@@ -47,10 +47,13 @@ empty ground, which emits a visible MISS.
 - *A dead intent skips rather than aborts.* Killing one attacker must not cancel the rest
   of the enemy's turn.
 
-**Known gap:** the HUD totals *declared* damage only. Status ticks and Resonance are not
-declarations and land on top, so a turn can cost slightly more than the number promised.
-That is the trust-breaking direction and worth closing — either by folding foreseeable
-tick damage into the readout or by labelling it "from attacks".
+**Trust gap: closed 2026-08-17.** The cause turned out not to be status ticks — statuses
+live on units and never on a Commander in this engine. It was **Escalation**: an intent
+records the attacker's ATK when declared, but Escalate fires at the start of the enemy's
+turn, *before* the blow lands, so a growing unit hit harder than it promised. The HUD now
+projects that growth and itemises the total ("Incoming: 7 damage (5 attack, 2
+escalation)"). It is an upper bound — an attacker that dies before swinging makes it read
+high — which is the safe direction to err.
 
 <details>
 <summary>Original E1 plan (kept for reference)</summary>
@@ -234,6 +237,23 @@ floaters (damage numbers, CRASH badges) track. A rotation test that round-trips 
 at all four steps is the cheap guard.
 
 ---
+
+## ~~E5 — Making things land~~ ✅ DONE (2026-08-17)
+
+Hit-stops on death (150ms for a minion, 400ms for a Behemoth), a cascade crescendo that
+escalates shake and pitch per link and prints CASCADE ×N, Escalation stacks scaling the
+unit's drawn size, and a Last Stand state below 20% Pact that desaturates the board and
+brings up a synthesised heartbeat.
+
+Entirely client-side: `git diff src/core/` is empty for this work. The one supporting
+change was giving the sound layer a `pitch` option, which the crescendo needs and which
+lives in the presentation layer.
+
+**Not done:** per-reaction visual identity — Vaporize, Shatter and Wildfire still share one
+flash. It is the remaining item on this list.
+
+<details>
+<summary>Original E5 plan (kept for reference)</summary>
 
 ## E5 — Making things land (~2 days)
 

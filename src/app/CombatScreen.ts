@@ -26,6 +26,10 @@ import { cellsAt } from '../core/util/grid.js';
 import type { CommanderModel } from '../render/BoardRenderer.js';
 import type { Coord } from '../contract/ids.js';
 import type { GameState } from '../core/types/state.js';
+import { calculateProjectedDamage } from '../hud/projection.js';
+
+/** Below this share of the Pact, the presentation turns to panic. */
+const LAST_STAND_FRACTION = 0.2;
 import type { AiProfile } from '../core/ai/controller.js';
 import { easeOutQuad, tween } from '../anim/tween.js';
 
@@ -119,6 +123,7 @@ export class CombatScreen implements Screen {
       onToggleThreat: () => this.targeting?.toggleThreat() ?? false,
       onHelp: () => this.help?.toggle(),
       onRotate: (steps) => void this.rotate(steps),
+      onLastStand: (active) => this.sfx.setHeartbeat(active),
     });
 
     this.targeting = new TargetingController(this.session, {
@@ -573,10 +578,12 @@ export class CombatScreen implements Screen {
     const board = this.session.getBoard();
     this.hud?.syncFromBoard(board, this.session.getHand(), this.session.getPlayableCards());
     this.syncCommanders(board);
-    const incoming = board.intents
-      .filter((i) => i.kind === 'commander')
-      .reduce((sum, i) => sum + i.damage, 0);
-    this.hud?.setIncoming(incoming, this.session.getThreat().commanderThreatCount);
+    this.hud?.setIncoming(
+      calculateProjectedDamage(board),
+      this.session.getThreat().commanderThreatCount,
+    );
+    // Last Stand is a property of the board, so it is re-evaluated wherever the board is.
+    this.hud?.setLastStand(board.player.hp <= board.player.maxHp * LAST_STAND_FRACTION);
     // Undo availability and the End Turn warning are both properties of the turn as it
     // now stands, so they are recomputed every time control comes back to the player.
     this.refreshTurnUi();

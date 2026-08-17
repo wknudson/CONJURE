@@ -72,6 +72,9 @@ export interface CommanderModel {
   targetable: boolean;
 }
 
+/** How much bigger a unit looks per Escalation stack. */
+const ESCALATION_SCALE_PER_STACK = 0.05;
+
 export function emptyOverlays(): Overlays {
   return {
     highlight: [],
@@ -512,6 +515,18 @@ export class BoardRenderer {
 
       if (view.snapshot) {
         drawBasePlate(ctx, cam, centre, footprint, ally);
+
+        // A unit that has grown mechanically should look it. Scaled about its own feet so
+        // it rises off the base plate rather than sinking through it.
+        const growth = 1 + Math.min(view.escalation, 6) * ESCALATION_SCALE_PER_STACK;
+        const scaled = growth !== 1;
+        if (scaled) {
+          ctx.save();
+          ctx.translate(centre.x, centre.y);
+          ctx.scale(growth, growth);
+          ctx.translate(-centre.x, -centre.y);
+        }
+
         drawUnitBody(ctx, cam, centre, {
           archetype: view.snapshot.archetype,
           school: view.snapshot.school,
@@ -519,6 +534,8 @@ export class BoardRenderer {
           ally,
           bob: (this.clock / 1400) % 1,
         });
+
+        if (scaled) ctx.restore();
       } else if (view.obstacle?.cover) {
         // Cover is knee-high: it must read as something you walk through, not around.
         drawCover(ctx, cam, centre);

@@ -22,6 +22,16 @@ export interface CombatView {
   hud: Hud;
 }
 
+/** Held beat before a death resolves, so removing a piece has weight. */
+const MINION_HITSTOP_MS = 150;
+const BEHEMOTH_HITSTOP_MS = 400;
+
+/** A pause that respects the sequencer's speed scaling, so skip still skips. */
+function hold(ms: number): Promise<void> {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function registerHandlers(seq: Sequencer<CombatView>): void {
   // ---------------------------------------------------------------- board setup
 
@@ -160,8 +170,18 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
   seq.on('runeDetonated', async (e, { view, t }) => {
     const v = view.views.get(e.hostId);
     if (v) v.rune = null;
-    view.sfx.play('detonate');
-    view.fx.screenShake(9, t(300));
+
+    // Cascade crescendo. A three-rune chain currently looks like three separate pops;
+    // escalating each link turns it into the single loudest thing the game can do.
+    // `chainDepth` comes from the engine and is 0 for the rune that starts the chain.
+    const link = e.chainDepth + 1;
+    view.sfx.play('detonate', { pitch: 1 + Math.min(e.chainDepth, 4) * 0.12 });
+    view.fx.screenShake(9 + Math.min(e.chainDepth, 4) * 3, t(300));
+
+    if (link > 1) {
+      view.fx.label(e.at, `CASCADE ×${link}${link >= 3 ? '!' : ''}`, 'cascade');
+    }
+
     await view.fx.detonation(e.at, e.school, t(420));
   });
 
@@ -214,6 +234,12 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
 
   seq.on('unitDied', async (e, { view, t }) => {
     const v = view.views.get(e.unitId);
+
+    // Hit-stop. A beat of held silence before the death reads as weight; without it a
+    // unit leaving the board has exactly the same texture as a unit being scratched.
+    // A Behemoth gets a longer one, because it is a bigger thing to lose.
+    await hold(t(e.footprint === 2 ? BEHEMOTH_HITSTOP_MS : MINION_HITSTOP_MS));
+
     view.sfx.play(e.footprint === 2 ? 'death2' : 'death1');
     if (e.footprint === 2) view.fx.screenShake(8, t(320));
 

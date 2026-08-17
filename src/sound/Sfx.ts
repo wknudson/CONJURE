@@ -24,6 +24,10 @@ export class Sfx {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private _muted: boolean;
+  /** Multiplier applied to the current cue's frequencies. Reset on every play(). */
+  private pitch = 1;
+  /** Interval handle for the Last Stand heartbeat, or null when it is not running. */
+  private heartbeat: number | null = null;
 
   constructor() {
     this._muted = localStorage.getItem(MUTE_KEY) === '1';
@@ -55,13 +59,45 @@ export class Sfx {
     }
   }
 
-  play(cue: Cue): void {
+  /**
+   * `pitch` scales every frequency in the cue. Used by the cascade crescendo, where each
+   * link in a rune chain rings a little higher than the last.
+   */
+  /**
+   * A slow heartbeat under everything, for Last Stand.
+   *
+   * Scheduled rather than looped from a file: the whole sound layer is synthesised, and a
+   * pulse is two oscillator thumps a moment apart, repeated.
+   */
+  setHeartbeat(on: boolean): void {
+    if (on === (this.heartbeat !== null)) return;
+
+    if (!on) {
+      if (this.heartbeat !== null) window.clearInterval(this.heartbeat);
+      this.heartbeat = null;
+      return;
+    }
+
+    const beat = (): void => {
+      if (this._muted || !this.ctx) return;
+      const t = this.ctx.currentTime;
+      this.pitch = 1;
+      // Lub, then a softer dub a fifth of a second later.
+      this.tone(t, 'sine', 82, 46, 0.16, 0.32);
+      this.tone(t + 0.2, 'sine', 66, 38, 0.14, 0.2);
+    };
+    beat();
+    this.heartbeat = window.setInterval(beat, 1150);
+  }
+
+  play(cue: Cue, opts: { pitch?: number } = {}): void {
     if (this._muted) return;
     this.unlock();
     const ctx = this.ctx;
     const master = this.master;
     if (!ctx || !master) return;
 
+    this.pitch = opts.pitch ?? 1;
     const t = ctx.currentTime;
 
     switch (cue) {
@@ -128,8 +164,12 @@ export class Sfx {
     const osc = ctx.createOscillator();
     const env = ctx.createGain();
     osc.type = type;
-    osc.frequency.setValueAtTime(freqFrom, start);
-    osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqTo), start + duration);
+    // Pitch scaling lives here so every cue inherits it without touching call sites.
+    osc.frequency.setValueAtTime(freqFrom * this.pitch, start);
+    osc.frequency.exponentialRampToValueAtTime(
+      Math.max(20, freqTo * this.pitch),
+      start + duration,
+    );
     env.gain.setValueAtTime(0.0001, start);
     env.gain.exponentialRampToValueAtTime(gain, start + 0.012);
     env.gain.exponentialRampToValueAtTime(0.0001, start + duration);

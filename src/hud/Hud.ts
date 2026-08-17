@@ -10,6 +10,7 @@ import type { CardSnapshot } from '../contract/snapshots.js';
 import { CardView } from './CardView.js';
 import { Tooltip } from './Tooltip.js';
 import { schoolOf } from '../render/palette.js';
+import { describeProjected, type ProjectedDamage } from './projection.js';
 
 export interface HudCallbacks {
   onCardClick(cardId: CardInstanceId): void;
@@ -20,6 +21,7 @@ export interface HudCallbacks {
   onToggleThreat(): boolean;
   onHelp(): void;
   onRotate(steps: number): void;
+  onLastStand(active: boolean): void;
 }
 
 function escapeHtml(s: string): string {
@@ -61,6 +63,7 @@ export class Hud {
   private showingNotice: string | null = null;
   private noticeTimer: number | null = null;
   private noticeShownAt = 0;
+  private lastStand = false;
 
   private cards = new Map<CardInstanceId, CardView>();
   private playable = new Set<CardInstanceId>();
@@ -158,6 +161,19 @@ export class Hud {
     this.endTurnBtn.textContent = `End Turn (${bits.join(', ')} left)`;
   }
 
+  /**
+   * Last Stand: the board desaturates and a heartbeat comes up under everything.
+   *
+   * Purely presentational — the rules have no such state. It exists because the moment
+   * the Pact is two hits from breaking should feel different from the moment it is ten.
+   */
+  setLastStand(on: boolean): void {
+    if (this.lastStand === on) return;
+    this.lastStand = on;
+    this.root.classList.toggle('is-last-stand', on);
+    this.cb.onLastStand(on);
+  }
+
   setThreatActive(on: boolean): void {
     this.threatBtn.classList.toggle('is-active', on);
   }
@@ -168,9 +184,9 @@ export class Hud {
    * Once the enemy has committed, "7 damage incoming" beats "3 enemies can reach you" by
    * a wide margin — it is a number the player can plan against instead of worry about.
    */
-  setIncoming(declaredDamage: number, reachCount: number): void {
-    if (declaredDamage > 0) {
-      this.threatWarnEl.textContent = `${declaredDamage} damage incoming to your Pact`;
+  setIncoming(projected: ProjectedDamage, reachCount: number): void {
+    if (projected.total > 0) {
+      this.threatWarnEl.textContent = describeProjected(projected);
       this.threatWarnEl.classList.add('is-shown', 'is-declared');
       return;
     }

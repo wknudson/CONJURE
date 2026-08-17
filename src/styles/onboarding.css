@@ -405,3 +405,39 @@
     box-shadow: 0 0 16px rgba(251, 146, 60, 0.55);
   }
 }
+
+/* ------------------------------------------------------------- last stand */
+
+/*
+ * Two hits from losing the Pact should not look like ten. The board drains of colour and
+ * the edges close in; the heartbeat comes from the synthesised sound layer.
+ */
+.hud.is-last-stand ~ canvas.board,
+.screen--combat:has(.hud.is-last-stand) canvas.board {
+  filter: saturate(0.55) contrast(1.08);
+  transition: filter 900ms ease;
+}
+
+.hud.is-last-stand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 45%,
+    rgba(120, 0, 0, 0.16) 78%,
+    rgba(90, 0, 0, 0.34) 100%
+  );
+  animation: last-stand-pulse 1.15s ease-in-out infinite;
+}
+
+@keyframes last-stand-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.hud.is-last-stand .pact__fill {
+  animation: critical-pulse 0.8s ease-in-out infinite;
+}
