@@ -1,0 +1,93 @@
+:root {
+  --bg: #14161d;
+  --panel: rgba(18, 21, 29, 0.92);
+  --panel-edge: rgba(255, 255, 255, 0.09);
+  --text: #f1f5f9;
+  --text-dim: #94a3b8;
+  --accent: #67e8f9;
+  --danger: #f87171;
+  --good: #4ade80;
+  --gold: #fde047;
+
+  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+#app.is-fading-in {
+  animation: fade-in 260ms ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+}
+
+kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--panel-edge);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  font-family: inherit;
+  font-size: 0.85em;
+}
+
+.btn {
+  padding: 12px 26px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font: 600 15px var(--font);
+  cursor: pointer;
+  transition: background 140ms ease, transform 140ms ease, border-color 140ms ease;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn--primary {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.btn--primary:hover {
+  background: color-mix(in srgb, var(--accent) 34%, transparent);
+}

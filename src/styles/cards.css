@@ -1,0 +1,216 @@
+.card {
+  position: relative;
+  flex: 0 0 auto;
+  width: 104px;
+  height: 142px;
+  padding: 8px 8px 6px;
+  border-radius: 9px;
+  border: 2px solid var(--school, #94a3b8);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--school, #94a3b8) 22%, rgba(16, 19, 26, 0.97)),
+      rgba(12, 14, 20, 0.98)
+    );
+  cursor: pointer;
+  transform-origin: bottom center;
+  transition:
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 160ms ease,
+    filter 160ms ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scaling on hover keeps text crisp — this is the payoff for DOM cards over canvas. */
+.card:hover {
+  transform: translateY(-26px) scale(1.55);
+  z-index: 20;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.75),
+    0 0 22px color-mix(in srgb, var(--school, #94a3b8) 45%, transparent);
+}
+
+.card.is-unplayable {
+  filter: saturate(0.28) brightness(0.68);
+}
+
+.card.is-unplayable:hover {
+  transform: translateY(-18px) scale(1.4);
+}
+
+.card.is-unplayable .card__cost {
+  background: #7f1d1d;
+  border-color: #ef4444;
+}
+
+.card.is-selected {
+  transform: translateY(-30px) scale(1.2);
+  z-index: 21;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 16px 32px rgba(0, 0, 0, 0.7);
+}
+
+.card:not(.is-unplayable)::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--school, #94a3b8) 70%, transparent);
+  opacity: 0;
+  animation: card-ready 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes card-ready {
+  50% {
+    opacity: 0.75;
+  }
+}
+
+.card--ephemeral {
+  border-color: var(--gold);
+  box-shadow:
+    0 0 22px rgba(253, 224, 71, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.55);
+  animation: ephemeral-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes ephemeral-glow {
+  50% {
+    box-shadow:
+      0 0 34px rgba(253, 224, 71, 0.9),
+      0 4px 14px rgba(0, 0, 0, 0.55);
+  }
+}
+
+.card__cost {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--school, #94a3b8) 80%, white);
+  background: var(--school-deep, #334155);
+  font: 800 13px var(--font);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.card__name {
+  font: 700 10px var(--font);
+  line-height: 1.25;
+  text-align: center;
+  padding: 2px 0 3px 14px;
+  min-height: 24px;
+}
+
+/* Type line: what the card does with the board, and who casts it. */
+.card__type {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  padding: 2px 0 3px;
+  margin-bottom: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.card__kind {
+  font: 800 6.5px var(--font);
+  letter-spacing: 0.7px;
+  padding: 1.5px 4px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--school, #94a3b8) 40%, rgba(0, 0, 0, 0.5));
+  color: #fff;
+}
+
+.card__source {
+  font: 700 6px var(--font);
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+/* Companion cards get a school-tinted source tag; Hero cards stay neutral grey. */
+.card--src-companion .card__source {
+  color: color-mix(in srgb, var(--school, #94a3b8) 80%, white);
+}
+
+.card--src-companion {
+  border-style: solid;
+}
+
+.card--src-hero {
+  border-color: #6b7280;
+}
+
+.card--src-hero .card__cost {
+  border-color: #9ca3af;
+  background: #374151;
+}
+
+.card__body {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.card__text {
+  font: 400 7.5px var(--font);
+  line-height: 1.35;
+  color: #cbd5e1;
+}
+
+.card__keywords {
+  margin-top: 4px;
+  font: 700 6.5px var(--font);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--school, #94a3b8) 75%, white);
+}
+
+.card__stats {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.13);
+  font: 800 10px var(--font);
+}
+
+.card__stats span:nth-child(1) {
+  color: #fca5a5;
+}
+.card__stats span:nth-child(2) {
+  color: #86efac;
+}
+.card__stats span:nth-child(3) {
+  color: #93c5fd;
+}
+
+.card.is-drawing {
+  animation: card-draw 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes card-draw {
+  from {
+    opacity: 0;
+    transform: translate(60px, 40px) scale(0.5) rotate(12deg);
+  }
+}
+
+.card.is-leaving {
+  animation: card-leave 240ms ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes card-leave {
+  to {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.75);
+  }
+}

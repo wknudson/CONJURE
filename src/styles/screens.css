@@ -1,0 +1,219 @@
+/* ------------------------------------------------------------------- title */
+
+.screen--title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(103, 232, 249, 0.09), transparent 60%),
+    var(--bg);
+}
+
+.title__mark {
+  font: 800 66px var(--font);
+  letter-spacing: 18px;
+  text-indent: 18px;
+  background: linear-gradient(180deg, #f1f5f9, #7dd3fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 24px rgba(125, 211, 252, 0.35));
+}
+
+.title__sub {
+  font: 500 14px var(--font);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 32px;
+}
+
+.encounters {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 860px;
+}
+
+.encounter {
+  width: 340px;
+  padding: 22px;
+  text-align: left;
+  border: 1px solid var(--panel-edge);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.encounter:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
+.encounter__name {
+  font: 700 17px var(--font);
+  margin-bottom: 8px;
+}
+
+.encounter__blurb {
+  font: 400 13px var(--font);
+  line-height: 1.5;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.encounter__meta {
+  font: 600 11px var(--font);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 75%, transparent);
+}
+
+.title__hint {
+  max-width: 620px;
+  margin-top: 34px;
+  text-align: center;
+  font: 400 12.5px var(--font);
+  line-height: 1.8;
+  color: var(--text-dim);
+}
+
+/* ----------------------------------------------------------------- results */
+
+.screen--results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--bg);
+}
+
+.screen--victory {
+  background: radial-gradient(ellipse at center, rgba(74, 222, 128, 0.11), transparent 62%), var(--bg);
+}
+
+.screen--defeat {
+  background: radial-gradient(ellipse at center, rgba(248, 113, 113, 0.11), transparent 62%), var(--bg);
+}
+
+.screen--bound {
+  background: radial-gradient(ellipse at center, rgba(255, 107, 53, 0.14), transparent 62%), var(--bg);
+}
+
+.results__title {
+  font: 800 58px var(--font);
+  letter-spacing: 14px;
+  text-indent: 14px;
+}
+
+.screen--victory .results__title {
+  color: var(--good);
+}
+.screen--defeat .results__title {
+  color: var(--danger);
+}
+.screen--bound .results__title {
+  color: #ff6b35;
+}
+
+.results__blurb {
+  max-width: 460px;
+  text-align: center;
+  font: 400 15px var(--font);
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+
+.results__encounter {
+  margin-top: 4px;
+  font: 600 11px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.results__actions {
+  display: flex;
+  gap: 14px;
+  margin-top: 26px;
+}
+
+/* ------------------------------------------------------- companion select */
+
+.title__section-label {
+  font: 800 9px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.7);
+  margin: 22px 0 10px;
+}
+
+.companions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.companion {
+  position: relative;
+  width: 220px;
+  padding: 16px 16px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.companion:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.companion.is-selected {
+  border-color: var(--school, #7dd3fc);
+  background: color-mix(in srgb, var(--school, #7dd3fc) 12%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--school, #7dd3fc) 35%, transparent);
+}
+
+/* A school-coloured orb stands in for the companion's portrait. */
+.companion__sigil {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  margin-bottom: 10px;
+  background: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in srgb, var(--school, #7dd3fc) 55%, white),
+    var(--school, #7dd3fc)
+  );
+  box-shadow: 0 0 16px color-mix(in srgb, var(--school, #7dd3fc) 60%, transparent);
+}
+
+.companion__name {
+  font: 800 15px var(--font);
+  color: var(--text);
+}
+
+.companion__title {
+  font: 600 9px var(--font);
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--school, #7dd3fc);
+  margin-bottom: 8px;
+}
+
+.companion__blurb {
+  font: 400 11px/1.5 var(--font);
+  color: var(--text-dim);
+}

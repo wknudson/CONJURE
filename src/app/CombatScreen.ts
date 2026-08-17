@@ -1,0 +1,487 @@
+/**
+ * CombatScreen owns everything for one battle: the logic session, the canvas board,
+ * the HUD, the sequencer, and the input controller.
+ *
+ * The one synchronisation rule of the whole app lives here: input is locked the moment
+ * an action is dispatched and unlocked when the sequencer goes idle. That is precisely
+ * the window in which view state equals logic state, which is what makes previews and
+ * legality queries safe.
+ */
+
+import type { Screen } from './ScreenManager.js';
+import type { Action } from '../contract/query.js';
+import type { CombatResult } from '../contract/events.js';
+import type { EncounterDef } from '../core/data/encounters/registry.js';
+import { CombatSession } from '../core/session.js';
+import { IsoCamera } from '../render/IsoCamera.js';
+import { BoardRenderer, emptyOverlays, type Overlays } from '../render/BoardRenderer.js';
+import { EntityViewMap } from '../render/EntityViews.js';
+import { Fx } from '../render/Fx.js';
+import { Sequencer } from '../anim/Sequencer.js';
+import { registerHandlers, type CombatView } from '../anim/handlers.js';
+import { Hud } from '../hud/Hud.js';
+import { HelpOverlay } from '../hud/HelpOverlay.js';
+import { Tutorial } from '../hud/Tutorial.js';
+import { cellsAt } from '../core/util/grid.js';
+import type { CommanderModel } from '../render/BoardRenderer.js';
+import type { Coord } from '../contract/ids.js';
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+import { TargetingController } from '../hud/TargetingController.js';
+import { Sfx } from '../sound/Sfx.js';
+
+export class CombatScreen implements Screen {
+  private session: CombatSession;
+  private cam: IsoCamera;
+  private views = new EntityViewMap();
+  private sfx = new Sfx();
+
+  private el: HTMLElement | null = null;
+  private canvas: HTMLCanvasElement | null = null;
+  private renderer: BoardRenderer | null = null;
+  private hud: Hud | null = null;
+  private targeting: TargetingController | null = null;
+  private sequencer: Sequencer<CombatView> | null = null;
+  private fx: Fx | null = null;
+
+  private onResize = () => {
+    this.renderer?.resize();
+    this.reportViewportSize();
+  };
+  private help: HelpOverlay | null = null;
+  private warnedTooSmall = false;
+  private tutorial: Tutorial | null = null;
+  private onKeyDown = (ev: KeyboardEvent) => this.handleKeyDown(ev);
+  private onKeyUp = (ev: KeyboardEvent) => this.handleKeyUp(ev);
+
+  constructor(
+    private readonly encounter: EncounterDef,
+    private readonly onFinish: (result: CombatResult, encounter: EncounterDef) => void,
+    companionId?: string,
+    seed = Math.floor(Math.random() * 1e9),
+    deck?: string[],
+  ) {
+    this.session = new CombatSession(encounter, seed, undefined, companionId, deck);
+    this.cam = new IsoCamera(encounter.width, encounter.height);
+  }
+
+  mount(root: HTMLElement): void {
+    const el = document.createElement('div');
+    el.className = 'screen screen--combat';
+    el.innerHTML = `
+      <canvas class="board"></canvas>
+      <div class="floaters"></div>
+    `;
+    root.appendChild(el);
+    this.el = el;
+
+    const canvas = el.querySelector<HTMLCanvasElement>('.board')!;
+    const floaters = el.querySelector<HTMLElement>('.floaters')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D is unavailable in this browser');
+
+    this.canvas = canvas;
+    this.fx = new Fx(this.cam, floaters);
+    this.renderer = new BoardRenderer(canvas, ctx, this.cam, this.views, this.fx);
+
+    this.hud = new Hud(el, {
+      onCardClick: (id) => this.targeting?.onCardClick(id),
+      onCardHover: (id) => this.targeting?.onCardHover(id),
+      onEndTurn: () => this.commit({ type: 'endTurn' }),
+      onToggleMute: () => this.sfx.toggleMute(),
+      onToggleThreat: () => this.targeting?.toggleThreat() ?? false,
+      onHelp: () => this.help?.toggle(),
+    });
+
+    this.targeting = new TargetingController(this.session, {
+      commit: (action) => this.commit(action),
+      setOverlays: (o) => this.setOverlays(o),
+      setSelectedCard: (id) => this.hud?.setSelectedCard(id),
+      setEnemyTargetable: (on) => {
+        this.hud?.setEnemyTargetable(on);
+        const boss = this.renderer?.commanders.find((c) => c.side === 'enemy');
+        if (boss) boss.targetable = on;
+      },
+      notice: (text) => this.hud?.flashNotice(text),
+    });
+
+    const view: CombatView = {
+      views: this.views,
+      fx: this.fx,
+      sfx: this.sfx,
+      hud: this.hud,
+    };
+    this.sequencer = new Sequencer(view);
+    registerHandlers(this.sequencer);
+    this.sequencer.onIdle = () => this.onSequencerIdle();
+
+    canvas.addEventListener('mousemove', (ev) => this.handleMouseMove(ev));
+    canvas.addEventListener('click', (ev) => this.handleClick(ev));
+    canvas.addEventListener('mouseleave', () => this.targeting?.onTileHover(null));
+    canvas.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      this.targeting?.onCancel();
+    });
+
+    window.addEventListener('resize', this.onResize);
+    window.addEventListener('keydown', this.onKeyDown);
+    window.addEventListener('keyup', this.onKeyUp);
+
+    this.help = new HelpOverlay(root);
+
+    // A first-time player gets the danger zone on by default and a short walkthrough.
+    // Both are one keystroke from being turned off, and the tutorial never runs twice.
+    if (!Tutorial.hasSeen()) {
+      this.hud.setThreatActive(this.targeting.toggleThreat());
+      this.tutorial = new Tutorial(root, () => {
+        this.hud?.flashNotice('Press H for the rules at any time');
+      });
+      // Let the opening animation settle before pointing at anything.
+      window.setTimeout(() => this.tutorial?.start(), 900);
+    }
+
+    this.renderer.resize();
+    this.renderer.start();
+    this.reportViewportSize();
+
+    if (import.meta.env.DEV) {
+      // Dev handle: lets a headless session force a frame and inspect state.
+      (window as unknown as Record<string, unknown>).__conjure = {
+        renderer: this.renderer,
+        session: this.session,
+        views: this.views,
+        cam: this.cam,
+        hud: this.hud,
+        sequencer: this.sequencer,
+      };
+    }
+
+    // Seed the board from the authoritative state, then animate the opening events.
+    const board = this.session.getBoard();
+    this.views.syncFrom(board.units, board.obstacles);
+    this.syncCommanders(board);
+    this.hud.setSchoolAccent(board.player.companionSchool);
+    this.hud.syncFromBoard(board, this.session.getHand(), this.session.getPlayableCards());
+    this.hud.setInteractive(false);
+    this.sequencer.enqueue(this.session.openingEvents);
+  }
+
+  unmount(): void {
+    this.renderer?.stop();
+    this.hud?.destroy();
+    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyUp);
+    this.help?.destroy();
+    this.help = null;
+    this.tutorial?.destroy();
+    this.tutorial = null;
+    this.el?.remove();
+    this.el = null;
+  }
+
+  // ---------------------------------------------------------------- input
+
+  private handleMouseMove(ev: MouseEvent): void {
+    if (!this.canvas || !this.renderer) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    const y = ev.clientY - rect.top;
+    const overCommander = this.renderer.commanderAt(x, y);
+    this.canvas.style.cursor = overCommander?.targetable ? 'pointer' : 'crosshair';
+    const tile = overCommander ? null : this.cam.screenToTile(x, y);
+    this.targeting?.onTileHover(tile);
+    this.showBoardTip(overCommander, tile, ev.clientX, ev.clientY);
+  }
+
+  /**
+   * Inspection on hover. A newcomer cannot read a unit's role off a coloured prism, so
+   * anything on the board explains itself when the cursor rests on it.
+   */
+  private showBoardTip(
+    commander: CommanderModel | null,
+    tile: Coord | null,
+    cx: number,
+    cy: number,
+  ): void {
+    const tips = this.hud?.tips;
+    if (!tips) return;
+
+    if (commander) {
+      const isFoe = commander.side === 'enemy';
+      tips.showHtml(
+        `<div class="tooltip__title">${escapeHtml(commander.name)}</div>
+         <div class="tooltip__body">${
+           isFoe
+             ? 'Defeat them to win. Melee must be standing in their two red rows to strike.'
+             : commander.kind === 'companion'
+               ? 'Your Companion. Its lane is marked on the board — the first Companion card you play each turn fires its passive there.'
+               : 'You. Your Hero and Companion share this health pool.'
+         }</div>
+         <div class="tooltip__detail">${commander.hp} / ${commander.maxHp} HP${
+           commander.armor > 0 ? ` · ${commander.armor} Armor` : ''
+         }</div>`,
+        cx,
+        cy,
+      );
+      return;
+    }
+
+    const board = this.session.getBoard();
+    const unit = tile
+      ? board.units.find((u) =>
+          cellsAt(u.anchor, u.footprint).some((c) => c.x === tile.x && c.y === tile.y),
+        )
+      : undefined;
+
+    if (!unit) {
+      const obstacle = tile
+        ? board.obstacles.find((o) => o.anchor.x === tile.x && o.anchor.y === tile.y)
+        : undefined;
+      if (obstacle) {
+        tips.showHtml(
+          `<div class="tooltip__title">${escapeHtml(obstacle.name)}</div>
+           <div class="tooltip__body">Blocks line of sight and movement. Either side may break it.</div>
+           <div class="tooltip__detail">${obstacle.hp} HP</div>`,
+          cx,
+          cy,
+        );
+        return;
+      }
+      tips.hide();
+      return;
+    }
+
+    const statuses = board.statuses
+      .filter((s) => s.unitId === unit.id)
+      .map((s) => `${s.kind} ${s.stacks}`)
+      .join(' · ');
+
+    tips.showHtml(
+      `<div class="tooltip__title">${escapeHtml(unit.name)}${
+        unit.side === 'enemy' ? ' <span style="color:#fca5a5">(enemy)</span>' : ''
+      }</div>
+       <div class="tooltip__body">${unit.atk} Attack · ${unit.hp}/${unit.maxHp} Health · Moves ${unit.mov}${
+         unit.rangeMax > 1 ? ` · Range ${unit.rangeMin}–${unit.rangeMax}` : ' · Melee'
+       }</div>
+       ${
+         unit.keywords.length
+           ? `<div class="tooltip__detail">${unit.keywords.join(' · ')}</div>`
+           : ''
+       }
+       ${unit.armor > 0 ? `<div class="tooltip__detail">${unit.armor} Armor absorbs damage first</div>` : ''}
+       ${statuses ? `<div class="tooltip__detail">${escapeHtml(statuses)}</div>` : ''}
+       ${unit.escalation > 0 ? `<div class="tooltip__detail">Escalated ${unit.escalation}×</div>` : ''}`,
+      cx,
+      cy,
+    );
+  }
+
+  private handleClick(ev: MouseEvent): void {
+    if (!this.canvas || !this.renderer) return;
+    this.sfx.unlock();
+    const rect = this.canvas.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    const y = ev.clientY - rect.top;
+
+    // Commanders stand beside the grid, so test them before falling through to tiles.
+    const commander = this.renderer.commanderAt(x, y);
+    if (commander) {
+      if (commander.side === 'enemy') this.targeting?.onEnemyCommanderClick();
+      else this.targeting?.onCancel();
+      return;
+    }
+
+    const tile = this.cam.screenToTile(x, y);
+    if (tile) this.targeting?.onTileClick(tile);
+    else this.targeting?.onCancel();
+  }
+
+  /**
+   * Tells the player when the window is simply too small, rather than silently drawing
+   * a board whose tiles are too fine to aim at. Said once per session, not every resize.
+   */
+  private reportViewportSize(): void {
+    if (!this.cam.tooSmall || this.warnedTooSmall) return;
+    this.warnedTooSmall = true;
+    this.hud?.flashNotice('Window is small — enlarge it for a readable board');
+  }
+
+  private handleKeyDown(ev: KeyboardEvent): void {
+    if (ev.key === 'h' || ev.key === 'H') {
+      this.help?.toggle();
+      return;
+    }
+    // While the reference is open it swallows everything but its own dismissal.
+    if (this.help?.isOpen) {
+      if (ev.key === 'Escape') this.help.hide();
+      return;
+    }
+    if (ev.key === 't' || ev.key === 'T') {
+      this.hud?.setThreatActive(this.targeting?.toggleThreat() ?? false);
+      return;
+    }
+    if (ev.key === 'Shift') this.targeting?.setExpanded(true);
+    if (ev.key === 'Escape') this.targeting?.onCancel();
+    if (ev.code === 'Space') {
+      ev.preventDefault();
+      this.sequencer?.fastForward(true);
+    }
+    if (ev.key === 'Enter' && !this.sequencer?.busy) this.commit({ type: 'endTurn' });
+  }
+
+  private handleKeyUp(ev: KeyboardEvent): void {
+    if (ev.key === 'Shift') this.targeting?.setExpanded(false);
+    if (ev.code === 'Space') this.sequencer?.fastForward(false);
+  }
+
+  private setOverlays(overlays: Overlays): void {
+    if (this.renderer) this.renderer.overlays = overlays;
+  }
+
+  // ---------------------------------------------------------------- flow
+
+  private commit(action: Action): void {
+    if (!this.sequencer || this.sequencer.busy) return;
+    if (this.session.isOver()) return;
+    if (this.session.activeSide !== 'player') return;
+
+    this.sfx.unlock();
+    this.lockInput();
+
+    let events;
+    try {
+      events = this.session.dispatch(action);
+    } catch (err) {
+      this.hud?.flashNotice(err instanceof Error ? err.message : 'Illegal action');
+      this.unlockInput();
+      return;
+    }
+
+    this.sequencer.enqueue(events);
+  }
+
+  private lockInput(): void {
+    this.targeting?.setEnabled(false);
+    this.hud?.setInteractive(false);
+    this.setOverlays(emptyOverlays());
+  }
+
+  private unlockInput(): void {
+    const board = this.session.getBoard();
+    this.hud?.syncFromBoard(board, this.session.getHand(), this.session.getPlayableCards());
+    this.syncCommanders(board);
+    this.hud?.setCommanderThreat(this.session.getThreat().commanderThreatCount);
+    this.hud?.setInteractive(true);
+    this.targeting?.setEnabled(true);
+  }
+
+  /**
+   * Places the Hero, Companion and enemy Commander one row beyond each end of the grid.
+   * They are on the field but never on it, which is what makes melee reach legible.
+   */
+  private syncCommanders(board: ReturnType<CombatSession['getBoard']>, targetable = false): void {
+    if (!this.renderer) return;
+
+    const nearRow = board.height + 0.35;
+    const farRow = -1.35;
+
+    this.renderer.commanders = [
+      {
+        side: 'player',
+        kind: 'hero',
+        name: board.player.name,
+        school: 'arcane',
+        at: { x: board.player.heroColumn, y: nearRow },
+        hp: board.player.hp,
+        maxHp: board.player.maxHp,
+        armor: board.player.armor,
+        targetable: false,
+      },
+      {
+        side: 'player',
+        kind: 'companion',
+        name: board.player.companionName ?? 'Companion',
+        school: board.player.companionSchool,
+        at: { x: board.player.companionColumn, y: nearRow },
+        hp: board.player.hp,
+        maxHp: board.player.maxHp,
+        armor: board.player.armor,
+        targetable: false,
+      },
+      {
+        side: 'enemy',
+        kind: 'boss',
+        name: board.enemy.name,
+        school: board.enemy.companionSchool,
+        at: { x: Math.floor((board.width - 1) / 2), y: farRow },
+        hp: board.enemy.hp,
+        maxHp: board.enemy.maxHp,
+        armor: board.enemy.armor,
+        targetable,
+      },
+    ];
+
+    this.renderer.resonanceLane = board.player.resonanceUsed
+      ? null
+      : board.player.companionColumn;
+  }
+
+  /**
+   * Called whenever the animation queue empties. This is the only place the turn can
+   * advance, which keeps view state and logic state in lockstep.
+   */
+  private onSequencerIdle(): void {
+    if (this.session.isOver()) {
+      const result = this.session.result;
+      if (result) {
+        this.hud?.setInteractive(false);
+        this.targeting?.setEnabled(false);
+        window.setTimeout(() => this.onFinish(result, this.encounter), 900);
+      }
+      return;
+    }
+
+    // Re-sync the view from the authoritative board: cheap insurance against any
+    // drift introduced by a skipped animation.
+    const board = this.session.getBoard();
+    this.views.syncFrom(board.units, board.obstacles);
+    this.syncRunesAndStatuses(board);
+
+    if (this.session.activeSide === 'enemy') {
+      this.hud?.setInteractive(false);
+      this.targeting?.setEnabled(false);
+      // Let the "enemy turn" banner land before the AI starts acting.
+      window.setTimeout(() => {
+        const events = this.session.runAiTurn();
+        if (events.length > 0) this.sequencer?.enqueue(events);
+        else this.unlockInput();
+      }, 260);
+      return;
+    }
+
+    this.unlockInput();
+  }
+
+  private syncRunesAndStatuses(board: ReturnType<CombatSession['getBoard']>): void {
+    for (const view of this.views.all()) {
+      view.rune = null;
+      view.statuses = [];
+      view.escalation = 0;
+    }
+    for (const r of board.runes) {
+      const v = this.views.get(r.hostId);
+      if (v) v.rune = { school: r.rune.school };
+    }
+    for (const s of board.statuses) {
+      const v = this.views.get(s.unitId);
+      if (v) v.statuses.push({ kind: s.kind, stacks: s.stacks });
+    }
+    for (const e of board.escalation) {
+      const v = this.views.get(e.unitId);
+      if (v) v.escalation = e.stacks;
+    }
+  }
+}

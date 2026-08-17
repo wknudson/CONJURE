@@ -1,0 +1,409 @@
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hud.is-locked .hand,
+.hud.is-locked .portrait--enemy {
+  filter: saturate(0.6);
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+/* ------------------------------------------------------------------ top bar */
+
+.top-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 20px;
+}
+
+.enemy-bar {
+  flex: 0 1 320px;
+}
+
+.enemy-bar__label {
+  font: 700 9px var(--font);
+  letter-spacing: 1.6px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+/* Mirrors the glow on the Commander model when a unit can reach them. */
+.enemy-bar__track.is-targetable {
+  border-color: var(--danger);
+  box-shadow: 0 0 14px rgba(248, 113, 113, 0.5);
+}
+
+.enemy-bar__track,
+.pact__track {
+  position: relative;
+  height: 14px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.enemy-bar__fill,
+.pact__fill {
+  height: 100%;
+  width: 100%;
+  border-radius: 7px;
+  transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.enemy-bar__fill {
+  background: linear-gradient(90deg, #e5484d, #f87171);
+}
+
+.pact__fill {
+  background: linear-gradient(90deg, #38bdf8, #7dd3fc);
+}
+
+.enemy-bar__fill.is-critical,
+.pact__fill.is-critical {
+  background: linear-gradient(90deg, #b91c1c, #f87171);
+  animation: critical-pulse 1s ease-in-out infinite;
+}
+
+@keyframes critical-pulse {
+  50% {
+    filter: brightness(1.5);
+  }
+}
+
+.enemy-bar__track.is-hit,
+.pact__track.is-hit {
+  animation: bar-hit 260ms ease-out;
+}
+
+@keyframes bar-hit {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  60% {
+    transform: translateX(3px);
+  }
+}
+
+.enemy-bar__row,
+.pact__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  font: 600 12px var(--font);
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.enemy-bar__armor,
+.pact__armor {
+  color: #d6c4a0;
+}
+
+.is-hidden {
+  display: none;
+}
+
+.status {
+  margin-left: auto;
+  text-align: right;
+  font: 600 13px var(--font);
+  color: var(--text-dim);
+}
+
+.status__phase {
+  font-size: 11px;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ----------------------------------------------------------------- portraits */
+
+.portrait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 84px;
+}
+
+.portrait__frame {
+  width: 62px;
+  height: 70px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0.4));
+  border: 2px solid var(--panel-edge);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.portrait__name {
+  font: 600 11px var(--font);
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.portrait--enemy {
+  cursor: default;
+}
+
+.portrait--enemy.is-targetable {
+  cursor: crosshair;
+}
+
+.portrait--enemy.is-targetable .portrait__frame {
+  border-color: var(--danger);
+  box-shadow: 0 0 20px rgba(248, 113, 113, 0.55);
+  animation: targetable 1.1s ease-in-out infinite;
+}
+
+@keyframes targetable {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.portrait--hero .portrait__frame {
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+.portrait--companion .portrait__frame {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* --------------------------------------------------------------- bottom bar */
+
+.bottom-bar {
+  padding: 0 20px 16px;
+  background: linear-gradient(to top, rgba(10, 12, 18, 0.92) 55%, transparent);
+}
+
+.center-stack {
+  width: 400px;
+  margin: 0 auto 10px;
+}
+
+.resonance {
+  margin-top: 6px;
+  text-align: center;
+  font: 600 10px var(--font);
+  letter-spacing: 0.8px;
+  color: rgba(148, 163, 184, 0.65);
+  min-height: 13px;
+}
+
+.resonance.is-ready {
+  color: #ff9a6b;
+  text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+}
+
+.pact {
+  margin-bottom: 8px;
+}
+
+/* The dual-ring dial: heavy sockets for banked Pips, ethereal beads for Sparks. */
+.dial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.dial__pips {
+  display: flex;
+  gap: 6px;
+}
+
+.socket {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.09), rgba(0, 0, 0, 0.6));
+  transition: all 200ms ease;
+}
+
+.socket.is-filled {
+  border-color: #fcd34d;
+  background: radial-gradient(circle at 35% 30%, #fef3c7, #d97706);
+  box-shadow: 0 0 9px rgba(252, 211, 77, 0.6);
+}
+
+.dial__sparks {
+  display: flex;
+  gap: 3px;
+  min-height: 17px;
+  font-size: 14px;
+  color: #fdba74;
+}
+
+.dial__sparks.is-empty {
+  opacity: 0;
+}
+
+.bead {
+  text-shadow: 0 0 8px rgba(253, 186, 116, 0.9);
+  animation: bead-flicker 1.4s ease-in-out infinite;
+}
+
+@keyframes bead-flicker {
+  50% {
+    opacity: 0.6;
+    transform: translateY(-2px);
+  }
+}
+
+/* -------------------------------------------------------------------- hand */
+
+.hand-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 14px;
+}
+
+.hand {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 142px;
+  flex: 1 1 auto;
+}
+
+.end-turn {
+  flex: 0 0 auto;
+  padding: 12px 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 16%, rgba(0, 0, 0, 0.5));
+  color: var(--text);
+  font: 700 13px var(--font);
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.end-turn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 30%, rgba(0, 0, 0, 0.5));
+  transform: translateY(-2px);
+}
+
+.end-turn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.mute {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.4);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------- notices & banners */
+
+.notice {
+  position: absolute;
+  top: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 20px;
+  background: var(--panel);
+  font: 600 13px var(--font);
+  color: var(--text);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.notice.is-shown {
+  animation: notice-flash 2.2s ease-out forwards;
+}
+
+@keyframes notice-flash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  12%,
+  70% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.banner {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font: 800 42px var(--font);
+  letter-spacing: 7px;
+  color: var(--text);
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.banner.is-shown {
+  animation: banner-sweep 1.5s ease-out forwards;
+}
+
+.banner--foe,
+.banner--danger {
+  color: var(--danger);
+}
+
+.banner--you {
+  color: var(--accent);
+}
+
+.banner--boss {
+  color: #ff6b35;
+}
+
+@keyframes banner-sweep {
+  0% {
+    opacity: 0;
+    letter-spacing: 24px;
+  }
+  22% {
+    opacity: 1;
+    letter-spacing: 7px;
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    letter-spacing: 3px;
+  }
+}

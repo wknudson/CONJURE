@@ -1,0 +1,107 @@
+import type {
+  CardDefId,
+  CardInstanceId,
+  Coord,
+  DamageType,
+  Keyword,
+  RuneDefId,
+  School,
+  Side,
+  StatusKind,
+  TargetRef,
+  UnitId,
+} from '../../contract/ids.js';
+import type { UnitArchetype } from '../../contract/snapshots.js';
+
+/**
+ * Effect primitives. Card rules text compiles down to a tree of these, interpreted by
+ * engine/effects.ts. Keeping cards as data (rather than closures) means the AI can read
+ * a card's shape to enumerate targets, and new cards need no engine changes.
+ */
+export type EffectNode =
+  | { op: 'seq'; effects: EffectNode[] }
+  | { op: 'damage'; amount: number; dtype: DamageType; area: AreaSpec }
+  | { op: 'summon'; unitDef: CardDefId }
+  | { op: 'spawnObstacle'; obstacleDef: CardDefId }
+  | { op: 'attachRune'; rune: RuneDefId }
+  | { op: 'push'; distance: number }
+  | { op: 'grantArmor'; amount: number | { from: 'sacrificedHp' } }
+  | { op: 'applyStatus'; status: StatusKind; stacks: number; area: AreaSpec }
+  | { op: 'sacrificeTarget' }
+  | { op: 'gainSparks'; amount: number }
+  | { op: 'detonateAllRunes'; bonusDamage: number }
+  /** Magma Brute's on-deploy 2-tile cleave. */
+  | { op: 'cleaveFront'; amount: number; dtype: DamageType; width: number }
+  /** Rite of Binding: ends a Subjugation Trial with the companion bound. */
+  | { op: 'bindCompanion' };
+
+/** Which tiles an effect touches, relative to the chosen target. */
+export type AreaSpec =
+  | { shape: 'target' }
+  | { shape: 'line'; length: number }
+  | { shape: 'adjacent8' }
+  | { shape: 'plus'; radius: number }
+  | { shape: 'all' }
+  | { shape: 'lowestHpEnemy' };
+
+/** What the player must pick before a card can resolve. */
+export type TargetSpec =
+  | { kind: 'none' }
+  | { kind: 'emptyTile'; zone: 'ownTerritory' | 'any'; footprint: 1 | 2 }
+  | { kind: 'entity'; side: 'ally' | 'enemy' | 'any'; includeObstacles: boolean; requireUnexhausted?: boolean }
+  | { kind: 'adjacentEnemy' }
+  | { kind: 'line'; length: number }
+  | { kind: 'unitOrPortrait'; side: 'ally' }
+  | { kind: 'global' };
+
+export interface UnitStatBlock {
+  atk: number;
+  hp: number;
+  mov: number;
+  rangeMin: number;
+  rangeMax: number;
+  footprint: 1 | 2;
+  archetype: UnitArchetype;
+  sacrificeValue: number;
+  escalationBonus: { atk: number; hp: number };
+}
+
+export interface CardDef {
+  id: CardDefId;
+  name: string;
+  cost: number;
+  school: School;
+  source: 'hero' | 'companion';
+  kind: 'minion' | 'spell' | 'rune' | 'obstacle';
+  text: string;
+  target: TargetSpec;
+  effect: EffectNode;
+  keywords: Keyword[];
+  /** Present for minion cards. */
+  unit?: UnitStatBlock;
+  /** Present for obstacle cards. */
+  obstacleHp?: number;
+}
+
+export interface CardInstance {
+  instanceId: CardInstanceId;
+  defId: CardDefId;
+  /** Rite of Binding: sits outside the hand limit, cannot be discarded. */
+  ephemeral?: boolean;
+}
+
+/** A resolved target selection passed into effect execution. */
+export type ChosenTarget =
+  | { kind: 'tile'; at: Coord }
+  | { kind: 'entity'; ref: TargetRef }
+  | { kind: 'line'; from: Coord; dir: Coord }
+  | { kind: 'global' }
+  | { kind: 'none' };
+
+export interface CardPlayContext {
+  side: Side;
+  casterAnchor?: Coord;
+  chosen: ChosenTarget;
+  sacrificedHp?: number;
+  summonedUnitId?: UnitId;
+}

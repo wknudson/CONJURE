@@ -1,0 +1,126 @@
+/**
+ * Displacement and collision physics (Draft 7 §5.1).
+ *
+ *   Hits wall / arena border   -> pushed unit takes 3
+ *   Hits obstructing unit      -> pushed unit takes 3, blocker takes 2 collateral
+ *   Hits destructible obstacle -> pushed unit takes 3, obstacle takes 3
+ *
+ * Mass Invariance: the numbers do not change when a 2x2 is involved, in either role.
+ * Draft 7 states this explicitly and Module 8's competing mass-crush rule is not used.
+ */
+
+import type { Coord } from '../../contract/ids.js';
+import type { Ctx } from './context.js';
+import { emit } from './context.js';
+import type { Unit } from '../types/units.js';
+import { isUnit } from '../types/units.js';
+import { canPlace, entityAt, refOf } from './board.js';
+import { dealDamage } from './damage.js';
+import { cellsAt, add } from '../util/grid.js';
+import { inBounds } from '../types/state.js';
+
+export const COLLISION_TARGET_DAMAGE = 3;
+export const COLLISION_BLOCKER_DAMAGE = 2;
+export const COLLISION_OBSTACLE_DAMAGE = 3;
+
+export interface DisplacementResult {
+  path: Coord[];
+  collision?: {
+    at: Coord;
+    against: 'wall' | 'unit' | 'obstacle';
+  };
+}
+
+/**
+ * Pushes a unit `distance` tiles along `dir`, resolving collisions.
+ * Movement stops at the first obstruction; the unit stays on the last valid tile.
+ */
+export function pushUnit(ctx: Ctx, unit: Unit, dir: Coord, distance: number): DisplacementResult {
+  const path: Coord[] = [{ ...unit.anchor }];
+
+  for (let step = 0; step < distance; step++) {
+    const nextAnchor = add(unit.anchor, dir);
+    const cells = cellsAt(nextAnchor, unit.footprint);
+
+    // Cells the unit is vacating do not obstruct itself.
+    const blockingCells = cells.filter(
+      (c) => !cellsAt(unit.anchor, unit.footprint).some((o) => o.x === c.x && o.y === c.y),
+    );
+
+    const offBoard = cells.some((c) => !inBounds(ctx.state, c));
+    if (offBoard) {
+      applyWallCollision(ctx, unit);
+      return { path, collision: { at: { ...unit.anchor }, against: 'wall' } };
+    }
+
+    let blocker;
+    for (const c of blockingCells) {
+      const occ = entityAt(ctx.state, c);
+      if (occ && occ.id !== unit.id) {
+        blocker = occ;
+        break;
+      }
+    }
+
+    if (blocker) {
+      const against = isUnit(blocker) ? 'unit' : 'obstacle';
+      emit(ctx, {
+        t: 'collision',
+        unitId: unit.id,
+        at: { ...unit.anchor },
+        against,
+        blockerId: blocker.id,
+      });
+
+      dealDamage(ctx, {
+        target: { kind: 'unit', id: unit.id },
+        amount: COLLISION_TARGET_DAMAGE,
+        dtype: 'impact',
+        cause: 'collision',
+      });
+
+      // The blocker may already be gone if the pushed unit's rune detonated.
+      const stillThere = ctx.state.units[blocker.id] ?? ctx.state.obstacles[blocker.id];
+      if (stillThere) {
+        dealDamage(ctx, {
+          target: refOf(stillThere),
+          amount: against === 'obstacle' ? COLLISION_OBSTACLE_DAMAGE : COLLISION_BLOCKER_DAMAGE,
+          dtype: 'impact',
+          cause: 'collision',
+        });
+      }
+
+      return { path, collision: { at: { ...unit.anchor }, against } };
+    }
+
+    if (!canPlace(ctx.state, nextAnchor, unit.footprint, unit.id)) {
+      applyWallCollision(ctx, unit);
+      return { path, collision: { at: { ...unit.anchor }, against: 'wall' } };
+    }
+
+    const from = { ...unit.anchor };
+    unit.anchor = { ...nextAnchor };
+    path.push({ ...nextAnchor });
+    emit(ctx, { t: 'unitDisplaced', unitId: unit.id, from, to: { ...nextAnchor } });
+
+    // A unit can die mid-push (e.g. its own rune cascaded); stop moving a corpse.
+    if (!ctx.state.units[unit.id]) return { path };
+  }
+
+  return { path };
+}
+
+function applyWallCollision(ctx: Ctx, unit: Unit): void {
+  emit(ctx, {
+    t: 'collision',
+    unitId: unit.id,
+    at: { ...unit.anchor },
+    against: 'wall',
+  });
+  dealDamage(ctx, {
+    target: { kind: 'unit', id: unit.id },
+    amount: COLLISION_TARGET_DAMAGE,
+    dtype: 'impact',
+    cause: 'collision',
+  });
+}
