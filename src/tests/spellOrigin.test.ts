@@ -171,11 +171,33 @@ describe('what origin does not change', () => {
     expect(targetIds(state, HERO_BOLT)).toContain(foeId);
   });
 
-  it('leaves every shipped card unrestricted until ranges are assigned', () => {
-    // The schema landing must not, by itself, change what any real card can do.
+  it('gives every Hero card the run of the board', () => {
+    // Range belongs to the Companion. A Hero card with one would be measuring from a
+    // body that does not exist, and would silently become uncastable.
     for (const def of Object.values(CARDS)) {
       if (def.id.startsWith('test_')) continue;
-      expect(def.range, `${def.id} gained a range unexpectedly`).toBeUndefined();
+      if (def.source === 'companion') continue;
+      expect(def.range, `${def.id} is a Hero card and must not carry a range`).toBeUndefined();
+    }
+  });
+
+  it('holds the intended reach for each Companion spell', () => {
+    // Pinned deliberately: these numbers are the balance decision, and a silent edit to
+    // one of them changes how far forward the Companion has to walk to be useful.
+    const expected: Record<string, number | undefined> = {
+      cinder_rune: 4,
+      soul_splinter_rune: 4,
+      flame_surge: 4,
+      glacial_spike: 5,
+      frost_nova: 3,
+      brittle_touch: 2,
+      flash_freeze: 4,
+      // Board-wide by design, and the Trial's win condition: never range-gated.
+      cataclysmic_core: undefined,
+      rite_of_binding: undefined,
+    };
+    for (const [id, range] of Object.entries(expected)) {
+      expect(CARDS[id]!.range, id).toBe(range);
     }
   });
 });

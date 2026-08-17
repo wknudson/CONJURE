@@ -74,6 +74,8 @@ export interface CardSnapshot {
   keywords: Keyword[];
   /** Present for minion/behemoth cards, for the stat footer. */
   stats?: { atk: number; hp: number; mov: number };
+  /** How far from the Companion this may be cast. Absent on Hero cards, which reach all. */
+  range?: number;
   /** Rite of Binding overlay: sits outside the hand limit and cannot be discarded. */
   ephemeral?: boolean;
 }

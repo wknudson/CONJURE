@@ -154,6 +154,9 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     target: { kind: 'entity', side: 'any', includeObstacles: true },
     effect: { op: 'attachRune', rune: 'cinder_rune' },
     keywords: [],
+    // Branding an enemy means getting a clear look at it.
+    range: 4,
+    needsLoS: true,
   },
 
   soul_splinter_rune: {
@@ -167,6 +170,8 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     target: { kind: 'entity', side: 'ally', includeObstacles: false },
     effect: { op: 'attachRune', rune: 'soul_splinter_rune' },
     keywords: [],
+    // Marking your own needs closeness, not sight: no line required.
+    range: 4,
   },
 
   // ----------------------------------------------------------------- spells
@@ -181,6 +186,9 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     target: { kind: 'line', length: 2 },
     effect: { op: 'damage', amount: 3, dtype: 'fire', area: { shape: 'line', length: 2 } },
     keywords: [],
+    // The surge erupts at the near end of the line, so that tile is what must be in reach.
+    range: 4,
+    needsLoS: true,
   },
 
   cataclysmic_core: {

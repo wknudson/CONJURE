@@ -79,6 +79,7 @@ export function toCardSnapshot(state: GameState, side: Side, id: CardInstanceId)
     ...(def.unit
       ? { stats: { atk: def.unit.atk, hp: def.unit.hp, mov: def.unit.mov } }
       : {}),
+    ...(def.range !== undefined ? { range: def.range } : {}),
     ...(inst.ephemeral ? { ephemeral: true } : {}),
   };
 }

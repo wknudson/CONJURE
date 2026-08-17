@@ -37,6 +37,12 @@ export const KEYWORDS: Record<string, GlossaryEntry> = {
     body: 'Blocks line of sight. Ranged attacks cannot shoot past it.',
     detail: 'Park one in front of your Commander and enemy archers have to come around it.',
   },
+  companionRange: {
+    title: 'Companion Range',
+    body: 'Cast from your Companion, not from you. It reaches this many tiles from where your Companion is standing.',
+    detail:
+      'Most also need a clear line, so walls and Guardians block them. Move your Companion to change what you can hit — but the further forward it stands, the easier it is to hurt, and its wounds are yours.',
+  },
   BoundForm: {
     title: 'Bound Form',
     body: 'Your Companion, made flesh. Every wound it takes is dealt straight to your Pact.',

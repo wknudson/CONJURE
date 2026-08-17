@@ -51,9 +51,18 @@ export class CardView {
 
     // The type line tells you at a glance what the card *is* — whether it puts a body on
     // the board, attaches to something, or resolves and goes away — and who casts it.
+    // Reach is part of what the card *is* on a grid, so it sits on the type line rather
+    // than buried in the rules text. Only Companion cards have one: the Hero has no
+    // position to measure from.
+    const rangeChip =
+      snapshot.range === undefined
+        ? ''
+        : `<span class="card__range" data-tip="companionRange">RANGE ${snapshot.range}</span>`;
+
     const typeLine = `
       <div class="card__type">
         <span class="card__kind">${KIND_LABEL[snapshot.kind]}</span>
+        ${rangeChip}
         <span class="card__source">${snapshot.source === 'companion' ? 'COMPANION' : 'HERO'}</span>
       </div>`;
 

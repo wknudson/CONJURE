@@ -137,6 +137,17 @@
   color: var(--text-dim);
 }
 
+/* Reach, in the Pact's blue: it is measured from the Companion, whose life is yours. */
+.card__range {
+  font: 800 6px var(--font);
+  letter-spacing: 0.5px;
+  padding: 1.5px 3px;
+  border-radius: 3px;
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  color: #7dd3fc;
+  white-space: nowrap;
+}
+
 /* Companion cards get a school-tinted source tag; Hero cards stay neutral grey. */
 .card--src-companion .card__source {
   color: color-mix(in srgb, var(--school, #94a3b8) 80%, white);

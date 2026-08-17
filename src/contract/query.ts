@@ -106,11 +106,26 @@ export interface CommanderView {
   resonanceName?: string;
 }
 
+/**
+ * Where a Companion card is thrown from, so the board can show its reach.
+ *
+ * Absent for Hero cards: the Architect is off the board and has no origin to draw.
+ */
+export interface CastInfo {
+  origin: Coord;
+  range: number;
+  needsLoS: boolean;
+  /** Tiles the origin cannot see. Empty when the card does not need a line. */
+  occluded: Coord[];
+}
+
 export interface RulesQuery {
   getBoard(): BoardView;
   getHand(): CardSnapshot[];
   getPlayableCards(): CardInstanceId[];
   getLegalTargets(card: CardInstanceId): TargetSpec;
+  /** Origin and reach for a Companion-cast card; undefined when the Hero casts it. */
+  castInfo(card: CardInstanceId): CastInfo | undefined;
   getLegalMoves(unit: UnitId): Coord[];
   getLegalAttacks(unit: UnitId): TargetRef[];
   /** Tiles the given origin cannot see, for shadow-cone fog rendering. */

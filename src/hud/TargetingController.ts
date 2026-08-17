@@ -282,6 +282,7 @@ export class TargetingController {
 
     if (this.mode.kind === 'targeting') {
       this.paintCardTargets(overlays, this.mode.spec);
+      this.paintCastOrigin(overlays, this.mode.card);
       this.previewInto(overlays, this.mode.card, this.mode.spec);
     } else if (this.mode.kind === 'unit') {
       this.paintUnitOptions(overlays, this.mode.unit);
@@ -289,9 +290,25 @@ export class TargetingController {
       // Inspect mode: a faint pre-glow of where this card could land.
       const spec = this.rules.getLegalTargets(this.hoveredCard);
       this.paintCardTargets(overlays, spec);
+      this.paintCastOrigin(overlays, this.hoveredCard);
     }
 
     this.cb.setOverlays(overlays);
+  }
+
+  /**
+   * Marks where a Companion card is thrown from, and shades what its origin cannot see.
+   *
+   * The legal tiles already account for range and sight, so this adds no rules — it
+   * answers the question the highlighting raises but cannot answer on its own: *why* is
+   * that tile not offered? Seeing the fog behind a wall makes the answer obvious, and
+   * makes moving the Companion the visible fix.
+   */
+  private paintCastOrigin(overlays: Overlays, cardId: CardInstanceId): void {
+    const info = this.rules.castInfo(cardId);
+    if (!info) return;
+    overlays.castOrigin = info.origin;
+    if (info.occluded.length) overlays.fog = info.occluded;
   }
 
   private paintCardTargets(overlays: Overlays, spec: TargetSpec): void {

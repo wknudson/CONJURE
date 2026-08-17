@@ -30,6 +30,9 @@ export const FROST_CARDS: Record<string, CardDef> = {
       ],
     },
     keywords: [],
+    // Boreas' reach: the longest in the school, and the reason it can hold the back line.
+    range: 5,
+    needsLoS: true,
   },
 
   frost_nova: {
@@ -49,6 +52,9 @@ export const FROST_CARDS: Record<string, CardDef> = {
       ],
     },
     keywords: [],
+    // A burst, thrown short: the Companion has to commit forward to catch a cluster.
+    range: 3,
+    needsLoS: true,
   },
 
   brittle_touch: {
@@ -62,6 +68,9 @@ export const FROST_CARDS: Record<string, CardDef> = {
     target: { kind: 'entity', side: 'enemy', includeObstacles: false },
     effect: { op: 'applyStatus', status: 'brittle', stacks: 2, area: { shape: 'target' } },
     keywords: [],
+    // A touch, and priced like one: the Companion must be nearly on top of the target.
+    range: 2,
+    needsLoS: true,
   },
 
   flash_freeze: {
@@ -75,6 +84,8 @@ export const FROST_CARDS: Record<string, CardDef> = {
     target: { kind: 'entity', side: 'enemy', includeObstacles: false },
     effect: { op: 'applyStatus', status: 'freeze', stacks: 1, area: { shape: 'target' } },
     keywords: [],
+    range: 4,
+    needsLoS: true,
   },
 
   ice_barricade: {

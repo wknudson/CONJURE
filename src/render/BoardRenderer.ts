@@ -57,6 +57,8 @@ export interface Overlays {
   }[];
   /** Whether the threat overlay is currently visible. */
   showThreat: boolean;
+  /** Tile a Companion card is being cast from, marked while aiming it. */
+  castOrigin: Coord | null;
 }
 
 /** A Commander standing beside the board: on the field, off the grid. */
@@ -90,6 +92,7 @@ export function emptyOverlays(): Overlays {
     hazards: [],
     intents: [],
     showThreat: false,
+    castOrigin: null,
   };
 }
 
@@ -471,6 +474,15 @@ export class BoardRenderer {
     }
     for (const c of overlays.attack) {
       fillTile(ctx, cam, c, PALETTE.attackFill, PALETTE.attackEdge);
+    }
+
+    // The tile the spell is thrown from, in the Pact's colour so it reads as "this is
+    // you, and this is where you are casting from".
+    if (overlays.castOrigin) {
+      ctx.save();
+      ctx.globalAlpha = 0.45 + 0.35 * pulse;
+      fillTile(ctx, cam, overlays.castOrigin, 'rgba(125, 211, 252, 0.10)', PALETTE.pact);
+      ctx.restore();
     }
 
     if (overlays.selected) {

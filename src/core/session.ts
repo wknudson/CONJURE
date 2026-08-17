@@ -12,6 +12,7 @@ import type {
   Action,
   ActionPreview,
   BoardView,
+  CastInfo,
   RulesQuery,
   TargetSelection,
   TargetSpec,
@@ -122,6 +123,30 @@ export class CombatSession implements RulesQuery {
           refs: chosen.flatMap((c) => (c.kind === 'entity' ? [c.ref] : [])),
         };
     }
+  }
+
+  /**
+   * Where this card is cast from, for the targeting overlay.
+   *
+   * Returns undefined for anything the Hero throws, which is most of the deck — those
+   * have no origin to draw and no reach to dim. Occlusion is computed here rather than
+   * in the HUD because the HUD is not allowed to reach into the engine.
+   */
+  castInfo(cardId: CardInstanceId): CastInfo | undefined {
+    const cmd = this.state.players.player;
+    const def = CARDS[cmd.cards[cardId]?.defId ?? ''];
+    if (!def || def.source !== 'companion' || def.range === undefined) return undefined;
+
+    const bodyId = cmd.companionUnitId;
+    const body = bodyId ? this.state.units[bodyId] : undefined;
+    if (!body) return undefined;
+
+    return {
+      origin: { ...body.anchor },
+      range: def.range,
+      needsLoS: def.needsLoS === true,
+      occluded: def.needsLoS ? occludedTiles(this.state, body.anchor) : [],
+    };
   }
 
   getLegalMoves(unitId: UnitId): Coord[] {
