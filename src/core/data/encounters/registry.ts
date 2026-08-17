@@ -48,6 +48,12 @@ export interface EncounterDef {
    */
   terrain?: { at: { x: number; y: number }; kind: 'wall' | 'cover'; hp?: number }[];
   /**
+   * Named scenery placed at fixed tiles — crystals, barrels, anything with an obstacle
+   * definition. Unlike `terrain`, which is generic walls and cover, these are specific
+   * things whose behaviour lives on their card.
+   */
+  props?: { at: { x: number; y: number }; defId: string }[];
+  /**
    * Volatile Spark Geodes scattered on neutral ground at setup.
    *
    * Per-encounter rather than universal so a boss arena can stay clean and a test arena

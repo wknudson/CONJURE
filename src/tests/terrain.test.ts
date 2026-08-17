@@ -97,9 +97,11 @@ describe('per-encounter arenas', () => {
 
       expect(board.width).toBe(enc.width);
       expect(board.height).toBe(enc.height);
-      // Geodes are scattered obstacles too, so count only what the terrain list asked for.
-      const walls = board.obstacles.filter((o) => o.defId !== 'spark_geode');
-      expect(walls.length).toBe(enc.terrain?.length ?? 0);
+      // Everything an encounter lays down is an obstacle: generic walls and cover from
+      // `terrain`, named scenery from `props`, and geodes scattered at random. Count the
+      // two authored lists and let the random ones be.
+      const placed = board.obstacles.filter((o) => o.defId !== 'spark_geode');
+      expect(placed.length).toBe((enc.terrain?.length ?? 0) + (enc.props?.length ?? 0));
 
       // Terrain must never strand a side with nowhere to summon on turn one.
       expect(session.getPlayableCards().length).toBeGreaterThan(0);

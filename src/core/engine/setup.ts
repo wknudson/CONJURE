@@ -260,6 +260,11 @@ export function createCombat(
     }
   }
 
+  // Named scenery: crystals and the like, whose behaviour lives on their own card.
+  for (const prop of encounter.props ?? []) {
+    spawnObstacle(ctx, prop.defId, 'player', prop.at);
+  }
+
   // Currents are part of the map, laid down like terrain rather than conjured.
   for (const c of encounter.currents ?? []) {
     state.hazards[`${c.at.x},${c.at.y}`] = {
