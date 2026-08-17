@@ -47,6 +47,7 @@ floor — and both sides open with a free Vanguard Footman already on the field.
 - **T** toggles the danger zone — every tile the enemy could strike next turn.
 - A unit gets **one move and one attack** each turn, in either order, so it can strike
   and then withdraw.
+- **Q** and **E** turn the board a quarter-turn, to see behind a Behemoth or a wall.
 - **H** opens the rules reference. **Esc** or right-click cancels. **Space** fast-forwards
   the enemy turn. **Enter** ends yours.
 
@@ -142,9 +143,16 @@ with hand-rolled 2:1 diamond projection, while **DOM/CSS** draws all interface c
 card text stays crisp when it scales on hover. There are no image assets — every visual is
 a canvas path, and units are extruded prisms on team-coloured base plates.
 
-Free camera rotation was cut for the demo; the `rotationStep` seam remains in `IsoCamera`
-so 90° rotation is a small change rather than a rewrite. A silhouette pass ensures a 2×2
-Behemoth never hides a unit behind it, which is what rotation would have been for.
+The board turns in 90° steps. The *logical* orientation flips instantly, so depth sorting
+and tile picking never see an in-between state; what animates is the drawing, which spins
+the finished image about the board centre. An isometric diamond is a squashed square, so
+the renderer un-squashes before rotating and re-squashes after — rotating the projected
+shape directly would skew it into a parallelogram.
+
+Enabling it surfaced a latent bug in the projection: `rot` reflects *continuous points*
+and must mirror about the board extent, while `unrot` reflects *tile indices* and must
+mirror about the last index. Using one constant for both put every pick one tile out at
+90° and 270°. A test round-trips every tile at all four steps.
 
 ## Rules adjudications
 
@@ -215,9 +223,12 @@ Two AI tiers, chosen on the title screen and remembered between sessions.
 | **Novice** | Greedy: takes the best action available right now. Visibly misjudges the order of its own actions — it will walk a unit out of range before remembering it could have swung first. |
 | **Adept** | Values a candidate opener by the whole turn it leads to, so it strikes before it withdraws. Also sees collisions, and is far less prone to a deliberate mistake (5% vs 20%). |
 
-Both run inside Module 5's 1.2s thinking cap, enforced by a latching budget that degrades
-Adept to greedy mid-turn rather than letting a turn hang. Measured worst case on the
-largest arena: ~1.2s; typical enemy turn ~300ms.
+Thinking is bounded by a **simulation count**, not a clock. An earlier version used wall
+time, which made the AI's choices depend on how busy the machine was — the same seed
+produced different games, and the replay harness caught it immediately. Anything that
+changes a decision has to be deterministic; a clock survives only as an anti-hang backstop
+that normal play never reaches. Typical enemy turn ~220ms, worst case ~2s on the largest
+arena, with the turn banner up throughout.
 
 Adept is measurably harder where the matchup has headroom — against a fixed scripted
 opponent on the Ignis trial it wins **18/20** against Novice's 12/20, and leaves that

@@ -26,6 +26,7 @@ import { cellsAt } from '../core/util/grid.js';
 import type { CommanderModel } from '../render/BoardRenderer.js';
 import type { Coord } from '../contract/ids.js';
 import type { AiProfile } from '../core/ai/controller.js';
+import { easeOutQuad, tween } from '../anim/tween.js';
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -95,6 +96,7 @@ export class CombatScreen implements Screen {
       onToggleMute: () => this.sfx.toggleMute(),
       onToggleThreat: () => this.targeting?.toggleThreat() ?? false,
       onHelp: () => this.help?.toggle(),
+      onRotate: (steps) => void this.rotate(steps),
     });
 
     this.targeting = new TargetingController(this.session, {
@@ -107,6 +109,7 @@ export class CombatScreen implements Screen {
         if (boss) boss.targetable = on;
       },
       notice: (text) => this.hud?.flashNotice(text),
+      setInspected: (unitId) => this.hud?.showInspect(this.session.getBoard(), unitId),
     });
 
     const view: CombatView = {
@@ -188,6 +191,7 @@ export class CombatScreen implements Screen {
 
   private handleMouseMove(ev: MouseEvent): void {
     if (!this.canvas || !this.renderer) return;
+    if (this.cam.spinning) return;
     const rect = this.canvas.getBoundingClientRect();
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;
@@ -283,6 +287,7 @@ export class CombatScreen implements Screen {
 
   private handleClick(ev: MouseEvent): void {
     if (!this.canvas || !this.renderer) return;
+    if (this.cam.spinning) return;
     this.sfx.unlock();
     const rect = this.canvas.getBoundingClientRect();
     const x = ev.clientX - rect.left;
@@ -299,6 +304,35 @@ export class CombatScreen implements Screen {
     const tile = this.cam.screenToTile(x, y);
     if (tile) this.targeting?.onTileClick(tile);
     else this.targeting?.onCancel();
+  }
+
+  /**
+   * Turns the board a quarter-turn.
+   *
+   * The logical step flips first, so picking and depth sorting are correct from the very
+   * next frame; the visual spin then unwinds from the old angle to the new one. Doing it
+   * the other way round would leave a window where the board on screen and the board the
+   * mouse is hitting disagree.
+   */
+  private async rotate(steps: number): Promise<void> {
+    if (!this.renderer || this.cam.spinning) return;
+
+    this.cam.rotateBy(steps);
+    this.renderer.resize();
+
+    // Start fully counter-rotated, then relax to zero.
+    const from = -steps * (Math.PI / 2);
+    this.cam.spin = from;
+    this.sfx.play('card');
+
+    await tween(260, easeOutQuad, (k) => {
+      this.cam.spin = from * (1 - k);
+    });
+    this.cam.spin = 0;
+
+    // Overlays are recomputed against the new orientation: board-anchored DOM floaters
+    // do not follow a canvas transform, so they need settling once the spin is done.
+    this.targeting?.refreshOverlays();
   }
 
   /**
@@ -319,6 +353,14 @@ export class CombatScreen implements Screen {
     // While the reference is open it swallows everything but its own dismissal.
     if (this.help?.isOpen) {
       if (ev.key === 'Escape') this.help.hide();
+      return;
+    }
+    if (ev.key === 'q' || ev.key === 'Q') {
+      void this.rotate(-1);
+      return;
+    }
+    if (ev.key === 'e' || ev.key === 'E') {
+      void this.rotate(1);
       return;
     }
     if (ev.key === 't' || ev.key === 'T') {

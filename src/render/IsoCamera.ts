@@ -19,6 +19,9 @@ export interface ScreenPoint {
 /** Below roughly this, tiles are too small to read or click accurately. */
 const MIN_READABLE_ZOOM = 0.45;
 
+/** How far beyond each end of the grid the Commander models stand, in tiles. */
+export const COMMANDER_MARGIN = 1.35;
+
 export class IsoCamera {
   origin: ScreenPoint = { x: 0, y: 0 };
   zoom = 1;
@@ -27,10 +30,30 @@ export class IsoCamera {
   tooSmall = false;
   shake: ScreenPoint = { x: 0, y: 0 };
 
+  /**
+   * Visual-only rotation in progress, in radians.
+   *
+   * The logical `rotationStep` flips instantly — depth sorting and tile picking stay on
+   * whole quarter-turns and never see an in-between state. What animates is the drawing:
+   * the renderer spins the finished image about the board centre, so the transition looks
+   * continuous while every calculation behind it stays discrete.
+   */
+  spin = 0;
+
   constructor(
     public gridW: number,
     public gridH: number,
   ) {}
+
+  /** True while a turn is animating, which is when input should ignore the board. */
+  get spinning(): boolean {
+    return this.spin !== 0;
+  }
+
+  /** Quarter-turns, wrapping in both directions. */
+  rotateBy(steps: number): void {
+    this.rotationStep = (((this.rotationStep + steps) % 4) + 4) % 4 as 0 | 1 | 2 | 3;
+  }
 
   get tileW(): number {
     return TILE_W * this.zoom;
@@ -92,48 +115,96 @@ export class IsoCamera {
     const availH = canvasH - topMargin - bottomMargin;
     const availW = canvasW * 0.92;
 
-    // Two extra virtual rows of depth: one for each Commander line.
-    const boardW = (this.gridW + this.gridH) * (TILE_W / 2);
-    const boardH = (this.gridW + this.gridH + 2.6) * (TILE_H / 2);
+    // Measured from the projected corners rather than derived from the grid dimensions.
+    // Rotating a non-square board changes its screen footprint, and rotating the *centre*
+    // point is not the same as the centre of the rotated *extent* — that discrepancy put
+    // the board half a tile off at 90 and 270 degrees.
+    const extent = this.extentAtUnitZoom();
 
+    const ideal = Math.min(availW / extent.width, availH / extent.height, 1.05);
     // Clamped at the bottom: below this the board is drawn but unreadable, and it is
-    // better to overflow slightly and let the player scroll or enlarge the window than
-    // to render tiles too small to aim at. `tooSmall` lets the UI say so.
-    const ideal = Math.min(availW / boardW, availH / boardH, 1.05);
+    // better to overflow slightly and let the player enlarge the window than to render
+    // tiles too small to aim at. `tooSmall` lets the UI say so.
     this.zoom = Math.max(ideal, MIN_READABLE_ZOOM);
     this.tooSmall = ideal < MIN_READABLE_ZOOM;
 
-    // Centre the diamond: its widest point is at the middle of the two axes.
-    const centre = this.rawCentre();
+    // The extent was measured at zoom 1, so scale it before centring.
     this.origin = {
-      x: canvasW / 2 - centre.x,
-      y: topMargin + availH / 2 - centre.y,
+      x: canvasW / 2 - (extent.midX * this.zoom),
+      y: topMargin + availH / 2 - (extent.midY * this.zoom),
     };
   }
 
-  private rawCentre(): ScreenPoint {
-    const [rx, ry] = this.rot(this.gridW / 2, this.gridH / 2);
+  /**
+   * Screen bounding box of everything that must stay visible, at zoom 1 and without the
+   * origin applied: the four board corners plus the Commander lines that sit just beyond
+   * each end of the grid.
+   */
+  private extentAtUnitZoom(): { width: number; height: number; midX: number; midY: number } {
+    const points: ScreenPoint[] = [];
+    const project = (gx: number, gy: number): void => {
+      const [rx, ry] = this.rot(gx, gy);
+      points.push({ x: (rx - ry) * (TILE_W / 2), y: (rx + ry) * (TILE_H / 2) });
+    };
+
+    for (const [gx, gy] of [
+      [0, 0],
+      [this.gridW, 0],
+      [this.gridW, this.gridH],
+      [0, this.gridH],
+      // The Commander rows, which live outside the grid on both ends.
+      [this.gridW / 2, -COMMANDER_MARGIN],
+      [this.gridW / 2, this.gridH + COMMANDER_MARGIN],
+    ] as const) {
+      project(gx, gy);
+    }
+
+    const xs = points.map((p) => p.x);
+    const ys = points.map((p) => p.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
     return {
-      x: (rx - ry) * (this.tileW / 2),
-      y: (rx + ry) * (this.tileH / 2),
+      width: maxX - minX,
+      height: maxY - minY,
+      midX: (minX + maxX) / 2,
+      midY: (minY + maxY) / 2,
     };
   }
 
+  /**
+   * Rotates a *continuous* board position.
+   *
+   * Reflection is about the board's extent (`gridW`, `gridH`), not its last index. A
+   * point at x = 0 sits on the board's edge, so its mirror is the opposite edge at
+   * x = gridW — mirroring about `gridW - 1` instead would shift everything half a tile
+   * and put tile centres on tile boundaries.
+   */
   private rot(gx: number, gy: number): [number, number] {
-    const nx = this.gridW - 1;
-    const ny = this.gridH - 1;
+    const w = this.gridW;
+    const h = this.gridH;
     switch (this.rotationStep) {
       case 0:
         return [gx, gy];
       case 1:
-        return [gy, nx - gx];
+        return [gy, w - gx];
       case 2:
-        return [nx - gx, ny - gy];
+        return [w - gx, h - gy];
       case 3:
-        return [ny - gy, gx];
+        return [h - gy, gx];
     }
   }
 
+  /**
+   * Rotates a *tile index* back to board space.
+   *
+   * The counterpart to `rot`, and deliberately not its mirror image: an index identifies
+   * a whole tile rather than a point, so it reflects about the last index (`gridW - 1`).
+   * Tile 0 spans [0, 1) and its mirror is the tile spanning [w-1, w), which is index
+   * w - 1 — using the extent here would land one tile past the edge.
+   */
   private unrot(rx: number, ry: number): [number, number] {
     const nx = this.gridW - 1;
     const ny = this.gridH - 1;

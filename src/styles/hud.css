@@ -407,3 +407,138 @@
     letter-spacing: 3px;
   }
 }
+
+/* ------------------------------------------------- segmented Pact gauge */
+
+/*
+ * Five-point ticks across the bar. "Two hits from death" should be readable at a glance
+ * rather than something the player works out from a number.
+ */
+.pact__ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(12.5% - 1px),
+    rgba(0, 0, 0, 0.45) calc(12.5% - 1px),
+    rgba(0, 0, 0, 0.45) 12.5%
+  );
+}
+
+.pact__track {
+  position: relative;
+}
+
+/* ----------------------------------------------------------- enemy read */
+
+.enemy-read {
+  display: flex;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.enemy-read__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 700 10px var(--font);
+  color: var(--text-dim);
+}
+
+.enemy-read__icon {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* Enough banked magic for the most expensive card in the game. */
+.enemy-read__item.is-loaded {
+  color: #fcd34d;
+}
+
+.enemy-read__item.is-loaded .enemy-read__icon {
+  opacity: 1;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.7);
+}
+
+/* ------------------------------------------------------ inspect panel */
+
+.inspect {
+  position: absolute;
+  left: 20px;
+  bottom: 190px;
+  width: 210px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-left: 3px solid var(--accent, #7dd3fc);
+  border-radius: 8px;
+  background: rgba(14, 16, 22, 0.93);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-6px);
+  transition: opacity 0.13s ease, transform 0.13s ease, visibility 0.13s;
+  pointer-events: auto;
+}
+
+.inspect.is-shown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.inspect__name {
+  font: 800 12px var(--font);
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.inspect__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font: 700 9.5px var(--font);
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.inspect__keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 5px;
+}
+
+.inspect__keywords span {
+  font: 700 7.5px var(--font);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(125, 211, 252, 0.16);
+  color: #7dd3fc;
+  cursor: help;
+}
+
+.inspect__statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 5px;
+}
+
+.inspect__status {
+  font: 700 7.5px var(--font);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(248, 113, 113, 0.18);
+  color: #fca5a5;
+  cursor: help;
+}
+
+.inspect__actions {
+  font: 600 9px var(--font);
+  color: rgba(110, 231, 183, 0.85);
+}

@@ -138,7 +138,7 @@ describe('compute budget', () => {
   it('degrades instead of stalling when the budget is tiny', () => {
     // A profile that runs out of budget almost immediately must still produce a legal,
     // terminated turn rather than looping or throwing.
-    const starved = { ...ADEPT_AI, simulationBudget: 1, timeBudgetMs: 1 };
+    const starved = { ...ADEPT_AI, simulationBudget: 1 };
     const state = scenario({
       width: 8,
       height: 8,

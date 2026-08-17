@@ -28,6 +28,7 @@ export interface TargetingCallbacks {
   setSelectedCard(id: CardInstanceId | null): void;
   setEnemyTargetable(on: boolean): void;
   notice(text: string): void;
+  setInspected(unitId: UnitId | null): void;
 }
 
 export class TargetingController {
@@ -54,7 +55,13 @@ export class TargetingController {
     this.hoveredCard = null;
     this.cb.setSelectedCard(null);
     this.cb.setEnemyTargetable(false);
+    this.cb.setInspected(null);
     this.cb.setOverlays(emptyOverlays());
+  }
+
+  /** Re-emits the current overlays, e.g. after the board has been rotated. */
+  refreshOverlays(): void {
+    this.refresh();
   }
 
   setExpanded(on: boolean): void {
@@ -179,6 +186,7 @@ export class TargetingController {
     const unit = this.unitAt(tile);
     if (unit && unit.side === 'player') {
       this.mode = { kind: 'unit', unit: unit.id };
+      this.cb.setInspected(unit.id);
       this.explainIfStuck(unit.id, unit.name);
       this.refresh();
       return;

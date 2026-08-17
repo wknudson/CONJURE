@@ -70,6 +70,7 @@ const CONTROLS: [string, string][] = [
   ['Click the enemy Commander', 'Attacks them, if the selected unit can reach'],
   ['Hold Shift', 'Expands damage predictions across every affected tile'],
   ['T', 'Toggles the danger zone — every tile the enemy can strike'],
+  ['Q / E', 'Turns the board a quarter-turn, to see behind tall pieces'],
   ['Space', 'Fast-forwards the enemy turn'],
   ['Enter', 'Ends your turn'],
   ['Esc / right-click', 'Cancels the current selection'],

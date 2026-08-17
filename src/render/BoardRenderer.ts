@@ -6,6 +6,7 @@
 import type { Coord, Side, UnitId } from '../contract/ids.js';
 import { coordKey } from '../contract/ids.js';
 import type { IsoCamera } from './IsoCamera.js';
+import { TILE_H, TILE_W } from './IsoCamera.js';
 import type { EntityViewMap, EntityView } from './EntityViews.js';
 import type { Fx } from './Fx.js';
 import { PALETTE } from './palette.js';
@@ -138,6 +139,20 @@ export class BoardRenderer {
 
     const pulse = (Math.sin(this.clock / 620) + 1) / 2;
 
+    // A rotation in progress spins the whole finished image. An isometric diamond is a
+    // squashed square, so it has to be un-squashed before rotating and re-squashed after
+    // — rotating the projected shape directly would skew it into a parallelogram.
+    const spinning = cam.spinning;
+    if (spinning) {
+      const centre = cam.worldToScreen(cam.gridW / 2, cam.gridH / 2);
+      ctx.save();
+      ctx.translate(centre.x, centre.y);
+      ctx.scale(1, TILE_W / TILE_H);
+      ctx.rotate(cam.spin);
+      ctx.scale(1, TILE_H / TILE_W);
+      ctx.translate(-centre.x, -centre.y);
+    }
+
     this.drawTiles();
     drawBoundary(ctx, cam, pulse);
     this.drawResonanceLane(pulse);
@@ -148,6 +163,10 @@ export class BoardRenderer {
     this.drawGhost();
     this.drawPredictions();
 
+    if (spinning) ctx.restore();
+
+    // Screen effects sit outside the spin: a shake or a flash belongs to the camera, not
+    // to the board being turned underneath it.
     this.fx.draw(ctx, rect.width, rect.height);
   }
 

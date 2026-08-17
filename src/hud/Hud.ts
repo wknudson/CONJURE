@@ -18,6 +18,11 @@ export interface HudCallbacks {
   onToggleMute(): boolean;
   onToggleThreat(): boolean;
   onHelp(): void;
+  onRotate(steps: number): void;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /** Dwell for a notice with nothing behind it — matches the CSS fade exactly. */
@@ -46,6 +51,9 @@ export class Hud {
   private threatBtn!: HTMLButtonElement;
   private helpBtn!: HTMLButtonElement;
   private threatWarnEl!: HTMLElement;
+  private enemyHandEl!: HTMLElement;
+  private enemyPipsEl!: HTMLElement;
+  private inspectEl!: HTMLElement;
   private tooltip!: Tooltip;
   private noticeQueue: string[] = [];
   private showingNotice: string | null = null;
@@ -93,6 +101,9 @@ export class Hud {
     this.threatBtn = q<HTMLButtonElement>('.threat-toggle');
     this.helpBtn = q<HTMLButtonElement>('.help');
     this.threatWarnEl = q('.status__threat-warning');
+    this.enemyHandEl = q('.enemy-read__hand');
+    this.enemyPipsEl = q('.enemy-read__pips');
+    this.inspectEl = q('.inspect');
 
     this.endTurnBtn.addEventListener('click', () => this.cb.onEndTurn());
     this.muteBtn.addEventListener('click', () => {
@@ -101,6 +112,8 @@ export class Hud {
     });
     this.threatBtn.addEventListener('click', () => this.setThreatActive(this.cb.onToggleThreat()));
     this.helpBtn.addEventListener('click', () => this.cb.onHelp());
+    q('.rotate--ccw').addEventListener('click', () => this.cb.onRotate(-1));
+    q('.rotate--cw').addEventListener('click', () => this.cb.onRotate(1));
 
     this.tooltip = new Tooltip(document.body);
     this.tooltip.attach(this.root);
@@ -147,6 +160,70 @@ export class Hud {
     this.setMaxHp(board.player, board.enemy);
     this.syncHand(hand, playable);
     this.setResonance(board);
+    this.setEnemyRead(board);
+  }
+
+  /**
+   * What the enemy is holding.
+   *
+   * Not their cards — only how many and how much magic is banked. That is enough to make
+   * a Power Tier turn foreseeable rather than a surprise, without giving the game away.
+   */
+  private setEnemyRead(board: BoardView): void {
+    this.enemyHandEl.textContent = String(board.enemy.handCount);
+    this.enemyPipsEl.textContent = String(board.enemy.pips);
+    // Flagged once the bank could pay for the most expensive thing in the game.
+    this.enemyPipsEl.parentElement?.classList.toggle('is-loaded', board.enemy.pips >= 5);
+  }
+
+  /**
+   * The selected unit, spelled out in one place.
+   *
+   * Everything here is discoverable by hovering the piece, but a tactics player needs it
+   * *while* choosing a destination, not while pointing at the unit they already chose.
+   */
+  showInspect(board: BoardView, unitId: string | null): void {
+    if (!unitId) {
+      this.inspectEl.classList.remove('is-shown');
+      return;
+    }
+    const unit = board.units.find((u) => u.id === unitId);
+    if (!unit) {
+      this.inspectEl.classList.remove('is-shown');
+      return;
+    }
+
+    const statuses = board.statuses
+      .filter((s) => s.unitId === unitId)
+      .map((s) => `<span class="inspect__status" data-tip="${s.kind}">${s.kind} ${s.stacks}</span>`)
+      .join('');
+
+    const actions: string[] = [];
+    if (!unit.exhausted) actions.push('can act');
+    if (unit.escalation > 0) actions.push(`escalated ×${unit.escalation}`);
+
+    this.inspectEl.innerHTML = `
+      <div class="inspect__name">${escapeHtml(unit.name)}</div>
+      <div class="inspect__stats">
+        <span data-tip="Attack|Damage this unit deals when it strikes.">${unit.atk} ATK</span>
+        <span data-tip="Health|Damage it can take before dying.">${unit.hp}/${unit.maxHp} HP</span>
+        <span data-tip="Movement|Tiles it can cross in one move, diagonals included.">${unit.mov} MOV</span>
+        ${unit.armor > 0 ? `<span data-tip="armor">${unit.armor} ARM</span>` : ''}
+        <span data-tip="Range|How far it can strike. Melee must be adjacent.">${
+          unit.rangeMax > 1 ? `RNG ${unit.rangeMin}–${unit.rangeMax}` : 'MELEE'
+        }</span>
+      </div>
+      ${
+        unit.keywords.length
+          ? `<div class="inspect__keywords">${unit.keywords
+              .map((k) => `<span data-tip="${k}">${k}</span>`)
+              .join('')}</div>`
+          : ''
+      }
+      ${statuses ? `<div class="inspect__statuses">${statuses}</div>` : ''}
+      ${actions.length ? `<div class="inspect__actions">${actions.join(' · ')}</div>` : ''}
+    `;
+    this.inspectEl.classList.add('is-shown');
   }
 
   /** Shows whether the Companion's passive is still available this turn. */
@@ -389,6 +466,14 @@ const TEMPLATE = `
         <span class="enemy-bar__text">40 / 40</span>
         <span class="enemy-bar__armor is-hidden" data-tip="armor"></span>
       </div>
+      <div class="enemy-read">
+        <span class="enemy-read__item" data-tip="Enemy hand|How many cards the enemy is holding.|You cannot see what they are, but a full hand means options.">
+          <span class="enemy-read__icon">🂠</span><span class="enemy-read__hand">0</span>
+        </span>
+        <span class="enemy-read__item" data-tip="Enemy Pips|Banked magic the enemy has available.|A high bank means a Power Tier card may be coming.">
+          <span class="enemy-read__icon">◈</span><span class="enemy-read__pips">0</span>
+        </span>
+      </div>
     </div>
     <div class="status">
       <div class="status__turn">Turn 1 · YOU</div>
@@ -398,11 +483,15 @@ const TEMPLATE = `
   </div>
 
   <div class="notice"></div>
+  <div class="inspect"></div>
 
   <div class="bottom-bar">
     <div class="center-stack">
       <div class="pact" data-tip="pact">
-        <div class="pact__track"><div class="pact__fill"></div></div>
+        <div class="pact__track">
+          <div class="pact__fill"></div>
+          <div class="pact__ticks"></div>
+        </div>
         <div class="pact__row">
           <span class="pact__text">PACT  40 / 40</span>
           <span class="pact__armor is-hidden" data-tip="armor"></span>
@@ -424,6 +513,8 @@ const TEMPLATE = `
       </div>
       <div class="hand"></div>
       <div class="right-controls">
+        <button class="rotate rotate--ccw" data-tip="Rotate left|Turns the board a quarter-turn anticlockwise.|Press Q.">⟲</button>
+        <button class="rotate rotate--cw" data-tip="Rotate right|Turns the board a quarter-turn clockwise.|Press E.">⟳</button>
         <button class="help" data-tip="Help|Opens the rules reference.|Press H at any time.">?</button>
         <button class="mute" title="Toggle sound">🔊</button>
       </div>

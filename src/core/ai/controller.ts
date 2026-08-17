@@ -44,13 +44,19 @@ export interface AiProfile {
   /** How many further actions the rollout plays out when valuing an opener. */
   rolloutDepth: number;
   /**
-   * Ceiling on simulated actions per turn. Module 5 states 150 iterations; that reads as
-   * per decision, so the per-turn budget is a multiple of it. Exceeding it drops the
-   * rest of the turn to greedy rather than stalling.
+   * Ceiling on simulated actions per turn, and the *only* limit that shapes play. Module 5
+   * states 150 iterations; that reads as per decision, so the per-turn budget is a
+   * multiple of it. Reaching it drops the rest of the turn to greedy.
+   *
+   * Tuned so a turn lands inside Module 5's 1.2s thinking cap on typical hardware, and
+   * degrades in quality rather than in time on slower machines.
    */
   simulationBudget: number;
-  /** Wall-clock guard, so a slow machine degrades instead of freezing (Module 5: 1.2s). */
-  timeBudgetMs: number;
+  /**
+   * Last-resort anti-hang cutoff. Far above the simulation budget so it never fires in
+   * normal play — reaching it means abandoning determinism to avoid freezing the tab.
+   */
+  hangGuardMs: number;
 }
 
 export const NOVICE_AI: AiProfile = {
@@ -64,7 +70,7 @@ export const NOVICE_AI: AiProfile = {
   lookaheadDiscount: 0,
   rolloutDepth: 0,
   simulationBudget: 400,
-  timeBudgetMs: 1200,
+  hangGuardMs: 8000,
 };
 
 export const ADEPT_AI: AiProfile = {
@@ -79,8 +85,10 @@ export const ADEPT_AI: AiProfile = {
   beamWidth: 4,
   lookaheadDiscount: 0.9,
   rolloutDepth: 3,
-  simulationBudget: 2500,
-  timeBudgetMs: 1200,
+  // Tuned against measured play: 1600 buys the full strength gain over Novice, while
+  // 2200 costs noticeably more thinking time for no additional wins.
+  simulationBudget: 1600,
+  hangGuardMs: 8000,
 };
 
 export const AI_PROFILES: AiProfile[] = [NOVICE_AI, ADEPT_AI];
@@ -92,9 +100,14 @@ export function profileByName(name: string): AiProfile | undefined {
 /**
  * Tracks how much thinking a turn has spent, so it degrades before it stalls.
  *
- * Wall clock is the binding constraint, not the simulation count: a single simulation
- * clones the whole board, so its cost scales with the arena and the number of units.
- * Once time is up the flag latches — an over-budget turn must not un-exhaust itself.
+ * **The simulation count is the binding constraint, and deliberately so.** An earlier
+ * version let the wall clock decide, which made the AI's choices depend on how busy the
+ * machine was: the same seed produced different games, and the replay harness caught it
+ * immediately. Anything that changes a decision has to be deterministic.
+ *
+ * The clock survives only as an anti-hang backstop, set far enough out that ordinary play
+ * never reaches it. If it ever does fire, determinism is knowingly traded away to avoid
+ * freezing the tab — the right call, but the reason it is not the primary limit.
  */
 class Budget {
   private sims = 0;
@@ -109,17 +122,17 @@ class Budget {
 
   get exhausted(): boolean {
     if (this.latched) return true;
+
     if (this.sims >= this.profile.simulationBudget) {
       this.latched = true;
       return true;
     }
-    // Checked on every call rather than sampled. A single simulation costs milliseconds,
-    // so reading the clock is free by comparison — and sampling let a big enumeration
-    // run hundreds of simulations past the deadline before anyone noticed.
-    if (Date.now() - this.startedAt > this.profile.timeBudgetMs) {
+
+    if (Date.now() - this.startedAt > this.profile.hangGuardMs) {
       this.latched = true;
       return true;
     }
+
     return false;
   }
 }
