@@ -255,3 +255,39 @@ describe('escalation', () => {
     expect(cur.units[imp.id]!.escalation).toBe(3);
   });
 });
+
+describe('movement costs', () => {
+  it('charges one per step while every tile is open ground', () => {
+    const state = scenario({
+      width: 6,
+      height: 8,
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 4 } }],
+    });
+    const imp = findUnit(state, 'scout_imp', 'player');
+
+    for (const move of legalMoves(state, imp)) {
+      // The path includes the starting tile, so a cost of N is N+1 waypoints.
+      expect(move.cost, `path to ${move.to.x},${move.to.y}`).toBe(move.path.length - 1);
+      expect(move.cost).toBeLessThanOrEqual(state.units[imp.id]!.mov);
+    }
+  });
+
+  it('reaches everything within its allowance on an empty board', () => {
+    const state = scenario({
+      width: 6,
+      height: 8,
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 4 } }],
+    });
+    const imp = findUnit(state, 'scout_imp', 'player');
+    const mov = state.units[imp.id]!.mov;
+
+    const reached = new Set(legalMoves(state, imp).map((m) => `${m.to.x},${m.to.y}`));
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 6; x++) {
+        const steps = Math.max(Math.abs(x - 2), Math.abs(y - 4));
+        if (steps === 0 || steps > mov) continue;
+        expect(reached.has(`${x},${y}`), `should reach ${x},${y}`).toBe(true);
+      }
+    }
+  });
+});

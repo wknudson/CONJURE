@@ -1,10 +1,15 @@
 /**
  * Movement.
  *
- * BFS over 8-directional steps up to MOV. A step is legal only if EVERY cell of the
- * unit's footprint is in bounds and unoccupied at the new anchor — which is what makes
- * "a 2x2 Behemoth cannot squeeze through a 1x1 opening" fall out for free, with no
- * special case: the BFS simply finds no legal step through the gap.
+ * A cost-relaxing search over 8-directional steps up to MOV. A step is legal only if
+ * EVERY cell of the unit's footprint is in bounds and unoccupied at the new anchor —
+ * which is what makes "a 2x2 Behemoth cannot squeeze through a 1x1 opening" fall out for
+ * free, with no special case: the search simply finds no legal step through the gap.
+ *
+ * Steps are not all equal. Rough ground costs more to cross than open ground, so the
+ * cheapest route to a tile is not always the one with the fewest steps, and a plain
+ * breadth-first sweep — which accepts the first arrival at a tile and never revisits —
+ * would report a detour around rubble as unreachable when it is merely longer.
  */
 
 import type { Coord, UnitId } from '../../contract/ids.js';
@@ -12,7 +17,7 @@ import { coordKey } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
 import type { Unit } from '../types/units.js';
 import { canPlace } from './board.js';
-import { DIRS_8, add } from '../util/grid.js';
+import { DIRS_8, add, cellsAt } from '../util/grid.js';
 
 export interface MoveOption {
   to: Coord;
@@ -27,34 +32,59 @@ export function legalMoves(state: GameState, unit: Unit): MoveOption[] {
   if (!canMove(unit) || unit.mov <= 0) return [];
 
   const start = unit.anchor;
-  const seen = new Map<string, MoveOption>();
-  seen.set(coordKey(start), { to: start, path: [start], cost: 0 });
+  const best = new Map<string, MoveOption>();
+  best.set(coordKey(start), { to: start, path: [start], cost: 0 });
 
+  // Relaxation, not a single sweep: a tile already reached may be reached again more
+  // cheaply by a longer route, and when it is, everything beyond it is reconsidered too.
+  // MOV is small and the board is small, so this settles in a few passes.
   let frontier: MoveOption[] = [{ to: start, path: [start], cost: 0 }];
 
   while (frontier.length > 0) {
     const next: MoveOption[] = [];
     for (const cur of frontier) {
-      if (cur.cost >= unit.mov) continue;
       for (const dir of DIRS_8) {
         const anchor = add(cur.to, dir);
         const key = coordKey(anchor);
-        if (seen.has(key)) continue;
         if (!canPlace(state, anchor, unit.footprint, unit.id)) continue;
-        const option: MoveOption = {
-          to: anchor,
-          path: [...cur.path, anchor],
-          cost: cur.cost + 1,
-        };
-        seen.set(key, option);
+
+        const cost = cur.cost + stepCost(state, unit, anchor);
+        if (cost > unit.mov) continue;
+        const prior = best.get(key);
+        if (prior && prior.cost <= cost) continue;
+
+        const option: MoveOption = { to: anchor, path: [...cur.path, anchor], cost };
+        best.set(key, option);
         next.push(option);
       }
     }
     frontier = next;
   }
 
-  seen.delete(coordKey(start));
-  return [...seen.values()];
+  best.delete(coordKey(start));
+  return [...best.values()];
+}
+
+/**
+ * What it costs to step onto this anchor.
+ *
+ * A footprint pays for the worst ground it covers: a Behemoth with one foot in rubble is
+ * slowed by it, which is the answer that makes big units feel heavy rather than letting
+ * them straddle bad ground for free.
+ */
+export function stepCost(state: GameState, unit: Unit, anchor: Coord): number {
+  let worst = 1;
+  for (const cell of cellsAt(anchor, unit.footprint)) {
+    worst = Math.max(worst, tileMoveCost(state, cell));
+  }
+  return worst;
+}
+
+/** The cost of crossing a single tile. Open ground is 1; nothing is dearer yet. */
+export function tileMoveCost(state: GameState, at: Coord): number {
+  void state;
+  void at;
+  return 1;
 }
 
 export function findMove(state: GameState, unit: Unit, to: Coord): MoveOption | undefined {
