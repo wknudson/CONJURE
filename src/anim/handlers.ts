@@ -115,6 +115,10 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
       if (e.hpLoss > 0) {
         view.hud.pulsePact(e.target.side);
         view.sfx.play('hit');
+        // Damage redirected from a Bound Form names the tile it happened on. Showing the
+        // number there as well as on the gauge is what connects the two: the hit landed
+        // on your Companion, and your Pact is what paid for it.
+        if (e.at) view.fx.damageNumber(e.at, e.hpLoss);
       }
       return;
     }

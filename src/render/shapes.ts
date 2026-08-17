@@ -521,6 +521,39 @@ export function drawRune(
 }
 
 /** HP pill and armor chip beneath a unit. */
+/**
+ * The Bound Form's badge, drawn where an ordinary unit's health bar would be.
+ *
+ * A bar would be a lie twice over: it is not this unit's health, and it would never
+ * move. Instead a slow pulse in the Pact's own colour says the same thing the gauge
+ * above says — this thing and your life are one.
+ */
+export function drawBoundMark(
+  ctx: Ctx2D,
+  centre: { x: number; y: number },
+  z: number,
+  pulse: number,
+): void {
+  const w = 30 * z;
+  const h = 7 * z;
+  const x = centre.x - w / 2;
+  const y = centre.y + 12 * z;
+  const glow = 0.55 + 0.25 * Math.sin(pulse * 2);
+
+  ctx.save();
+  roundRect(ctx, x, y, w, h, h / 2);
+  ctx.fillStyle = 'rgba(10, 12, 18, 0.85)';
+  ctx.fill();
+
+  ctx.globalAlpha = glow;
+  roundRect(ctx, x + 1.5 * z, y + 1.5 * z, w - 3 * z, h - 3 * z, (h - 3 * z) / 2);
+  ctx.fillStyle = PALETTE.pact;
+  ctx.fill();
+
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
 export function drawStatBar(
   ctx: Ctx2D,
   centre: { x: number; y: number },

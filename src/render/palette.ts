@@ -17,6 +17,9 @@ export const PALETTE = {
 
   boundary: '#8BE9E0',
 
+  /** The Pact gauge's own blue, so the Bound Form on the board reads as the same pool. */
+  pact: '#7DD3FC',
+
   allyBase: '#3B82F6',
   enemyBase: '#E5484D',
 

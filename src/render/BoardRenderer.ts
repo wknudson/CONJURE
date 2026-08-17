@@ -12,6 +12,7 @@ import type { Fx } from './Fx.js';
 import { PALETTE } from './palette.js';
 import {
   drawBasePlate,
+  drawBoundMark,
   drawBoundary,
   drawCommander,
   drawCover,
@@ -557,7 +558,13 @@ export class BoardRenderer {
         drawRune(ctx, { x: centre.x, y: brandY }, view.rune.school, pulse, cam.zoom);
       }
 
-      drawStatBar(ctx, centre, view.hp, view.maxHp, view.armor, view.atk, cam.zoom);
+      // The Bound Form's health is the Pact's, shown on the gauge above. A bar here
+      // would read as a second, separate pool -- and one that never moves.
+      if (view.snapshot?.keywords.includes('BoundForm')) {
+        drawBoundMark(ctx, centre, cam.zoom, pulse);
+      } else {
+        drawStatBar(ctx, centre, view.hp, view.maxHp, view.armor, view.atk, cam.zoom);
+      }
 
       if (view.escalation > 0) {
         ctx.fillStyle = '#FDE047';

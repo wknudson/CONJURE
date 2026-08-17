@@ -602,6 +602,12 @@ export class CombatScreen implements Screen {
     const nearRow = board.height + 0.35;
     const farRow = -1.35;
 
+    // The Companion cannot stand in two places at once. Once its Bound Form is on the
+    // board, the off-grid model is the stale one and is dropped.
+    const embodied = board.units.some(
+      (u) => u.side === 'player' && u.keywords.includes('BoundForm'),
+    );
+
     this.renderer.commanders = [
       {
         side: 'player',
@@ -614,17 +620,21 @@ export class CombatScreen implements Screen {
         armor: board.player.armor,
         targetable: false,
       },
-      {
-        side: 'player',
-        kind: 'companion',
-        name: board.player.companionName ?? 'Companion',
-        school: board.player.companionSchool,
-        at: { x: board.player.companionColumn, y: nearRow },
-        hp: board.player.hp,
-        maxHp: board.player.maxHp,
-        armor: board.player.armor,
-        targetable: false,
-      },
+      ...(embodied
+        ? []
+        : [
+            {
+              side: 'player' as const,
+              kind: 'companion' as const,
+              name: board.player.companionName ?? 'Companion',
+              school: board.player.companionSchool,
+              at: { x: board.player.companionColumn, y: nearRow },
+              hp: board.player.hp,
+              maxHp: board.player.maxHp,
+              armor: board.player.armor,
+              targetable: false,
+            },
+          ]),
       {
         side: 'enemy',
         kind: 'boss',
