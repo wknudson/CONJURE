@@ -62,6 +62,48 @@ describe('IsoCamera', () => {
     expect(behemoth).toBeGreaterThan(behind);
   });
 
+  /**
+   * Rotation reflects continuous positions about the board *extent* but tile indices
+   * about the *last index* — a distinction that vanishes on a square board and is
+   * invisible in play until a click at 90 degrees lands one tile out. A non-square
+   * board is the only shape that can catch it, so it gets its own coverage.
+   */
+  it('round-trips every tile of a non-square board at every rotation', () => {
+    const c = new IsoCamera(4, 7);
+    c.fit(1280, 720);
+
+    for (const step of [0, 1, 2, 3] as const) {
+      c.rotationStep = step;
+      c.fit(1280, 720);
+      for (let y = 0; y < 7; y++) {
+        for (let x = 0; x < 4; x++) {
+          const centre = c.tileCenter({ x, y });
+          expect(c.screenToTile(centre.x, centre.y), `tile ${x},${y} at step ${step}`).toEqual({
+            x,
+            y,
+          });
+        }
+      }
+    }
+  });
+
+  it('frames a non-square board inside the canvas at every rotation', () => {
+    const c = new IsoCamera(4, 7);
+    for (const step of [0, 1, 2, 3] as const) {
+      c.rotationStep = step;
+      c.fit(1280, 720);
+      for (let y = 0; y <= 7; y++) {
+        for (let x = 0; x <= 4; x++) {
+          const p = c.worldToScreen(x, y);
+          expect(p.x, `x of ${x},${y} at step ${step}`).toBeGreaterThan(0);
+          expect(p.x).toBeLessThan(1280);
+          expect(p.y, `y of ${x},${y} at step ${step}`).toBeGreaterThan(0);
+          expect(p.y).toBeLessThan(720);
+        }
+      }
+    }
+  });
+
   it('keeps picking correct after a resize', () => {
     const c = new IsoCamera(6, 6);
     c.fit(800, 600);

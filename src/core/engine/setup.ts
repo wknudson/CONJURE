@@ -4,7 +4,7 @@
 
 import type { CardInstanceId, Coord, School, Side } from '../../contract/ids.js';
 import type { GameState, StepResult, CommanderState } from '../types/state.js';
-import { territoryRows } from '../types/state.js';
+import { territoryDepthFor, territoryRows } from '../types/state.js';
 import { canPlace } from './board.js';
 import type { Ctx } from './context.js';
 import type { CardInstance } from '../types/cards.js';
@@ -80,12 +80,57 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
   };
 }
 
+/** Smallest arena the rules stay coherent on, and the largest worth framing. */
+export const MIN_ARENA = 4;
+export const MAX_ARENA = 12;
+
+/**
+ * Rejects an unplayable arena at construction rather than midway through a battle.
+ *
+ * Encounters are hand-authored data, so these are authoring mistakes, not player
+ * actions — a plain Error, not an IllegalCommandError. Nothing checked any of this
+ * before: a typo in a coordinate produced terrain quietly dropped on the floor, and an
+ * arena too small to hold two territories produced a game with no neutral ground.
+ */
+export function validateEncounter(encounter: EncounterDef): void {
+  const { id, width, height } = encounter;
+  if (width < MIN_ARENA || height < MIN_ARENA) {
+    throw new Error(`${id}: arena ${width}x${height} is below the ${MIN_ARENA}x${MIN_ARENA} minimum`);
+  }
+  if (width > MAX_ARENA || height > MAX_ARENA) {
+    throw new Error(`${id}: arena ${width}x${height} exceeds the ${MAX_ARENA}x${MAX_ARENA} maximum`);
+  }
+
+  const within = (c: Coord): boolean => c.x >= 0 && c.y >= 0 && c.x < width && c.y < height;
+
+  // Terrain in a summon zone would silently shrink the deployable area instead of
+  // announcing itself, so it is a hard error rather than a judgement call.
+  const depth = territoryDepthFor(height);
+  const homeRows = new Set<number>();
+  for (let i = 0; i < depth; i++) homeRows.add(i).add(height - 1 - i);
+
+  for (const t of encounter.terrain ?? []) {
+    if (!within(t.at)) throw new Error(`${id}: terrain at ${t.at.x},${t.at.y} is outside the arena`);
+    if (homeRows.has(t.at.y)) {
+      throw new Error(`${id}: terrain at ${t.at.x},${t.at.y} sits in a territory row`);
+    }
+  }
+
+  for (const [defId, x, y] of encounter.enemyOpeningBoard) {
+    if (!within({ x, y })) {
+      throw new Error(`${id}: opening unit ${defId} at ${x},${y} is outside the arena`);
+    }
+  }
+}
+
 export function createCombat(
   encounter: EncounterDef,
   seed: number,
   companionId?: string,
   deck?: string[],
 ): StepResult {
+  validateEncounter(encounter);
+
   const rng = makeRng(seed);
 
   // The chosen Companion decides the player's deck and Resonance school; the encounter
@@ -180,7 +225,8 @@ export function createCombat(
   }
 
   // Free Vanguard for both sides, centred on each front line, so turn one is a real
-  // tactical turn instead of a setup turn.
+  // tactical turn instead of a setup turn. The two rows below are distinct for every
+  // arena validateEncounter accepts (height >= 4), so the pair can never collide.
   const vanguard = encounter.vanguard === undefined ? 'vanguard_footman' : encounter.vanguard;
   if (vanguard) {
     const mid = Math.floor(encounter.width / 2);

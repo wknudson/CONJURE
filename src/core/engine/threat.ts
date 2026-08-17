@@ -13,10 +13,10 @@
 import type { Coord, Side, UnitId } from '../../contract/ids.js';
 import { coordKey } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
-import { inBounds, territoryRows } from '../types/state.js';
 import type { Unit } from '../types/units.js';
 import { canPlace, unitsOf, opposite } from './board.js';
 import { hasLoS } from './los.js';
+import { canHitPortrait } from './targeting.js';
 import { cellsAt, chebyshev, DIRS_8, add } from '../util/grid.js';
 
 export interface ThreatMap {
@@ -87,7 +87,6 @@ function strikeableFrom(state: GameState, unit: Unit, anchor: Coord): Coord[] {
 export function threatMap(state: GameState, side: Side): ThreatMap {
   const damageByTile = new Map<string, number>();
   const commanderThreats: UnitId[] = [];
-  const homeRows = territoryRows(state, side);
 
   for (const foe of unitsOf(state, opposite(side))) {
     // Held units threaten nothing at all — they can neither move nor strike.
@@ -98,13 +97,11 @@ export function threatMap(state: GameState, side: Side): ThreatMap {
 
     for (const anchor of anchors) {
       // Melee reaches a Commander by standing in their home rows; ranged needs a line.
+      // Defer to the targeting rule rather than restating it: the old ranged branch
+      // asked only whether the unit was on the board, which is true of every unit, so
+      // every ranged foe was permanently flagged as a threat to the Commander.
       if (!commanderThreats.includes(foe.id)) {
-        const cells = cellsAt(anchor, foe.footprint);
-        const canReachCommander =
-          foe.rangeMax <= 2
-            ? cells.some((c) => homeRows.includes(c.y))
-            : cells.some((c) => inBounds(state, c));
-        if (canReachCommander) commanderThreats.push(foe.id);
+        if (canHitPortrait(state, { ...foe, anchor }, side)) commanderThreats.push(foe.id);
       }
 
       for (const t of strikeableFrom(state, foe, anchor)) tiles.add(coordKey(t));
