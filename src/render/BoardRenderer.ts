@@ -601,7 +601,7 @@ export class BoardRenderer {
       // The Bound Form's health is the Pact's, shown on the gauge above. A bar here
       // would read as a second, separate pool -- and one that never moves.
       if (view.snapshot?.keywords.includes('BoundForm')) {
-        drawBoundMark(ctx, centre, cam.zoom, pulse);
+        drawBoundMark(ctx, centre, cam.zoom, pulse, view.snapshot.side === 'player');
       } else {
         drawStatBar(ctx, centre, view.hp, view.maxHp, view.armor, view.atk, cam.zoom);
       }

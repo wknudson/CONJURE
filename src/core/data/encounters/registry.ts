@@ -35,6 +35,14 @@ export interface EncounterDef {
   /** Units the enemy starts with, as [cardDefId, x, y]. */
   enemyOpeningBoard: [string, number, number][];
   /**
+   * The enemy's Companion, given a body on the board.
+   *
+   * Without this their Commander stays entirely off-grid, which is how every fight
+   * worked before mirrors existed. With it, the enemy Pact has a second, reachable
+   * route — and their ranged Companion cards become anchored to it, exactly as yours are.
+   */
+  enemyCompanion?: { unitCardId: string; at?: { x: number; y: number } };
+  /**
    * Map terrain, Pirate101-style: every arena has its own shape and furniture.
    * `wall` blocks movement and sight; `cover` blocks only sight, so units may stand on it.
    */

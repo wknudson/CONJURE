@@ -39,6 +39,9 @@ export const NOVICE_DUELIST: EncounterDef = {
     'magma_brute',
   ],
   enemyOpeningBoard: [['scout_imp', 4, 1]],
+  // A duelist, so they fight as you do: their Companion stands on the board, their spells
+  // are cast from it, and shoving it into a wall costs them exactly what it would cost you.
+  enemyCompanion: { unitCardId: 'umbra_bound' },
   // Something to fight over in the middle before either side is really ready to.
   sparkGeodes: { min: 1, max: 3 },
   // Two bramble screens midfield break the sightlines down the lane without walling it,

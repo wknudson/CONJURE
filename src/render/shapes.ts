@@ -533,6 +533,7 @@ export function drawBoundMark(
   centre: { x: number; y: number },
   z: number,
   pulse: number,
+  ally = true,
 ): void {
   const w = 30 * z;
   const h = 7 * z;
@@ -547,7 +548,9 @@ export function drawBoundMark(
 
   ctx.globalAlpha = glow;
   roundRect(ctx, x + 1.5 * z, y + 1.5 * z, w - 3 * z, h - 3 * z, (h - 3 * z) / 2);
-  ctx.fillStyle = PALETTE.pact;
+  // Their pool is not yours: the enemy's body pulses in their own colour, or the board
+  // would be telling you that hurting it helps you in the way hurting yours hurts you.
+  ctx.fillStyle = ally ? PALETTE.pact : PALETTE.enemyBase;
   ctx.fill();
 
   ctx.globalAlpha = 1;

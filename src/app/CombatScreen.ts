@@ -624,6 +624,9 @@ export class CombatScreen implements Screen {
     const embodied = board.units.some(
       (u) => u.side === 'player' && u.keywords.includes('BoundForm'),
     );
+    const enemyEmbodied = board.units.some(
+      (u) => u.side === 'enemy' && u.keywords.includes('BoundForm'),
+    );
 
     this.renderer.commanders = [
       {
@@ -652,17 +655,24 @@ export class CombatScreen implements Screen {
               targetable: false,
             },
           ]),
-      {
-        side: 'enemy',
-        kind: 'boss',
-        name: board.enemy.name,
-        school: board.enemy.companionSchool,
-        at: { x: Math.floor((board.width - 1) / 2), y: farRow },
-        hp: board.enemy.hp,
-        maxHp: board.enemy.maxHp,
-        armor: board.enemy.armor,
-        targetable,
-      },
+      // The enemy Commander is drawn off-grid only while nothing represents it on the
+      // board. Once it has a Bound Form, the off-grid model is the stale one — the same
+      // rule the player's Companion follows.
+      ...(enemyEmbodied
+        ? []
+        : [
+            {
+              side: 'enemy' as const,
+              kind: 'boss' as const,
+              name: board.enemy.name,
+              school: board.enemy.companionSchool,
+              at: { x: Math.floor((board.width - 1) / 2), y: farRow },
+              hp: board.enemy.hp,
+              maxHp: board.enemy.maxHp,
+              armor: board.enemy.armor,
+              targetable,
+            },
+          ]),
     ];
 
     this.renderer.resonanceLane = board.player.resonanceUsed

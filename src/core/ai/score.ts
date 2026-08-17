@@ -201,9 +201,16 @@ export function scoreAction(
       // reach, so a unit that has already swung this turn values safety instead of
       // ground. Deliberately weighted below the face-damage term: the AI should still
       // prefer pressing an advantage over preserving a minion.
-      if (unit.attackedThisTurn && weights.retreat > 0) {
+      // A Bound Form is judged by a different rule. Its own HP is decorative — the pool
+      // it draws on is the Pact — so pricing its safety off `unit.hp` would value a
+      // 3-HP Pact at a comfortable 40. And it is worth pulling back whether or not it
+      // has swung, because what is at risk is not a minion but the game.
+      const isBody = unit.keywords.includes('BoundForm');
+      if ((isBody || unit.attackedThisTurn) && weights.retreat > 0) {
         const danger = incomingDamageAt(state, side);
-        const effective = unit.hp + unit.armor;
+        const effective = isBody
+          ? state.players[side].hp + state.players[side].armor
+          : unit.hp + unit.armor;
         // Damage that would actually land, not raw threat: anything past the unit's
         // health is wasted on it either way.
         const here = Math.min(danger.get(coordKey(unit.anchor)) ?? 0, effective);

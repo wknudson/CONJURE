@@ -58,14 +58,24 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
     }
   }
 
-  // 3. Moves.
+  // 3. Moves. Retreats are pruned to keep the candidate list focused — a minion walking
+  // backwards is almost never the best thing to do, and enumerating every such move
+  // triples the search for nothing.
+  //
+  // The Bound Form is the exception, and the exception matters: it is the one unit whose
+  // loss is the game, so withdrawing it is frequently the whole turn. Pruned along with
+  // everything else, the AI could not defend its own Companion at all — it would walk it
+  // forward into range and have no way of walking it back.
   const forward = side === 'player' ? -1 : 1;
   for (const unit of unitsOf(state, side)) {
     if (!canMove(unit)) continue;
+    const mayRetreat = unit.keywords.includes('BoundForm');
     for (const move of legalMoves(state, unit)) {
-      const advances = (move.to.y - unit.anchor.y) * forward > 0;
-      const lateral = move.to.y === unit.anchor.y;
-      if (!advances && !lateral) continue;
+      if (!mayRetreat) {
+        const advances = (move.to.y - unit.anchor.y) * forward > 0;
+        const lateral = move.to.y === unit.anchor.y;
+        if (!advances && !lateral) continue;
+      }
       out.push({ type: 'moveUnit', unit: unit.id, to: move.to });
     }
   }

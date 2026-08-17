@@ -237,11 +237,6 @@ export function createCombat(
 
   // The Companion takes the field, standing in its own lane on the back row. The Hero
   // stays off-grid as the Architect; only the Companion has a body to lose.
-  //
-  // The enemy has none: their Companion remains off-grid, as every Commander's was
-  // before this. Giving one to a boss means adding a field to EncounterDef and deciding
-  // what its Resonance lane does — a separate design question, deliberately not answered
-  // here. Everything downstream keys off companionUnitDefId being absent.
   const boundId = placeOpeningUnit(ctx, companion.unitCardId, 'player', {
     x: player.commander.companionColumn,
     y: encounter.height - 1,
@@ -249,6 +244,19 @@ export function createCombat(
   if (boundId) {
     state.players.player.companionUnitId = boundId;
     state.players.player.companionUnitDefId = companion.unitCardId;
+  }
+
+  // The enemy fields one too, when the encounter says so. A side without one keeps its
+  // Commander wholly off-grid, which is what every fight looked like before mirrors —
+  // and everything downstream still keys off companionUnitDefId being absent.
+  const foe = encounter.enemyCompanion;
+  if (foe) {
+    const foeAt = foe.at ?? { x: enemy.commander.companionColumn, y: 0 };
+    const foeId = placeOpeningUnit(ctx, foe.unitCardId, 'enemy', foeAt);
+    if (foeId) {
+      state.players.enemy.companionUnitId = foeId;
+      state.players.enemy.companionUnitDefId = foe.unitCardId;
+    }
   }
 
   // Currents are part of the map, laid down like terrain rather than conjured.

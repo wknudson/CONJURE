@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { addUnit, atTile, eventsOf, findUnit, handCard, play, run, scenario } from './scenario.js';
 import { applyCommand } from '../core/engine/engine.js';
 import { IllegalCommandError } from '../core/types/commands.js';
-import { legalCardTargets } from '../core/engine/targeting.js';
+import { legalAttacks, legalCardTargets } from '../core/engine/targeting.js';
+import { enumerateActions } from '../core/ai/enumerate.js';
 import { checkInvariants } from './replay.js';
 import { CombatSession } from '../core/session.js';
 import { ENCOUNTERS } from '../core/data/encounters/index.js';
@@ -192,10 +193,12 @@ describe('the Companion takes the field', () => {
       const session = new CombatSession(ENCOUNTERS[0]!, 7, undefined, companionId);
       const st = session.debugState;
 
-      const bound = Object.values(st.units).filter((u) => u.keywords.includes('BoundForm'));
-      expect(bound.length, `${companionId} should field exactly one body`).toBe(1);
-      expect(bound[0]!.defId).toBe(expected);
-      expect(st.players.player.companionUnitId).toBe(bound[0]!.id);
+      const mine = Object.values(st.units).filter(
+        (u) => u.side === 'player' && u.keywords.includes('BoundForm'),
+      );
+      expect(mine.length, `${companionId} should field exactly one body`).toBe(1);
+      expect(mine[0]!.defId).toBe(expected);
+      expect(st.players.player.companionUnitId).toBe(mine[0]!.id);
       expect(st.players.player.companionUnitDefId).toBe(expected);
     }
   });
@@ -209,12 +212,25 @@ describe('the Companion takes the field', () => {
     expect(body.anchor.x).toBe(st.players.player.companionColumn);
   });
 
-  it('gives the enemy no body, so their Commander stays off-grid', () => {
-    const session = new CombatSession(ENCOUNTERS[0]!, 7);
-    const st = session.debugState;
+  it('gives the enemy a body only when the encounter asks for one', () => {
+    // Having a body is a property of the fight, not of being the enemy. A duelist mirrors
+    // you; something else may still command wholly from off the board.
+    for (const enc of ENCOUNTERS) {
+      const session = new CombatSession(enc, 7);
+      const st = session.debugState;
+      const theirs = Object.values(st.units).filter(
+        (u) => u.side === 'enemy' && u.keywords.includes('BoundForm'),
+      );
 
-    expect(Object.values(st.units).some((u) => u.side === 'enemy' && u.keywords.includes('BoundForm'))).toBe(false);
-    expect(st.players.enemy.companionUnitDefId).toBeUndefined();
+      if (enc.enemyCompanion) {
+        expect(theirs.length, `${enc.id} should field one`).toBe(1);
+        expect(theirs[0]!.defId).toBe(enc.enemyCompanion.unitCardId);
+        expect(st.players.enemy.companionUnitId).toBe(theirs[0]!.id);
+      } else {
+        expect(theirs.length, `${enc.id} should field none`).toBe(0);
+        expect(st.players.enemy.companionUnitDefId).toBeUndefined();
+      }
+    }
   });
 
   it('can act from turn one, like the Vanguard beside it', () => {
@@ -267,5 +283,111 @@ describe('it still plays like a unit', () => {
     const card = handCard(state, 'player', 'scout_imp');
     const res = run(state, play(card, atTile(1, 7)));
     expect(findUnit(res.state, 'scout_imp', 'player')).toBeDefined();
+  });
+});
+
+describe('the mirror', () => {
+  /** The duelist fight, where both sides have a body on the board. */
+  function mirror(seed = 7) {
+    const session = new CombatSession(ENCOUNTERS[0]!, seed, undefined, 'ignis');
+    const st = session.debugState;
+    return {
+      st,
+      mine: st.units[st.players.player.companionUnitId!]!,
+      theirs: st.units[st.players.enemy.companionUnitId!]!,
+    };
+  }
+
+  it('routes damage on their body to their Pact, not ours', () => {
+    const { st, theirs } = mirror();
+    const striker = addUnit(st, {
+      def: 'scout_imp',
+      side: 'player',
+      at: { x: theirs.anchor.x, y: theirs.anchor.y + 1 },
+    });
+    const before = { player: st.players.player.hp, enemy: st.players.enemy.hp };
+
+    const res = applyCommand(st, {
+      type: 'attack',
+      attacker: striker.id,
+      target: { kind: 'unit', id: theirs.id },
+    });
+
+    expect(res.state.players.enemy.hp).toBeLessThan(before.enemy);
+    expect(res.state.players.player.hp).toBe(before.player);
+    expect(res.state.units[theirs.id]!.hp).toBe(res.state.units[theirs.id]!.maxHp);
+  });
+
+  it('leaves their portrait attackable too, so both routes are open', () => {
+    // True symmetry: the body is a second way in, not a replacement for the first.
+    const { st } = mirror();
+    const striker = addUnit(st, { def: 'scout_imp', side: 'player', at: { x: 2, y: 1 } });
+
+    const targets = legalAttacks(st, st.units[striker.id]!);
+    expect(targets.some((t) => t.kind === 'portrait' && t.side === 'enemy')).toBe(true);
+  });
+
+  it('anchors their ranged Companion cards to their body', () => {
+    // The knock-on that makes the mirror real: the moment they have a body, their spells
+    // are thrown from it, exactly as yours are.
+    const { st, theirs } = mirror();
+    expect(st.players.enemy.companionUnitDefId).toBeDefined();
+
+    const near = legalCardTargets(st, 'enemy', 'flame_surge');
+    const reach = near.flatMap((t) => (t.kind === 'line' ? [t.from] : []));
+    for (const from of reach) {
+      const dist = Math.max(
+        Math.abs(from.x - theirs.anchor.x),
+        Math.abs(from.y - theirs.anchor.y),
+      );
+      expect(dist, 'cast from beyond their Companion reach').toBeLessThanOrEqual(4);
+    }
+    expect(reach.length).toBeGreaterThan(0);
+  });
+
+  it('restores both bodies after sudden death', () => {
+    const { st } = mirror();
+    st.players.player.hp = 0;
+    st.players.enemy.hp = 0;
+
+    const res = applyCommand(st, { type: 'endTurn' });
+
+    expect(res.state.suddenDeath).toBe(true);
+    for (const side of ['player', 'enemy'] as const) {
+      const id = res.state.players[side].companionUnitId;
+      expect(id, `${side} body must return`).toBeDefined();
+      expect(res.state.units[id!]!.keywords).toContain('BoundForm');
+    }
+    expect(checkInvariants(res.state, 'mirror sudden death')).toEqual([]);
+  });
+
+  it('lets the AI walk its own body backwards out of danger', () => {
+    // Retreats are pruned from enumeration for every other unit. The Bound Form is the
+    // exception, because without it the AI cannot defend the one loss that ends the game.
+    const { st, theirs } = mirror();
+    st.activeSide = 'enemy';
+    // It opens on its own back row, where there is nowhere further back to go. Walk it
+    // out first — which is the situation the retreat rule exists for.
+    theirs.anchor = { x: theirs.anchor.x, y: 3 };
+
+    const actions = enumerateActions(st, 'enemy');
+    const retreats = actions.filter(
+      (a) => a.type === 'moveUnit' && a.unit === theirs.id && a.to.y < 3,
+    );
+
+    expect(retreats.length, 'the body must be able to fall back').toBeGreaterThan(0);
+  });
+
+  it('does not un-prune retreats for ordinary units', () => {
+    const { st } = mirror();
+    st.activeSide = 'enemy';
+    const pawn = addUnit(st, { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 3 } });
+
+    const actions = enumerateActions(st, 'enemy');
+    const back = actions.filter(
+      (a) => a.type === 'moveUnit' && a.unit === pawn.id && a.to.y < 3,
+    );
+
+    expect(back).toHaveLength(0);
   });
 });

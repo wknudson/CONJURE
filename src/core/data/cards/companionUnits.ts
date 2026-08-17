@@ -48,6 +48,38 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     },
   },
 
+  /**
+   * The Novice Duelist's own Companion, and the first enemy to have a body at all.
+   *
+   * Deliberately the least imposing of the three: a duelist you are meant to beat should
+   * not field the hardest Bound Form in the game. Its reach of 2 is what makes it worth
+   * chasing — it can be walked down, but it will get a hit in on the way.
+   */
+  umbra_bound: {
+    id: 'umbra_bound',
+    name: 'Umbra',
+    cost: 0,
+    school: 'dusk',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. The Duelist casts from where it stands, and bleeds when it is struck.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 2,
+      hp: PACT_HP,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 2,
+      footprint: 1,
+      archetype: 'skirmisher',
+      sacrificeValue: 0,
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
   boreas_bound: {
     id: 'boreas_bound',
     name: 'Boreas',
