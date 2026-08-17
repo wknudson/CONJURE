@@ -57,6 +57,11 @@ export interface ActionPreview {
 export interface BoardView {
   width: number;
   height: number;
+  /**
+   * How many rows deep each side's territory reaches. Short arenas use one row rather
+   * than two; the renderer cannot import the engine, so the depth travels with the view.
+   */
+  territoryDepth: number;
   turn: number;
   activeSide: 'player' | 'enemy';
   phase: Phase;

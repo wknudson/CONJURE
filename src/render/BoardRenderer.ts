@@ -100,6 +100,8 @@ export class BoardRenderer {
   commanders: CommanderModel[] = [];
   /** Column the player's Companion watches, highlighted as its Resonance lane. */
   resonanceLane: number | null = null;
+  /** Rows of territory each side owns. Mirrors the engine; short arenas use one. */
+  territoryDepth = 2;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -443,10 +445,11 @@ export class BoardRenderer {
     for (let y = 0; y < cam.gridH; y++) {
       for (let x = 0; x < cam.gridW; x++) {
         // Faint territory tinting makes the three zones readable at a glance.
+        const depth = this.territoryDepth;
         const tint =
-          y >= cam.gridH - 2
+          y >= cam.gridH - depth
             ? PALETTE.playerTint
-            : y <= 1
+            : y <= depth - 1
               ? PALETTE.enemyTint
               : PALETTE.neutralTint;
         drawTile(ctx, cam, { x, y }, { tint, checker: (x + y) % 2 === 0 });

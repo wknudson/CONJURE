@@ -15,6 +15,7 @@ import { applyCommand } from '../core/engine/engine.js';
 import { makeRng } from '../core/util/rng.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { HAND_LIMIT } from '../core/engine/deck.js';
+import { flankColumns } from '../core/engine/setup.js';
 
 export interface UnitSpec {
   def: string;
@@ -125,8 +126,7 @@ function blankCommander(
   return {
     name,
     companionSchool: 'pyre' as const,
-    heroColumn: Math.max(0, Math.floor((width - 1) / 2) - 1),
-    companionColumn: Math.min(width - 1, Math.ceil((width - 1) / 2) + 1),
+    ...flankColumns(width),
     resonanceUsedThisTurn: false,
     hp,
     maxHp: hp,

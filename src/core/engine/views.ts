@@ -7,6 +7,7 @@ import type { CardInstanceId, Side } from '../../contract/ids.js';
 import type { BoardView, CommanderView } from '../../contract/query.js';
 import type { CardSnapshot, ObstacleSnapshot, UnitSnapshot } from '../../contract/snapshots.js';
 import type { GameState } from '../types/state.js';
+import { territoryDepthFor } from '../types/state.js';
 import type { Obstacle, Unit } from '../types/units.js';
 import { CARDS } from '../data/cards/index.js';
 import { RUNES } from '../data/runes.js';
@@ -130,6 +131,7 @@ export function toBoardView(state: GameState): BoardView {
   return {
     width: state.width,
     height: state.height,
+    territoryDepth: territoryDepthFor(state.height),
     turn: state.turn,
     activeSide: state.activeSide,
     phase: state.phase,

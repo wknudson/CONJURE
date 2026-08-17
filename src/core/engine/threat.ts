@@ -13,7 +13,7 @@
 import type { Coord, Side, UnitId } from '../../contract/ids.js';
 import { coordKey } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
-import { inBounds } from '../types/state.js';
+import { inBounds, territoryRows } from '../types/state.js';
 import type { Unit } from '../types/units.js';
 import { canPlace, unitsOf, opposite } from './board.js';
 import { hasLoS } from './los.js';
@@ -87,7 +87,7 @@ function strikeableFrom(state: GameState, unit: Unit, anchor: Coord): Coord[] {
 export function threatMap(state: GameState, side: Side): ThreatMap {
   const damageByTile = new Map<string, number>();
   const commanderThreats: UnitId[] = [];
-  const homeRows = side === 'player' ? [state.height - 1, state.height - 2] : [0, 1];
+  const homeRows = territoryRows(state, side);
 
   for (const foe of unitsOf(state, opposite(side))) {
     // Held units threaten nothing at all — they can neither move nor strike.

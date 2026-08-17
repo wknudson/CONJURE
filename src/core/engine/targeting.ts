@@ -21,7 +21,7 @@ import {
 import { canAttack, canAct } from './movement.js';
 import { hasLoS, hasLoSToPortrait } from './los.js';
 import { DIRS_8, cellsOf, footprintDistance } from '../util/grid.js';
-import { inBounds } from '../types/state.js';
+import { inBounds, territoryRows } from '../types/state.js';
 
 /** Every legal way to play this card right now. Empty means it is unplayable. */
 export function legalCardTargets(state: GameState, side: Side, defId: string): ChosenTarget[] {
@@ -150,8 +150,7 @@ export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): 
   if (unit.rangeMax <= 2) {
     // Melee (Draft 7 §5.2): reaching the enemy's front or back row is the whole
     // requirement — standing in their territory is what puts the portrait in reach.
-    const homeRows =
-      targetSide === 'player' ? [state.height - 1, state.height - 2] : [0, 1];
+    const homeRows = territoryRows(state, targetSide);
     return cells.some((c) => homeRows.includes(c.y));
   }
 

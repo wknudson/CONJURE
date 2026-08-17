@@ -109,11 +109,31 @@ export interface StepResult {
   events: GameEvent[];
 }
 
-/** Player territory is the bottom two rows; enemy territory the top two. */
+/**
+ * How deep each side's territory reaches from its own edge.
+ *
+ * Two rows is the standard, but a short arena cannot afford it: at height 4 a
+ * two-deep territory on both sides consumes the entire board, leaving no neutral
+ * ground to contest and putting every tile within melee reach of a portrait. Small
+ * grids therefore fall back to a single row, which keeps the three-zone structure
+ * (yours / neutral / theirs) intact at every supported size.
+ */
+export function territoryDepthFor(height: number): number {
+  return height <= 5 ? 1 : 2;
+}
+
+/**
+ * Rows belonging to a side: the bottom `depth` for the player, the top `depth` for
+ * the enemy. This is the single source of truth for deployment zones, melee portrait
+ * reach, threat display, and board tinting — do not inline the row arithmetic.
+ */
 export function territoryRows(state: GameState, side: Side): number[] {
-  return side === 'player'
-    ? [state.height - 1, state.height - 2]
-    : [0, 1];
+  const depth = territoryDepthFor(state.height);
+  const rows: number[] = [];
+  for (let i = 0; i < depth; i++) {
+    rows.push(side === 'player' ? state.height - 1 - i : i);
+  }
+  return rows;
 }
 
 export function inBounds(state: GameState, c: Coord): boolean {

@@ -641,6 +641,7 @@ export class CombatScreen implements Screen {
     this.renderer.resonanceLane = board.player.resonanceUsed
       ? null
       : board.player.companionColumn;
+    this.renderer.territoryDepth = board.territoryDepth;
   }
 
   /**

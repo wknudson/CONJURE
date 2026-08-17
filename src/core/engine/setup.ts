@@ -17,6 +17,20 @@ import { HAND_LIMIT, OPENING_HAND, drawCards } from './deck.js';
 import { summonUnit } from './spawn.js';
 import { beginTurn } from './turn.js';
 
+/**
+ * Where the Hero and Companion stand: they flank the board, Hero left of centre and
+ * Companion right. The Companion's column is the lane its Resonance passive watches.
+ *
+ * Exported because the test scenario builder needs the identical placement — two copies
+ * of this arithmetic drifted apart once already.
+ */
+export function flankColumns(width: number): { heroColumn: number; companionColumn: number } {
+  return {
+    heroColumn: Math.max(0, Math.floor((width - 1) / 2) - 1),
+    companionColumn: Math.min(width - 1, Math.ceil((width - 1) / 2) + 1),
+  };
+}
+
 interface CommanderOpts {
   name: string;
   companionName?: string;
@@ -41,10 +55,7 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
     deck.push(instanceId);
   }
 
-  // The Hero and Companion flank the board: Hero left of centre, Companion right.
-  // The Companion's column is the lane its Resonance passive watches.
-  const heroColumn = Math.max(0, Math.floor((width - 1) / 2) - 1);
-  const companionColumn = Math.min(width - 1, Math.ceil((width - 1) / 2) + 1);
+  const { heroColumn, companionColumn } = flankColumns(width);
 
   return {
     commander: {

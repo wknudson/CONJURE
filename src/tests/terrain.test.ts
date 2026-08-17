@@ -6,6 +6,7 @@ import { legalAttacks } from '../core/engine/targeting.js';
 import { unitAt, entityAt, coverAt } from '../core/engine/board.js';
 import { CombatSession } from '../core/session.js';
 import { ENCOUNTERS, NOVICE_DUELIST, IGNIS_TRIAL } from '../core/data/encounters/index.js';
+import { territoryDepthFor } from '../core/types/state.js';
 
 /** Builds a board with one cover tile at (2,2). */
 function withCover() {
@@ -119,7 +120,11 @@ describe('per-encounter arenas', () => {
   it('leaves terrain out of both sides territory rows', () => {
     // Furniture in a summon zone would silently shrink the deployable area.
     for (const enc of ENCOUNTERS) {
-      const homeRows = [0, 1, enc.height - 1, enc.height - 2];
+      // Derived, not assumed: a short arena owns one row per side, and hardcoding two
+      // here made the assertion unsatisfiable — every row would be somebody's territory.
+      const depth = territoryDepthFor(enc.height);
+      const homeRows: number[] = [];
+      for (let i = 0; i < depth; i++) homeRows.push(i, enc.height - 1 - i);
       for (const t of enc.terrain ?? []) {
         expect(homeRows, `${enc.id} terrain at row ${t.at.y}`).not.toContain(t.at.y);
       }
