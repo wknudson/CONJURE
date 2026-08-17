@@ -515,6 +515,10 @@ export class CombatScreen implements Screen {
       this.hud?.setThreatActive(this.targeting?.toggleThreat() ?? false);
       return;
     }
+    if (ev.key === 'c' || ev.key === 'C') {
+      this.channelSelected();
+      return;
+    }
     if (ev.key === 'Shift') this.targeting?.setExpanded(true);
     if (ev.key === 'Escape') this.targeting?.onCancel();
     if (ev.code === 'Space') {
@@ -534,6 +538,19 @@ export class CombatScreen implements Screen {
   }
 
   // ---------------------------------------------------------------- flow
+
+  /**
+   * Channel the selected unit. The engine owns the legality rules, so an ineligible unit
+   * is refused there and the reason is surfaced as a notice rather than restated here.
+   */
+  private channelSelected(): void {
+    const unit = this.targeting?.selectedUnit ?? null;
+    if (!unit) {
+      this.hud?.flashNotice('Select a unit first — C banks a Spark instead of attacking');
+      return;
+    }
+    this.commit({ type: 'channel', unit });
+  }
 
   private commit(action: Action): void {
     if (!this.sequencer || this.sequencer.busy) return;

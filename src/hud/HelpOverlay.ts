@@ -78,6 +78,7 @@ const CONTROLS: [string, string][] = [
   ['Click your unit', 'Cyan tiles are moves, red outlines are attacks'],
   ['Click the enemy Commander', 'Attacks them, if the selected unit can reach'],
   ['Hold Shift', 'Expands damage predictions across every affected tile'],
+  ['C', 'Channels the selected unit: gives up its attack to bank a Spark'],
   ['T', 'Toggles the danger zone — every tile the enemy can strike'],
   ['Q / E', 'Turns the board a quarter-turn, to see behind tall pieces'],
   ['Z', 'Takes back your last move. Attacks and card plays are final'],
