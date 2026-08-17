@@ -66,6 +66,19 @@ export type TargetSpec =
   | { kind: 'unitOrPortrait'; side: 'ally' }
   | { kind: 'global' };
 
+/**
+ * How a unit's attacks travel, beyond how far.
+ *
+ * Undefined is the ordinary case: free aim within range, needing a clear line. The two
+ * named profiles are what make long range interesting instead of merely strong — each
+ * buys its reach with a specific, exploitable weakness.
+ */
+export type AttackProfile =
+  /** Fires only down a straight rank, file, or diagonal. Anything on the line stops it. */
+  | 'lineOnly'
+  /** Lobs over everything, and so needs no line at all — but cannot hit what is close. */
+  | 'arcing';
+
 export interface UnitStatBlock {
   atk: number;
   hp: number;
@@ -76,6 +89,7 @@ export interface UnitStatBlock {
   archetype: UnitArchetype;
   sacrificeValue: number;
   escalationBonus: { atk: number; hp: number };
+  attackProfile?: AttackProfile;
 }
 
 export interface CardDef {

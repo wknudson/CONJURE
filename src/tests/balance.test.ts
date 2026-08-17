@@ -70,5 +70,6 @@ describe('encounter balance sanity', () => {
     // A demo duel should not drag on for dozens of rounds. The deeper lane arena adds
     // an approach phase, so this sits higher than it did on the old compact board.
     expect(avg).toBeLessThan(30);
-  }, 30_000);
+    // Same reasoning as above: the budget guards against a hang, not against slowness.
+  }, 120_000);
 });

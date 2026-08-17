@@ -164,6 +164,7 @@ export function addUnit(state: GameState, spec: UnitSpec): Unit {
     mov: stats.mov,
     rangeMin: stats.rangeMin,
     rangeMax: spec.rangeMax ?? stats.rangeMax,
+    ...(stats.attackProfile ? { attackProfile: stats.attackProfile } : {}),
     school: def.school,
     archetype: stats.archetype,
     keywords: (spec.keywords as Unit['keywords']) ?? [...def.keywords],

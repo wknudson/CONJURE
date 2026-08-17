@@ -29,7 +29,7 @@ export interface MoveOption {
 export function legalMoves(state: GameState, unit: Unit): MoveOption[] {
   // canMove is the single source of truth the command validator uses too — checking a
   // subset here would let the UI offer moves that the engine then rejects.
-  if (!canMove(unit) || unit.mov <= 0) return [];
+  if (!canMove(unit)) return [];
 
   const start = unit.anchor;
   const best = new Map<string, MoveOption>();
@@ -108,6 +108,9 @@ export function canAct(unit: Unit): boolean {
 
 export function canMove(unit: Unit): boolean {
   if (!canAct(unit)) return false;
+  // An emplacement never moves. Without this a 0-MOV unit is forever "able to move" and
+  // so never counts as spent, and the board draws it as ready long after it has fired.
+  if (unit.mov <= 0) return false;
   if (unit.statuses.entangle) return false;
   return !unit.movedThisTurn;
 }

@@ -32,6 +32,8 @@ export interface UnitSnapshot {
   mov: number;
   rangeMin: number;
   rangeMax: number;
+  /** 'lineOnly' fires down straight lines; 'arcing' ignores line of sight entirely. */
+  attackProfile?: 'lineOnly' | 'arcing';
   school: School;
   keywords: Keyword[];
   archetype: UnitArchetype;

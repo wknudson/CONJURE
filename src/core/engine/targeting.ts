@@ -22,7 +22,7 @@ import {
 import { canAttack, canAct } from './movement.js';
 import { hasLoS, hasLoSToPortrait } from './los.js';
 import { DIRS_8, cellsOf } from '../util/grid.js';
-import { inBounds, territoryRows } from '../types/state.js';
+import { inBounds, portraitRow, territoryRows } from '../types/state.js';
 
 /**
  * Where a card is cast from.
@@ -233,20 +233,56 @@ export function canStrike(
   }
   if (best < unit.rangeMin || best > unit.rangeMax) return false;
 
+  // A mortar lobs over everything, which is the whole of what it buys with its blind
+  // spot: no line is needed, at any distance.
+  if (unit.attackProfile === 'arcing') return true;
+
+  // A marksman fires only down a rank, file, or diagonal. Being off the line is a
+  // complete defence, whatever the distance.
+  if (unit.attackProfile === 'lineOnly' && !onLine(from, targets)) return false;
+
   // Reaching past arm's length means seeing what you are reaching for; melee never does.
   if (best <= 1) return true;
   return from.some((c) => targets.some((t) => hasLoS(state, c, t, ignoreIds)));
 }
 
+/** Whether any attacking cell shares a rank, file, or diagonal with any target cell. */
+function onLine(from: Coord[], targets: Coord[]): boolean {
+  return from.some((c) =>
+    targets.some((t) => {
+      const dx = Math.abs(c.x - t.x);
+      const dy = Math.abs(c.y - t.y);
+      return dx === 0 || dy === 0 || dx === dy;
+    }),
+  );
+}
+
 export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): boolean {
   const cells = cellsOf(unit);
 
-  if (unit.rangeMax <= 2) {
+  if (unit.rangeMax <= 2 && unit.attackProfile === undefined) {
     // Melee (Draft 7 §5.2): reaching the enemy's front or back row is the whole
     // requirement — standing in their territory is what puts the portrait in reach.
     const homeRows = territoryRows(state, targetSide);
     return cells.some((c) => homeRows.includes(c.y));
   }
+
+  // The portrait stands one row beyond the board's edge. Everything ranged measures
+  // against that virtual row, so the profiles apply to the Commander exactly as they do
+  // to a unit: a mortar lobs at the face within its envelope and cannot hit it from
+  // point-blank, and a marksman needs a straight line to it.
+  const row = portraitRow(state, targetSide);
+  const mid = Math.floor((state.width - 1) / 2);
+  const portraitCells: Coord[] = [{ x: mid, y: row }];
+
+  if (unit.attackProfile === 'arcing') {
+    const dist = Math.min(
+      ...cells.map((c) => Math.max(Math.abs(c.x - mid), Math.abs(c.y - row))),
+    );
+    return dist >= unit.rangeMin && dist <= unit.rangeMax;
+  }
+
+  if (unit.attackProfile === 'lineOnly' && !onLine(cells, portraitCells)) return false;
 
   // Ranged: needs a clear vector to the off-grid portrait.
   return cells.some((c) => hasLoSToPortrait(state, c, targetSide, [unit.id]));

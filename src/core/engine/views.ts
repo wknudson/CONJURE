@@ -30,6 +30,7 @@ export function toSnapshot(unit: Unit): UnitSnapshot {
     mov: unit.mov,
     rangeMin: unit.rangeMin,
     rangeMax: unit.rangeMax,
+    ...(unit.attackProfile ? { attackProfile: unit.attackProfile } : {}),
     school: unit.school,
     keywords: [...unit.keywords],
     archetype: unit.archetype,

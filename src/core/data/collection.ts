@@ -41,6 +41,14 @@ export function startingCollection(): Collection {
     owned[id] = Math.max(owned[id] ?? 0, 3);
   }
 
+  // A marksman and a mortar to start with. Both reward reading the ground rather than
+  // out-statting it, which is the lesson the pre-combat arena preview is asking players
+  // to learn — and neither is in a companion deck, so they would otherwise be invisible
+  // until a reward roll happened to offer one.
+  for (const id of ['longshot_stalker', 'cinder_lobber']) {
+    owned[id] = Math.max(owned[id] ?? 0, 1);
+  }
+
   return { owned };
 }
 
