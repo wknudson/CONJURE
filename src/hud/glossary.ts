@@ -37,6 +37,12 @@ export const KEYWORDS: Record<string, GlossaryEntry> = {
     body: 'Blocks line of sight. Ranged attacks cannot shoot past it.',
     detail: 'Park one in front of your Commander and enemy archers have to come around it.',
   },
+  BoundForm: {
+    title: 'Bound Form',
+    body: 'Your Companion, made flesh. Every wound it takes is dealt straight to your Pact.',
+    detail:
+      'It keeps no health of its own and cannot be sacrificed or made to grow. Shoving it into a wall hurts you, not it — but your elemental spells are cast from where it stands.',
+  },
   Escalate: {
     title: 'Escalate',
     body: 'Grows stronger at the start of your turn, if it survived the enemy round.',

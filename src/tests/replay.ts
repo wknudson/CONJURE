@@ -152,6 +152,20 @@ export function checkInvariants(state: GameState, where: string): string[] {
     }
   }
 
+  // A Bound Form is the Pact's body: at most one per side, it never grows, it is worth
+  // nothing as an offering, and its own HP must never move (all damage is redirected).
+  for (const side of ['player', 'enemy'] as const) {
+    const bound = Object.values(state.units).filter(
+      (u) => u.side === side && u.keywords.includes('BoundForm'),
+    );
+    if (bound.length > 1) say(`${side} has ${bound.length} Bound Forms`);
+    for (const u of bound) {
+      if (u.hp !== u.maxHp) say(`Bound Form ${u.id} lost HP of its own (${u.hp}/${u.maxHp})`);
+      if (u.escalation !== 0) say(`Bound Form ${u.id} escalated to ${u.escalation}`);
+      if (u.sacrificeValue !== 0) say(`Bound Form ${u.id} is worth ${u.sacrificeValue} sparks`);
+    }
+  }
+
   for (const o of Object.values(state.obstacles)) {
     if (o.hp <= 0) say(`obstacle ${o.id} is alive at ${o.hp} HP`);
     // Cover may share its tile with a unit; solid terrain may not.

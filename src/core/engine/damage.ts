@@ -6,7 +6,7 @@
  * allowed to write `hp` directly.
  */
 
-import type { DamageCause, DamageType, Side, TargetRef, UnitId } from '../../contract/ids.js';
+import type { Coord, DamageCause, DamageType, Side, TargetRef, UnitId } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
 import { emit } from './context.js';
 import { prepareReaction, resolveReaction } from './reactions.js';
@@ -33,6 +33,12 @@ export interface DamageRequest {
 export interface DamageOutcome {
   absorbedByArmor: number;
   hpLoss: number;
+  /**
+   * The target was reduced to nothing. For a Bound Form, whose damage is redirected to
+   * the Pact, this means the *Pact* is spent and the combat is over -- not that the unit
+   * is removed. No caller inspects it on that path today; the lethal check every command
+   * runs is what actually ends the game.
+   */
   died: boolean;
 }
 
@@ -53,10 +59,23 @@ export function dealDamage(ctx: Ctx, req: DamageRequest): DamageOutcome {
   const entity = getEntity(ctx.state, req.target.id);
   if (!entity) return { absorbedByArmor: 0, hpLoss: 0, died: false };
 
+  // The Bound Form is the Pact's body on the board: it keeps no health of its own, so
+  // every blow it takes -- a strike, a spell, a burn tick, a shove into a wall -- lands
+  // on the shared pool instead. Its tile travels with the redirect so the hit can still
+  // be drawn where it happened rather than only on the portrait.
+  //
+  // This deliberately bypasses damageEntity, and therefore armor on the unit, Counter,
+  // Brittle, elemental reactions, and rune-on-damage. A Bound Form can host none of
+  // those meaningfully, so targeting refuses to attach them (see legalCardTargets)
+  // rather than letting a card be spent on an effect that would never fire.
+  if (isUnit(entity) && entity.keywords.includes('BoundForm')) {
+    return damagePortrait(ctx, req, entity.side, entity.anchor);
+  }
+
   return damageEntity(ctx, entity, req);
 }
 
-function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side): DamageOutcome {
+function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side, at?: Coord): DamageOutcome {
   const cmd = ctx.state.players[side];
   let amount = req.amount;
 
@@ -81,6 +100,7 @@ function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side): DamageOutcome
   emit(ctx, {
     t: 'damageDealt',
     target: { kind: 'portrait', side },
+    ...(at ? { at: { ...at } } : {}),
     amount: req.amount,
     absorbedByArmor: absorbed,
     hpLoss,

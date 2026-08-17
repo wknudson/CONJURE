@@ -97,6 +97,10 @@ function decay(unit: Unit, status: StatusKind): void {
  * 1x1 units cap at +3 stacks; Behemoths are uncapped.
  */
 function escalate(ctx: Ctx, unit: Unit): void {
+  // A Bound Form is bound: its power is the Pact's, and the Pact does not grow. Its
+  // card carries no Escalate either, so this is the belt to that suspenders -- it holds
+  // even if some future effect grants Escalate to everything you control.
+  if (unit.keywords.includes('BoundForm')) return;
   if (!unit.keywords.includes('Escalate')) return;
   if (unit.freshlySummoned) {
     // It has now survived a full round, so it escalates from next turn onward.

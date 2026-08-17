@@ -28,6 +28,7 @@ export interface UnitSpec {
   keywords?: string[];
   rangeMax?: number;
   fresh?: boolean;
+  sacrificeValue?: number;
 }
 
 /** Builds a bare 5x5 board in the action phase, with no cards drawn. */
@@ -166,7 +167,7 @@ export function addUnit(state: GameState, spec: UnitSpec): Unit {
     archetype: stats.archetype,
     keywords: (spec.keywords as Unit['keywords']) ?? [...def.keywords],
     statuses: {},
-    sacrificeValue: stats.sacrificeValue,
+    sacrificeValue: spec.sacrificeValue ?? stats.sacrificeValue,
     escalation: 0,
     escalationCap: stats.footprint === 2 ? Infinity : 3,
     movedThisTurn: false,

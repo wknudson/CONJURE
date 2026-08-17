@@ -35,6 +35,18 @@ export type EffectNode =
   /** Rite of Binding: ends a Subjugation Trial with the companion bound. */
   | { op: 'bindCompanion' };
 
+/**
+ * Whether an effect tree contains a given primitive anywhere, including inside `seq`.
+ *
+ * Targeting uses this to ask what a card would actually do to its target, rather than
+ * maintaining a list of card ids that must be kept in step with the card data.
+ */
+export function effectContainsOp(node: EffectNode, op: EffectNode['op']): boolean {
+  if (node.op === op) return true;
+  if (node.op === 'seq') return node.effects.some((child) => effectContainsOp(child, op));
+  return false;
+}
+
 /** Which tiles an effect touches, relative to the chosen target. */
 export type AreaSpec =
   | { shape: 'target' }

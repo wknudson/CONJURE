@@ -245,6 +245,13 @@ function sacrifice(ctx: Ctx, unitId: string): void {
   // "Sacrifice un-exhausted minion" (Draft 7): the offering has to come before the blow.
   if (unit.attackedThisTurn) throw new IllegalCommandError('unit has already attacked');
   if (!canAct(unit)) throw new IllegalCommandError('unit cannot act');
+  // Some things are not yours to offer. The Bound Form is the Pact itself, and a unit
+  // worth no Sparks was never a valid offering -- this command checked neither before,
+  // so it would happily consume a unit for nothing.
+  if (unit.keywords.includes('BoundForm')) {
+    throw new IllegalCommandError('the Bound Form cannot be sacrificed');
+  }
+  if (unit.sacrificeValue <= 0) throw new IllegalCommandError('unit is worth no sparks');
 
   const side = ctx.state.activeSide;
   const cmd = ctx.state.players[side];

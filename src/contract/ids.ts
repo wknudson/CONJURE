@@ -42,7 +42,9 @@ export type Keyword =
   | 'Escalate'
   | 'Retain'
   | 'PowerTier'
-  | 'Sacrifice';
+  | 'Sacrifice'
+  /** Your Companion's body on the board. Its wounds are the Pact's wounds. */
+  | 'BoundForm';
 
 /** A thing that can be damaged: an on-grid entity, or an off-grid commander portrait. */
 export type TargetRef =

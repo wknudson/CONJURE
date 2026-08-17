@@ -5,6 +5,7 @@
 
 import type { Coord, Side, TargetRef } from '../../contract/ids.js';
 import type { ChosenTarget } from '../types/cards.js';
+import { effectContainsOp } from '../types/cards.js';
 import type { GameState } from '../types/state.js';
 import type { Unit } from '../types/units.js';
 import { CARDS } from '../data/cards/index.js';
@@ -50,6 +51,12 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
 
     case 'entity': {
       const spec = def.target;
+      // Two things can never be done to a Bound Form, and offering them would waste the
+      // card: it cannot be sacrificed, and a rune attached to it could never detonate,
+      // because its damage is redirected to the Pact before runes are ever evaluated.
+      const barred =
+        effectContainsOp(def.effect, 'sacrificeTarget') ||
+        effectContainsOp(def.effect, 'attachRune');
       const out: ChosenTarget[] = [];
       for (const e of allEntities(state)) {
         const isUnitEntity = 'atk' in e;
@@ -57,6 +64,7 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
         if (spec.side === 'ally' && e.side !== side) continue;
         if (spec.side === 'enemy' && e.side === side) continue;
         if (spec.requireUnexhausted && isUnitEntity && !canAct(e as Unit)) continue;
+        if (barred && isUnitEntity && (e as Unit).keywords.includes('BoundForm')) continue;
         out.push({ kind: 'entity', ref: refOf(e) });
       }
       return out;
@@ -91,6 +99,9 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
         { kind: 'entity', ref: { kind: 'portrait', side } },
       ];
       for (const u of unitsOf(state, side)) {
+        // Armor on a Bound Form would never be consumed: its damage is redirected to the
+        // Pact before unit armor is considered. The portrait above is the real target.
+        if (u.keywords.includes('BoundForm')) continue;
         out.push({ kind: 'entity', ref: { kind: 'unit', id: u.id } });
       }
       return out;
