@@ -99,6 +99,8 @@ export interface CardDef {
    * more durable than the list of exceptions the reward roller used to carry.
    */
   setupOnly?: true;
+  /** Paid to whoever breaks this obstacle. Present only on obstacle cards. */
+  onDestroyReward?: { sparks: number };
   /**
    * How far from the Companion's Bound Form this may be cast, as a Chebyshev distance.
    *

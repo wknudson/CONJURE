@@ -10,6 +10,7 @@ import { isUnit } from '../types/units.js';
 import { getEntity } from './board.js';
 import { evaluateRuneOnDeath } from './runes.js';
 import { placeOpeningUnit } from './spawn.js';
+import { CARDS } from '../data/cards/index.js';
 
 /**
  * Removes an entity from the board. `devoured` routes to the fizzle path: a devoured
@@ -37,6 +38,7 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
   } else {
     delete ctx.state.obstacles[live.id];
     emit(ctx, { t: 'obstacleDestroyed', obstacleId: live.id, at });
+    payDestroyReward(ctx, live.defId);
   }
 
   // Rune resolution happens after removal so a death-triggered blast cannot hit its
@@ -46,6 +48,24 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
   }
 
   checkLethal(ctx);
+}
+
+/**
+ * Pays out an obstacle that was worth something to break.
+ *
+ * Credited to the side whose turn it is. That is right for a deliberate swing, which is
+ * how a geode is broken in practice; a cascade that clips one during the opponent's turn
+ * pays the opponent, which is a rare and forgivable wrinkle next to threading an
+ * attacker through every path that can destroy a tile.
+ */
+function payDestroyReward(ctx: Ctx, defId: string): void {
+  const reward = CARDS[defId]?.onDestroyReward;
+  if (!reward) return;
+
+  const side = ctx.state.activeSide;
+  const cmd = ctx.state.players[side];
+  cmd.sparks += reward.sparks;
+  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, sparks: cmd.sparks });
 }
 
 /**

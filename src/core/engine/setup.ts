@@ -4,15 +4,17 @@
 
 import type { CardInstanceId, Coord, School, Side } from '../../contract/ids.js';
 import type { GameState, StepResult, CommanderState } from '../types/state.js';
-import { territoryDepthFor } from '../types/state.js';
+import { territoryDepthFor, territoryRows } from '../types/state.js';
+import { canPlace } from './board.js';
+import type { Ctx } from './context.js';
 import type { CardInstance } from '../types/cards.js';
 import type { EncounterDef } from '../data/encounters/registry.js';
 import { getEncounterScript } from '../data/encounters/registry.js';
-import { makeRng, shuffle } from '../util/rng.js';
+import { makeRng, nextInt, shuffle } from '../util/rng.js';
 import { makeCtx, emit } from './context.js';
 import { DEFAULT_COMPANION, companionById } from '../data/companions.js';
 import { HAND_LIMIT, OPENING_HAND, drawCards } from './deck.js';
-import { placeOpeningUnit } from './spawn.js';
+import { placeOpeningUnit, spawnObstacle } from './spawn.js';
 import { beginTurn } from './turn.js';
 
 /**
@@ -249,6 +251,8 @@ export function createCombat(
     state.players.player.companionUnitDefId = companion.unitCardId;
   }
 
+  scatterGeodes(ctx, encounter);
+
   // Opening hands, then the encounter script, then turn 1.
   drawCards(ctx, 'player', OPENING_HAND);
   drawCards(ctx, 'enemy', OPENING_HAND);
@@ -259,6 +263,46 @@ export function createCombat(
   beginTurn(ctx, 'player');
 
   return { state, events: ctx.events };
+}
+
+/**
+ * Scatters Spark Geodes across the neutral middle.
+ *
+ * Never in either territory: a geode in a deploy zone would either be free for its owner
+ * or block their own summons, and neither is the intended decision. On neutral ground it
+ * is a prize both sides must walk to, which puts a reason to contest the middle on the
+ * board from turn one.
+ *
+ * Placed last, after every unit and every wall, so it can see what ground is actually
+ * free — and it consumes the seeded stream, so the same seed lays out the same field.
+ */
+function scatterGeodes(ctx: Ctx, encounter: EncounterDef): void {
+  const spec = encounter.sparkGeodes;
+  if (!spec) return;
+
+  const state = ctx.state;
+  const off = new Set<number>();
+  for (const side of ['player', 'enemy'] as const) {
+    for (const y of territoryRows(state, side)) off.add(y);
+  }
+
+  const open: Coord[] = [];
+  for (let y = 0; y < state.height; y++) {
+    if (off.has(y)) continue;
+    for (let x = 0; x < state.width; x++) {
+      if (canPlace(state, { x, y }, 1)) open.push({ x, y });
+    }
+  }
+  if (open.length === 0) return;
+
+  const span = Math.max(0, spec.max - spec.min);
+  const count = Math.min(spec.min + nextInt(state.rng, span + 1), open.length);
+
+  for (let i = 0; i < count; i++) {
+    const at = open.splice(nextInt(state.rng, open.length), 1)[0];
+    if (!at) break;
+    spawnObstacle(ctx, 'spark_geode', 'player', at);
+  }
 }
 
 export function sideName(state: GameState, side: Side): string {

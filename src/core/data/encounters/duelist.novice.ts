@@ -39,6 +39,8 @@ export const NOVICE_DUELIST: EncounterDef = {
     'magma_brute',
   ],
   enemyOpeningBoard: [['scout_imp', 4, 1]],
+  // Something to fight over in the middle before either side is really ready to.
+  sparkGeodes: { min: 1, max: 3 },
   // Two bramble screens midfield break the sightlines down the lane without walling it,
   // and a pair of rubble blocks force melee to commit to a side.
   terrain: [

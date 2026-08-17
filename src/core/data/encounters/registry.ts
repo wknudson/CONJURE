@@ -39,6 +39,14 @@ export interface EncounterDef {
    * `wall` blocks movement and sight; `cover` blocks only sight, so units may stand on it.
    */
   terrain?: { at: { x: number; y: number }; kind: 'wall' | 'cover'; hp?: number }[];
+  /**
+   * Volatile Spark Geodes scattered on neutral ground at setup.
+   *
+   * Per-encounter rather than universal so a boss arena can stay clean and a test arena
+   * stays predictable. Every ordinary fight opts in, so from the player's side they are
+   * simply part of the furniture.
+   */
+  sparkGeodes?: { min: number; max: number };
   /** Free opening unit placed for both sides. Set to null to skip. */
   vanguard?: string | null;
   script?: EncounterScript;

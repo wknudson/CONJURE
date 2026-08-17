@@ -57,9 +57,11 @@ describe('encounter balance sanity', () => {
 
       const playerEverDamaged = outcomes.some((o) => o.playerHp < encounter.playerHp);
       expect(playerEverDamaged, 'enemy never dealt any commander damage').toBe(true);
-      // A dozen full playouts on the larger arenas exceeds the default 5s budget; the
-      // AI itself runs well inside Module 5's 1.2s-per-turn cap.
-    }, 30_000);
+      // A dozen full playouts per encounter, run alongside every other AI-heavy suite in
+      // a parallel worker. The budget is for "did this hang", not "was this fast": every
+      // action the AI gains -- channelling, another obstacle worth striking -- adds real
+      // work to every turn of every game, and the assertions above are what matter.
+    }, 120_000);
   }
 
   it('resolves in a reasonable number of turns', () => {

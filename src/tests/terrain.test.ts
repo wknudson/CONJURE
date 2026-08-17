@@ -97,7 +97,9 @@ describe('per-encounter arenas', () => {
 
       expect(board.width).toBe(enc.width);
       expect(board.height).toBe(enc.height);
-      expect(board.obstacles.length).toBe(enc.terrain?.length ?? 0);
+      // Geodes are scattered obstacles too, so count only what the terrain list asked for.
+      const walls = board.obstacles.filter((o) => o.defId !== 'spark_geode');
+      expect(walls.length).toBe(enc.terrain?.length ?? 0);
 
       // Terrain must never strand a side with nowhere to summon on turn one.
       expect(session.getPlayableCards().length).toBeGreaterThan(0);
