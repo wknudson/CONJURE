@@ -63,9 +63,20 @@ export interface Hazard {
   turns: number;
   /** Which side's turn ticks it down, so both sides see it for the same duration. */
   owner: Side;
+  /**
+   * Never ages or expires. Rubble is a change to the ground, not a cloud sitting on it.
+   *
+   * A flag rather than `turns: Infinity`, because Infinity does not survive JSON: it
+   * serialises as null, which would corrupt the state hash and with it replay and saves.
+   */
+  permanent?: true;
 }
 
-export type HazardKind = 'steam_fog';
+export type HazardKind =
+  /** Vaporised water. Blocks sight through the tile, but not movement. */
+  | 'steam_fog'
+  /** What a broken wall leaves behind. Costs more to cross; blocks nothing. */
+  | 'rubble';
 
 /**
  * A declared enemy action, shown to the player before it happens.

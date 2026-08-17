@@ -80,10 +80,12 @@ export function stepCost(state: GameState, unit: Unit, anchor: Coord): number {
   return worst;
 }
 
-/** The cost of crossing a single tile. Open ground is 1; nothing is dearer yet. */
+/** What crossing a single tile costs. Broken ground costs double; open ground is free. */
+export const RUBBLE_MOVE_COST = 2;
+
 export function tileMoveCost(state: GameState, at: Coord): number {
-  void state;
-  void at;
+  const hazard = state.hazards[coordKey(at)];
+  if (hazard?.kind === 'rubble') return RUBBLE_MOVE_COST;
   return 1;
 }
 

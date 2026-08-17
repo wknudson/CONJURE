@@ -11,6 +11,7 @@ import { getEntity } from './board.js';
 import { evaluateRuneOnDeath } from './runes.js';
 import { placeOpeningUnit } from './spawn.js';
 import { CARDS } from '../data/cards/index.js';
+import { spawnHazard } from './reactions.js';
 
 /**
  * Removes an entity from the board. `devoured` routes to the fizzle path: a devoured
@@ -39,6 +40,11 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
     delete ctx.state.obstacles[live.id];
     emit(ctx, { t: 'obstacleDestroyed', obstacleId: live.id, at });
     payDestroyReward(ctx, live.defId);
+    // A broken wall is not a cleared lane. The stone stays where it fell, and crossing
+    // it costs — so knocking one down opens a route without making it a fast one.
+    if (CARDS[live.defId]?.leavesRubble) {
+      spawnHazard(ctx, at, 'rubble', 1, true);
+    }
   }
 
   // Rune resolution happens after removal so a death-triggered blast cannot hit its

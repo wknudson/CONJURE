@@ -16,6 +16,7 @@ import { findReaction } from '../data/reactions.js';
 import { coordKey } from '../../contract/ids.js';
 import { DIRS_8 } from '../util/grid.js';
 import { inBounds } from '../types/state.js';
+import type { HazardKind } from '../types/state.js';
 import { entityAt } from './board.js';
 import { gainPips } from './deck.js';
 
@@ -160,17 +161,20 @@ function refundReactionPip(ctx: Ctx): void {
 export function spawnHazard(
   ctx: Ctx,
   at: Coord,
-  kind: 'steam_fog',
+  kind: HazardKind,
   turns: number,
+  permanent = false,
 ): void {
   const key = coordKey(at);
   const existing = ctx.state.hazards[key];
-  // Re-fogging a tile refreshes it rather than stacking a second cloud on it.
+  // One hazard to a tile. Re-fogging refreshes rather than stacking a second cloud, and
+  // rubble simply replaces whatever was drifting over the ground it buried.
   ctx.state.hazards[key] = {
     kind,
     at: { ...at },
-    turns: Math.max(turns, existing?.turns ?? 0),
+    turns: permanent ? turns : Math.max(turns, existing?.turns ?? 0),
     owner: ctx.state.activeSide,
+    ...(permanent ? { permanent: true as const } : {}),
   };
   emit(ctx, { t: 'hazardSpawned', kind, at: { ...at }, turns });
 }
@@ -192,6 +196,8 @@ function adjacentTiles(ctx: Ctx, at: Coord): Coord[] {
 /** Ticks hazards down at the hazard slot of the status order, clearing expired ones. */
 export function tickHazards(ctx: Ctx): void {
   for (const [key, hazard] of Object.entries(ctx.state.hazards)) {
+    // Rubble is the ground now. It does not drift away.
+    if (hazard.permanent) continue;
     // Only the owner's turn ages a hazard, so both sides get the full stated duration.
     if (hazard.owner !== ctx.state.activeSide) continue;
     hazard.turns -= 1;

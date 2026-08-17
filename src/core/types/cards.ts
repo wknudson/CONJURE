@@ -116,6 +116,13 @@ export interface CardDef {
   /** Paid to whoever breaks this obstacle. Present only on obstacle cards. */
   onDestroyReward?: { sparks: number };
   /**
+   * Breaking this leaves rough ground behind, rather than clearing the tile outright.
+   *
+   * Masonry does; a geode or a crystal shatters into nothing worth walking around. Opt-in
+   * so that "what does this leave" is a property of the thing, not a rule about its size.
+   */
+  leavesRubble?: true;
+  /**
    * How far from the Companion's Bound Form this may be cast, as a Chebyshev distance.
    *
    * Only meaningful on `source: 'companion'` cards: the Hero is off-grid and has no

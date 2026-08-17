@@ -9,7 +9,42 @@
 
 import type { CardDef } from '../../types/cards.js';
 
+/** Shared shape for the scenery an encounter lays down. Never drawn, never owned. */
+function scenery(id: string, name: string, text: string, hp: number): CardDef {
+  return {
+    id,
+    name,
+    cost: 0,
+    school: 'neutral',
+    source: 'hero',
+    kind: 'obstacle',
+    text,
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: [],
+    setupOnly: true,
+    obstacleHp: hp,
+  };
+}
+
 export const TERRAIN_CARDS: Record<string, CardDef> = {
+  /**
+   * The pieces `EncounterDef.terrain` places. They exist as definitions so that the
+   * rules about them — what breaking one leaves behind — live with the thing itself
+   * rather than as a special case buried in the death path.
+   */
+  terrain_wall: {
+    ...scenery('terrain_wall', 'Rubble Wall', 'Blocks movement and sight until broken.', 8),
+    // Masonry does not vanish when it falls.
+    leavesRubble: true,
+  },
+  terrain_cover: scenery(
+    'terrain_cover',
+    'Bramble Screen',
+    'Blocks sight but not movement. Units may stand in it.',
+    4,
+  ),
+
   /**
    * A geode is one hit and a decision. It is worth two Sparks to whoever cracks it,
    * which is most of a card — enough that both sides want it early, and early is exactly

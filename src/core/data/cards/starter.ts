@@ -255,6 +255,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     effect: { op: 'spawnObstacle', obstacleDef: 'stone_barricade' },
     keywords: [],
     obstacleHp: 6,
+    leavesRubble: true,
   },
 
   aegis_ward: {

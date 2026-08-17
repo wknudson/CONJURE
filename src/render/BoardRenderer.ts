@@ -274,6 +274,34 @@ export class BoardRenderer {
    */
   private drawHazards(pulse: number): void {
     const { ctx, cam } = this;
+
+    // Rubble first and flat to the ground: it is the floor, not something on it.
+    for (const h of this.overlays.hazards) {
+      if (h.kind !== 'rubble') continue;
+      const p = cam.tileCenter(h.at);
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      // Scattered chips of stone, deterministic per tile so they do not crawl.
+      for (let i = 0; i < 7; i++) {
+        const a = ((h.at.x * 7 + h.at.y * 13 + i * 29) % 360) * (Math.PI / 180);
+        const r = (0.1 + ((i * 37) % 100) / 320) * cam.tileW * 0.5;
+        const size = (1.6 + (i % 3) * 0.9) * cam.zoom;
+        ctx.beginPath();
+        ctx.ellipse(
+          p.x + Math.cos(a) * r,
+          p.y + Math.sin(a) * r * (cam.tileH / cam.tileW),
+          size,
+          size * 0.6,
+          a,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fillStyle = i % 2 ? '#6b7280' : '#4b5563';
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
     for (const h of this.overlays.hazards) {
       if (h.kind !== 'steam_fog') continue;
       const p = cam.tileCenter(h.at);

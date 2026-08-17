@@ -99,6 +99,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
     target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
     effect: { op: 'spawnObstacle', obstacleDef: 'ice_barricade' },
     obstacleHp: 5,
+    leavesRubble: true,
     keywords: [],
   },
 
