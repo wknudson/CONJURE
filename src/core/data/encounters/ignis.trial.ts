@@ -13,13 +13,16 @@ import type { EncounterDef, EncounterScript } from './registry.js';
 import { registerEncounterScript } from './registry.js';
 import type { Ctx } from '../../engine/context.js';
 import { emit, newCause } from '../../engine/context.js';
-import { summonUnit } from '../../engine/spawn.js';
+import { dockIntoForm, summonUnit } from '../../engine/spawn.js';
+import { clearIntents } from '../../engine/intents.js';
 import { canPlace, entityAt, unitsOf } from '../../engine/board.js';
 import { toCardSnapshot } from '../../engine/views.js';
 import { cellsAt } from '../../util/grid.js';
 
 const ENCOUNTER_ID = 'ignis_trial';
 const PHASE_TWO_GATE = 'phase2';
+/** Tracked apart from the phase itself, so a blocked transformation can retry. */
+const GROWN_GATE = 'grown';
 const RITE_GATE = 'rite';
 const RITE_CARD_DEF = 'rite_of_binding';
 
@@ -66,6 +69,9 @@ const script: EncounterScript = {
     if (cmd.hp <= halfway && !ctx.state.encounter.firedGates.includes(PHASE_TWO_GATE)) {
       ctx.state.encounter.firedGates.push(PHASE_TWO_GATE);
       enterPhaseTwo(ctx);
+    } else if (ctx.state.encounter.bossPhase === 2) {
+      // It was boxed in when it tried to grow. Try again now that the board has moved.
+      growIntoBehemoth(ctx);
     }
     maybeOfferRite(ctx);
   },
@@ -83,20 +89,53 @@ function enterPhaseTwo(ctx: Ctx): void {
     name: 'Ignis Enraged',
   });
 
-  // Purge debuffs from the boss's own units.
+  // Purge debuffs from the boss's own units, its own body included. A phase change
+  // shrugging off crowd control is standard for a boss, and it is the reason spending a
+  // Flash Freeze just before the halfway mark is a mistake rather than a plan.
   for (const unit of unitsOf(state, 'enemy')) {
     unit.statuses = {};
   }
 
-  // Forced Eviction: clear a spawn site by returning any player minion on it to hand,
-  // refunding its pip cost as Sparks (Module 5 §5.4).
+  // The drake grows into its full shape. The enraged form is the enrage: it hits harder,
+  // it is slower, and at 2x2 it blocks sight through itself, so the arena's lanes are
+  // redrawn by the transformation alone.
+  if (growIntoBehemoth(ctx)) return;
+
+  // Boxed in, or fighting from off the board entirely. It calls for help instead; the
+  // growth is retried at the start of each of its turns until there is room.
   for (const [x, y] of ADD_SPAWNS) {
-    const anchor = { x, y };
-    if (evictAndSpawn(ctx, anchor)) return;
+    if (evictAndSpawn(ctx, { x, y })) return;
   }
 }
 
-function evictAndSpawn(ctx: Ctx, anchor: { x: number; y: number }): boolean {
+/**
+ * Grows the drake into its enraged shape, if there is anywhere to put it.
+ *
+ * Kept separate from the phase change so that a failure retries without re-announcing.
+ * The phase has genuinely happened — the clamp, the purge and the adds are all done —
+ * and only the transformation is outstanding.
+ */
+function growIntoBehemoth(ctx: Ctx): boolean {
+  const state = ctx.state;
+  if (state.encounter.firedGates.includes(GROWN_GATE)) return false;
+
+  const grew = dockIntoForm(ctx, 'enemy', 'ignis_behemoth_bound', (c, at) =>
+    evictAndSpawn(c, at, false),
+  );
+  if (!grew) return false;
+
+  state.encounter.firedGates.push(GROWN_GATE);
+  // Every declared blow was aimed from a body that no longer stands there, and half the
+  // sightlines it was aimed along have just been rewritten.
+  clearIntents(ctx);
+  return true;
+}
+
+function evictAndSpawn(
+  ctx: Ctx,
+  anchor: { x: number; y: number },
+  summon = true,
+): boolean {
   const state = ctx.state;
 
   for (const cell of cellsAt(anchor, 1)) {
@@ -127,6 +166,8 @@ function evictAndSpawn(ctx: Ctx, anchor: { x: number; y: number }): boolean {
     });
   }
 
+  // Used both to make room for the drake's larger form and to call an add into the gap.
+  if (!summon) return true;
   if (!canPlace(state, anchor, 1)) return false;
   summonUnit(ctx, 'grave_sentinel', 'enemy', anchor);
   return true;
@@ -200,6 +241,8 @@ export const IGNIS_TRIAL: EncounterDef = {
     ['scout_imp', 1, 1],
     ['spark_wisp', 5, 1],
   ],
+  // The drake fights on the board. Its 44 HP is the pool its body draws on.
+  enemyCompanion: { unitCardId: 'ignis_drake_bound' },
   // Four pillars in the middle of the arena: cover on the diagonals to break the drake's
   // sightlines, solid rubble at the centre to fight around rather than through.
   terrain: [

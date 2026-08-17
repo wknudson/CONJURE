@@ -100,6 +100,100 @@ export function firstFreeNear(state: GameState, at: Coord, side: Side): Coord | 
   return undefined;
 }
 
+/**
+ * Moves a Commander's body into a bigger one.
+ *
+ * The whole sequence is one atomic step, because between removing the old body and
+ * pointing at the new one the side would briefly have a `companionUnitDefId` naming a
+ * unit that does not exist — and origin-cast targeting reads exactly that to decide a
+ * spell has nowhere to be thrown from.
+ *
+ * Deliberately not routed through killEntity: that clears the companion reference and
+ * then runs a lethal check, and a Commander mid-transformation is not a Commander who
+ * has lost. The old body is removed directly, with the death event kept so the renderer
+ * still animates the change.
+ *
+ * Returns false when there is no room, which is the caller's cue to try something else
+ * rather than a failure — a boss with nowhere to grow simply has not grown yet.
+ */
+export function dockIntoForm(
+  ctx: Ctx,
+  side: Side,
+  defId: CardDefId,
+  evict?: (ctx: Ctx, anchor: Coord) => boolean,
+): boolean {
+  const cmd = ctx.state.players[side];
+  const oldId = cmd.companionUnitId;
+  const old = oldId ? ctx.state.units[oldId] : undefined;
+  if (!old) return false;
+
+  const def = CARDS[defId];
+  const footprint = def?.unit?.footprint ?? 1;
+
+  const site = findDockSite(ctx, old.anchor, footprint, old.id, evict);
+  if (!site) return false;
+
+  const at = { ...old.anchor };
+  delete ctx.state.units[old.id];
+  emit(ctx, {
+    t: 'unitDied',
+    unitId: old.id,
+    at,
+    footprint: old.footprint,
+    cause: 'spell',
+  });
+
+  const grown = summonUnit(ctx, defId, side, site);
+  if (!grown) {
+    // Nothing legal to become. Put the old body back rather than leaving the side
+    // bodiless, which would strand every spell it casts from one.
+    ctx.state.units[old.id] = old;
+    emit(ctx, { t: 'unitSummoned', unit: toSnapshot(old) });
+    return false;
+  }
+
+  const unit = ctx.state.units[grown];
+  if (unit) {
+    unit.summonedThisTurn = false;
+    unit.freshlySummoned = false;
+  }
+
+  cmd.companionUnitId = grown;
+  cmd.companionUnitDefId = defId;
+  return true;
+}
+
+/** The nearest place the larger form fits, trying the current spot first. */
+function findDockSite(
+  ctx: Ctx,
+  from: Coord,
+  footprint: 1 | 2,
+  ignoreId: UnitId,
+  evict?: (ctx: Ctx, anchor: Coord) => boolean,
+): Coord | undefined {
+  const candidates: Coord[] = [from];
+  // A 2x2 anchored here may need to sit up and left of where the old body stood.
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      candidates.push({ x: from.x + dx, y: from.y + dy });
+    }
+  }
+
+  for (const at of candidates) {
+    // The old body still occupies its tile at this point, so it is ignored when asking
+    // whether the new one fits — it is about to leave.
+    if (canPlace(ctx.state, at, footprint, ignoreId)) return at;
+  }
+
+  // Nothing free. Ask the caller whether it can make room.
+  if (!evict) return undefined;
+  for (const at of candidates) {
+    if (evict(ctx, at) && canPlace(ctx.state, at, footprint)) return at;
+  }
+  return undefined;
+}
+
 export function spawnObstacle(
   ctx: Ctx,
   defId: CardDefId,

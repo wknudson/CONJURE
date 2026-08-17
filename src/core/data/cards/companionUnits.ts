@@ -19,6 +19,8 @@ import type { CardDef } from '../../types/cards.js';
 
 /** The Pact's full pool, mirrored so the body never reads as wounded. */
 const PACT_HP = 40;
+/** The Trial's own pool, mirrored on the boss's bodies for the same reason. */
+const BOSS_HP = 44;
 
 export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   ignis_bound: {
@@ -75,6 +77,68 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       rangeMax: 2,
       footprint: 1,
       archetype: 'skirmisher',
+      sacrificeValue: 0,
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /**
+   * Ignis as the Trial fights it: on the board, in reach, and worth walking up to.
+   *
+   * A boss that commanded from off-grid could only ever be chipped at through its
+   * minions. Standing it on the field makes the fight about closing with the drake, and
+   * the 44 HP it draws on is the encounter's own pool rather than anything of its own.
+   */
+  ignis_drake_bound: {
+    id: 'ignis_drake_bound',
+    name: 'Ignis, Ember Drake',
+    cost: 0,
+    school: 'pyre',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. The drake itself. Wounds it takes are dealt to its Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 4,
+      hp: BOSS_HP,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 2,
+      footprint: 1,
+      archetype: 'bruiser',
+      sacrificeValue: 0,
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /**
+   * What it becomes at half health. Bigger in every sense: it hits harder, it is slower,
+   * and at 2x2 it blocks line of sight through itself — so the enraged drake rewrites
+   * the sightlines of the arena simply by standing in it.
+   */
+  ignis_behemoth_bound: {
+    id: 'ignis_behemoth_bound',
+    name: 'Ignis Enraged',
+    cost: 0,
+    school: 'pyre',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. The drake grown into its full shape. Blocks sight through itself.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 5,
+      hp: BOSS_HP,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 2,
+      archetype: 'behemoth',
       sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },

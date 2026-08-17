@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { eventsOf, findUnit, run, scenario } from './scenario.js';
+import { addUnit, eventsOf, findUnit, run, scenario } from './scenario.js';
+import { CombatSession } from '../core/session.js';
 import { applyCommand } from '../core/engine/engine.js';
 import { createCombat } from '../core/engine/setup.js';
 import { IGNIS_TRIAL, NOVICE_DUELIST } from '../core/data/encounters/index.js';
@@ -203,5 +204,130 @@ describe('encounter definitions', () => {
     // Either someone won, or the game is still legally running after 200 turns.
     expect(guard).toBeLessThan(200);
     expect(['victory', 'defeat', 'bound']).toContain(state.result);
+  });
+});
+
+describe('the drake on the board', () => {
+  /** The Trial as it is really played, with the boss standing on the field. */
+  function trial(seed = 5) {
+    const session = new CombatSession(IGNIS_TRIAL, seed, undefined, 'ignis');
+    return { session, st: session.debugState };
+  }
+
+  const bodyOf = (st: ReturnType<typeof trial>['st']) => {
+    const id = st.players.enemy.companionUnitId;
+    return id ? st.units[id] : undefined;
+  };
+
+  it('opens with the drake itself in reach', () => {
+    const { st } = trial();
+    const body = bodyOf(st);
+
+    expect(body?.defId).toBe('ignis_drake_bound');
+    expect(body?.keywords).toContain('BoundForm');
+    expect(st.players.enemy.maxHp).toBe(44);
+  });
+
+  it('wounds the trial pool when the drake is struck', () => {
+    const { st } = trial();
+    const body = bodyOf(st)!;
+    const striker = addUnit(st, {
+      def: 'scout_imp',
+      side: 'player',
+      at: { x: body.anchor.x, y: body.anchor.y + 1 },
+    });
+    const before = st.players.enemy.hp;
+
+    const res = applyCommand(st, {
+      type: 'attack',
+      attacker: striker.id,
+      target: { kind: 'unit', id: body.id },
+    });
+
+    expect(res.state.players.enemy.hp).toBeLessThan(before);
+    expect(res.state.units[body.id]!.hp).toBe(res.state.units[body.id]!.maxHp);
+  });
+
+  it('grows into its enraged shape at the halfway mark', () => {
+    const { session, st } = trial();
+    st.players.enemy.hp = 20; // under the 22 threshold
+
+    session.dispatch({ type: 'endTurn' });
+    const after = session.debugState;
+    const body = bodyOf(after);
+
+    expect(after.encounter.bossPhase).toBe(2);
+    expect(body?.defId).toBe('ignis_behemoth_bound');
+    expect(body?.footprint).toBe(2);
+  });
+
+  it('carries the same pool through the change', () => {
+    // The transformation is a change of body, not a heal and not a second health bar.
+    const { session, st } = trial();
+    st.players.enemy.hp = 20;
+
+    session.dispatch({ type: 'endTurn' });
+
+    expect(session.debugState.players.enemy.hp).toBe(20);
+  });
+
+  it('leaves exactly one enemy body behind', () => {
+    const { session, st } = trial();
+    st.players.enemy.hp = 20;
+
+    session.dispatch({ type: 'endTurn' });
+    const after = session.debugState;
+
+    const bodies = Object.values(after.units).filter(
+      (u) => u.side === 'enemy' && u.keywords.includes('BoundForm'),
+    );
+    expect(bodies).toHaveLength(1);
+    expect(after.units[after.players.enemy.companionUnitId!]).toBeDefined();
+  });
+
+  it('clears declared intents, which were aimed from a body that has moved', () => {
+    const { session, st } = trial();
+    st.players.enemy.hp = 20;
+    st.intents = [
+      { unitId: bodyOf(st)!.id, kind: 'attack', at: { x: 3, y: 3 }, damage: 4 },
+    ];
+
+    session.dispatch({ type: 'endTurn' });
+
+    expect(session.debugState.intents).toHaveLength(0);
+  });
+
+  it('keeps its footing after sudden death, restoring the shape it now wears', () => {
+    const { session, st } = trial();
+    st.players.enemy.hp = 20;
+    session.dispatch({ type: 'endTurn' });
+
+    const grown = session.debugState;
+    expect(grown.players.enemy.companionUnitDefId).toBe('ignis_behemoth_bound');
+
+    grown.players.player.hp = 0;
+    grown.players.enemy.hp = 0;
+    const res = applyCommand(grown, { type: 'endTurn' });
+
+    expect(res.state.suddenDeath).toBe(true);
+    const restored = res.state.players.enemy.companionUnitId;
+    expect(restored).toBeDefined();
+    expect(res.state.units[restored!]!.defId, 'the enraged form, not the drake').toBe(
+      'ignis_behemoth_bound',
+    );
+  });
+
+  it('announces the shift once, even when it cannot grow immediately', () => {
+    // A boxed-in drake still enters phase two; only the transformation waits.
+    const { session, st } = trial();
+    st.players.enemy.hp = 20;
+    delete st.players.enemy.companionUnitId;
+
+    const first = session.dispatch({ type: 'endTurn' });
+    expect(eventsOf(first, 'bossPhaseShift')).toHaveLength(1);
+    expect(session.debugState.encounter.bossPhase).toBe(2);
+
+    const second = session.dispatch({ type: 'endTurn' });
+    expect(eventsOf(second, 'bossPhaseShift'), 'must not re-announce').toHaveLength(0);
   });
 });
