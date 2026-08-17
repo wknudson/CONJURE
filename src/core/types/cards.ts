@@ -123,6 +123,17 @@ export interface CardDef {
    */
   leavesRubble?: true;
   /**
+   * What this obstacle does to everything around it when it breaks.
+   *
+   * Indiscriminate by design: a crystal does not know whose army is standing next to it,
+   * which is what makes shooting one a decision rather than a free removal spell.
+   */
+  obstacleDeath?: {
+    status: StatusKind;
+    stacks: number;
+    damage?: number;
+  };
+  /**
    * How far from the Companion's Bound Form this may be cast, as a Chebyshev distance.
    *
    * Only meaningful on `source: 'companion'` cards: the Hero is off-grid and has no

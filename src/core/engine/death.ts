@@ -2,16 +2,20 @@
  * Entity removal and the lethal / Last Stand check.
  */
 
-import type { DamageCause } from '../../contract/ids.js';
+import type { Coord, DamageCause, UnitId } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
-import { emit } from './context.js';
+import { emit, newCause } from './context.js';
 import type { Entity } from '../types/units.js';
 import { isUnit } from '../types/units.js';
-import { getEntity } from './board.js';
+import { getEntity, unitAt } from './board.js';
 import { evaluateRuneOnDeath } from './runes.js';
 import { placeOpeningUnit } from './spawn.js';
 import { CARDS } from '../data/cards/index.js';
 import { spawnHazard } from './reactions.js';
+import { applyStatusTo } from './status.js';
+import { dealDamage } from './damage.js';
+import { inBounds } from '../types/state.js';
+import { DIRS_8 } from '../util/grid.js';
 
 /**
  * Removes an entity from the board. `devoured` routes to the fizzle path: a devoured
@@ -45,6 +49,7 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
     if (CARDS[live.defId]?.leavesRubble) {
       spawnHazard(ctx, at, 'rubble', 1, true);
     }
+    burstObstacle(ctx, live.defId, at);
   }
 
   // Rune resolution happens after removal so a death-triggered blast cannot hit its
@@ -54,6 +59,60 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
   }
 
   checkLethal(ctx);
+}
+
+/**
+ * A crystal going off.
+ *
+ * Everything in the surrounding nine tiles catches it, on both sides. That is the whole
+ * design: the blast does not know whose army is standing in it, so shooting one is a
+ * decision about where your own units are, not a free removal spell.
+ *
+ * Runs inside the death cascade, so it respects a cancelled chain the same way a rune
+ * blast does — a boss Damage Gate that stops a chain stops this with it.
+ */
+function burstObstacle(ctx: Ctx, defId: string, at: Coord): void {
+  const burst = CARDS[defId]?.obstacleDeath;
+  if (!burst) return;
+  if (ctx.state.encounter.chainCancelled) return;
+
+  newCause(ctx);
+  emit(ctx, { t: 'reactionTriggered', reaction: 'crystal_burst', name: 'Burst', at: { ...at } });
+
+  // Snapshot the victims before touching anything: the blast can kill, and a kill can
+  // set off the next crystal, which must not mutate the list being walked.
+  const caught: UnitId[] = [];
+  for (const cell of [at, ...adjacent(ctx.state, at)]) {
+    const occupant = unitAt(ctx.state, cell);
+    if (occupant && !caught.includes(occupant.id)) caught.push(occupant.id);
+  }
+
+  for (const id of caught) {
+    const unit = ctx.state.units[id];
+    if (!unit) continue;
+    applyStatusTo(ctx, unit, burst.status, burst.stacks);
+  }
+
+  if (burst.damage === undefined) return;
+  for (const id of caught) {
+    if (!ctx.state.units[id]) continue;
+    dealDamage(ctx, {
+      target: { kind: 'unit', id },
+      amount: burst.damage,
+      dtype: 'true',
+      cause: 'spell',
+    });
+  }
+}
+
+/** The eight tiles around a point, in bounds. */
+function adjacent(state: Ctx['state'], at: Coord): Coord[] {
+  const out: Coord[] = [];
+  for (const dir of DIRS_8) {
+    const c = { x: at.x + dir.x, y: at.y + dir.y };
+    if (inBounds(state, c)) out.push(c);
+  }
+  return out;
 }
 
 /**

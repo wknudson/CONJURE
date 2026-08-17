@@ -66,4 +66,34 @@ export const TERRAIN_CARDS: Record<string, CardDef> = {
     obstacleHp: 1,
     onDestroyReward: { sparks: 2 },
   },
+
+  /**
+   * Crystals are traps you set off rather than pick up. Two HP is enough that breaking
+   * one is a choice, and the blast catches everything in the nine tiles around it — both
+   * armies — so the question is never "should I shoot it" but "who is standing there".
+   *
+   * Cryo freezes: the tempo swing is enormous and lands on whoever is closest.
+   */
+  cryo_crystal: {
+    ...scenery(
+      'cryo_crystal',
+      'Cryo-Crystal',
+      'Volatile. Shattering it freezes every unit around it, friend and foe.',
+      2,
+    ),
+    school: 'frost',
+    obstacleDeath: { status: 'freeze', stacks: 1 },
+  },
+
+  /** Magma burns instead, which is slower but sets up a reaction on anything Chilled. */
+  magma_crystal: {
+    ...scenery(
+      'magma_crystal',
+      'Magma Barrel',
+      'Volatile. Shattering it sets fire to every unit around it, friend and foe.',
+      2,
+    ),
+    school: 'pyre',
+    obstacleDeath: { status: 'burn', stacks: 2 },
+  },
 };

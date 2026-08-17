@@ -150,6 +150,33 @@ export function applyChill(ctx: Ctx, unit: Unit, stacks: number): void {
 /** Stacks of Chill that convert into a Freeze. */
 export const CHILL_TO_FREEZE = 3;
 
+/**
+ * Puts a status on a unit, whatever put it there.
+ *
+ * Chill routes through its own helper because the third stack becomes a Freeze rather
+ * than a fourth stack, and nothing applying a status should have to know that threshold.
+ * Shared by the card effect interpreter and by scenery that bursts.
+ */
+export function applyStatusTo(
+  ctx: Ctx,
+  unit: Unit,
+  status: StatusKind,
+  stacks: number,
+): void {
+  if (status === 'chill') {
+    applyChill(ctx, unit, stacks);
+    return;
+  }
+
+  unit.statuses[status] = (unit.statuses[status] ?? 0) + stacks;
+  emit(ctx, {
+    t: 'statusApplied',
+    unitId: unit.id,
+    status,
+    stacks: unit.statuses[status] ?? 0,
+  });
+}
+
 export function refreshUnits(ctx: Ctx, side: Side): void {
   for (const unit of unitsOf(ctx.state, side)) {
     unit.movedThisTurn = false;

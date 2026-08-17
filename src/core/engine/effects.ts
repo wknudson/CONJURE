@@ -10,7 +10,7 @@ import type { Coord, Side, TargetRef, UnitId } from '../../contract/ids.js';
 import { coordEq } from '../../contract/ids.js';
 import type { AreaSpec, CardPlayContext, EffectNode } from '../types/cards.js';
 import type { Ctx } from './context.js';
-import { applyChill } from './status.js';
+import { applyStatusTo } from './status.js';
 import { emit } from './context.js';
 import { allEntities, entityAt, getEntity, lowestHpEnemy, refOf } from './board.js';
 import { dealDamage, grantArmor } from './damage.js';
@@ -95,20 +95,7 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
         const unit = ctx.state.units[ref.id];
         if (!unit) continue;
 
-        // Chill routes through its own helper: the third stack becomes a Freeze rather
-        // than a fourth stack, and no card should have to know that threshold.
-        if (node.status === 'chill') {
-          applyChill(ctx, unit, node.stacks);
-          continue;
-        }
-
-        unit.statuses[node.status] = (unit.statuses[node.status] ?? 0) + node.stacks;
-        emit(ctx, {
-          t: 'statusApplied',
-          unitId: unit.id,
-          status: node.status,
-          stacks: unit.statuses[node.status] ?? 0,
-        });
+        applyStatusTo(ctx, unit, node.status, node.stacks);
       }
       return;
     }
