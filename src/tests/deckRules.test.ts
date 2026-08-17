@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   MAX_BEHEMOTHS,
   MAX_DECK,
+  MAX_SWAPS,
   MIN_DECK,
+  swapCount,
   TIER_COPY_LIMIT,
   baseIdOf,
   costCurve,
@@ -166,5 +168,41 @@ describe('cost curve', () => {
     expect(curve[0]).toBe(1); // Dark Tithe is free
     expect(curve[1]).toBe(2);
     expect(curve[2]).toBe(1);
+  });
+});
+
+describe('pre-combat swaps', () => {
+  const base = ['scout_imp', 'scout_imp', 'flame_surge', 'aegis_ward'];
+
+  it('counts an unchanged deck as no swaps at all', () => {
+    expect(swapCount(base, [...base])).toBe(0);
+    // Order is not a change: a deck is a multiset.
+    expect(swapCount(base, [...base].reverse())).toBe(0);
+  });
+
+  it('charges one swap for a card traded one-for-one', () => {
+    expect(swapCount(base, ['scout_imp', 'scout_imp', 'glacial_spike', 'aegis_ward'])).toBe(1);
+  });
+
+  it('charges by the larger side, not both', () => {
+    // Two out and two in is two swaps, not four.
+    expect(
+      swapCount(base, ['glacial_spike', 'frost_nova', 'flame_surge', 'aegis_ward']),
+    ).toBe(2);
+  });
+
+  it('charges for changing the deck size', () => {
+    expect(swapCount(base, [...base, 'frost_nova'])).toBe(1);
+    expect(swapCount(base, base.slice(0, 2))).toBe(2);
+  });
+
+  it('counts duplicates individually', () => {
+    expect(swapCount(base, ['scout_imp', 'flame_surge', 'aegis_ward', 'frost_nova'])).toBe(1);
+  });
+
+  it('keeps the budget small enough that the built deck still matters', () => {
+    // A guard on the design, not the code: a budget approaching deck size would make
+    // pre-combat adaptation into pre-combat deck building.
+    expect(MAX_SWAPS).toBeLessThan(MIN_DECK / 2);
   });
 });

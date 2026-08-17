@@ -112,6 +112,42 @@ describe('migration', () => {
     expect(Object.keys(save.collection.owned).length).toBeGreaterThan(0);
   });
 
+  it('upgrades a version 1 save, which has no recorded run', () => {
+    // v1 predates pre-combat adaptation. Having never played is not a fault to repair.
+    localStorage.setItem(
+      'conjure.save',
+      JSON.stringify({ ...defaultSave(), version: 1, lastRun: undefined }),
+    );
+    const { save, notes } = loadSave();
+    expect(save.version).toBe(SAVE_VERSION);
+    expect(save.lastRun).toBeUndefined();
+    expect(notes).toHaveLength(0);
+  });
+
+  it('keeps the last run so the same battle can be found again', () => {
+    const save = defaultSave();
+    save.lastRun = {
+      encounterId: 'novice_duelist',
+      seed: 123456,
+      companionId: COMPANIONS[0]!.id,
+      deck: ['scout_imp', 'flame_surge'],
+    };
+    writeSave(save);
+
+    const { save: loaded } = loadSave();
+    expect(loaded.lastRun?.seed).toBe(123456);
+    expect(loaded.lastRun?.deck).toEqual(['scout_imp', 'flame_surge']);
+  });
+
+  it('discards a recorded run that is missing its seed', () => {
+    localStorage.setItem(
+      'conjure.save',
+      JSON.stringify({ ...defaultSave(), lastRun: { encounterId: 'x', deck: [] } }),
+    );
+    const { save } = loadSave();
+    expect(save.lastRun, 'a run without a seed cannot be reproduced').toBeUndefined();
+  });
+
   it('rejects a companion id that is not real', () => {
     const save = defaultSave();
     (save as { lastCompanionId: string }).lastCompanionId = 'nobody';

@@ -405,3 +405,96 @@
   font: 400 10px/1.45 var(--font);
   color: var(--text-dim);
 }
+
+/* ------------------------------------------------------------ pre-combat plan */
+
+/* Three panes rather than the builder's two: the ground, what you own, what you bring. */
+.screen--precombat .builder__body {
+  grid-template-columns: minmax(200px, 0.9fr) 1fr 1fr;
+}
+
+.pre__pane--map {
+  align-items: center;
+}
+
+/*
+ * A flat overhead plan, not the isometric board. Read from straight above, distances
+ * are honest and the shape is obvious — which is the whole question being asked here.
+ */
+.pre__map {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 6), 1fr);
+  gap: 2px;
+  width: 100%;
+  max-width: 260px;
+  margin: 8px auto;
+  padding: 8px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.pre__cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pre__cell.is-you {
+  background: rgba(59, 130, 246, 0.28);
+}
+
+.pre__cell.is-foe {
+  background: rgba(229, 72, 77, 0.26);
+}
+
+.pre__cell.is-wall {
+  background: #6b7280;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.pre__cell.is-cover {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(74, 222, 128, 0.55) 0 2px,
+    transparent 2px 4px
+  );
+}
+
+/* Enemies already on the field when the fight opens. */
+.pre__foe {
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: #e5484d;
+  box-shadow: 0 0 5px rgba(229, 72, 77, 0.9);
+}
+
+.pre__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  font: 600 9px var(--font);
+  color: var(--text-dim);
+}
+
+.pre__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pre__key {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.pre__key--you { background: rgba(59, 130, 246, 0.7); }
+.pre__key--foe { background: rgba(229, 72, 77, 0.7); }
+.pre__key--wall { background: #6b7280; }
+.pre__key--cover {
+  background: repeating-linear-gradient(45deg, rgba(74, 222, 128, 0.7) 0 2px, transparent 2px 4px);
+}

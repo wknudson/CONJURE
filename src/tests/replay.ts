@@ -23,6 +23,15 @@ export type Step = { kind: 'action'; action: Action } | { kind: 'ai' };
 export interface Recording {
   encounterId: string;
   seed: number;
+  /**
+   * The setup, not just the seed.
+   *
+   * Since decks can be adapted before a fight, the encounter and seed alone no longer
+   * identify a game: the same pair with a different deck is a different battle. Both
+   * are optional, meaning "whatever the companion brings by default".
+   */
+  companionId?: string;
+  deck?: string[];
   steps: Step[];
   events: GameEvent[];
   finalHash: string;
@@ -68,10 +77,17 @@ export function replay(
   seed: number,
   steps: Step[],
   ai?: AiProfile,
+  setup?: { companionId?: string; deck?: string[] },
 ): { events: GameEvent[]; finalHash: string; state: GameState } {
-  const session = ai
-    ? new CombatSession(encounter, seed, ai)
-    : new CombatSession(encounter, seed);
+  // Reproducing a game means reproducing how it was set up, deck included — the seed
+  // fixes the shuffle, but not what is being shuffled.
+  const session = new CombatSession(
+    encounter,
+    seed,
+    ai,
+    setup?.companionId,
+    setup?.deck,
+  );
   const events: GameEvent[] = [];
 
   for (const step of steps) {

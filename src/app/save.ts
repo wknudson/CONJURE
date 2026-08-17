@@ -19,7 +19,7 @@ import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface SavedDeck {
   companionId: string;
@@ -37,6 +37,20 @@ export interface SaveData {
   /** AI tier name, matched against AI_PROFILES on load. */
   difficulty: string;
   record: { wins: number; losses: number; bound: number };
+  /**
+   * The last fight as it was actually set up, seed included.
+   *
+   * The seed used to be an unnamed default deep inside the combat screen: never shown,
+   * never recorded, and rerolled on every rematch. Keeping it means a battle worth
+   * talking about can be found again, and a bug report can name the exact game.
+   */
+  lastRun?: {
+    encounterId: string;
+    seed: number;
+    companionId: string;
+    /** The adapted deck, which may differ from the saved one by up to MAX_SWAPS. */
+    deck: string[];
+  };
 }
 
 export function defaultSave(): SaveData {
@@ -142,7 +156,33 @@ function migrate(raw: unknown, notes: string[]): SaveData {
   // the game with no AI to run.
   const difficulty = profileByName(String(data.difficulty ?? '')) ? data.difficulty! : base.difficulty;
 
-  return { version: SAVE_VERSION, collection, decks, lastCompanionId, difficulty, record };
+  // --- last run (added in v2) ---
+  // A v1 save simply has none, which is the same as never having played: the field is
+  // optional precisely so the absence needs no repair.
+  const run = data.lastRun;
+  const lastRun =
+    run &&
+    typeof run.encounterId === 'string' &&
+    typeof run.seed === 'number' &&
+    Number.isFinite(run.seed) &&
+    Array.isArray(run.deck)
+      ? {
+          encounterId: run.encounterId,
+          seed: run.seed,
+          companionId: String(run.companionId ?? lastCompanionId),
+          deck: run.deck.filter((c): c is string => typeof c === 'string'),
+        }
+      : undefined;
+
+  return {
+    version: SAVE_VERSION,
+    collection,
+    decks,
+    lastCompanionId,
+    difficulty,
+    record,
+    ...(lastRun ? { lastRun } : {}),
+  };
 }
 
 function numberOr(value: unknown, fallback: number): number {

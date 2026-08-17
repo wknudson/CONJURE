@@ -19,6 +19,7 @@ import { TitleScreen } from './app/TitleScreen.js';
 import { CombatScreen } from './app/CombatScreen.js';
 import { ResultsScreen } from './app/ResultsScreen.js';
 import { DeckBuilderScreen } from './app/DeckBuilderScreen.js';
+import { PreCombatScreen } from './app/PreCombatScreen.js';
 import { loadSave, writeSave, type SaveData } from './app/save.js';
 import { companionById } from './core/data/companions.js';
 import { grantCard, rollRewards } from './core/data/collection.js';
@@ -56,7 +57,7 @@ function showTitle(): void {
         save.lastCompanionId = companionId;
         save.difficulty = difficulty;
         persist();
-        startCombat(encounter, companionId);
+        showPreCombat(encounter, companionId);
       },
       onEditDeck: (companionId) => showBuilder(companionId),
     }),
@@ -83,20 +84,51 @@ function showBuilder(companionId: string): void {
   );
 }
 
-function startCombat(encounter: EncounterDef, companionId: string): void {
+/** See the ground, adapt the deck, then commit to the fight. */
+function showPreCombat(encounter: EncounterDef, companionId: string): void {
+  screens.go(
+    new PreCombatScreen({
+      encounter,
+      companionId,
+      deck: deckFor(companionId),
+      collection: save.collection,
+      onReady: (deck, seed) => {
+        // The adapted deck belongs to this fight, not to the saved deck: a swap made for
+        // a narrow ruin should not follow the player into the next arena.
+        save.lastRun = { encounterId: encounter.id, seed, companionId, deck: [...deck] };
+        persist();
+        startCombat(encounter, companionId, deck, seed);
+      },
+      onBack: showTitle,
+    }),
+  );
+}
+
+function startCombat(
+  encounter: EncounterDef,
+  companionId: string,
+  deck: string[],
+  seed: number,
+): void {
   screens.go(
     new CombatScreen(
       encounter,
-      (result, played) => finishCombat(result, played, companionId),
+      (result, played) => finishCombat(result, played, companionId, deck, seed),
       companionId,
-      undefined,
-      deckFor(companionId),
+      seed,
+      deck,
       profileByName(save.difficulty) ?? NOVICE_AI,
     ),
   );
 }
 
-function finishCombat(result: CombatResult, played: EncounterDef, companionId: string): void {
+function finishCombat(
+  result: CombatResult,
+  played: EncounterDef,
+  companionId: string,
+  deck: string[],
+  seed: number,
+): void {
   if (result === 'victory') save.record.wins += 1;
   else if (result === 'bound') save.record.bound += 1;
   else save.record.losses += 1;
@@ -118,7 +150,9 @@ function finishCombat(result: CombatResult, played: EncounterDef, companionId: s
         save.collection = grantCard(save.collection, cardId);
         persist();
       },
-      onRematch: () => startCombat(played, companionId),
+      // A rematch is the same fight: same seed, same adapted deck. Rerolling would make
+      // "again" mean a different battle, which is not what the button says.
+      onRematch: () => startCombat(played, companionId, deck, seed),
       onTitle: showTitle,
     }),
   );

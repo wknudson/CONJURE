@@ -35,6 +35,36 @@ export function tierOf(def: CardDef): CardTier {
   return 1;
 }
 
+/**
+ * Cards you may change between seeing the arena and fighting in it.
+ *
+ * Small on purpose. Adapting to a narrow ruin or an open field should mean bringing the
+ * two or three answers that shape needs, not rebuilding into a different deck once the
+ * terrain is known — which would make the deck you built beforehand irrelevant.
+ */
+export const MAX_SWAPS = 5;
+
+/**
+ * How many cards differ between a deck and the one it started as.
+ *
+ * Counted as a multiset difference, taking the larger side, so that trading one card for
+ * another costs one swap rather than two, and changing the deck's size costs what it
+ * actually changes.
+ */
+export function swapCount(base: string[], candidate: string[]): number {
+  const tally = new Map<string, number>();
+  for (const id of base) tally.set(id, (tally.get(id) ?? 0) + 1);
+  for (const id of candidate) tally.set(id, (tally.get(id) ?? 0) - 1);
+
+  let removed = 0;
+  let added = 0;
+  for (const n of tally.values()) {
+    if (n > 0) removed += n;
+    else added -= n;
+  }
+  return Math.max(removed, added);
+}
+
 /** The base card a copy belongs to. Ranks share a base, so they share a cap. */
 export function baseIdOf(cardId: string): string {
   return cardId.replace(/_r[23]$/, '');
