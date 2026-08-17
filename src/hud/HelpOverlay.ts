@@ -44,6 +44,15 @@ const SECTIONS: { heading: string; rows: [string, string][] }[] = [
     ],
   },
   {
+    heading: 'Reading the enemy',
+    rows: [
+      ['Declared attacks', 'Red tiles mark where the enemy will strike next turn, with the damage on them.'],
+      ['It hits the tile', 'Move the target away and the blow lands on empty ground — or on whatever is standing there now, including one of their own.'],
+      ['Stopping it', 'Kill the attacker, or Freeze it, and the blow never comes.'],
+      ['What is hidden', 'A Novice shows you everything. An Adept shows only its blows and keeps its cards to itself.'],
+    ],
+  },
+  {
     heading: 'Elemental reactions',
     rows: [
       ['Vaporize', 'Fire on a Chilled target flashes it to fog that blocks ranged sight for 2 turns.'],

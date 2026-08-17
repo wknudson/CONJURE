@@ -123,16 +123,27 @@ export class Hud {
     this.threatBtn.classList.toggle('is-active', on);
   }
 
-  /** Warns when enemies are already in position to strike the Pact. */
-  setCommanderThreat(count: number): void {
-    if (count <= 0) {
-      this.threatWarnEl.textContent = '';
-      this.threatWarnEl.classList.remove('is-shown');
+  /**
+   * What is actually coming, rather than what merely could.
+   *
+   * Once the enemy has committed, "7 damage incoming" beats "3 enemies can reach you" by
+   * a wide margin — it is a number the player can plan against instead of worry about.
+   */
+  setIncoming(declaredDamage: number, reachCount: number): void {
+    if (declaredDamage > 0) {
+      this.threatWarnEl.textContent = `${declaredDamage} damage incoming to your Pact`;
+      this.threatWarnEl.classList.add('is-shown', 'is-declared');
       return;
     }
-    this.threatWarnEl.textContent =
-      count === 1 ? '1 enemy can reach your Pact' : `${count} enemies can reach your Pact`;
-    this.threatWarnEl.classList.add('is-shown');
+    if (reachCount > 0) {
+      this.threatWarnEl.textContent =
+        reachCount === 1 ? '1 enemy can reach your Pact' : `${reachCount} enemies can reach your Pact`;
+      this.threatWarnEl.classList.add('is-shown');
+      this.threatWarnEl.classList.remove('is-declared');
+      return;
+    }
+    this.threatWarnEl.textContent = '';
+    this.threatWarnEl.classList.remove('is-shown', 'is-declared');
   }
 
   get tips(): Tooltip {

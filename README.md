@@ -214,14 +214,34 @@ Imp could reach every tile on the board in one turn, so the overlay was a unifor
 wash. On the lane map your two home rows are genuinely safe and everything past row 5 is
 contested, which turns stepping forward into a decision.
 
+### Enemy intent
+
+The enemy commits, at the end of its turn, to what it will do next — and then does it.
+Declared blows are drawn on the board with their damage on them; a blow aimed at your Pact
+draws a line to your Hero and totals into the HUD.
+
+Two rules make the telegraph worth trusting:
+
+- **A declared blow lands on the tile, not the target.** Move the victim away and the
+  attack hits empty ground — or whatever is standing there now, including one of the
+  enemy's own units. That is the reward for reading it.
+- **What is declared is what happens.** The enemy does not re-plan on its turn. If it
+  could, the telegraph would be a suggestion rather than a promise.
+
+This is what turns the rest of the game into tools. A shove stops being chip damage and
+becomes "push the attacker off its firing line"; a Barricade becomes a body-block; Freeze
+becomes "cancel that specific hit".
+
+How much is declared is a difficulty setting, not a constant.
+
 ### Difficulty
 
 Two AI tiers, chosen on the title screen and remembered between sessions.
 
 | Tier | Behaviour |
 | :-- | :-- |
-| **Novice** | Greedy: takes the best action available right now. Visibly misjudges the order of its own actions — it will walk a unit out of range before remembering it could have swung first. |
-| **Adept** | Values a candidate opener by the whole turn it leads to, so it strikes before it withdraws. Also sees collisions, and is far less prone to a deliberate mistake (5% vs 20%). |
+| **Novice** | Greedy: takes the best action available right now. Visibly misjudges the order of its own actions — it will walk a unit out of range before remembering it could have swung first. Declares its entire turn. |
+| **Adept** | Values a candidate opener by the whole turn it leads to, so it strikes before it withdraws. Also sees collisions, and is far less prone to a deliberate mistake (5% vs 20%). Declares only its blows, keeping its cards hidden. |
 
 Thinking is bounded by a **simulation count**, not a clock. An earlier version used wall
 time, which made the AI's choices depend on how busy the machine was — the same seed

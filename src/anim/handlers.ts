@@ -292,6 +292,20 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
   });
 
   // Reactions are the loudest thing that can happen: name them, flash, and shake.
+  seq.on('intentWhiffed', async (e, { view, t }) => {
+    view.fx.label(e.at, 'MISS', 'fizzle');
+    view.sfx.play('card');
+    await tween(t(220), easeOutQuad, () => {});
+  });
+
+  seq.on('intentDeclared', () => {
+    // Nothing to animate: the board renderer draws declarations continuously from state.
+  });
+
+  seq.on('intentsCleared', () => {
+    /* likewise */
+  });
+
   seq.on('reactionTriggered', async (e, { view, t }) => {
     view.hud.flashNotice(`${e.name}!`);
     view.fx.label(e.at, e.name.toUpperCase(), 'reaction');

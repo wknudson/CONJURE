@@ -1,4 +1,5 @@
 import type { CardInstanceId, Coord, School, Side, UnitId } from '../../contract/ids.js';
+import type { Command } from './commands.js';
 import type { CombatResult, GameEvent, Phase } from '../../contract/events.js';
 import type { RngState } from '../util/rng.js';
 import type { CardInstance } from './cards.js';
@@ -57,6 +58,24 @@ export interface Hazard {
 
 export type HazardKind = 'steam_fog';
 
+/**
+ * A declared enemy action, shown to the player before it happens.
+ *
+ * `at` is the *tile* the blow lands on, deliberately not the unit that happened to be
+ * standing there. Moving the target away makes the attack miss, which is the whole point.
+ */
+export interface Intent {
+  /** The acting unit, or `card:<instanceId>` for a declared card play. */
+  unitId: UnitId;
+  kind: 'attack' | 'commander' | 'card';
+  at?: Coord;
+  /** Movement committed before the strike, for drawing the approach. */
+  path?: Coord[];
+  damage: number;
+  /** Card name, for declared card plays. */
+  label?: string;
+}
+
 export interface GameState {
   rng: RngState;
   turn: number;
@@ -68,6 +87,10 @@ export interface GameState {
   obstacles: Record<UnitId, Obstacle>;
   /** Tile hazards: fog, fire patches and the like, keyed by "x,y". */
   hazards: Record<string, Hazard>;
+  /** What the enemy has committed to doing next turn, shown to the player. */
+  intents: Intent[];
+  /** The plan those intents came from. Replayed rather than re-planned. */
+  declaredPlan: Command[];
   players: Record<Side, CommanderState>;
   encounter: EncounterState;
   nextId: number;

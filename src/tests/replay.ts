@@ -163,16 +163,22 @@ export function checkInvariants(state: GameState, where: string): string[] {
   return bad;
 }
 
-/** Invariants that only hold between turns, once cleanup has run. */
+/**
+ * Invariants that only hold for a side whose cleanup has just run.
+ *
+ * Checked against the *inactive* side only. Draft 7 allows the Pip bank to overflow
+ * freely during a turn and caps it during end-of-turn cleanup, so the side that has just
+ * started — and already taken its +1 — is legitimately allowed to be sitting on nine.
+ */
 export function checkCleanupInvariants(state: GameState, where: string): string[] {
   const bad: string[] = [];
-  for (const side of ['player', 'enemy'] as const) {
-    const c = state.players[side];
-    if (c.pips > 8) bad.push(`${where}: ${side} banked ${c.pips} pips, over the cap of 8`);
-    if (c.hand.length > c.handLimit + 1) {
-      // +1 tolerance: the Rite of Binding overlay is allowed to exceed the limit.
-      bad.push(`${where}: ${side} holds ${c.hand.length} cards, over limit ${c.handLimit}`);
-    }
+  const side = state.activeSide === 'player' ? 'enemy' : 'player';
+  const c = state.players[side];
+
+  if (c.pips > 8) bad.push(`${where}: ${side} banked ${c.pips} pips, over the cap of 8`);
+  if (c.hand.length > c.handLimit + 1) {
+    // +1 tolerance: the Rite of Binding overlay is allowed to exceed the limit.
+    bad.push(`${where}: ${side} holds ${c.hand.length} cards, over limit ${c.handLimit}`);
   }
   return bad;
 }

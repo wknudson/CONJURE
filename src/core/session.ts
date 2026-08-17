@@ -32,6 +32,7 @@ import { legalMoves } from './engine/movement.js';
 import { occludedTiles } from './engine/los.js';
 import { threatMap } from './engine/threat.js';
 import { getEntity } from './engine/board.js';
+import { boardForNextEnemyTurn, commandsForDeclaredTurn } from './engine/intents.js';
 import { planTurn, NOVICE_AI, type AiProfile } from './ai/controller.js';
 import { lineCovers } from './engine/targeting.js';
 
@@ -283,12 +284,31 @@ export class CombatSession implements RulesQuery {
   }
 
   /** Runs the AI's whole turn and returns its combined event stream. */
+  /**
+   * Runs the enemy turn from what it already committed to.
+   *
+   * The plan is *not* recomputed here. Whatever was declared at the end of the previous
+   * turn is what happens, adapted only for a board that has changed since — that promise
+   * is the entire value of telegraphing. Only when nothing was declared (the very first
+   * enemy turn) does it fall back to planning on the spot.
+   */
   runAiTurn(): GameEvent[] {
     const events: GameEvent[] = [];
     if (this.state.result) return events;
     if (this.state.activeSide !== 'enemy') return events;
 
-    const plan = planTurn(this.state, 'enemy', this.ai);
+    // `endTurn` is stripped: ending the turn belongs to finishEnemyTurn, which has to
+    // declare next turn's intents first. Letting it through here would flip the side and
+    // skip the declaration entirely.
+    const plan = (
+      this.state.declaredPlan.length > 0
+        ? commandsForDeclaredTurn(this.state)
+        : planTurn(this.state, 'enemy', this.ai)
+    ).filter((c) => c.type !== 'endTurn');
+
+    // The declaration has now been cashed in; it must not be shown again or replayed.
+    this.state = { ...this.state, intents: [], declaredPlan: [] };
+
     for (const command of plan) {
       if (this.state.result) break;
       try {
@@ -296,9 +316,60 @@ export class CombatSession implements RulesQuery {
         this.state = res.state;
         events.push(...res.events);
       } catch {
-        // A planned action can be invalidated by an earlier one's cascade; skip it.
-        break;
+        // A declared action can be invalidated by an earlier one's cascade, or by the
+        // player having moved the ground out from under it. Skip it and continue: one
+        // dead intent must not silently cancel the rest of the turn.
+        continue;
       }
+    }
+
+    // Whatever remains unspent is played out and re-declared for next turn.
+    events.push(...this.finishEnemyTurn());
+    return events;
+  }
+
+  /**
+   * Ends the enemy turn and commits to the next one.
+   *
+   * Declaration happens here, inside the normal command flow, so it consumes the seeded
+   * RNG at a fixed point and replays identically.
+   */
+  private finishEnemyTurn(): GameEvent[] {
+    const events: GameEvent[] = [];
+    if (this.state.result || this.state.activeSide !== 'enemy') return events;
+
+    // An Adept keeps its cards hidden, so it still has undeclared plays to make.
+    if (this.ai.telegraph !== 'all') {
+      for (const command of planTurn(this.state, 'enemy', this.ai)) {
+        if (command.type === 'endTurn') break;
+        if (command.type === 'declareIntents') continue;
+        if (this.state.result) break;
+        try {
+          const res = applyCommand(this.state, command);
+          this.state = res.state;
+          events.push(...res.events);
+        } catch {
+          continue;
+        }
+      }
+    }
+
+    if (this.state.result) return events;
+
+    // Commit to next turn *before* handing over, so the player spends their turn
+    // answering a known threat. Planned against a forecast board on which the enemy's
+    // units have refreshed, since they are all spent at this exact moment.
+    const next = planTurn(boardForNextEnemyTurn(this.state), 'enemy', this.ai);
+    const declared = applyCommand(this.state, { type: 'declareIntents', plan: next, telegraph: this.ai.telegraph });
+    this.state = declared.state;
+    events.push(...declared.events);
+
+    try {
+      const res = applyCommand(this.state, { type: 'endTurn' });
+      this.state = res.state;
+      events.push(...res.events);
+    } catch {
+      /* already over */
     }
     return events;
   }

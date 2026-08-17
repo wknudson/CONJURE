@@ -259,7 +259,9 @@ export class TargetingController {
     const overlays = emptyOverlays();
     overlays.hover = this.hover;
     overlays.expanded = this.expanded;
-    overlays.hazards = this.rules.getBoard().hazards;
+    const board = this.rules.getBoard();
+    overlays.hazards = board.hazards;
+    overlays.intents = board.intents;
     overlays.showThreat = this.threatOn;
     if (this.threatOn) overlays.threat = this.rules.getThreat().tiles;
 

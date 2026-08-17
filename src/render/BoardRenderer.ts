@@ -21,6 +21,7 @@ import {
   drawUnitBody,
   fillTile,
   hatchTile,
+  tilePath,
 } from './shapes.js';
 import { cellsAt } from '../core/util/grid.js';
 
@@ -45,6 +46,14 @@ export interface Overlays {
   threat: { at: Coord; damage: number }[];
   /** Lingering tile hazards, drawn under the entities. */
   hazards: { at: Coord; kind: string; turns: number }[];
+  /** What the enemy has committed to next turn. */
+  intents: {
+    unitId: UnitId;
+    kind: 'attack' | 'commander' | 'card';
+    at?: Coord;
+    damage: number;
+    label?: string;
+  }[];
   /** Whether the threat overlay is currently visible. */
   showThreat: boolean;
 }
@@ -75,6 +84,7 @@ export function emptyOverlays(): Overlays {
     expanded: false,
     threat: [],
     hazards: [],
+    intents: [],
     showThreat: false,
   };
 }
@@ -158,6 +168,7 @@ export class BoardRenderer {
     this.drawResonanceLane(pulse);
     this.drawHazards(pulse);
     this.drawOverlays(pulse);
+    this.drawIntents(pulse);
     this.drawCommanders(pulse);
     this.drawEntities(pulse);
     this.drawGhost();
@@ -276,6 +287,118 @@ export class BoardRenderer {
         ctx.fill();
       }
       ctx.restore();
+    }
+  }
+
+  /**
+   * The enemy's declared turn, drawn on the board.
+   *
+   * Deliberately loud. A telegraph the player can overlook is worth nothing — the entire
+   * mechanic rests on them having seen it before they commit to their own turn.
+   */
+  private drawIntents(pulse: number): void {
+    const { ctx, cam, overlays } = this;
+    if (overlays.intents.length === 0) return;
+
+    // A blow aimed at the Commander has no tile — it is aimed at the player. Drawn as a
+    // line to the Hero model, because "7 damage is coming at your Pact" is the single
+    // most decision-changing thing on the board.
+    const hero = this.commanders.find((m) => m.side === 'player' && m.kind === 'hero');
+    for (const intent of overlays.intents) {
+      if (intent.at || intent.kind !== 'commander' || !hero) continue;
+      const source = this.views.get(intent.unitId);
+      if (!source) continue;
+
+      const from = cam.worldToScreen(source.pos.x + 0.5, source.pos.y + 0.5, 18 * cam.zoom);
+      const to = cam.worldToScreen(hero.at.x + 0.5, hero.at.y + 0.5, 30 * cam.zoom);
+
+      ctx.save();
+      ctx.globalAlpha = 0.55 + 0.25 * pulse;
+      ctx.strokeStyle = 'rgba(248, 113, 113, 0.95)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([7, 5]);
+      ctx.lineDashOffset = -(this.clock / 20) % 12;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+      ctx.restore();
+
+      // The number rides the line rather than the endpoint, so several do not stack up.
+      const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+      ctx.save();
+      ctx.font = `800 ${Math.round(13 * cam.zoom)}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+      ctx.lineWidth = 4;
+      ctx.strokeText(String(intent.damage), mid.x, mid.y);
+      ctx.fillStyle = '#fecaca';
+      ctx.fillText(String(intent.damage), mid.x, mid.y);
+      ctx.restore();
+    }
+
+    for (const intent of overlays.intents) {
+      if (!intent.at) continue;
+      const target = cam.tileCenter(intent.at);
+      const source = this.views.get(intent.unitId);
+
+      // Marked tile: a filled diamond that breathes, so it reads even under a unit.
+      ctx.save();
+      ctx.globalAlpha = 0.3 + 0.16 * pulse;
+      fillTile(ctx, cam, intent.at, 'rgba(229, 72, 77, 0.9)');
+      ctx.restore();
+
+      ctx.save();
+      ctx.setLineDash([6, 4]);
+      ctx.lineDashOffset = -(this.clock / 28) % 10;
+      ctx.strokeStyle = 'rgba(248, 113, 113, 0.95)';
+      ctx.lineWidth = 2.5;
+      tilePath(ctx, cam, intent.at);
+      ctx.stroke();
+      ctx.restore();
+
+      // The line of attack, so it is obvious *who* is throwing the blow.
+      if (source) {
+        const from = cam.worldToScreen(source.pos.x + 0.5, source.pos.y + 0.5, 18 * cam.zoom);
+        ctx.save();
+        ctx.globalAlpha = 0.65;
+        ctx.strokeStyle = 'rgba(248, 113, 113, 0.9)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.lineDashOffset = -(this.clock / 22) % 10;
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(target.x, target.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // The number, which is the part that actually informs the decision.
+      if (intent.damage > 0) {
+        const label = String(intent.damage);
+        ctx.save();
+        ctx.font = `800 ${Math.round(15 * cam.zoom)}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const y = target.y - 4 * cam.zoom;
+        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+        ctx.lineWidth = 4;
+        ctx.strokeText(label, target.x, y);
+        ctx.fillStyle = '#fecaca';
+        ctx.fillText(label, target.x, y);
+        ctx.restore();
+      } else if (intent.label) {
+        ctx.save();
+        ctx.font = `700 ${Math.round(9 * cam.zoom)}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+        ctx.lineWidth = 3;
+        ctx.strokeText(intent.label, target.x, target.y - 2 * cam.zoom);
+        ctx.fillStyle = '#fde68a';
+        ctx.fillText(intent.label, target.x, target.y - 2 * cam.zoom);
+        ctx.restore();
+      }
     }
   }
 

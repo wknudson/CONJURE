@@ -353,3 +353,10 @@
 .rotate:active {
   transform: scale(0.92);
 }
+
+/* A committed blow reads louder than a merely possible one. */
+.status__threat-warning.is-declared {
+  color: #fecaca;
+  font-size: 11px;
+  text-shadow: 0 0 10px rgba(229, 72, 77, 0.6);
+}

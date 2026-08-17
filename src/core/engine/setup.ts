@@ -120,6 +120,8 @@ export function createCombat(
     units: {},
     obstacles: {},
     hazards: {},
+    intents: [],
+    declaredPlan: [],
     players: { player: player.commander, enemy: enemy.commander },
     encounter: {
       id: encounter.id,

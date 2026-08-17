@@ -57,6 +57,14 @@ export interface AiProfile {
    * normal play — reaching it means abandoning determinism to avoid freezing the tab.
    */
   hangGuardMs: number;
+  /**
+   * How much of its turn this tier commits to in advance.
+   *
+   * `all` shows attacks and card plays — the teaching tier, where total clarity is the
+   * point. `attacks` shows only the blows, keeping what it is holding to itself, so
+   * difficulty scales along information as well as skill.
+   */
+  telegraph: 'all' | 'attacks';
 }
 
 export const NOVICE_AI: AiProfile = {
@@ -71,6 +79,7 @@ export const NOVICE_AI: AiProfile = {
   rolloutDepth: 0,
   simulationBudget: 400,
   hangGuardMs: 8000,
+  telegraph: 'all',
 };
 
 export const ADEPT_AI: AiProfile = {
@@ -89,6 +98,7 @@ export const ADEPT_AI: AiProfile = {
   // 2200 costs noticeably more thinking time for no additional wins.
   simulationBudget: 1600,
   hangGuardMs: 8000,
+  telegraph: 'attacks',
 };
 
 export const AI_PROFILES: AiProfile[] = [NOVICE_AI, ADEPT_AI];
@@ -336,6 +346,10 @@ function tieBreakKey(command: Command, state: GameState): { x: number; y: number
       const u = state.units[command.unit];
       return { x: u?.anchor.x ?? 0, y: u?.anchor.y ?? 0, tag: `sac:${command.unit}` };
     }
+    case 'attackTile':
+      return { x: command.at.x, y: command.at.y, tag: `whiff:${command.attacker}` };
+    case 'declareIntents':
+      return { x: 0, y: 0, tag: 'declare' };
     case 'endTurn':
       return { x: 0, y: 0, tag: 'end' };
   }

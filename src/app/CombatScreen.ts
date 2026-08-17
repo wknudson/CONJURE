@@ -417,7 +417,10 @@ export class CombatScreen implements Screen {
     const board = this.session.getBoard();
     this.hud?.syncFromBoard(board, this.session.getHand(), this.session.getPlayableCards());
     this.syncCommanders(board);
-    this.hud?.setCommanderThreat(this.session.getThreat().commanderThreatCount);
+    const incoming = board.intents
+      .filter((i) => i.kind === 'commander')
+      .reduce((sum, i) => sum + i.damage, 0);
+    this.hud?.setIncoming(incoming, this.session.getThreat().commanderThreatCount);
     this.hud?.setInteractive(true);
     this.targeting?.setEnabled(true);
   }

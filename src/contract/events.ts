@@ -92,6 +92,16 @@ export type GameEvent = EventBase &
     | { t: 'armorStripped'; unitId: UnitId; amount: number }
     | { t: 'hazardSpawned'; kind: string; at: Coord; turns: number }
     | { t: 'hazardExpired'; at: Coord }
+    | {
+        t: 'intentDeclared';
+        unitId: UnitId;
+        kind: 'attack' | 'commander' | 'card';
+        at?: Coord;
+        damage: number;
+        label?: string;
+      }
+    | { t: 'intentsCleared' }
+    | { t: 'intentWhiffed'; attackerId: UnitId; at: Coord }
     | { t: 'bossPhaseShift'; side: Side; phase: number; name: string }
     | { t: 'suddenDeath' }
     | { t: 'combatEnded'; result: CombatResult }

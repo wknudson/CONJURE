@@ -140,6 +140,14 @@ export function toBoardView(state: GameState): BoardView {
       kind: h.kind,
       turns: h.turns,
     })),
+    intents: state.intents.map((i) => ({
+      unitId: i.unitId,
+      kind: i.kind,
+      ...(i.at ? { at: { ...i.at } } : {}),
+      ...(i.path ? { path: i.path.map((c) => ({ ...c })) } : {}),
+      damage: i.damage,
+      ...(i.label ? { label: i.label } : {}),
+    })),
     runes,
     statuses,
     escalation: units

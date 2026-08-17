@@ -28,6 +28,7 @@ import { toCardSnapshot } from './views.js';
 import { endTurn } from './turn.js';
 import { footprintDistance } from '../util/grid.js';
 import { resonanceFor } from '../data/resonance.js';
+import { declareIntents } from './intents.js';
 
 export function applyCommand(prev: GameState, command: Command): StepResult {
   const state = deepClone(prev);
@@ -36,7 +37,7 @@ export function applyCommand(prev: GameState, command: Command): StepResult {
   if (state.result) {
     throw new IllegalCommandError('combat is already over');
   }
-  if (state.phase !== 'action' && command.type !== 'endTurn') {
+  if (state.phase !== 'action' && command.type !== 'endTurn' && command.type !== 'declareIntents') {
     throw new IllegalCommandError(`cannot act during phase "${state.phase}"`);
   }
 
@@ -50,8 +51,14 @@ export function applyCommand(prev: GameState, command: Command): StepResult {
     case 'attack':
       attack(ctx, command.attacker, command.target);
       break;
+    case 'attackTile':
+      attackTile(ctx, command.attacker, command.at);
+      break;
     case 'sacrifice':
       sacrifice(ctx, command.unit);
+      break;
+    case 'declareIntents':
+      declareIntents(ctx, command.plan, command.telegraph);
       break;
     case 'endTurn':
       endTurn(ctx);
@@ -212,6 +219,23 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
     cause: 'attack',
     ...(isMelee ? { sourceUnitId: attackerId } : {}),
   });
+}
+
+/**
+ * A declared attack landing on a tile that is now empty.
+ *
+ * The unit still spends its swing, and nothing takes damage. This is what the player
+ * bought by moving the target out of the way, so it has to be visible rather than a
+ * silently skipped action.
+ */
+function attackTile(ctx: Ctx, attackerId: string, at: { x: number; y: number }): void {
+  const attacker = ctx.state.units[attackerId];
+  if (!attacker) return;
+  if (!canAttack(attacker)) return;
+
+  attacker.attackedThisTurn = true;
+  newCause(ctx);
+  emit(ctx, { t: 'intentWhiffed', attackerId, at: { ...at } });
 }
 
 function sacrifice(ctx: Ctx, unitId: string): void {

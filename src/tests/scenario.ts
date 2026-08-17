@@ -58,6 +58,8 @@ export function scenario(opts: {
     units: {},
     obstacles: {},
     hazards: {},
+    intents: [],
+    declaredPlan: [],
     players: {
       player: blankCommander(
         'Hero',

@@ -100,6 +100,11 @@ export const TERMS: Record<string, GlossaryEntry> = {
     body: 'Blocks ranged line of sight through the tile. Movement is unaffected.',
     detail: 'Left behind when fire meets a Chilled target. Thins as it expires.',
   },
+  intent: {
+    title: 'Enemy intent',
+    body: 'Red tiles are where the enemy has committed to strike next turn, with the damage shown.',
+    detail: 'The blow lands on the tile, not the unit. Move the target away and it hits nothing — or whatever is standing there instead.',
+  },
   reactions: {
     title: 'Elemental reactions',
     body: 'Damage of one school landing on the status of another produces something new.',

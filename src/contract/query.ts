@@ -63,6 +63,15 @@ export interface BoardView {
   units: UnitSnapshot[];
   obstacles: ObstacleSnapshot[];
   hazards: { at: Coord; kind: string; turns: number }[];
+  /** What the enemy has committed to next turn. Empty during the enemy's own turn. */
+  intents: {
+    unitId: UnitId;
+    kind: 'attack' | 'commander' | 'card';
+    at?: Coord;
+    path?: Coord[];
+    damage: number;
+    label?: string;
+  }[];
   runes: { hostId: UnitId; at: Coord; rune: RuneSnapshot }[];
   statuses: { unitId: UnitId; kind: string; stacks: number }[];
   escalation: { unitId: UnitId; stacks: number }[];

@@ -29,6 +29,32 @@ HUD work and the rotation work more valuable — so it goes first.
 
 ---
 
+## ~~E1 — Enemy intent~~ ✅ DONE (2026-08-17)
+
+The enemy commits at the end of its turn and honours the commitment. Declared blows are
+drawn on the board with their damage; blows aimed at the Pact draw a line to the Hero and
+total into a HUD readout. Moving a target off a declared tile makes the swing land on
+empty ground, which emits a visible MISS.
+
+**Design points that turned out to matter:**
+
+- *Declaration is a command*, so it passes through the one reducer and replays identically
+  from a seed rather than being a side effect the harness cannot see.
+- *The next turn is planned against a forecast board* on which the enemy's units have
+  refreshed. Planning against the live state finds nothing, because every unit is spent at
+  the moment the turn ends. The forecast deliberately does not simulate the upkeep draw —
+  promising a card the enemy does not hold yet would be a lie.
+- *A dead intent skips rather than aborts.* Killing one attacker must not cancel the rest
+  of the enemy's turn.
+
+**Known gap:** the HUD totals *declared* damage only. Status ticks and Resonance are not
+declarations and land on top, so a turn can cost slightly more than the number promised.
+That is the trust-breaking direction and worth closing — either by folding foreseeable
+tick damage into the readout or by labelling it "from attacks".
+
+<details>
+<summary>Original E1 plan (kept for reference)</summary>
+
 ## E1 — Enemy intent: the centrepiece (~1 week)
 
 **The change.** At the end of its turn, the enemy *commits* to what each of its units will
@@ -72,8 +98,8 @@ Cost to be aware of: two telegraphing modes doubles the tuning and testing surfa
 threat display must handle a partially-known turn without implying it is complete. The HUD
 should show explicitly that Adept has undeclared cards in hand.
 
-> **Status: not scheduled.** E1 is deferred; the current pass is E4 (rotation) and E3 (HUD)
-> only. This section records the decision so it does not have to be relitigated later.
+> **Status: ✅ built 2026-08-17**, exactly as decided — Novice declares its whole turn,
+> Adept declares only its blows.
 
 ### Implementation sketch
 
@@ -119,6 +145,8 @@ export interface Intent {
   play, which is exactly what makes it the easy tier.
 
 ---
+
+</details>
 
 ## E2 — Turn flow (~2 days, do alongside E1)
 
