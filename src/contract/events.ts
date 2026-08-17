@@ -85,6 +85,8 @@ export type GameEvent = EventBase &
     | { t: 'runeFizzled'; hostId: UnitId; rune: RuneDefId; reason: 'unaligned' | 'devour' | 'gate' }
     | { t: 'escalated'; unitId: UnitId; stacks: number; atk: number; hp: number }
     | { t: 'unitSacrificed'; unitId: UnitId; sparksGained: number }
+    /** A unit spent its attack banking a Spark instead of swinging. */
+    | { t: 'unitChannelled'; unitId: UnitId; side: Side; sparks: number }
     | { t: 'unitDied'; unitId: UnitId; at: Coord; footprint: 1 | 2; cause: DamageCause }
     | { t: 'obstacleDestroyed'; obstacleId: UnitId; at: Coord }
     | { t: 'resonanceTriggered'; side: Side; name: string; column: number }

@@ -57,6 +57,9 @@ export function applyCommand(prev: GameState, command: Command): StepResult {
     case 'sacrifice':
       sacrifice(ctx, command.unit);
       break;
+    case 'channel':
+      channel(ctx, command.unit);
+      break;
     case 'declareIntents':
       declareIntents(ctx, command.plan, command.telegraph);
       break;
@@ -251,6 +254,40 @@ function attackTile(ctx: Ctx, attackerId: string, at: { x: number; y: number }):
   attacker.attackedThisTurn = true;
   newCause(ctx);
   emit(ctx, { t: 'intentWhiffed', attackerId, at: { ...at } });
+}
+
+/** Sparks banked by a unit that spends its swing on the ritual instead of a target. */
+export const CHANNEL_SPARKS = 1;
+
+/**
+ * Channel: give up a unit's attack to bank a Spark.
+ *
+ * The floor under a bad hand. A turn where nothing is worth attacking and no card is
+ * affordable used to be a turn spent passing; now every idle body is worth something,
+ * and the choice between striking and channelling is a real one on the margin.
+ *
+ * Unlike Sacrifice this asks nothing of the unit but its turn — it survives, so there is
+ * no offering to be worth anything. The Bound Form is still excluded: banking a Spark for
+ * free with the one unit that cannot be traded away is a turn with no downside at all.
+ */
+function channel(ctx: Ctx, unitId: string): void {
+  const unit = ctx.state.units[unitId];
+  if (!unit) throw new IllegalCommandError(`no unit ${unitId}`);
+  if (unit.side !== ctx.state.activeSide) throw new IllegalCommandError('not your unit');
+  if (unit.attackedThisTurn) throw new IllegalCommandError('unit has already attacked');
+  if (!canAct(unit)) throw new IllegalCommandError('unit cannot act');
+  if (unit.keywords.includes('BoundForm')) {
+    throw new IllegalCommandError('the Bound Form cannot channel');
+  }
+
+  const side = ctx.state.activeSide;
+  const cmd = ctx.state.players[side];
+  unit.attackedThisTurn = true;
+  cmd.sparks += CHANNEL_SPARKS;
+
+  newCause(ctx);
+  emit(ctx, { t: 'unitChannelled', unitId, side, sparks: CHANNEL_SPARKS });
+  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, sparks: cmd.sparks });
 }
 
 function sacrifice(ctx: Ctx, unitId: string): void {

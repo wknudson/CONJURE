@@ -96,6 +96,21 @@ function playRandomGame(
       }
     }
 
+    // And occasionally channel, exercising the other spark path.
+    if (!session.isOver()) {
+      const mine = session.getBoard().units.filter((u) => u.side === 'player');
+      if (nextInt(rng, 4) === 0) {
+        const caster = pick(mine);
+        if (caster) {
+          try {
+            take({ type: 'channel', unit: caster.id }, 'after channel');
+          } catch {
+            /* an exhausted or bound unit cannot channel; legality is the engine's job */
+          }
+        }
+      }
+    }
+
     if (session.isOver()) break;
     take({ type: 'endTurn' }, 'after endTurn');
     onState?.(session, 'after player cleanup');

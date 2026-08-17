@@ -28,6 +28,8 @@ export interface UtilityWeights {
   guardianKill: number;
   collision: number;
   sparkEfficiency: number;
+  /** Banking a Spark by channelling. Deferred value, so priced under spending one. */
+  channelValue: number;
   counterRisk: number;
   friendlyCollateral: number;
   advance: number;
@@ -60,6 +62,9 @@ export const NOVICE_WEIGHTS: UtilityWeights = {
   // A Novice duelist "ignores collision damage" — it does not seek out shoves.
   collision: 0,
   sparkEfficiency: 10,
+  // Above the pass threshold so an idle unit channels rather than standing there, but
+  // well under a kill or a face hit so it never competes with actually fighting.
+  channelValue: 6,
   counterRisk: 12,
   friendlyCollateral: 15,
   advance: 3,
@@ -242,6 +247,13 @@ export function scoreAction(
   const after = next.players[side];
   const sparksSpent = Math.max(0, before.sparks - after.sparks);
   utility += weights.sparkEfficiency * sparksSpent;
+
+  // Channelling banks a Spark instead of swinging. Worth less than spending one, because
+  // the Spark still has to find a use before end of turn — but worth more than the zero
+  // it would otherwise score, which would mean the AI never channelled at all.
+  for (const e of events) {
+    if (e.t === 'unitChannelled') utility += weights.channelValue * e.sparks;
+  }
 
   // --- Risk ---
   for (const e of events) {

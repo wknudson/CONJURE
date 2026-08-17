@@ -18,6 +18,7 @@ export type Action =
   | { type: 'moveUnit'; unit: UnitId; to: Coord }
   | { type: 'attack'; attacker: UnitId; target: TargetRef }
   | { type: 'sacrifice'; unit: UnitId }
+  | { type: 'channel'; unit: UnitId }
   | { type: 'endTurn' };
 
 export type TargetSelection =

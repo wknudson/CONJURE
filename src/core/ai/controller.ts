@@ -346,6 +346,10 @@ function tieBreakKey(command: Command, state: GameState): { x: number; y: number
       const u = state.units[command.unit];
       return { x: u?.anchor.x ?? 0, y: u?.anchor.y ?? 0, tag: `sac:${command.unit}` };
     }
+    case 'channel': {
+      const u = state.units[command.unit];
+      return { x: u?.anchor.x ?? 0, y: u?.anchor.y ?? 0, tag: `channel:${command.unit}` };
+    }
     case 'attackTile':
       return { x: command.at.x, y: command.at.y, tag: `whiff:${command.attacker}` };
     case 'declareIntents':

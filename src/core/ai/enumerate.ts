@@ -5,14 +5,15 @@
  * action the player could not also take.
  */
 
-import type { Side } from '../../contract/ids.js';
+import type { Side, UnitId } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
 import type { Command } from '../types/commands.js';
 import { CARDS } from '../data/cards/index.js';
 import { canAfford } from '../engine/deck.js';
 import { legalCardTargets, legalAttacks, sacrificeCandidates } from '../engine/targeting.js';
-import { legalMoves, canMove } from '../engine/movement.js';
+import { legalMoves, canMove, canAttack } from '../engine/movement.js';
 import { unitsOf } from '../engine/board.js';
+import { CHANNEL_SPARKS } from '../engine/engine.js';
 
 /**
  * Every command the side could legally issue right now.
@@ -38,9 +39,22 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
   }
 
   // 2. Attacks — enumerated before moves so equal-utility ties favour acting.
+  // The first unit found with nothing to swing at is remembered for the Channel block:
+  // legalAttacks is the most expensive call in this function and it is already being
+  // made here, so asking it twice would double the cost of the AI's hottest path.
+  let idleUnit: UnitId | undefined;
   for (const unit of unitsOf(state, side)) {
-    for (const target of legalAttacks(state, unit)) {
+    const targets = legalAttacks(state, unit);
+    for (const target of targets) {
       out.push({ type: 'attack', attacker: unit.id, target });
+    }
+    if (
+      targets.length === 0 &&
+      idleUnit === undefined &&
+      canAttack(unit) &&
+      !unit.keywords.includes('BoundForm')
+    ) {
+      idleUnit = unit.id;
     }
   }
 
@@ -57,14 +71,32 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
   }
 
   // 4. Sacrifices — only worth enumerating when there is something to spend sparks on.
-  const hasExpensiveCard = cmd.hand.some((id) => {
+  let cheapestUnaffordable = Infinity;
+  for (const id of cmd.hand) {
     const def = CARDS[cmd.cards[id]?.defId ?? ''];
-    return def && !canAfford(state, side, def.cost);
-  });
+    if (!def || canAfford(state, side, def.cost)) continue;
+    cheapestUnaffordable = Math.min(cheapestUnaffordable, def.cost);
+  }
+  const hasExpensiveCard = cheapestUnaffordable !== Infinity;
   if (hasExpensiveCard) {
     for (const unit of sacrificeCandidates(state, side)) {
       out.push({ type: 'sacrifice', unit: unit.id });
     }
+  }
+
+  // 5. Channels — offered only when the Spark actually completes a purchase this turn.
+  //
+  // Sparks expire at end of turn, so banking one that goes unspent is worse than doing
+  // nothing: the unit gave up its swing for it. The gate is therefore not "could I use a
+  // Spark" but "does this Spark, right now, make an unaffordable card affordable".
+  // Without that the AI channels every idle unit until it hits the action cap, hoarding
+  // Sparks it cannot spend and quadrupling its own planning time in the process.
+  //
+  // Only one candidate is offered even so: every idle unit banks the same Spark, so the
+  // choice of which one is not a decision worth searching.
+  const banked = cmd.pips + cmd.sparks;
+  if (idleUnit !== undefined && banked + CHANNEL_SPARKS >= cheapestUnaffordable) {
+    out.push({ type: 'channel', unit: idleUnit });
   }
 
   return out;

@@ -236,6 +236,18 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     if (e.sparksGained > 0) view.sfx.play('spark');
   });
 
+  seq.on('unitChannelled', async (e, { view, t }) => {
+    // A quieter beat than a sacrifice: nothing is lost, the unit simply gives up its
+    // swing. A brief lift and a spark chime, then it settles back as spent.
+    const v = view.views.get(e.unitId);
+    if (v) view.fx.label(roundOf(v.pos), 'CHANNEL', 'spark');
+    view.sfx.play('spark');
+    await tween(t(180), easeOutQuad, (k) => {
+      if (v) v.elev = Math.sin(k * Math.PI) * 8;
+    });
+    if (v) v.elev = 0;
+  });
+
   seq.on('unitDied', async (e, { view, t }) => {
     const v = view.views.get(e.unitId);
 

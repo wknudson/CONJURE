@@ -461,6 +461,8 @@ function toCommand(action: Action): Command {
       return { type: 'attack', attacker: action.attacker, target: action.target };
     case 'sacrifice':
       return { type: 'sacrifice', unit: action.unit };
+    case 'channel':
+      return { type: 'channel', unit: action.unit };
     case 'endTurn':
       return { type: 'endTurn' };
   }
