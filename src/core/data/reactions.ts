@@ -86,6 +86,19 @@ export const REACTIONS: ReactionDef[] = [
   },
 ];
 
+/**
+ * Not implemented, deliberately: **Arc**, the rain reaction.
+ *
+ * The design calls for Surge damage landing on wet ground to chain a point of damage to
+ * adjacent units. There is no Surge damage type and no Surge card, so the branch could
+ * not be reached, could not be tested, and would rot quietly until someone trusted it.
+ *
+ * When Surge lands, this is the shape it takes: a fourth entry here triggering on the
+ * new dtype, gated on `state.encounter.weather?.kind === 'rain'` rather than on a
+ * status — which is the one thing the table cannot currently express, since `requires`
+ * names a status. Adding a `requiresWeather` field beside it is the smaller change.
+ */
+
 /** The reaction a hit of this school would provoke on a target carrying these statuses. */
 export function findReaction(
   dtype: DamageType,

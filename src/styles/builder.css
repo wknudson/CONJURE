@@ -498,3 +498,11 @@
 .pre__key--cover {
   background: repeating-linear-gradient(45deg, rgba(74, 222, 128, 0.7) 0 2px, transparent 2px 4px);
 }
+
+/* The sky, stated where the deck is chosen — it is a reason to bring different cards. */
+.pre__weather {
+  margin-top: 4px;
+  font: 700 9px var(--font);
+  letter-spacing: 0.3px;
+  color: #a5c8e1;
+}

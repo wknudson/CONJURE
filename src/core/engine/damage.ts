@@ -75,9 +75,26 @@ export function dealDamage(ctx: Ctx, req: DamageRequest): DamageOutcome {
   return damageEntity(ctx, entity, req);
 }
 
+/**
+ * Fire gutters in the rain.
+ *
+ * Applied before armor and before anything else looks at the number, so a Cinder Rune in
+ * a downpour is genuinely weaker rather than merely absorbed differently. It can be
+ * damped to nothing, which is the point: bringing a Pyre deck to a storm is a decision
+ * with a price, and the pre-combat screen exists so it is an informed one.
+ */
+function dampenFire(ctx: Ctx, req: DamageRequest): number {
+  if (req.dtype !== 'fire') return req.amount;
+  if (ctx.state.encounter.weather?.kind !== 'rain') return req.amount;
+  return Math.max(0, req.amount - RAIN_FIRE_PENALTY);
+}
+
+/** How much a downpour takes off every point of fire. */
+export const RAIN_FIRE_PENALTY = 1;
+
 function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side, at?: Coord): DamageOutcome {
   const cmd = ctx.state.players[side];
-  let amount = req.amount;
+  let amount = dampenFire(ctx, req);
 
   // Boss Damage Gates clamp incoming damage at phase thresholds and cancel the rest
   // of the current resolution chain.
@@ -117,7 +134,7 @@ function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side, at?: Coord): D
 }
 
 function damageEntity(ctx: Ctx, entity: Entity, req: DamageRequest): DamageOutcome {
-  let amount = req.amount;
+  let amount = dampenFire(ctx, req);
   let absorbed = 0;
 
   // Brittle: frozen-through flesh takes more from everything, before armor is applied.

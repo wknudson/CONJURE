@@ -22,7 +22,7 @@ import {
 import { canAttack, canAct } from './movement.js';
 import { hasLoS, hasLoSToPortrait } from './los.js';
 import { DIRS_8, cellsOf } from '../util/grid.js';
-import { inBounds, portraitRow, territoryRows } from '../types/state.js';
+import { inBounds, portraitRow, territoryRows, visionClamp } from '../types/state.js';
 
 /**
  * Where a card is cast from.
@@ -55,7 +55,10 @@ function inCastRange(
   def: CardDef,
   ignore: string[],
 ): boolean {
-  const range = def.range ?? Infinity;
+  // Fog shortens a spell exactly as it shortens a bow: the Companion cannot throw at what
+  // it cannot see. Gale is deliberately not applied — it bends arrows, not sorcery.
+  const clamp = visionClamp(state);
+  const range = Math.min(def.range ?? Infinity, clamp ?? Infinity);
   return origin.some((o) =>
     cells.some(
       (c) =>
@@ -238,12 +241,17 @@ export function canStrike(
   ignoreIds: UnitId[] = [unit.id],
 ): boolean {
   let best = Infinity;
+  let toward: Coord = { x: 0, y: 0 };
   for (const c of from) {
     for (const t of targets) {
-      best = Math.min(best, Math.max(Math.abs(c.x - t.x), Math.abs(c.y - t.y)));
+      const d = Math.max(Math.abs(c.x - t.x), Math.abs(c.y - t.y));
+      if (d < best) {
+        best = d;
+        toward = { x: t.x - c.x, y: t.y - c.y };
+      }
     }
   }
-  if (best < unit.rangeMin || best > unit.rangeMax) return false;
+  if (best < unit.rangeMin || best > effectiveRange(state, unit, toward)) return false;
 
   // A mortar lobs over everything, which is the whole of what it buys with its blind
   // spot: no line is needed, at any distance.
@@ -256,6 +264,27 @@ export function canStrike(
   // Reaching past arm's length means seeing what you are reaching for; melee never does.
   if (best <= 1) return true;
   return from.some((c) => targets.some((t) => hasLoS(state, c, t, ignoreIds)));
+}
+
+/**
+ * How far this unit can actually reach, once the sky is taken into account.
+ *
+ * Fog clamps everything to what can be seen. A gale stretches a shot thrown downwind and
+ * shortens one thrown into the teeth of it — melee is untouched, since a wind that could
+ * hold off a sword would be a different kind of problem.
+ */
+export function effectiveRange(state: GameState, unit: Unit, toward: Coord): number {
+  let range = unit.rangeMax;
+
+  const weather = state.encounter.weather;
+  if (weather?.kind === 'gale' && range > 1) {
+    const dot = toward.x * weather.wind.x + toward.y * weather.wind.y;
+    if (dot > 0) range += 1;
+    else if (dot < 0) range = Math.max(unit.rangeMin, range - 1);
+  }
+
+  const clamp = visionClamp(state);
+  return clamp === undefined ? range : Math.min(range, clamp);
 }
 
 /** Whether any attacking cell shares a rank, file, or diagonal with any target cell. */
@@ -287,11 +316,14 @@ export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): 
   const mid = Math.floor((state.width - 1) / 2);
   const portraitCells: Coord[] = [{ x: mid, y: row }];
 
+  // The sky applies to the Commander as much as to anything else. Without this a fogged
+  // board would blind every unit while leaving snipers a clear shot at the face.
+  const dist = Math.min(...cells.map((c) => Math.max(Math.abs(c.x - mid), Math.abs(c.y - row))));
+  const reach = effectiveRange(state, unit, { x: 0, y: row < 0 ? -1 : 1 });
+  if (dist > reach) return false;
+
   if (unit.attackProfile === 'arcing') {
-    const dist = Math.min(
-      ...cells.map((c) => Math.max(Math.abs(c.x - mid), Math.abs(c.y - row))),
-    );
-    return dist >= unit.rangeMin && dist <= unit.rangeMax;
+    return dist >= unit.rangeMin;
   }
 
   if (unit.attackProfile === 'lineOnly' && !onLine(cells, portraitCells)) return false;

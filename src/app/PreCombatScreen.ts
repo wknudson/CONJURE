@@ -48,6 +48,24 @@ function describeArena(enc: EncounterDef): string {
   return 'Even ground.';
 }
 
+/**
+ * What the sky is doing, and what it will do to you.
+ *
+ * Stated in terms of consequences rather than flavour, because this is the screen where
+ * the deck is chosen — "fire is weaker here" is actionable in a way that "it is raining"
+ * is not.
+ */
+function describeWeather(enc: EncounterDef): string | undefined {
+  const w = enc.weather;
+  if (!w) return undefined;
+  if (w.kind === 'rain') return 'Torrential rain — fire damage is blunted.';
+  if (w.kind === 'fog') return 'Dense fog — nothing sees or shoots past 3 tiles.';
+  const { x, y } = w.wind;
+  const heading =
+    Math.abs(x) > Math.abs(y) ? (x > 0 ? 'east' : 'west') : y > 0 ? 'south' : 'north';
+  return `Gale blowing ${heading} — ranged attacks carry further with it, and fall short into it.`;
+}
+
 export class PreCombatScreen implements Screen {
   private el: HTMLElement | null = null;
   private deck: string[];
@@ -70,6 +88,7 @@ export class PreCombatScreen implements Screen {
         <div>
           <div class="builder__title">${enc.name}</div>
           <div class="builder__sub">${companion?.name ?? 'Companion'} · ${enc.width}×${enc.height} · ${describeArena(enc)}</div>
+          ${describeWeather(enc) ? `<div class="pre__weather">${describeWeather(enc)}</div>` : ''}
         </div>
         <div class="builder__actions">
           <button class="pre__reset">Undo changes</button>

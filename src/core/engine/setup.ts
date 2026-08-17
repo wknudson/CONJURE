@@ -186,6 +186,7 @@ export function createCombat(
       bossPhase: 1,
       firedGates: [],
       chainCancelled: false,
+      ...(encounter.weather ? { weather: encounter.weather } : {}),
     },
     nextId: 0,
     suddenDeath: false,

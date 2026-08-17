@@ -39,6 +39,19 @@ export interface CommanderState {
   handLimit: number;
 }
 
+/**
+ * The sky over an arena. Global and permanent, unlike a hazard, which sits on a tile and
+ * burns off — so it lives on the encounter rather than in `hazards`, where the tick
+ * would age it away.
+ */
+export type Weather =
+  /** Fire gutters in the wet. */
+  | { kind: 'rain' }
+  /** Nothing can be seen past three tiles, by anyone, in any direction. */
+  | { kind: 'fog' }
+  /** A steady wind: ranged attacks reach further downwind and fall short into it. */
+  | { kind: 'gale'; wind: Coord };
+
 export interface EncounterState {
   id: string;
   name: string;
@@ -50,7 +63,17 @@ export interface EncounterState {
    * cascade worklist both check this and abandon the rest of the current chain.
    */
   chainCancelled: boolean;
+  /** The weather this fight is being had in, if any. */
+  weather?: Weather;
 }
+
+/** How far anything can see. Undefined means as far as the board allows. */
+export function visionClamp(state: GameState): number | undefined {
+  return state.encounter.weather?.kind === 'fog' ? FOG_VISION : undefined;
+}
+
+/** Dense fog: three tiles, for units, spells and Commanders alike. */
+export const FOG_VISION = 3;
 
 /**
  * A lingering effect occupying a tile. Hazards are terrain, not entities: they do not

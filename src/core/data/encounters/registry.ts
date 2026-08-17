@@ -7,7 +7,7 @@
 
 import type { School, Side } from '../../../contract/ids.js';
 import type { Ctx } from '../../engine/context.js';
-import type { GameState } from '../../types/state.js';
+import type { GameState, Weather } from '../../types/state.js';
 
 export interface EncounterDef {
   id: string;
@@ -62,6 +62,8 @@ export interface EncounterDef {
    * your units toward the enemy, and theirs toward you, whether or not that was the plan.
    */
   currents?: { at: { x: number; y: number }; dir: { x: number; y: number } }[];
+  /** The sky this fight is had under. Shown before the deck is locked. */
+  weather?: Weather;
   /** A loot-carrying scavenger turns up mid-fight and runs for the edge. */
   scavenger?: true;
   /** Wild beasts arrive and maul whichever army is nearest. */
