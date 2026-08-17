@@ -251,6 +251,18 @@ export function createCombat(
     state.players.player.companionUnitDefId = companion.unitCardId;
   }
 
+  // Currents are part of the map, laid down like terrain rather than conjured.
+  for (const c of encounter.currents ?? []) {
+    state.hazards[`${c.at.x},${c.at.y}`] = {
+      kind: 'current',
+      at: { ...c.at },
+      turns: 1,
+      owner: 'player',
+      permanent: true,
+      dir: { ...c.dir },
+    };
+  }
+
   scatterGeodes(ctx, encounter);
 
   // Opening hands, then the encounter script, then turn 1.

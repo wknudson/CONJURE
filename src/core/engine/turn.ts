@@ -14,7 +14,9 @@
 
 import type { Side } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
-import { emit } from './context.js';
+import { emit, newCause } from './context.js';
+import { unitAt } from './board.js';
+import { pushUnit } from './displacement.js';
 import { DRAW_PER_TURN, drawCards, endOfTurnCleanup, gainPips } from './deck.js';
 import { refreshUnits, startOfTurnStatuses } from './status.js';
 import { checkLethal } from './death.js';
@@ -33,6 +35,9 @@ export function beginTurn(ctx: Ctx, side: Side): void {
   refreshUnits(ctx, side);
   ctx.state.players[side].resonanceUsedThisTurn = false;
   ctx.state.players[side].reactionPipsThisTurn = 0;
+  // The game's only source of Pip income. If play ever shows the economy is too tight
+  // even with Channel, reaction refunds and geodes in it, raising this 1 to a 2 is the
+  // whole of the fail-safe — starting Pips are already 3 and the cap is already 8.
   gainPips(ctx, side, 1);
   // The opening hand of 5 dealt during setup IS turn one's draw. Drawing again here
   // would immediately overdraw past the hand limit of 7 and burn two cards.
@@ -68,10 +73,46 @@ export function endTurn(ctx: Ctx): void {
   const next = opposite(side);
   if (next === 'player') {
     ctx.state.turn += 1;
+    runCurrents(ctx);
+    if (ctx.state.result) return;
     applyPacifistLockout(ctx);
     if (ctx.state.result) return;
   }
   beginTurn(ctx, next);
+}
+
+/**
+ * Moving ground, applied once both sides have had their turn.
+ *
+ * The round boundary is the only fair place for this: applied per turn it would carry a
+ * unit twice as far for the side that acted first, and applied mid-turn it would move
+ * pieces out from under a plan already committed to.
+ *
+ * The tiles are snapshotted before anything moves, so a unit carried onto another current
+ * is not carried again this round — that keeps a ring of currents from spinning forever,
+ * and keeps the whole sweep to one deterministic pass. Order is fixed by position rather
+ * than by insertion, so a replay lays out identically.
+ *
+ * Blocked pushes deal their usual collision damage. A current that shoves a unit into a
+ * wall is a weapon, which is the point of fighting over the lane.
+ */
+function runCurrents(ctx: Ctx): void {
+  const carried = Object.values(ctx.state.hazards)
+    .filter((h) => h.kind === 'current' && h.dir)
+    .map((h) => ({ at: { ...h.at }, dir: { ...h.dir! } }))
+    .sort((a, b) => a.at.y - b.at.y || a.at.x - b.at.x);
+
+  for (const lane of carried) {
+    if (ctx.state.result) return;
+    const rider = unitAt(ctx.state, lane.at);
+    if (!rider) continue;
+    // A Behemoth rides the tile under its anchor, so a 2x2 straddling two lanes is
+    // carried once rather than twice.
+    if (rider.anchor.x !== lane.at.x || rider.anchor.y !== lane.at.y) continue;
+
+    newCause(ctx);
+    pushUnit(ctx, rider, lane.dir, 1);
+  }
 }
 
 /**

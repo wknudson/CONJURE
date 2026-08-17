@@ -136,7 +136,12 @@ describe('determinism', () => {
 
       expect(again.finalHash, `seed ${seed} diverged on replay`).toBe(original);
     }
-  }, 60_000);
+    // Every wall-clock budget in this suite is generous on purpose. They run in parallel
+    // workers alongside the other AI-heavy files, and each board now carries more to
+    // think about — geodes, crystals, rubble, currents, an extra action. A failure here
+    // should mean "this hung", never "this machine was busy"; divergence is caught by
+    // the hash above, which is the assertion that matters.
+  }, 180_000);
 
   it('produces identical events when the same game is replayed twice', () => {
     const encounter = ENCOUNTERS[0]!;
@@ -188,7 +193,7 @@ describe('determinism', () => {
       const replayed = replay(encounter, seed, steps);
       expect(replayed.finalHash, `trial seed ${seed} diverged`).toBe(hashState(session.debugState));
     }
-  }, 60_000);
+  }, 180_000);
 });
 
 describe('fuzz soak', () => {
@@ -228,5 +233,5 @@ describe('fuzz soak', () => {
         expect(state.players.enemy.hp).toBeGreaterThan(0);
       }
     }
-  }, 60_000);
+  }, 180_000);
 });

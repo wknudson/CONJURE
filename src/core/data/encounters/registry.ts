@@ -47,6 +47,13 @@ export interface EncounterDef {
    * simply part of the furniture.
    */
   sparkGeodes?: { min: number; max: number };
+  /**
+   * Tiles that carry whatever stands on them, one step per round, in `dir`.
+   *
+   * A lane of these is ground both sides want and neither fully controls: it delivers
+   * your units toward the enemy, and theirs toward you, whether or not that was the plan.
+   */
+  currents?: { at: { x: number; y: number }; dir: { x: number; y: number } }[];
   /** Free opening unit placed for both sides. Set to null to skip. */
   vanguard?: string | null;
   script?: EncounterScript;
