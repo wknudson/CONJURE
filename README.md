@@ -308,6 +308,10 @@ alone (Module 1 §4). The table lives in `core/data/reactions.ts` and is evaluat
 | **Shatter** | A physical hit or collision on a **Frozen** target | Strips 100% Armor, 4 shrapnel to adjacent |
 | **Wildfire** | Fire on a **Toxined** target | Consumes every stack for 2 damage per stack, all around |
 
+Each reads differently on the board without needing its label: Shatter throws oriented ice
+slivers under a sharp shake, Vaporize blooms a lingering cloud with no shake at all, and
+Wildfire's embers cross from green to orange as the fire front outruns them.
+
 Reactions inherit the rune armor gate — a blow entirely absorbed changes nothing — with
 one deliberate exception. **Shatter ignores it**, because requiring HP loss would mean
 armor prevented the one reaction whose entire purpose is removing armor, and a heavily

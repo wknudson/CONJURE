@@ -332,12 +332,48 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     /* likewise */
   });
 
+  /**
+   * Reactions route to their own presentation.
+   *
+   * They are mechanically distinct — one breaks armour, one leaves fog, one consumes a
+   * status for area damage — and sharing a single flash threw that away. Each now looks
+   * and sounds like the thing it is, so the board is readable without reading the label.
+   *
+   * An unknown id falls through to the generic burst rather than rendering nothing, so a
+   * reaction added later is merely unstyled instead of invisible.
+   */
   seq.on('reactionTriggered', async (e, { view, t }) => {
     view.hud.flashNotice(`${e.name}!`);
     view.fx.label(e.at, e.name.toUpperCase(), 'reaction');
-    view.fx.screenShake(6, t(260));
-    view.sfx.play('detonate');
-    await tween(t(300), easeOutQuad, () => {});
+
+    switch (e.reaction) {
+      case 'shatter':
+        // Rigid failure: hard, brief, and gone.
+        view.sfx.play('shatter', { pitch: 1.15 });
+        view.fx.screenShake(9, t(140));
+        await view.fx.shatterBurst(e.at, t(300));
+        return;
+
+      case 'vaporize':
+        // Nothing struck anything, so nothing shakes. The cloud outstays the beat because
+        // the fog it leaves behind is a real rule, not just a flourish.
+        view.sfx.play('hiss');
+        await view.fx.steamBloom(e.at, t(520));
+        return;
+
+      case 'wildfire':
+        // Combustion: a lower, longer rumble under a bloom that turns as it spreads.
+        view.sfx.play('wildfire', { pitch: 0.85 });
+        view.fx.screenShake(7, t(420));
+        await view.fx.wildfireBloom(e.at, t(460));
+        return;
+
+      default:
+        view.sfx.play('detonate');
+        view.fx.screenShake(6, t(260));
+        await tween(t(300), easeOutQuad, () => {});
+        return;
+    }
   });
 
   seq.on('armorStripped', async (e, { view, t }) => {

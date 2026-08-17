@@ -249,8 +249,20 @@ Entirely client-side: `git diff src/core/` is empty for this work. The one suppo
 change was giving the sound layer a `pitch` option, which the crescendo needs and which
 lives in the presentation layer.
 
-**Not done:** per-reaction visual identity — Vaporize, Shatter and Wildfire still share one
-flash. It is the remaining item on this list.
+**Per-reaction identity — done 2026-08-17.** The `reactionTriggered` handler is now a
+router on the reaction id:
+
+| Reaction | Reads as |
+| :-- | :-- |
+| **Shatter** | Oriented cyan/white slivers thrown outward under hard gravity, a sharp 140ms shake, and a brittle high crack. Rigid failure: loud and over at once. |
+| **Vaporize** | A soft white bloom that holds opacity before clearing, drifting upward, with a sustained hiss and **no shake** — nothing struck anything. It outstays the animation beat because the fog it leaves is a real rule. |
+| **Wildfire** | Embers that cross from green to orange over their own lifetime, a fire ring outrunning a green one, and a bass-heavy roar pitched down to 0.85. |
+
+Unknown ids fall through to the generic burst, so a reaction added later is unstyled
+rather than invisible.
+
+Supporting work, all presentation-layer: particles gained size, orientation, per-particle
+gravity and decay, and a colour ramp; rings gained a filled soft-edged mode.
 
 <details>
 <summary>Original E5 plan (kept for reference)</summary>

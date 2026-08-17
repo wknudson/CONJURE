@@ -13,6 +13,9 @@ export type Cue =
   | 'hit'
   | 'crash'
   | 'detonate'
+  | 'shatter'
+  | 'hiss'
+  | 'wildfire'
   | 'death1'
   | 'death2'
   | 'win'
@@ -111,6 +114,23 @@ export class Sfx {
         // Deliberately harsh: spending life should sound like it costs something.
         this.tone(t, 'sawtooth', 240, 90, 0.16, 0.3);
         this.noise(t, 0.14, 3200, 0.22);
+        break;
+      case 'shatter':
+        // Brittle and bright: a high crack over a short, sharp noise burst.
+        this.tone(t, 'square', 2400, 900, 0.06, 0.16);
+        this.noise(t, 0.09, 6000, 0.3);
+        this.noise(t + 0.03, 0.13, 3200, 0.18);
+        break;
+      case 'hiss':
+        // Sustained and tuneless: steam is pressure escaping, not an impact.
+        this.noise(t, 0.42, 5200, 0.16);
+        this.noise(t + 0.06, 0.34, 2600, 0.1);
+        break;
+      case 'wildfire':
+        // Bass-heavy roar: combustion rather than a bang.
+        this.tone(t, 'sawtooth', 150, 55, 0.42, 0.26);
+        this.noise(t, 0.4, 1100, 0.3);
+        this.noise(t + 0.1, 0.3, 600, 0.22);
         break;
       case 'hit':
         this.noise(t, 0.07, 900, 0.35);

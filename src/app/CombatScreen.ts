@@ -187,6 +187,7 @@ export class CombatScreen implements Screen {
         cam: this.cam,
         hud: this.hud,
         sequencer: this.sequencer,
+        fx: this.fx,
       };
     }
 
