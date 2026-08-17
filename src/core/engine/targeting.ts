@@ -3,7 +3,7 @@
  * and the AI (action enumeration), so they can never disagree about what is playable.
  */
 
-import type { Coord, Side, TargetRef } from '../../contract/ids.js';
+import type { Coord, Side, TargetRef, UnitId } from '../../contract/ids.js';
 import type { CardDef, ChosenTarget } from '../types/cards.js';
 import { effectContainsOp } from '../types/cards.js';
 import type { GameState } from '../types/state.js';
@@ -21,7 +21,7 @@ import {
 } from './board.js';
 import { canAttack, canAct } from './movement.js';
 import { hasLoS, hasLoSToPortrait } from './los.js';
-import { DIRS_8, cellsOf, footprintDistance } from '../util/grid.js';
+import { DIRS_8, cellsOf } from '../util/grid.js';
 import { inBounds, territoryRows } from '../types/state.js';
 
 /**
@@ -195,12 +195,7 @@ export function legalAttacks(state: GameState, unit: Unit): TargetRef[] {
     // regardless of who conjured it.
     const isObstacle = !('atk' in e);
     if (!isObstacle && e.side === unit.side) continue;
-    const dist = footprintDistance(unit, e);
-    if (dist < unit.rangeMin || dist > unit.rangeMax) continue;
-    // Ranged attacks need sight; adjacent melee never does.
-    if (dist > 1 && !cellsOf(unit).some((from) => cellsOf(e).some((to) => hasLoS(state, from, to, [unit.id, e.id])))) {
-      continue;
-    }
+    if (!canStrike(state, unit, cellsOf(unit), cellsOf(e), [unit.id, e.id])) continue;
     out.push(refOf(e));
   }
 
@@ -209,6 +204,38 @@ export function legalAttacks(state: GameState, unit: Unit): TargetRef[] {
   }
 
   return out;
+}
+
+/**
+ * Can this unit strike these tiles from those ones?
+ *
+ * The single answer to "is that in reach", used by attack legality, by the danger
+ * overlay, and by anything else that needs to know. It lived in three hand-copied
+ * versions before, which is two more than can be kept in step: a change to reach or
+ * sight had to be made identically in each, and the copies had already drifted apart
+ * once. Everything that decides reach now goes through here.
+ *
+ * `from` is passed separately from the unit because the threat map asks the question
+ * about anchors the unit could move to, not the one it currently occupies.
+ */
+export function canStrike(
+  state: GameState,
+  unit: Unit,
+  from: Coord[],
+  targets: Coord[],
+  ignoreIds: UnitId[] = [unit.id],
+): boolean {
+  let best = Infinity;
+  for (const c of from) {
+    for (const t of targets) {
+      best = Math.min(best, Math.max(Math.abs(c.x - t.x), Math.abs(c.y - t.y)));
+    }
+  }
+  if (best < unit.rangeMin || best > unit.rangeMax) return false;
+
+  // Reaching past arm's length means seeing what you are reaching for; melee never does.
+  if (best <= 1) return true;
+  return from.some((c) => targets.some((t) => hasLoS(state, c, t, ignoreIds)));
 }
 
 export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): boolean {

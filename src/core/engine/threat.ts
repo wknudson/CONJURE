@@ -15,9 +15,8 @@ import { coordKey } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
 import type { Unit } from '../types/units.js';
 import { canPlace, unitsOf, opposite } from './board.js';
-import { hasLoS } from './los.js';
-import { canHitPortrait } from './targeting.js';
-import { cellsAt, chebyshev, DIRS_8, add } from '../util/grid.js';
+import { canHitPortrait, canStrike } from './targeting.js';
+import { cellsAt, DIRS_8, add } from '../util/grid.js';
 
 export interface ThreatMap {
   /** Every tile some enemy could attack next turn. */
@@ -68,11 +67,7 @@ function strikeableFrom(state: GameState, unit: Unit, anchor: Coord): Coord[] {
     for (let x = 0; x < state.width; x++) {
       const target = { x, y };
       if (from.some((c) => c.x === x && c.y === y)) continue;
-
-      const dist = Math.min(...from.map((c) => chebyshev(c, target)));
-      if (dist < unit.rangeMin || dist > unit.rangeMax) continue;
-      // Ranged attacks still need a clear line; melee never does.
-      if (dist > 1 && !from.some((c) => hasLoS(state, c, target, [unit.id]))) continue;
+      if (!canStrike(state, unit, from, [target])) continue;
 
       out.push(target);
     }
@@ -81,9 +76,6 @@ function strikeableFrom(state: GameState, unit: Unit, anchor: Coord): Coord[] {
   return out;
 }
 
-/**
- * Builds the threat map faced by `side` — that is, what the opposing units can hit.
- */
 /** Whether `side`'s Bound Form stands on this tile. */
 function boundFormOccupies(state: GameState, side: Side, at: Coord): boolean {
   const id = state.players[side].companionUnitId;
@@ -93,6 +85,9 @@ function boundFormOccupies(state: GameState, side: Side, at: Coord): boolean {
   return cellsAt(body.anchor, body.footprint).some((c) => c.x === at.x && c.y === at.y);
 }
 
+/**
+ * Builds the threat map faced by `side` — that is, what the opposing units can hit.
+ */
 export function threatMap(state: GameState, side: Side): ThreatMap {
   const damageByTile = new Map<string, number>();
   const commanderThreats: UnitId[] = [];
