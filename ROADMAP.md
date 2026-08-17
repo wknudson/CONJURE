@@ -5,6 +5,38 @@ what comes next, grounded in an audit of what is actually built.*
 
 ---
 
+## 0. Since this was written: the Bound Form pivot (2026-08-17)
+
+Four phases shipped, 267 tests green. The combat loop changed shape enough that parts of
+the audit below are now history rather than plan.
+
+| Phase | What landed |
+| :-- | :-- |
+| **Dynamic grid** | Territory depth derived rather than hardcoded in five places (one row on boards ≤5 tall, so a 4×4 keeps neutral ground); `createCombat` validates arena size and furniture placement; 4×4/4×7 and non-square camera-rotation coverage added |
+| **Bound Form** | The Companion is a unit on the board. All damage to it — strike, spell, burn tick, wall collision — is dealt to the Pact; it cannot be sacrificed, runed, or Escalated. Sudden death restores it. HUD counts blows on it as incoming Pact damage |
+| **Origin casting** | Hero cards reach the whole board; Companion cards are cast from the Companion's tile with range and line of sight. A side with no body still casts globally, which is what keeps the enemy AI's deck intact |
+| **Pre-combat** | An overhead plan of the arena before the fight, with up to five card swaps; **Ready** fixes the deck and generates a recorded seed, so Rematch is the same battle |
+
+Two pre-existing bugs fell out of this work: the threat map flagged *every* ranged enemy
+as a Commander threat regardless of sightlines (the check asked only whether the unit was
+on the board), and the raw `sacrifice` command validated neither protection nor whether
+the offering was worth any Sparks.
+
+**Opened, not closed, by the pivot:**
+
+- **Enemy Bound Forms.** Enemy Commanders stay off-grid. Giving a boss a body needs an
+  `EncounterDef` field and a decision about its Resonance lane; the seam is commented.
+- **Resonance follows the static lane**, not the Companion's live column. Recomputing it
+  at trigger time is a one-line change and a real balance shift — deliberately not taken.
+- **`magma_brute`** is a Pyre summon marked `source: 'hero'`, so it never triggers
+  Resonance. Moving it is thematically right and a buff; left as a balance decision.
+- **`hud/projection.ts` hardcodes the Escalation cap** rather than reading
+  `escalationCap` — harmless today, wrong the day a card changes a cap.
+- **Arena variety.** The engine now supports 4×4 through 12×12, but both shipped
+  encounters are still 6×8 and 8×8. Nothing exercises the new shapes in play.
+
+---
+
 ## 1. Where the project stands
 
 ### Done and verified (107 tests, clean build, playable at localhost:5173)

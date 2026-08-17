@@ -216,6 +216,26 @@ Imp could reach every tile on the board in one turn, so the overlay was a unifor
 wash. On the lane map your two home rows are genuinely safe and everything past row 5 is
 contested, which turns stepping forward into a decision.
 
+Arenas may be anywhere from 4×4 to 12×12, square or not, and `createCombat` refuses
+anything outside that or with furniture parked in a deployment zone — these are authoring
+mistakes in hand-written data, so they fail loudly at construction rather than producing a
+subtly wrong game. Territory depth is derived rather than fixed: two rows per side
+normally, one on a board five rows or shorter, since two-deep territories on a four-row
+board would consume the whole map and leave no neutral ground to fight over.
+
+### Before the fight
+
+Choosing an encounter opens a plan of the ground before combat starts: a flat overhead
+map — not the isometric view, because from directly above the distances are honest and the
+shape is obvious — with both territories, terrain, and the enemy's opening position.
+
+Up to five cards may then be swapped from your collection. The budget is small
+deliberately: adapting should mean bringing two or three answers to a shape, not
+rebuilding into a different deck once the terrain is known. Pressing **Ready** fixes the
+deck and generates the combat seed, which is recorded alongside the encounter and the
+adapted deck so the same battle can be replayed or reported later — and so **Rematch**
+means the same fight rather than a new one.
+
 ### Turn flow
 
 Positioning is where a tactical mistake is cheapest to make and most annoying to live
@@ -324,19 +344,64 @@ Frost supplies the setup half: **Chill** stacks toward a Freeze on the third sta
 ### Companions
 
 Two are playable, chosen before a run. The Hero half of the deck is shared; the Companion
-decides the other half and the Resonance passive.
+decides the other half, the Resonance passive, and the body that stands on the board.
 
-| Companion | School | Plays like |
+| Companion | School | On the board | Plays like |
+| :-- | :-- | :-- | :-- |
+| **Ignis**, Ember Drake | Pyre | 3 ATK, melee | Runes and cascades. *Ember Watch* ignites its lane. |
+| **Boreas**, Frost Bear | Frost | 2 ATK, reach 3 | Control — chill, freeze, break. *Rime Guard* armours your Hero. |
+
+Their stat lines follow their magic: Ignis fights at arm's length, where its shorter spells
+want it anyway; Boreas holds a longer sightline, which is what Frost's reach is for.
+
+### The Companion on the board
+
+The Companion is a physical unit, deployed in its own lane on your back row and moving and
+attacking like any other. The Hero remains off-grid as the Architect.
+
+It carries **Bound Form**, which makes it the Pact's body: it keeps no health of its own,
+and every wound it takes — a strike, a spell, a burn tick, a shove into a wall — is dealt
+straight to your shared 40 HP pool. It cannot be sacrificed, cannot be given a rune (one
+attached to it could never detonate), and never Escalates. Cards that would do those
+things simply do not offer it as a target rather than being wasted on it.
+
+That gives the enemy a second, on-grid route to your Pact, and the HUD treats it as one:
+a declared blow on the Companion counts as incoming Pact damage in the forecast, and a foe
+that can reach it is flagged as a threat to your Commander.
+
+Enemy Commanders have no body and remain off-grid. Giving a boss one means deciding what
+its Resonance lane does, which is a separate design question.
+
+### Origin casting
+
+Who throws a card decides where it is thrown from. **Hero** cards are cast from off the
+board and reach all of it. **Companion** cards are thrown by the Companion, so they reach
+only as far as it can stretch and see from where it stands:
+
+| Card | Reach | Needs a line |
 | :-- | :-- | :-- |
-| **Ignis**, Ember Drake | Pyre | Runes and cascades. *Ember Watch* ignites its lane. |
-| **Boreas**, Frost Bear | Frost | Control — chill, freeze, break. *Rime Guard* armours your Hero. |
+| Rime Touch | 2 | yes |
+| Frost Nova | 3 | yes |
+| Cinder Rune, Flame Surge, Flash Freeze | 4 | yes |
+| Soul Splinter Rune | 4 | no — marking your own is closeness, not aim |
+| Glacial Spike | 5 | yes |
+
+Cataclysmic Core stays board-wide, and the Rite of Binding is never range-gated: it is a
+win condition, not a spell.
+
+Aiming a Companion card marks the tile it is cast from and shades what that origin cannot
+see, so the answer to "why is that tile not offered?" is visible rather than inferred —
+and moving the Companion is the obvious fix. Walking it forward to line up a shot is a
+real decision, because the further forward it stands, the easier it is to hurt, and its
+wounds are yours.
+
+A side that has no Bound Form — every enemy today — casts globally, exactly as before.
 
 ### Companion Resonance
 
-The Hero/Companion split is more than a card-pool label. The Companion stands at a fixed
-column beside the board, and the first Companion card played each turn fires that
-school's passive in its lane (Module 1 §3). Pyre ignites, Frost armors, Dusk drains. Once
-per turn, so a multi-card turn cannot spiral.
+The Hero/Companion split is more than a card-pool label. The first Companion card played
+each turn fires that school's passive in the Companion's lane (Module 1 §3). Pyre ignites,
+Frost armors, Dusk drains. Once per turn, so a multi-card turn cannot spiral.
 
 ## Testing
 
@@ -344,7 +409,7 @@ per turn, so a multi-card turn cannot spiral.
 npm test
 ```
 
-123 tests covering collision splits and Mass Invariance, rune cascades and the armor
+267 tests covering collision splits and Mass Invariance, rune cascades and the armor
 gate that stops them, fizzle rules, line of sight and Guardian occlusion, the turn and
 resource machine, escalation caps, movement commitment, boss phase gates and the Rite of
 Binding, Resonance firing once per turn in the right lane, AI lethal-taking and the
@@ -358,11 +423,21 @@ walls stop ranged projection. A **determinism harness** replays recorded games f
 their seed and asserts an identical event stream and state hash — including through boss
 phase transitions — and a **fuzz soak** drives random legal commands across two dozen
 games, checking engine invariants after every single one (no negative HP, no shared
-tiles, no orphaned cards, no pip overflow after cleanup).
+tiles, no orphaned cards, no pip overflow after cleanup, at most one Bound Form per side
+and never one that lost health of its own).
+
+Three suites guard the pivot specifically. **Bound Form** proves every route to the Pact —
+strikes, burn ticks, shoves into walls — and every refusal: sacrifice, rune attachment,
+warding, Escalation. **Spell origin** pins range boundaries at exactly N and N+1, walls
+breaking a Companion's line while a Hero card ignores the same wall, and the case that
+would quietly break the enemy AI: a side with no body must still cast. **Grid bounds**
+opens 4×4 and 4×7 arenas, runs AI turns in them, and checks that the camera's rotation
+round-trips on a non-square board — the one place where reflecting about the board extent
+and about the last tile index differ, which is invisible until a click lands a tile out.
 
 ## What is deliberately not here
 
-The overworld, deck builder, economy, crafting, ascension, the other three continents,
+The overworld, economy, crafting, ascension, the other three continents,
 and five of the seven elemental schools. The demo ships the Pyre / Dusk / Arcane starter
 deck from Draft 7 §10 — fifteen cards that between them exercise every core system:
 summoning, a 2×2 Behemoth, displacement and collisions, rune attachment, cascading
