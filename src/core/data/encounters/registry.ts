@@ -62,6 +62,10 @@ export interface EncounterDef {
    * your units toward the enemy, and theirs toward you, whether or not that was the plan.
    */
   currents?: { at: { x: number; y: number }; dir: { x: number; y: number } }[];
+  /** A loot-carrying scavenger turns up mid-fight and runs for the edge. */
+  scavenger?: true;
+  /** Wild beasts arrive and maul whichever army is nearest. */
+  turfwar?: { count: number; unitCardId: string };
   /** Free opening unit placed for both sides. Set to null to skip. */
   vanguard?: string | null;
   script?: EncounterScript;
@@ -86,6 +90,24 @@ export function registerEncounterScript(id: string, script: EncounterScript): vo
 
 export function getEncounterScript(id: string): EncounterScript | undefined {
   return registry.get(id);
+}
+
+/**
+ * The definitions themselves, registered as they are declared.
+ *
+ * The turn machine needs to read an encounter's own settings — whether it has wildlife,
+ * what weather it is fought in — and it only ever has the id to hand. Populated by the
+ * encounter modules on import, so it cannot fall out of step with what ships.
+ */
+const defs = new Map<string, EncounterDef>();
+
+export function registerEncounter(def: EncounterDef): EncounterDef {
+  defs.set(def.id, def);
+  return def;
+}
+
+export function encounterDefById(id: string): EncounterDef | undefined {
+  return defs.get(id);
 }
 
 export function encounterOf(state: GameState): string {

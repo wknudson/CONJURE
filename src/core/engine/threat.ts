@@ -92,7 +92,14 @@ export function threatMap(state: GameState, side: Side): ThreatMap {
   const damageByTile = new Map<string, number>();
   const commanderThreats: UnitId[] = [];
 
-  for (const foe of unitsOf(state, opposite(side))) {
+  // Everything hostile to this side, which for a Feral beast means both sides at once:
+  // a wolf between two armies is a danger to whichever it can reach.
+  const hostile = [
+    ...unitsOf(state, opposite(side)),
+    ...unitsOf(state, side).filter((u) => u.keywords.includes('Feral')),
+  ];
+
+  for (const foe of hostile) {
     // Held units threaten nothing at all — they can neither move nor strike.
     if (foe.statuses.freeze || foe.statuses.stun) continue;
 

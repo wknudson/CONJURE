@@ -12,6 +12,7 @@ import { FROST_CARDS } from './frost.js';
 import { COMPANION_UNIT_CARDS } from './companionUnits.js';
 import { TERRAIN_CARDS } from './terrain.js';
 import { RANGED_CARDS } from './ranged.js';
+import { WILDLIFE_CARDS } from './wildlife.js';
 
 export const CARDS: Record<string, CardDef> = {
   ...STARTER_CARDS,
@@ -19,6 +20,7 @@ export const CARDS: Record<string, CardDef> = {
   ...COMPANION_UNIT_CARDS,
   ...TERRAIN_CARDS,
   ...RANGED_CARDS,
+  ...WILDLIFE_CARDS,
 };
 
 export { STARTER_DECK };
@@ -37,6 +39,7 @@ for (const source of [
   COMPANION_UNIT_CARDS,
   TERRAIN_CARDS,
   RANGED_CARDS,
+  WILDLIFE_CARDS,
 ]) {
   for (const id of Object.keys(source)) {
     if (seen.has(id)) throw new Error(`duplicate card id across school files: ${id}`);

@@ -4,8 +4,9 @@
  */
 
 import type { EncounterDef } from './registry.js';
+import { registerEncounter } from './registry.js';
 
-export const NOVICE_DUELIST: EncounterDef = {
+export const NOVICE_DUELIST: EncounterDef = registerEncounter({
   id: 'novice_duelist',
   name: 'Wandering Novice Duelist',
   blurb:
@@ -44,6 +45,8 @@ export const NOVICE_DUELIST: EncounterDef = {
   enemyCompanion: { unitCardId: 'umbra_bound' },
   // Something to fight over in the middle before either side is really ready to.
   sparkGeodes: { min: 1, max: 3 },
+  // A hedge-mage's duel on open road: someone else's purse wanders through it.
+  scavenger: true,
   // Two bramble screens midfield break the sightlines down the lane without walling it,
   // and a pair of rubble blocks force melee to commit to a side.
   terrain: [
@@ -52,4 +55,4 @@ export const NOVICE_DUELIST: EncounterDef = {
     { at: { x: 2, y: 4 }, kind: 'wall' },
     { at: { x: 3, y: 3 }, kind: 'wall' },
   ],
-};
+});

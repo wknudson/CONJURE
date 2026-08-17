@@ -25,6 +25,10 @@ import { CHANNEL_SPARKS } from '../engine/engine.js';
 export function enumerateActions(state: GameState, side: Side): Command[] {
   const out: Command[] = [];
   const cmd = state.players[side];
+  // Feral beasts sit in a side's unit list for bookkeeping, but nothing commands them —
+  // they are driven by the encounter, not by this planner, and offering their moves here
+  // would let the AI play the wildlife against itself.
+  const mine = unitsOf(state, side).filter((u) => !u.keywords.includes('Feral'));
 
   // 1. Cards.
   for (const cardId of cmd.hand) {
@@ -43,7 +47,7 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
   // legalAttacks is the most expensive call in this function and it is already being
   // made here, so asking it twice would double the cost of the AI's hottest path.
   let idleUnit: UnitId | undefined;
-  for (const unit of unitsOf(state, side)) {
+  for (const unit of mine) {
     const targets = legalAttacks(state, unit);
     for (const target of targets) {
       out.push({ type: 'attack', attacker: unit.id, target });
@@ -67,7 +71,7 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
   // everything else, the AI could not defend its own Companion at all — it would walk it
   // forward into range and have no way of walking it back.
   const forward = side === 'player' ? -1 : 1;
-  for (const unit of unitsOf(state, side)) {
+  for (const unit of mine) {
     if (!canMove(unit)) continue;
     const mayRetreat = unit.keywords.includes('BoundForm');
     for (const move of legalMoves(state, unit)) {

@@ -21,7 +21,8 @@ import { DRAW_PER_TURN, drawCards, endOfTurnCleanup, gainPips } from './deck.js'
 import { refreshUnits, startOfTurnStatuses } from './status.js';
 import { checkLethal } from './death.js';
 import { dealDamage } from './damage.js';
-import { getEncounterScript } from '../data/encounters/registry.js';
+import { encounterDefById, getEncounterScript } from '../data/encounters/registry.js';
+import { runWildlife } from '../data/encounters/wildlife.js';
 import { opposite } from './board.js';
 
 export function beginTurn(ctx: Ctx, side: Side): void {
@@ -46,6 +47,14 @@ export function beginTurn(ctx: Ctx, side: Side): void {
 
   const script = getEncounterScript(ctx.state.encounter.id);
   script?.onTurnStart?.(ctx, side);
+
+  // The wildlife takes its turn alongside the side it is filed under. Driven from here
+  // rather than from a script so that an encounter can have beasts without having to be
+  // a program — opting in is a field on the definition.
+  if (side === 'enemy' && !ctx.state.result) {
+    const def = encounterDefById(ctx.state.encounter.id);
+    if (def) runWildlife(ctx, def);
+  }
 
   if (ctx.state.result) return;
 

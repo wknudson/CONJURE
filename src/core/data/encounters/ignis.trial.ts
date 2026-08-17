@@ -10,7 +10,7 @@
  */
 
 import type { EncounterDef, EncounterScript } from './registry.js';
-import { registerEncounterScript } from './registry.js';
+import { registerEncounter, registerEncounterScript } from './registry.js';
 import type { Ctx } from '../../engine/context.js';
 import { emit, newCause } from '../../engine/context.js';
 import { dockIntoForm, summonUnit } from '../../engine/spawn.js';
@@ -205,7 +205,7 @@ function maybeOfferRite(ctx: Ctx): void {
 
 registerEncounterScript(ENCOUNTER_ID, script);
 
-export const IGNIS_TRIAL: EncounterDef = {
+export const IGNIS_TRIAL: EncounterDef = registerEncounter({
   id: ENCOUNTER_ID,
   name: 'Subjugation Trial: Ignis',
   blurb:
@@ -252,4 +252,4 @@ export const IGNIS_TRIAL: EncounterDef = {
     { at: { x: 4, y: 3 }, kind: 'wall' },
   ],
   script,
-};
+});

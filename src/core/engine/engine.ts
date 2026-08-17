@@ -41,6 +41,24 @@ export function applyCommand(prev: GameState, command: Command): StepResult {
     throw new IllegalCommandError(`cannot act during phase "${state.phase}"`);
   }
 
+  runCommand(ctx, command);
+
+  // Every command ends with a lethal check so no path can miss a win condition.
+  checkLethal(ctx);
+  // The chain-cancel flag is scoped to one action.
+  state.encounter.chainCancelled = false;
+
+  return { state, events: ctx.events };
+}
+
+/**
+ * Runs a command against a context that already exists, without cloning.
+ *
+ * Used by anything that acts from inside the engine's own turn — the wildlife, an
+ * encounter script — so those get the real rules (exhaustion, Counter, collisions)
+ * rather than a second, drifting implementation of each action.
+ */
+export function runCommand(ctx: Ctx, command: Command): void {
   switch (command.type) {
     case 'playCard':
       playCard(ctx, command.card, command.target);
@@ -67,13 +85,6 @@ export function applyCommand(prev: GameState, command: Command): StepResult {
       endTurn(ctx);
       break;
   }
-
-  // Every command ends with a lethal check so no path can miss a win condition.
-  checkLethal(ctx);
-  // The chain-cancel flag is scoped to one action.
-  state.encounter.chainCancelled = false;
-
-  return { state, events: ctx.events };
 }
 
 // ------------------------------------------------------------------------ commands

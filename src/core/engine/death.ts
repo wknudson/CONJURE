@@ -40,6 +40,7 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
       footprint: live.footprint,
       cause,
     });
+    payBounty(ctx, live.defId);
   } else {
     delete ctx.state.obstacles[live.id];
     emit(ctx, { t: 'obstacleDestroyed', obstacleId: live.id, at });
@@ -124,12 +125,19 @@ function adjacent(state: Ctx['state'], at: Coord): Coord[] {
  * attacker through every path that can destroy a tile.
  */
 function payDestroyReward(ctx: Ctx, defId: string): void {
-  const reward = CARDS[defId]?.onDestroyReward;
-  if (!reward) return;
+  payTo(ctx, CARDS[defId]?.onDestroyReward?.sparks);
+}
 
+/** The purse a scavenger was carrying, paid to whoever brought it down. */
+function payBounty(ctx: Ctx, defId: string): void {
+  payTo(ctx, CARDS[defId]?.bounty?.sparks);
+}
+
+function payTo(ctx: Ctx, sparks: number | undefined): void {
+  if (!sparks) return;
   const side = ctx.state.activeSide;
   const cmd = ctx.state.players[side];
-  cmd.sparks += reward.sparks;
+  cmd.sparks += sparks;
   emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, sparks: cmd.sparks });
 }
 

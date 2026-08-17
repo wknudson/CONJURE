@@ -248,6 +248,20 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     if (v) v.elev = 0;
   });
 
+  seq.on('unitEscaped', async (e, { view, t }) => {
+    // No hit-stop and no death sound: it got away, which is a disappointment rather than
+    // a killing blow, and dressing it as one would misreport who won the exchange.
+    const v = view.views.get(e.unitId);
+    view.fx.label(e.at, 'ESCAPED', 'note');
+    await tween(t(260), easeOutQuad, (k) => {
+      if (v) {
+        v.alpha = 1 - k;
+        v.elev = k * 14;
+      }
+    });
+    view.views.remove(e.unitId);
+  });
+
   seq.on('unitDied', async (e, { view, t }) => {
     const v = view.views.get(e.unitId);
 

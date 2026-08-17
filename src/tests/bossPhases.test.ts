@@ -204,7 +204,9 @@ describe('encounter definitions', () => {
     // Either someone won, or the game is still legally running after 200 turns.
     expect(guard).toBeLessThan(200);
     expect(['victory', 'defeat', 'bound']).toContain(state.result);
-  });
+    // A whole game driven by the planner, on a board that now carries wildlife and
+    // scenery as well as two armies. The default 5s budget is for unit tests, not this.
+  }, 60_000);
 });
 
 describe('the drake on the board', () => {

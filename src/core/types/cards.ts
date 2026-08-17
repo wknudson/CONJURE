@@ -115,6 +115,8 @@ export interface CardDef {
   setupOnly?: true;
   /** Paid to whoever breaks this obstacle. Present only on obstacle cards. */
   onDestroyReward?: { sparks: number };
+  /** Paid to whoever kills this creature. What makes a scavenger worth chasing. */
+  bounty?: { sparks: number };
   /**
    * Breaking this leaves rough ground behind, rather than clearing the tile outright.
    *

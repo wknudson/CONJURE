@@ -88,6 +88,13 @@ export type GameEvent = EventBase &
     /** A unit spent its attack banking a Spark instead of swinging. */
     | { t: 'unitChannelled'; unitId: UnitId; side: Side; sparks: number }
     | { t: 'unitDied'; unitId: UnitId; at: Coord; footprint: 1 | 2; cause: DamageCause }
+    /**
+     * Something left the board without dying — a scavenger that reached the edge.
+     *
+     * Deliberately not a death: nothing killed it, nobody is owed the kill, and it
+     * should read as a loss of opportunity rather than as a victory for either side.
+     */
+    | { t: 'unitEscaped'; unitId: UnitId; at: Coord }
     | { t: 'obstacleDestroyed'; obstacleId: UnitId; at: Coord }
     | { t: 'resonanceTriggered'; side: Side; name: string; column: number }
     | { t: 'reactionTriggered'; reaction: string; name: string; at: Coord }

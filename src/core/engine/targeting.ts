@@ -194,7 +194,19 @@ export function legalAttacks(state: GameState, unit: Unit): TargetRef[] {
     // Obstacles are terrain, not allies: either side may break a pillar to open a lane,
     // regardless of who conjured it.
     const isObstacle = !('atk' in e);
-    if (!isObstacle && e.side === unit.side) continue;
+    const targetIsFeral = !isObstacle && (e as Unit).keywords.includes('Feral');
+    const attackerIsFeral = unit.keywords.includes('Feral');
+
+    if (attackerIsFeral) {
+      // A beast has no allies. It will bite anything that is not also a beast, on
+      // whichever side that thing happens to be — which is the whole of "hostile to
+      // both", falling out of the target list rather than needing a rule of its own.
+      if (targetIsFeral) continue;
+    } else {
+      // And nobody counts a beast as an ally either, including the side whose record it
+      // sits in: it is on the board the way a pillar is, and either army may swing at it.
+      if (!isObstacle && !targetIsFeral && e.side === unit.side) continue;
+    }
     if (!canStrike(state, unit, cellsOf(unit), cellsOf(e), [unit.id, e.id])) continue;
     out.push(refOf(e));
   }
@@ -290,7 +302,10 @@ export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): 
 
 /** Units the given side may sacrifice for Sparks right now. */
 export function sacrificeCandidates(state: GameState, side: Side): Unit[] {
-  return unitsOf(state, side).filter((u) => canAct(u) && u.sacrificeValue > 0);
+  return unitsOf(state, side).filter(
+    // Nothing offers up a wolf that does not belong to it in the first place.
+    (u) => canAct(u) && u.sacrificeValue > 0 && !u.keywords.includes('Feral'),
+  );
 }
 
 /** Resolves an entity reference to its board anchor, for previews and AI heuristics. */

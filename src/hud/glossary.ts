@@ -43,6 +43,12 @@ export const KEYWORDS: Record<string, GlossaryEntry> = {
     detail:
       'Most also need a clear line, so walls and Guardians block them. Move your Companion to change what you can hit — but the further forward it stands, the easier it is to hurt, and its wounds are yours.',
   },
+  Feral: {
+    title: 'Feral',
+    body: 'Wild. It belongs to neither side, attacks whatever is nearest, and either side may attack it.',
+    detail:
+      'Nothing commands it. A beast between two armies will maul whichever is closer — so shoving an enemy into its path is as good as striking them yourself.',
+  },
   BoundForm: {
     title: 'Bound Form',
     body: 'Your Companion, made flesh. Every wound it takes is dealt straight to your Pact.',
