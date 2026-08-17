@@ -47,6 +47,8 @@ floor — and both sides open with a free Vanguard Footman already on the field.
 - **T** toggles the danger zone — every tile the enemy could strike next turn.
 - A unit gets **one move and one attack** each turn, in either order, so it can strike
   and then withdraw.
+- **Z** takes back your last move. Attacks and card plays are final.
+- **Tab** jumps to the next unit that can still act.
 - **Q** and **E** turn the board a quarter-turn, to see behind a Behemoth or a wall.
 - **H** opens the rules reference. **Esc** or right-click cancels. **Space** fast-forwards
   the enemy turn. **Enter** ends yours.
@@ -213,6 +215,20 @@ Deeper boards are what make the danger zone meaningful. On the old compact grid 
 Imp could reach every tile on the board in one turn, so the overlay was a uniform red
 wash. On the lane map your two home rows are genuinely safe and everything past row 5 is
 contested, which turns stepping forward into a decision.
+
+### Turn flow
+
+Positioning is where a tactical mistake is cheapest to make and most annoying to live
+with, so **movement is reversible** until something irreversible happens. Undo is a client
+convenience rather than a game action: it stores whole-state snapshots on the screen
+component, emits nothing, and never enters the event stream. Because a snapshot carries
+the RNG state, rewinding rewinds the seeded stream too — the game continues along exactly
+the branch it would have taken had the move never happened.
+
+**End Turn says what passing would cost** — *"End Turn (1 unit, 5 cards left)"* — and asks
+for a second click. With nothing unspent it passes on the first click, because nagging a
+player who has already done everything is its own kind of friction. Any other action
+resets it.
 
 ### Enemy intent
 

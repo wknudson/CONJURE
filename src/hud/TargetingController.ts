@@ -59,6 +59,21 @@ export class TargetingController {
     this.cb.setOverlays(emptyOverlays());
   }
 
+  /** The unit currently selected, if any. */
+  get selectedUnit(): UnitId | null {
+    return this.mode.kind === 'unit' ? this.mode.unit : null;
+  }
+
+  /** Selects a unit directly, as Tab-cycling does, bypassing a board click. */
+  selectUnit(unitId: UnitId): void {
+    if (!this.enabled) return;
+    this.mode = { kind: 'unit', unit: unitId };
+    this.hoveredCard = null;
+    this.cb.setSelectedCard(null);
+    this.cb.setInspected(unitId);
+    this.refresh();
+  }
+
   /** Re-emits the current overlays, e.g. after the board has been rotated. */
   refreshOverlays(): void {
     this.refresh();

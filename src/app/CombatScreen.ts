@@ -25,8 +25,23 @@ import { Tutorial } from '../hud/Tutorial.js';
 import { cellsAt } from '../core/util/grid.js';
 import type { CommanderModel } from '../render/BoardRenderer.js';
 import type { Coord } from '../contract/ids.js';
+import type { GameState } from '../core/types/state.js';
 import type { AiProfile } from '../core/ai/controller.js';
 import { easeOutQuad, tween } from '../anim/tween.js';
+
+/** Plain-language summary of what passing right now would waste. */
+function describeUnspent(p: { readyUnits: number; playableCards: number }): string {
+  const parts: string[] = [];
+  if (p.readyUnits > 0) {
+    parts.push(p.readyUnits === 1 ? '1 unit can still act' : `${p.readyUnits} units can still act`);
+  }
+  if (p.playableCards > 0) {
+    parts.push(
+      p.playableCards === 1 ? '1 card is still playable' : `${p.playableCards} cards are still playable`,
+    );
+  }
+  return parts.join(' and ');
+}
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -53,6 +68,12 @@ export class CombatScreen implements Screen {
     this.reportViewportSize();
   };
   private help: HelpOverlay | null = null;
+  /** Board states to step back to. Client-side only; never part of the event stream. */
+  private undoStack: GameState[] = [];
+  /** True once End Turn has warned and is waiting for a confirming second click. */
+  private armedEndTurn = false;
+  /** Turn number the undo history belongs to, so it is dropped when the turn changes. */
+  private turnStamp = 0;
   private warnedTooSmall = false;
   private tutorial: Tutorial | null = null;
   private onKeyDown = (ev: KeyboardEvent) => this.handleKeyDown(ev);
@@ -92,7 +113,8 @@ export class CombatScreen implements Screen {
     this.hud = new Hud(el, {
       onCardClick: (id) => this.targeting?.onCardClick(id),
       onCardHover: (id) => this.targeting?.onCardHover(id),
-      onEndTurn: () => this.commit({ type: 'endTurn' }),
+      onEndTurn: () => this.requestEndTurn(),
+      onUndo: () => this.undo(),
       onToggleMute: () => this.sfx.toggleMute(),
       onToggleThreat: () => this.targeting?.toggleThreat() ?? false,
       onHelp: () => this.help?.toggle(),
@@ -307,6 +329,116 @@ export class CombatScreen implements Screen {
   }
 
   /**
+   * Selects the next unit that can still act, wrapping around.
+   *
+   * Starts from whoever is selected so repeated presses walk the list rather than
+   * bouncing between two units. The board is small enough that centring the camera is
+   * unnecessary — every tile is already on screen — so this only moves the selection.
+   */
+  private cycleNextReadyUnit(): void {
+    if (this.sequencer?.busy || this.session.activeSide !== 'player') return;
+
+    const ready = this.session.getReadyUnits();
+    if (ready.length === 0) {
+      this.hud?.flashNotice('No unit has an action left — press Enter to end your turn');
+      return;
+    }
+
+    const current = this.targeting?.selectedUnit ?? null;
+    const index = current ? ready.indexOf(current) : -1;
+    const next = ready[(index + 1) % ready.length]!;
+
+    this.targeting?.selectUnit(next);
+    this.armedEndTurn = false;
+    this.refreshTurnUi();
+  }
+
+  /**
+   * Keeps the End Turn button honest about what passing would cost.
+   *
+   * The most common self-inflicted loss in a tactics game is ending a turn with actions
+   * unspent, so the button says so and asks twice. Re-evaluated after every action, since
+   * spending the last one should quietly return it to normal.
+   */
+  private refreshTurnUi(): void {
+    const potential = this.session.getUnspentPotential();
+    const wasted = potential.readyUnits + potential.playableCards;
+
+    this.hud?.setUndoAvailable(this.canUndo);
+    this.hud?.setEndTurnWarning(this.armedEndTurn ? 'armed' : wasted > 0 ? 'warn' : 'none', potential);
+  }
+
+  /**
+   * Two-click End Turn, but only when there is something to lose.
+   *
+   * With nothing unspent it passes on the first click — nagging a player who has already
+   * done everything is its own kind of friction.
+   */
+  private requestEndTurn(): void {
+    if (this.sequencer?.busy || this.session.activeSide !== 'player') return;
+
+    const potential = this.session.getUnspentPotential();
+    const wasted = potential.readyUnits + potential.playableCards;
+
+    if (wasted > 0 && !this.armedEndTurn) {
+      this.armedEndTurn = true;
+      this.hud?.flashNotice(describeUnspent(potential) + ' — click again to end your turn');
+      this.refreshTurnUi();
+      return;
+    }
+
+    this.armedEndTurn = false;
+    this.commit({ type: 'endTurn' });
+  }
+
+  /**
+   * Undo is movement-only, and only until something irreversible happens.
+   *
+   * Positioning is where a tactical mistake is cheapest to make and most annoying to
+   * live with — misjudging a diagonal should not cost a turn. Attacks and card plays are
+   * final because they reveal information and resolve dice-free consequences; being able
+   * to take them back would turn the turn into a search rather than a decision.
+   */
+  private recordUndo(action: Action): void {
+    if (action.type === 'moveUnit') {
+      this.undoStack.push(this.session.snapshot());
+      return;
+    }
+    // Everything else is a commitment. Once made, the moves that set it up are part of
+    // that commitment and cannot be unpicked from underneath it.
+    this.undoStack.length = 0;
+  }
+
+  get canUndo(): boolean {
+    return (
+      this.undoStack.length > 0 &&
+      !this.sequencer?.busy &&
+      !this.session.isOver() &&
+      this.session.activeSide === 'player'
+    );
+  }
+
+  /** Steps back to the board as it stood before the last move. */
+  private undo(): void {
+    if (!this.canUndo) return;
+    const previous = this.undoStack.pop();
+    if (!previous) return;
+
+    this.session.restore(previous);
+    this.targeting?.reset();
+
+    // Snapped, not animated: an undo is a correction, and watching a unit walk backwards
+    // would read as another move rather than as the removal of one.
+    const board = this.session.getBoard();
+    this.views.syncFrom(board.units, board.obstacles);
+    this.syncRunesAndStatuses(board);
+    this.syncCommanders(board);
+    this.hud?.syncFromBoard(board, this.session.getHand(), this.session.getPlayableCards());
+    this.refreshTurnUi();
+    this.sfx.play('card');
+  }
+
+  /**
    * Turns the board a quarter-turn.
    *
    * The logical step flips first, so picking and depth sorting are correct from the very
@@ -355,6 +487,16 @@ export class CombatScreen implements Screen {
       if (ev.key === 'Escape') this.help.hide();
       return;
     }
+    if (ev.key === 'z' || ev.key === 'Z' || ev.key === 'Backspace') {
+      ev.preventDefault();
+      this.undo();
+      return;
+    }
+    if (ev.key === 'Tab') {
+      ev.preventDefault();
+      this.cycleNextReadyUnit();
+      return;
+    }
     if (ev.key === 'q' || ev.key === 'Q') {
       void this.rotate(-1);
       return;
@@ -373,7 +515,7 @@ export class CombatScreen implements Screen {
       ev.preventDefault();
       this.sequencer?.fastForward(true);
     }
-    if (ev.key === 'Enter' && !this.sequencer?.busy) this.commit({ type: 'endTurn' });
+    if (ev.key === 'Enter' && !this.sequencer?.busy) this.requestEndTurn();
   }
 
   private handleKeyUp(ev: KeyboardEvent): void {
@@ -393,6 +535,11 @@ export class CombatScreen implements Screen {
     if (this.session.activeSide !== 'player') return;
 
     this.sfx.unlock();
+    this.recordUndo(action);
+    // Any deliberate action clears a pending End Turn confirmation: the player has
+    // demonstrably found something else to do, so the warning has served its purpose.
+    this.armedEndTurn = false;
+
     this.lockInput();
 
     let events;
@@ -414,6 +561,15 @@ export class CombatScreen implements Screen {
   }
 
   private unlockInput(): void {
+    if (this.session.activeSide === 'player' && this.session.getBoard().phase === 'action') {
+      // A fresh turn carries no history: the moves that could be taken back belong to a
+      // turn that has already been handed over.
+      if (this.turnStamp !== this.session.getBoard().turn) {
+        this.turnStamp = this.session.getBoard().turn;
+        this.undoStack.length = 0;
+        this.armedEndTurn = false;
+      }
+    }
     const board = this.session.getBoard();
     this.hud?.syncFromBoard(board, this.session.getHand(), this.session.getPlayableCards());
     this.syncCommanders(board);
@@ -421,6 +577,9 @@ export class CombatScreen implements Screen {
       .filter((i) => i.kind === 'commander')
       .reduce((sum, i) => sum + i.damage, 0);
     this.hud?.setIncoming(incoming, this.session.getThreat().commanderThreatCount);
+    // Undo availability and the End Turn warning are both properties of the turn as it
+    // now stands, so they are recomputed every time control comes back to the player.
+    this.refreshTurnUi();
     this.hud?.setInteractive(true);
     this.targeting?.setEnabled(true);
   }

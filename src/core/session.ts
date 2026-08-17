@@ -23,6 +23,7 @@ import type { Command } from './types/commands.js';
 import type { ChosenTarget } from './types/cards.js';
 import type { EncounterDef } from './data/encounters/registry.js';
 import { applyCommand } from './engine/engine.js';
+import { deepClone } from './util/clone.js';
 import { createCombat } from './engine/setup.js';
 import { toBoardView, toCardSnapshot } from './engine/views.js';
 import { CARDS } from './data/cards/index.js';
@@ -139,6 +140,38 @@ export class CombatSession implements RulesQuery {
 
   getOccludedTiles(from: Coord): Coord[] {
     return occludedTiles(this.state, from);
+  }
+
+  /**
+   * Your units that can still do something this turn, in board order.
+   *
+   * Readiness is derived rather than stored: a unit is ready if the engine would accept a
+   * move or an attack from it. Asking the same functions the rules use means Tab can
+   * never offer a unit that turns out to be inert, which is exactly the friction it
+   * exists to remove.
+   */
+  getReadyUnits(): UnitId[] {
+    if (this.state.activeSide !== 'player') return [];
+    return Object.values(this.state.units)
+      .filter((u) => u.side === 'player')
+      .filter((u) => legalMoves(this.state, u).length > 0 || legalAttacks(this.state, u).length > 0)
+      .sort((a, b) => a.anchor.y - b.anchor.y || a.anchor.x - b.anchor.x)
+      .map((u) => u.id);
+  }
+
+  /**
+   * Whether the player is about to waste something by passing.
+   *
+   * Two kinds of waste: a unit that could still act, and a card that could still be
+   * played. Both are asked of the same helpers the UI uses to offer them in the first
+   * place, so the warning cannot disagree with the affordances on screen.
+   */
+  getUnspentPotential(): { readyUnits: number; playableCards: number } {
+    if (this.state.activeSide !== 'player') return { readyUnits: 0, playableCards: 0 };
+    return {
+      readyUnits: this.getReadyUnits().length,
+      playableCards: this.getPlayableCards().length,
+    };
   }
 
   getThreat(): ThreatView {
@@ -281,6 +314,24 @@ export class CombatSession implements RulesQuery {
     const res = applyCommand(this.state, toCommand(action));
     this.state = res.state;
     return res.events;
+  }
+
+  /**
+   * A snapshot the client can hold onto and hand back later.
+   *
+   * This exists for Undo, which is deliberately a *client* convenience rather than a game
+   * action: nothing is emitted, nothing enters the event stream, and the engine remains a
+   * pure reducer that has no idea the player changed their mind. Because a snapshot
+   * includes the RNG state, restoring one rewinds the seeded stream too — so a rewound
+   * game continues along exactly the branch it would have taken had the move never
+   * happened, rather than a differently-shuffled one.
+   */
+  snapshot(): GameState {
+    return deepClone(this.state);
+  }
+
+  restore(state: GameState): void {
+    this.state = deepClone(state);
   }
 
   /** Runs the AI's whole turn and returns its combined event stream. */

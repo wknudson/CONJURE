@@ -15,6 +15,7 @@ export interface HudCallbacks {
   onCardClick(cardId: CardInstanceId): void;
   onCardHover(cardId: CardInstanceId | null): void;
   onEndTurn(): void;
+  onUndo(): void;
   onToggleMute(): boolean;
   onToggleThreat(): boolean;
   onHelp(): void;
@@ -49,6 +50,7 @@ export class Hud {
   private muteBtn!: HTMLButtonElement;
   private resonanceEl!: HTMLElement;
   private threatBtn!: HTMLButtonElement;
+  private undoBtn!: HTMLButtonElement;
   private helpBtn!: HTMLButtonElement;
   private threatWarnEl!: HTMLElement;
   private enemyHandEl!: HTMLElement;
@@ -110,6 +112,8 @@ export class Hud {
       const muted = this.cb.onToggleMute();
       this.muteBtn.textContent = muted ? '🔇' : '🔊';
     });
+    this.undoBtn = q<HTMLButtonElement>('.undo');
+    this.undoBtn.addEventListener('click', () => this.cb.onUndo());
     this.threatBtn.addEventListener('click', () => this.setThreatActive(this.cb.onToggleThreat()));
     this.helpBtn.addEventListener('click', () => this.cb.onHelp());
     q('.rotate--ccw').addEventListener('click', () => this.cb.onRotate(-1));
@@ -117,6 +121,41 @@ export class Hud {
 
     this.tooltip = new Tooltip(document.body);
     this.tooltip.attach(this.root);
+  }
+
+  setUndoAvailable(on: boolean): void {
+    this.undoBtn.disabled = !on;
+  }
+
+  /**
+   * Says what passing would cost, on the button itself.
+   *
+   * `warn` is the first press and the honest label; `armed` is the confirmation. Putting
+   * the count on the button means the player does not have to audit the board to know
+   * whether they are about to waste a turn.
+   */
+  setEndTurnWarning(
+    state: 'none' | 'warn' | 'armed',
+    potential: { readyUnits: number; playableCards: number },
+  ): void {
+    this.endTurnBtn.classList.toggle('is-warning', state === 'warn');
+    this.endTurnBtn.classList.toggle('is-armed', state === 'armed');
+
+    if (state === 'none') {
+      this.endTurnBtn.textContent = 'End Turn';
+      return;
+    }
+    if (state === 'armed') {
+      this.endTurnBtn.textContent = 'End Turn anyway?';
+      return;
+    }
+
+    const bits: string[] = [];
+    if (potential.readyUnits > 0) bits.push(`${potential.readyUnits} unit${potential.readyUnits === 1 ? '' : 's'}`);
+    if (potential.playableCards > 0) {
+      bits.push(`${potential.playableCards} card${potential.playableCards === 1 ? '' : 's'}`);
+    }
+    this.endTurnBtn.textContent = `End Turn (${bits.join(', ')} left)`;
   }
 
   setThreatActive(on: boolean): void {
@@ -518,6 +557,7 @@ const TEMPLATE = `
     <div class="hand-row">
       <div class="left-controls">
         <button class="end-turn">End Turn</button>
+        <button class="undo" data-tip="Undo move|Steps back to before your last move.|Movement only — attacks and card plays are final. Press Z.">↶ Undo</button>
         <button class="threat-toggle" data-tip="Danger zone|Highlights every tile the enemy could strike on their next turn.|Press T to toggle. Red tiles are reachable; deeper red means more attackers.">
           <span class="threat-toggle__dot"></span> Threat
         </button>

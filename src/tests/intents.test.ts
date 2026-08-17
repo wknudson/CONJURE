@@ -48,7 +48,9 @@ describe('declaration', () => {
 
     const adept = afterEnemyDeclares(0, 3, ADEPT_AI);
     expect(adept.getBoard().intents.every((i) => i.kind !== 'card')).toBe(true);
-  });
+    // Adept plans twice per turn (execute, then declare), so it needs the wider budget
+    // the other AI-heavy suites carry.
+  }, 30_000);
 
   it('clears the declaration once the turn it described is spent', () => {
     const session = afterEnemyDeclares();

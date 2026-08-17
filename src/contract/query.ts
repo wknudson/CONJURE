@@ -112,6 +112,10 @@ export interface RulesQuery {
   getOccludedTiles(from: Coord): Coord[];
   /** Tiles enemies could strike next turn, with incoming damage per tile. */
   getThreat(): ThreatView;
+  /** Your units with an action still available, in board order. */
+  getReadyUnits(): UnitId[];
+  /** What passing the turn right now would leave on the table. */
+  getUnspentPotential(): { readyUnits: number; playableCards: number };
   previewAction(action: Action): ActionPreview;
   isOver(): boolean;
 }

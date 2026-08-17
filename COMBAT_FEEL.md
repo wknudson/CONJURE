@@ -148,6 +148,28 @@ export interface Intent {
 
 </details>
 
+## ~~E2 — Turn flow~~ ✅ DONE (2026-08-17)
+
+Undo (Z / Backspace / button), Tab-cycling, and a two-click End Turn that names what it
+would waste. Undo is deliberately **client-side**: it stores whole `GameState` snapshots
+on the screen component, emits nothing, and never enters the event stream — the engine
+stays a pure reducer that has no idea the player changed their mind.
+
+Because a snapshot carries the RNG state, rewinding rewinds the seeded stream too, so a
+rewound game continues along exactly the branch it would have taken had the move never
+happened. A snapshot that kept the advanced RNG would silently reshuffle the future, which
+is the subtle failure an undo built on partial state produces; there is a test for it.
+
+Attacks and card plays clear the stack outright. They reveal information and resolve
+consequences, and being able to take them back would turn a turn into a search rather
+than a decision.
+
+**Not done:** hover-a-card-to-preview, and a tick on spent units. Both are cosmetic
+against the three that remove real friction.
+
+<details>
+<summary>Original E2 plan (kept for reference)</summary>
+
 ## E2 — Turn flow (~2 days, do alongside E1)
 
 Small frictions, each cheap, that together decide whether a turn feels smooth.
@@ -164,6 +186,8 @@ Small frictions, each cheap, that together decide whether a turn feels smooth.
    *done* rather than *disabled*.
 
 ---
+
+</details>
 
 ## E3 — HUD refinement (~3 days)
 

@@ -360,3 +360,48 @@
   font-size: 11px;
   text-shadow: 0 0 10px rgba(229, 72, 77, 0.6);
 }
+
+.undo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+  font: 700 9.5px var(--font);
+  letter-spacing: 0.7px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.undo:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.32);
+  color: var(--text);
+}
+
+.undo:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* End Turn escalates: honest label first, confirmation second. */
+.end-turn.is-warning {
+  border-color: rgba(251, 191, 36, 0.6);
+  background: rgba(251, 191, 36, 0.16);
+  color: #fcd34d;
+}
+
+.end-turn.is-armed {
+  border-color: #fb923c;
+  background: rgba(251, 146, 60, 0.28);
+  color: #fed7aa;
+  animation: end-turn-armed 0.9s ease-in-out infinite;
+}
+
+@keyframes end-turn-armed {
+  50% {
+    box-shadow: 0 0 16px rgba(251, 146, 60, 0.55);
+  }
+}

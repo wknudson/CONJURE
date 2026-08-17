@@ -80,6 +80,8 @@ const CONTROLS: [string, string][] = [
   ['Hold Shift', 'Expands damage predictions across every affected tile'],
   ['T', 'Toggles the danger zone — every tile the enemy can strike'],
   ['Q / E', 'Turns the board a quarter-turn, to see behind tall pieces'],
+  ['Z', 'Takes back your last move. Attacks and card plays are final'],
+  ['Tab', 'Jumps to the next unit that can still act'],
   ['Space', 'Fast-forwards the enemy turn'],
   ['Enter', 'Ends your turn'],
   ['Esc / right-click', 'Cancels the current selection'],
