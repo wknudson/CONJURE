@@ -73,6 +73,20 @@ export const NOVICE_WEIGHTS: UtilityWeights = {
   unitDamage: 2,
 };
 
+/**
+ * Adept (Module 5 §3): the same value system, but it sees collisions.
+ *
+ * A Novice "ignores collision damage"; an Adept deliberately shoves units into walls and
+ * into each other, which on a board with a Runic Boundary is a whole extra damage source
+ * — and, since Phase B, the way to Shatter a frozen target.
+ */
+export const ADEPT_WEIGHTS: UtilityWeights = {
+  ...NOVICE_WEIGHTS,
+  collision: 45,
+  // Slightly more willing to preserve a unit, since it can plan the withdrawal.
+  retreat: 3.5,
+};
+
 /** Overwhelms every other term, so a lethal line is always taken. */
 export const LETHAL_SCORE = 10_000;
 

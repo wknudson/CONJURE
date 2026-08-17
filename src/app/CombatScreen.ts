@@ -25,6 +25,7 @@ import { Tutorial } from '../hud/Tutorial.js';
 import { cellsAt } from '../core/util/grid.js';
 import type { CommanderModel } from '../render/BoardRenderer.js';
 import type { Coord } from '../contract/ids.js';
+import type { AiProfile } from '../core/ai/controller.js';
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -62,8 +63,9 @@ export class CombatScreen implements Screen {
     companionId?: string,
     seed = Math.floor(Math.random() * 1e9),
     deck?: string[],
+    ai?: AiProfile,
   ) {
-    this.session = new CombatSession(encounter, seed, undefined, companionId, deck);
+    this.session = new CombatSession(encounter, seed, ai, companionId, deck);
     this.cam = new IsoCamera(encounter.width, encounter.height);
   }
 

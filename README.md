@@ -206,6 +206,23 @@ Imp could reach every tile on the board in one turn, so the overlay was a unifor
 wash. On the lane map your two home rows are genuinely safe and everything past row 5 is
 contested, which turns stepping forward into a decision.
 
+### Difficulty
+
+Two AI tiers, chosen on the title screen and remembered between sessions.
+
+| Tier | Behaviour |
+| :-- | :-- |
+| **Novice** | Greedy: takes the best action available right now. Visibly misjudges the order of its own actions — it will walk a unit out of range before remembering it could have swung first. |
+| **Adept** | Values a candidate opener by the whole turn it leads to, so it strikes before it withdraws. Also sees collisions, and is far less prone to a deliberate mistake (5% vs 20%). |
+
+Both run inside Module 5's 1.2s thinking cap, enforced by a latching budget that degrades
+Adept to greedy mid-turn rather than letting a turn hang. Measured worst case on the
+largest arena: ~1.2s; typical enemy turn ~300ms.
+
+Adept is measurably harder where the matchup has headroom — against a fixed scripted
+opponent on the Ignis trial it wins **18/20** against Novice's 12/20, and leaves that
+opponent on 3.5 HP rather than 10.9.
+
 ### Deck building
 
 Your collection grows by winning: each victory offers a choice of three cards. Decks are

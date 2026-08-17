@@ -15,6 +15,7 @@ import type { Collection } from '../core/data/deckRules.js';
 import { reconcileCollection, startingCollection } from '../core/data/collection.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import { COMPANIONS, DEFAULT_COMPANION } from '../core/data/companions.js';
+import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
@@ -33,6 +34,8 @@ export interface SaveData {
   /** One deck per companion, keyed by companion id. */
   decks: Record<string, SavedDeck>;
   lastCompanionId: string;
+  /** AI tier name, matched against AI_PROFILES on load. */
+  difficulty: string;
   record: { wins: number; losses: number; bound: number };
 }
 
@@ -46,6 +49,7 @@ export function defaultSave(): SaveData {
     collection: startingCollection(),
     decks,
     lastCompanionId: DEFAULT_COMPANION.id,
+    difficulty: NOVICE_AI.name,
     record: { wins: 0, losses: 0, bound: 0 },
   };
 }
@@ -134,7 +138,11 @@ function migrate(raw: unknown, notes: string[]): SaveData {
         }
       : base.record;
 
-  return { version: SAVE_VERSION, collection, decks, lastCompanionId, record };
+  // An unknown tier (renamed, or from a future version) falls back rather than leaving
+  // the game with no AI to run.
+  const difficulty = profileByName(String(data.difficulty ?? '')) ? data.difficulty! : base.difficulty;
+
+  return { version: SAVE_VERSION, collection, decks, lastCompanionId, difficulty, record };
 }
 
 function numberOr(value: unknown, fallback: number): number {

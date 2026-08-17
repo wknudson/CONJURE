@@ -229,6 +229,32 @@ errors for every illegal deck, and it all survives a reload and a simulated corr
 
 ---
 
+### ~~Phase D — Adept AI + difficulty select~~ ✅ DONE (2026-08-17)
+
+Shipped: an Adept tier with whole-turn lookahead, collision awareness and 5%
+suboptimality; a latching simulation/wall-clock budget that degrades to greedy instead of
+stalling; a difficulty picker persisted in the save. Suite is now **180 tests**.
+
+**Two implementation mistakes worth recording, both caught by measurement rather than by
+the tests passing:**
+
+1. *The beam was selected by greedy score.* Lookahead only re-ranked the top N — but the
+   actions lookahead exists to rescue are exactly the ones that score badly alone. A free
+   attack worth 4 never entered a beam full of advances worth 9. Fixed by guaranteeing
+   the best action of every command type a place in the beam.
+2. *The objective double-counted.* Scoring an opener as `its utility + best sequel`
+   rewards actions that leave *many* options rather than *good* ones, because that sequel
+   gets taken next iteration anyway. Replaced with a short greedy rollout: value the whole
+   turn an opener leads to. Only after this did strength actually move.
+
+**On measurement:** win rate against the scripted player was saturated (~85%) and could
+not detect improvement — the first three ablations all read as noise. Speed-to-win and
+remaining HP were the sensitive metrics, and AI-vs-AI isolated tier quality from player-script
+quality.
+
+<details>
+<summary>Original Phase D plan (kept for reference)</summary>
+
 ### Phase D — Adept AI + difficulty select (~3–4 days)
 
 **Why:** Novice is beatable 8/10 by a naive scripted player. Anyone who likes the demo
@@ -254,6 +280,8 @@ will exhaust it in an evening without a second difficulty.
 
 **Done when:** Adept beats the Phase A scripted player ≥6/10 where Novice loses 8/10,
 within budget, fully deterministic under seed.
+
+</details>
 
 ---
 

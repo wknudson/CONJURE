@@ -5,14 +5,21 @@ import { COMPANIONS, DEFAULT_COMPANION } from '../core/data/companions.js';
 import { schoolOf } from '../render/palette.js';
 import type { SaveData } from './save.js';
 import { validateDeck } from '../core/data/deckRules.js';
+import { AI_PROFILES } from '../core/ai/controller.js';
 
 export interface TitleOptions {
   save: SaveData;
   /** One-off messages from loading the save (migration, corruption recovery). */
   notes: string[];
-  onStart: (encounter: EncounterDef, companionId: string) => void;
+  onStart: (encounter: EncounterDef, companionId: string, difficulty: string) => void;
   onEditDeck: (companionId: string) => void;
 }
+
+/** What each tier actually does differently, in the player's terms. */
+const DIFFICULTY_BLURB: Record<string, string> = {
+  Novice: 'Takes the best move available right now. Misjudges the order of its own actions.',
+  Adept: 'Thinks a step ahead, strikes before it withdraws, and shoves you into walls.',
+};
 
 /**
  * Title and setup. Two choices before a run: who fights beside you, and what you fight.
@@ -21,9 +28,11 @@ export interface TitleOptions {
 export class TitleScreen implements Screen {
   private el: HTMLElement | null = null;
   private companionId = DEFAULT_COMPANION.id;
+  private difficulty: string;
 
   constructor(private readonly opts: TitleOptions) {
     this.companionId = opts.save.lastCompanionId || DEFAULT_COMPANION.id;
+    this.difficulty = opts.save.difficulty;
   }
 
   mount(root: HTMLElement): void {
@@ -37,6 +46,9 @@ export class TitleScreen implements Screen {
       <div class="companions"></div>
 
       <div class="deck-summary"></div>
+
+      <div class="title__section-label">Difficulty</div>
+      <div class="difficulty"></div>
 
       <div class="title__section-label">Choose an encounter</div>
       <div class="encounters"></div>
@@ -54,6 +66,7 @@ export class TitleScreen implements Screen {
     root.appendChild(el);
 
     this.buildCompanions(el);
+    this.buildDifficulty(el);
     this.buildEncounters(el);
     this.renderNotes(el);
   }
@@ -116,6 +129,32 @@ export class TitleScreen implements Screen {
       .addEventListener('click', () => this.opts.onEditDeck(this.companionId));
   }
 
+  private buildDifficulty(el: HTMLElement): void {
+    const list = el.querySelector('.difficulty')!;
+
+    for (const profile of AI_PROFILES) {
+      const btn = document.createElement('button');
+      btn.className = 'difficulty__opt';
+      btn.dataset.name = profile.name;
+      btn.innerHTML = `
+        <span class="difficulty__name">${profile.name}</span>
+        <span class="difficulty__desc">${DIFFICULTY_BLURB[profile.name] ?? ''}</span>
+      `;
+      btn.addEventListener('click', () => this.selectDifficulty(profile.name));
+      list.appendChild(btn);
+    }
+
+    this.selectDifficulty(this.difficulty);
+  }
+
+  private selectDifficulty(name: string): void {
+    this.difficulty = name;
+    const root = this.el ?? document;
+    for (const el of root.querySelectorAll<HTMLElement>('.difficulty__opt')) {
+      el.classList.toggle('is-selected', el.dataset.name === name);
+    }
+  }
+
   private renderNotes(el: HTMLElement): void {
     if (this.opts.notes.length === 0) return;
     const box = document.createElement('div');
@@ -135,7 +174,9 @@ export class TitleScreen implements Screen {
         <div class="encounter__blurb">${encounter.blurb}</div>
         <div class="encounter__meta">${encounter.width}×${encounter.height} arena · ${encounter.enemyHp} HP</div>
       `;
-      card.addEventListener('click', () => this.opts.onStart(encounter, this.companionId));
+      card.addEventListener('click', () =>
+        this.opts.onStart(encounter, this.companionId, this.difficulty),
+      );
       list.appendChild(card);
     }
   }

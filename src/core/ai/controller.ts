@@ -1,16 +1,30 @@
 /**
- * The AI turn loop: enumerate -> simulate -> score -> pick greedily, one action at a
- * time, until nothing is worth doing or the action cap is reached.
+ * The AI turn loop: enumerate -> simulate -> score -> pick, one action at a time, until
+ * nothing is worth doing or the action cap is reached.
  *
- * Failsafes from Module 5: a per-turn action cap, deterministic tie-breaking (never RNG),
- * and the Lethal Veto handled in score.ts.
+ * Two tiers, per Module 5 §3:
+ *
+ *   Novice  greedy, current action only. Cheap, and visibly imperfect — it will move a
+ *           unit out of range before remembering it could have swung first.
+ *   Adept   one-action lookahead. Values a candidate by what it *enables*, not only by
+ *           what it does, which is precisely what fixes the ordering weakness above.
+ *
+ * Failsafes: a per-turn action cap, deterministic tie-breaking (never RNG), the Lethal
+ * Veto in score.ts, and a simulation budget that degrades Adept to greedy rather than
+ * letting a turn hang.
  */
 
 import type { Side } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
 import type { Command } from '../types/commands.js';
 import { enumerateActions } from './enumerate.js';
-import { NOVICE_WEIGHTS, scoreAction, type ScoredAction, type UtilityWeights } from './score.js';
+import {
+  ADEPT_WEIGHTS,
+  NOVICE_WEIGHTS,
+  scoreAction,
+  type ScoredAction,
+  type UtilityWeights,
+} from './score.js';
 import { nextFloat, nextInt } from '../util/rng.js';
 
 export interface AiProfile {
@@ -21,6 +35,22 @@ export interface AiProfile {
   actionCap: number;
   /** Actions scoring at or below this are not worth taking. */
   passThreshold: number;
+  /** Follow-up actions considered when valuing a candidate. 0 = pure greedy. */
+  lookahead: 0 | 1;
+  /** Candidates expanded during lookahead. Wider is better and costlier. */
+  beamWidth: number;
+  /** Weight given to what an action enables, relative to what it does. */
+  lookaheadDiscount: number;
+  /** How many further actions the rollout plays out when valuing an opener. */
+  rolloutDepth: number;
+  /**
+   * Ceiling on simulated actions per turn. Module 5 states 150 iterations; that reads as
+   * per decision, so the per-turn budget is a multiple of it. Exceeding it drops the
+   * rest of the turn to greedy rather than stalling.
+   */
+  simulationBudget: number;
+  /** Wall-clock guard, so a slow machine degrades instead of freezing (Module 5: 1.2s). */
+  timeBudgetMs: number;
 }
 
 export const NOVICE_AI: AiProfile = {
@@ -29,7 +59,70 @@ export const NOVICE_AI: AiProfile = {
   suboptimalChance: 0.2,
   actionCap: 8,
   passThreshold: 0,
+  lookahead: 0,
+  beamWidth: 1,
+  lookaheadDiscount: 0,
+  rolloutDepth: 0,
+  simulationBudget: 400,
+  timeBudgetMs: 1200,
 };
+
+export const ADEPT_AI: AiProfile = {
+  name: 'Adept',
+  // Collision awareness is the other half of Module 5's Adept tier: unlike a Novice it
+  // will deliberately shove a unit into a wall.
+  weights: ADEPT_WEIGHTS,
+  suboptimalChance: 0.05,
+  actionCap: 8,
+  passThreshold: 0,
+  lookahead: 1,
+  beamWidth: 4,
+  lookaheadDiscount: 0.9,
+  rolloutDepth: 3,
+  simulationBudget: 2500,
+  timeBudgetMs: 1200,
+};
+
+export const AI_PROFILES: AiProfile[] = [NOVICE_AI, ADEPT_AI];
+
+export function profileByName(name: string): AiProfile | undefined {
+  return AI_PROFILES.find((p) => p.name.toLowerCase() === name.toLowerCase());
+}
+
+/**
+ * Tracks how much thinking a turn has spent, so it degrades before it stalls.
+ *
+ * Wall clock is the binding constraint, not the simulation count: a single simulation
+ * clones the whole board, so its cost scales with the arena and the number of units.
+ * Once time is up the flag latches — an over-budget turn must not un-exhaust itself.
+ */
+class Budget {
+  private sims = 0;
+  private latched = false;
+  private readonly startedAt = Date.now();
+
+  constructor(private readonly profile: AiProfile) {}
+
+  spend(n = 1): void {
+    this.sims += n;
+  }
+
+  get exhausted(): boolean {
+    if (this.latched) return true;
+    if (this.sims >= this.profile.simulationBudget) {
+      this.latched = true;
+      return true;
+    }
+    // Checked on every call rather than sampled. A single simulation costs milliseconds,
+    // so reading the clock is free by comparison — and sampling let a big enumeration
+    // run hundreds of simulations past the deadline before anyone noticed.
+    if (Date.now() - this.startedAt > this.profile.timeBudgetMs) {
+      this.latched = true;
+      return true;
+    }
+    return false;
+  }
+}
 
 /**
  * Plans a full turn and returns the command list. The caller replays these through the
@@ -37,21 +130,25 @@ export const NOVICE_AI: AiProfile = {
  */
 export function planTurn(state: GameState, side: Side, profile: AiProfile = NOVICE_AI): Command[] {
   const commands: Command[] = [];
+  const budget = new Budget(profile);
   let current = state;
 
   for (let i = 0; i < profile.actionCap; i++) {
     if (current.result) break;
 
-    const candidates = enumerateActions(current, side)
-      .map((c) => scoreAction(current, side, c, profile.weights))
-      .filter((s): s is ScoredAction => s !== undefined)
-      .filter((s) => Number.isFinite(s.utility) && s.utility > profile.passThreshold);
-
+    const candidates = scoreAll(current, side, profile, budget);
     if (candidates.length === 0) break;
 
     candidates.sort((a, b) => compareActions(a, b, current));
 
-    const chosen = pickWithSuboptimality(current, candidates, profile);
+    // Lookahead re-ranks the leaders by what each one leaves available. Skipped once the
+    // budget is gone, which turns the remainder of the turn into a greedy plan.
+    const ranked =
+      profile.lookahead > 0 && !budget.exhausted
+        ? withLookahead(current, side, candidates, profile, budget)
+        : candidates;
+
+    const chosen = pickWithSuboptimality(current, ranked, profile);
     commands.push(chosen.command);
     current = chosen.next;
   }
@@ -60,6 +157,133 @@ export function planTurn(state: GameState, side: Side, profile: AiProfile = NOVI
   // issued after a result is decided.
   if (!current.result) commands.push({ type: 'endTurn' });
   return commands;
+}
+
+function scoreAll(
+  state: GameState,
+  side: Side,
+  profile: AiProfile,
+  budget: Budget,
+): ScoredAction[] {
+  const actions = enumerateActions(state, side);
+  const out: ScoredAction[] = [];
+
+  for (const command of actions) {
+    // Checked inside the loop: a single enumeration on a large board can be a hundred
+    // simulations, which is enough to overrun the whole turn's budget on its own.
+    if (budget.exhausted) break;
+    budget.spend();
+
+    const scored = scoreAction(state, side, command, profile.weights);
+    if (!scored) continue;
+    if (!Number.isFinite(scored.utility) || scored.utility <= profile.passThreshold) continue;
+    out.push(scored);
+  }
+
+  return out;
+}
+
+/**
+ * One-action lookahead.
+ *
+ * A candidate is re-valued as `its own utility + discount × the best thing it leaves
+ * available`. That single change is what makes a unit swing before it withdraws: moving
+ * first scores well on its own but leaves nothing, while attacking first scores modestly
+ * and still leaves the move.
+ *
+ * A winning line is never re-ranked — no amount of follow-up beats taking the game.
+ */
+function withLookahead(
+  state: GameState,
+  side: Side,
+  candidates: ScoredAction[],
+  profile: AiProfile,
+  budget: Budget,
+): ScoredAction[] {
+  const leaders = beamFor(candidates, profile.beamWidth);
+  if (leaders.length <= 1) return candidates;
+  if (leaders.some((c) => c.utility >= 10_000)) return candidates;
+
+  const rescored = leaders.map((candidate) => {
+    if (candidate.next.result || budget.exhausted) {
+      return { candidate, value: candidate.utility };
+    }
+
+    // Value of the whole turn that starts with this action, not of the action plus its
+    // single best sequel. Adding a sequel's score to the opener double-counts it — that
+    // sequel gets taken on the next iteration anyway — and rewards actions that leave
+    // *many* options over actions that leave *good* ones.
+    const rest = rolloutValue(candidate.next, side, profile, budget, profile.rolloutDepth);
+    return { candidate, value: candidate.utility + profile.lookaheadDiscount * rest };
+  });
+
+  rescored.sort((a, b) => {
+    if (a.value !== b.value) return b.value - a.value;
+    // Fall back to the same deterministic tie-break the greedy path uses.
+    return compareActions(a.candidate, b.candidate, state);
+  });
+
+  // The re-ranked leaders, then everything else in its original order.
+  const promoted = rescored.map((r) => r.candidate);
+  const seen = new Set(promoted);
+  return [...promoted, ...candidates.filter((c) => !seen.has(c))];
+}
+
+/**
+ * Total utility of continuing this turn greedily for a few more actions.
+ *
+ * A cheap stand-in for "how good is the turn this opener leads to". Greedy inside the
+ * rollout is fine: the question is which *first* action to commit to, and a consistent
+ * continuation policy is enough to rank them.
+ */
+function rolloutValue(
+  state: GameState,
+  side: Side,
+  profile: AiProfile,
+  budget: Budget,
+  depth: number,
+): number {
+  let total = 0;
+  let current = state;
+
+  for (let i = 0; i < depth; i++) {
+    if (current.result || budget.exhausted) break;
+    const options = scoreAll(current, side, profile, budget);
+    if (options.length === 0) break;
+
+    const best = options.reduce((a, b) => (b.utility > a.utility ? b : a));
+    total += best.utility;
+    current = best.next;
+  }
+
+  return total;
+}
+
+/**
+ * Picks which candidates are worth looking ahead from.
+ *
+ * Taking the top N by greedy score alone defeats the entire purpose: the actions
+ * lookahead exists to rescue are precisely the ones that score badly on their own. A free
+ * attack worth 4 never enters a beam full of advances worth 9, so it never gets the
+ * chance to show that it costs nothing and leaves the move intact.
+ *
+ * So the beam is the top N *plus* the best of every command type, which guarantees the
+ * comparison that matters actually happens.
+ */
+function beamFor(candidates: ScoredAction[], width: number): ScoredAction[] {
+  const beam = candidates.slice(0, width);
+  const included = new Set(beam);
+
+  const kinds = new Set(candidates.map((c) => c.command.type));
+  for (const kind of kinds) {
+    const best = candidates.find((c) => c.command.type === kind);
+    if (best && !included.has(best)) {
+      included.add(best);
+      beam.push(best);
+    }
+  }
+
+  return beam;
 }
 
 /**

@@ -23,6 +23,7 @@ import { loadSave, writeSave, type SaveData } from './app/save.js';
 import { companionById } from './core/data/companions.js';
 import { grantCard, rollRewards } from './core/data/collection.js';
 import { makeRng } from './core/util/rng.js';
+import { NOVICE_AI, profileByName } from './core/ai/controller.js';
 import type { EncounterDef } from './core/data/encounters/registry.js';
 import type { CombatResult } from './contract/events.js';
 
@@ -51,8 +52,9 @@ function showTitle(): void {
     new TitleScreen({
       save,
       notes: bootNotes.splice(0),
-      onStart: (encounter, companionId) => {
+      onStart: (encounter, companionId, difficulty) => {
         save.lastCompanionId = companionId;
+        save.difficulty = difficulty;
         persist();
         startCombat(encounter, companionId);
       },
@@ -89,6 +91,7 @@ function startCombat(encounter: EncounterDef, companionId: string): void {
       companionId,
       undefined,
       deckFor(companionId),
+      profileByName(save.difficulty) ?? NOVICE_AI,
     ),
   );
 }
