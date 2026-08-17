@@ -93,6 +93,12 @@ export interface CardDef {
   unit?: UnitStatBlock;
   /** Present for obstacle cards. */
   obstacleHp?: number;
+  /**
+   * A stat block the engine places directly — the free Vanguard, the Companions' bodies.
+   * It is never drawn, owned, offered as a reward, or put in a deck. Marking the card is
+   * more durable than the list of exceptions the reward roller used to carry.
+   */
+  setupOnly?: true;
 }
 
 export interface CardInstance {

@@ -16,6 +16,13 @@ export interface CommanderState {
   companionColumn: number;
   /** Resonance fires once per turn, on the first Companion card played. */
   resonanceUsedThisTurn: boolean;
+  /**
+   * The Companion's body on the board, if this side has one. A side without one casts
+   * from nowhere in particular, exactly as every side did before Bound Forms existed.
+   */
+  companionUnitId?: UnitId;
+  /** Its stat block, kept so sudden death can restore the body after the board is wiped. */
+  companionUnitDefId?: string;
   hp: number;
   maxHp: number;
   armor: number;

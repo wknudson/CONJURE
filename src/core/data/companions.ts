@@ -19,6 +19,8 @@ export interface CompanionDef {
   blurb: string;
   /** The 15-card deck this companion brings. */
   deck: string[];
+  /** The setup-only stat block placed on the board as its Bound Form. */
+  unitCardId: string;
 }
 
 /** Hero cards from the Draft 7 starter deck — the shared spine of every companion deck. */
@@ -42,6 +44,7 @@ export const COMPANIONS: CompanionDef[] = [
       'Runes and cascades. Brand your enemies, then set the whole board off at once. Ember Watch ignites anything standing in its lane.',
     // The Draft 7 deck exactly as specced.
     deck: [...STARTER_DECK],
+    unitCardId: 'ignis_bound',
   },
   {
     id: 'boreas',
@@ -59,6 +62,7 @@ export const COMPANIONS: CompanionDef[] = [
       'flash_freeze',
       'ice_barricade',
     ],
+    unitCardId: 'boreas_bound',
   },
 ];
 

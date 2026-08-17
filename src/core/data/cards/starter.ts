@@ -24,6 +24,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'vanguard_footman' },
     keywords: ['Escalate'],
+    setupOnly: true,
     unit: {
       atk: 2,
       hp: 4,

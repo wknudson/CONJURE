@@ -45,7 +45,13 @@ export function calculateProjectedDamage(board: BoardView): ProjectedDamage {
   let fromEscalation = 0;
 
   for (const intent of board.intents) {
-    if (intent.kind !== 'commander') continue;
+    // A blow aimed at the Bound Form is a blow aimed at the Pact: its damage is
+    // redirected there, so the readout has to count it exactly like a portrait attack.
+    // Without this, the on-grid route to the Pact would be entirely invisible.
+    const atBoundForm = intent.kind === 'attack' && intent.at !== undefined
+      ? boundFormAt(board, intent.at)
+      : false;
+    if (intent.kind !== 'commander' && !atBoundForm) continue;
     fromAttacks += intent.damage;
 
     // Will this attacker be bigger by the time it swings?
@@ -69,6 +75,19 @@ export function calculateProjectedDamage(board: BoardView): ProjectedDamage {
     fromEscalation,
     fromStatuses,
   };
+}
+
+/** Whether the player's Bound Form occupies the given tile, footprint included. */
+function boundFormAt(board: BoardView, at: { x: number; y: number }): boolean {
+  for (const u of board.units) {
+    if (u.side !== 'player') continue;
+    if (!u.keywords.includes('BoundForm')) continue;
+    const span = u.footprint;
+    if (at.x >= u.anchor.x && at.x < u.anchor.x + span && at.y >= u.anchor.y && at.y < u.anchor.y + span) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**

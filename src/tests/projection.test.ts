@@ -144,6 +144,36 @@ describe('projected damage', () => {
     expect(describeProjected(mixed)).toBe('Incoming: 4 damage (3 attack, 1 escalation)');
   });
 
+  it('counts a blow aimed at the Bound Form, which lands on the Pact', () => {
+    // The on-grid route to the Pact. Without this the readout would call a lethal swing
+    // at the Companion "0 incoming" and the telegraph would be worse than useless.
+    const bound = attacker({
+      id: 'b1',
+      side: 'player',
+      anchor: { x: 3, y: 6 },
+      keywords: ['BoundForm'],
+    });
+    const p = calculateProjectedDamage(
+      board({
+        units: [attacker({ keywords: [] }), bound],
+        intents: [{ unitId: 'u1', kind: 'attack', at: { x: 3, y: 6 }, damage: 3 }],
+      }),
+    );
+    expect(p.total).toBe(3);
+    expect(p.fromAttacks).toBe(3);
+  });
+
+  it('ignores a blow aimed at an ordinary minion', () => {
+    const pawn = attacker({ id: 'p1', side: 'player', anchor: { x: 3, y: 6 }, keywords: [] });
+    const p = calculateProjectedDamage(
+      board({
+        units: [attacker({ keywords: [] }), pawn],
+        intents: [{ unitId: 'u1', kind: 'attack', at: { x: 3, y: 6 }, damage: 3 }],
+      }),
+    );
+    expect(p.total).toBe(0);
+  });
+
   it('survives an intent whose unit is already gone', () => {
     const p = calculateProjectedDamage(
       board({ intents: [{ unitId: 'ghost', kind: 'commander', damage: 3 }] }),

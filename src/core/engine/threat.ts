@@ -84,6 +84,15 @@ function strikeableFrom(state: GameState, unit: Unit, anchor: Coord): Coord[] {
 /**
  * Builds the threat map faced by `side` — that is, what the opposing units can hit.
  */
+/** Whether `side`'s Bound Form stands on this tile. */
+function boundFormOccupies(state: GameState, side: Side, at: Coord): boolean {
+  const id = state.players[side].companionUnitId;
+  if (!id) return false;
+  const body = state.units[id];
+  if (!body) return false;
+  return cellsAt(body.anchor, body.footprint).some((c) => c.x === at.x && c.y === at.y);
+}
+
 export function threatMap(state: GameState, side: Side): ThreatMap {
   const damageByTile = new Map<string, number>();
   const commanderThreats: UnitId[] = [];
@@ -104,7 +113,15 @@ export function threatMap(state: GameState, side: Side): ThreatMap {
         if (canHitPortrait(state, { ...foe, anchor }, side)) commanderThreats.push(foe.id);
       }
 
-      for (const t of strikeableFrom(state, foe, anchor)) tiles.add(coordKey(t));
+      for (const t of strikeableFrom(state, foe, anchor)) {
+        tiles.add(coordKey(t));
+        // The Bound Form is a second, on-grid route to the same Pact. A foe that can
+        // strike it threatens the Commander just as surely as one with a clear shot at
+        // the portrait, and the HUD would otherwise call that tile merely dangerous.
+        if (!commanderThreats.includes(foe.id) && boundFormOccupies(state, side, t)) {
+          commanderThreats.push(foe.id);
+        }
+      }
     }
 
     for (const key of tiles) {

@@ -8,6 +8,8 @@ import { emit } from './context.js';
 import type { Obstacle, Unit } from '../types/units.js';
 import { CARDS } from '../data/cards/index.js';
 import { canPlace } from './board.js';
+import type { GameState } from '../types/state.js';
+import { territoryRows } from '../types/state.js';
 import { toSnapshot } from './views.js';
 
 export function nextId(ctx: Ctx, prefix: string): UnitId {
@@ -58,6 +60,43 @@ export function summonUnit(
   ctx.state.units[unit.id] = unit;
   emit(ctx, { t: 'unitSummoned', unit: toSnapshot(unit) });
   return unit.id;
+}
+
+/**
+ * Places a unit that was already on the field when combat began — so it is not treated
+ * as freshly summoned and can act, and escalate, from turn one.
+ *
+ * Lives here rather than in setup so that sudden death, which wipes the board and must
+ * restore the Bound Form afterwards, can reach it without importing combat setup.
+ */
+export function placeOpeningUnit(
+  ctx: Ctx,
+  defId: string,
+  side: Side,
+  at: Coord,
+): UnitId | undefined {
+  const spot = firstFreeNear(ctx.state, at, side);
+  if (!spot) return undefined;
+  const id = summonUnit(ctx, defId, side, spot);
+  if (!id) return undefined;
+  const unit = ctx.state.units[id];
+  if (!unit) return undefined;
+  unit.summonedThisTurn = false;
+  unit.freshlySummoned = false;
+  return id;
+}
+
+/** Falls back to a nearby tile in the same territory if the preferred one is taken. */
+export function firstFreeNear(state: GameState, at: Coord, side: Side): Coord | undefined {
+  if (canPlace(state, at, 1)) return at;
+  const rows = territoryRows(state, side);
+  for (const y of rows) {
+    for (let x = 0; x < state.width; x++) {
+      const c = { x, y };
+      if (canPlace(state, c, 1)) return c;
+    }
+  }
+  return undefined;
 }
 
 export function spawnObstacle(

@@ -4,9 +4,7 @@
 
 import type { CardInstanceId, Coord, School, Side } from '../../contract/ids.js';
 import type { GameState, StepResult, CommanderState } from '../types/state.js';
-import { territoryDepthFor, territoryRows } from '../types/state.js';
-import { canPlace } from './board.js';
-import type { Ctx } from './context.js';
+import { territoryDepthFor } from '../types/state.js';
 import type { CardInstance } from '../types/cards.js';
 import type { EncounterDef } from '../data/encounters/registry.js';
 import { getEncounterScript } from '../data/encounters/registry.js';
@@ -14,7 +12,7 @@ import { makeRng, shuffle } from '../util/rng.js';
 import { makeCtx, emit } from './context.js';
 import { DEFAULT_COMPANION, companionById } from '../data/companions.js';
 import { HAND_LIMIT, OPENING_HAND, drawCards } from './deck.js';
-import { summonUnit } from './spawn.js';
+import { placeOpeningUnit } from './spawn.js';
 import { beginTurn } from './turn.js';
 
 /**
@@ -234,6 +232,22 @@ export function createCombat(
     placeOpeningUnit(ctx, vanguard, 'enemy', { x: mid, y: 1 });
   }
 
+  // The Companion takes the field, standing in its own lane on the back row. The Hero
+  // stays off-grid as the Architect; only the Companion has a body to lose.
+  //
+  // The enemy has none: their Companion remains off-grid, as every Commander's was
+  // before this. Giving one to a boss means adding a field to EncounterDef and deciding
+  // what its Resonance lane does — a separate design question, deliberately not answered
+  // here. Everything downstream keys off companionUnitDefId being absent.
+  const boundId = placeOpeningUnit(ctx, companion.unitCardId, 'player', {
+    x: player.commander.companionColumn,
+    y: encounter.height - 1,
+  });
+  if (boundId) {
+    state.players.player.companionUnitId = boundId;
+    state.players.player.companionUnitDefId = companion.unitCardId;
+  }
+
   // Opening hands, then the encounter script, then turn 1.
   drawCards(ctx, 'player', OPENING_HAND);
   drawCards(ctx, 'enemy', OPENING_HAND);
@@ -244,34 +258,6 @@ export function createCombat(
   beginTurn(ctx, 'player');
 
   return { state, events: ctx.events };
-}
-
-/**
- * Places a unit that was already on the field when combat began — so it is not treated
- * as freshly summoned and can act, and escalate, from turn one.
- */
-function placeOpeningUnit(ctx: Ctx, defId: string, side: Side, at: Coord): void {
-  const spot = firstFreeNear(ctx.state, at, side);
-  if (!spot) return;
-  const id = summonUnit(ctx, defId, side, spot);
-  if (!id) return;
-  const unit = ctx.state.units[id];
-  if (!unit) return;
-  unit.summonedThisTurn = false;
-  unit.freshlySummoned = false;
-}
-
-/** Falls back to a nearby tile in the same territory if the preferred one is taken. */
-function firstFreeNear(state: GameState, at: Coord, side: Side): Coord | undefined {
-  if (canPlace(state, at, 1)) return at;
-  const rows = territoryRows(state, side);
-  for (const y of rows) {
-    for (let x = 0; x < state.width; x++) {
-      const c = { x, y };
-      if (canPlace(state, c, 1)) return c;
-    }
-  }
-  return undefined;
 }
 
 export function sideName(state: GameState, side: Side): string {

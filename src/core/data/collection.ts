@@ -59,7 +59,9 @@ export function grantCard(collection: Collection, cardId: string): Collection {
  */
 export function rollRewards(rng: RngState, count = 3): string[] {
   const pool = Object.values(CARDS)
-    .filter((c) => c.id !== 'rite_of_binding' && c.id !== 'vanguard_footman')
+    // Setup-only stat blocks are placed by the engine and are not cards anyone can own;
+    // the Rite is injected by the Trial itself.
+    .filter((c) => !c.setupOnly && c.id !== 'rite_of_binding')
     .map((c) => c.id)
     .sort();
 

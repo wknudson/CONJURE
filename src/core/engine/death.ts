@@ -9,6 +9,7 @@ import type { Entity } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import { getEntity } from './board.js';
 import { evaluateRuneOnDeath } from './runes.js';
+import { placeOpeningUnit } from './spawn.js';
 
 /**
  * Removes an entity from the board. `devoured` routes to the fizzle path: a devoured
@@ -22,6 +23,10 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
 
   if (isUnit(live)) {
     delete ctx.state.units[live.id];
+    // Never leave a dangling reference to a body that is no longer on the board. Damage
+    // can never kill a Bound Form, but a board wipe removes it like anything else.
+    const owner = ctx.state.players[live.side];
+    if (owner.companionUnitId === live.id) delete owner.companionUnitId;
     emit(ctx, {
       t: 'unitDied',
       unitId: live.id,
@@ -95,6 +100,19 @@ function enterSuddenDeath(ctx: Ctx): void {
   }
   for (const obs of Object.values(ctx.state.obstacles)) {
     obs.rune = undefined;
+  }
+
+  // The wipe took the Bound Form with it, but the Pact did not end — it was revived at
+  // 1 HP above. The body has to come back with it, or the player would spend the rest of
+  // the fight with no Companion and no way to cast from one.
+  for (const side of ['player', 'enemy'] as const) {
+    const cmd = ctx.state.players[side];
+    if (!cmd.companionUnitDefId) continue;
+    const id = placeOpeningUnit(ctx, cmd.companionUnitDefId, side, {
+      x: cmd.companionColumn,
+      y: side === 'player' ? ctx.state.height - 1 : 0,
+    });
+    cmd.companionUnitId = id;
   }
 
   emit(ctx, { t: 'suddenDeath' });

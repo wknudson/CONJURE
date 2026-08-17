@@ -4,6 +4,8 @@ import { applyCommand } from '../core/engine/engine.js';
 import { IllegalCommandError } from '../core/types/commands.js';
 import { legalCardTargets } from '../core/engine/targeting.js';
 import { checkInvariants } from './replay.js';
+import { CombatSession } from '../core/session.js';
+import { ENCOUNTERS } from '../core/data/encounters/index.js';
 import type { GameState } from '../core/types/state.js';
 import type { Coord } from '../contract/ids.js';
 
@@ -178,6 +180,67 @@ describe('what cannot be done to it', () => {
       expect(body.escalation).toBe(0);
       expect(body.atk).toBe(atk);
     }
+  });
+});
+
+describe('the Companion takes the field', () => {
+  it('places the chosen Companion, and only the chosen one', () => {
+    for (const [companionId, expected] of [
+      ['ignis', 'ignis_bound'],
+      ['boreas', 'boreas_bound'],
+    ] as const) {
+      const session = new CombatSession(ENCOUNTERS[0]!, 7, undefined, companionId);
+      const st = session.debugState;
+
+      const bound = Object.values(st.units).filter((u) => u.keywords.includes('BoundForm'));
+      expect(bound.length, `${companionId} should field exactly one body`).toBe(1);
+      expect(bound[0]!.defId).toBe(expected);
+      expect(st.players.player.companionUnitId).toBe(bound[0]!.id);
+      expect(st.players.player.companionUnitDefId).toBe(expected);
+    }
+  });
+
+  it('stands it in its own Resonance lane on the back row', () => {
+    const session = new CombatSession(ENCOUNTERS[0]!, 7, undefined, 'ignis');
+    const st = session.debugState;
+    const body = st.units[st.players.player.companionUnitId!]!;
+
+    expect(body.anchor.y).toBe(st.height - 1);
+    expect(body.anchor.x).toBe(st.players.player.companionColumn);
+  });
+
+  it('gives the enemy no body, so their Commander stays off-grid', () => {
+    const session = new CombatSession(ENCOUNTERS[0]!, 7);
+    const st = session.debugState;
+
+    expect(Object.values(st.units).some((u) => u.side === 'enemy' && u.keywords.includes('BoundForm'))).toBe(false);
+    expect(st.players.enemy.companionUnitDefId).toBeUndefined();
+  });
+
+  it('can act from turn one, like the Vanguard beside it', () => {
+    const session = new CombatSession(ENCOUNTERS[0]!, 7, undefined, 'ignis');
+    const id = session.debugState.players.player.companionUnitId!;
+    expect(session.getLegalMoves(id).length).toBeGreaterThan(0);
+  });
+
+  it('restores the body when sudden death wipes the board', () => {
+    // Both Pacts revive at 1 HP, so the Companion has to come back with them — otherwise
+    // the rest of the fight is played with no Companion and no elemental origin.
+    const session = new CombatSession(ENCOUNTERS[0]!, 7, undefined, 'ignis');
+    const st = session.debugState;
+    const before = st.players.player.companionUnitId;
+
+    // Drive the mutual KO straight through the lethal checker, as armor.test.ts does.
+    st.players.player.hp = 0;
+    st.players.enemy.hp = 0;
+    const res = applyCommand(st, { type: 'endTurn' });
+
+    expect(res.state.suddenDeath).toBe(true);
+    const after = res.state.players.player.companionUnitId;
+    expect(after, 'the body must return').toBeDefined();
+    expect(after).not.toBe(before);
+    expect(res.state.units[after!]!.keywords).toContain('BoundForm');
+    expect(checkInvariants(res.state, 'after sudden death')).toEqual([]);
   });
 });
 
