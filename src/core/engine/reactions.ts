@@ -17,6 +17,7 @@ import { coordKey } from '../../contract/ids.js';
 import { DIRS_8 } from '../util/grid.js';
 import { inBounds } from '../types/state.js';
 import { entityAt } from './board.js';
+import { gainPips } from './deck.js';
 
 export interface PendingReaction {
   def: ReactionDef;
@@ -66,6 +67,8 @@ export function resolveReaction(
   const { def, consumed, at } = pending;
   newCause(ctx);
   emit(ctx, { t: 'reactionTriggered', reaction: def.id, name: def.name, at: { ...at } });
+
+  refundReactionPip(ctx);
 
   switch (def.outcome.op) {
     case 'spawnHazard':
@@ -129,6 +132,30 @@ type DealDamageFn = (
     cause: string;
   },
 ) => unknown;
+
+/** Reactions are hard to set up, so landing one pays part of its cost back. */
+export const REACTION_PIP_REFUND = 1;
+/** Two a turn. Beyond that a cascade would fund itself, which is a loop, not a reward. */
+export const REACTION_PIP_CAP = 2;
+
+/**
+ * Pays a Pip back to whoever caused the reaction.
+ *
+ * Credited to the active side rather than to the victim's opponent: a reaction fires
+ * inside the acting side's resolution chain, and self-inflicted ones (shoving your own
+ * burning unit into a chilled ally) are still your doing. This mirrors how `spawnHazard`
+ * already decides ownership.
+ */
+function refundReactionPip(ctx: Ctx): void {
+  const side = ctx.state.activeSide;
+  const cmd = ctx.state.players[side];
+  if (cmd.reactionPipsThisTurn >= REACTION_PIP_CAP) return;
+
+  cmd.reactionPipsThisTurn += 1;
+  // Deliberately unclamped, like every other Pip gain: the cap of 8 is applied once, at
+  // end-of-turn cleanup, so a refund near the ceiling still banks for this turn's use.
+  gainPips(ctx, side, REACTION_PIP_REFUND);
+}
 
 export function spawnHazard(
   ctx: Ctx,

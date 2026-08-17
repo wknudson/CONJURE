@@ -16,6 +16,8 @@ export interface CommanderState {
   companionColumn: number;
   /** Resonance fires once per turn, on the first Companion card played. */
   resonanceUsedThisTurn: boolean;
+  /** Pips refunded by elemental reactions this turn, capped so cascades cannot self-fund. */
+  reactionPipsThisTurn: number;
   /**
    * The Companion's body on the board, if this side has one. A side without one casts
    * from nowhere in particular, exactly as every side did before Bound Forms existed.

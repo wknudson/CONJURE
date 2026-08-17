@@ -32,6 +32,7 @@ export function beginTurn(ctx: Ctx, side: Side): void {
 
   refreshUnits(ctx, side);
   ctx.state.players[side].resonanceUsedThisTurn = false;
+  ctx.state.players[side].reactionPipsThisTurn = 0;
   gainPips(ctx, side, 1);
   // The opening hand of 5 dealt during setup IS turn one's draw. Drawing again here
   // would immediately overdraw past the hand limit of 7 and burn two cards.

@@ -129,6 +129,7 @@ function blankCommander(
     companionSchool: 'pyre' as const,
     ...flankColumns(width),
     resonanceUsedThisTurn: false,
+    reactionPipsThisTurn: 0,
     hp,
     maxHp: hp,
     armor,

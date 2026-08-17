@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { atTile, atUnit, eventsOf, findUnit, handCard, play, run, scenario } from './scenario.js';
+import { atTile, atUnit, eventsOf, findUnit, giveCard, handCard, play, run, scenario } from './scenario.js';
 import { coordKey } from '../contract/ids.js';
 import { hasLoS } from '../core/engine/los.js';
 import { CHILL_TO_FREEZE } from '../core/engine/status.js';
@@ -285,5 +285,97 @@ describe('Frost cards', () => {
     expect(wall?.name).toBe('Ice Barricade');
     expect(wall?.cover).toBeUndefined();
     expect(hasLoS(res.state, { x: 2, y: 4 }, { x: 2, y: 0 })).toBe(false);
+  });
+});
+
+describe('reaction pip refunds', () => {
+  /** A board where one Flame Surge into a Chilled target vaporizes. */
+  function vaporizeSetup(pips = 8) {
+    const state = scenario({
+      width: 6,
+      height: 6,
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, keywords: [] }],
+      hand: ['flame_surge', 'flame_surge', 'flame_surge'],
+      pips,
+    });
+    const foe = findUnit(state, 'grave_sentinel', 'enemy');
+    state.units[foe.id]!.statuses.chill = 2;
+    return { state, foe };
+  }
+
+  const surgeAt = (from: { x: number; y: number }) => ({
+    kind: 'line' as const,
+    from,
+    dir: { x: 0 as number, y: -1 as number },
+  });
+
+  it('pays a pip back for landing one', () => {
+    // Reactions take real setup — a status applied on an earlier turn, then the right
+    // element into it. Refunding part of the cost is what makes that worth planning.
+    const { state } = vaporizeSetup();
+    const before = state.players.player.pips;
+    const cost = 2; // Flame Surge
+
+    const res = run(state, play(handCard(state, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
+
+    expect(eventsOf(res.events, 'reactionTriggered').length).toBeGreaterThan(0);
+    expect(res.state.players.player.pips).toBe(before - cost + 1);
+    expect(res.state.players.player.reactionPipsThisTurn).toBe(1);
+  });
+
+  it('stops paying after two in one turn, so a cascade cannot fund itself', () => {
+    let cur = vaporizeSetup(20).state;
+    const foe = findUnit(cur, 'grave_sentinel', 'enemy');
+    const spend: number[] = [];
+
+    // Three separate reactions in one turn; only the first two are paid for.
+    for (let i = 0; i < 3; i++) {
+      const alive = cur.units[foe.id];
+      if (!alive) break;
+      alive.statuses.chill = 2;
+      alive.hp = 20;
+      const before = cur.players.player.pips;
+      const res = run(cur, play(handCard(cur, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
+      expect(eventsOf(res.events, 'reactionTriggered').length, `reaction ${i + 1}`).toBeGreaterThan(0);
+      spend.push(before - res.state.players.player.pips);
+      cur = res.state;
+    }
+
+    // Flame Surge costs 2: the refunded casts net 1, the third pays full freight.
+    expect(spend).toEqual([1, 1, 2]);
+    expect(cur.players.player.reactionPipsThisTurn).toBe(2);
+  });
+
+  it('resets the allowance each turn', () => {
+    const { state } = vaporizeSetup();
+    const after = run(state, play(handCard(state, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
+    expect(after.state.players.player.reactionPipsThisTurn).toBe(1);
+
+    const cycled = run(after.state, { type: 'endTurn' }, { type: 'endTurn' });
+    expect(cycled.state.players.player.reactionPipsThisTurn).toBe(0);
+  });
+
+  it('credits the side that caused it, not the side that suffered it', () => {
+    // The enemy sets off a reaction on its own turn: the enemy is paid, not the player.
+    const state = scenario({
+      width: 6,
+      height: 6,
+      units: [{ def: 'grave_sentinel', side: 'player', at: { x: 2, y: 2 }, hp: 20, keywords: [] }],
+      hand: [],
+    });
+    const victim = findUnit(state, 'grave_sentinel', 'player');
+    state.units[victim.id]!.statuses.chill = 2;
+
+    const enemy = state.players.enemy;
+    const card = giveCard(state, 'enemy', 'flame_surge');
+    enemy.pips = 8;
+    state.activeSide = 'enemy';
+    const before = enemy.pips;
+
+    const res = run(state, play(card, surgeAt({ x: 2, y: 2 })));
+
+    expect(eventsOf(res.events, 'reactionTriggered').length).toBeGreaterThan(0);
+    expect(res.state.players.enemy.pips).toBe(before - 2 + 1);
+    expect(res.state.players.player.reactionPipsThisTurn).toBe(0);
   });
 });

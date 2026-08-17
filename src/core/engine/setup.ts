@@ -63,6 +63,7 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       heroColumn,
       companionColumn,
       resonanceUsedThisTurn: false,
+      reactionPipsThisTurn: 0,
       hp,
       maxHp: hp,
       armor: 0,
