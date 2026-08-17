@@ -99,6 +99,16 @@ export interface CardDef {
    * more durable than the list of exceptions the reward roller used to carry.
    */
   setupOnly?: true;
+  /**
+   * How far from the Companion's Bound Form this may be cast, as a Chebyshev distance.
+   *
+   * Only meaningful on `source: 'companion'` cards: the Hero is off-grid and has no
+   * position to measure from, so its cards reach the whole board. Leaving this undefined
+   * keeps a card global, which is how every card behaved before origins existed.
+   */
+  range?: number;
+  /** Whether the cast also needs an unblocked line from the Bound Form. */
+  needsLoS?: boolean;
 }
 
 export interface CardInstance {

@@ -4,7 +4,7 @@
  */
 
 import type { Coord, Side, TargetRef } from '../../contract/ids.js';
-import type { ChosenTarget } from '../types/cards.js';
+import type { CardDef, ChosenTarget } from '../types/cards.js';
 import { effectContainsOp } from '../types/cards.js';
 import type { GameState } from '../types/state.js';
 import type { Unit } from '../types/units.js';
@@ -24,10 +24,59 @@ import { hasLoS, hasLoSToPortrait } from './los.js';
 import { DIRS_8, cellsOf, footprintDistance } from '../util/grid.js';
 import { inBounds, territoryRows } from '../types/state.js';
 
+/**
+ * Where a card is cast from.
+ *
+ * The Hero works from off the board and so reaches all of it — that is what being the
+ * Architect means. A Companion card is thrown by the Companion, so it reaches only as
+ * far as the Companion can see and stretch from where it is standing.
+ *
+ * `'global'` means unrestricted; a cell list means measure from these; `'none'` means
+ * there is nothing to cast from and the card has no legal target at all.
+ */
+function castOriginCells(state: GameState, side: Side, def: CardDef): Coord[] | 'global' | 'none' {
+  if (def.source !== 'companion' || def.range === undefined) return 'global';
+
+  // A side that never had a body -- every enemy Commander today -- casts as it always
+  // did. Without this, the enemy AI would silently lose every ranged Companion card in
+  // its deck the moment ranges were assigned.
+  if (!state.players[side].companionUnitDefId) return 'global';
+
+  const id = state.players[side].companionUnitId;
+  const body = id ? state.units[id] : undefined;
+  return body ? cellsOf(body) : 'none';
+}
+
+/** Whether any origin cell can reach any target cell, within range and sight. */
+function inCastRange(
+  state: GameState,
+  origin: Coord[],
+  cells: Coord[],
+  def: CardDef,
+  ignore: string[],
+): boolean {
+  const range = def.range ?? Infinity;
+  return origin.some((o) =>
+    cells.some(
+      (c) =>
+        Math.max(Math.abs(o.x - c.x), Math.abs(o.y - c.y)) <= range &&
+        (!def.needsLoS || hasLoS(state, o, c, ignore)),
+    ),
+  );
+}
+
 /** Every legal way to play this card right now. Empty means it is unplayable. */
 export function legalCardTargets(state: GameState, side: Side, defId: string): ChosenTarget[] {
   const def = CARDS[defId];
   if (!def) return [];
+
+  const origin = castOriginCells(state, side, def);
+  if (origin === 'none') return [];
+  const bodyId = state.players[side].companionUnitId;
+  // The caster never blocks its own line.
+  const ignore = bodyId ? [bodyId] : [];
+  const reaches = (cells: Coord[], alsoIgnore: string[] = []): boolean =>
+    origin === 'global' || inCastRange(state, origin, cells, def, [...ignore, ...alsoIgnore]);
 
   switch (def.target.kind) {
     case 'none':
@@ -46,7 +95,9 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
         def.target.zone === 'ownTerritory'
           ? summonSpots(state, side, def.target.footprint)
           : emptyTiles(state);
-      return tiles.map((at) => ({ kind: 'tile' as const, at }));
+      // Summons into your own territory are placed by the Hero and are never ranged;
+      // a tile-targeted spell cast anywhere on the board is thrown by the Companion.
+      return tiles.filter((at) => reaches([at])).map((at) => ({ kind: 'tile' as const, at }));
     }
 
     case 'entity': {
@@ -65,6 +116,8 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
         if (spec.side === 'enemy' && e.side === side) continue;
         if (spec.requireUnexhausted && isUnitEntity && !canAct(e as Unit)) continue;
         if (barred && isUnitEntity && (e as Unit).keywords.includes('BoundForm')) continue;
+        // The target itself never blocks the line to itself.
+        if (!reaches(cellsOf(e), [e.id])) continue;
         out.push({ kind: 'entity', ref: refOf(e) });
       }
       return out;
@@ -84,6 +137,9 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
       for (let y = 0; y < state.height; y++) {
         for (let x = 0; x < state.width; x++) {
           const from = { x, y };
+          // A line erupts at `from` and runs outward, so that origin tile is what has to
+          // be in reach — not the far end of the line.
+          if (!reaches([from])) continue;
           for (const dir of DIRS_8) {
             // Only offer lines that actually cover at least one entity.
             if (!lineCovers(state, from, dir, length).some((c) => entityAt(state, c))) continue;

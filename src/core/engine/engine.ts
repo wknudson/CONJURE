@@ -12,7 +12,7 @@ import type { TargetRef } from '../../contract/ids.js';
 import type { Command } from '../types/commands.js';
 import { IllegalCommandError } from '../types/commands.js';
 import type { GameState, StepResult } from '../types/state.js';
-import type { CardPlayContext, ChosenTarget } from '../types/cards.js';
+import type { CardDef, CardPlayContext, ChosenTarget } from '../types/cards.js';
 import type { Ctx } from './context.js';
 import { emit, makeCtx, newCause } from './context.js';
 import { deepClone } from '../util/clone.js';
@@ -110,10 +110,11 @@ function playCard(ctx: Ctx, cardId: string, target: ChosenTarget): void {
   // Remove from hand before resolving, so effects that draw cannot redraw this card.
   resolvePlayedCard(ctx, side, cardId);
 
+  const casterAnchor = casterAnchorFor(ctx, def, side, target);
   const play: CardPlayContext = {
     side,
     chosen: target,
-    ...(casterAnchorFor(ctx, target) ? { casterAnchor: casterAnchorFor(ctx, target) } : {}),
+    ...(casterAnchor ? { casterAnchor } : {}),
   };
 
   newCause(ctx);
@@ -162,12 +163,26 @@ function sameTarget(a: ChosenTarget, b: ChosenTarget): boolean {
 }
 
 /**
- * Cards cast from the off-grid portrait have no board origin, so shoves resolve away
- * from the caster's own side. Line spells carry their own origin.
+ * Where a card's effects consider themselves to originate, which decides which way a
+ * shove throws its victim.
+ *
+ * Line spells carry their own origin. A Companion card is thrown by the Companion, so it
+ * pushes away from wherever that is actually standing. A Hero card is cast from off the
+ * board and has no position, so displacement.ts falls back to shoving away from the
+ * caster's own side.
  */
-function casterAnchorFor(ctx: Ctx, target: ChosenTarget): { x: number; y: number } | undefined {
-  void ctx;
+function casterAnchorFor(
+  ctx: Ctx,
+  def: CardDef,
+  side: 'player' | 'enemy',
+  target: ChosenTarget,
+): { x: number; y: number } | undefined {
   if (target.kind === 'line') return { ...target.from };
+  if (def.source === 'companion') {
+    const id = ctx.state.players[side].companionUnitId;
+    const body = id ? ctx.state.units[id] : undefined;
+    if (body) return { ...body.anchor };
+  }
   return undefined;
 }
 
