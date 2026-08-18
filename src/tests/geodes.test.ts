@@ -110,6 +110,42 @@ describe('breaking one', () => {
     expect(eventsOf(res.events, 'resourcesChanged').length).toBeGreaterThan(0);
   });
 
+  it('names the payout and the tile it fell on, so it can be shown there', () => {
+    // `resourcesChanged` is a silent dial sync shared by every resource move; it cannot
+    // tell the animation layer that a geode in particular just paid out, or where.
+    const { state, striker, geodeId } = withGeode();
+    const at = { ...state.obstacles[geodeId]!.anchor };
+
+    const res = applyCommand(state, {
+      type: 'attack',
+      attacker: striker.id,
+      target: { kind: 'obstacle', id: geodeId },
+    });
+
+    const paid = eventsOf(res.events, 'marrowExtracted');
+    expect(paid).toHaveLength(1);
+    expect(paid[0]!.amount).toBe(2);
+    expect(paid[0]!.total).toBe(2);
+    expect(paid[0]!.at).toEqual(at);
+    expect(paid[0]!.side).toBe('player');
+    // Glass, not a purse — the handler picks the shatter cue from this.
+    expect(paid[0]!.source).toBe('obstacle');
+  });
+
+  it('says nothing when a pillar worth no marrow is broken', () => {
+    const state = scenario({ width: 6, height: 8, marrow: 0 });
+    const striker = addUnit(state, { def: 'magma_brute', side: 'player', at: { x: 2, y: 5 } });
+    const ctx = makeCtx(state);
+    const wall = spawnObstacle(ctx, 'stone_barricade', 'player', { x: 2, y: 4 })!;
+
+    const res = applyCommand(state, {
+      type: 'attack',
+      attacker: striker.id,
+      target: { kind: 'obstacle', id: wall },
+    });
+    expect(eventsOf(res.events, 'marrowExtracted')).toHaveLength(0);
+  });
+
   it('is worth nothing to break an ordinary pillar', () => {
     const state = scenario({ width: 6, height: 8, marrow: 0 });
     const striker = addUnit(state, { def: 'magma_brute', side: 'player', at: { x: 2, y: 5 } });

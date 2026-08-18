@@ -100,6 +100,23 @@ export type GameEvent = EventBase &
       }
     | { t: 'runeFizzled'; hostId: UnitId; rune: RuneDefId; reason: 'unaligned' | 'devour' | 'gate' }
     | { t: 'escalated'; unitId: UnitId; stacks: number; atk: number; hp: number }
+    /**
+     * Marrow paid out by something that died — a shattered geode, a scavenger's purse.
+     *
+     * Alongside `resourcesChanged` rather than instead of it: that event is a silent dial
+     * sync with no sound or text of its own, so there is no double-announcement here. It
+     * carries the tile because the payout belongs to where the thing fell, and `source`
+     * because glass and a purse should not make the same noise.
+     */
+    | {
+        t: 'marrowExtracted';
+        side: Side;
+        amount: number;
+        total: number;
+        at: Coord;
+        name: string;
+        source: 'obstacle' | 'creature';
+      }
     | { t: 'unitSacrificed'; unitId: UnitId; marrowExtracted: number }
     /** A unit spent its attack extracting Marrow instead of swinging. */
     | { t: 'unitChannelled'; unitId: UnitId; side: Side; marrow: number }

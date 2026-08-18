@@ -412,28 +412,36 @@ export class Hud {
 
   /**
    * The dual-ring dial: heavy sockets for banked Pips, ethereal beads for Marrow.
-   * Passing `undefined` for marrow leaves that ring untouched.
+   *
+   * Either ring may be passed `undefined` to leave it alone. Events that move only one
+   * resource — a Pip refund, a shattered geode — know nothing reliable about the other,
+   * and writing a stale value would make the untouched ring flicker to the wrong count.
    */
-  setResources(side: Side, pips: number, marrow: number | undefined): void {
+  setResources(side: Side, pips: number | undefined, marrow: number | undefined): void {
     if (side !== 'player') return;
 
+    if (pips !== undefined) this.renderPips(pips);
+    if (marrow !== undefined) this.renderMarrow(marrow);
+  }
+
+  private renderPips(pips: number): void {
     this.pipRing.replaceChildren();
     for (let i = 0; i < 8; i++) {
       const socket = document.createElement('span');
       socket.className = `socket${i < pips ? ' is-filled' : ''}`;
       this.pipRing.appendChild(socket);
     }
+  }
 
-    if (marrow !== undefined) {
-      this.marrowRing.replaceChildren();
-      for (let i = 0; i < marrow; i++) {
-        const bead = document.createElement('span');
-        bead.className = 'bead';
-        bead.textContent = '✦';
-        this.marrowRing.appendChild(bead);
-      }
-      this.marrowRing.classList.toggle('is-empty', marrow === 0);
+  private renderMarrow(marrow: number): void {
+    this.marrowRing.replaceChildren();
+    for (let i = 0; i < marrow; i++) {
+      const bead = document.createElement('span');
+      bead.className = 'bead';
+      bead.textContent = '✦';
+      this.marrowRing.appendChild(bead);
     }
+    this.marrowRing.classList.toggle('is-empty', marrow === 0);
   }
 
   setTurn(turn: number, side: Side): void {

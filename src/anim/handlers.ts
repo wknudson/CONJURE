@@ -309,6 +309,20 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     if (e.side === 'player') view.sfx.play('pip');
   });
 
+  seq.on('marrowExtracted', async (e, { view, t }) => {
+    view.hud.setResources(e.side, undefined, e.total);
+    // Glass or a purse: a geode shatters, a scavenger simply drops what it carried.
+    view.sfx.play(e.source === 'obstacle' ? 'shatter' : 'rasp');
+    if (e.side !== 'player') return;
+
+    // Lifted clear of the damage number, which sits at -30 and lands between these two
+    // at the default offsets: a geode always takes the hit that kills it, so unlike a
+    // sacrifice or a channel this beat always has a third floater competing for the tile.
+    view.fx.label(e.at, `+${e.amount} MARROW`, 'marrow', -60);
+    view.fx.label(e.at, e.name.toUpperCase(), 'marrow', -80);
+    await tween(t(200), easeOutQuad, () => {});
+  });
+
   seq.on('pipRefunded', async (e, { view, t }) => {
     // The dial moves for both sides; only the player is told about it. An enemy refund
     // still has to reach the HUD or its bank would drift from the truth.

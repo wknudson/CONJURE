@@ -116,12 +116,19 @@ export class HelpOverlay {
       .map((k) => `<dt>${k.title}</dt><dd>${k.body}</dd>`)
       .join('');
 
-    const resourceRows = (['pips', 'marrow', 'armor'] as const)
-      .map((k) => {
-        const e = TERMS[k]!;
-        return `<dt>${e.title.split('—')[0]!.trim()}</dt><dd>${e.body}${e.detail ? ` ${e.detail}` : ''}</dd>`;
-      })
-      .join('');
+    const termRows = (keys: readonly string[]): string =>
+      keys
+        .map((k) => {
+          const e = TERMS[k]!;
+          return `<dt>${e.title.split('—')[0]!.trim()}</dt><dd>${e.body}${e.detail ? ` ${e.detail}` : ''}</dd>`;
+        })
+        .join('');
+
+    const resourceRows = termRows(['pips', 'marrow', 'armor']);
+    // Terrain reads from the glossary rather than a second hand-written copy: the board
+    // is canvas, so these tiles have nothing to hover, and this panel is where a player
+    // looks when a unit's reach is shorter than they expected.
+    const groundRows = termRows(['rubble', 'fog']);
 
     return `
       <div class="help__panel" role="dialog" aria-label="Rules reference">
@@ -133,6 +140,10 @@ export class HelpOverlay {
             <section class="help__section">
               <h3>Resources</h3>
               <dl>${resourceRows}</dl>
+            </section>
+            <section class="help__section">
+              <h3>The ground</h3>
+              <dl>${groundRows}</dl>
             </section>
           </div>
           <div>

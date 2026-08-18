@@ -40,11 +40,11 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
       footprint: live.footprint,
       cause,
     });
-    payBounty(ctx, live.defId);
+    payBounty(ctx, live.defId, at);
   } else {
     delete ctx.state.obstacles[live.id];
     emit(ctx, { t: 'obstacleDestroyed', obstacleId: live.id, at });
-    payDestroyReward(ctx, live.defId);
+    payDestroyReward(ctx, live.defId, at);
     // A broken wall is not a cleared lane. The stone stays where it fell, and crossing
     // it costs — so knocking one down opens a route without making it a fast one.
     if (CARDS[live.defId]?.leavesRubble) {
@@ -124,21 +124,36 @@ function adjacent(state: Ctx['state'], at: Coord): Coord[] {
  * pays the opponent, which is a rare and forgivable wrinkle next to threading an
  * attacker through every path that can destroy a tile.
  */
-function payDestroyReward(ctx: Ctx, defId: string): void {
-  payTo(ctx, CARDS[defId]?.onDestroyReward?.marrow);
+function payDestroyReward(ctx: Ctx, defId: string, at: Coord): void {
+  payTo(ctx, defId, at, CARDS[defId]?.onDestroyReward?.marrow, 'obstacle');
 }
 
 /** The purse a scavenger was carrying, paid to whoever brought it down. */
-function payBounty(ctx: Ctx, defId: string): void {
-  payTo(ctx, CARDS[defId]?.bounty?.marrow);
+function payBounty(ctx: Ctx, defId: string, at: Coord): void {
+  payTo(ctx, defId, at, CARDS[defId]?.bounty?.marrow, 'creature');
 }
 
-function payTo(ctx: Ctx, marrow: number | undefined): void {
+function payTo(
+  ctx: Ctx,
+  defId: string,
+  at: Coord,
+  marrow: number | undefined,
+  source: 'obstacle' | 'creature',
+): void {
   if (!marrow) return;
   const side = ctx.state.activeSide;
   const cmd = ctx.state.players[side];
   cmd.marrow += marrow;
   emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
+  emit(ctx, {
+    t: 'marrowExtracted',
+    side,
+    amount: marrow,
+    total: cmd.marrow,
+    at: { ...at },
+    name: CARDS[defId]?.name ?? defId,
+    source,
+  });
 }
 
 /**

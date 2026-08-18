@@ -35,6 +35,10 @@ boxed in (growth is now tracked apart from the phase).
 - **AI kiting.** Retreats stay pruned from enumeration for everything except a Bound Form,
   so the new archetypes are used as static shooters rather than kited. Acceptable; noted
   beside the pruning.
+- **The AI is blind to Geodes.** There is no obstacle-kill scoring, so the enemy never
+  walks over to break one and only clips them incidentally. Deliberate — it keeps
+  enumeration flat and leaves the 2 Marrow as a prize for the attentive player — but it
+  is free value the AI declines, and worth revisiting if the middle ever feels uncontested.
 - **`magma_brute` Resonance.** Still a Pyre summon marked `source: 'hero'`, so it never
   triggers Resonance. Moving it is a buff, not a fix — a balance decision.
 

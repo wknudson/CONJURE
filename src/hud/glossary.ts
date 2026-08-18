@@ -97,6 +97,12 @@ export const TERMS: Record<string, GlossaryEntry> = {
     body: 'Soaks damage before health, and never expires until it is stripped away.',
     detail: 'Runes need damage to actually reach health — armor can stop a chain reaction cold.',
   },
+  rubble: {
+    title: 'Rubble — broken ground',
+    body: 'Crossing a rubble tile costs 2 MOV instead of 1. It blocks nothing: units may stand on it and shoot over it.',
+    detail:
+      'Left behind when masonry is destroyed, and it never clears. Breaking a wall opens a route without making it a fast one — and a slow unit can be stopped by a single stretch of it.',
+  },
   burn: {
     title: 'Burn',
     body: 'Deals damage at the start of the affected side\'s turn, then loses one stack.',
