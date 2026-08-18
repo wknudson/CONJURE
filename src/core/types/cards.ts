@@ -23,12 +23,30 @@ export type EffectNode =
   | { op: 'damage'; amount: number; dtype: DamageType; area: AreaSpec }
   | { op: 'summon'; unitDef: CardDefId }
   | { op: 'spawnObstacle'; obstacleDef: CardDefId }
+  /**
+   * An obstacle placed with health this cast decides, rather than the card's own.
+   *
+   * Separate from `spawnObstacle` because a construct's durability is a property of the
+   * spell that raised it — two different spells may raise the same pillar at different
+   * strengths, and neither should have to be its own card definition to do so.
+   */
+  | { op: 'spawnConstruct'; obstacleDef: CardDefId; hp: number }
   | { op: 'attachRune'; rune: RuneDefId }
   | { op: 'push'; distance: number }
   | { op: 'grantArmor'; amount: number | { from: 'sacrificedHp' } }
   | { op: 'applyStatus'; status: StatusKind; stacks: number; area: AreaSpec }
   | { op: 'sacrificeTarget' }
-  | { op: 'extractMarrow'; amount: number }
+  /**
+   * Marrow gained. A fixed number, or scaled off the unit this card just sacrificed.
+   *
+   * The dynamic form mirrors `grantArmor`'s, which already reads `sacrificedHp` — the
+   * same fact, wanted by two different cards for two different purposes.
+   */
+  | { op: 'extractMarrow'; amount: number | { from: 'sacrificedHp'; max: number } }
+  /** Cards drawn, obeying the hand limit and the overdraw burn like any other draw. */
+  | { op: 'drawCards'; amount: number }
+  /** Shoves everything in the area directly away from the point of origin. */
+  | { op: 'shoveArea'; distance: number; area: AreaSpec }
   | { op: 'detonateAllRunes'; bonusDamage: number }
   /** Magma Brute's on-deploy 2-tile cleave. */
   | { op: 'cleaveFront'; amount: number; dtype: DamageType; width: number }
@@ -59,6 +77,16 @@ export type AreaSpec =
   | { shape: 'line'; length: number }
   | { shape: 'adjacent8' }
   | { shape: 'plus'; radius: number }
+  /**
+   * A widening wedge from the caster, along the chosen direction.
+   *
+   * Row `n` out is `n` tiles wide either side of the axis, so depth 3 covers 1, 3 then 5
+   * tiles. Requires a `line` target, which is the only one carrying a direction — a cone
+   * with no facing is just a circle.
+   */
+  | { shape: 'cone'; depth: number }
+  /** The four orthogonal neighbours, and not the diagonals. */
+  | { shape: 'adjacentCross' }
   | { shape: 'all' }
   | { shape: 'lowestHpEnemy' };
 

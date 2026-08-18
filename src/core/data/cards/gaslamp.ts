@@ -1,0 +1,99 @@
+/**
+ * The Gaslamp set: industrial occultism.
+ *
+ * Where the starter deck is soldiers and runes, these are machinery and butchery — a
+ * pressure valve vented into a crowd, a mortar bolted together from scrap, a tithe taken
+ * in bone. Each one leans on a piece of vocabulary the engine gained for it, so the set
+ * doubles as the proof that the vocabulary is real.
+ *
+ * `Flash Freeze` belongs to this wave too but lives in the Frost file, since it replaced
+ * that school's existing prototype rather than joining a new one.
+ */
+
+import type { CardDef } from '../../types/cards.js';
+
+export const GASLAMP_CARDS: Record<string, CardDef> = {
+  /**
+   * The cone card. Damage and displacement over the same wedge, so it clears a doorway
+   * rather than merely hurting whoever is in it.
+   */
+  pressure_valve_release: {
+    id: 'pressure_valve_release',
+    name: 'Pressure Valve Release',
+    cost: { pips: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Vent a widening blast: 3 fire damage in a 3-deep cone, then shove everything caught 1 tile away.',
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 3, dtype: 'fire', area: { shape: 'cone', depth: 3 } },
+        { op: 'shoveArea', distance: 1, area: { shape: 'cone', depth: 3 } },
+      ],
+    },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * The Lobber, as a body rather than a spell.
+   *
+   * The card is an ordinary deployment — you place it in your own rows like any minion.
+   * Its mortar profile lives on the unit, which is where reach belongs: `rangeMin` gives
+   * it the blind spot and `arcing` lets it drop shells over walls.
+   */
+  scrap_metal_mortar: {
+    id: 'scrap_metal_mortar',
+    name: 'Scrap-Metal Mortar',
+    cost: { pips: 3, marrow: 0 },
+    school: 'bulwark',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Lobber. Fires 2-4 tiles, arcing over cover, and cannot depress its aim onto anything adjacent. Leaves rubble when it breaks.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'scrap_metal_mortar' },
+    keywords: ['Escalate'],
+    leavesRubble: true,
+    unit: {
+      atk: 2,
+      hp: 6,
+      mov: 1,
+      rangeMin: 2,
+      rangeMax: 4,
+      footprint: 1,
+      archetype: 'sniper',
+      sacrificeValue: 2,
+      escalationBonus: { atk: 1, hp: 0 },
+      attackProfile: 'arcing',
+    },
+  },
+
+  /**
+   * The tithe. Free to cast and paid for entirely in bodies.
+   *
+   * Capped at 4 so a fat minion cannot fund a whole turn on its own, and it draws a
+   * card, which is what makes feeding it a plan rather than a last resort.
+   */
+  harvest_the_weak: {
+    id: 'harvest_the_weak',
+    name: 'Harvest the Weak',
+    cost: { pips: 0, marrow: 0 },
+    school: 'dusk',
+    source: 'hero',
+    kind: 'spell',
+    text: 'Sacrifice a friendly minion. Extract Marrow equal to its remaining health, up to 4, and draw a card.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'sacrificeTarget' },
+        { op: 'extractMarrow', amount: { from: 'sacrificedHp', max: 4 } },
+        { op: 'drawCards', amount: 1 },
+      ],
+    },
+    keywords: [],
+  },
+};

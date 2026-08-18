@@ -73,19 +73,50 @@ export const FROST_CARDS: Record<string, CardDef> = {
     needsLoS: true,
   },
 
+  /**
+   * The evolution of the old Flash Freeze, which simply froze one unit.
+   *
+   * It now raises a coolant pillar and chills what stands beside it, which is a very
+   * different card: it makes ground rather than removing a body, and the 2 Marrow it
+   * strictly demands means it cannot be held in reserve and dropped from a full bank —
+   * something has to have been opened up that turn to pay for it.
+   */
   flash_freeze: {
     id: 'flash_freeze',
     name: 'Flash Freeze',
-    cost: { pips: 3, marrow: 0 },
+    cost: { pips: 1, marrow: 2 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
-    text: 'Freeze a unit for 1 turn. A Frozen unit cannot move or attack — and shatters if struck.',
-    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
-    effect: { op: 'applyStatus', status: 'freeze', stacks: 1, area: { shape: 'target' } },
+    text: 'Raise a 4 HP Coolant Pillar on an empty tile, Chilling everything orthogonally beside it.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'spawnConstruct', obstacleDef: 'coolant_pillar', hp: 4 },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'adjacentCross' } },
+      ],
+    },
     keywords: [],
     range: 4,
     needsLoS: true,
+  },
+
+  /** What Flash Freeze raises. Ordinary masonry, but it leaves rubble like the rest. */
+  coolant_pillar: {
+    id: 'coolant_pillar',
+    name: 'Coolant Pillar',
+    cost: { pips: 0, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'obstacle',
+    text: 'A venting column of coolant. Blocks sight and movement; leaves rubble when broken.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: [],
+    setupOnly: true,
+    obstacleHp: 4,
+    leavesRubble: true,
   },
 
   ice_barricade: {

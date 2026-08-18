@@ -13,6 +13,7 @@ import { COMPANION_UNIT_CARDS } from './companionUnits.js';
 import { TERRAIN_CARDS } from './terrain.js';
 import { RANGED_CARDS } from './ranged.js';
 import { SURGE_CARDS } from './surge.js';
+import { GASLAMP_CARDS } from './gaslamp.js';
 import { WILDLIFE_CARDS } from './wildlife.js';
 
 export const CARDS: Record<string, CardDef> = {
@@ -22,6 +23,7 @@ export const CARDS: Record<string, CardDef> = {
   ...TERRAIN_CARDS,
   ...RANGED_CARDS,
   ...SURGE_CARDS,
+  ...GASLAMP_CARDS,
   ...WILDLIFE_CARDS,
 };
 
@@ -42,6 +44,7 @@ for (const source of [
   TERRAIN_CARDS,
   RANGED_CARDS,
   SURGE_CARDS,
+  GASLAMP_CARDS,
   WILDLIFE_CARDS,
 ]) {
   for (const id of Object.keys(source)) {

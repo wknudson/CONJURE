@@ -6,6 +6,7 @@
  * it cannot bypass rune triggers, armor gating, or the lethal check.
  */
 
+import { drawCards } from './deck.js';
 import type { Coord, Side, TargetRef, UnitId } from '../../contract/ids.js';
 import { coordEq } from '../../contract/ids.js';
 import type { AreaSpec, CardPlayContext, EffectNode } from '../types/cards.js';
@@ -114,7 +115,14 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
 
     case 'extractMarrow': {
       const cmd = ctx.state.players[play.side];
-      cmd.marrow += node.amount;
+      // A fixed number, or what the body just given up was worth, capped so a fat target
+      // cannot pay for the whole turn on its own.
+      const amount =
+        typeof node.amount === 'number'
+          ? node.amount
+          : Math.min(node.amount.max, play.sacrificedHp ?? 0);
+      if (amount <= 0) return;
+      cmd.marrow += amount;
       emit(ctx, {
         t: 'resourcesChanged',
         side: play.side,
@@ -126,6 +134,52 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
 
     case 'detonateAllRunes': {
       detonateAllRunes(ctx, node.bonusDamage);
+      return;
+    }
+
+    case 'drawCards': {
+      // The ordinary draw, so the hand limit and the overdraw burn both still apply — a
+      // card that let you exceed seven would quietly rewrite a rule it never mentions.
+      drawCards(ctx, play.side, node.amount);
+      return;
+    }
+
+    case 'shoveArea': {
+      const origin = originOf(ctx, play);
+      if (!origin) return;
+
+      // Collected before anything moves, for the reason Overload does the same: shoving
+      // one unit vacates a tile another would then be read from.
+      const caught: UnitId[] = [];
+      for (const ref of resolveArea(ctx, node.area, play)) {
+        if (ref.kind !== 'unit') continue;
+        if (!caught.includes(ref.id)) caught.push(ref.id);
+      }
+
+      for (const id of caught) {
+        if (ctx.state.encounter.chainCancelled || ctx.state.result) return;
+        const unit = ctx.state.units[id];
+        if (!unit) continue;
+        const dir = {
+          x: Math.sign(unit.anchor.x - origin.x),
+          y: Math.sign(unit.anchor.y - origin.y),
+        };
+        if (dir.x === 0 && dir.y === 0) continue;
+        pushUnit(ctx, unit, dir, node.distance);
+      }
+      return;
+    }
+
+    case 'spawnConstruct': {
+      if (play.chosen.kind !== 'tile') return;
+      const id = spawnObstacle(ctx, node.obstacleDef, play.side, play.chosen.at);
+      if (!id) return;
+      // Raised at this spell's strength rather than the definition's.
+      const built = ctx.state.obstacles[id];
+      if (built) {
+        built.hp = node.hp;
+        built.maxHp = node.hp;
+      }
       return;
     }
 
@@ -209,6 +263,41 @@ function resolveArea(ctx: Ctx, area: AreaSpec, play: CardPlayContext): TargetRef
       if (!origin) return [];
       return allEntities(ctx.state)
         .filter((e) => cellsOf(e).some((c) => manhattan(c, origin) <= area.radius))
+        .map(refOf);
+    }
+
+    case 'cone': {
+      // Needs a facing, and `line` is the only target that carries one.
+      if (play.chosen.kind !== 'line') return [];
+      const { from, dir } = play.chosen;
+      // Perpendicular to the axis, for the widening.
+      const perp = { x: -dir.y, y: dir.x };
+
+      const cells: Coord[] = [];
+      for (let depth = 0; depth < area.depth; depth++) {
+        const spine = { x: from.x + dir.x * depth, y: from.y + dir.y * depth };
+        for (let spread = -depth; spread <= depth; spread++) {
+          const cell = { x: spine.x + perp.x * spread, y: spine.y + perp.y * spread };
+          if (inBounds(ctx.state, cell)) cells.push(cell);
+        }
+      }
+
+      const seen = new Set<UnitId>();
+      const refs: TargetRef[] = [];
+      for (const cell of cells) {
+        const e = entityAt(ctx.state, cell);
+        if (!e || seen.has(e.id)) continue;
+        seen.add(e.id);
+        refs.push(refOf(e));
+      }
+      return refs;
+    }
+
+    case 'adjacentCross': {
+      const origin = originOf(ctx, play);
+      if (!origin) return [];
+      return allEntities(ctx.state)
+        .filter((e) => cellsOf(e).some((c) => manhattan(c, origin) === 1))
         .map(refOf);
     }
 
