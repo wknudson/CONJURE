@@ -1520,3 +1520,125 @@
   from { clip-path: inset(0 100% 0 0); }
   to { clip-path: inset(0 0 0 0); }
 }
+
+/* -------- revoking a commission -------- */
+
+/* The wrapper exists so the seal can sit over the poster without being inside it. */
+.poster-slot {
+  position: relative;
+  display: flex;
+}
+
+.poster-slot > .wanted-poster {
+  flex: 1;
+}
+
+/* Broken wax, top-right. Small on purpose: the only destructive control on the wall
+   should need a deliberate aim rather than sit under a thumb. */
+.revoke-seal {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(circle at 34% 30%, #a8323c, #4d1116);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
+  opacity: 0.68;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.revoke-seal:hover {
+  opacity: 1;
+  transform: scale(1.12);
+}
+
+.revoke-seal__mark {
+  display: block;
+  font: 800 12px var(--font);
+  line-height: 26px;
+  color: rgba(255, 226, 214, 0.9);
+}
+
+/* The warning, printed on the same sheet it is about. */
+.wanted-poster--revoking {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  cursor: default;
+  transform: rotate(0deg);
+  background: linear-gradient(180deg, #cdb9a6, #a88d7c);
+  box-shadow: 0 0 0 2px rgba(122, 36, 16, 0.5), 0 14px 32px rgba(0, 0, 0, 0.7);
+}
+
+.wanted-poster--revoking:hover {
+  transform: rotate(0deg);
+}
+
+.revoke__head {
+  font: 800 13px var(--font);
+  letter-spacing: 2.6px;
+  text-transform: uppercase;
+  color: #7a2410;
+  border-bottom: 2px solid rgba(122, 36, 16, 0.45);
+  padding-bottom: 8px;
+}
+
+.revoke__body {
+  font: 500 12.5px/1.65 var(--font);
+  color: var(--ink);
+}
+
+.revoke__body strong {
+  font-weight: 800;
+}
+
+.revoke__ledger {
+  font: 600 10px var(--font);
+  color: rgba(42, 33, 24, 0.62);
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(42, 33, 24, 0.28);
+}
+
+.revoke__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Distinct on purpose: one is a scorched stamp, the other is plain paper. */
+.revoke__burn,
+.revoke__cancel {
+  padding: 10px 14px;
+  border-radius: 3px;
+  font: 800 10.5px var(--font);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.revoke__burn {
+  border: 2px solid #5e1a0c;
+  background: linear-gradient(180deg, #8f2a14, #5e1a0c);
+  color: #ffd9c9;
+  box-shadow: 0 0 16px rgba(143, 42, 20, 0.5);
+}
+
+.revoke__burn:hover {
+  background: linear-gradient(180deg, #ad3418, #7a2410);
+}
+
+.revoke__cancel {
+  border: 1px solid rgba(42, 33, 24, 0.45);
+  background: rgba(255, 255, 255, 0.22);
+  color: rgba(42, 33, 24, 0.85);
+}
+
+.revoke__cancel:hover {
+  background: rgba(255, 255, 255, 0.38);
+}

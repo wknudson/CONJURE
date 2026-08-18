@@ -3,6 +3,7 @@ import {
   SAVE_VERSION,
   SLOT_IDS,
   clearSave,
+  deleteProfile,
   emptySave,
   firstEmptySlot,
   loadSave,
@@ -371,5 +372,82 @@ describe('one character on disk', () => {
     const { save } = loadSave();
     expect(save.profiles['slot-1'], 'the good one survives').toBeDefined();
     expect(save.profiles['slot-2']).toBeUndefined();
+  });
+});
+
+describe('burning a dossier', () => {
+  beforeEach(() => {
+    installStorage();
+  });
+
+  it('frees the slot and leaves the others alone', () => {
+    const file = fileWith(...SLOT_IDS);
+    file.profiles['slot-1']!.name = 'Keeper';
+    file.profiles['slot-3']!.name = 'Also Keeper';
+
+    expect(deleteProfile(file, 'slot-2')).toBe(true);
+
+    expect(file.profiles['slot-2'], 'blank parchment again').toBeUndefined();
+    expect(firstEmptySlot(file), 'and the wall offers it back').toBe('slot-2');
+    expect(file.profiles['slot-1']!.name).toBe('Keeper');
+    expect(file.profiles['slot-3']!.name).toBe('Also Keeper');
+  });
+
+  it('takes the pointer with it when the burnt one was named', () => {
+    // A pointer at a slot nobody is on would open a ghost. `loadSave` drops a dangling
+    // one anyway, but writing one at all leaves a file that is wrong between here and
+    // the next load.
+    const file = fileWith('slot-1', 'slot-2');
+    file.activeProfileId = 'slot-2';
+
+    deleteProfile(file, 'slot-2');
+    expect(file.activeProfileId).toBeNull();
+  });
+
+  it('leaves the pointer alone when somebody else was burnt', () => {
+    const file = fileWith('slot-1', 'slot-2');
+    file.activeProfileId = 'slot-1';
+
+    deleteProfile(file, 'slot-2');
+    expect(file.activeProfileId, 'you are still the one playing').toBe('slot-1');
+  });
+
+  it('refuses a slot with nothing on it, and an id that is not a slot', () => {
+    const file = fileWith('slot-1');
+    expect(deleteProfile(file, 'slot-2'), 'nothing to burn').toBe(false);
+    expect(deleteProfile(file, 'slot-9'), 'not a poster at all').toBe(false);
+    expect(Object.keys(file.profiles), 'and nothing was touched').toEqual(['slot-1']);
+  });
+
+  it('survives the trip to disk, and the slot can be drafted again', () => {
+    const file = fileWith(...SLOT_IDS);
+    writeSave(file);
+
+    const reopened = loadSave().save;
+    deleteProfile(reopened, 'slot-1');
+    writeSave(reopened);
+
+    const after = loadSave().save;
+    expect(after.profiles['slot-1']).toBeUndefined();
+    expect(Object.keys(after.profiles)).toHaveLength(2);
+
+    after.profiles['slot-1'] = newProfile('slot-1', 'Second Draft');
+    writeSave(after);
+    expect(loadSave().save.profiles['slot-1']!.name).toBe('Second Draft');
+  });
+
+  it('does not resurrect the burnt character in the freed slot', () => {
+    // The failure this guards: a delete that only cleared the *pointer* would leave the
+    // old character's purse under a new name.
+    const file = fileWith('slot-1');
+    file.profiles['slot-1']!.state.overworld.economy.ducats = 4000;
+    writeSave(file);
+
+    const reopened = loadSave().save;
+    deleteProfile(reopened, 'slot-1');
+    reopened.profiles['slot-1'] = newProfile('slot-1');
+    writeSave(reopened);
+
+    expect(loadSave().save.profiles['slot-1']!.state.overworld.economy.ducats).toBe(0);
   });
 });

@@ -31,6 +31,7 @@ import { SafehouseScreen } from './app/SafehouseScreen.js';
 import { ShopScreen } from './app/ShopScreen.js';
 import { ArtificerScreen } from './app/ArtificerScreen.js';
 import {
+  deleteProfile,
   loadSave,
   newProfile,
   writeSave,
@@ -282,6 +283,12 @@ function showTitle(): void {
       notes: bootNotes.splice(0),
       onLoad: openProfile,
       onDraft: draftProfile,
+      // The screen has already asked. By the time this runs the player has read the
+      // warning and pressed the red button, so there is nothing left to confirm here.
+      onDelete: (slot) => {
+        deleteProfile(saveFile, slot);
+        persist();
+      },
       onDifficulty: (name) => {
         if (saveFile.difficulty === name) return;
         saveFile.difficulty = name;

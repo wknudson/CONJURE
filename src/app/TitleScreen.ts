@@ -28,6 +28,8 @@ export interface TitleOptions {
   onLoad: (slot: SlotId) => void;
   /** Drafts a new one into an empty slot. */
   onDraft: (slot: SlotId) => void;
+  /** Burns a character. Already confirmed by the time this is called. */
+  onDelete: (slot: SlotId) => void;
   onDifficulty: (name: string) => void;
 }
 
@@ -45,6 +47,8 @@ function bounty(ducats: number): string {
 export class TitleScreen implements Screen {
   private el: HTMLElement | null = null;
   private drafting: SlotId | null = null;
+  /** The slot showing its revocation warning, if any. Never more than one at a time. */
+  private confirming: SlotId | null = null;
 
   constructor(private readonly opts: TitleOptions) {}
 
@@ -87,8 +91,83 @@ export class TitleScreen implements Screen {
 
     for (const slot of SLOT_IDS) {
       const profile = this.opts.save.profiles[slot];
-      host.appendChild(profile ? this.wantedPoster(slot, profile) : this.blankPoster(slot));
+
+      // Each slot is a wrapper rather than a bare poster, because the revoke seal has to
+      // sit *over* the poster without being inside it: a button nested in a button is
+      // invalid, and its click would open the very character it is offering to burn.
+      const wrap = document.createElement('div');
+      wrap.className = 'poster-slot';
+
+      if (!profile) {
+        wrap.appendChild(this.blankPoster(slot));
+      } else if (this.confirming === slot) {
+        wrap.appendChild(this.revocation(slot, profile));
+      } else {
+        wrap.appendChild(this.wantedPoster(slot, profile));
+        wrap.appendChild(this.revokeSeal(slot));
+      }
+
+      host.appendChild(wrap);
     }
+  }
+
+  /**
+   * The wax seal in the corner: broken, and offering to break the rest.
+   *
+   * Deliberately small and off to one side. It is the only destructive control on the
+   * wall, and it should take a deliberate aim rather than sit under the thumb of somebody
+   * reaching for the poster.
+   */
+  private revokeSeal(slot: SlotId): HTMLElement {
+    const seal = document.createElement('button');
+    seal.className = 'revoke-seal';
+    seal.title = 'Revoke Commission';
+    seal.setAttribute('aria-label', 'Revoke Commission');
+    seal.innerHTML = '<span class="revoke-seal__mark">✕</span>';
+    seal.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      this.confirming = slot;
+      this.renderPosters();
+    });
+    return seal;
+  }
+
+  /**
+   * The warning, printed over the poster it is about.
+   *
+   * In place rather than in a modal over the whole wall, so the paper being burnt is the
+   * paper you are looking at — there is no chance of confirming against the wrong one.
+   */
+  private revocation(slot: SlotId, profile: Profile): HTMLElement {
+    const sheet = document.createElement('div');
+    sheet.className = 'wanted-poster wanted-poster--revoking';
+    sheet.innerHTML = `
+      <i class="wanted-poster__pin"></i>
+      <div class="revoke__head">Revoke Commission</div>
+      <div class="revoke__body">
+        The Magistracy will erase all records of <strong>${profile.name}</strong>.
+        This cannot be undone.
+      </div>
+      <div class="revoke__ledger">
+        Level ${profile.level} · ${bounty(profile.state.overworld.economy.ducats)} ·
+        ${profile.record.wins + profile.record.bound} taken
+      </div>
+      <div class="revoke__actions">
+        <button class="revoke__burn">Burn the Records</button>
+        <button class="revoke__cancel">Cancel</button>
+      </div>
+    `;
+
+    sheet.querySelector('.revoke__burn')!.addEventListener('click', () => {
+      this.confirming = null;
+      this.opts.onDelete(slot);
+      this.renderPosters();
+    });
+    sheet.querySelector('.revoke__cancel')!.addEventListener('click', () => {
+      this.confirming = null;
+      this.renderPosters();
+    });
+    return sheet;
   }
 
   /**
@@ -155,6 +234,7 @@ export class TitleScreen implements Screen {
   private draft(slot: SlotId, poster: HTMLElement): void {
     if (this.drafting) return;
     this.drafting = slot;
+    this.confirming = null;
 
     poster.classList.add('is-sketching');
     poster.innerHTML = `

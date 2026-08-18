@@ -207,6 +207,26 @@ export function stampProfile(profile: Profile): void {
   profile.level = profile.companions[profile.activeCompanionId]?.level ?? 1;
 }
 
+/**
+ * Tears a character off the wall, and reports whether one was there.
+ *
+ * Mutates the file rather than returning a new one, for the same reason every other
+ * write here does: `writeSave` takes the file whole, and the caller persists. There is
+ * deliberately no variant that reaches into `localStorage` itself — a delete that wrote
+ * on its own would be the one code path able to save a file the game was not holding.
+ *
+ * If the character being burnt is the one the pointer names, the pointer goes with them.
+ * `loadSave` would drop a dangling pointer anyway, but writing one at all means a crash
+ * between here and the next load leaves a file that opens a ghost.
+ */
+export function deleteProfile(file: SaveFile, profileId: string): boolean {
+  if (!isSlotId(profileId) || !file.profiles[profileId]) return false;
+
+  delete file.profiles[profileId];
+  if (file.activeProfileId === profileId) file.activeProfileId = null;
+  return true;
+}
+
 /** The first slot with nothing pinned to it, or null when the wall is full. */
 export function firstEmptySlot(file: SaveFile): SlotId | null {
   return SLOT_IDS.find((id) => !file.profiles[id]) ?? null;
