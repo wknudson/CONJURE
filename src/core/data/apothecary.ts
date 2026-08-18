@@ -9,7 +9,7 @@
  * can be tested without mounting a screen.
  */
 
-import type { BuffId, Consumable } from '../overworld/state.js';
+import type { BuffId, Consumable, OverworldState } from '../overworld/state.js';
 import type { CombatBoons } from '../engine/setup.js';
 import { BUFF_EFFECTS } from '../overworld/run.js';
 
@@ -44,6 +44,21 @@ export const APOTHECARY_STOCK: readonly StockItem[] = [
     blurb: 'A wound brass flywheel, still turning. Opens the ledger with more to spend.',
   },
 ];
+
+/**
+ * Ducats per point of health at the Clinic.
+ *
+ * Priced above a Mending Tonic per point on purpose: the Clinic is the expensive way to
+ * get well, and buying tonics ahead of time is meant to be the thrifty one. It exists so
+ * that waking at 1 health after a rescue is a bill rather than a dead end.
+ */
+export const CLINIC_RATE = 3;
+
+/** What it would cost to walk out of the Clinic whole. Zero when already whole. */
+export function clinicPrice(overworld: OverworldState): number {
+  const missing = Math.max(0, overworld.pact.maxHp - overworld.pact.currentHp);
+  return missing * CLINIC_RATE;
+}
 
 /**
  * What an item actually does, in the fight's own terms.

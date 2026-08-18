@@ -1,6 +1,4 @@
 import type { Screen } from './ScreenManager.js';
-import type { EncounterDef } from '../core/data/encounters/registry.js';
-import { ENCOUNTERS } from '../core/data/encounters/index.js';
 import { COMPANIONS, DEFAULT_COMPANION } from '../core/data/companions.js';
 import { schoolOf } from '../render/palette.js';
 import type { SaveData } from './save.js';
@@ -11,7 +9,8 @@ export interface TitleOptions {
   save: SaveData;
   /** One-off messages from loading the save (migration, corruption recovery). */
   notes: string[];
-  onStart: (encounter: EncounterDef, companionId: string, difficulty: string) => void;
+  /** Into the Safehouse. Which fight to take is the Bounty Board's question, not this one. */
+  onStart: (companionId: string, difficulty: string) => void;
   onEditDeck: (companionId: string) => void;
 }
 
@@ -50,10 +49,12 @@ export class TitleScreen implements Screen {
       <div class="title__section-label">Difficulty</div>
       <div class="difficulty"></div>
 
-      <div class="title__section-label">Choose an encounter</div>
-      <div class="encounters"></div>
+      <div class="title__begin">
+        <button class="btn btn--primary title__enter">Enter the Safehouse</button>
+      </div>
 
       <div class="title__hint">
+        Work is posted on the Bounty Board inside.
         Click a card to select it, then click a highlighted tile to play it.
         Click your own unit to move or attack. Each unit gets one move and one attack per
         turn, in either order. <kbd>T</kbd> shows the danger zone, <kbd>H</kbd> the rules.
@@ -67,7 +68,9 @@ export class TitleScreen implements Screen {
 
     this.buildCompanions(el);
     this.buildDifficulty(el);
-    this.buildEncounters(el);
+    el.querySelector('.title__enter')!.addEventListener('click', () =>
+      this.opts.onStart(this.companionId, this.difficulty),
+    );
     this.renderNotes(el);
   }
 
@@ -161,24 +164,6 @@ export class TitleScreen implements Screen {
     box.className = 'title__notes';
     box.innerHTML = this.opts.notes.map((n) => `<div>${n}</div>`).join('');
     el.appendChild(box);
-  }
-
-  private buildEncounters(el: HTMLElement): void {
-    const list = el.querySelector('.encounters')!;
-
-    for (const encounter of ENCOUNTERS) {
-      const card = document.createElement('button');
-      card.className = 'encounter';
-      card.innerHTML = `
-        <div class="encounter__name">${encounter.name}</div>
-        <div class="encounter__blurb">${encounter.blurb}</div>
-        <div class="encounter__meta">${encounter.width}×${encounter.height} arena · ${encounter.enemyHp} HP</div>
-      `;
-      card.addEventListener('click', () =>
-        this.opts.onStart(encounter, this.companionId, this.difficulty),
-      );
-      list.appendChild(card);
-    }
   }
 
   unmount(): void {

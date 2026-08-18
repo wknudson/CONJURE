@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CARDS } from '../core/data/cards/index.js';
-import { APOTHECARY_STOCK, describeBoons, effectOf } from '../core/data/apothecary.js';
+import {
+  APOTHECARY_STOCK,
+  CLINIC_RATE,
+  clinicPrice,
+  describeBoons,
+  effectOf,
+} from '../core/data/apothecary.js';
 import {
   CATALYSTS,
   FORGE_COST,
@@ -9,6 +15,7 @@ import {
   forgeCostOf,
 } from '../core/data/artificer.js';
 import { BUFF_EFFECTS } from '../core/overworld/run.js';
+import { newRun } from '../core/overworld/state.js';
 import { type BuffId } from '../core/overworld/state.js';
 import { isObtainable, startingCollection } from '../core/data/collection.js';
 import { tierOf } from '../core/data/deckRules.js';
@@ -106,5 +113,28 @@ describe('the Artificer bench', () => {
     for (const catalyst of CATALYSTS) {
       expect(['pyre', 'surge', 'frost'], catalyst.name).toContain(catalyst.school);
     }
+  });
+});
+
+describe('the Clinic', () => {
+  it('costs nothing when there is nothing to mend', () => {
+    expect(clinicPrice(newRun(1))).toBe(0);
+  });
+
+  it('bills by the point, so being carried in is dear and a scratch is not', () => {
+    const scratched = newRun(1);
+    scratched.pact.currentHp = scratched.pact.maxHp - 2;
+    const floored = newRun(1);
+    floored.pact.currentHp = 1;
+
+    expect(clinicPrice(scratched)).toBe(2 * CLINIC_RATE);
+    expect(clinicPrice(floored)).toBe((floored.pact.maxHp - 1) * CLINIC_RATE);
+    expect(clinicPrice(floored)).toBeGreaterThan(clinicPrice(scratched));
+  });
+
+  it('is the expensive way to heal, so buying tonics ahead stays worth it', () => {
+    // If a Clinic point were cheaper than a tonic point, the satchel would be pointless.
+    const tonic = APOTHECARY_STOCK.find((s) => s.item.type === 'healing')!;
+    expect(CLINIC_RATE).toBeGreaterThan(tonic.price / tonic.item.value);
   });
 });

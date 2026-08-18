@@ -1,10 +1,17 @@
 /**
- * The world outside a fight, and the run that persists across fights.
+ * The world outside a fight, and the character that persists across fights.
  *
  * CONJURE's combat engine is a pure reducer over a `GameState` that begins and ends with
- * one encounter. The Gauntlet needs something the encounter cannot hold: a Pact that
- * stays wounded, a purse that remembers, an inventory carried between rooms. That lives
- * here.
+ * one encounter. Progression needs what the encounter cannot hold: a Pact that stays
+ * wounded, a purse that remembers, a satchel carried from one contract to the next.
+ *
+ * The progression model is **RPG, not roguelike**. Nothing here is wagered on a single
+ * outing: the deck and the satchel are the player's property and survive death. What a
+ * knockout costs is money and time, never possessions — see `rescuePlayer`.
+ *
+ * There is deliberately no `deck` field. The saved master deck *is* the active deck, and
+ * a second copy here would be the "run deck" the design discarded. One list, one truth:
+ * a mirror is how the two drift apart.
  *
  * Deliberately in `src/core/` and therefore DOM-free: none of this touches a screen, all
  * of it is a pure function of what came before, and keeping it beside the engine means it
@@ -20,8 +27,6 @@
  * vocabulary. `src/tests/boundaries.test.ts` holds the rule to it.
  */
 
-import { STARTER_DECK } from '../data/cards/starter.js';
-
 /** A carried item. Healing is spent immediately; a buff is held until the next fight. */
 export interface Consumable {
   id: BuffId | string;
@@ -32,7 +37,7 @@ export interface Consumable {
 }
 
 /**
- * The three brews a run can carry into a fight.
+ * The three brews a character can carry into a fight.
  *
  * The list is the runtime value and the type is derived from it, so a save holding an
  * unknown brew can be checked against the same thing the type is made of.
@@ -45,18 +50,46 @@ export function isBuffId(value: unknown): value is BuffId {
   return typeof value === 'string' && (BUFF_IDS as readonly string[]).includes(value);
 }
 
+/**
+ * What a won fight pays.
+ *
+ * Named for the purse it lands in rather than for the contract it came from — `ducats`
+ * and `marrowShards` are the economy's own field names, so a payout cannot miss by being
+ * spelled one way at the bounty end and another at the till.
+ */
+export interface CombatSpoils {
+  ducats?: number;
+  marrowShards?: number;
+}
+
+/**
+ * A fight that has been committed to and not yet answered for.
+ *
+ * Non-null from the moment a bounty is accepted until `resolveCombat` closes it, and —
+ * critically — written to disk in that state *before* the board is mounted. A player who
+ * closes the tab on a losing turn leaves this set, and the next boot reads it as a
+ * forfeit. Without it, walking away is strictly better than losing.
+ *
+ * It carries the payout rather than merely marking that a fight is open, so what a win is
+ * worth is fixed when the contract is taken. The board rerolls after every fight; without
+ * the cached copy, a victory would be paid at whatever the new board happened to offer.
+ */
+export interface ActiveEncounterState {
+  bountyId: string;
+  spoils: CombatSpoils;
+}
+
 export interface OverworldState {
   playerPos: { x: number; y: number; mapId: string };
   /**
    * The Pact, carried between fights.
    *
-   * Not reset on entering combat, which is the whole point of the Gauntlet: a fight won
-   * at three health is a fight that makes the next room terrifying.
+   * Not reset on entering combat: a fight won at three health is one that makes the next
+   * contract terrifying. A knockout does not reset it either — `rescuePlayer` stands the
+   * player back up at exactly 1.
    */
   pact: { currentHp: number; maxHp: number };
   economy: { ducats: number; marrowShards: number };
-  /** Card ids. The deck the next fight is built from. */
-  deck: string[];
   /** Hard cap of `INVENTORY_LIMIT`; enforced by `addConsumable`, not by convention. */
   inventory: Consumable[];
   /**
@@ -66,14 +99,16 @@ export interface OverworldState {
    * decision is always "which one", never "how many".
    */
   activeBuff: BuffId | null;
+  /** The open contract, or null when standing safely in the Safehouse. */
+  activeEncounter: ActiveEncounterState | null;
   /**
-   * True from the moment a fight is committed to until it is resolved.
+   * Seeds the three bounties currently pinned to the board.
    *
-   * Written to disk *before* the Combat Screen mounts, which is the whole point: a
-   * player who closes the tab on a losing turn leaves this set, and the next boot reads
-   * it as a forfeit. Without it, walking away is strictly better than losing.
+   * A seed rather than the bounties themselves, so the board is stable across a hub that
+   * is re-entered every time a shop door closes, and so the save grows by one number
+   * instead of three objects. Bumped once per finished fight.
    */
-  activeEncounter: boolean;
+  bountySeed: number;
 }
 
 /**
@@ -96,19 +131,19 @@ export interface GlobalGameState {
  */
 export type CombatSnapshotRef = unknown;
 
-/** Items a run may carry at once. */
+/** Items a character may carry at once. */
 export const INVENTORY_LIMIT = 3;
 
-/** A fresh run. */
-export function newRun(deck: string[], maxHp = 40): OverworldState {
+/** A fresh character. */
+export function newRun(bountySeed = 1, maxHp = 40): OverworldState {
   return {
     playerPos: { x: 0, y: 0, mapId: 'start' },
     pact: { currentHp: maxHp, maxHp },
     economy: { ducats: 0, marrowShards: 0 },
-    deck: [...deck],
     inventory: [],
     activeBuff: null,
-    activeEncounter: false,
+    activeEncounter: null,
+    bountySeed,
   };
 }
 
@@ -116,7 +151,7 @@ export function newRun(deck: string[], maxHp = 40): OverworldState {
  * Picks up an item, or refuses when the satchel is full.
  *
  * Returns whether it was taken rather than throwing: finding loot with no room is an
- * ordinary thing that happens in a run, not a programming error.
+ * ordinary thing that happens, not a programming error.
  */
 export function addConsumable(state: OverworldState, item: Consumable): boolean {
   if (state.inventory.length >= INVENTORY_LIMIT) return false;
@@ -124,59 +159,70 @@ export function addConsumable(state: OverworldState, item: Consumable): boolean 
   return true;
 }
 
-/** Whether the run is over. A Pact at zero does not recover between rooms. */
-export function isRunOver(state: OverworldState): boolean {
+/**
+ * Whether the player is down and owes the Magistracy a rescue.
+ *
+ * Not "the run is over" — under the RPG model there is no run to end. Zero is a state to
+ * be recovered from at a price, which is what `rescuePlayer` charges.
+ */
+export function isDown(state: OverworldState): boolean {
   return state.pact.currentHp <= 0;
+}
+
+/** At or below this, the player is upright but in no state to take a contract. */
+export const CRITICAL_HP = 5;
+
+export function isCritical(state: OverworldState): boolean {
+  return !isDown(state) && state.pact.currentHp <= CRITICAL_HP;
 }
 
 /**
  * Collects on an abandoned fight, and reports whether it had to.
  *
- * A run loaded with `activeEncounter` still set was interrupted between committing to a
- * fight and finishing one, which in practice means the tab was closed. Treated as a
- * lethal forfeit rather than a resume: the alternative is that quitting a fight going
- * badly costs nothing, which makes every defeat optional.
+ * A save loaded with a contract still open was interrupted between committing to a fight
+ * and finishing one, which in practice means the tab was closed. Treated as a knockout
+ * rather than a resume: the alternative is that quitting a fight going badly costs
+ * nothing, which makes every defeat optional.
  *
- * Idempotent — the flag is cleared as the Pact is emptied, so a second boot finds an
- * ordinary dead run rather than forfeiting it again.
+ * Idempotent — the contract is closed as the Pact is emptied, so a second boot finds an
+ * ordinary knockout rather than forfeiting it again.
  */
 export function forfeitIfAbandoned(state: OverworldState): boolean {
-  if (!state.activeEncounter) return false;
-  state.activeEncounter = false;
+  if (state.activeEncounter === null) return false;
+  state.activeEncounter = null;
   state.pact.currentHp = 0;
   return true;
 }
 
-/**
- * What a dead run leaves behind: nothing but the gauge it starts with.
- *
- * The Ducats a corpse was carrying do not follow it back. Only the *collection* survives
- * a death — a forged card was bought once and stays bought — which is the line between
- * progress that persists and progress that is wagered on a run.
- */
-export const SURVIVAL_STIPEND = 0;
+/** The share of the purse the Magistracy keeps for carrying you home. */
+export const RESCUE_FEE_RATE = 0.2;
 
 /**
- * Wipes a spent run back to its opening state, in place.
+ * Picks the player up off the floor, and returns what it cost them.
  *
- * Mutates rather than returning a fresh object because the run is referenced from the
- * save, and swapping the object would leave `save.overworld` pointing at the corpse.
+ * The RPG death penalty, and the whole reason there is no wipe: a knockout takes money
+ * and time, never property. The deck, the satchel, the collection and the Marrow Shards
+ * all come through untouched — those were earned, and earning is what this model keeps.
  *
- * `maxHp` is deliberately untouched: it is the shape of the Pact rather than something
- * the run spent, and a permanent upgrade to it should survive a death.
+ * Two things make it sting anyway. The fee is a share of the purse, so it is felt by a
+ * rich player as much as a poor one. And the Pact comes back at **1**, not full: upright,
+ * but unable to take another contract without spending a tonic or a Clinic fee on getting
+ * well. Waking at full health would make dying a free ride home.
+ *
+ * Mutates in place because the state is referenced from the save; swapping the object
+ * would leave `save.overworld` pointing at the version that got knocked out.
  */
-export function resetRun(state: GlobalGameState): void {
+export function rescuePlayer(state: GlobalGameState): number {
   const { overworld } = state;
 
-  overworld.playerPos = { x: 0, y: 0, mapId: 'start' };
-  overworld.pact.currentHp = overworld.pact.maxHp;
-  overworld.deck = [...STARTER_DECK];
-  overworld.inventory = [];
-  overworld.economy = { ducats: SURVIVAL_STIPEND, marrowShards: 0 };
-  // Not in the brief, but a wipe that left a brew in hand or a fight marked open would
-  // be a wipe with a hole in it.
-  overworld.activeBuff = null;
-  overworld.activeEncounter = false;
+  const before = overworld.economy.ducats;
+  overworld.economy.ducats = Math.floor(before * (1 - RESCUE_FEE_RATE));
+  const fee = before - overworld.economy.ducats;
 
+  overworld.pact.currentHp = 1;
+  overworld.activeBuff = null;
+  overworld.activeEncounter = null;
   state.combat = null;
+
+  return fee;
 }

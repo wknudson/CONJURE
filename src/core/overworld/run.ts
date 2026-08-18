@@ -11,6 +11,7 @@ import type { CombatResult } from '../../contract/events.js';
 import type { CombatBoons, CombatCarry } from '../engine/setup.js';
 import type { BuffId, GlobalGameState, OverworldState } from './state.js';
 import { INVENTORY_LIMIT } from './state.js';
+import { nextBountySeed } from '../data/bounties.js';
 
 /**
  * What each brew does to a fight.
@@ -42,11 +43,6 @@ export function carryFor(overworld: OverworldState): CombatCarry {
   };
 }
 
-export interface CombatSpoils {
-  ducats?: number;
-  marrowShards?: number;
-}
-
 /**
  * What a finished fight tells the run.
  *
@@ -65,13 +61,17 @@ export interface CombatOutcome {
  * Three things happen in a fixed order, and the order matters:
  *
  *  1. The surviving Pact is written back, whatever it is. A defeat writes zero rather
- *     than being suppressed — a run that ended should read as ended, and `isRunOver`
+ *     than being suppressed — a player who is down should read as down, and `isDown`
  *     should not need a second flag to agree with the number beside it.
- *  2. The buff clears regardless of outcome, and so does `activeEncounter`. The brew was
+ *  2. The buff clears regardless of outcome, and so does the contract. The brew was
  *     drunk on the way in; losing does not give it back, and a brew that survived a
  *     defeat would make retrying strictly better than winning.
  *  3. Spoils are granted only on a win, and only after the Pact is settled, so a victory
- *     at one health still pays.
+ *     at one health still pays. They are read from the contract the player accepted, not
+ *     passed in — the board rerolls after every fight, and paying from the new board
+ *     would settle a win against an offer nobody agreed to.
+ *  4. The board moves on, win or lose. Declining everything keeps your board; finishing
+ *     something changes it.
  *
  * The combat handle is nulled last: `combat === null` is what "we are in the overworld"
  * means, so it flips once everything it was holding has been read out of it.
@@ -80,17 +80,20 @@ export function resolveCombat(
   global: GlobalGameState,
   outcome: CombatOutcome,
   result: CombatResult,
-  spoils: CombatSpoils = {},
 ): void {
   const { overworld } = global;
+
+  // Read the contract before closing it: the payout was fixed when the bounty was
+  // accepted, and clearing first would settle every win at nothing.
+  const spoils = overworld.activeEncounter?.spoils ?? {};
 
   overworld.pact.currentHp = Math.max(0, Math.min(overworld.pact.maxHp, outcome.pactHp));
 
   overworld.activeBuff = null;
-  // The fight is answered for, so the forfeit flag comes down. Whoever calls this owns
-  // writing it to disk — a cleared flag that never reaches storage would forfeit a run
-  // the player actually finished.
-  overworld.activeEncounter = false;
+  // The fight is answered for, so the contract closes. Whoever calls this owns writing it
+  // to disk — a cleared contract that never reaches storage would forfeit a fight the
+  // player actually finished.
+  overworld.activeEncounter = null;
 
   // 'bound' is a win: the companion was subjugated rather than the enemy killed.
   if (result === 'victory' || result === 'bound') {
@@ -98,6 +101,7 @@ export function resolveCombat(
     overworld.economy.marrowShards += spoils.marrowShards ?? 0;
   }
 
+  overworld.bountySeed = nextBountySeed(overworld.bountySeed);
   global.combat = null;
 }
 
@@ -119,7 +123,7 @@ export function consumableRefusal(
   // `activeEncounter` is its persisted mirror; asking for both to agree would mean a
   // desync unlocks the satchel, where asking for either means a desync merely locks it.
   // Failing shut is the right way round for a rule that exists to stop an exploit.
-  if (global.combat !== null || global.overworld.activeEncounter) return 'in-combat';
+  if (global.combat !== null || global.overworld.activeEncounter !== null) return 'in-combat';
   const item = global.overworld.inventory[inventoryIndex];
   if (!item) return 'no-such-item';
   return null;

@@ -794,3 +794,136 @@
   color: var(--text-dim);
   margin-bottom: 24px;
 }
+
+/* -------- the bounty board -------- */
+
+.bounty-board__head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.bounty-board__title {
+  font: 800 12px var(--font);
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--brass-lit);
+}
+
+.bounty-board__note {
+  font: 400 11px var(--font);
+  color: var(--text-dim);
+}
+
+.bounty-board__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.bounty-card {
+  position: relative;
+  padding: 18px 18px 16px;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  border-left: 3px solid var(--tier, var(--brass));
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.bounty-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--brass-lit) 26%, transparent),
+    0 0 24px color-mix(in srgb, var(--tier, var(--brass)) 26%, transparent),
+    0 14px 30px rgba(0, 0, 0, 0.55);
+}
+
+/* Tier is the only colour on the board, because tier is the only real question. */
+.bounty-card--novice { --tier: #6ee7b7; }
+.bounty-card--adept { --tier: var(--lamp); }
+.bounty-card--master { --tier: var(--marrow); }
+
+.bounty-card__tier {
+  font: 800 9px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--tier, var(--brass));
+  margin-bottom: 6px;
+}
+
+.bounty-card__title {
+  font: 800 15px var(--font);
+  color: var(--brass-lit);
+}
+
+.bounty-card__where {
+  margin: 4px 0 10px;
+  font: 600 10.5px var(--font);
+  color: var(--text-dim);
+}
+
+.bounty-card__flavour {
+  font: 400 11.5px/1.55 var(--font);
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+.bounty-card__pay {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid rgba(176, 148, 106, 0.22);
+  font: 700 12px var(--font);
+}
+
+.bounty-card__coin--gold { color: var(--lamp); }
+.bounty-card__coin--marrow { color: var(--marrow); }
+
+.bounty-card__warn {
+  font: 700 9px var(--font);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--danger);
+}
+
+/* A Pact this low is a warning, not a verdict — the contract is still takeable. */
+.ledger__value.is-critical {
+  color: var(--danger);
+}
+
+.ledger__critical {
+  font: 700 9px var(--font);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--danger);
+}
+
+/* -------- the clinic -------- */
+
+.shop__clinic {
+  padding: 20px 18px;
+  text-align: center;
+}
+
+.shop__clinic-line {
+  font: 800 15px var(--font);
+  color: var(--text);
+}
+
+.shop__clinic-copy {
+  margin: 6px 0 12px;
+  font: 400 11.5px/1.6 var(--font);
+  color: var(--text-dim);
+}
+
+.shop__clinic-price {
+  font: 800 20px var(--font);
+  color: var(--lamp);
+  margin-bottom: 10px;
+}

@@ -27,11 +27,12 @@ import { ArtificerScreen } from './app/ArtificerScreen.js';
 import { loadSave, writeSave, type SaveData } from './app/save.js';
 import {
   forfeitIfAbandoned,
-  isRunOver,
+  isDown,
   newRun,
-  resetRun,
+  rescuePlayer,
   type GlobalGameState,
 } from './core/overworld/state.js';
+import { encounterForBounty, rollBounties, type Bounty } from './core/data/bounties.js';
 import { carryFor, resolveCombat, type CombatOutcome } from './core/overworld/run.js';
 import { companionById } from './core/data/companions.js';
 import { grantCard, rollRewards } from './core/data/collection.js';
@@ -92,42 +93,40 @@ function deckFor(companionId: string): string[] {
  */
 let run: GlobalGameState | null = null;
 
-/** What a run opens with, before it has won anything. */
+/** What a new character opens with, before they have won anything. */
 const OPENING_PURSE = { ducats: 120, marrowShards: 3 };
 
-/** What a fight pays. Granted only on a win — `resolveCombat` owns that gate. */
-const VICTORY_SPOILS = { ducats: 50, marrowShards: 1 };
-
-function startRun(companionId: string): GlobalGameState {
-  const overworld = newRun(deckFor(companionId));
+function startCharacter(): GlobalGameState {
+  // Seeded once, at creation, so two characters do not stare at the same board forever.
+  const overworld = newRun(Math.floor(Math.random() * 1e9) >>> 0);
   overworld.economy = { ...OPENING_PURSE };
   return { overworld, combat: null };
 }
 
 /**
- * The run this session is playing: resumed, wiped, or started.
+ * The character this session is playing: resumed, rescued, or created.
  *
- * Three cases, and the middle one is the point. A run that came back dead is **not**
- * handed a fresh opening purse — that would make dying the cheapest way to restock. It
- * is wiped instead: same object, emptied, back to the starter deck with nothing in the
- * satchel. Only a player who has never had a run at all gets the opening stipend.
+ * Three cases, and the middle one is the RPG death penalty. A player who comes back down
+ * is not wiped and not restarted — they are picked up for a share of the purse and left
+ * at 1 health. Nothing they own is taken. Only somebody who has never played at all gets
+ * a new character and the opening purse.
  *
  * `save.overworld` is set to the very same object rather than a copy, so every mutation
  * a screen makes is already in the save by the time `persist()` is called. One object,
  * one truth — a copy taken here would be a second one to keep in step.
  */
-function adoptRun(companionId: string): GlobalGameState {
+function adoptCharacter(): GlobalGameState {
   const restored = save.overworld;
 
   let global: GlobalGameState;
   if (!restored) {
-    global = startRun(companionId);
-  } else if (isRunOver(restored)) {
+    global = startCharacter();
+  } else if (isDown(restored)) {
     global = { overworld: restored, combat: null };
-    resetRun(global);
+    const fee = rescuePlayer(global);
     pendingNotice = {
-      title: 'Run Failed',
-      body: 'The Magistracy retrieved your body. What you were carrying went with the bill.',
+      title: 'Rescued',
+      body: 'You blacked out. The Magistracy rescued you for a fee of ' + fee + ' Ducats.',
     };
   } else {
     global = { overworld: restored, combat: null };
@@ -138,15 +137,13 @@ function adoptRun(companionId: string): GlobalGameState {
 }
 
 /**
- * The hub between fights.
+ * The hub between contracts.
  *
- * A dead run is replaced on the way in rather than blocking the door: the Bounty Board
- * already refuses to hire a broken Pact, and a player who walked out to the title and
- * back is asking to start again.
+ * A player who walks in on the floor is picked up at the door rather than being stopped
+ * at it — the rescue is a fee and a hospital bed, not a wall.
  */
-function showSafehouse(encounter: EncounterDef, companionId: string): void {
-  if (!run || isRunOver(run.overworld)) run = adoptRun(companionId);
-  run.overworld.deck = deckFor(companionId);
+function showSafehouse(companionId: string): void {
+  if (!run || isDown(run.overworld)) run = adoptCharacter();
   save.overworld = run.overworld;
   persist();
   const global = run;
@@ -157,7 +154,7 @@ function showSafehouse(encounter: EncounterDef, companionId: string): void {
     new SafehouseScreen({
       global,
       companionId,
-      posted: encounter,
+      bounties: rollBounties(global.overworld.bountySeed),
       collection: save.collection,
       deck: deckFor(companionId),
       // Consumed on the way in, so a death is announced once rather than every time a
@@ -169,7 +166,7 @@ function showSafehouse(encounter: EncounterDef, companionId: string): void {
           new ShopScreen({
             global,
             onChange: persist,
-            onBack: () => showSafehouse(encounter, companionId),
+            onBack: () => showSafehouse(companionId),
           }),
         ),
       onArtificer: () =>
@@ -183,11 +180,11 @@ function showSafehouse(encounter: EncounterDef, companionId: string): void {
               save.collection = grantCard(save.collection, cardId);
             },
             onChange: persist,
-            onBack: () => showSafehouse(encounter, companionId),
+            onBack: () => showSafehouse(companionId),
           }),
         ),
-      onJournal: () => showBuilder(companionId, () => showSafehouse(encounter, companionId)),
-      onBounty: (enc) => showPreCombat(enc, companionId),
+      onJournal: () => showBuilder(companionId, () => showSafehouse(companionId)),
+      onBounty: (bounty) => takeBounty(bounty, companionId),
       onLeave: showTitle,
     }),
   );
@@ -198,11 +195,11 @@ function showTitle(): void {
     new TitleScreen({
       save,
       notes: bootNotes.splice(0),
-      onStart: (encounter, companionId, difficulty) => {
+      onStart: (companionId, difficulty) => {
         save.lastCompanionId = companionId;
         save.difficulty = difficulty;
         persist();
-        showSafehouse(encounter, companionId);
+        showSafehouse(companionId);
       },
       onEditDeck: (companionId) => showBuilder(companionId),
     }),
@@ -229,8 +226,32 @@ function showBuilder(companionId: string, onDone: () => void = showTitle): void 
   );
 }
 
+/**
+ * Accepts a contract, if the catalogue still knows the fight it names.
+ *
+ * A bounty read off disk can outlive the encounter it points at, so the lookup is checked
+ * rather than asserted — an unknown fight puts the player back in the hub with a reason
+ * instead of throwing on a click.
+ */
+function takeBounty(bounty: Bounty, companionId: string): void {
+  const encounter = encounterForBounty(bounty);
+  if (!encounter) {
+    pendingNotice = {
+      title: 'Contract Void',
+      body: 'The posting names a place nobody can find any more. Try another.',
+    };
+    showSafehouse(companionId);
+    return;
+  }
+  showPreCombat(encounter, companionId, bounty);
+}
+
 /** See the ground, adapt the deck, then commit to the fight. */
-function showPreCombat(encounter: EncounterDef, companionId: string): void {
+function showPreCombat(
+  encounter: EncounterDef,
+  companionId: string,
+  bounty: Bounty,
+): void {
   screens.go(
     new PreCombatScreen({
       encounter,
@@ -242,10 +263,10 @@ function showPreCombat(encounter: EncounterDef, companionId: string): void {
         // a narrow ruin should not follow the player into the next arena.
         save.lastRun = { encounterId: encounter.id, seed, companionId, deck: [...deck] };
         persist();
-        startCombat(encounter, companionId, deck, seed);
+        startCombat(encounter, companionId, deck, seed, bounty);
       },
       // Back to the Safehouse, because that is where the contract was taken down from.
-      onBack: () => showSafehouse(encounter, companionId),
+      onBack: () => showSafehouse(companionId),
     }),
   );
 }
@@ -263,6 +284,7 @@ function startCombat(
   companionId: string,
   deck: string[],
   seed: number,
+  bounty: Bounty,
 ): void {
   const carry = run ? carryFor(run.overworld) : undefined;
 
@@ -270,9 +292,13 @@ function startCombat(
   // clears it, the save says a fight is open, and a boot that finds it open collects on
   // it. This ordering is the whole failsafe: the write has to happen before the player
   // can see a single turn, or the first turn is a free look.
+  //
+  // The payout is cached here too, not looked up when the fight ends: the board rerolls
+  // after every contract, so a win settled against the *new* board would pay for a job
+  // nobody accepted.
   if (run) {
     run.combat = { encounterId: encounter.id, seed };
-    run.overworld.activeEncounter = true;
+    run.overworld.activeEncounter = { bountyId: bounty.id, spoils: bounty.spoils };
   }
   persist();
 
@@ -280,7 +306,7 @@ function startCombat(
     new CombatScreen(
       encounter,
       (result, played, outcome) =>
-        finishCombat(result, played, outcome, companionId, deck, seed),
+        finishCombat(result, played, outcome, companionId, deck, seed, bounty),
       companionId,
       seed,
       deck,
@@ -297,10 +323,12 @@ function finishCombat(
   companionId: string,
   deck: string[],
   seed: number,
+  bounty: Bounty,
 ): void {
-  // Fold the fight back into the run first: the Pact is written back wounds and all, the
-  // brew is spent whether it was won or lost, and only a win is paid for.
-  if (run) resolveCombat(run, outcome, result, VICTORY_SPOILS);
+  // Fold the fight back into the character first: the Pact is written back wounds and
+  // all, the brew is spent whether it was won or lost, and a win is paid at the rate the
+  // accepted contract promised.
+  if (run) resolveCombat(run, outcome, result);
 
   if (result === 'victory') save.record.wins += 1;
   else if (result === 'bound') save.record.bound += 1;
@@ -325,13 +353,13 @@ function finishCombat(
       },
       // A rematch is the same fight: same seed, same adapted deck. Rerolling would make
       // "again" mean a different battle, which is not what the button says.
-      // Offered only while the run can still stand: a rematch after a defeat would open
-      // the same fight with a Pact at zero.
-      canRematch: !run || !isRunOver(run.overworld),
-      onRematch: () => startCombat(played, companionId, deck, seed),
-      // Back to the hub rather than the title: the Safehouse is where a run lives between
-      // contracts, and the title is only the way out of one.
-      onTitle: () => showSafehouse(played, companionId),
+      // Offered only while the player is still standing: a rematch from the floor would
+      // open the same fight with a Pact at zero.
+      canRematch: !run || !isDown(run.overworld),
+      onRematch: () => startCombat(played, companionId, deck, seed, bounty),
+      // Back to the hub rather than the title: the Safehouse is where a character lives
+      // between contracts, and the title is only the way out.
+      onTitle: () => showSafehouse(companionId),
     }),
   );
 }

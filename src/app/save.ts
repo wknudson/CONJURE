@@ -16,12 +16,16 @@ import { reconcileCollection, startingCollection } from '../core/data/collection
 import { validateDeck } from '../core/data/deckRules.js';
 import { COMPANIONS, DEFAULT_COMPANION } from '../core/data/companions.js';
 import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
-import type { Consumable, OverworldState } from '../core/overworld/state.js';
+import type {
+  ActiveEncounterState,
+  Consumable,
+  OverworldState,
+} from '../core/overworld/state.js';
 import { INVENTORY_LIMIT, isBuffId } from '../core/overworld/state.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 /**
  * Cards that have been renamed, old id to new.
@@ -71,14 +75,14 @@ export interface SaveData {
     deck: string[];
   };
   /**
-   * The run in progress, if there is one (added in v4).
+   * The character outside combat: Pact, purse, satchel, open contract (added in v4).
    *
-   * Optional because "no run" is a real state, not a broken one: a fresh save, or a
-   * player who has never left the title. Its absence needs no repair, which is the same
-   * reason `lastRun` is optional.
+   * Optional because "not started" is a real state, not a broken one — a fresh save, or a
+   * player who has never left the title. Its absence needs no repair, the same reason
+   * `lastRun` is optional.
    *
-   * Note this is the *run*, not the collection — a forged card lands in `collection` and
-   * outlives the run, while the purse that paid for it dies with it.
+   * Deliberately holds no deck. The master deck lives in `decks`, and under the RPG model
+   * that *is* the active deck; a copy here would be the run deck the design discarded.
    */
   overworld?: OverworldState;
 }
@@ -255,12 +259,6 @@ function readOverworld(raw: unknown): OverworldState | undefined {
     mapId: typeof pos?.mapId === 'string' ? pos.mapId : 'start',
   };
 
-  // The deck holds card ids, so it goes through the same rename map as the collection
-  // and the saved decks — a card renamed under a run in progress must not vanish from it.
-  const deck = (Array.isArray(data.deck) ? data.deck : [])
-    .filter((c): c is string => typeof c === 'string')
-    .map(rename);
-
   const inventory = (Array.isArray(data.inventory) ? data.inventory : [])
     .filter(isConsumable)
     .slice(0, INVENTORY_LIMIT);
@@ -272,15 +270,38 @@ function readOverworld(raw: unknown): OverworldState | undefined {
       ducats: Math.max(0, Math.round(numberOr(data.economy?.ducats, 0))),
       marrowShards: Math.max(0, Math.round(numberOr(data.economy?.marrowShards, 0))),
     },
-    deck,
     inventory,
     // An unknown brew becomes none rather than being carried as a word the fight cannot
     // read. `BUFF_IDS` is the same list the type is made of, so this cannot drift.
     activeBuff: isBuffId(data.activeBuff) ? data.activeBuff : null,
-    // Anything but an explicit `true` is "no fight in progress". A save written before
-    // this field existed is a run that was sitting safely in the Safehouse, not one to
-    // punish on the next boot.
-    activeEncounter: data.activeEncounter === true,
+    activeEncounter: readActiveEncounter(data.activeEncounter),
+    bountySeed: Math.max(1, Math.round(numberOr(data.bountySeed, 1))),
+  };
+}
+
+/**
+ * The open contract, rebuilt or dropped.
+ *
+ * Anything that is not a well-formed contract reads as "no fight in progress", including
+ * the `true` a v4 save would have written here. That is deliberately forgiving in one
+ * direction only: the cost of missing a forfeit is one un-punished tab-close during a
+ * version upgrade, where the cost of inventing one is killing a player who was standing
+ * safely in the Safehouse.
+ *
+ * The spoils are rebuilt rather than trusted for the obvious reason — this is the field
+ * that pays out, and it is a text file.
+ */
+function readActiveEncounter(raw: unknown): ActiveEncounterState | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as Partial<ActiveEncounterState>;
+  if (typeof data.bountyId !== 'string') return null;
+
+  return {
+    bountyId: data.bountyId,
+    spoils: {
+      ducats: Math.max(0, Math.round(numberOr(data.spoils?.ducats, 0))),
+      marrowShards: Math.max(0, Math.round(numberOr(data.spoils?.marrowShards, 0))),
+    },
   };
 }
 

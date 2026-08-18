@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { createCombat } from '../core/engine/setup.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
-import { STARTER_DECK } from '../core/data/cards/starter.js';
 import {
   addConsumable,
   forfeitIfAbandoned,
-  isRunOver,
+  isCritical,
+  isDown,
   newRun,
-  resetRun,
-  SURVIVAL_STIPEND,
+  rescuePlayer,
+  RESCUE_FEE_RATE,
   INVENTORY_LIMIT,
   type BuffId,
   type Consumable,
@@ -30,9 +30,12 @@ import {
  * balance rule, and a balance rule with no test is a suggestion.
  */
 
-const global = (): GlobalGameState => ({
-  overworld: newRun(['scout_imp', 'grave_sentinel']),
-  combat: null,
+const global = (): GlobalGameState => ({ overworld: newRun(7), combat: null });
+
+/** An accepted contract worth the given payout. */
+const contract = (ducats = 0, marrowShards = 0) => ({
+  bountyId: 'test_contract',
+  spoils: { ducats, marrowShards },
 });
 
 const potion = (value = 10): Consumable => ({
@@ -175,8 +178,9 @@ describe('resolving a fight back into the run', () => {
   it('writes the surviving Pact back, wounds and all', () => {
     const g = global();
     g.combat = { pretend: 'a live fight' };
+    g.overworld.activeEncounter = contract(25);
 
-    resolveCombat(g, finished(13), 'victory', { ducats: 25 });
+    resolveCombat(g, finished(13), 'victory');
 
     expect(g.overworld.pact.currentHp, 'the Gauntlet does not heal you').toBe(13);
     expect(g.overworld.economy.ducats).toBe(25);
@@ -200,23 +204,25 @@ describe('resolving a fight back into the run', () => {
   it('pays nothing for a defeat, and leaves the run over', () => {
     const g = global();
     g.combat = {};
+    g.overworld.activeEncounter = contract(25);
 
-    resolveCombat(g, finished(0), 'defeat', { ducats: 25 });
+    resolveCombat(g, finished(0), 'defeat');
 
     expect(g.overworld.economy.ducats).toBe(0);
     expect(g.overworld.pact.currentHp).toBe(0);
-    expect(isRunOver(g.overworld), 'the number and the flag agree').toBe(true);
+    expect(isDown(g.overworld), 'the number and the flag agree').toBe(true);
   });
 
   it('pays out a win taken at one health', () => {
     const g = global();
     g.combat = {};
-    resolveCombat(g, finished(1), 'bound', { ducats: 40, marrowShards: 2 });
+    g.overworld.activeEncounter = contract(40, 2);
+    resolveCombat(g, finished(1), 'bound');
 
     expect(g.overworld.pact.currentHp).toBe(1);
     expect(g.overworld.economy.ducats, 'binding is a win too').toBe(40);
     expect(g.overworld.economy.marrowShards).toBe(2);
-    expect(isRunOver(g.overworld)).toBe(false);
+    expect(isDown(g.overworld)).toBe(false);
   });
 
   it('round-trips: a wounded run fights, survives, and stays wounded', () => {
@@ -246,7 +252,8 @@ describe('the loop, closed', () => {
     expect(first.state.players.player.hp, 'opens where the run left it').toBe(34);
 
     g.combat = first.state;
-    resolveCombat(g, { pactHp: 19 }, 'victory', { ducats: 50, marrowShards: 1 });
+    g.overworld.activeEncounter = contract(50, 1);
+    resolveCombat(g, { pactHp: 19 }, 'victory');
 
     expect(g.overworld.pact.currentHp).toBe(19);
     expect(g.overworld.economy.ducats).toBe(50);
@@ -289,11 +296,11 @@ describe('walking away from a fight', () => {
     // The exploit this closes: close the tab on a losing turn, reopen, and the fight
     // never happened. With the flag written before the board is mounted, it did.
     const g = global();
-    g.overworld.activeEncounter = true;
+    g.overworld.activeEncounter = contract(50);
 
     expect(forfeitIfAbandoned(g.overworld), 'a forfeit was collected').toBe(true);
     expect(g.overworld.pact.currentHp).toBe(0);
-    expect(isRunOver(g.overworld)).toBe(true);
+    expect(isDown(g.overworld)).toBe(true);
   });
 
   it('leaves an ordinary run alone', () => {
@@ -305,19 +312,19 @@ describe('walking away from a fight', () => {
 
   it('collects once, not on every boot after', () => {
     const g = global();
-    g.overworld.activeEncounter = true;
+    g.overworld.activeEncounter = contract();
     forfeitIfAbandoned(g.overworld);
     expect(forfeitIfAbandoned(g.overworld), 'already collected').toBe(false);
   });
 
   it('is raised by committing to a fight and lowered by finishing one', () => {
     const g = global();
-    g.overworld.activeEncounter = true;
+    g.overworld.activeEncounter = contract();
     g.combat = { pretend: 'a live fight' };
 
     resolveCombat(g, { pactHp: 14 }, 'victory');
 
-    expect(g.overworld.activeEncounter, 'the fight was answered for').toBe(false);
+    expect(g.overworld.activeEncounter, 'the fight was answered for').toBeNull();
     expect(g.overworld.pact.currentHp).toBe(14);
   });
 
@@ -327,74 +334,88 @@ describe('walking away from a fight', () => {
     const g = global();
     addConsumable(g.overworld, potion());
     g.combat = null;
-    g.overworld.activeEncounter = true;
+    g.overworld.activeEncounter = contract();
 
     expect(consumableRefusal(g, 0)).toBe('in-combat');
     expect(useConsumable(g, 0)).toBe(false);
   });
 });
 
-describe('the wipe', () => {
-  const spent = (): GlobalGameState => {
+describe('the rescue', () => {
+  const floored = (): GlobalGameState => {
     const g = global();
     g.overworld.pact.currentHp = 0;
     g.overworld.economy = { ducats: 300, marrowShards: 9 };
-    g.overworld.deck = ['scout_imp'];
     addConsumable(g.overworld, potion());
     addConsumable(g.overworld, brew('ironbrew'));
     g.overworld.activeBuff = 'quicksilver';
-    g.overworld.activeEncounter = true;
-    g.combat = { pretend: 'a fight that killed you' };
+    g.overworld.activeEncounter = contract(50);
+    g.combat = { pretend: 'the fight that put you there' };
     return g;
   };
 
-  it('takes back everything the run was carrying', () => {
-    const g = spent();
-    resetRun(g);
+  it('takes a fifth of the purse and reports the bill', () => {
+    const g = floored();
+    const fee = rescuePlayer(g);
 
-    expect(g.overworld.economy).toEqual({ ducats: SURVIVAL_STIPEND, marrowShards: 0 });
-    expect(g.overworld.inventory, 'satchel emptied').toHaveLength(0);
-    expect(g.overworld.activeBuff, 'and the bottle in hand').toBeNull();
+    expect(g.overworld.economy.ducats, 'Math.floor(300 * 0.8)').toBe(240);
+    expect(fee, 'and the modal is told what to say').toBe(60);
+    expect(fee / 300).toBeCloseTo(RESCUE_FEE_RATE, 5);
   });
 
-  it('is not a restock: dying must never beat surviving', () => {
-    // The rule the whole phase exists for. A dead run that came back with the opening
-    // purse would make the fastest route to 120 Ducats a deliberate loss.
-    const g = spent();
-    const before = g.overworld.economy.ducats;
-    resetRun(g);
-    expect(g.overworld.economy.ducats).toBeLessThan(before);
-    expect(g.overworld.economy.ducats).toBe(SURVIVAL_STIPEND);
+  it('leaves the satchel and the Shards alone — property is not the penalty', () => {
+    // The pivot away from the roguelike wipe, stated as a test: a knockout costs money
+    // and time. Everything the player owns comes through it.
+    const g = floored();
+    rescuePlayer(g);
+
+    expect(g.overworld.inventory, 'both items still there').toHaveLength(2);
+    expect(g.overworld.economy.marrowShards, 'Shards are earned, not wagered').toBe(9);
   });
 
-  it('stands the Pact back up at its full gauge', () => {
-    const g = spent();
-    resetRun(g);
-    expect(g.overworld.pact.currentHp).toBe(g.overworld.pact.maxHp);
-    expect(isRunOver(g.overworld), 'and it is a live run again').toBe(false);
+  it('stands the player at one, not at full', () => {
+    // Waking whole would make dying a free ride home from a fight going badly.
+    const g = floored();
+    rescuePlayer(g);
+
+    expect(g.overworld.pact.currentHp).toBe(1);
+    expect(g.overworld.pact.currentHp).not.toBe(g.overworld.pact.maxHp);
+    expect(isDown(g.overworld), 'upright again').toBe(false);
+    expect(isCritical(g.overworld), 'but in no state to work').toBe(true);
   });
 
-  it('keeps the gauge itself, which was never the run to spend', () => {
-    const g = spent();
-    g.overworld.pact.maxHp = 55;
-    resetRun(g);
-    expect(g.overworld.pact.maxHp, 'a permanent upgrade outlives a death').toBe(55);
-    expect(g.overworld.pact.currentHp).toBe(55);
-  });
+  it('spends the brew and closes the contract', () => {
+    const g = floored();
+    rescuePlayer(g);
 
-  it('puts the starter deck back', () => {
-    const g = spent();
-    resetRun(g);
-    expect(g.overworld.deck).toEqual(STARTER_DECK);
-    expect(g.overworld.deck, 'a full opening list').toHaveLength(15);
-  });
-
-  it('leaves no fight marked open behind it', () => {
-    const g = spent();
-    resetRun(g);
-    expect(g.overworld.activeEncounter).toBe(false);
+    expect(g.overworld.activeBuff).toBeNull();
+    expect(g.overworld.activeEncounter).toBeNull();
     expect(g.combat).toBeNull();
     // Which means the next boot has nothing to collect on.
     expect(forfeitIfAbandoned(g.overworld)).toBe(false);
+  });
+
+  it('costs a pauper nothing it cannot take', () => {
+    // A player rescued with an empty purse must still come back upright, or the penalty
+    // becomes a dead end rather than a setback.
+    const g = global();
+    g.overworld.pact.currentHp = 0;
+    g.overworld.economy.ducats = 0;
+
+    expect(rescuePlayer(g)).toBe(0);
+    expect(g.overworld.economy.ducats).toBe(0);
+    expect(g.overworld.pact.currentHp).toBe(1);
+  });
+
+  it('is felt by a rich player as much as a poor one', () => {
+    const rich = global();
+    rich.overworld.pact.currentHp = 0;
+    rich.overworld.economy.ducats = 1000;
+
+    const poor = global();
+    poor.overworld.pact.currentHp = 0;
+    poor.overworld.economy.ducats = 100;
+
+    expect(rescuePlayer(rich) / 1000).toBeCloseTo(rescuePlayer(poor) / 100, 5);
   });
 });

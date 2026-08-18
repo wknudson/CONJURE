@@ -12,22 +12,23 @@
  */
 
 import type { Screen } from './ScreenManager.js';
-import type { EncounterDef } from '../core/data/encounters/registry.js';
 import type { Collection } from '../core/data/deckRules.js';
 import type { GlobalGameState } from '../core/overworld/state.js';
-import { INVENTORY_LIMIT, isRunOver } from '../core/overworld/state.js';
+import type { Bounty } from '../core/data/bounties.js';
+import { INVENTORY_LIMIT, isCritical } from '../core/overworld/state.js';
 import { useConsumable } from '../core/overworld/run.js';
 import { blueprintsFor } from '../core/data/artificer.js';
 import { companionById } from '../core/data/companions.js';
 import { validateDeck } from '../core/data/deckRules.js';
+import { encounterById } from '../core/data/encounters/index.js';
 import { schoolOf } from '../render/palette.js';
 import { Tooltip } from '../hud/Tooltip.js';
 
 export interface SafehouseOpts {
   global: GlobalGameState;
   companionId: string;
-  /** The contract currently pinned to the Bounty Board. */
-  posted: EncounterDef;
+  /** The three contracts currently pinned to the board. */
+  bounties: Bounty[];
   collection: Collection;
   /** The deck the Field Journal would open on, for the summary line. */
   deck: string[];
@@ -41,7 +42,7 @@ export interface SafehouseOpts {
   onApothecary: () => void;
   onArtificer: () => void;
   onJournal: () => void;
-  onBounty: (encounter: EncounterDef) => void;
+  onBounty: (bounty: Bounty) => void;
   /** Called after the run is mutated here — drinking something — so it reaches disk. */
   onChange?: () => void;
   /** Out the front door, back to the title. */
@@ -83,6 +84,16 @@ export class SafehouseScreen implements Screen {
 
       <div class="hub-ledger brass-panel"></div>
       <div class="hub-menu"></div>
+
+      <div class="bounty-board">
+        <div class="bounty-board__head">
+          <span class="bounty-board__title">The Bounty Board</span>
+          <span class="bounty-board__note">
+            Nailed paper over older nailed paper. Take one and the rest are gone by morning.
+          </span>
+        </div>
+        <div class="bounty-board__list"></div>
+      </div>
     `;
 
     if (this.opts.notice) el.appendChild(this.buildNotice(this.opts.notice));
@@ -95,6 +106,7 @@ export class SafehouseScreen implements Screen {
     this.tooltip.attach(el);
     this.renderLedger();
     this.renderZones();
+    this.renderBounties();
   }
 
   /**
@@ -132,13 +144,14 @@ export class SafehouseScreen implements Screen {
     const { pact, economy, inventory, activeBuff } = this.opts.global.overworld;
 
     const pactPct = Math.max(0, Math.min(100, (pact.currentHp / pact.maxHp) * 100));
-    const spent = isRunOver(this.opts.global.overworld);
+    const critical = isCritical(this.opts.global.overworld);
 
     host.innerHTML = `
       <div class="ledger__pact">
         <div class="ledger__label">The Pact</div>
         <div class="ledger__gauge"><i style="width:${pactPct}%"></i></div>
-        <div class="ledger__value${spent ? ' is-spent' : ''}">${pact.currentHp} / ${pact.maxHp}</div>
+        <div class="ledger__value${critical ? ' is-critical' : ''}">${pact.currentHp} / ${pact.maxHp}</div>
+        ${critical ? '<div class="ledger__critical">Critical — heal before taking work</div>' : ''}
       </div>
       <div class="ledger__coins">
         <div class="ledger__stat">
@@ -206,8 +219,7 @@ export class SafehouseScreen implements Screen {
   // ------------------------------------------------------------------- doors
 
   private zones(): Zone[] {
-    const { global, collection, deck, posted } = this.opts;
-    const over = () => isRunOver(global.overworld);
+    const { global, collection, deck } = this.opts;
 
     return [
       {
@@ -247,19 +259,51 @@ export class SafehouseScreen implements Screen {
         },
         onOpen: this.opts.onJournal,
       },
-      {
-        key: 'bounty',
-        name: 'The Bounty Board',
-        trade: 'Contracts',
-        blurb: 'Nailed paper over older nailed paper. Somebody wants somebody stopped.',
-        status: () =>
-          over()
-            ? 'The Pact is broken — no one will hire you'
-            : `${posted.name} · ${posted.width}×${posted.height}`,
-        disabled: over,
-        onOpen: () => this.opts.onBounty(posted),
-      },
     ];
+  }
+
+  // ------------------------------------------------------------------ the board
+
+  /**
+   * Three contracts, one per tier, so the board is always a question about risk.
+   *
+   * Nothing here refuses a wounded player. Taking a Master contract at 2 health is a
+   * terrible idea and remains theirs to make — the ledger says Critical in red, which is
+   * the game's job; deciding is the player's.
+   */
+  private renderBounties(): void {
+    const host = this.el?.querySelector('.bounty-board__list');
+    if (!host) return;
+    host.innerHTML = '';
+
+    const critical = isCritical(this.opts.global.overworld);
+
+    for (const bounty of this.opts.bounties) {
+      const card = document.createElement('button');
+      card.className = `bounty-card brass-panel bounty-card--${bounty.difficulty}`;
+      const encounter = encounterById(bounty.enemySeed);
+
+      card.innerHTML = `
+        <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
+        <div class="bounty-card__tier">${bounty.difficulty}</div>
+        <div class="bounty-card__title">${bounty.title}</div>
+        <div class="bounty-card__where">${
+          encounter ? `${encounter.name} · ${encounter.width}×${encounter.height}` : 'Location unknown'
+        }</div>
+        <div class="bounty-card__flavour">${bounty.flavour}</div>
+        <div class="bounty-card__pay">
+          <span class="bounty-card__coin bounty-card__coin--gold">${bounty.spoils.ducats ?? 0} d</span>
+          ${
+            bounty.spoils.marrowShards
+              ? `<span class="bounty-card__coin bounty-card__coin--marrow">${bounty.spoils.marrowShards} shards</span>`
+              : ''
+          }
+          ${critical ? '<span class="bounty-card__warn">at critical health</span>' : ''}
+        </div>
+      `;
+      card.addEventListener('click', () => this.opts.onBounty(bounty));
+      host.appendChild(card);
+    }
   }
 
   private renderZones(): void {

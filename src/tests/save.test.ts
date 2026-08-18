@@ -246,7 +246,7 @@ describe('the run on disk', () => {
   });
 
   const run = (over: Partial<OverworldState> = {}): OverworldState => ({
-    ...newRun(['scout_imp', 'grave_sentinel']),
+    ...newRun(7),
     ...over,
   });
 
@@ -303,7 +303,6 @@ describe('the run on disk', () => {
         overworld: {
           pact: { currentHp: 9999, maxHp: 40 },
           economy: { ducats: -50, marrowShards: 2.7 },
-          deck: ['scout_imp', 42, null],
           inventory: Array.from({ length: 6 }, () => ({
             id: 'mending_tonic',
             name: 'Mending Tonic',
@@ -320,7 +319,6 @@ describe('the run on disk', () => {
     expect(over.pact.currentHp, 'cannot exceed the gauge').toBe(40);
     expect(over.economy.ducats, 'no negative purse').toBe(0);
     expect(Number.isInteger(over.economy.marrowShards)).toBe(true);
-    expect(over.deck, 'non-strings dropped').toEqual(['scout_imp']);
     expect(over.inventory.length, 'capped at the satchel limit').toBe(INVENTORY_LIMIT);
     expect(over.activeBuff, 'an unreadable brew becomes none').toBeNull();
   });
@@ -333,16 +331,15 @@ describe('the run on disk', () => {
     expect(loadSave().save.overworld, 'whole, or not at all').toBeUndefined();
   });
 
-  it('renames a card held in the run deck, same as everywhere else', () => {
-    store.set(
-      'conjure.save',
-      JSON.stringify({
-        ...defaultSave(),
-        version: 2,
-        overworld: { ...run(), deck: ['spark_wisp', 'scout_imp'] },
-      }),
-    );
-    expect(loadSave().save.overworld?.deck).toEqual(['marrow_wisp', 'scout_imp']);
+  it('keeps no deck of its own — the master deck is the only one', () => {
+    // The RPG pivot, held by a test: a run deck stored here would be a second list to
+    // keep in step with `decks`, and the two would drift the first time one was edited.
+    const save = defaultSave();
+    save.overworld = run();
+    writeSave(save);
+
+    const loaded = loadSave().save.overworld as unknown as Record<string, unknown>;
+    expect(loaded).not.toHaveProperty('deck');
   });
 });
 
@@ -355,18 +352,36 @@ describe('a fight left open on disk', () => {
     // The failsafe only works if the flag actually survives the trip. Everything else in
     // it is downstream of this one round trip.
     const save = defaultSave();
-    save.overworld = { ...newRun(['scout_imp']), activeEncounter: true };
+    save.overworld = {
+      ...newRun(7),
+      activeEncounter: { bountyId: 'adept_1_narrow_ruin', spoils: { ducats: 90, marrowShards: 1 } },
+    };
     writeSave(save);
 
     const { save: loaded } = loadSave();
-    expect(loaded.overworld?.activeEncounter).toBe(true);
+    expect(loaded.overworld?.activeEncounter?.bountyId).toBe('adept_1_narrow_ruin');
+    expect(loaded.overworld?.activeEncounter?.spoils, 'the payout survives the trip').toEqual({
+      ducats: 90,
+      marrowShards: 1,
+    });
     expect(forfeitIfAbandoned(loaded.overworld!), 'and boot collects on it').toBe(true);
     expect(loaded.overworld?.pact.currentHp).toBe(0);
   });
 
+  it('treats a v4 boolean flag as no fight rather than inventing a payout', () => {
+    // v4 wrote `true` here. Reading that as an open contract would mean guessing at a
+    // payout, so it reads as no fight — one un-punished tab-close during an upgrade is
+    // cheaper than killing somebody who was standing safely in the hub.
+    localStorage.setItem(
+      'conjure.save',
+      JSON.stringify({ ...defaultSave(), version: 4, overworld: { ...newRun(7), activeEncounter: true } }),
+    );
+    expect(loadSave().save.overworld?.activeEncounter).toBeNull();
+  });
+
   it('treats a missing flag as no fight, not as one to punish', () => {
     // Every save written before this field existed was a run sitting safely in the hub.
-    const bare: Record<string, unknown> = { ...newRun(['scout_imp']) };
+    const bare: Record<string, unknown> = { ...newRun(7) };
     delete bare.activeEncounter;
 
     localStorage.setItem(
@@ -375,18 +390,35 @@ describe('a fight left open on disk', () => {
     );
 
     const { save } = loadSave();
-    expect(save.overworld?.activeEncounter).toBe(false);
+    expect(save.overworld?.activeEncounter).toBeNull();
     expect(forfeitIfAbandoned(save.overworld!)).toBe(false);
   });
 
-  it('will not take a truthy string for a raised flag', () => {
+  it('will not take a contract with no id, however much it promises', () => {
     localStorage.setItem(
       'conjure.save',
       JSON.stringify({
         ...defaultSave(),
-        overworld: { ...newRun(['scout_imp']), activeEncounter: 'no' },
+        overworld: { ...newRun(7), activeEncounter: { spoils: { ducats: 99999 } } },
       }),
     );
-    expect(loadSave().save.overworld?.activeEncounter).toBe(false);
+    expect(loadSave().save.overworld?.activeEncounter).toBeNull();
+  });
+
+  it('rebuilds a hand-edited payout rather than trusting it', () => {
+    localStorage.setItem(
+      'conjure.save',
+      JSON.stringify({
+        ...defaultSave(),
+        overworld: {
+          ...newRun(7),
+          activeEncounter: { bountyId: 'x', spoils: { ducats: -5, marrowShards: 'lots' } },
+        },
+      }),
+    );
+    expect(loadSave().save.overworld?.activeEncounter?.spoils).toEqual({
+      ducats: 0,
+      marrowShards: 0,
+    });
   });
 });

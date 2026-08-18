@@ -14,7 +14,7 @@ import type { Screen } from './ScreenManager.js';
 import type { GlobalGameState } from '../core/overworld/state.js';
 import type { StockItem } from '../core/data/apothecary.js';
 import { addConsumable, INVENTORY_LIMIT } from '../core/overworld/state.js';
-import { APOTHECARY_STOCK, effectOf } from '../core/data/apothecary.js';
+import { APOTHECARY_STOCK, clinicPrice, effectOf } from '../core/data/apothecary.js';
 
 export interface ShopOpts {
   global: GlobalGameState;
@@ -58,6 +58,11 @@ export class ShopScreen implements Screen {
           <div class="shop__satchel"></div>
         </section>
 
+        <section class="shop__section shop__section--clinic">
+          <div class="shop__section-title">The Clinic</div>
+          <div class="brass-panel shop__clinic"></div>
+        </section>
+
         <section class="shop__section shop__section--cosmetics">
           <div class="shop__section-title">Cosmetics &amp; Tailoring</div>
           <div class="brass-panel shop__soon">
@@ -83,6 +88,55 @@ export class ShopScreen implements Screen {
     this.renderPurse();
     this.renderStock();
     this.renderSatchel();
+    this.renderClinic();
+  }
+
+  /**
+   * A bed and a bill.
+   *
+   * The counterpart to the rescue fee: a knockout leaves the player at 1 health, and this
+   * is the way back to full for anyone without a tonic. Priced by the point, so being
+   * barely scratched costs barely anything and being carried in off the street is dear.
+   */
+  private renderClinic(): void {
+    const host = this.el?.querySelector('.shop__clinic');
+    if (!host) return;
+    const { overworld } = this.opts.global;
+    const { pact, economy } = overworld;
+    const price = clinicPrice(overworld);
+    const whole = price === 0;
+    const affordable = economy.ducats >= price;
+
+    host.innerHTML = `
+      <div class="shop__clinic-line">Pact ${pact.currentHp} / ${pact.maxHp}</div>
+      <div class="shop__clinic-copy">${
+        whole
+          ? 'Nothing here needs mending. Come back bleeding.'
+          : 'Boiled linen and a lamp turned low. You will walk out whole.'
+      }</div>
+      <div class="shop__clinic-price">${whole ? '—' : `${price} d`}</div>
+      <button class="brass-btn shop__clinic-buy">Take the bed</button>
+      <div class="shop-item__refusal">${
+        !whole && !affordable ? `${price - economy.ducats} short` : ''
+      }</div>
+    `;
+
+    const btn = host.querySelector('button')!;
+    btn.disabled = whole || !affordable;
+    btn.addEventListener('click', () => this.treat());
+  }
+
+  /** Pays the bill, then heals — asking the price once, so the two cannot disagree. */
+  private treat(): void {
+    const { overworld } = this.opts.global;
+    const price = clinicPrice(overworld);
+    if (price === 0 || overworld.economy.ducats < price) return;
+
+    overworld.economy.ducats -= price;
+    overworld.pact.currentHp = overworld.pact.maxHp;
+
+    this.opts.onChange?.();
+    this.render();
   }
 
   private renderPurse(): void {
