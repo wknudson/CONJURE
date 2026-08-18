@@ -17,6 +17,7 @@ import type { Ctx } from './context.js';
 import { emit, newCause } from './context.js';
 import { unitAt } from './board.js';
 import { pushUnit } from './displacement.js';
+import { tickSubjugation } from './subjugation.js';
 import { DRAW_PER_TURN, drawCards, endOfTurnCleanup, gainPips } from './deck.js';
 import { refreshUnits, startOfTurnStatuses } from './status.js';
 import { checkLethal } from './death.js';
@@ -84,6 +85,11 @@ export function endTurn(ctx: Ctx): void {
     ctx.state.turn += 1;
     runCurrents(ctx);
     if (ctx.state.result) return;
+    // After the currents, deliberately: a conveyor can shove the anchor into a wall and
+    // kill it, and a tether that snapped this round must not also be credited with
+    // surviving it. The order here is the difference between those two outcomes.
+    tickSubjugation(ctx);
+    if (ctx.state.result) return;
     applyPacifistLockout(ctx);
     if (ctx.state.result) return;
   }
@@ -138,6 +144,16 @@ const LOCKOUT_DAMAGE = 10;
  * AIs — can trade board presence forever and the game never resolves.
  */
 function applyPacifistLockout(ctx: Ctx): void {
+  // Suspended while a tether is live. The lockout exists to break a stalemate between two
+  // sides who will not commit; a subjugation is the opposite of that -- it is a timed
+  // siege in which the beast is sealed and neither commander CAN be hurt. Left running it
+  // would fire on schedule and kill the player with unblockable damage the sealed Alpha
+  // is immune to, turning the doc's "try again" loop into a guaranteed loss.
+  if (ctx.state.encounter.subjugation.active) {
+    ctx.state.commanderDamagedThisRound = false;
+    return;
+  }
+
   if (ctx.state.commanderDamagedThisRound) {
     ctx.state.stalledRounds = 0;
     ctx.state.commanderDamagedThisRound = false;

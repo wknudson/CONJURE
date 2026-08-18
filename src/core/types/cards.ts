@@ -32,8 +32,14 @@ export type EffectNode =
   | { op: 'detonateAllRunes'; bonusDamage: number }
   /** Magma Brute's on-deploy 2-tile cleave. */
   | { op: 'cleaveFront'; amount: number; dtype: DamageType; width: number }
-  /** Rite of Binding: ends a Subjugation Trial with the companion bound. */
-  | { op: 'bindCompanion' };
+  /**
+   * Rite of Subjugation: drives the tether into the chosen unit.
+   *
+   * This replaced an older `bindCompanion` op that simply declared victory. Binding is no
+   * longer a button you press once the beast is weak enough — it is three rounds of
+   * holding on, and the win is decided by whether the anchor is still standing.
+   */
+  | { op: 'anchorTether' };
 
 /**
  * Whether an effect tree contains a given primitive anywhere, including inside `seq`.
@@ -150,7 +156,7 @@ export interface CardDef {
 export interface CardInstance {
   instanceId: CardInstanceId;
   defId: CardDefId;
-  /** Rite of Binding: sits outside the hand limit, cannot be discarded. */
+  /** Sits outside the hand limit and cannot be discarded. */
   ephemeral?: boolean;
 }
 

@@ -367,7 +367,7 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
 
   seq.on('cardInjected', (e, { view }) => {
     view.hud.onCardDrawn(e.side, e.card);
-    view.hud.flashNotice('The Rite of Binding is offered!');
+    view.hud.flashNotice('The beast seals itself — the Rite of Subjugation is drawn!');
     view.sfx.play('win');
   });
 

@@ -103,6 +103,10 @@ export function findMove(state: GameState, unit: Unit, to: Coord): MoveOption | 
  */
 export function canAct(unit: Unit): boolean {
   if (unit.statuses.freeze || unit.statuses.stun) return false;
+  // Tethered. It is holding a beast in place with its whole body; it does nothing else
+  // until the tether resolves. Gating here covers moving, striking and channelling in
+  // one place, since all three already ask this question.
+  if (unit.statuses.anchor) return false;
   // Dormant and Impact units cannot act on the turn they were deployed. Haste can.
   if (unit.summonedThisTurn && !unit.keywords.includes('Haste')) return false;
   return true;

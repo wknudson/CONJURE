@@ -78,6 +78,6 @@ export interface CardSnapshot {
   stats?: { atk: number; hp: number; mov: number };
   /** How far from the Companion this may be cast. Absent on Hero cards, which reach all. */
   range?: number;
-  /** Rite of Binding overlay: sits outside the hand limit and cannot be discarded. */
+  /** Ephemeral overlay: sits outside the hand limit and cannot be discarded. */
   ephemeral?: boolean;
 }

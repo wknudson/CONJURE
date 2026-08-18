@@ -69,7 +69,7 @@ export function rollRewards(rng: RngState, count = 3): string[] {
   const pool = Object.values(CARDS)
     // Setup-only stat blocks are placed by the engine and are not cards anyone can own;
     // the Rite is injected by the Trial itself.
-    .filter((c) => !c.setupOnly && c.id !== 'rite_of_binding')
+    .filter((c) => !c.setupOnly && c.id !== 'rite_of_subjugation')
     .map((c) => c.id)
     .sort();
 

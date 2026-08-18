@@ -207,7 +207,7 @@ export function checkCleanupInvariants(state: GameState, where: string): string[
 
   if (c.pips > 8) bad.push(`${where}: ${side} banked ${c.pips} pips, over the cap of 8`);
   if (c.hand.length > c.handLimit + 1) {
-    // +1 tolerance: the Rite of Binding overlay is allowed to exceed the limit.
+    // +1 tolerance: an ephemeral overlay is allowed to exceed the limit.
     bad.push(`${where}: ${side} holds ${c.hand.length} cards, over limit ${c.handLimit}`);
   }
   return bad;

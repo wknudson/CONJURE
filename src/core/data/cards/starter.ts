@@ -272,16 +272,18 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   },
 
   // ------------------------------------------------- boss-granted special card
-  rite_of_binding: {
-    id: 'rite_of_binding',
-    name: 'Rite of Binding',
+  rite_of_subjugation: {
+    id: 'rite_of_subjugation',
+    name: 'Rite of Subjugation',
     cost: 0,
     school: 'arcane',
     source: 'companion',
     kind: 'spell',
-    text: 'Bind the weakened companion to your service, ending the trial in your favour.',
-    target: { kind: 'global' },
-    effect: { op: 'bindCompanion' },
+    text: 'Tether a friendly unit to the sealed beast. It cannot move or act. Hold it there for three rounds to claim the companion.',
+    // An ally, not the board: the Rite is a harpoon fired from one of your own, and which
+    // one you can afford to immobilise for three rounds is the decision it asks.
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: { op: 'anchorTether' },
     keywords: ['Retain'],
   },
 };

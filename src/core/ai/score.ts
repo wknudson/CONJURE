@@ -19,6 +19,7 @@ import { opposite } from '../engine/board.js';
 import { threatMap } from '../engine/threat.js';
 import { threatensFrom } from '../engine/targeting.js';
 import { coordKey } from '../../contract/ids.js';
+import { footprintDistance } from '../util/grid.js';
 
 export interface UtilityWeights {
   kill: number;
@@ -108,6 +109,71 @@ export const ADEPT_WEIGHTS: UtilityWeights = {
 export const LETHAL_SCORE = 10_000;
 
 /**
+ * Breaking a tether outranks even lethal.
+ *
+ * A sealed Alpha cannot be killed and cannot be beaten to the punch; the only thing on
+ * the board that can end the phase against it is the anchor, so nothing else may score
+ * higher. Above LETHAL_SCORE by design rather than by accident.
+ */
+export const ANCHOR_KILL_SCORE = 20_000;
+
+/**
+ * What a line is worth while the tether is live.
+ *
+ * The beast wants one thing, and the scoring says so in three tiers:
+ *
+ *  - Killing the anchor ends the phase in the beast's favour, so it is priced above
+ *    lethal. Nothing else on the board can be worth more.
+ *  - Hurting the anchor is progress toward that, priced per point so a plan that gets it
+ *    to one HP beats one that does not touch it.
+ *  - Closing on the anchor matters when nothing can reach it yet, which is the ordinary
+ *    case on the turn the Rite lands. Measured as reduction in footprint distance, so a
+ *    2x2 Alpha is judged by its nearest cell rather than its anchor corner.
+ *
+ * Everything else the matrix scores still applies underneath, at its usual magnitude —
+ * so between two lines that make identical progress on the tether the beast still
+ * prefers the one that also kills a blocker. It simply cannot prefer a face hit to the
+ * tether, because a face hit cannot win a fight it is sealed out of.
+ */
+function anchorPressure(
+  state: GameState,
+  next: GameState,
+  events: GameEvent[],
+  command: Command,
+  anchorId: string,
+): number {
+  if (events.some((e) => e.t === 'unitDied' && e.unitId === anchorId)) {
+    return ANCHOR_KILL_SCORE;
+  }
+
+  let score = 0;
+  for (const e of events) {
+    if (e.t !== 'damageDealt') continue;
+    if (e.target.kind !== 'unit' || e.target.id !== anchorId) continue;
+    score += ANCHOR_CHIP * e.hpLoss;
+  }
+
+  // Closing the distance, judged only for the unit that actually moved.
+  if (command.type === 'moveUnit') {
+    const before = state.units[command.unit];
+    const after = next.units[command.unit];
+    const target = state.units[anchorId];
+    if (before && after && target) {
+      const gained =
+        footprintDistance(before, target) - footprintDistance(after, target);
+      if (gained > 0) score += ANCHOR_APPROACH * gained;
+    }
+  }
+
+  return score;
+}
+
+/** Per point of health taken off the anchor. Well under a kill, well over a face hit. */
+const ANCHOR_CHIP = 60;
+/** Per tile closed on the anchor, when nothing can reach it yet. */
+const ANCHOR_APPROACH = 40;
+
+/**
  * Damage the opposing side could land on each tile next turn, for retreat scoring.
  *
  * Reuses the same projection that draws the player's danger zone, so the AI is reading
@@ -155,6 +221,21 @@ export function scoreAction(
   }
 
   let utility = 0;
+
+  // --- The Harpoon Protocol overrides everything ---
+  //
+  // While a tether is live the beast has exactly one problem. This is expressed as a term
+  // rather than as a separate planner because every other part of the matrix still has to
+  // work: the AI must still path, still respect reach, still avoid walking into a wall.
+  // What changes is only what the board is worth, and that is what scoring is for.
+  //
+  // It sits above LETHAL_SCORE deliberately. A sealed Alpha cannot be killed and cannot
+  // lose, so a line that chips the player's face is not merely worth less than breaking
+  // the tether — it is worth nothing at all, and must never outrank it.
+  const sub = state.encounter.subjugation;
+  if (sub.active && sub.anchorUnitId) {
+    utility += anchorPressure(state, next, events, command, sub.anchorUnitId);
+  }
 
   // --- Kills and threat removal ---
   for (const e of events) {

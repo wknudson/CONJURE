@@ -7,6 +7,11 @@ import { IGNIS_TRIAL, NOVICE_DUELIST } from '../core/data/encounters/index.js';
 import { planTurn } from '../core/ai/controller.js';
 import { CARDS } from '../core/data/cards/index.js';
 import type { GameState } from '../core/types/state.js';
+import { canAct } from '../core/engine/movement.js';
+import { makeCtx } from '../core/engine/context.js';
+import { killEntity } from '../core/engine/death.js';
+import { beginSubjugation } from '../core/engine/subjugation.js';
+import { summonUnit } from '../core/engine/spawn.js';
 
 /** Puts a scenario onto the Ignis trial script. */
 function ignisScenario(opts: Parameters<typeof scenario>[0] = {}): GameState {
@@ -15,6 +20,31 @@ function ignisScenario(opts: Parameters<typeof scenario>[0] = {}): GameState {
   state.encounter.name = 'Subjugation Trial: Ignis';
   state.players.enemy.maxHp = 44;
   return state;
+}
+
+/**
+ * A sealed trial with a Rite in hand and something to tether.
+ *
+ * Built by calling the protocol directly rather than by beating the boss down to a
+ * quarter: the threshold is the encounter's business and is tested on its own above, and
+ * routing every tether test through a damage race would make them all depend on it.
+ */
+function sealedTrial(): { state: GameState; anchor: { id: string }; riteId: string } {
+  const state = ignisScenario({ enemyHp: 10 });
+  const ctx = makeCtx(state);
+  // The Alpha's body, which is what the seal and the punitive stack both attach to.
+  const boss = summonUnit(ctx, 'ignis_drake_bound', 'enemy', { x: 2, y: 1 });
+  state.players.enemy.companionUnitId = boss!;
+  state.players.enemy.companionUnitDefId = 'ignis_drake_bound';
+
+  beginSubjugation(ctx);
+
+  const anchor = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 5 } });
+  // The Rite was dealt to the top of the deck; move it to hand so it can be cast.
+  const riteId = state.players.player.deck.shift()!;
+  state.players.player.hand.push(riteId);
+
+  return { state, anchor, riteId };
 }
 
 describe('Ignis trial phase gates', () => {
@@ -97,7 +127,7 @@ describe('Ignis trial phase gates', () => {
     expect(add).toBeDefined();
   });
 
-  it('injects the Rite of Binding at 25% boss HP', () => {
+  it('seals itself and deals the Rite at 25% boss HP', () => {
     // Boss at 12/44. 25% is 11. A 2-damage hit takes it to 10, crossing the threshold.
     const state = ignisScenario({
       enemyHp: 12,
@@ -112,56 +142,112 @@ describe('Ignis trial phase gates', () => {
       target: { kind: 'portrait', side: 'enemy' },
     });
 
+    expect(eventsOf(res.events, 'subjugationBegan')).toHaveLength(1);
+
     const injected = eventsOf(res.events, 'cardInjected');
     expect(injected).toHaveLength(1);
-    expect(injected[0]!.card.defId).toBe('rite_of_binding');
+    expect(injected[0]!.card.defId).toBe('rite_of_subjugation');
     expect(injected[0]!.card.cost).toBe(0);
+
+    // On top of the draw pile, not in hand: it is guaranteed, but still has to be drawn.
+    const player = res.state.players.player;
+    expect(player.deck[0]).toBe(injected[0]!.card.instanceId);
+    expect(player.hand).not.toContain(injected[0]!.card.instanceId);
   });
 
-  it('adds the Rite as an undiscardable overlay when the hand is full', () => {
+  it('stops taking damage once it is sealed, by either route', () => {
     const state = ignisScenario({
       enemyHp: 12,
       units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 2 }],
-      hand: [
-        'scout_imp',
-        'scout_imp',
-        'scout_imp',
-        'scout_imp',
-        'scout_imp',
-        'scout_imp',
-        'scout_imp',
-      ],
     });
     state.encounter.firedGates.push('phase2');
     const imp = findUnit(state, 'scout_imp', 'player');
 
-    const res = run(state, {
+    const sealed = run(state, {
       type: 'attack',
       attacker: imp.id,
       target: { kind: 'portrait', side: 'enemy' },
     });
+    const after = sealed.state.players.enemy.hp;
 
-    const injected = eventsOf(res.events, 'cardInjected')[0]!;
-    expect(injected.card.ephemeral).toBe(true);
-
-    // End-of-turn cleanup discards the ordinary cards but never the overlay.
-    const cleaned = run(res.state, { type: 'endTurn' });
-    const riteId = injected.card.instanceId;
-    expect(cleaned.state.players.player.hand).toContain(riteId);
+    // A second swing at the face, and a swing at the beast's own body, which redirects
+    // onto the same pool. Neither may move the number.
+    const again = run(sealed.state, { type: 'endTurn' }, { type: 'endTurn' });
+    const stillThere = again.state.units[imp.id];
+    if (stillThere) {
+      const hit = run(again.state, {
+        type: 'attack',
+        attacker: imp.id,
+        target: { kind: 'portrait', side: 'enemy' },
+      });
+      expect(hit.state.players.enemy.hp).toBe(after);
+    }
   });
 
-  it('wins the trial by binding rather than killing when the Rite is played', () => {
-    const state = ignisScenario({ enemyHp: 10 });
-    const cmd = state.players.player;
-    const riteId = 'rite1';
-    cmd.cards[riteId] = { instanceId: riteId, defId: 'rite_of_binding' };
-    cmd.hand.push(riteId);
+  it('tethers the chosen unit and takes its turn away', () => {
+    const { state, anchor, riteId } = sealedTrial();
+    const res = run(state, {
+      type: 'playCard',
+      card: riteId,
+      target: { kind: 'entity', ref: { kind: 'unit', id: anchor.id } },
+    });
 
-    const res = run(state, { type: 'playCard', card: riteId, target: { kind: 'global' } });
+    const sub = res.state.encounter.subjugation;
+    expect(sub.active).toBe(true);
+    expect(sub.anchorUnitId).toBe(anchor.id);
+    expect(sub.turnsSurvived).toBe(0);
 
-    expect(res.state.result).toBe('bound');
-    // The boss survives — it was bound, not killed.
-    expect(res.state.players.enemy.hp).toBe(10);
+    const tethered = res.state.units[anchor.id]!;
+    expect(tethered.statuses.anchor).toBe(1);
+    expect(canAct(tethered), 'it can only brace').toBe(false);
+  });
+
+  it('claims the companion when the anchor endures three rounds', () => {
+    const { state, anchor, riteId } = sealedTrial();
+    let cur = run(state, {
+      type: 'playCard',
+      card: riteId,
+      target: { kind: 'entity', ref: { kind: 'unit', id: anchor.id } },
+    }).state;
+
+    const seen: number[] = [];
+    for (let round = 0; round < 3 && !cur.result; round++) {
+      const res = run(cur, { type: 'endTurn' }, { type: 'endTurn' });
+      cur = res.state;
+      const progress = eventsOf(res.events, 'subjugationProgress');
+      if (progress.length > 0) seen.push(progress[progress.length - 1]!.turnsSurvived);
+    }
+
+    expect(seen).toEqual([1, 2, 3]);
+    expect(cur.result).toBe('bound');
+  });
+
+  it('snaps the tether when the anchor dies, and the beast comes back angrier', () => {
+    const { state, anchor, riteId } = sealedTrial();
+    const tethered = run(state, {
+      type: 'playCard',
+      card: riteId,
+      target: { kind: 'entity', ref: { kind: 'unit', id: anchor.id } },
+    }).state;
+
+    const boss = tethered.units[tethered.players.enemy.companionUnitId!]!;
+    const before = boss.atk;
+
+    // Kill the anchor outright.
+    const ctx = makeCtx(tethered);
+    killEntity(ctx, tethered.units[anchor.id]!, 'spell');
+
+    const sub = tethered.encounter.subjugation;
+    expect(sub.active).toBe(false);
+    expect(sub.anchorUnitId).toBeNull();
+    expect(ctx.events.some((e) => e.t === 'tetherSnapped')).toBe(true);
+
+    const angrier = tethered.units[tethered.players.enemy.companionUnitId!]!;
+    expect(angrier.escalation, 'one punitive stack').toBe(boss.escalation);
+    expect(angrier.atk).toBeGreaterThan(before - 1);
+
+    // And a fresh Rite is dealt, so the loop can be tried again.
+    expect(ctx.events.filter((e) => e.t === 'cardInjected').length).toBe(1);
   });
 });
 
@@ -331,5 +417,60 @@ describe('the drake on the board', () => {
 
     const second = session.dispatch({ type: 'endTurn' });
     expect(eventsOf(second, 'bossPhaseShift'), 'must not re-announce').toHaveLength(0);
+  });
+});
+
+/**
+ * The AI half of the protocol.
+ *
+ * A sealed Alpha cannot win by damage and cannot lose to it, so a planner that keeps
+ * chipping the player's face would leave the phase to resolve itself. These check that
+ * the override actually redirects the beast rather than merely scoring higher on paper.
+ */
+describe('the beast hunting its anchor', () => {
+  /** A tethered board where the enemy can reach both the anchor and the player's face. */
+  const hunt = () => {
+    const state = ignisScenario({ enemyHp: 10, width: 6, height: 8 });
+    const ctx = makeCtx(state);
+    beginSubjugation(ctx);
+
+    const anchor = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 1, y: 6 } });
+    // A hunter standing where the player's territory rows are already in melee reach of
+    // the portrait, so face damage is genuinely on the table as an alternative.
+    const hunter = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 7 }, atk: 3 });
+
+    const sub = state.encounter.subjugation;
+    sub.active = true;
+    sub.anchorUnitId = anchor.id;
+    state.units[anchor.id]!.statuses.anchor = 1;
+    state.activeSide = 'enemy';
+    return { state, anchor, hunter };
+  };
+
+  it('strikes the anchor rather than the face it could reach instead', () => {
+    const { state, anchor, hunter } = hunt();
+    const plan = planTurn(state, 'enemy');
+
+    const strike = plan.find((c) => c.type === 'attack' && c.attacker === hunter.id);
+    expect(strike, 'it must swing at something').toBeDefined();
+    expect(
+      strike && strike.type === 'attack' && strike.target,
+      'the tether, not the Pact behind it',
+    ).toEqual({ kind: 'unit', id: anchor.id });
+  });
+
+  it('goes back to the face once the tether is gone', () => {
+    // The same board with the tether released: the override must be the only thing that
+    // was redirecting it, not some accident of the geometry.
+    const { state, hunter } = hunt();
+    state.encounter.subjugation.active = false;
+    state.encounter.subjugation.anchorUnitId = null;
+
+    const plan = planTurn(state, 'enemy');
+    const strike = plan.find((c) => c.type === 'attack' && c.attacker === hunter.id);
+    expect(strike && strike.type === 'attack' && strike.target).toEqual({
+      kind: 'portrait',
+      side: 'player',
+    });
   });
 });

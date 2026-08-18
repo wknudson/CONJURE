@@ -14,7 +14,8 @@ import { applyStatusTo } from './status.js';
 import { emit } from './context.js';
 import { allEntities, entityAt, getEntity, lowestHpEnemy, refOf } from './board.js';
 import { dealDamage, grantArmor } from './damage.js';
-import { killEntity, finish } from './death.js';
+import { killEntity } from './death.js';
+import { setAnchor } from './subjugation.js';
 import { attachRune, detonateAllRunes } from './runes.js';
 import { pushUnit } from './displacement.js';
 import { spawnObstacle, summonUnit } from './spawn.js';
@@ -128,8 +129,14 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       return;
     }
 
-    case 'bindCompanion': {
-      finish(ctx, 'bound');
+    case 'anchorTether': {
+      // Targeting has already restricted this to a living unit of the caster's side, so
+      // the only thing left to guard is the target having died to something else in the
+      // same resolution chain.
+      if (play.chosen.kind !== 'entity' || play.chosen.ref.kind !== 'unit') return;
+      const target = ctx.state.units[play.chosen.ref.id];
+      if (!target) return;
+      setAnchor(ctx, target);
       return;
     }
 

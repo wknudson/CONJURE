@@ -31,7 +31,16 @@ export type StatusKind =
   | 'entangle'
   | 'stun'
   /** Frost: the target takes +2 from every hit until it wears off. */
-  | 'brittle';
+  | 'brittle'
+  /**
+   * Wild magic sealing a cornered Alpha. Nothing reduces its health while this holds.
+   *
+   * Neither of the two below ever ticks: the status tick walks explicit lists, and these
+   * are absent from all of them. They end when the subjugation does, not on a clock.
+   */
+  | 'aetherPlated'
+  /** Tethered to the beast. It cannot move, strike, or channel — only endure. */
+  | 'anchor';
 
 export type Keyword =
   | 'Haste'

@@ -2,7 +2,7 @@
  * Encounter scripts.
  *
  * Boss behaviour lives in data-side hooks rather than in the engine, so the Ignis trial's
- * phase gates and Rite of Binding injection add no branches to the combat rules.
+ * phase gates and the Harpoon Protocol add no branches to the combat rules.
  */
 
 import type { School, Side } from '../../../contract/ids.js';

@@ -14,6 +14,7 @@ import { registerEncounter, registerEncounterScript } from './registry.js';
 import type { Ctx } from '../../engine/context.js';
 import { emit, newCause } from '../../engine/context.js';
 import { dockIntoForm, summonUnit } from '../../engine/spawn.js';
+import { beginSubjugation } from '../../engine/subjugation.js';
 import { clearIntents } from '../../engine/intents.js';
 import { canPlace, entityAt, unitsOf } from '../../engine/board.js';
 import { toCardSnapshot } from '../../engine/views.js';
@@ -23,8 +24,6 @@ const ENCOUNTER_ID = 'ignis_trial';
 const PHASE_TWO_GATE = 'phase2';
 /** Tracked apart from the phase itself, so a blocked transformation can retry. */
 const GROWN_GATE = 'grown';
-const RITE_GATE = 'rite';
-const RITE_CARD_DEF = 'rite_of_binding';
 
 /** Where the phase-2 Ember Guard tries to appear. */
 const ADD_SPAWNS: [number, number][] = [
@@ -58,7 +57,7 @@ const script: EncounterScript = {
 
   onCommanderHpChanged(ctx, side) {
     if (side !== 'enemy') return;
-    maybeOfferRite(ctx);
+    maybeSeal(ctx);
   },
 
   onTurnStart(ctx, side) {
@@ -73,7 +72,7 @@ const script: EncounterScript = {
       // It was boxed in when it tried to grow. Try again now that the board has moved.
       growIntoBehemoth(ctx);
     }
-    maybeOfferRite(ctx);
+    maybeSeal(ctx);
   },
 };
 
@@ -173,34 +172,18 @@ function evictAndSpawn(
   return true;
 }
 
-function maybeOfferRite(ctx: Ctx): void {
-  const state = ctx.state;
-  if (state.encounter.firedGates.includes(RITE_GATE)) return;
-
-  const cmd = state.players.enemy;
-  if (cmd.hp > Math.floor(cmd.maxHp * 0.25)) return;
+/**
+ * The enrage, at a quarter strength.
+ *
+ * The threshold and the decision to have one belong to the encounter; everything the
+ * protocol then does -- sealing, purging, dealing the Rite -- belongs to the engine, and
+ * `beginSubjugation` is idempotent, so this may be called as loosely as it likes.
+ */
+function maybeSeal(ctx: Ctx): void {
+  const cmd = ctx.state.players.enemy;
   if (cmd.hp <= 0) return;
-
-  state.encounter.firedGates.push(RITE_GATE);
-
-  const player = state.players.player;
-  const instanceId = `rite${state.nextId++}`;
-  const nonEphemeral = player.hand.filter((h) => !player.cards[h]?.ephemeral).length;
-
-  player.cards[instanceId] = {
-    instanceId,
-    defId: RITE_CARD_DEF,
-    // A full hand means the Rite arrives as an overlay outside the limit.
-    ...(nonEphemeral >= player.handLimit ? { ephemeral: true } : {}),
-  };
-  player.hand.push(instanceId);
-
-  newCause(ctx);
-  emit(ctx, {
-    t: 'cardInjected',
-    side: 'player',
-    card: toCardSnapshot(state, 'player', instanceId),
-  });
+  if (cmd.hp > Math.floor(cmd.maxHp * 0.25)) return;
+  beginSubjugation(ctx);
 }
 
 registerEncounterScript(ENCOUNTER_ID, script);

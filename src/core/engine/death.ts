@@ -4,6 +4,7 @@
 
 import type { Coord, DamageCause, UnitId } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
+import { onAnchorDied } from './subjugation.js';
 import { emit, newCause } from './context.js';
 import type { Entity } from '../types/units.js';
 import { isUnit } from '../types/units.js';
@@ -28,6 +29,10 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
   const at = { ...live.anchor };
 
   if (isUnit(live)) {
+    // Before removal, while the body is still standing somewhere the tether can be drawn
+    // snapping from. It also has to run before checkLethal: the punitive stack must be on
+    // the beast whatever else this death resolves into.
+    onAnchorDied(ctx, live);
     delete ctx.state.units[live.id];
     // Never leave a dangling reference to a body that is no longer on the board. Damage
     // can never kill a Bound Form, but a board wipe removes it like anything else.

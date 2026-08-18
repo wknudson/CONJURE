@@ -194,7 +194,7 @@ describe('what origin does not change', () => {
       flash_freeze: 4,
       // Board-wide by design, and the Trial's win condition: never range-gated.
       cataclysmic_core: undefined,
-      rite_of_binding: undefined,
+      rite_of_subjugation: undefined,
     };
     for (const [id, range] of Object.entries(expected)) {
       expect(CARDS[id]!.range, id).toBe(range);

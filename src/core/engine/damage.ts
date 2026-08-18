@@ -20,6 +20,7 @@ import { getEncounterScript } from '../data/encounters/registry.js';
 // declarations, so these resolve correctly at call time.
 import { evaluateRuneOnDamage } from './runes.js';
 import { killEntity } from './death.js';
+import { isSealed } from './subjugation.js';
 
 export interface DamageRequest {
   target: TargetRef;
@@ -53,6 +54,16 @@ export const BRITTLE_BONUS = 2;
 
 export function dealDamage(ctx: Ctx, req: DamageRequest): DamageOutcome {
   if (ctx.state.result) return { absorbedByArmor: 0, hpLoss: 0, died: false };
+
+  // The seal is checked here, at the top, and not further down beside armor and Brittle.
+  // A sealed Alpha's body is a Bound Form, so its damage is redirected to the portrait
+  // two lines below and never reaches `damageEntity` at all -- a gate placed there looks
+  // right and does nothing. This is the one point every route passes through.
+  //
+  // It covers `true` damage too. The phase is built on damage having stopped being the
+  // answer, and an exception for unblockable damage would leave the Pacifist Lockout as
+  // a way to win a subjugation by waiting.
+  if (isSealed(ctx.state, req.target)) return { absorbedByArmor: 0, hpLoss: 0, died: false };
 
   if (req.target.kind === 'portrait') {
     return damagePortrait(ctx, req, req.target.side);

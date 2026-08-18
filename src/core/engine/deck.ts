@@ -101,7 +101,7 @@ export function endOfTurnCleanup(ctx: Ctx, side: Side): void {
   for (const id of [...cmd.hand]) {
     const inst = cmd.cards[id];
     if (!inst) continue;
-    // Ephemeral overlay cards (Rite of Binding) can never be discarded.
+    // Ephemeral overlay cards can never be discarded.
     if (inst.ephemeral) continue;
     const def = CARDS[inst.defId];
     if (def?.keywords.includes('Retain')) continue;

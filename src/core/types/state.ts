@@ -65,7 +65,39 @@ export interface EncounterState {
   chainCancelled: boolean;
   /** The weather this fight is being had in, if any. */
   weather?: Weather;
+  /**
+   * The Harpoon Protocol: a cornered Alpha seals itself, and the trial stops being a
+   * damage race and becomes a siege around one tethered unit.
+   *
+   * Always present rather than optional, so the reducer never has to ask whether the
+   * field exists before reading it, and so the shape of a serialised state does not
+   * depend on how far into a fight it got.
+   */
+  subjugation: Subjugation;
 }
+
+export interface Subjugation {
+  /**
+   * The beast has sealed itself and can no longer be harmed.
+   *
+   * Set at the enrage and never cleared: a failed tether leaves the Alpha just as
+   * unkillable as before, which is what forces the player back to the Rite rather than
+   * back to swinging. Held here rather than read off the `aetherPlated` status because
+   * the body carrying that status can leave the board — a wipe, a sudden death — and a
+   * boss that became mortal again because its model was removed would be a way to win a
+   * subjugation by accident.
+   */
+  sealed: boolean;
+  /** True between the Rite being cast and the tether resolving or snapping. */
+  active: boolean;
+  /** The tethered unit. Null whenever `active` is false. */
+  anchorUnitId: UnitId | null;
+  /** Completed rounds the anchor has endured. At `SUBJUGATION_ROUNDS` the beast breaks. */
+  turnsSurvived: number;
+}
+
+/** Rounds the anchor must survive. */
+export const SUBJUGATION_ROUNDS = 3;
 
 /** How far anything can see. Undefined means as far as the board allows. */
 export function visionClamp(state: GameState): number | undefined {

@@ -157,8 +157,8 @@ describe('collection', () => {
     expect(a).toEqual(b);
     expect(new Set(a).size).toBe(a.length);
     for (const id of a) expect(CARDS[id], id).toBeDefined();
-    // The Rite of Binding is encounter-generated and must never be a reward.
-    expect(a).not.toContain('rite_of_binding');
+    // The Rite is encounter-generated and must never be a reward.
+    expect(a).not.toContain('rite_of_subjugation');
   });
 });
 
