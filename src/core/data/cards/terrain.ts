@@ -14,7 +14,7 @@ function scenery(id: string, name: string, text: string, hp: number): CardDef {
   return {
     id,
     name,
-    cost: 0,
+    cost: { pips: 0, marrow: 0 },
     school: 'neutral',
     source: 'hero',
     kind: 'obstacle',
@@ -54,7 +54,7 @@ export const TERRAIN_CARDS: Record<string, CardDef> = {
   marrow_geode: {
     id: 'marrow_geode',
     name: 'Marrow Geode',
-    cost: 0,
+    cost: { pips: 0, marrow: 0 },
     school: 'neutral',
     source: 'hero',
     kind: 'obstacle',

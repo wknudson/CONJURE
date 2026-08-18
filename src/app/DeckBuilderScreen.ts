@@ -7,6 +7,8 @@
  * explains precisely what is wrong when it refuses.
  */
 
+import { cardCostTotal } from '../core/types/cards.js';
+import { formatCost } from '../hud/cost.js';
 import type { Screen } from './ScreenManager.js';
 import type { CardDef } from '../core/types/cards.js';
 import type { Collection } from '../core/data/deckRules.js';
@@ -108,7 +110,7 @@ export class DeckBuilderScreen implements Screen {
     const owned = Object.keys(this.collection.owned)
       .filter((id) => (this.collection.owned[id] ?? 0) > 0 && CARDS[id])
       .map((id) => CARDS[id]!)
-      .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name));
+      .sort((a, b) => cardCostTotal(a.cost) - cardCostTotal(b.cost) || a.name.localeCompare(b.name));
 
     host.innerHTML = '';
     for (const def of owned) {
@@ -127,7 +129,7 @@ export class DeckBuilderScreen implements Screen {
 
     const rows = [...counts.entries()]
       .map(([id, n]) => ({ def: CARDS[id], id, n }))
-      .sort((a, b) => (a.def?.cost ?? 0) - (b.def?.cost ?? 0));
+      .sort((a, b) => (a.def ? cardCostTotal(a.def.cost) : 0) - (b.def ? cardCostTotal(b.def.cost) : 0));
 
     host.innerHTML = '';
     for (const { def, id, n } of rows) {
@@ -159,7 +161,7 @@ export class DeckBuilderScreen implements Screen {
     row.disabled = !enabled;
     row.dataset.tip = `${def.name}|${def.text}|Tier ${tier} · max ${TIER_COPY_LIMIT[tier]} per deck`;
     row.innerHTML = `
-      <span class="deckrow__cost">${def.cost}</span>
+      <span class="deckrow__cost">${formatCost(def.cost)}</span>
       <span class="deckrow__name">${def.name}</span>
       <span class="deckrow__kind">${def.kind}</span>
       <span class="deckrow__n">${count > 0 ? `${count}×` : ''}</span>

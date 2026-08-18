@@ -26,7 +26,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   ignis_bound: {
     id: 'ignis_bound',
     name: 'Ignis',
-    cost: 0,
+    cost: { pips: 0, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'minion',
@@ -60,7 +60,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   umbra_bound: {
     id: 'umbra_bound',
     name: 'Umbra',
-    cost: 0,
+    cost: { pips: 0, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'minion',
@@ -92,7 +92,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   ignis_drake_bound: {
     id: 'ignis_drake_bound',
     name: 'Ignis, Ember Drake',
-    cost: 0,
+    cost: { pips: 0, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'minion',
@@ -122,7 +122,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   ignis_behemoth_bound: {
     id: 'ignis_behemoth_bound',
     name: 'Ignis Enraged',
-    cost: 0,
+    cost: { pips: 0, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'minion',
@@ -147,7 +147,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   boreas_bound: {
     id: 'boreas_bound',
     name: 'Boreas',
-    cost: 0,
+    cost: { pips: 0, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'minion',

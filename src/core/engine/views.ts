@@ -59,7 +59,7 @@ export function toCardSnapshot(state: GameState, side: Side, id: CardInstanceId)
       instanceId: id,
       defId: 'unknown',
       name: '???',
-      cost: 0,
+      cost: { pips: 0, marrow: 0 },
       school: 'neutral',
       source: 'hero',
       kind: 'spell',

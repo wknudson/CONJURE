@@ -11,6 +11,8 @@
  * the deck built beforehand stops mattering.
  */
 
+import { cardCostTotal } from '../core/types/cards.js';
+import { formatCost } from '../hud/cost.js';
 import type { Screen } from './ScreenManager.js';
 import type { CardDef } from '../core/types/cards.js';
 import type { Collection } from '../core/data/deckRules.js';
@@ -188,7 +190,7 @@ export class PreCombatScreen implements Screen {
     const owned = Object.keys(this.opts.collection.owned)
       .filter((id) => (this.opts.collection.owned[id] ?? 0) > 0 && CARDS[id])
       .map((id) => CARDS[id]!)
-      .sort((a, b) => a.cost - b.cost || a.name.localeCompare(b.name));
+      .sort((a, b) => cardCostTotal(a.cost) - cardCostTotal(b.cost) || a.name.localeCompare(b.name));
 
     host.innerHTML = '';
     for (const def of owned) {
@@ -209,7 +211,7 @@ export class PreCombatScreen implements Screen {
     host.innerHTML = '';
     const rows = [...counts.entries()]
       .map(([id, n]) => ({ def: CARDS[id], id, n }))
-      .sort((a, b) => (a.def?.cost ?? 0) - (b.def?.cost ?? 0));
+      .sort((a, b) => (a.def ? cardCostTotal(a.def.cost) : 0) - (b.def ? cardCostTotal(b.def.cost) : 0));
 
     for (const { def, n } of rows) {
       if (!def) continue;
@@ -233,7 +235,7 @@ export class PreCombatScreen implements Screen {
     const reach = def.range === undefined ? '' : ` · range ${def.range}`;
     row.dataset.tip = `${def.name}|${def.text}|${def.source === 'companion' ? 'Companion' : 'Hero'}${reach}`;
     row.innerHTML = `
-      <span class="deckrow__cost">${def.cost}</span>
+      <span class="deckrow__cost">${formatCost(def.cost)}</span>
       <span class="deckrow__name">${def.name}</span>
       <span class="deckrow__kind">${def.range === undefined ? def.kind : `${def.kind} ${def.range}`}</span>
       <span class="deckrow__n">${count > 0 ? `${count}×` : ''}</span>

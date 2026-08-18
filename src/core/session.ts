@@ -30,6 +30,7 @@ import { toBoardView, toCardSnapshot } from './engine/views.js';
 import { CARDS } from './data/cards/index.js';
 import { canAfford } from './engine/deck.js';
 import { legalCardTargets, legalAttacks } from './engine/targeting.js';
+import { costBreakdown } from './engine/deck.js';
 import { legalMoves } from './engine/movement.js';
 import { occludedTiles } from './engine/los.js';
 import { threatMap } from './engine/threat.js';
@@ -323,10 +324,7 @@ export class CombatSession implements RulesQuery {
 
     if (action.type === 'playCard') {
       const def = CARDS[before.players.player.cards[action.card]?.defId ?? ''];
-      if (def) {
-        const marrow = Math.min(before.players.player.marrow, def.cost);
-        preview.cost = { pips: def.cost - marrow, marrow };
-      }
+      if (def) preview.cost = costBreakdown(before.players.player.marrow, def.cost);
     }
 
     return preview;

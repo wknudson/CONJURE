@@ -7,6 +7,7 @@
  */
 
 import type { CardDef } from '../types/cards.js';
+import { cardCostTotal } from '../types/cards.js';
 import { CARDS } from './cards/index.js';
 
 export const MIN_DECK = 12;
@@ -30,8 +31,8 @@ export type CardTier = 1 | 2 | 3;
 export function tierOf(def: CardDef): CardTier {
   if (def.keywords.includes('PowerTier')) return 3;
   if (def.unit?.footprint === 2) return 3;
-  if (def.cost >= 4) return 3;
-  if (def.cost >= 2) return 2;
+  if (cardCostTotal(def.cost) >= 4) return 3;
+  if (cardCostTotal(def.cost) >= 2) return 2;
   return 1;
 }
 
@@ -183,7 +184,7 @@ export function costCurve(deck: string[]): number[] {
   for (const id of deck) {
     const def = CARDS[id];
     if (!def) continue;
-    curve[Math.min(def.cost, curve.length - 1)] += 1;
+    curve[Math.min(cardCostTotal(def.cost), curve.length - 1)] += 1;
   }
   return curve;
 }

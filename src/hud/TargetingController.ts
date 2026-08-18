@@ -16,6 +16,7 @@ import type { Action, RulesQuery, TargetSpec } from '../contract/query.js';
 import type { Overlays } from '../render/BoardRenderer.js';
 import { emptyOverlays } from '../render/BoardRenderer.js';
 import { cellsAt } from '../core/util/grid.js';
+import { describeShortfall } from './cost.js';
 
 type Mode =
   | { kind: 'idle' }
@@ -141,11 +142,11 @@ export class TargetingController {
     const card = this.rules.getHand().find((c) => c.instanceId === id);
     if (!card) return 'That card is no longer in your hand';
 
-    const available = board.player.pips + board.player.marrow;
-    if (card.cost > available) {
-      const short = card.cost - available;
-      return `${card.name} costs ${card.cost} — you are ${short} short (${board.player.pips} Pips + ${board.player.marrow} Marrow)`;
-    }
+    // Names the pool that is actually missing. A strict Marrow cost cannot be solved by
+    // banking, so telling the player they are "2 short" of a total would send them off to
+    // save Pips that will never buy it.
+    const shortfall = describeShortfall(card.cost, board.player.pips, board.player.marrow);
+    if (shortfall) return `${card.name} ${shortfall}`;
 
     switch (card.kind) {
       case 'minion':

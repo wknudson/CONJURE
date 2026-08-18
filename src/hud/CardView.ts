@@ -3,6 +3,7 @@
  * on hover.
  */
 
+import { formatCost } from './cost.js';
 import type { CardInstanceId } from '../contract/ids.js';
 import type { CardSnapshot } from '../contract/snapshots.js';
 import { schoolOf } from '../render/palette.js';
@@ -67,7 +68,7 @@ export class CardView {
       </div>`;
 
     this.el.innerHTML = `
-      <div class="card__cost">${snapshot.cost}</div>
+      <div class="card__cost">${formatCost(snapshot.cost)}</div>
       <div class="card__name">${escapeHtml(snapshot.name)}</div>
       ${typeLine}
       <div class="card__body">

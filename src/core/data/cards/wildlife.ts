@@ -17,7 +17,7 @@ export const WILDLIFE_CARDS: Record<string, CardDef> = {
   gilded_scavenger: {
     id: 'gilded_scavenger',
     name: 'Gilded Scavenger',
-    cost: 0,
+    cost: { pips: 0, marrow: 0 },
     school: 'neutral',
     source: 'hero',
     kind: 'minion',
@@ -49,7 +49,7 @@ export const WILDLIFE_CARDS: Record<string, CardDef> = {
   ridge_wolf: {
     id: 'ridge_wolf',
     name: 'Ridge Wolf',
-    cost: 0,
+    cost: { pips: 0, marrow: 0 },
     school: 'neutral',
     source: 'hero',
     kind: 'minion',

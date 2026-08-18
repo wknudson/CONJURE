@@ -9,7 +9,7 @@ import type { Side, UnitId } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
 import type { Command } from '../types/commands.js';
 import { CARDS } from '../data/cards/index.js';
-import { canAfford } from '../engine/deck.js';
+import { affordable, canAfford } from '../engine/deck.js';
 import { legalCardTargets, legalAttacks, sacrificeCandidates } from '../engine/targeting.js';
 import { legalMoves, canMove, canAttack } from '../engine/movement.js';
 import { unitsOf } from '../engine/board.js';
@@ -85,13 +85,20 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
   }
 
   // 4. Sacrifices — only worth enumerating when there is something to spend marrow on.
-  let cheapestUnaffordable = Infinity;
+  //
+  // Two questions, asked in one sweep: is anything out of reach at all, and would one
+  // more Marrow specifically bring something into reach. The second cannot be derived
+  // from a cheapest-cost number any more — with a strict Marrow component a dearer card
+  // may be the one a single Marrow unlocks, while a cheaper one stays impossible — so it
+  // is asked directly of each card.
+  let hasExpensiveCard = false;
+  let marrowWouldUnlock = false;
   for (const id of cmd.hand) {
     const def = CARDS[cmd.cards[id]?.defId ?? ''];
     if (!def || canAfford(state, side, def.cost)) continue;
-    cheapestUnaffordable = Math.min(cheapestUnaffordable, def.cost);
+    hasExpensiveCard = true;
+    if (affordable(cmd.pips, cmd.marrow + CHANNEL_MARROW, def.cost)) marrowWouldUnlock = true;
   }
-  const hasExpensiveCard = cheapestUnaffordable !== Infinity;
   if (hasExpensiveCard) {
     for (const unit of sacrificeCandidates(state, side)) {
       out.push({ type: 'sacrifice', unit: unit.id });
@@ -108,8 +115,7 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
   //
   // Only one candidate is offered even so: every idle unit extracts the same Marrow, so
   // the choice of which one is not a decision worth searching.
-  const banked = cmd.pips + cmd.marrow;
-  if (idleUnit !== undefined && banked + CHANNEL_MARROW >= cheapestUnaffordable) {
+  if (idleUnit !== undefined && marrowWouldUnlock) {
     out.push({ type: 'channel', unit: idleUnit });
   }
 

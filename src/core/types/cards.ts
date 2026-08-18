@@ -98,10 +98,33 @@ export interface UnitStatBlock {
   attackProfile?: AttackProfile;
 }
 
+/**
+ * What a card asks for.
+ *
+ * Two different kinds of demand, deliberately:
+ *
+ *  - `pips` is generic energy. Marrow substitutes for it freely, and does so first,
+ *    because Marrow evaporates at end of turn while Pips bank — so a card priced purely
+ *    in Pips is still payable entirely out of a sacrifice, which is what keeps the ramp
+ *    economy intact.
+ *  - `marrow` is a strict requirement. Pips cannot cover it at any price. A card that
+ *    asks for Marrow is asking the player to have opened something up this turn, and no
+ *    amount of patient banking substitutes for that.
+ */
+export interface CardCost {
+  pips: number;
+  marrow: number;
+}
+
+/** Sorting, rarity tiers, and anywhere a card needs one comparable number. */
+export function cardCostTotal(cost: CardCost): number {
+  return cost.pips + cost.marrow;
+}
+
 export interface CardDef {
   id: CardDefId;
   name: string;
-  cost: number;
+  cost: CardCost;
   school: School;
   source: 'hero' | 'companion';
   kind: 'minion' | 'spell' | 'rune' | 'obstacle';
@@ -151,6 +174,23 @@ export interface CardDef {
   range?: number;
   /** Whether the cast also needs an unblocked line from the Bound Form. */
   needsLoS?: boolean;
+  /**
+   * Closest the cast may land, as a Chebyshev distance from the origin.
+   *
+   * A mortar's blind spot, expressed for spells. Undefined means no minimum, which is
+   * how every card behaved before. Sits here beside `range` rather than inside the
+   * `TargetSpec` union because reach is a property of the cast, not of what is being
+   * picked — the union describes *what* is legal, these two describe *where*.
+   */
+  minRange?: number;
+  /**
+   * Whether the cast is confined to a rank, file or diagonal from the origin.
+   *
+   * The spell-side spelling of `attackProfile: 'lineOnly'`, and deliberately the same
+   * geometry, so a beam is a beam whether a unit or a card threw it. Undefined is
+   * `omni` — free aim within range.
+   */
+  vector?: 'omni' | 'linear';
 }
 
 export interface CardInstance {

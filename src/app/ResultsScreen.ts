@@ -1,3 +1,4 @@
+import { formatCost } from '../hud/cost.js';
 import type { Screen } from './ScreenManager.js';
 import type { CombatResult } from '../contract/events.js';
 import type { EncounterDef } from '../core/data/encounters/registry.js';
@@ -89,7 +90,7 @@ export class ResultsScreen implements Screen {
       btn.className = 'reward';
       btn.style.setProperty('--school', colors.main);
       btn.innerHTML = `
-        <span class="reward__cost">${def.cost}</span>
+        <span class="reward__cost">${formatCost(def.cost)}</span>
         <span class="reward__name">${def.name}</span>
         <span class="reward__kind">${def.kind} · ${def.school}</span>
         <span class="reward__text">${def.text}</span>

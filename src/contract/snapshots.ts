@@ -6,6 +6,7 @@
  * carry everything needed to draw them.
  */
 
+import type { CardCost } from '../core/types/cards.js';
 import type {
   CardDefId,
   CardInstanceId,
@@ -68,7 +69,7 @@ export interface CardSnapshot {
   instanceId: CardInstanceId;
   defId: CardDefId;
   name: string;
-  cost: number;
+  cost: CardCost;
   school: School;
   source: 'hero' | 'companion';
   kind: 'minion' | 'spell' | 'rune' | 'obstacle';

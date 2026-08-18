@@ -16,7 +16,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   glacial_spike: {
     id: 'glacial_spike',
     name: 'Glacial Spike',
-    cost: 2,
+    cost: { pips: 2, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -38,7 +38,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   frost_nova: {
     id: 'frost_nova',
     name: 'Frost Nova',
-    cost: 3,
+    cost: { pips: 3, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -60,7 +60,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   brittle_touch: {
     id: 'brittle_touch',
     name: 'Rime Touch',
-    cost: 1,
+    cost: { pips: 1, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -76,7 +76,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   flash_freeze: {
     id: 'flash_freeze',
     name: 'Flash Freeze',
-    cost: 3,
+    cost: { pips: 3, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -91,7 +91,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   ice_barricade: {
     id: 'ice_barricade',
     name: 'Ice Barricade',
-    cost: 1,
+    cost: { pips: 1, marrow: 0 },
     school: 'frost',
     source: 'hero',
     kind: 'obstacle',
@@ -106,7 +106,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   rimeguard: {
     id: 'rimeguard',
     name: 'Rimeguard',
-    cost: 2,
+    cost: { pips: 2, marrow: 0 },
     school: 'frost',
     source: 'hero',
     kind: 'minion',

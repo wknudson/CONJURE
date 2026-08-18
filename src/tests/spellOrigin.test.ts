@@ -23,7 +23,7 @@ function defineCard(def: CardDef): string {
 const RANGED_BOLT = defineCard({
   id: 'test_ranged_bolt',
   name: 'Test Bolt',
-  cost: 1,
+  cost: { pips: 1, marrow: 0 },
   school: 'frost',
   source: 'companion',
   kind: 'spell',
@@ -38,7 +38,7 @@ const RANGED_BOLT = defineCard({
 const HERO_BOLT = defineCard({
   id: 'test_hero_bolt',
   name: 'Test Hero Bolt',
-  cost: 1,
+  cost: { pips: 1, marrow: 0 },
   school: 'arcane',
   source: 'hero',
   kind: 'spell',

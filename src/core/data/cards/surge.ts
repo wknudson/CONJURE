@@ -16,7 +16,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   arc_lash: {
     id: 'arc_lash',
     name: 'Arc Lash',
-    cost: 2,
+    cost: { pips: 2, marrow: 0 },
     school: 'surge',
     source: 'hero',
     kind: 'spell',
