@@ -6,6 +6,11 @@ import { threatMap } from '../core/engine/threat.js';
 import { FOG_VISION } from '../core/types/state.js';
 import { RAIN_FIRE_PENALTY } from '../core/engine/damage.js';
 import type { GameState, Weather } from '../core/types/state.js';
+import type { DamageType } from '../contract/ids.js';
+import { dealDamage } from '../core/engine/damage.js';
+import { makeCtx } from '../core/engine/context.js';
+import { deepClone } from '../core/util/clone.js';
+import { CARDS } from '../core/data/cards/index.js';
 
 /**
  * Weather.
@@ -190,5 +195,98 @@ describe('clear skies', () => {
     const sniper = addUnit(state, { def: 'longshot_stalker', side: 'player', at: { x: 3, y: 7 } });
     const far = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 0 } });
     expect(canHit(state, sniper.id, far.id)).toBe(true);
+  });
+});
+
+/**
+ * Surge conduction.
+ *
+ * The one weather effect that adds damage rather than subtracting reach, and the one
+ * that needed a damage type to exist before it could be written at all: `shock` is what
+ * a Surge card deals, exactly as a Pyre card deals `fire`.
+ */
+describe('torrential rain conducting a shock', () => {
+  /**
+   * Drives `dealDamage` directly rather than through Arc Lash.
+   *
+   * Conduction is a property of the damage, not of the card: a Surge unit's swing or a
+   * future Surge rune would arc identically, and testing through one caller would tie
+   * the rule to that caller.
+   */
+  const strike = (state: GameState, targetId: string, dtype: DamageType) => {
+    const next = deepClone(state);
+    const ctx = makeCtx(next);
+    dealDamage(ctx, {
+      target: { kind: 'unit', id: targetId },
+      amount: 3,
+      dtype,
+      cause: 'spell',
+    });
+    return { units: next.units, events: ctx.events };
+  };
+
+  const cluster = (weather: Weather) => {
+    const state = underSky(weather);
+    // The one struck, two of its own side touching it, one standing clear, and a unit
+    // of the caster's side pressed right up against the target.
+    const primary = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 3 }, hp: 20 });
+    const orthogonal = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 3 }, hp: 20 });
+    const diagonal = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20 });
+    const clear = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 6, y: 6 }, hp: 20 });
+    const ally = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 3, y: 4 }, hp: 20 });
+    return { state, primary, orthogonal, diagonal, clear, ally };
+  };
+
+  it("jumps to everything of the target's side that is touching it", () => {
+    const { state, primary, orthogonal, diagonal, clear } = cluster({ kind: 'rain' });
+    const out = strike(state, primary.id, 'shock');
+
+    expect(out.units[primary.id]!.hp, 'the primary takes the full hit').toBe(17);
+    expect(out.units[orthogonal.id]!.hp, 'orthogonal neighbour').toBe(19);
+    expect(out.units[diagonal.id]!.hp, 'diagonal neighbour').toBe(19);
+    expect(out.units[clear.id]!.hp, 'two tiles away, untouched').toBe(20);
+  });
+
+  it("spares the caster's own line, unlike a volatile crystal", () => {
+    const { state, primary, ally } = cluster({ kind: 'rain' });
+    expect(strike(state, primary.id, 'shock').units[ally.id]!.hp).toBe(20);
+  });
+
+  it('does nothing under any other sky', () => {
+    const { state, primary, orthogonal, diagonal } = cluster({ kind: 'fog' });
+    const out = strike(state, primary.id, 'shock');
+    expect(out.units[primary.id]!.hp).toBe(17);
+    expect(out.units[orthogonal.id]!.hp).toBe(20);
+    expect(out.units[diagonal.id]!.hp).toBe(20);
+  });
+
+  it('does not arc from fire, however wet the ground', () => {
+    const { state, primary, orthogonal } = cluster({ kind: 'rain' });
+    const out = strike(state, primary.id, 'fire');
+    // Rain dampens the fire instead, which is the other half of the same sky.
+    expect(out.units[primary.id]!.hp).toBe(20 - (3 - RAIN_FIRE_PENALTY));
+    expect(out.units[orthogonal.id]!.hp).toBe(20);
+  });
+
+  it('arcs deal physical, so an arc cannot arc', () => {
+    // The bound on the recursion. Were the secondary hits `shock`, a line of units in
+    // the rain would chain end to end from a single cast.
+    const { state, primary } = cluster({ kind: 'rain' });
+    const out = strike(state, primary.id, 'shock');
+
+    const arcs = out.events.filter(
+      (e) => e.t === 'damageDealt' && e.cause === 'reaction' && e.dtype === 'physical',
+    );
+    expect(arcs).toHaveLength(2);
+    expect(
+      out.events.some((e) => e.t === 'damageDealt' && e.dtype === 'shock' && e.cause === 'reaction'),
+    ).toBe(false);
+  });
+
+  it('ships a Surge card that can actually reach this rule', () => {
+    // The reason this feature waited: a branch nothing can trigger is untestable.
+    expect(CARDS.arc_lash?.school).toBe('surge');
+    const eff = CARDS.arc_lash!.effect;
+    expect(eff.op === 'damage' && eff.dtype).toBe('shock');
   });
 });

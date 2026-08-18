@@ -18,7 +18,7 @@ export interface Coord {
 export type School = 'pyre' | 'frost' | 'surge' | 'bulwark' | 'dusk' | 'bloom' | 'arcane' | 'neutral';
 
 /** Damage typing drives rune alignment (which triggers detonate vs. fizzle). */
-export type DamageType = 'physical' | 'fire' | 'frost' | 'spell' | 'impact' | 'true';
+export type DamageType = 'physical' | 'fire' | 'frost' | 'shock' | 'spell' | 'impact' | 'true';
 
 /** What caused a damage instance — the renderer picks animations from this. */
 export type DamageCause = 'attack' | 'spell' | 'collision' | 'rune' | 'status' | 'counter' | 'impact' | 'reaction';

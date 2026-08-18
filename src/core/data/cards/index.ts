@@ -12,6 +12,7 @@ import { FROST_CARDS } from './frost.js';
 import { COMPANION_UNIT_CARDS } from './companionUnits.js';
 import { TERRAIN_CARDS } from './terrain.js';
 import { RANGED_CARDS } from './ranged.js';
+import { SURGE_CARDS } from './surge.js';
 import { WILDLIFE_CARDS } from './wildlife.js';
 
 export const CARDS: Record<string, CardDef> = {
@@ -20,6 +21,7 @@ export const CARDS: Record<string, CardDef> = {
   ...COMPANION_UNIT_CARDS,
   ...TERRAIN_CARDS,
   ...RANGED_CARDS,
+  ...SURGE_CARDS,
   ...WILDLIFE_CARDS,
 };
 
@@ -39,6 +41,7 @@ for (const source of [
   COMPANION_UNIT_CARDS,
   TERRAIN_CARDS,
   RANGED_CARDS,
+  SURGE_CARDS,
   WILDLIFE_CARDS,
 ]) {
   for (const id of Object.keys(source)) {

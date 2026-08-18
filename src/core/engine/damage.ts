@@ -12,7 +12,9 @@ import { emit } from './context.js';
 import { prepareReaction, resolveReaction } from './reactions.js';
 import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
-import { getEntity, opposite } from './board.js';
+import { getEntity, entityAt, opposite } from './board.js';
+import { DIRS_8 } from '../util/grid.js';
+import { inBounds } from '../types/state.js';
 import { getEncounterScript } from '../data/encounters/registry.js';
 // Circular by design: runes/death call back into dealDamage. ESM hoists function
 // declarations, so these resolve correctly at call time.
@@ -91,6 +93,67 @@ function dampenFire(ctx: Ctx, req: DamageRequest): number {
 
 /** How much a downpour takes off every point of fire. */
 export const RAIN_FIRE_PENALTY = 1;
+
+/** What each arc carries to a neighbour. Deliberately small: it is a bonus, not the spell. */
+export const RAIN_ARC_DAMAGE = 1;
+
+/**
+ * Rain conduction: a shock that lands in a downpour jumps to everything touching it.
+ *
+ * There is no queue here, and there does not need to be one. The reducer is synchronous
+ * and resolves a command's cascades completely before returning, so a secondary hit is
+ * simply an ordered recursive call placed after the primary HP write — the same shape
+ * Counter and the reaction outcomes already use a few lines below.
+ *
+ * Three things keep it deterministic and bounded:
+ *   - `DIRS_8` is a fixed row-then-column list, so the arcs always resolve in one order.
+ *   - The neighbours are collected into ids *before* any of them are dealt damage. Read
+ *     lazily, a death mid-loop would mutate the board being iterated.
+ *   - Arcs deal `physical`, not `shock`, so an arc cannot arc. That is what makes the
+ *     recursion depth exactly one rather than a chain reaction across the board.
+ *
+ * `chainCancelled` is honoured, so a boss Damage Gate stops the arcs with everything else.
+ */
+function conductShock(ctx: Ctx, req: DamageRequest, primary: Entity): void {
+  if (req.dtype !== 'shock') return;
+  if (ctx.state.encounter.weather?.kind !== 'rain') return;
+  if (ctx.state.encounter.chainCancelled) return;
+
+  const struck: UnitId[] = [];
+  for (const dir of DIRS_8) {
+    const cell = { x: primary.anchor.x + dir.x, y: primary.anchor.y + dir.y };
+    if (!inBounds(ctx.state, cell)) continue;
+    const neighbour = entityAt(ctx.state, cell);
+    // Units only: arcing through scenery would make every wall a lightning rod.
+    if (!neighbour || !isUnit(neighbour)) continue;
+    // A Behemoth occupies cells adjacent to its own anchor, so it would otherwise
+    // arc into itself; identity is by id, never by position.
+    if (neighbour.id === primary.id) continue;
+    // Only the target's own side. Derived from the primary rather than from the caster,
+    // which needs no knowledge of who cast it and gives the same answer: the thing that
+    // was aimed at is by definition an enemy of whoever aimed.
+    //
+    // Note this is narrower than the volatile crystals, which hit friend and foe alike.
+    // A charge that spared allies is a kindness physics would not extend, but it is what
+    // keeps Arc Lash a clean offensive card rather than a second way to kill your own line.
+    if (!isUnit(primary) || neighbour.side !== primary.side) continue;
+    if (struck.includes(neighbour.id)) continue; // a 2x2 touches on several sides
+    struck.push(neighbour.id);
+  }
+
+  for (const id of struck) {
+    if (ctx.state.encounter.chainCancelled) return;
+    // Re-read: an earlier arc in this same loop may already have killed it.
+    if (!ctx.state.units[id]) continue;
+    dealDamage(ctx, {
+      target: { kind: 'unit', id },
+      amount: RAIN_ARC_DAMAGE,
+      dtype: 'physical',
+      cause: 'reaction',
+      ...(req.sourceUnitId ? { sourceUnitId: req.sourceUnitId } : {}),
+    });
+  }
+}
 
 function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side, at?: Coord): DamageOutcome {
   const cmd = ctx.state.players[side];
@@ -195,6 +258,10 @@ function damageEntity(ctx: Ctx, entity: Entity, req: DamageRequest): DamageOutco
       });
     }
   }
+
+  // Wet ground conducts. Placed with the other secondary hits and for the same reason:
+  // after the HP write, so what arcs is a blow that actually landed.
+  conductShock(ctx, req, entity);
 
   // Reactions and runes both resolve after the HP write, so the "at least 1 point of
   // actual HP loss" penetration rule is checked against reality rather than intent.
