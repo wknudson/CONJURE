@@ -219,7 +219,7 @@
   margin-bottom: 8px;
 }
 
-/* The dual-ring dial: heavy sockets for banked Pips, ethereal beads for Sparks. */
+/* The dual-ring dial: heavy sockets for banked Pips, ethereal beads for Marrow. */
 .dial {
   display: flex;
   flex-direction: column;
@@ -247,20 +247,24 @@
   box-shadow: 0 0 9px rgba(252, 211, 77, 0.6);
 }
 
-.dial__sparks {
+/* Crimson, not ember: Pips are the warm banked gold above, and the two rings have to be
+   tellable apart at a glance mid-fight. Marrow is the visceral one. */
+.dial__marrow {
   display: flex;
   gap: 3px;
   min-height: 17px;
   font-size: 14px;
-  color: #fdba74;
+  color: #f0567a;
 }
 
-.dial__sparks.is-empty {
+.dial__marrow.is-empty {
   opacity: 0;
 }
 
 .bead {
-  text-shadow: 0 0 8px rgba(253, 186, 116, 0.9);
+  text-shadow:
+    0 0 8px rgba(240, 86, 122, 0.9),
+    0 0 14px rgba(168, 85, 247, 0.5);
   animation: bead-flicker 1.4s ease-in-out infinite;
 }
 

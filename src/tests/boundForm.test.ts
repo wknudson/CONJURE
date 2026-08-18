@@ -120,7 +120,7 @@ describe('what cannot be done to it', () => {
     );
   });
 
-  it('refuses to sacrifice anything worth no sparks', () => {
+  it('refuses to sacrifice anything worth no marrow', () => {
     // Pre-existing hole: this command never checked, so a worthless offering was legal.
     const state = scenario({ width: 6, height: 8 });
     const pawn = addUnit(state, {

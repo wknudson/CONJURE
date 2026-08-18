@@ -81,7 +81,7 @@ function playRandomGame(
       }
     }
 
-    // Occasionally sacrifice something, exercising the spark path.
+    // Occasionally sacrifice something, exercising the marrow path.
     if (!session.isOver()) {
       const mine = session.getBoard().units.filter((u) => u.side === 'player');
       if (nextInt(rng, 5) === 0) {
@@ -96,7 +96,7 @@ function playRandomGame(
       }
     }
 
-    // And occasionally channel, exercising the other spark path.
+    // And occasionally channel, exercising the other marrow path.
     if (!session.isOver()) {
       const mine = session.getBoard().units.filter((u) => u.side === 'player');
       if (nextInt(rng, 4) === 0) {

@@ -148,6 +148,52 @@ describe('migration', () => {
     expect(save.lastRun, 'a run without a seed cannot be reproduced').toBeUndefined();
   });
 
+  /**
+   * The Sparks -> Marrow rename (v3) changed a card id. Without the remap, reconciliation
+   * would read `spark_wisp` as a card from a deleted patch and quietly confiscate it.
+   */
+  it('carries a renamed card through the collection, decks, and last run', () => {
+    const save = defaultSave();
+    delete save.collection.owned.marrow_wisp;
+    // Above the soulbound floor of 3, so the assertion measures the remap rather than
+    // the top-up that would restore this particular card either way.
+    save.collection.owned.spark_wisp = 5;
+    save.decks.ignis!.cards = save.decks.ignis!.cards.map((c) =>
+      c === 'marrow_wisp' ? 'spark_wisp' : c,
+    );
+    save.lastRun = {
+      encounterId: 'novice_duelist',
+      seed: 7,
+      companionId: 'ignis',
+      deck: ['spark_wisp', 'scout_imp'],
+    };
+    localStorage.setItem('conjure.save', JSON.stringify({ ...save, version: 2 }));
+
+    const { save: loaded, notes } = loadSave();
+
+    expect(loaded.collection.owned.marrow_wisp).toBe(5);
+    expect(loaded.collection.owned.spark_wisp).toBeUndefined();
+    // The deck is where the rename actually bites: an unremapped id is not a real card,
+    // so the deck would stop validating and the player would be sent to fix it.
+    expect(loaded.decks.ignis!.cards).toContain('marrow_wisp');
+    expect(loaded.decks.ignis!.cards).not.toContain('spark_wisp');
+    expect(loaded.lastRun?.deck).toEqual(['marrow_wisp', 'scout_imp']);
+
+    // The point of the remap: nothing was lost, so there is nothing to report.
+    expect(loaded.decks.ignis!.invalid).toBeUndefined();
+    expect(notes).toHaveLength(0);
+  });
+
+  it('sums the counts when a save somehow holds both the old and new card id', () => {
+    const save = defaultSave();
+    save.collection.owned.marrow_wisp = 2;
+    save.collection.owned.spark_wisp = 3;
+    localStorage.setItem('conjure.save', JSON.stringify({ ...save, version: 2 }));
+
+    const { save: loaded } = loadSave();
+    expect(loaded.collection.owned.marrow_wisp).toBe(5);
+  });
+
   it('rejects a companion id that is not real', () => {
     const save = defaultSave();
     (save as { lastCompanionId: string }).lastCompanionId = 'nobody';

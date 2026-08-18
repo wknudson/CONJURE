@@ -70,7 +70,7 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       maxHp: hp,
       armor: 0,
       pips: 0,
-      sparks: 0,
+      marrow: 0,
       deck,
       hand: [],
       discard: [],
@@ -292,7 +292,7 @@ export function createCombat(
 }
 
 /**
- * Scatters Spark Geodes across the neutral middle.
+ * Scatters Marrow Geodes across the neutral middle.
  *
  * Never in either territory: a geode in a deploy zone would either be free for its owner
  * or block their own summons, and neither is the intended decision. On neutral ground it
@@ -303,7 +303,7 @@ export function createCombat(
  * free — and it consumes the seeded stream, so the same seed lays out the same field.
  */
 function scatterGeodes(ctx: Ctx, encounter: EncounterDef): void {
-  const spec = encounter.sparkGeodes;
+  const spec = encounter.marrowGeodes;
   if (!spec) return;
 
   const state = ctx.state;
@@ -327,7 +327,7 @@ function scatterGeodes(ctx: Ctx, encounter: EncounterDef): void {
   for (let i = 0; i < count; i++) {
     const at = open.splice(nextInt(state.rng, open.length), 1)[0];
     if (!at) break;
-    spawnObstacle(ctx, 'spark_geode', 'player', at);
+    spawnObstacle(ctx, 'marrow_geode', 'player', at);
   }
 }
 

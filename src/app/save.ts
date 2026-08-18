@@ -19,7 +19,24 @@ import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
+
+/**
+ * Cards that have been renamed, old id to new.
+ *
+ * A save stores card ids, so renaming one in the card database silently deletes it from
+ * every existing collection: `reconcileCollection` drops ids it no longer recognises, and
+ * decks holding one stop validating. Remapping on load is what makes a rename a rename
+ * rather than a confiscation.
+ */
+const RENAMED_CARDS: Record<string, string> = {
+  // The Sparks -> Marrow consolidation (v3).
+  spark_wisp: 'marrow_wisp',
+};
+
+function rename(id: string): string {
+  return RENAMED_CARDS[id] ?? id;
+}
 
 export interface SavedDeck {
   companionId: string;
@@ -110,9 +127,18 @@ function migrate(raw: unknown, notes: string[]): SaveData {
   }
 
   // --- collection ---
+  // Renames are applied before reconciliation, which is the whole point: reconciliation
+  // is what would otherwise throw the old id away as an unknown card.
   let collection = base.collection;
   if (data.collection && typeof data.collection.owned === 'object') {
-    const reconciled = reconcileCollection({ owned: { ...data.collection.owned } });
+    const owned: Record<string, number> = {};
+    for (const [id, count] of Object.entries(data.collection.owned)) {
+      const to = rename(id);
+      // Summed rather than assigned: a save could in principle hold both ids at once,
+      // and the player should end up with the cards from both.
+      owned[to] = (owned[to] ?? 0) + count;
+    }
+    const reconciled = reconcileCollection({ owned });
     collection = reconciled.collection;
     if (reconciled.dropped.length > 0) {
       notes.push(`${reconciled.dropped.length} card(s) no longer exist and were removed.`);
@@ -125,7 +151,7 @@ function migrate(raw: unknown, notes: string[]): SaveData {
     const saved = data.decks?.[companion.id];
     if (!saved || !Array.isArray(saved.cards)) continue;
 
-    const cards = saved.cards.filter((c): c is string => typeof c === 'string');
+    const cards = saved.cards.filter((c): c is string => typeof c === 'string').map(rename);
     const problems = validateDeck(cards, collection);
     decks[companion.id] = {
       companionId: companion.id,
@@ -170,7 +196,7 @@ function migrate(raw: unknown, notes: string[]): SaveData {
           encounterId: run.encounterId,
           seed: run.seed,
           companionId: String(run.companionId ?? lastCompanionId),
-          deck: run.deck.filter((c): c is string => typeof c === 'string'),
+          deck: run.deck.filter((c): c is string => typeof c === 'string').map(rename),
         }
       : undefined;
 

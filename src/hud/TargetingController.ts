@@ -138,10 +138,10 @@ export class TargetingController {
     const card = this.rules.getHand().find((c) => c.instanceId === id);
     if (!card) return 'That card is no longer in your hand';
 
-    const available = board.player.pips + board.player.sparks;
+    const available = board.player.pips + board.player.marrow;
     if (card.cost > available) {
       const short = card.cost - available;
-      return `${card.name} costs ${card.cost} — you are ${short} short (${board.player.pips} Pips + ${board.player.sparks} Sparks)`;
+      return `${card.name} costs ${card.cost} — you are ${short} short (${board.player.pips} Pips + ${board.player.marrow} Marrow)`;
     }
 
     switch (card.kind) {

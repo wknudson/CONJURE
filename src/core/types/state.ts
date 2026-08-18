@@ -31,7 +31,7 @@ export interface CommanderState {
   /** Banked. The cap of 8 is enforced only during end-of-turn cleanup. */
   pips: number;
   /** Ephemeral. Zeroed at end of turn. */
-  sparks: number;
+  marrow: number;
   deck: CardInstanceId[];
   hand: CardInstanceId[];
   discard: CardInstanceId[];

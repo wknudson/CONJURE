@@ -80,7 +80,7 @@ describe('line of sight', () => {
 
     it('lets a ranged unit reach the portrait through a clear lane', () => {
       const state = scenario({
-        units: [{ def: 'spark_wisp', side: 'player', at: { x: 2, y: 3 }, rangeMax: 4 }],
+        units: [{ def: 'marrow_wisp', side: 'player', at: { x: 2, y: 3 }, rangeMax: 4 }],
       });
       expect(hasLoSToPortrait(state, { x: 2, y: 3 }, 'enemy')).toBe(true);
     });
@@ -89,7 +89,7 @@ describe('line of sight', () => {
       // Guardians on the shooter's column and both diagonal exits.
       const state = scenario({
         units: [
-          { def: 'spark_wisp', side: 'player', at: { x: 2, y: 3 }, rangeMax: 4 },
+          { def: 'marrow_wisp', side: 'player', at: { x: 2, y: 3 }, rangeMax: 4 },
           { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 0 } },
           { def: 'grave_sentinel', side: 'enemy', at: { x: 1, y: 0 } },
           { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 0 } },

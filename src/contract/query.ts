@@ -51,7 +51,7 @@ export interface ActionPreview {
   }[];
   detonations: { hostId: UnitId; at: Coord; affected: Coord[]; chainDepth: number }[];
   predictedDeaths: UnitId[];
-  cost: { pips: number; sparks: number };
+  cost: { pips: number; marrow: number };
 }
 
 /** A flattened, render-ready view of the board. Read only while the sequencer is idle. */
@@ -92,7 +92,7 @@ export interface CommanderView {
   maxHp: number;
   armor: number;
   pips: number;
-  sparks: number;
+  marrow: number;
   handCount: number;
   deckCount: number;
   discardCount: number;

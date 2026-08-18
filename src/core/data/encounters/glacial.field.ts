@@ -66,7 +66,7 @@ export const GLACIAL_FIELD: EncounterDef = registerEncounter({
     { at: { x: 3, y: 3 }, defId: 'cryo_crystal' },
     { at: { x: 4, y: 4 }, defId: 'cryo_crystal' },
   ],
-  sparkGeodes: { min: 2, max: 3 },
+  marrowGeodes: { min: 2, max: 3 },
   scavenger: true,
   turfwar: { count: 2, unitCardId: 'ridge_wolf' },
 });

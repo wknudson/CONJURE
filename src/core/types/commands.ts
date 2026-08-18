@@ -7,7 +7,7 @@ export type Command =
   | { type: 'moveUnit'; unit: UnitId; to: Coord }
   | { type: 'attack'; attacker: UnitId; target: TargetRef }
   | { type: 'sacrifice'; unit: UnitId }
-  /** Spend a unit's attack to bank a Spark instead of swinging. */
+  /** Spend a unit's attack to extract Marrow instead of swinging. */
   | { type: 'channel'; unit: UnitId }
   /**
    * A declared attack resolving on a tile that is now empty. It costs the unit its

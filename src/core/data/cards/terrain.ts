@@ -46,25 +46,25 @@ export const TERRAIN_CARDS: Record<string, CardDef> = {
   ),
 
   /**
-   * A geode is one hit and a decision. It is worth two Sparks to whoever cracks it,
+   * A geode is one hit and a decision. It is worth two Marrow to whoever cracks it,
    * which is most of a card — enough that both sides want it early, and early is exactly
    * when neither can spare the tempo. It lands on neutral ground for that reason: taking
    * one means walking somewhere you would rather not stand yet.
    */
-  spark_geode: {
-    id: 'spark_geode',
-    name: 'Spark Geode',
+  marrow_geode: {
+    id: 'marrow_geode',
+    name: 'Marrow Geode',
     cost: 0,
     school: 'neutral',
     source: 'hero',
     kind: 'obstacle',
-    text: 'Volatile. Breaking it grants the attacker 2 Sparks.',
+    text: 'Volatile. Breaking it extracts 2 Marrow for the attacker.',
     target: { kind: 'none' },
     effect: { op: 'seq', effects: [] },
     keywords: [],
     setupOnly: true,
     obstacleHp: 1,
-    onDestroyReward: { sparks: 2 },
+    onDestroyReward: { marrow: 2 },
   },
 
   /**

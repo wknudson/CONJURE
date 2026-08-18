@@ -37,14 +37,14 @@ export type GameEvent = EventBase &
     | { t: 'turnStarted'; side: Side; turn: number }
     | { t: 'phaseChanged'; phase: Phase; side: Side }
     | { t: 'pipGained'; side: Side; amount: number; total: number }
-    | { t: 'resourcesChanged'; side: Side; pips: number; sparks: number }
+    | { t: 'resourcesChanged'; side: Side; pips: number; marrow: number }
     | { t: 'cardDrawn'; side: Side; card: CardSnapshot }
     | { t: 'cardBurned'; side: Side; card: CardSnapshot }
     | { t: 'cardDiscarded'; side: Side; cardId: CardInstanceId }
     | { t: 'deckReshuffled'; side: Side; count: number }
     | { t: 'cardPlayed'; side: Side; card: CardSnapshot; at?: Coord }
     | { t: 'cardInjected'; side: Side; card: CardSnapshot }
-    | { t: 'cardReturnedToHand'; side: Side; card: CardSnapshot; refundedSparks: number }
+    | { t: 'cardReturnedToHand'; side: Side; card: CardSnapshot; refundedMarrow: number }
     | { t: 'unitSummoned'; unit: UnitSnapshot }
     | { t: 'obstacleSpawned'; obstacle: ObstacleSnapshot }
     | { t: 'unitMoved'; unitId: UnitId; path: Coord[] }
@@ -84,9 +84,9 @@ export type GameEvent = EventBase &
       }
     | { t: 'runeFizzled'; hostId: UnitId; rune: RuneDefId; reason: 'unaligned' | 'devour' | 'gate' }
     | { t: 'escalated'; unitId: UnitId; stacks: number; atk: number; hp: number }
-    | { t: 'unitSacrificed'; unitId: UnitId; sparksGained: number }
-    /** A unit spent its attack banking a Spark instead of swinging. */
-    | { t: 'unitChannelled'; unitId: UnitId; side: Side; sparks: number }
+    | { t: 'unitSacrificed'; unitId: UnitId; marrowExtracted: number }
+    /** A unit spent its attack extracting Marrow instead of swinging. */
+    | { t: 'unitChannelled'; unitId: UnitId; side: Side; marrow: number }
     | { t: 'unitDied'; unitId: UnitId; at: Coord; footprint: 1 | 2; cause: DamageCause }
     /**
      * Something left the board without dying — a scavenger that reached the edge.

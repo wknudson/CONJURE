@@ -3,9 +3,9 @@
  *
  * Adjudications used here (docs conflict; see the plan's rule table):
  *  - An empty deck reshuffles the discard pile for free, with no fatigue (Draft 7).
- *  - Hand size is 7. Overdrawing BURNS the drawn card and grants 1 Spark (Module 4).
+ *  - Hand size is 7. Overdrawing BURNS the drawn card and grants 1 Marrow (Module 4).
  *  - Pips bank up to 8, but the cap is enforced only during end-of-turn cleanup, so
- *    in-turn Pip + Spark totals may freely exceed 8.
+ *    in-turn Pip + Marrow totals may freely exceed 8.
  */
 
 import type { CardInstanceId, Side } from '../../contract/ids.js';
@@ -38,13 +38,13 @@ function drawOne(ctx: Ctx, side: Side): void {
   const id = cmd.deck.shift();
   if (!id) return;
 
-  // Overdraw: the card burns for a Spark rather than entering an overfull hand.
+  // Overdraw: the card burns for Marrow rather than entering an overfull hand.
   const nonEphemeral = cmd.hand.filter((h) => !cmd.cards[h]?.ephemeral).length;
   if (nonEphemeral >= cmd.handLimit) {
     cmd.discard.push(id);
-    cmd.sparks += 1;
+    cmd.marrow += 1;
     emit(ctx, { t: 'cardBurned', side, card: toCardSnapshot(ctx.state, side, id) });
-    emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, sparks: cmd.sparks });
+    emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
     return;
   }
 
@@ -60,20 +60,20 @@ export function gainPips(ctx: Ctx, side: Side, amount: number): void {
 
 export function spendResources(ctx: Ctx, side: Side, cost: number): boolean {
   const cmd = ctx.state.players[side];
-  if (cmd.pips + cmd.sparks < cost) return false;
+  if (cmd.pips + cmd.marrow < cost) return false;
 
-  // Spend Sparks first: they evaporate at end of turn, so banking Pips is correct play.
-  const fromSparks = Math.min(cmd.sparks, cost);
-  cmd.sparks -= fromSparks;
-  cmd.pips -= cost - fromSparks;
+  // Spend Marrow first: it evaporates at end of turn, so banking Pips is correct play.
+  const fromMarrow = Math.min(cmd.marrow, cost);
+  cmd.marrow -= fromMarrow;
+  cmd.pips -= cost - fromMarrow;
 
-  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, sparks: cmd.sparks });
+  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
   return true;
 }
 
 export function canAfford(state: GameState, side: Side, cost: number): boolean {
   const cmd = state.players[side];
-  return cmd.pips + cmd.sparks >= cost;
+  return cmd.pips + cmd.marrow >= cost;
 }
 
 export function discardCard(ctx: Ctx, side: Side, id: CardInstanceId): void {
@@ -94,7 +94,7 @@ export function resolvePlayedCard(ctx: Ctx, side: Side, id: CardInstanceId): voi
   cmd.discard.push(id);
 }
 
-/** End-of-turn cleanup: discard non-Retain cards, expire Sparks, cap the Pip bank. */
+/** End-of-turn cleanup: discard non-Retain cards, expire Marrow, cap the Pip bank. */
 export function endOfTurnCleanup(ctx: Ctx, side: Side): void {
   const cmd = ctx.state.players[side];
 
@@ -108,7 +108,7 @@ export function endOfTurnCleanup(ctx: Ctx, side: Side): void {
     discardCard(ctx, side, id);
   }
 
-  cmd.sparks = 0;
+  cmd.marrow = 0;
   cmd.pips = Math.min(cmd.pips, PIP_CAP);
-  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, sparks: cmd.sparks });
+  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
 }

@@ -100,7 +100,7 @@ describe('per-encounter arenas', () => {
       // Everything an encounter lays down is an obstacle: generic walls and cover from
       // `terrain`, named scenery from `props`, and geodes scattered at random. Count the
       // two authored lists and let the random ones be.
-      const placed = board.obstacles.filter((o) => o.defId !== 'spark_geode');
+      const placed = board.obstacles.filter((o) => o.defId !== 'marrow_geode');
       expect(placed.length).toBe((enc.terrain?.length ?? 0) + (enc.props?.length ?? 0));
 
       // Terrain must never strand a side with nowhere to summon on turn one.

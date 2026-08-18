@@ -332,7 +332,7 @@ export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): 
   return cells.some((c) => hasLoSToPortrait(state, c, targetSide, [unit.id]));
 }
 
-/** Units the given side may sacrifice for Sparks right now. */
+/** Units the given side may sacrifice for Marrow right now. */
 export function sacrificeCandidates(state: GameState, side: Side): Unit[] {
   return unitsOf(state, side).filter(
     // Nothing offers up a wolf that does not belong to it in the first place.

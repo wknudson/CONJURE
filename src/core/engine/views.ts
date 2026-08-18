@@ -93,7 +93,7 @@ function toCommanderView(state: GameState, side: Side): CommanderView {
     maxHp: c.maxHp,
     armor: c.armor,
     pips: c.pips,
-    sparks: c.sparks,
+    marrow: c.marrow,
     handCount: c.hand.length,
     deckCount: c.deck.length,
     discardCount: c.discard.length,

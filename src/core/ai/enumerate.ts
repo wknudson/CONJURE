@@ -13,7 +13,7 @@ import { canAfford } from '../engine/deck.js';
 import { legalCardTargets, legalAttacks, sacrificeCandidates } from '../engine/targeting.js';
 import { legalMoves, canMove, canAttack } from '../engine/movement.js';
 import { unitsOf } from '../engine/board.js';
-import { CHANNEL_SPARKS } from '../engine/engine.js';
+import { CHANNEL_MARROW } from '../engine/engine.js';
 
 /**
  * Every command the side could legally issue right now.
@@ -84,7 +84,7 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
     }
   }
 
-  // 4. Sacrifices — only worth enumerating when there is something to spend sparks on.
+  // 4. Sacrifices — only worth enumerating when there is something to spend marrow on.
   let cheapestUnaffordable = Infinity;
   for (const id of cmd.hand) {
     const def = CARDS[cmd.cards[id]?.defId ?? ''];
@@ -98,18 +98,18 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
     }
   }
 
-  // 5. Channels — offered only when the Spark actually completes a purchase this turn.
+  // 5. Channels — offered only when the Marrow actually completes a purchase this turn.
   //
-  // Sparks expire at end of turn, so banking one that goes unspent is worse than doing
-  // nothing: the unit gave up its swing for it. The gate is therefore not "could I use a
-  // Spark" but "does this Spark, right now, make an unaffordable card affordable".
-  // Without that the AI channels every idle unit until it hits the action cap, hoarding
-  // Sparks it cannot spend and quadrupling its own planning time in the process.
+  // Marrow expires at end of turn, so extracting it only to leave it unspent is worse
+  // than doing nothing: the unit gave up its swing for it. The gate is therefore not
+  // "could I use Marrow" but "does this Marrow, right now, make an unaffordable card
+  // affordable". Without that the AI channels every idle unit until it hits the action
+  // cap, hoarding Marrow it cannot spend and quadrupling its own planning time.
   //
-  // Only one candidate is offered even so: every idle unit banks the same Spark, so the
-  // choice of which one is not a decision worth searching.
-  const banked = cmd.pips + cmd.sparks;
-  if (idleUnit !== undefined && banked + CHANNEL_SPARKS >= cheapestUnaffordable) {
+  // Only one candidate is offered even so: every idle unit extracts the same Marrow, so
+  // the choice of which one is not a decision worth searching.
+  const banked = cmd.pips + cmd.marrow;
+  if (idleUnit !== undefined && banked + CHANNEL_MARROW >= cheapestUnaffordable) {
     out.push({ type: 'channel', unit: idleUnit });
   }
 

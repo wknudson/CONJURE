@@ -87,7 +87,7 @@ describe('resource and card edges', () => {
   });
 
   it('rejects a card the commander cannot afford', () => {
-    const state = scenario({ pips: 0, sparks: 0, hand: ['magma_brute'] });
+    const state = scenario({ pips: 0, marrow: 0, hand: ['magma_brute'] });
     const card = handCard(state, 'player', 'magma_brute');
     expect(() => applyCommand(state, play(card, atTile(2, 4)))).toThrow(IllegalCommandError);
   });
@@ -176,9 +176,9 @@ describe('combat resolution edges', () => {
 
   it('lets the last unit be sacrificed without breaking the turn', () => {
     const state = scenario({
-      units: [{ def: 'spark_wisp', side: 'player', at: { x: 2, y: 4 } }],
+      units: [{ def: 'marrow_wisp', side: 'player', at: { x: 2, y: 4 } }],
     });
-    const wisp = findUnit(state, 'spark_wisp', 'player');
+    const wisp = findUnit(state, 'marrow_wisp', 'player');
 
     const res = run(state, { type: 'sacrifice', unit: wisp.id }, { type: 'endTurn' });
 
@@ -299,12 +299,12 @@ describe('resonance', () => {
       units: [
         { def: 'scout_imp', side: 'enemy', at: { x: 4, y: 1 } },
         { def: 'scout_imp', side: 'enemy', at: { x: 0, y: 1 } },
-        { def: 'spark_wisp', side: 'player', at: { x: 2, y: 4 } },
+        { def: 'marrow_wisp', side: 'player', at: { x: 2, y: 4 } },
       ],
       hand: ['soul_splinter_rune'],
     });
     const inLane = state.units[findUnit(state, 'scout_imp', 'enemy').id]!;
-    const wisp = findUnit(state, 'spark_wisp', 'player');
+    const wisp = findUnit(state, 'marrow_wisp', 'player');
     const outOfLane = Object.values(state.units).find(
       (u) => u.side === 'enemy' && u.anchor.x === 0,
     )!;

@@ -41,7 +41,7 @@ export class Hud {
   private enemyFill!: HTMLElement;
   private enemyText!: HTMLElement;
   private pipRing!: HTMLElement;
-  private sparkRing!: HTMLElement;
+  private marrowRing!: HTMLElement;
   private turnLabel!: HTMLElement;
   private phaseLabel!: HTMLElement;
   private noticeEl!: HTMLElement;
@@ -93,7 +93,7 @@ export class Hud {
     this.enemyFill = q('.enemy-bar__fill');
     this.enemyText = q('.enemy-bar__text');
     this.pipRing = q('.dial__pips');
-    this.sparkRing = q('.dial__sparks');
+    this.marrowRing = q('.dial__marrow');
     this.turnLabel = q('.status__turn');
     this.phaseLabel = q('.status__phase');
     this.noticeEl = q('.notice');
@@ -220,7 +220,7 @@ export class Hud {
     this.setCommanderHp('enemy', board.enemy.hp);
     this.setCommanderArmor('player', board.player.armor);
     this.setCommanderArmor('enemy', board.enemy.armor);
-    this.setResources('player', board.player.pips, board.player.sparks);
+    this.setResources('player', board.player.pips, board.player.marrow);
     this.setTurn(board.turn, board.activeSide);
     this.setPhase(board.phase, board.activeSide);
     this.setMaxHp(board.player, board.enemy);
@@ -396,10 +396,10 @@ export class Hud {
   }
 
   /**
-   * The dual-ring dial: heavy sockets for banked Pips, ethereal beads for Sparks.
-   * Passing `undefined` for sparks leaves that ring untouched.
+   * The dual-ring dial: heavy sockets for banked Pips, ethereal beads for Marrow.
+   * Passing `undefined` for marrow leaves that ring untouched.
    */
-  setResources(side: Side, pips: number, sparks: number | undefined): void {
+  setResources(side: Side, pips: number, marrow: number | undefined): void {
     if (side !== 'player') return;
 
     this.pipRing.replaceChildren();
@@ -409,15 +409,15 @@ export class Hud {
       this.pipRing.appendChild(socket);
     }
 
-    if (sparks !== undefined) {
-      this.sparkRing.replaceChildren();
-      for (let i = 0; i < sparks; i++) {
+    if (marrow !== undefined) {
+      this.marrowRing.replaceChildren();
+      for (let i = 0; i < marrow; i++) {
         const bead = document.createElement('span');
         bead.className = 'bead';
         bead.textContent = '✦';
-        this.sparkRing.appendChild(bead);
+        this.marrowRing.appendChild(bead);
       }
-      this.sparkRing.classList.toggle('is-empty', sparks === 0);
+      this.marrowRing.classList.toggle('is-empty', marrow === 0);
     }
   }
 
@@ -565,7 +565,7 @@ const TEMPLATE = `
       </div>
       <div class="dial">
         <div class="dial__pips" data-tip="pips"></div>
-        <div class="dial__sparks is-empty" data-tip="sparks"></div>
+        <div class="dial__marrow is-empty" data-tip="marrow"></div>
       </div>
       <div class="resonance" data-tip="resonance"></div>
     </div>

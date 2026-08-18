@@ -221,7 +221,7 @@ export class CombatSession implements RulesQuery {
       displacements: [],
       detonations: [],
       predictedDeaths: [],
-      cost: { pips: 0, sparks: 0 },
+      cost: { pips: 0, marrow: 0 },
     };
 
     let events: GameEvent[];
@@ -239,7 +239,7 @@ export class CombatSession implements RulesQuery {
       displacements: [],
       detonations: [],
       predictedDeaths: [],
-      cost: { pips: 0, sparks: 0 },
+      cost: { pips: 0, marrow: 0 },
     };
 
     const paths = new Map<UnitId, Coord[]>();
@@ -312,8 +312,8 @@ export class CombatSession implements RulesQuery {
     if (action.type === 'playCard') {
       const def = CARDS[before.players.player.cards[action.card]?.defId ?? ''];
       if (def) {
-        const sparks = Math.min(before.players.player.sparks, def.cost);
-        preview.cost = { pips: def.cost - sparks, sparks };
+        const marrow = Math.min(before.players.player.marrow, def.cost);
+        preview.cost = { pips: def.cost - marrow, marrow };
       }
     }
 

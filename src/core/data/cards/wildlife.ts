@@ -26,7 +26,7 @@ export const WILDLIFE_CARDS: Record<string, CardDef> = {
     effect: { op: 'seq', effects: [] },
     keywords: ['Feral', 'Haste'],
     setupOnly: true,
-    bounty: { sparks: 3 },
+    bounty: { marrow: 3 },
     unit: {
       atk: 0,
       hp: 6,

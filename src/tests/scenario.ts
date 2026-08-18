@@ -40,7 +40,7 @@ export function scenario(opts: {
   playerArmor?: number;
   enemyArmor?: number;
   pips?: number;
-  sparks?: number;
+  marrow?: number;
   units?: UnitSpec[];
   obstacles?: { at: Coord; hp?: number; rune?: string; side?: Side }[];
   hand?: string[];
@@ -68,7 +68,7 @@ export function scenario(opts: {
         opts.playerHp ?? 40,
         opts.playerArmor ?? 0,
         opts.pips ?? 10,
-        opts.sparks ?? 0,
+        opts.marrow ?? 0,
         width,
       ),
       enemy: blankCommander('Foe', opts.enemyHp ?? 40, opts.enemyArmor ?? 0, 10, 0, width),
@@ -121,7 +121,7 @@ function blankCommander(
   hp: number,
   armor: number,
   pips: number,
-  sparks: number,
+  marrow: number,
   width: number,
 ) {
   return {
@@ -134,7 +134,7 @@ function blankCommander(
     maxHp: hp,
     armor,
     pips,
-    sparks,
+    marrow,
     deck: [] as string[],
     hand: [] as string[],
     discard: [] as string[],

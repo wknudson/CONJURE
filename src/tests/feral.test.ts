@@ -161,7 +161,7 @@ describe('the scavenger', () => {
   });
 
   it('pays a purse to whoever brings it down', () => {
-    const state = scenario({ width: 6, height: 8, sparks: 0 });
+    const state = scenario({ width: 6, height: 8, marrow: 0 });
     const scav = addUnit(state, {
       def: 'gilded_scavenger',
       side: 'enemy',
@@ -177,7 +177,7 @@ describe('the scavenger', () => {
     });
 
     expect(res.state.units[scav.id]).toBeUndefined();
-    expect(res.state.players.player.sparks).toBe(CARDS.gilded_scavenger!.bounty!.sparks);
+    expect(res.state.players.player.marrow).toBe(CARDS.gilded_scavenger!.bounty!.marrow);
   });
 
   it('leaves without dying when it reaches the edge in time', () => {

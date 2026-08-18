@@ -250,14 +250,19 @@ export class Fx {
     window.setTimeout(() => el.remove(), 800);
   }
 
-  /** A transient label, e.g. a phase-shift or status callout. */
-  label(at: Coord, text: string, kind = 'note'): void {
+  /**
+   * A transient label, e.g. a phase-shift or status callout.
+   *
+   * `dy` exists so two labels can describe one beat — the act above, what it paid below —
+   * without landing on the same point, since floaters are centred on where they are put.
+   */
+  label(at: Coord, text: string, kind = 'note', dy = -42): void {
     const centre = this.cam.tileCenter(at);
     const el = document.createElement('div');
     el.className = `floater floater--${kind}`;
     el.textContent = text;
     el.style.left = `${centre.x}px`;
-    el.style.top = `${centre.y - 42}px`;
+    el.style.top = `${centre.y + dy}px`;
     this.floaterLayer.appendChild(el);
     window.setTimeout(() => el.remove(), 1100);
   }

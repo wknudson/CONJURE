@@ -119,7 +119,7 @@ export function checkInvariants(state: GameState, where: string): string[] {
     if (c.hp < 0) say(`${side} commander HP went negative (${c.hp})`);
     if (c.hp > c.maxHp) say(`${side} commander HP ${c.hp} exceeds max ${c.maxHp}`);
     if (c.armor < 0) say(`${side} commander armor negative (${c.armor})`);
-    if (c.pips < 0 || c.sparks < 0) say(`${side} has negative resources`);
+    if (c.pips < 0 || c.marrow < 0) say(`${side} has negative resources`);
 
     // Every card id referenced by a zone must exist in the instance table.
     for (const zone of ['hand', 'deck', 'discard'] as const) {
@@ -178,7 +178,7 @@ export function checkInvariants(state: GameState, where: string): string[] {
     for (const u of bound) {
       if (u.hp !== u.maxHp) say(`Bound Form ${u.id} lost HP of its own (${u.hp}/${u.maxHp})`);
       if (u.escalation !== 0) say(`Bound Form ${u.id} escalated to ${u.escalation}`);
-      if (u.sacrificeValue !== 0) say(`Bound Form ${u.id} is worth ${u.sacrificeValue} sparks`);
+      if (u.sacrificeValue !== 0) say(`Bound Form ${u.id} is worth ${u.sacrificeValue} marrow`);
     }
   }
 

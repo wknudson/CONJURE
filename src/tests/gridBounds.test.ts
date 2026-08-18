@@ -27,7 +27,7 @@ function arena(width: number, height: number, over: Partial<EncounterDef> = {}):
     companionSchool: 'pyre',
     enemyName: 'Duelist',
     enemySchool: 'dusk',
-    enemyDeck: ['scout_imp', 'spark_wisp', 'grave_sentinel', 'flame_surge', 'shield_bash'],
+    enemyDeck: ['scout_imp', 'marrow_wisp', 'grave_sentinel', 'flame_surge', 'shield_bash'],
     enemyOpeningBoard: [['scout_imp', 1, 0]],
     ...over,
   };

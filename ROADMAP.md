@@ -15,14 +15,14 @@ then used).
 | Section | What landed |
 | :-- | :-- |
 | **Symmetric battlefield** | Duelists field their own Companion; both routes to the Pact stay open. Ignis is the on-grid unit and docks into a 2×2 enraged form at half health |
-| **Economy** | Channel (`C`), reaction Pip refunds capped at 2/turn, Spark Geodes on neutral ground |
+| **Economy** | Channel (`C`), reaction Pip refunds capped at 2/turn, Marrow Geodes on neutral ground |
 | **Ranged archetypes** | Sniper (lines only), Lobber (ignores sight, blind up close), Turret (immobile) |
 | **Terrain** | Rubble costing double, volatile crystals hitting friend and foe, conveyor currents at the round boundary |
 | **Wildlife** | `Feral` units nobody commands; a scavenger that flees and escapes, wolves that maul both sides |
 | **Weather** | Fog clamping all vision to 3, a directional gale, rain blunting fire |
 
-Three latent bugs surfaced: the AI hoarded Sparks that expire (Channel's gate must require
-the Spark to *complete a purchase*); `canMove` ignored MOV so an immobile unit never read
+Three latent bugs surfaced: the AI hoarded Marrow that expires (Channel's gate must require
+the Marrow to *complete a purchase*); `canMove` ignored MOV so an immobile unit never read
 as spent; and the first draft of the boss phase re-announced itself when the drake was
 boxed in (growth is now tracked apart from the phase).
 
@@ -61,7 +61,7 @@ the audit below are now history rather than plan.
 Two pre-existing bugs fell out of this work: the threat map flagged *every* ranged enemy
 as a Commander threat regardless of sightlines (the check asked only whether the unit was
 on the board), and the raw `sacrifice` command validated neither protection nor whether
-the offering was worth any Sparks.
+the offering was worth any Marrow.
 
 **Opened, not closed, by the pivot:**
 
@@ -84,7 +84,7 @@ the offering was worth any Sparks.
 
 | System | State |
 | :-- | :-- |
-| Rules engine | Complete for the Draft 7 set: pips/sparks, overdraw burn, free reshuffle, Retain, movement (BFS, 2×2 footprints), **independent move + attack per turn**, collisions 3/2 with Mass Invariance, supercover LoS, Guardian occlusion, runes/cascades/armor-gating/fizzle, Escalation caps, status ticks in Module 1 order, Last Stand double-KO |
+| Rules engine | Complete for the Draft 7 set: pips/marrow, overdraw burn, free reshuffle, Retain, movement (BFS, 2×2 footprints), **independent move + attack per turn**, collisions 3/2 with Mass Invariance, supercover LoS, Guardian occlusion, runes/cascades/armor-gating/fizzle, Escalation caps, status ticks in Module 1 order, Last Stand double-KO |
 | Cards | 15-card Draft 7 starter deck + Vanguard Footman, all data-driven through ~12 effect primitives |
 | Encounters | Novice Duelist (6×8 lane, terrain), Ignis Trial (8×8 arena, 50% damage-gate with chain nullification, Rite of Binding at 25%, Forced Eviction) |
 | AI | Novice tier: greedy utility scoring per Module 5 weights, Lethal Veto, deterministic tie-breaks, seeded 20% suboptimality; 32–64ms/turn |

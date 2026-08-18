@@ -82,7 +82,7 @@ describe('threat projection', () => {
     const blocked = scenario({
       width: 6,
       height: 6,
-      units: [{ def: 'spark_wisp', side: 'enemy', at: { x: 0, y: 0 } }],
+      units: [{ def: 'marrow_wisp', side: 'enemy', at: { x: 0, y: 0 } }],
       obstacles: [{ at: { x: 0, y: 1 } }, { at: { x: 1, y: 1 } }, { at: { x: 1, y: 0 } }],
     });
 

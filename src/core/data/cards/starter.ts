@@ -63,16 +63,16 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     },
   },
 
-  spark_wisp: {
-    id: 'spark_wisp',
-    name: 'Spark Wisp',
+  marrow_wisp: {
+    id: 'marrow_wisp',
+    name: 'Marrow Wisp',
     cost: 1,
     school: 'arcane',
     source: 'hero',
     kind: 'minion',
-    text: 'Escalate: +1 ATK. Sacrifice: grants +2 Sparks.',
+    text: 'Escalate: +1 ATK. Sacrifice: extracts +2 Marrow.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
-    effect: { op: 'summon', unitDef: 'spark_wisp' },
+    effect: { op: 'summon', unitDef: 'marrow_wisp' },
     keywords: ['Escalate', 'Sacrifice'],
     unit: {
       atk: 1,
@@ -211,14 +211,14 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     school: 'dusk',
     source: 'hero',
     kind: 'spell',
-    text: 'Sacrifice an un-exhausted friendly minion. Grants its current HP as Persistent Armor and generates +2 Sparks.',
+    text: 'Sacrifice an un-exhausted friendly minion. Grants its current HP as Persistent Armor and extracts +2 Marrow.',
     target: { kind: 'entity', side: 'ally', includeObstacles: false, requireUnexhausted: true },
     effect: {
       op: 'seq',
       effects: [
         { op: 'sacrificeTarget' },
         { op: 'grantArmor', amount: { from: 'sacrificedHp' } },
-        { op: 'gainSparks', amount: 2 },
+        { op: 'extractMarrow', amount: 2 },
       ],
     },
     keywords: [],
@@ -292,7 +292,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
  */
 export const STARTER_DECK: string[] = [
   'scout_imp',
-  'spark_wisp',
+  'marrow_wisp',
   'grave_sentinel',
   'grave_sentinel',
   'magma_brute',

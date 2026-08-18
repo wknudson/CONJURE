@@ -25,7 +25,7 @@ export const NOVICE_DUELIST: EncounterDef = registerEncounter({
   enemyDeck: [
     'scout_imp',
     'scout_imp',
-    'spark_wisp',
+    'marrow_wisp',
     'grave_sentinel',
     'grave_sentinel',
     'cinder_rune',
@@ -44,7 +44,7 @@ export const NOVICE_DUELIST: EncounterDef = registerEncounter({
   // are cast from it, and shoving it into a wall costs them exactly what it would cost you.
   enemyCompanion: { unitCardId: 'umbra_bound' },
   // Something to fight over in the middle before either side is really ready to.
-  sparkGeodes: { min: 1, max: 3 },
+  marrowGeodes: { min: 1, max: 3 },
   // A hedge-mage's duel on open road: someone else's purse wanders through it.
   scavenger: true,
   // Two bramble screens midfield break the sightlines down the lane without walling it,

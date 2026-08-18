@@ -143,7 +143,7 @@ function evictAndSpawn(
     if (!occupant) continue;
     if (occupant.side !== 'player') return false; // enemy unit already there; try next site
 
-    // Return the player's unit to hand with a spark refund.
+    // Return the player's unit to hand with a marrow refund.
     const cmd = state.players.player;
     delete state.units[occupant.id];
     emit(ctx, {
@@ -157,12 +157,12 @@ function evictAndSpawn(
     const instanceId = `evict${state.nextId++}`;
     cmd.cards[instanceId] = { instanceId, defId: occupant.defId };
     cmd.hand.push(instanceId);
-    cmd.sparks += 1;
+    cmd.marrow += 1;
     emit(ctx, {
       t: 'cardReturnedToHand',
       side: 'player',
       card: toCardSnapshot(state, 'player', instanceId),
-      refundedSparks: 1,
+      refundedMarrow: 1,
     });
   }
 
@@ -228,7 +228,7 @@ export const IGNIS_TRIAL: EncounterDef = registerEncounter({
     'magma_brute',
     'scout_imp',
     'scout_imp',
-    'spark_wisp',
+    'marrow_wisp',
     'grave_sentinel',
     'shield_bash',
     'aegis_ward',
@@ -239,7 +239,7 @@ export const IGNIS_TRIAL: EncounterDef = registerEncounter({
   ],
   enemyOpeningBoard: [
     ['scout_imp', 1, 1],
-    ['spark_wisp', 5, 1],
+    ['marrow_wisp', 5, 1],
   ],
   // The drake fights on the board. Its 44 HP is the pool its body draws on.
   enemyCompanion: { unitCardId: 'ignis_drake_bound' },

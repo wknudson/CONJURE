@@ -232,16 +232,25 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
 
   seq.on('unitSacrificed', (e, { view }) => {
     const v = view.views.get(e.unitId);
-    if (v) view.fx.label(roundOf(v.pos), 'SACRIFICE', 'sacrifice');
-    if (e.sparksGained > 0) view.sfx.play('spark');
+    if (!v) return;
+    // Two beats, stacked: what was done to the unit, and what it paid out. The second is
+    // the reason the player did it, so it should not be left to the dial to report.
+    view.fx.label(roundOf(v.pos), 'SACRIFICE', 'sacrifice');
+    if (e.marrowExtracted > 0) {
+      view.fx.label(roundOf(v.pos), `+${e.marrowExtracted} MARROW`, 'marrow', -20);
+      view.sfx.play('rasp');
+    }
   });
 
   seq.on('unitChannelled', async (e, { view, t }) => {
     // A quieter beat than a sacrifice: nothing is lost, the unit simply gives up its
-    // swing. A brief lift and a spark chime, then it settles back as spent.
+    // swing. A brief lift and a marrow chime, then it settles back as spent.
     const v = view.views.get(e.unitId);
-    if (v) view.fx.label(roundOf(v.pos), 'CHANNEL', 'spark');
-    view.sfx.play('spark');
+    if (v) {
+      view.fx.label(roundOf(v.pos), 'CHANNEL', 'marrow');
+      view.fx.label(roundOf(v.pos), `+${e.marrow} MARROW`, 'marrow', -20);
+    }
+    view.sfx.play('rasp');
     await tween(t(180), easeOutQuad, (k) => {
       if (v) v.elev = Math.sin(k * Math.PI) * 8;
     });
@@ -301,7 +310,7 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
   });
 
   seq.on('resourcesChanged', (e, { view }) => {
-    view.hud.setResources(e.side, e.pips, e.sparks);
+    view.hud.setResources(e.side, e.pips, e.marrow);
   });
 
   seq.on('cardDrawn', (e, { view }) => {
@@ -311,8 +320,8 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
   seq.on('cardBurned', (e, { view }) => {
     view.hud.onCardRemoved(e.side, e.card.instanceId);
     if (e.side === 'player') {
-      view.hud.flashNotice('Hand full — card burned for a Spark');
-      view.sfx.play('spark');
+      view.hud.flashNotice('Hand full — card burned for Marrow');
+      view.sfx.play('rasp');
     }
   });
 
@@ -334,7 +343,7 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
 
   seq.on('cardReturnedToHand', (e, { view }) => {
     view.hud.onCardDrawn(e.side, e.card);
-    view.hud.flashNotice(`${e.card.name} evicted — +${e.refundedSparks} Spark`);
+    view.hud.flashNotice(`${e.card.name} evicted — +${e.refundedMarrow} Marrow`);
   });
 
   // ---------------------------------------------------------------- flow
@@ -414,7 +423,7 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
   });
 
   seq.on('hazardSpawned', async (_e, { view, t }) => {
-    view.sfx.play('spark');
+    view.sfx.play('rasp');
     await tween(t(220), easeOutQuad, () => {});
   });
 
@@ -425,7 +434,7 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
   seq.on('resonanceTriggered', async (e, { view, t }) => {
     if (e.side !== 'player') return;
     view.hud.flashNotice(`Resonance — ${e.name}`);
-    view.sfx.play('spark');
+    view.sfx.play('rasp');
     await tween(t(180), easeOutQuad, () => {});
   });
 

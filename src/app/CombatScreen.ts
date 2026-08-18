@@ -644,7 +644,7 @@ export class CombatScreen implements Screen {
   private channelSelected(): void {
     const unit = this.targeting?.selectedUnit ?? null;
     if (!unit) {
-      this.hud?.flashNotice('Select a unit first — C banks a Spark instead of attacking');
+      this.hud?.flashNotice('Select a unit first — C extracts Marrow instead of attacking');
       return;
     }
     this.commit({ type: 'channel', unit });

@@ -125,20 +125,20 @@ function adjacent(state: Ctx['state'], at: Coord): Coord[] {
  * attacker through every path that can destroy a tile.
  */
 function payDestroyReward(ctx: Ctx, defId: string): void {
-  payTo(ctx, CARDS[defId]?.onDestroyReward?.sparks);
+  payTo(ctx, CARDS[defId]?.onDestroyReward?.marrow);
 }
 
 /** The purse a scavenger was carrying, paid to whoever brought it down. */
 function payBounty(ctx: Ctx, defId: string): void {
-  payTo(ctx, CARDS[defId]?.bounty?.sparks);
+  payTo(ctx, CARDS[defId]?.bounty?.marrow);
 }
 
-function payTo(ctx: Ctx, sparks: number | undefined): void {
-  if (!sparks) return;
+function payTo(ctx: Ctx, marrow: number | undefined): void {
+  if (!marrow) return;
   const side = ctx.state.activeSide;
   const cmd = ctx.state.players[side];
-  cmd.sparks += sparks;
-  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, sparks: cmd.sparks });
+  cmd.marrow += marrow;
+  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
 }
 
 /**

@@ -98,11 +98,11 @@ describe('what a crystal is', () => {
     expect(Object.keys(res.state.hazards)).toHaveLength(0);
   });
 
-  it('is worth no sparks, unlike a geode', () => {
+  it('is worth no marrow, unlike a geode', () => {
     const { state, striker, id } = crystalAt('cryo_crystal');
-    const before = state.players.player.sparks;
+    const before = state.players.player.marrow;
     const res = breakIt(state, striker.id, id);
-    expect(res.state.players.player.sparks).toBe(before);
+    expect(res.state.players.player.marrow).toBe(before);
   });
 
   it('is placed by encounters, never drawn', () => {

@@ -17,7 +17,7 @@ import { nextInt } from '../util/rng.js';
 export const SOULBOUND: readonly string[] = [
   'vanguard_footman',
   'scout_imp',
-  'spark_wisp',
+  'marrow_wisp',
   'grave_sentinel',
   'dark_tithe',
   'shield_bash',

@@ -50,7 +50,7 @@ describe('persistent armor', () => {
 
     expect(res.state.units[sentinel.id]).toBeUndefined();
     expect(res.state.players.player.armor).toBe(6);
-    expect(res.state.players.player.sparks).toBe(2);
+    expect(res.state.players.player.marrow).toBe(2);
   });
 });
 

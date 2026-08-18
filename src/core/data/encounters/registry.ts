@@ -54,13 +54,13 @@ export interface EncounterDef {
    */
   props?: { at: { x: number; y: number }; defId: string }[];
   /**
-   * Volatile Spark Geodes scattered on neutral ground at setup.
+   * Volatile Marrow Geodes scattered on neutral ground at setup.
    *
    * Per-encounter rather than universal so a boss arena can stay clean and a test arena
    * stays predictable. Every ordinary fight opts in, so from the player's side they are
    * simply part of the furniture.
    */
-  sparkGeodes?: { min: number; max: number };
+  marrowGeodes?: { min: number; max: number };
   /**
    * Tiles that carry whatever stands on them, one step per round, in `dir`.
    *

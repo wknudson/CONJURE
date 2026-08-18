@@ -28,7 +28,7 @@ export type EffectNode =
   | { op: 'grantArmor'; amount: number | { from: 'sacrificedHp' } }
   | { op: 'applyStatus'; status: StatusKind; stacks: number; area: AreaSpec }
   | { op: 'sacrificeTarget' }
-  | { op: 'gainSparks'; amount: number }
+  | { op: 'extractMarrow'; amount: number }
   | { op: 'detonateAllRunes'; bonusDamage: number }
   /** Magma Brute's on-deploy 2-tile cleave. */
   | { op: 'cleaveFront'; amount: number; dtype: DamageType; width: number }
@@ -114,9 +114,9 @@ export interface CardDef {
    */
   setupOnly?: true;
   /** Paid to whoever breaks this obstacle. Present only on obstacle cards. */
-  onDestroyReward?: { sparks: number };
+  onDestroyReward?: { marrow: number };
   /** Paid to whoever kills this creature. What makes a scavenger worth chasing. */
-  bounty?: { sparks: number };
+  bounty?: { marrow: number };
   /**
    * Breaking this leaves rough ground behind, rather than clearing the tile outright.
    *

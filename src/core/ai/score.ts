@@ -27,8 +27,8 @@ export interface UtilityWeights {
   runeHolderKill: number;
   guardianKill: number;
   collision: number;
-  sparkEfficiency: number;
-  /** Banking a Spark by channelling. Deferred value, so priced under spending one. */
+  marrowEfficiency: number;
+  /** Extracting Marrow by channelling. Deferred value, so priced under spending it. */
   channelValue: number;
   counterRisk: number;
   friendlyCollateral: number;
@@ -61,7 +61,7 @@ export const NOVICE_WEIGHTS: UtilityWeights = {
   guardianKill: 60,
   // A Novice duelist "ignores collision damage" — it does not seek out shoves.
   collision: 0,
-  sparkEfficiency: 10,
+  marrowEfficiency: 10,
   // Above the pass threshold so an idle unit channels rather than standing there, but
   // well under a kill or a face hit so it never competes with actually fighting.
   channelValue: 6,
@@ -252,14 +252,14 @@ export function scoreAction(
   // --- Efficiency ---
   const before = state.players[side];
   const after = next.players[side];
-  const sparksSpent = Math.max(0, before.sparks - after.sparks);
-  utility += weights.sparkEfficiency * sparksSpent;
+  const marrowSpent = Math.max(0, before.marrow - after.marrow);
+  utility += weights.marrowEfficiency * marrowSpent;
 
-  // Channelling banks a Spark instead of swinging. Worth less than spending one, because
-  // the Spark still has to find a use before end of turn — but worth more than the zero
+  // Channelling extracts Marrow instead of swinging. Worth less than spending it, because
+  // the Marrow still has to find a use before end of turn — but worth more than the zero
   // it would otherwise score, which would mean the AI never channelled at all.
   for (const e of events) {
-    if (e.t === 'unitChannelled') utility += weights.channelValue * e.sparks;
+    if (e.t === 'unitChannelled') utility += weights.channelValue * e.marrow;
   }
 
   // --- Risk ---

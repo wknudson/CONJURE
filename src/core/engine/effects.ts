@@ -106,19 +106,19 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       const unit = ctx.state.units[ref.id];
       if (!unit) return;
       play.sacrificedHp = unit.hp;
-      emit(ctx, { t: 'unitSacrificed', unitId: unit.id, sparksGained: 0 });
+      emit(ctx, { t: 'unitSacrificed', unitId: unit.id, marrowExtracted: 0 });
       killEntity(ctx, unit, 'spell');
       return;
     }
 
-    case 'gainSparks': {
+    case 'extractMarrow': {
       const cmd = ctx.state.players[play.side];
-      cmd.sparks += node.amount;
+      cmd.marrow += node.amount;
       emit(ctx, {
         t: 'resourcesChanged',
         side: play.side,
         pips: cmd.pips,
-        sparks: cmd.sparks,
+        marrow: cmd.marrow,
       });
       return;
     }

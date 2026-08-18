@@ -66,7 +66,7 @@ describe('Ignis trial phase gates', () => {
     expect(second.state.players.enemy.hp).toBe(10);
   });
 
-  it('spawns a phase-2 add, evicting a player minion and refunding a spark', () => {
+  it('spawns a phase-2 add, evicting a player minion and refunding a marrow', () => {
     // A player minion is squatting on the first spawn site (1,1).
     const state = ignisScenario({
       enemyHp: 24,
@@ -84,11 +84,11 @@ describe('Ignis trial phase gates', () => {
       target: { kind: 'portrait', side: 'enemy' },
     });
 
-    // Forced Eviction returns it to hand with a spark refund.
+    // Forced Eviction returns it to hand with a marrow refund.
     expect(res.state.units[squatter.id]).toBeUndefined();
     const returned = eventsOf(res.events, 'cardReturnedToHand');
     expect(returned).toHaveLength(1);
-    expect(returned[0]!.refundedSparks).toBe(1);
+    expect(returned[0]!.refundedMarrow).toBe(1);
 
     // An enemy add now occupies the spawn site.
     const add = Object.values(res.state.units).find(

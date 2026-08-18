@@ -16,30 +16,30 @@ import { canMove, legalMoves } from '../core/engine/movement.js';
 
 describe('resources', () => {
   it('caps the pip bank at 8 only during end-of-turn cleanup', () => {
-    const state = scenario({ pips: 12, sparks: 3 });
+    const state = scenario({ pips: 12, marrow: 3 });
     // In-turn overflow is legal: the combined pool may exceed 8.
-    expect(state.players.player.pips + state.players.player.sparks).toBe(15);
+    expect(state.players.player.pips + state.players.player.marrow).toBe(15);
 
     const res = run(state, { type: 'endTurn' });
     expect(res.state.players.player.pips).toBe(PIP_CAP);
   });
 
-  it('expires all sparks at end of turn', () => {
-    const state = scenario({ pips: 2, sparks: 5 });
+  it('expires all marrow at end of turn', () => {
+    const state = scenario({ pips: 2, marrow: 5 });
     const res = run(state, { type: 'endTurn' });
-    expect(res.state.players.player.sparks).toBe(0);
+    expect(res.state.players.player.marrow).toBe(0);
   });
 
-  it('spends sparks before pips, since sparks evaporate', () => {
-    const state = scenario({ pips: 5, sparks: 2, hand: ['grave_sentinel'] });
+  it('spends marrow before pips, since marrow evaporate', () => {
+    const state = scenario({ pips: 5, marrow: 2, hand: ['grave_sentinel'] });
     const res = run(state, play(handCard(state, 'player', 'grave_sentinel'), atTile(2, 4)));
-    // Cost 2 taken entirely from sparks.
-    expect(res.state.players.player.sparks).toBe(0);
+    // Cost 2 taken entirely from marrow.
+    expect(res.state.players.player.marrow).toBe(0);
     expect(res.state.players.player.pips).toBe(5);
   });
 
-  it('burns an overdrawn card and grants a spark instead of overfilling the hand', () => {
-    const state = scenario({ sparks: 0 });
+  it('burns an overdrawn card and grants a marrow instead of overfilling the hand', () => {
+    const state = scenario({ marrow: 0 });
     const cmd = state.players.player;
     // Aegis Ward has Retain, so these survive end-of-turn cleanup and the hand is still
     // full at the limit of 7 when next turn's draw step runs.
@@ -52,8 +52,8 @@ describe('resources', () => {
 
     const burned = eventsOf(res.events, 'cardBurned').filter((e) => e.side === 'player');
     expect(burned.length).toBeGreaterThan(0);
-    // The burned card converts into a Spark rather than being lost outright.
-    expect(res.state.players.player.sparks).toBeGreaterThan(0);
+    // The burned card converts into a Marrow rather than being lost outright.
+    expect(res.state.players.player.marrow).toBeGreaterThan(0);
   });
 
   it('reshuffles the discard pile for free when the deck runs out', () => {

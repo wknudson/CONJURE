@@ -153,7 +153,7 @@ describe('runes and cascades', () => {
     const state = scenario({
       units: [
         {
-          def: 'spark_wisp',
+          def: 'marrow_wisp',
           side: 'player',
           at: { x: 2, y: 3 },
           rune: 'soul_splinter_rune',
@@ -163,7 +163,7 @@ describe('runes and cascades', () => {
       ],
       hand: ['dark_tithe'],
     });
-    const wisp = findUnit(state, 'spark_wisp', 'player');
+    const wisp = findUnit(state, 'marrow_wisp', 'player');
     const weakest = findUnit(state, 'scout_imp', 'enemy');
 
     const res = run(state, play(handCard(state, 'player', 'dark_tithe'), atUnit(wisp.id)));
@@ -178,7 +178,7 @@ describe('runes and cascades', () => {
   it('detonates every rune on the board with +2 bonus damage via Cataclysmic Core', () => {
     const state = scenario({
       pips: 8,
-      sparks: 2,
+      marrow: 2,
       units: [
         { def: 'grave_sentinel', side: 'enemy', at: { x: 0, y: 0 }, hp: 20, rune: 'cinder_rune' },
         { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 0 }, hp: 20, rune: 'cinder_rune' },

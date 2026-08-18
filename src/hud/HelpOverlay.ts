@@ -23,7 +23,7 @@ const SECTIONS: { heading: string; rows: [string, string][] }[] = [
       ['1 · Upkeep', 'You gain a Pip, draw to four cards, and Burn and Toxin tick.'],
       ['2 · Escalation', 'Units that survived a full round grow stronger.'],
       ['3 · Your actions', 'Play cards, move units, attack — in any order you like.'],
-      ['4 · End turn', 'Unspent Sparks vanish. Unplayed cards are discarded unless they Retain.'],
+      ['4 · End turn', 'Unspent Marrow is lost. Unplayed cards are discarded unless they Retain.'],
     ],
   },
   {
@@ -78,7 +78,7 @@ const CONTROLS: [string, string][] = [
   ['Click your unit', 'Cyan tiles are moves, red outlines are attacks'],
   ['Click the enemy Commander', 'Attacks them, if the selected unit can reach'],
   ['Hold Shift', 'Expands damage predictions across every affected tile'],
-  ['C', 'Channels the selected unit: gives up its attack to bank a Spark'],
+  ['C', 'Channels the selected unit: gives up its attack to extract Marrow'],
   ['T', 'Toggles the danger zone — every tile the enemy can strike'],
   ['Q / E', 'Turns the board a quarter-turn, to see behind tall pieces'],
   ['Z', 'Takes back your last move. Attacks and card plays are final'],
@@ -116,7 +116,7 @@ export class HelpOverlay {
       .map((k) => `<dt>${k.title}</dt><dd>${k.body}</dd>`)
       .join('');
 
-    const resourceRows = (['pips', 'sparks', 'armor'] as const)
+    const resourceRows = (['pips', 'marrow', 'armor'] as const)
       .map((k) => {
         const e = TERMS[k]!;
         return `<dt>${e.title.split('—')[0]!.trim()}</dt><dd>${e.body}${e.detail ? ` ${e.detail}` : ''}</dd>`;

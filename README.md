@@ -165,7 +165,7 @@ follows, and each is asserted by a test:
 | :-- | :-- | :-- |
 | Empty deck | Free reshuffle, no fatigue | Draft 7 |
 | Collision damage | 3 to the displaced unit, 2 to the blocker, 3/3 vs. obstacles; Mass Invariance | Draft 7 §5.1 |
-| Hand size | 7; overdraw burns the card for +1 Spark | Draft 7 + Module 4 |
+| Hand size | 7; overdraw burns the card for +1 Marrow | Draft 7 + Module 4 |
 | Double KO | Both revive at 1 HP, board wiped, armor purged, sudden death | Draft 7 §9 |
 | Pip cap | 8, enforced only during end-of-turn cleanup | Draft 7 |
 | Opening hand | 5 cards and 3 banked Pips (frontal contact), then draw 4/turn | Module 3 |
@@ -230,10 +230,10 @@ board would consume the whole map and leave no neutral ground to fight over.
 Three ways to find resources when the hand is bad, because a turn spent passing is a
 turn the game did not ask you anything.
 
-**Channel** (`C`) spends a unit's attack to bank a Spark. It keeps its move, so this is a
+**Channel** (`C`) spends a unit's attack to extract Marrow. It keeps its move, so this is a
 use for the swing rather than exhaustion. **Reactions pay a Pip back** — capped at two a
 turn, which is the whole design: without the cap a three-reaction cascade funds the card
-that caused it. **Spark Geodes** are 1 HP and worth two Sparks, scattered only on neutral
+that caused it. **Marrow Geodes** are 1 HP and worth two Marrow, scattered only on neutral
 ground, so taking one means walking somewhere you would rather not stand yet.
 
 If play still feels starved, the fail-safe is one token: `gainPips(ctx, side, 1)` in

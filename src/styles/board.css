@@ -69,6 +69,17 @@
   letter-spacing: 1.5px;
 }
 
+/* Marrow gained. Crimson with an aether glow, matching the dial's outer ring so a
+   floater on the board and the beads it lands in read as the same substance. */
+.floater--marrow {
+  color: #f0567a;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-shadow:
+    0 0 10px rgba(240, 86, 122, 0.8),
+    0 0 18px rgba(168, 85, 247, 0.45);
+}
+
 .floater--note {
   color: var(--text);
   font-size: 14px;

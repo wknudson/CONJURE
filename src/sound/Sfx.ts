@@ -9,7 +9,7 @@
 export type Cue =
   | 'pip'
   | 'card'
-  | 'spark'
+  | 'rasp'
   | 'hit'
   | 'crash'
   | 'detonate'
@@ -110,7 +110,9 @@ export class Sfx {
       case 'card':
         this.noise(t, 0.09, 1600, 0.18);
         break;
-      case 'spark':
+      case 'rasp':
+        // Named for the sound, not the event: it serves Marrow, hazards and Resonance
+        // alike, and a cue named after one of them would misdescribe the other two.
         // Deliberately harsh: spending life should sound like it costs something.
         this.tone(t, 'sawtooth', 240, 90, 0.16, 0.3);
         this.noise(t, 0.14, 3200, 0.22);

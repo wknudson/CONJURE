@@ -1,7 +1,7 @@
 /**
  * Plain-language explanations for every term the game shows but never defines.
  *
- * A first-time player meets "Escalate", "Guardian", "Pips" and "Sparks" within seconds
+ * A first-time player meets "Escalate", "Guardian", "Pips" and "Marrow" within seconds
  * of starting, and nothing on screen says what any of them mean. Everything here is
  * surfaced on hover.
  */
@@ -70,7 +70,7 @@ export const KEYWORDS: Record<string, GlossaryEntry> = {
   },
   Sacrifice: {
     title: 'Sacrifice',
-    body: 'Can be spent for Sparks instead of attacking.',
+    body: 'Can be spent to extract Marrow instead of attacking.',
     detail: 'Sacrificing is an action: it has to happen before the unit attacks.',
   },
 };
@@ -81,10 +81,11 @@ export const TERMS: Record<string, GlossaryEntry> = {
     body: 'You gain 1 Pip at the start of every turn, and unspent Pips carry over.',
     detail: 'The bank holds 8. Saving them is how you afford Power Tier cards like Cataclysmic Core.',
   },
-  sparks: {
-    title: 'Sparks — burst magic',
-    body: 'Temporary energy from sacrificing your own units. Spends exactly like Pips.',
-    detail: 'Sparks vanish at end of turn. Use them or lose them — and they are spent before Pips.',
+  marrow: {
+    title: 'Marrow — volatile magic',
+    body: 'Volatile, unrefined energy extracted during a turn by sacrifice, devouring, or elemental reactions.',
+    detail:
+      'Marrow is consumed before Pips when casting, and all unspent Marrow is lost at the end of the turn. Use it or lose it.',
   },
   pact: {
     title: 'The Pact',

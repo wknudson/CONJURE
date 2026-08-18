@@ -26,7 +26,7 @@ import { makeRng } from '../core/util/rng.js';
 
 /** A legal filler deck of N copies drawn from cheap Tier 1 staples. */
 function fillerDeck(size: number): string[] {
-  const staples = ['scout_imp', 'spark_wisp', 'shield_bash', 'aegis_ward', 'stone_barricade'];
+  const staples = ['scout_imp', 'marrow_wisp', 'shield_bash', 'aegis_ward', 'stone_barricade'];
   const out: string[] = [];
   let i = 0;
   while (out.length < size) {

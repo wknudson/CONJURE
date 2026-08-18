@@ -38,7 +38,7 @@ describe('what breaking a wall leaves', () => {
     // A geode is not masonry. Nothing worth walking around survives it.
     const state = scenario({ width: 6, height: 8 });
     const imp = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 5 } });
-    const geode = spawnObstacle(state, 'spark_geode', { x: 2, y: 4 });
+    const geode = spawnObstacle(state, 'marrow_geode', { x: 2, y: 4 });
 
     const res = applyCommand(state, {
       type: 'attack',

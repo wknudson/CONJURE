@@ -2,25 +2,25 @@ import { describe, expect, it } from 'vitest';
 import { addUnit, eventsOf, findUnit, giveCard, run, scenario } from './scenario.js';
 import { applyCommand } from '../core/engine/engine.js';
 import { IllegalCommandError } from '../core/types/commands.js';
-import { CHANNEL_SPARKS } from '../core/engine/engine.js';
+import { CHANNEL_MARROW } from '../core/engine/engine.js';
 import { enumerateActions } from '../core/ai/enumerate.js';
 import { canAttack } from '../core/engine/movement.js';
 
 /**
- * Channel: spend a unit's swing to bank a Spark.
+ * Channel: spend a unit's swing to bank a Marrow.
  *
  * The floor under a bad hand. A turn with nothing worth attacking and nothing affordable
  * used to be a turn spent passing; every idle body is now worth something.
  */
 
 describe('channelling', () => {
-  it('banks a spark and spends the swing', () => {
-    const state = scenario({ sparks: 0 });
+  it('banks a marrow and spends the swing', () => {
+    const state = scenario({ marrow: 0 });
     const unit = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 4 } });
 
     const res = applyCommand(state, { type: 'channel', unit: unit.id });
 
-    expect(res.state.players.player.sparks).toBe(CHANNEL_SPARKS);
+    expect(res.state.players.player.marrow).toBe(CHANNEL_MARROW);
     expect(res.state.units[unit.id]!.attackedThisTurn).toBe(true);
     expect(eventsOf(res.events, 'unitChannelled')[0]?.unitId).toBe(unit.id);
   });
@@ -77,7 +77,7 @@ describe('channelling', () => {
     );
   });
 
-  it('refuses the Bound Form, which would bank a spark at no risk', () => {
+  it('refuses the Bound Form, which would bank a marrow at no risk', () => {
     const state = scenario({});
     const body = addUnit(state, {
       def: 'ignis_bound',
@@ -92,7 +92,7 @@ describe('channelling', () => {
   });
 
   it('can be done by several units in a turn', () => {
-    const state = scenario({ sparks: 0 });
+    const state = scenario({ marrow: 0 });
     const a = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 1, y: 4 } });
     const b = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 3, y: 4 } });
 
@@ -102,7 +102,7 @@ describe('channelling', () => {
       { type: 'channel', unit: b.id },
     );
 
-    expect(res.state.players.player.sparks).toBe(CHANNEL_SPARKS * 2);
+    expect(res.state.players.player.marrow).toBe(CHANNEL_MARROW * 2);
   });
 });
 
@@ -112,27 +112,27 @@ describe('the AI and channelling', () => {
     const state = scenario({ width: 6, height: 8, pips: 0 });
     const cmd = state.players.enemy;
     cmd.pips = pips;
-    cmd.sparks = 0;
+    cmd.marrow = 0;
     giveCard(state, 'enemy', 'grave_sentinel'); // costs 2
     addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 } });
     state.activeSide = 'enemy';
     return state;
   }
 
-  it('offers a channel when the spark completes a purchase', () => {
+  it('offers a channel when the marrow completes a purchase', () => {
     const actions = enumerateActions(starved(1), 'enemy');
     expect(actions.some((a) => a.type === 'channel')).toBe(true);
   });
 
-  it('refuses to hoard sparks that would expire unspent', () => {
-    // The bug this guards: sparks are wiped at end of turn, so banking one that buys
+  it('refuses to hoard marrow that would expire unspent', () => {
+    // The bug this guards: marrow are wiped at end of turn, so banking one that buys
     // nothing costs a swing for nothing. Left ungated the AI channels every idle unit
     // until it hits its action cap, and quadruples its own planning time doing it.
     const actions = enumerateActions(starved(0), 'enemy');
     expect(actions.some((a) => a.type === 'channel')).toBe(false);
   });
 
-  it('offers at most one channel, since every unit banks the same spark', () => {
+  it('offers at most one channel, since every unit banks the same marrow', () => {
     const state = starved(1);
     addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 1 } });
     addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 4, y: 1 } });

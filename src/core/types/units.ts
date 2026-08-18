@@ -64,7 +64,7 @@ export interface Unit {
   keywords: Keyword[];
   statuses: Partial<Record<StatusKind, number>>;
   rune?: AttachedRune;
-  /** Sparks granted when this unit is sacrificed. */
+  /** Marrow granted when this unit is sacrificed. */
   sacrificeValue: number;
   escalation: number;
   escalationCap: number;

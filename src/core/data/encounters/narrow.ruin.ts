@@ -64,5 +64,5 @@ export const NARROW_RUIN: EncounterDef = registerEncounter({
     { at: { x: 0, y: 3 }, dir: { x: 0, y: -1 } },
     { at: { x: 0, y: 2 }, dir: { x: 0, y: -1 } },
   ],
-  sparkGeodes: { min: 1, max: 2 },
+  marrowGeodes: { min: 1, max: 2 },
 });
