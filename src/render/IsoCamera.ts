@@ -26,6 +26,15 @@ export class IsoCamera {
   origin: ScreenPoint = { x: 0, y: 0 };
   zoom = 1;
   rotationStep: 0 | 1 | 2 | 3 = 0;
+  /**
+   * Free rotation in radians, added on top of the quarter-turn steps.
+   *
+   * Unlike `spin`, which only tilts the finished image, this is part of the projection:
+   * picking, framing and depth sorting all see it, so the board can sit at any angle and
+   * still be clicked accurately. Quarter-turns remain a separate quantised value so that
+   * Q/E keeps snapping to clean orientations rather than drifting off them.
+   */
+  continuousRotation = 0;
   /** True when the viewport is too small to show the board at a readable size. */
   tooSmall = false;
   shake: ScreenPoint = { x: 0, y: 0 };
@@ -50,9 +59,32 @@ export class IsoCamera {
     return this.spin !== 0;
   }
 
+  /** Everything the board is turned by: quarter-turn steps plus any free rotation. */
+  get angle(): number {
+    return this.rotationStep * (Math.PI / 2) + this.continuousRotation;
+  }
+
+  /** True once the board has been turned off its quarter-turn grid. */
+  get freeRotated(): boolean {
+    return this.continuousRotation !== 0;
+  }
+
   /** Quarter-turns, wrapping in both directions. */
   rotateBy(steps: number): void {
     this.rotationStep = (((this.rotationStep + steps) % 4) + 4) % 4 as 0 | 1 | 2 | 3;
+  }
+
+  /**
+   * Drops the free rotation back onto the nearest quarter-turn.
+   *
+   * Snapping matters because the quantised orientations are the ones the art was drawn
+   * for: at a clean angle the diamonds line up with the tile sprites, and a Behemoth's
+   * silhouette reads as a box rather than as a lozenge.
+   */
+  snapToNearestStep(): void {
+    const quarters = Math.round(this.angle / (Math.PI / 2));
+    this.rotationStep = (((quarters % 4) + 4) % 4) as 0 | 1 | 2 | 3;
+    this.continuousRotation = 0;
   }
 
   get tileW(): number {
@@ -76,13 +108,22 @@ export class IsoCamera {
     return this.worldToScreen(c.x + 0.5, c.y + 0.5, elevPx);
   }
 
-  /** Screen pixel -> grid tile, or null when the point is off the board. */
+  /**
+   * Screen pixel -> grid tile, or null when the point is off the board.
+   *
+   * Note the order: the projection is undone in *continuous* space and only rounded down
+   * to a tile at the very end. Rounding first and then un-rotating whole indices — which
+   * is what this did while rotation was limited to quarter-turns — only lands on the
+   * right tile when the turn is a multiple of 90 degrees. At 47 degrees a tile's screen
+   * diamond straddles several index cells, and flooring early picks one of its neighbours.
+   */
   screenToTile(sx: number, sy: number): Coord | null {
     const dx = (sx - this.origin.x - this.shake.x) / (this.tileW / 2);
     const dy = (sy - this.origin.y - this.shake.y) / (this.tileH / 2);
-    const rx = Math.floor((dy + dx) / 2);
-    const ry = Math.floor((dy - dx) / 2);
-    const [gx, gy] = this.unrot(rx, ry);
+    const [fx, fy] = this.unrot((dy + dx) / 2, (dy - dx) / 2);
+
+    const gx = Math.floor(fx);
+    const gy = Math.floor(fy);
     if (gx < 0 || gy < 0 || gx >= this.gridW || gy >= this.gridH) return null;
     return { x: gx, y: gy };
   }
@@ -141,6 +182,13 @@ export class IsoCamera {
    * each end of the grid.
    */
   private extentAtUnitZoom(): { width: number; height: number; midX: number; midY: number } {
+    // Free rotation is measured against the circle the board sweeps out rather than the
+    // box it happens to occupy right now. Measuring the current box would be tighter, but
+    // the box grows and shrinks as the board turns, so the zoom would pulse under the
+    // player's hand while they dragged — the board appearing to breathe is far worse than
+    // a little unused margin at the clean angles.
+    if (this.freeRotated) return this.sweptExtentAtUnitZoom();
+
     const points: ScreenPoint[] = [];
     const project = (gx: number, gy: number): void => {
       const [rx, ry] = this.rot(gx, gy);
@@ -175,48 +223,70 @@ export class IsoCamera {
   }
 
   /**
-   * Rotates a *continuous* board position.
+   * The screen box the board fits inside at *every* angle, so the zoom holds still while
+   * it turns.
    *
-   * Reflection is about the board's extent (`gridW`, `gridH`), not its last index. A
-   * point at x = 0 sits on the board's edge, so its mirror is the opposite edge at
-   * x = gridW — mirroring about `gridW - 1` instead would shift everything half a tile
-   * and put tile centres on tile boundaries.
+   * Whatever the angle, no part of the board escapes the circle of radius `r` about its
+   * centre. Projecting that circle gives an ellipse whose extremes are r·√2 tiles across
+   * and r·√2 tiles down — the √2 being what the isometric skew adds when the circle is
+   * squashed onto the diamond. The centre itself is the one point rotation cannot move,
+   * so it doubles as the framing midpoint.
    */
-  private rot(gx: number, gy: number): [number, number] {
-    const w = this.gridW;
-    const h = this.gridH;
-    switch (this.rotationStep) {
-      case 0:
-        return [gx, gy];
-      case 1:
-        return [gy, w - gx];
-      case 2:
-        return [w - gx, h - gy];
-      case 3:
-        return [h - gy, gx];
-    }
+  private sweptExtentAtUnitZoom(): {
+    width: number;
+    height: number;
+    midX: number;
+    midY: number;
+  } {
+    const cx = this.gridW / 2;
+    const cy = this.gridH / 2;
+    // The Commanders stand beyond the ends of the grid and turn with it, so they set the
+    // radius rather than the board's own corners.
+    const r = Math.hypot(cx, cy + COMMANDER_MARGIN) * Math.SQRT2;
+
+    return {
+      width: r * TILE_W,
+      height: r * TILE_H,
+      midX: (cx - cy) * (TILE_W / 2),
+      midY: (cx + cy) * (TILE_H / 2),
+    };
   }
 
   /**
-   * Rotates a *tile index* back to board space.
+   * Turns a board position about the board's centre.
    *
-   * The counterpart to `rot`, and deliberately not its mirror image: an index identifies
-   * a whole tile rather than a point, so it reflects about the last index (`gridW - 1`).
-   * Tile 0 spans [0, 1) and its mirror is the tile spanning [w-1, w), which is index
-   * w - 1 — using the extent here would land one tile past the edge.
+   * The pivot is the physical middle of the grid — (w/2, h/2) — rather than a corner or
+   * the origin, which is what makes the board appear to spin on a turntable instead of
+   * swinging around one edge. Every projected point goes through here, so the framing,
+   * the picking and the depth order all agree on where the board is pointing.
+   *
+   * The old quarter-turn table did the same thing by hand for four fixed angles; this is
+   * that generalised, and reduces to the same rotations at multiples of 90 degrees.
    */
+  private rot(gx: number, gy: number): [number, number] {
+    const a = this.angle;
+    if (a === 0) return [gx, gy];
+
+    const cx = this.gridW / 2;
+    const cy = this.gridH / 2;
+    const dx = gx - cx;
+    const dy = gy - cy;
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+    return [cx + dx * cos - dy * sin, cy + dx * sin + dy * cos];
+  }
+
+  /** The exact inverse of `rot`, for turning a screen hit back into a board position. */
   private unrot(rx: number, ry: number): [number, number] {
-    const nx = this.gridW - 1;
-    const ny = this.gridH - 1;
-    switch (this.rotationStep) {
-      case 0:
-        return [rx, ry];
-      case 1:
-        return [nx - ry, rx];
-      case 2:
-        return [nx - rx, ny - ry];
-      case 3:
-        return [ry, ny - rx];
-    }
+    const a = this.angle;
+    if (a === 0) return [rx, ry];
+
+    const cx = this.gridW / 2;
+    const cy = this.gridH / 2;
+    const dx = rx - cx;
+    const dy = ry - cy;
+    const cos = Math.cos(-a);
+    const sin = Math.sin(-a);
+    return [cx + dx * cos - dy * sin, cy + dx * sin + dy * cos];
   }
 }

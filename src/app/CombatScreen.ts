@@ -83,6 +83,25 @@ export class CombatScreen implements Screen {
   private onKeyDown = (ev: KeyboardEvent) => this.handleKeyDown(ev);
   private onKeyUp = (ev: KeyboardEvent) => this.handleKeyUp(ev);
 
+  /**
+   * Turntable drag: right or middle mouse held, dragged sideways to orbit the board.
+   *
+   * Held on the window rather than the canvas so a drag that wanders off the board keeps
+   * working — letting go outside the canvas would otherwise strand the camera mid-turn.
+   */
+  private drag: { button: number; lastX: number; turned: number } | null = null;
+  /**
+   * Set the moment a right-drag actually turns the board, and read by the context-menu
+   * handler so the same gesture does not also cancel the player's selection.
+   *
+   * A flag rather than an inspection of `drag`, because the two events arrive in either
+   * order depending on the platform — Windows raises the context menu on release, others
+   * on press — and this is true by the time either of them runs.
+   */
+  private swallowContextMenu = false;
+  private onDragMove = (ev: MouseEvent) => this.handleDragMove(ev);
+  private onDragEnd = () => this.endDrag();
+
   constructor(
     private readonly encounter: EncounterDef,
     private readonly onFinish: (result: CombatResult, encounter: EncounterDef) => void,
@@ -152,8 +171,12 @@ export class CombatScreen implements Screen {
     canvas.addEventListener('mousemove', (ev) => this.handleMouseMove(ev));
     canvas.addEventListener('click', (ev) => this.handleClick(ev));
     canvas.addEventListener('mouseleave', () => this.targeting?.onTileHover(null));
+    canvas.addEventListener('mousedown', (ev) => this.handleDragStart(ev));
     canvas.addEventListener('contextmenu', (ev) => {
       ev.preventDefault();
+      // A right-click that turned the board was a camera gesture, not a cancel. Without
+      // this, every orbit would also throw away whatever the player had selected.
+      if (this.consumeDragGesture()) return;
       this.targeting?.onCancel();
     });
 
@@ -204,6 +227,8 @@ export class CombatScreen implements Screen {
   unmount(): void {
     this.renderer?.stop();
     this.hud?.destroy();
+    // A screen torn down mid-drag would otherwise leave its window listeners behind.
+    this.endDrag();
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
@@ -213,6 +238,75 @@ export class CombatScreen implements Screen {
     this.tutorial = null;
     this.el?.remove();
     this.el = null;
+  }
+
+  // ---------------------------------------------------------------- camera drag
+
+  /** Radians turned per pixel dragged. A full turn is roughly the width of the board. */
+  private static readonly RADIANS_PER_PIXEL = 0.01;
+  /** Pixels of travel before a press counts as a drag rather than a click. */
+  private static readonly DRAG_SLOP = 3;
+
+  /**
+   * Begins a turntable drag on right or middle mouse.
+   *
+   * Left is deliberately untouched: it selects units, aims cards and attacks, and a
+   * camera control that fought with it would make the board feel unpredictable.
+   */
+  private handleDragStart(ev: MouseEvent): void {
+    if (ev.button !== 1 && ev.button !== 2) return;
+    if (this.cam.spinning) return;
+
+    ev.preventDefault();
+    this.drag = { button: ev.button, lastX: ev.clientX, turned: 0 };
+    window.addEventListener('mousemove', this.onDragMove);
+    window.addEventListener('mouseup', this.onDragEnd);
+  }
+
+  private handleDragMove(ev: MouseEvent): void {
+    const drag = this.drag;
+    if (!drag || !this.renderer) return;
+
+    // movementX is the honest figure where it exists; the fallback keeps this working
+    // under synthetic events and browsers that leave it at zero.
+    const delta = ev.movementX || ev.clientX - drag.lastX;
+    drag.lastX = ev.clientX;
+    if (delta === 0) return;
+
+    drag.turned += Math.abs(delta);
+    // Only a right-drag has a context menu to swallow; a middle-drag must not arm it, or
+    // the next genuine right-click would be eaten instead of cancelling.
+    if (drag.button === 2 && drag.turned >= CombatScreen.DRAG_SLOP) {
+      this.swallowContextMenu = true;
+    }
+    this.cam.continuousRotation += delta * CombatScreen.RADIANS_PER_PIXEL;
+
+    // Framing is recomputed rather than left alone: the board's centre stays put under
+    // rotation, but the space it needs does not, and the swept extent keeps the zoom
+    // steady while the drag is in flight.
+    this.renderer.resize();
+
+    // The board redraws itself every frame, so nothing needs forcing here — but the
+    // DOM-anchored overlays do not ride the canvas, so they are settled as we go.
+    this.targeting?.refreshOverlays();
+  }
+
+  private endDrag(): void {
+    window.removeEventListener('mousemove', this.onDragMove);
+    window.removeEventListener('mouseup', this.onDragEnd);
+    const drag = this.drag;
+    this.drag = null;
+    if (!drag || drag.turned < CombatScreen.DRAG_SLOP) return;
+
+    this.renderer?.resize();
+    this.targeting?.refreshOverlays();
+  }
+
+  /** True if the gesture just finished turned the board. Reads once, then rearms. */
+  private consumeDragGesture(): boolean {
+    const swallow = this.swallowContextMenu;
+    this.swallowContextMenu = false;
+    return swallow;
   }
 
   // ---------------------------------------------------------------- input
@@ -454,6 +548,10 @@ export class CombatScreen implements Screen {
    */
   private async rotate(steps: number): Promise<void> {
     if (!this.renderer || this.cam.spinning) return;
+
+    // A quarter-turn after a free drag tidies up first, so Q and E always leave the board
+    // square to the screen rather than a quarter-turn from wherever it was left pointing.
+    if (this.cam.freeRotated) this.cam.snapToNearestStep();
 
     this.cam.rotateBy(steps);
     this.renderer.resize();

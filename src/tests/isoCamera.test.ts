@@ -104,6 +104,85 @@ describe('IsoCamera', () => {
     }
   });
 
+  /**
+   * Free rotation. The board can now sit at any angle, so picking has to survive angles
+   * that no quarter-turn table could describe.
+   */
+  describe('turned to an arbitrary angle', () => {
+    const at = (radians: number, w = 6, h = 8) => {
+      const c = new IsoCamera(w, h);
+      c.continuousRotation = radians;
+      c.fit(1280, 720);
+      return c;
+    };
+
+    it('still picks the tile the cursor is over', () => {
+      // 47 degrees: nothing like a quarter-turn, and the angle the old index-reflection
+      // maths could not express at all.
+      const c = at((47 * Math.PI) / 180);
+      for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 6; x++) {
+          const centre = c.tileCenter({ x, y });
+          expect(c.screenToTile(centre.x, centre.y), `tile ${x},${y}`).toEqual({ x, y });
+        }
+      }
+    });
+
+    it('round-trips at a full sweep of angles', () => {
+      for (let deg = 0; deg < 360; deg += 13) {
+        const c = at((deg * Math.PI) / 180);
+        const centre = c.tileCenter({ x: 2, y: 5 });
+        expect(c.screenToTile(centre.x, centre.y), `${deg} degrees`).toEqual({ x: 2, y: 5 });
+      }
+    });
+
+    it('turns about the board centre, which is the one point that cannot move', () => {
+      const still = at(0);
+      const turned = at(1.2);
+      const middle = { x: 3, y: 4 }; // the exact centre of a 6x8 board
+
+      const a = still.worldToScreen(middle.x, middle.y);
+      const b = turned.worldToScreen(middle.x, middle.y);
+      expect(b.x).toBeCloseTo(a.x, 6);
+      expect(b.y).toBeCloseTo(a.y, 6);
+    });
+
+    it('holds the zoom steady while it turns, so the board does not breathe', () => {
+      // Framing off the current bounding box would pulse the zoom under the player's
+      // hand; the swept extent is what keeps it still.
+      const zooms = new Set<number>();
+      for (let deg = 5; deg < 360; deg += 17) {
+        zooms.add(at((deg * Math.PI) / 180).zoom);
+      }
+      expect(zooms.size, 'zoom must not change with angle').toBe(1);
+    });
+
+    it('adds free rotation on top of the quarter-turn steps', () => {
+      const c = new IsoCamera(6, 8);
+      c.rotationStep = 1;
+      c.continuousRotation = 0.25;
+      expect(c.angle).toBeCloseTo(Math.PI / 2 + 0.25, 6);
+    });
+
+    it('snaps back to the nearest clean orientation', () => {
+      const c = new IsoCamera(6, 8);
+      // Just past three quarter-turns: it should land on three, not two.
+      c.continuousRotation = (Math.PI / 2) * 3 + 0.2;
+      c.snapToNearestStep();
+
+      expect(c.rotationStep).toBe(3);
+      expect(c.continuousRotation).toBe(0);
+      expect(c.freeRotated).toBe(false);
+    });
+
+    it('snaps a near-full turn back to square rather than to a fourth step', () => {
+      const c = new IsoCamera(6, 8);
+      c.continuousRotation = Math.PI * 2 - 0.05;
+      c.snapToNearestStep();
+      expect(c.rotationStep).toBe(0);
+    });
+  });
+
   it('keeps picking correct after a resize', () => {
     const c = new IsoCamera(6, 6);
     c.fit(800, 600);
