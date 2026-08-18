@@ -1295,3 +1295,228 @@
 }
 
 .hub-zone--vivarium { --sigil: #6ee7b7; }
+
+/* ------------------------------------------------------------- the wall */
+
+.screen--title {
+  --brass: #b0946a;
+  --brass-lit: #d6c4a0;
+  --lamp: #f0b24a;
+  --marrow: #e0466b;
+  --parchment: #d9cdb2;
+  --parchment-deep: #b8a887;
+  --ink: #2a2118;
+}
+
+/* Wet brick under a gaslamp: two offset gradients make the courses, and the whole
+   thing is dark enough that the paper is the only bright object in the room. */
+.brick-wall {
+  position: relative;
+  width: min(960px, 92vw);
+  padding: 46px 26px 34px;
+  border-radius: 6px;
+  background-color: #23201e;
+  background-image:
+    radial-gradient(ellipse at 50% -10%, rgba(240, 178, 74, 0.22), transparent 62%),
+    linear-gradient(rgba(0, 0, 0, 0.42) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.42) 2px, transparent 2px);
+  background-size: auto, 100% 28px, 62px 28px;
+  background-position: center, 0 0, 0 0;
+  box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.75);
+}
+
+/* The lamp itself, hanging above the middle poster. */
+.brick-wall__lamp {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 90px;
+  height: 26px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 0%, rgba(240, 178, 74, 0.55), transparent 70%);
+  filter: blur(3px);
+}
+
+.brick-wall__posters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 22px;
+}
+
+/* -------- a commission -------- */
+
+.wanted-poster {
+  position: relative;
+  min-height: 320px;
+  /* The bottom padding is the stamp's room. It is absolutely positioned so it can sit
+     crooked, which means the content above has to be told to stop short of it. */
+  padding: 26px 18px 46px;
+  text-align: center;
+  cursor: pointer;
+  color: var(--ink);
+  font-family: var(--font);
+  border: none;
+  border-radius: 2px;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.16), transparent 70%),
+    linear-gradient(180deg, var(--parchment), var(--parchment-deep));
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6);
+  /* Pinned by one corner, so it hangs slightly crooked. */
+  transform: rotate(-1.1deg);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease;
+}
+
+.wanted-poster:nth-child(2) { transform: rotate(0.7deg); }
+.wanted-poster:nth-child(3) { transform: rotate(-0.4deg); }
+
+.wanted-poster:hover {
+  transform: rotate(0deg) translateY(-5px);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.7), 0 0 30px rgba(240, 178, 74, 0.25);
+}
+
+.wanted-poster__pin {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4d9a0, #6b4f22);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.wanted-poster__head {
+  font: 800 22px var(--font);
+  letter-spacing: 8px;
+  text-indent: 8px;
+  text-transform: uppercase;
+  color: var(--ink);
+  border-bottom: 2px solid rgba(42, 33, 24, 0.5);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+/* Where the animated charcoal drawing will go. Reserved, framed, and tinted to the
+   Companion's school so the slot already reads as a portrait of somebody. */
+.wanted-poster__charcoal {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 110px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(42, 33, 24, 0.35);
+  background:
+    radial-gradient(
+      ellipse at 50% 55%,
+      color-mix(in srgb, var(--school, #7dd3fc) 34%, transparent),
+      transparent 68%
+    ),
+    repeating-linear-gradient(
+      -38deg,
+      rgba(42, 33, 24, 0.14) 0 2px,
+      transparent 2px 6px
+    );
+}
+
+.wanted-poster__charcoal-note {
+  font: 600 8px var(--font);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(42, 33, 24, 0.45);
+  padding-bottom: 4px;
+}
+
+.wanted-poster__name {
+  font: 800 19px var(--font);
+  letter-spacing: 1px;
+}
+
+.wanted-poster__rank {
+  font: 600 10.5px var(--font);
+  color: rgba(42, 33, 24, 0.72);
+  margin-bottom: 12px;
+}
+
+.wanted-poster__bounty {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(42, 33, 24, 0.3);
+  border-bottom: 1px solid rgba(42, 33, 24, 0.3);
+}
+
+.wanted-poster__bounty-label {
+  font: 700 8.5px var(--font);
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: rgba(42, 33, 24, 0.6);
+}
+
+.wanted-poster__bounty-value {
+  font: 800 22px var(--font);
+  color: #7a2410;
+}
+
+.wanted-poster__vitals {
+  margin-top: 8px;
+  font: 600 10px var(--font);
+  color: rgba(42, 33, 24, 0.7);
+}
+
+/* A rubber stamp, rolled on at an angle. */
+.wanted-poster__stamp {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%) rotate(-3deg);
+  padding: 4px 12px;
+  border: 2px solid rgba(122, 36, 16, 0.6);
+  border-radius: 3px;
+  font: 800 9.5px var(--font);
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: rgba(122, 36, 16, 0.78);
+}
+
+/* -------- a blank sheet -------- */
+
+.wanted-poster--blank {
+  background: linear-gradient(180deg, #cfc4ab, #ada079);
+}
+
+.wanted-poster--blank .wanted-poster__blank-mark {
+  height: 150px;
+  margin: 22px 0 14px;
+  border: 1px dashed rgba(42, 33, 24, 0.35);
+}
+
+.wanted-poster__blank-copy {
+  font: 600 11px var(--font);
+  color: rgba(42, 33, 24, 0.6);
+}
+
+/* The beat between clicking and the character existing. */
+.wanted-poster.is-sketching {
+  transform: rotate(0deg);
+  cursor: progress;
+}
+
+.wanted-poster__sketch {
+  height: 150px;
+  margin: 22px 0 14px;
+  border: 1px solid rgba(42, 33, 24, 0.4);
+  background: repeating-linear-gradient(
+    -38deg,
+    rgba(42, 33, 24, 0.3) 0 2px,
+    transparent 2px 6px
+  );
+  animation: sketching 700ms linear;
+}
+
+@keyframes sketching {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}

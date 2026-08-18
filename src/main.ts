@@ -1,9 +1,15 @@
 /**
  * Entry point: wires the screens together and owns the persistent save.
  *
- * The save is loaded once here and written after anything that changes it, so no screen
+ * The file is loaded once here and written after anything that changes it, so no screen
  * has to know about storage. A failed write is not fatal — the session simply continues
- * without persisting, which beats losing the run to an exception.
+ * without persisting, which beats losing progress to an exception.
+ *
+ * Three characters live in that file and exactly one is open at a time. `active` is a
+ * *reference into* `saveFile.profiles`, never a copy, so every mutation a screen makes is
+ * already in the file by the time `persist()` runs — and `persist()` writes the file
+ * whole, so the two profiles nobody is playing come through a save untouched. That is the
+ * one invariant this module exists to hold.
  */
 
 import './styles/base.css';
@@ -24,14 +30,15 @@ import { PreCombatScreen } from './app/PreCombatScreen.js';
 import { SafehouseScreen } from './app/SafehouseScreen.js';
 import { ShopScreen } from './app/ShopScreen.js';
 import { ArtificerScreen } from './app/ArtificerScreen.js';
-import { loadSave, writeSave, type SaveData } from './app/save.js';
 import {
-  forfeitIfAbandoned,
-  isDown,
-  newRun,
-  rescuePlayer,
-  type GlobalGameState,
-} from './core/overworld/state.js';
+  loadSave,
+  newProfile,
+  writeSave,
+  type Profile,
+  type SaveFile,
+  type SlotId,
+} from './app/save.js';
+import { forfeitIfAbandoned, isDown, rescuePlayer } from './core/overworld/state.js';
 import { encounterForBounty, rollBounties, type Bounty } from './core/data/bounties.js';
 import { carryFor, resolveCombat, type CombatOutcome } from './core/overworld/run.js';
 import { companionById } from './core/data/companions.js';
@@ -55,11 +62,31 @@ if (!root) throw new Error('#app root element is missing');
 const screens = new ScreenManager(root);
 
 const loaded = loadSave();
-let save: SaveData = loaded.save;
+const saveFile: SaveFile = loaded.save;
 const bootNotes = loaded.notes;
 
+/**
+ * The character currently open, or null while the player is at the wall.
+ *
+ * A reference into `saveFile.profiles`, deliberately. Taking a copy here is how one
+ * character's purchases would fail to reach disk, or worse, reach the wrong slot.
+ */
+let active: Profile | null = null;
+
+/**
+ * Writes the whole file.
+ *
+ * There is no "save this profile" — `writeSave` takes the file, so the slots nobody is
+ * playing are carried through every write by construction rather than by remembering to.
+ */
 function persist(): void {
-  writeSave(save);
+  writeSave(saveFile);
+}
+
+/** The open character. Every screen below the wall runs with one, so this asserts it. */
+function profile(): Profile {
+  if (!active) throw new Error('no profile is open');
+  return active;
 }
 
 /**
@@ -70,10 +97,11 @@ function persist(): void {
  * rather than as a crash on the way into the hub.
  */
 function progressFor(companionId: string): CompanionProgress {
-  const existing = save.companions[companionId];
+  const p = profile();
+  const existing = p.companions[companionId];
   if (existing) return existing;
   const fresh = newCompanion();
-  save.companions[companionId] = fresh;
+  p.companions[companionId] = fresh;
   return fresh;
 }
 
@@ -85,8 +113,13 @@ function progressFor(companionId: string): CompanionProgress {
  * and then killed it would look like a bug rather than a rule. Written back immediately,
  * so closing the tab again cannot undo the collection.
  */
-if (save.overworld && forfeitIfAbandoned(save.overworld)) {
-  bootNotes.push('You left a fight unfinished. The Magistracy collected on the Pact.');
+let forfeited = false;
+for (const slot of Object.keys(saveFile.profiles) as SlotId[]) {
+  const p = saveFile.profiles[slot];
+  if (p && forfeitIfAbandoned(p.state.overworld)) forfeited = true;
+}
+if (forfeited) {
+  bootNotes.push('A fight was left unfinished. The Magistracy collected on the Pact.');
   persist();
 }
 
@@ -101,62 +134,50 @@ let pendingNotice: { title: string; body: string } | null = null;
 
 /** The deck a companion will actually fight with, falling back to its default. */
 function deckFor(companionId: string): string[] {
-  const saved = save.decks[companionId];
+  const saved = profile().decks[companionId];
   if (saved && !saved.invalid && saved.cards.length > 0) return saved.cards;
   return companionById(companionId)?.deck ?? [];
 }
 
 /**
- * The Gauntlet run in progress.
+ * Opens a character and shows their Safehouse.
  *
- * Held here and stored under `save.overworld` as the very same object, so a purchase is
- * in the save the moment it happens and `persist()` is only ever a write. The run and the
- * collection are still different lifetimes — a forged card outlives the run that paid for
- * it — which is why they are separate fields rather than one.
+ * The only door into the game. Setting `activeProfileId` before anything else means a
+ * reload mid-session comes back to the same character rather than to the wall.
  */
-let run: GlobalGameState | null = null;
+function openProfile(slot: SlotId): void {
+  const p = saveFile.profiles[slot];
+  if (!p) {
+    showTitle();
+    return;
+  }
+  active = p;
+  saveFile.activeProfileId = slot;
+  persist();
+  showSafehouse(p.activeCompanionId);
+}
 
-/** What a new character opens with, before they have won anything. */
-const OPENING_PURSE = { ducats: 120, marrowShards: 3 };
-
-function startCharacter(): GlobalGameState {
-  // Seeded once, at creation, so two characters do not stare at the same board forever.
-  const overworld = newRun(Math.floor(Math.random() * 1e9) >>> 0);
-  overworld.economy = { ...OPENING_PURSE };
-  return { overworld, combat: null };
+/** Draws up a new commission on an empty poster, then opens it. */
+function draftProfile(slot: SlotId): void {
+  saveFile.profiles[slot] = newProfile(slot);
+  openProfile(slot);
 }
 
 /**
- * The character this session is playing: resumed, rescued, or created.
+ * Picks the player up if they came back down, and reports what it cost.
  *
- * Three cases, and the middle one is the RPG death penalty. A player who comes back down
- * is not wiped and not restarted — they are picked up for a share of the purse and left
- * at 1 health. Nothing they own is taken. Only somebody who has never played at all gets
- * a new character and the opening purse.
- *
- * `save.overworld` is set to the very same object rather than a copy, so every mutation
- * a screen makes is already in the save by the time `persist()` is called. One object,
- * one truth — a copy taken here would be a second one to keep in step.
+ * The RPG death penalty, applied at the Safehouse door rather than at the moment of
+ * defeat, so the rescue reads as a thing that happened on the way home.
  */
-function adoptCharacter(): GlobalGameState {
-  const restored = save.overworld;
+function rescueIfDown(): void {
+  const state = profile().state;
+  if (!isDown(state.overworld)) return;
 
-  let global: GlobalGameState;
-  if (!restored) {
-    global = startCharacter();
-  } else if (isDown(restored)) {
-    global = { overworld: restored, combat: null };
-    const fee = rescuePlayer(global);
-    pendingNotice = {
-      title: 'Rescued',
-      body: 'You blacked out. The Magistracy rescued you for a fee of ' + fee + ' Ducats.',
-    };
-  } else {
-    global = { overworld: restored, combat: null };
-  }
-
-  save.overworld = global.overworld;
-  return global;
+  const fee = rescuePlayer(state);
+  pendingNotice = {
+    title: 'Rescued',
+    body: 'You blacked out. The Magistracy rescued you for a fee of ' + fee + ' Ducats.',
+  };
 }
 
 /**
@@ -166,14 +187,13 @@ function adoptCharacter(): GlobalGameState {
  * at it — the rescue is a fee and a hospital bed, not a wall.
  */
 function showSafehouse(companionId: string): void {
-  if (!run || isDown(run.overworld)) run = adoptCharacter();
-  save.overworld = run.overworld;
+  rescueIfDown();
+  const global = profile().state;
   // The gauge is resynced on every entry rather than only when a Companion changes: it
-  // is the one number every clamp in the game reads, and a save restored with a levelled
-  // Companion would otherwise sit at the base ceiling until the next level was bought.
-  syncPactCeiling(run.overworld, progressFor(companionId));
+  // is the one number every clamp in the game reads, and a profile restored with a
+  // levelled Companion would otherwise sit at the base ceiling until the next level.
+  syncPactCeiling(global.overworld, progressFor(companionId));
   persist();
-  const global = run;
   const notice = pendingNotice;
   pendingNotice = null;
 
@@ -183,7 +203,7 @@ function showSafehouse(companionId: string): void {
       companionId,
       companionLevel: progressFor(companionId).level,
       bounties: rollBounties(global.overworld.bountySeed),
-      collection: save.collection,
+      collection: profile().collection,
       deck: deckFor(companionId),
       // Consumed on the way in, so a death is announced once rather than every time a
       // shop door closes behind the player.
@@ -201,20 +221,20 @@ function showSafehouse(companionId: string): void {
         screens.go(
           new ArtificerScreen({
             global,
-            collection: () => save.collection,
+            collection: () => profile().collection,
             // Both tills return whether they fired. The collection is replaced rather
             // than mutated — it is the save's, not the character's — so a refusal simply
             // leaves the old one in place and nothing has been charged.
             onAscend: (cardId) => {
-              const next = ascendCard(global, save.collection, cardId);
+              const next = ascendCard(global, profile().collection, cardId);
               if (!next) return false;
-              save.collection = next;
+              profile().collection = next;
               return true;
             },
             onForgeSchematic: (cardId) => {
-              const next = forgeSchematic(global, save.collection, cardId);
+              const next = forgeSchematic(global, profile().collection, cardId);
               if (!next) return false;
-              save.collection = next;
+              profile().collection = next;
               return true;
             },
             onChange: persist,
@@ -225,20 +245,20 @@ function showSafehouse(companionId: string): void {
         screens.go(
           new VivariumScreen({
             global,
-            companions: () => save.companions,
-            activeCompanionId: () => save.activeCompanionId,
+            companions: () => profile().companions,
+            activeCompanionId: () => profile().activeCompanionId,
             onSelect: (id) => {
-              save.activeCompanionId = id;
+              profile().activeCompanionId = id;
               // The Pact's ceiling belongs to whoever is standing beside it, so it moves
               // the moment the choice does — not at the next fight.
               syncPactCeiling(global.overworld, progressFor(id));
             },
             onLevel: (id) =>
-              levelCompanion(global, progressFor(id), id === save.activeCompanionId),
+              levelCompanion(global, progressFor(id), id === profile().activeCompanionId),
             onChange: persist,
             // Back through the hub rather than to it, so the room is rebuilt around
             // whichever Companion the player walked out with.
-            onBack: () => showSafehouse(save.activeCompanionId),
+            onBack: () => showSafehouse(profile().activeCompanionId),
           }),
         ),
       onJournal: () => showBuilder(companionId, () => showSafehouse(companionId)),
@@ -249,33 +269,40 @@ function showSafehouse(companionId: string): void {
 }
 
 function showTitle(): void {
+  // Leaving a character closes it. Nothing below the wall may run against a profile the
+  // player is no longer in, and `profile()` throwing is a better failure than the wrong
+  // purse being spent.
+  active = null;
+  saveFile.activeProfileId = null;
+  persist();
+
   screens.go(
     new TitleScreen({
-      save,
+      save: saveFile,
       notes: bootNotes.splice(0),
-      onStart: (companionId, difficulty) => {
-        save.activeCompanionId = companionId;
-        save.difficulty = difficulty;
+      onLoad: openProfile,
+      onDraft: draftProfile,
+      onDifficulty: (name) => {
+        if (saveFile.difficulty === name) return;
+        saveFile.difficulty = name;
         persist();
-        showSafehouse(companionId);
       },
-      onEditDeck: (companionId) => showBuilder(companionId),
     }),
   );
 }
 
-function showBuilder(companionId: string, onDone: () => void = showTitle): void {
+function showBuilder(companionId: string, onDone: () => void): void {
   screens.go(
     new DeckBuilderScreen(
       companionId,
       deckFor(companionId),
-      save.collection,
+      profile().collection,
       (result) => {
-        save.decks[result.companionId] = {
+        profile().decks[result.companionId] = {
           companionId: result.companionId,
           cards: result.cards,
         };
-        save.activeCompanionId = result.companionId;
+        profile().activeCompanionId = result.companionId;
         persist();
         onDone();
       },
@@ -315,11 +342,11 @@ function showPreCombat(
       encounter,
       companionId,
       deck: deckFor(companionId),
-      collection: save.collection,
+      collection: profile().collection,
       onReady: (deck, seed) => {
         // The adapted deck belongs to this fight, not to the saved deck: a swap made for
         // a narrow ruin should not follow the player into the next arena.
-        save.lastRun = { encounterId: encounter.id, seed, companionId, deck: [...deck] };
+        profile().lastRun = { encounterId: encounter.id, seed, companionId, deck: [...deck] };
         persist();
         startCombat(encounter, companionId, deck, seed, bounty);
       },
@@ -350,7 +377,8 @@ function startCombat(
   seed: number,
   bounty: Bounty,
 ): void {
-  const carry = run ? carryFor(run.overworld, progressFor(companionId)) : undefined;
+  const global = profile().state;
+  const carry = carryFor(global.overworld, progressFor(companionId));
 
   // Commit to the fight on disk *before* it is mounted. From here until `resolveCombat`
   // clears it, the save says a fight is open, and a boot that finds it open collects on
@@ -360,10 +388,8 @@ function startCombat(
   // The payout is cached here too, not looked up when the fight ends: the board rerolls
   // after every contract, so a win settled against the *new* board would pay for a job
   // nobody accepted.
-  if (run) {
-    run.combat = { encounterId: encounter.id, seed };
-    run.overworld.activeEncounter = { bountyId: bounty.id, spoils: bounty.spoils };
-  }
+  global.combat = { encounterId: encounter.id, seed };
+  global.overworld.activeEncounter = { bountyId: bounty.id, spoils: bounty.spoils };
   persist();
 
   screens.go(
@@ -372,8 +398,8 @@ function startCombat(
       (result, played, outcome) => finishCombat(result, played, outcome, companionId),
       companionId,
       seed,
-      printedDeck(save.collection, deck),
-      profileByName(save.difficulty) ?? NOVICE_AI,
+      printedDeck(profile().collection, deck),
+      profileByName(saveFile.difficulty) ?? NOVICE_AI,
       carry,
     ),
   );
@@ -390,17 +416,18 @@ function finishCombat(
   // Fold the fight back into the character first: the Pact is written back wounds and
   // all, the brew is spent whether it was won or lost, and a win is paid at the rate the
   // accepted contract promised.
-  if (run) resolveCombat(run, outcome, result);
+  const p = profile();
+  resolveCombat(p.state, outcome, result);
 
-  if (result === 'victory') save.record.wins += 1;
-  else if (result === 'bound') save.record.bound += 1;
-  else save.record.losses += 1;
+  if (result === 'victory') p.record.wins += 1;
+  else if (result === 'bound') p.record.bound += 1;
+  else p.record.losses += 1;
 
   // A win offers a card. Seeded off the running record so the same win does not reroll
   // into a different offer if the screen is rebuilt.
   const won = result === 'victory' || result === 'bound';
   const rewards = won
-    ? rollRewards(makeRng(save.record.wins * 7919 + save.record.bound * 31 + 5), 3)
+    ? rollRewards(makeRng(p.record.wins * 7919 + p.record.bound * 31 + 5), 3)
     : [];
   persist();
 
@@ -410,7 +437,7 @@ function finishCombat(
       encounter: played,
       rewards,
       onClaim: (cardId) => {
-        save.collection = grantCard(save.collection, cardId);
+        p.collection = grantCard(p.collection, cardId);
         persist();
       },
       // No rematch. In a hub-based RPG the way back to a fight is through the Bounty
@@ -423,4 +450,12 @@ function finishCombat(
   );
 }
 
-showTitle();
+/**
+ * Straight back into the character that was open, if one was.
+ *
+ * A reload should not cost the player the walk from the wall to the hub, and the pointer
+ * is only ever left set on a profile that actually exists.
+ */
+const resume = saveFile.activeProfileId;
+if (resume && saveFile.profiles[resume]) openProfile(resume);
+else showTitle();

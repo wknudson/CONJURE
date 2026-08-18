@@ -1,15 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SAVE_VERSION, clearSave, defaultSave, loadSave, writeSave } from '../app/save.js';
+import {
+  SAVE_VERSION,
+  SLOT_IDS,
+  clearSave,
+  emptySave,
+  firstEmptySlot,
+  loadSave,
+  newProfile,
+  writeSave,
+  type Profile,
+  type SaveFile,
+} from '../app/save.js';
 import { COMPANIONS } from '../core/data/companions.js';
-import { newCompanion } from '../core/overworld/vivarium.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import {
   INVENTORY_LIMIT,
   addConsumable,
   forfeitIfAbandoned,
   newRun,
-  type OverworldState,
 } from '../core/overworld/state.js';
+import { newCompanion } from '../core/overworld/vivarium.js';
 
 /** A minimal in-memory localStorage, so these run without a DOM. */
 function installStorage(): Map<string, string> {
@@ -23,300 +33,262 @@ function installStorage(): Map<string, string> {
   return store;
 }
 
-describe('save round-trip', () => {
+/** A file with a character on the given slots. */
+function fileWith(...slots: string[]): SaveFile {
+  const file = emptySave();
+  for (const slot of slots) {
+    file.profiles[slot as (typeof SLOT_IDS)[number]] = newProfile(slot);
+  }
+  return file;
+}
+
+describe('the wall', () => {
   let store: Map<string, string>;
   beforeEach(() => {
     store = installStorage();
   });
 
-  it('returns a playable default when nothing is stored', () => {
+  it('starts empty, with nobody chosen', () => {
     const { save, notes } = loadSave();
     expect(save.version).toBe(SAVE_VERSION);
+    expect(save.activeProfileId).toBeNull();
+    expect(Object.keys(save.profiles)).toHaveLength(0);
     expect(notes).toHaveLength(0);
+  });
+
+  it('holds three and no more', () => {
+    const file = fileWith(...SLOT_IDS);
+    expect(firstEmptySlot(file), 'the wall is full').toBeNull();
+    expect(Object.keys(file.profiles)).toHaveLength(3);
+  });
+
+  it('hands out the first blank poster', () => {
+    expect(firstEmptySlot(emptySave())).toBe('slot-1');
+    expect(firstEmptySlot(fileWith('slot-1'))).toBe('slot-2');
+    expect(firstEmptySlot(fileWith('slot-1', 'slot-3'))).toBe('slot-2');
+  });
+
+  it('gives a new character a legal deck and an empty purse', () => {
+    const p = newProfile('slot-1');
+    expect(p.name).toBe('Commander');
+    expect(p.level).toBe(1);
+    expect(p.state.overworld.economy).toEqual({ ducats: 0, marrowShards: 0 });
+    expect(p.state.overworld.pact).toEqual({ currentHp: 40, maxHp: 40 });
+    expect(p.activeCompanionId).toBe(COMPANIONS[0]!.id);
     for (const companion of COMPANIONS) {
-      expect(validateDeck(save.decks[companion.id]!.cards, save.collection)).toHaveLength(0);
+      expect(validateDeck(p.decks[companion.id]!.cards, p.collection), companion.name).toEqual([]);
     }
   });
 
-  it('persists and reloads a change', () => {
-    const save = defaultSave();
-    save.record.wins = 3;
-    save.activeCompanionId = 'boreas';
-    expect(writeSave(save)).toBe(true);
+  it('round-trips three characters at once', () => {
+    const file = fileWith(...SLOT_IDS);
+    file.profiles['slot-1']!.name = 'Vessel';
+    file.profiles['slot-2']!.state.overworld.economy.ducats = 900;
+    file.profiles['slot-3']!.record.wins = 12;
+    file.activeProfileId = 'slot-2';
+    writeSave(file);
 
-    const { save: loaded } = loadSave();
-    expect(loaded.record.wins).toBe(3);
-    expect(loaded.activeCompanionId).toBe('boreas');
+    const { save } = loadSave();
+    expect(save.profiles['slot-1']!.name).toBe('Vessel');
+    expect(save.profiles['slot-2']!.state.overworld.economy.ducats).toBe(900);
+    expect(save.profiles['slot-3']!.record.wins).toBe(12);
+    expect(save.activeProfileId).toBe('slot-2');
   });
 
-  it('keeps the previous save as a backup and recovers from corruption', () => {
-    writeSave(defaultSave());
-    const good = defaultSave();
-    good.record.wins = 9;
+  it('keeps the other two slots untouched when one is played', () => {
+    // The rule the whole refactor exists for. `writeSave` takes the file, so this is true
+    // by construction — and this test is what stops that ever becoming untrue.
+    const file = fileWith(...SLOT_IDS);
+    file.profiles['slot-2']!.state.overworld.economy.ducats = 500;
+    file.profiles['slot-3']!.state.overworld.economy.ducats = 500;
+    writeSave(file);
+
+    const reopened = loadSave().save;
+    reopened.activeProfileId = 'slot-1';
+    reopened.profiles['slot-1']!.state.overworld.economy.ducats = 7;
+    reopened.profiles['slot-1']!.collection = { owned: { scout_imp: 99 } };
+    writeSave(reopened);
+
+    const { save } = loadSave();
+    expect(save.profiles['slot-2']!.state.overworld.economy.ducats).toBe(500);
+    expect(save.profiles['slot-3']!.state.overworld.economy.ducats).toBe(500);
+    expect(save.profiles['slot-2']!.collection.owned.scout_imp).not.toBe(99);
+  });
+
+  it('drops a pointer at a slot with nobody on it', () => {
+    const file = fileWith('slot-1');
+    file.activeProfileId = 'slot-3';
+    writeSave(file);
+    expect(loadSave().save.activeProfileId, 'better the wall than a ghost').toBeNull();
+  });
+
+  it('shares the difficulty across characters, because it is a preference', () => {
+    const file = fileWith('slot-1', 'slot-2');
+    file.difficulty = 'Adept';
+    writeSave(file);
+    expect(loadSave().save.difficulty).toBe('Adept');
+  });
+
+  it('recovers from a torn write', () => {
+    writeSave(fileWith('slot-1'));
+    const good = fileWith('slot-1');
+    good.profiles['slot-1']!.name = 'Survivor';
     writeSave(good);
 
-    // Simulate a torn write.
     store.set('conjure.save', '{ this is not json');
 
     const { save, notes } = loadSave();
-    expect(save.record.wins).toBeGreaterThanOrEqual(0);
     expect(notes.join(' ')).toMatch(/damaged|Could not read/);
+    expect(save.profiles['slot-1']).toBeDefined();
   });
 
-  it('falls back to defaults when both the save and its backup are unreadable', () => {
+  it('falls back to a blank wall when the save and its backup are both unreadable', () => {
     store.set('conjure.save', 'garbage');
     store.set('conjure.save.bak', 'also garbage');
-
     const { save, notes } = loadSave();
-    expect(save.version).toBe(SAVE_VERSION);
+    expect(Object.keys(save.profiles)).toHaveLength(0);
     expect(notes.length).toBeGreaterThan(0);
-    // Still playable, which is the whole point.
-    for (const companion of COMPANIONS) {
-      expect(validateDeck(save.decks[companion.id]!.cards, save.collection)).toHaveLength(0);
-    }
+  });
+
+  it('clears everything', () => {
+    writeSave(fileWith('slot-1'));
+    clearSave();
+    expect(Object.keys(loadSave().save.profiles)).toHaveLength(0);
   });
 });
 
-describe('migration', () => {
-  beforeEach(() => installStorage());
-
-  it('flags a deck that is no longer legal rather than silently rewriting it', () => {
-    const save = defaultSave();
-    save.decks.ignis!.cards = ['scout_imp', 'a_card_from_a_past_patch'];
-    writeSave(save);
-
-    const { save: loaded, notes } = loadSave();
-    expect(loaded.decks.ignis!.invalid).toBe(true);
-    expect(notes.join(' ')).toMatch(/no longer legal/);
-    // The player's list is preserved so they can see what changed.
-    expect(loaded.decks.ignis!.cards).toContain('scout_imp');
-  });
-
-  it('drops collection entries for cards that no longer exist', () => {
-    const save = defaultSave();
-    save.collection.owned.a_card_from_a_past_patch = 4;
-    writeSave(save);
-
-    const { save: loaded, notes } = loadSave();
-    expect(loaded.collection.owned.a_card_from_a_past_patch).toBeUndefined();
-    expect(notes.join(' ')).toMatch(/no longer exist/);
-  });
-
-  it('ignores a save written by a newer version', () => {
-    localStorage.setItem(
-      'conjure.save',
-      JSON.stringify({ version: SAVE_VERSION + 5, collection: { owned: {} }, decks: {} }),
-    );
-    const { save, notes } = loadSave();
-    expect(save.version).toBe(SAVE_VERSION);
-    expect(notes.join(' ')).toMatch(/newer version/);
-  });
-
-  it('fills in missing fields from a partial save', () => {
-    localStorage.setItem('conjure.save', JSON.stringify({ version: 1 }));
-    const { save } = loadSave();
-    expect(Object.keys(save.decks).length).toBe(COMPANIONS.length);
-    expect(save.record.wins).toBe(0);
-    expect(Object.keys(save.collection.owned).length).toBeGreaterThan(0);
-  });
-
-  it('upgrades a version 1 save, which has no recorded run', () => {
-    // v1 predates pre-combat adaptation. Having never played is not a fault to repair.
-    localStorage.setItem(
-      'conjure.save',
-      JSON.stringify({ ...defaultSave(), version: 1, lastRun: undefined }),
-    );
-    const { save, notes } = loadSave();
-    expect(save.version).toBe(SAVE_VERSION);
-    expect(save.lastRun).toBeUndefined();
-    expect(notes).toHaveLength(0);
-  });
-
-  it('keeps the last run so the same battle can be found again', () => {
-    const save = defaultSave();
-    save.lastRun = {
-      encounterId: 'novice_duelist',
-      seed: 123456,
-      companionId: COMPANIONS[0]!.id,
-      deck: ['scout_imp', 'flame_surge'],
-    };
-    writeSave(save);
-
-    const { save: loaded } = loadSave();
-    expect(loaded.lastRun?.seed).toBe(123456);
-    expect(loaded.lastRun?.deck).toEqual(['scout_imp', 'flame_surge']);
-  });
-
-  it('discards a recorded run that is missing its seed', () => {
-    localStorage.setItem(
-      'conjure.save',
-      JSON.stringify({ ...defaultSave(), lastRun: { encounterId: 'x', deck: [] } }),
-    );
-    const { save } = loadSave();
-    expect(save.lastRun, 'a run without a seed cannot be reproduced').toBeUndefined();
-  });
-
-  /**
-   * The Sparks -> Marrow rename (v3) changed a card id. Without the remap, reconciliation
-   * would read `spark_wisp` as a card from a deleted patch and quietly confiscate it.
-   */
-  it('carries a renamed card through the collection, decks, and last run', () => {
-    const save = defaultSave();
-    delete save.collection.owned.marrow_wisp;
-    // Above the soulbound floor of 3, so the assertion measures the remap rather than
-    // the top-up that would restore this particular card either way.
-    save.collection.owned.spark_wisp = 5;
-    save.decks.ignis!.cards = save.decks.ignis!.cards.map((c) =>
-      c === 'marrow_wisp' ? 'spark_wisp' : c,
-    );
-    save.lastRun = {
-      encounterId: 'novice_duelist',
-      seed: 7,
-      companionId: 'ignis',
-      deck: ['spark_wisp', 'scout_imp'],
-    };
-    localStorage.setItem('conjure.save', JSON.stringify({ ...save, version: 2 }));
-
-    const { save: loaded, notes } = loadSave();
-
-    expect(loaded.collection.owned.marrow_wisp).toBe(5);
-    expect(loaded.collection.owned.spark_wisp).toBeUndefined();
-    // The deck is where the rename actually bites: an unremapped id is not a real card,
-    // so the deck would stop validating and the player would be sent to fix it.
-    expect(loaded.decks.ignis!.cards).toContain('marrow_wisp');
-    expect(loaded.decks.ignis!.cards).not.toContain('spark_wisp');
-    expect(loaded.lastRun?.deck).toEqual(['marrow_wisp', 'scout_imp']);
-
-    // The point of the remap: nothing was lost, so there is nothing to report.
-    expect(loaded.decks.ignis!.invalid).toBeUndefined();
-    expect(notes).toHaveLength(0);
-  });
-
-  it('sums the counts when a save somehow holds both the old and new card id', () => {
-    const save = defaultSave();
-    save.collection.owned.marrow_wisp = 2;
-    save.collection.owned.spark_wisp = 3;
-    localStorage.setItem('conjure.save', JSON.stringify({ ...save, version: 2 }));
-
-    const { save: loaded } = loadSave();
-    expect(loaded.collection.owned.marrow_wisp).toBe(5);
-  });
-
-  it('rejects a companion id that is not real', () => {
-    const save = defaultSave();
-    (save as { activeCompanionId: string }).activeCompanionId = 'nobody';
-    writeSave(save);
-    const { save: loaded } = loadSave();
-    expect(COMPANIONS.some((c) => c.id === loaded.activeCompanionId)).toBe(true);
-  });
-});
-
-describe('storage failure', () => {
-  it('reports a failed write instead of throwing', () => {
-    vi.stubGlobal('localStorage', {
-      getItem: () => null,
-      setItem: () => {
-        throw new Error('QuotaExceededError');
-      },
-      removeItem: () => {},
-    });
-
-    expect(() => writeSave(defaultSave())).not.toThrow();
-    expect(writeSave(defaultSave())).toBe(false);
-  });
-
-  it('loads defaults when storage is unavailable entirely', () => {
-    vi.stubGlobal('localStorage', {
-      getItem: () => {
-        throw new Error('SecurityError');
-      },
-      setItem: () => {},
-      removeItem: () => {},
-    });
-
-    const { save } = loadSave();
-    expect(save.version).toBe(SAVE_VERSION);
-    expect(() => clearSave()).not.toThrow();
-  });
-});
-
-describe('the run on disk', () => {
-  let store: Map<string, string>;
+describe('the upgrade from one character to three', () => {
   beforeEach(() => {
-    store = installStorage();
+    installStorage();
   });
 
-  const run = (over: Partial<OverworldState> = {}): OverworldState => ({
-    ...newRun(7),
-    ...over,
-  });
+  /** A v6 file: one character at the root, no notion of a slot. */
+  function legacy(over: Record<string, unknown> = {}): void {
+    const overworld = newRun(5);
+    overworld.economy = { ducats: 640, marrowShards: 4 };
+    overworld.pact = { currentHp: 22, maxHp: 40 };
 
-  it('has none until a run is started, and that is not an error', () => {
-    const { save, notes } = loadSave();
-    expect(save.overworld).toBeUndefined();
-    expect(notes).toHaveLength(0);
-  });
-
-  it('round-trips a wounded, half-spent run', () => {
-    const save = defaultSave();
-    save.overworld = run({
-      pact: { currentHp: 17, maxHp: 40 },
-      economy: { ducats: 95, marrowShards: 4 },
-      inventory: [{ id: 'mending_tonic', name: 'Mending Tonic', type: 'healing', value: 12 }],
-      activeBuff: 'ironbrew',
-    });
-    writeSave(save);
-
-    const { save: loaded } = loadSave();
-    expect(loaded.overworld?.pact).toEqual({ currentHp: 17, maxHp: 40 });
-    expect(loaded.overworld?.economy).toEqual({ ducats: 95, marrowShards: 4 });
-    expect(loaded.overworld?.inventory).toHaveLength(1);
-    expect(loaded.overworld?.activeBuff).toBe('ironbrew');
-  });
-
-  it('survives the reload it exists for: buy, close the tab, come back', () => {
-    const save = defaultSave();
-    const global = { overworld: run(), combat: null };
-    global.overworld.economy.ducats = 100;
-    save.overworld = global.overworld;
-
-    // What the Apothecary does, then what main does after it.
-    addConsumable(global.overworld, {
-      id: 'ironbrew',
-      name: 'Ironbrew',
-      type: 'buff',
-      value: 0,
-    });
-    global.overworld.economy.ducats -= 45;
-    writeSave(save);
-
-    const { save: reloaded } = loadSave();
-    expect(reloaded.overworld?.economy.ducats, 'the purse remembers').toBe(55);
-    expect(reloaded.overworld?.inventory.map((i) => i.id)).toEqual(['ironbrew']);
-  });
-
-  it('clamps a hand-edited run instead of trusting it', () => {
-    // These are the numbers a player edits first, so the repair has to be real.
-    store.set(
+    localStorage.setItem(
       'conjure.save',
       JSON.stringify({
-        ...defaultSave(),
-        overworld: {
-          pact: { currentHp: 9999, maxHp: 40 },
-          economy: { ducats: -50, marrowShards: 2.7 },
-          inventory: Array.from({ length: 6 }, () => ({
-            id: 'mending_tonic',
-            name: 'Mending Tonic',
-            type: 'healing',
-            value: 12,
-          })),
-          activeBuff: 'not_a_real_brew',
-        },
+        version: 6,
+        collection: { owned: { scout_imp: 3, shield_bash: 3 }, ascended: ['shield_bash'] },
+        decks: {},
+        activeCompanionId: 'boreas',
+        companions: { boreas: { level: 3, bonusMaxHp: 4, startingArmor: 0, bonusPips: 0 } },
+        difficulty: 'Adept',
+        record: { wins: 4, losses: 1, bound: 0 },
+        overworld,
+        ...over,
       }),
     );
+  }
 
-    const { save } = loadSave();
-    const over = save.overworld!;
+  it('pins the old character to the first poster rather than binning them', () => {
+    legacy();
+    const { save, notes } = loadSave();
+
+    expect(save.activeProfileId).toBe('slot-1');
+    expect(notes.join(' ')).toMatch(/first poster/i);
+    expect(save.profiles['slot-2'], 'and the other two stay blank').toBeUndefined();
+  });
+
+  it('brings their purse, their Pact and their Ascensions with them', () => {
+    legacy();
+    const p = loadSave().save.profiles['slot-1']!;
+
+    expect(p.state.overworld.economy).toEqual({ ducats: 640, marrowShards: 4 });
+    expect(p.state.overworld.pact.currentHp).toBe(22);
+    expect(p.collection.ascended).toContain('shield_bash');
+    expect(p.record.wins).toBe(4);
+  });
+
+  it('keeps the difficulty, which was never theirs to keep', () => {
+    legacy();
+    expect(loadSave().save.difficulty).toBe('Adept');
+  });
+
+  it('restores the Pact ceiling their Companion had earned', () => {
+    // A levelled Companion read off disk used to sit at the base 40 until the next level
+    // was bought, because nothing resynced the gauge on load.
+    legacy();
+    const p = loadSave().save.profiles['slot-1']!;
+    expect(p.activeCompanionId).toBe('boreas');
+    expect(p.state.overworld.pact.maxHp).toBe(44);
+    expect(p.level, 'and the poster shows the level without opening them').toBe(3);
+  });
+
+  it('collects on a fight they walked out of', () => {
+    legacy({
+      overworld: {
+        ...newRun(5),
+        activeEncounter: { bountyId: 'x', spoils: { ducats: 90 } },
+      },
+    });
+    const p = loadSave().save.profiles['slot-1']!;
+    expect(p.state.overworld.activeEncounter, 'still open on disk').not.toBeNull();
+    expect(forfeitIfAbandoned(p.state.overworld)).toBe(true);
+  });
+});
+
+describe('one character on disk', () => {
+  beforeEach(() => {
+    installStorage();
+  });
+
+  const saved = (edit: (p: Profile) => void): Profile => {
+    const file = fileWith('slot-1');
+    edit(file.profiles['slot-1']!);
+    writeSave(file);
+    return loadSave().save.profiles['slot-1']!;
+  };
+
+  it('carries a wounded, half-spent character', () => {
+    const p = saved((c) => {
+      c.state.overworld.pact = { currentHp: 17, maxHp: 40 };
+      c.state.overworld.economy = { ducats: 95, marrowShards: 4 };
+      c.state.overworld.activeBuff = 'ironbrew';
+      addConsumable(c.state.overworld, {
+        id: 'mending_tonic',
+        name: 'Mending Tonic',
+        type: 'healing',
+        value: 12,
+      });
+    });
+
+    expect(p.state.overworld.pact).toEqual({ currentHp: 17, maxHp: 40 });
+    expect(p.state.overworld.economy).toEqual({ ducats: 95, marrowShards: 4 });
+    expect(p.state.overworld.activeBuff).toBe('ironbrew');
+    expect(p.state.overworld.inventory).toHaveLength(1);
+  });
+
+  it('never restores a live fight handle', () => {
+    // A reload is not a resume. The open contract on `overworld` is what the forfeit
+    // failsafe reads; `combat` is a pointer into a session that no longer exists.
+    const p = saved((c) => {
+      c.state.combat = { pretend: 'a live fight' };
+    });
+    expect(p.state.combat).toBeNull();
+  });
+
+  it('clamps a hand-edited character instead of trusting it', () => {
+    const file = fileWith('slot-1');
+    writeSave(file);
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    raw.profiles['slot-1'].state.overworld = {
+      pact: { currentHp: 9999, maxHp: 40 },
+      economy: { ducats: -50, marrowShards: 2.7 },
+      inventory: Array.from({ length: 6 }, () => ({
+        id: 'mending_tonic',
+        name: 'Mending Tonic',
+        type: 'healing',
+        value: 12,
+      })),
+      activeBuff: 'not_a_real_brew',
+    };
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const over = loadSave().save.profiles['slot-1']!.state.overworld;
     expect(over.pact.currentHp, 'cannot exceed the gauge').toBe(40);
     expect(over.economy.ducats, 'no negative purse').toBe(0);
     expect(Number.isInteger(over.economy.marrowShards)).toBe(true);
@@ -324,163 +296,80 @@ describe('the run on disk', () => {
     expect(over.activeBuff, 'an unreadable brew becomes none').toBeNull();
   });
 
-  it('drops a run with no Pact rather than inventing one', () => {
-    store.set(
-      'conjure.save',
-      JSON.stringify({ ...defaultSave(), overworld: { economy: { ducats: 10 } } }),
-    );
-    expect(loadSave().save.overworld, 'whole, or not at all').toBeUndefined();
-  });
-
   it('keeps no deck of its own — the master deck is the only one', () => {
-    // The RPG pivot, held by a test: a run deck stored here would be a second list to
-    // keep in step with `decks`, and the two would drift the first time one was edited.
-    const save = defaultSave();
-    save.overworld = run();
-    writeSave(save);
-
-    const loaded = loadSave().save.overworld as unknown as Record<string, unknown>;
-    expect(loaded).not.toHaveProperty('deck');
-  });
-});
-
-describe('a fight left open on disk', () => {
-  beforeEach(() => {
-    installStorage();
+    const p = saved(() => {});
+    expect(p.state.overworld as unknown as Record<string, unknown>).not.toHaveProperty('deck');
   });
 
-  it('comes back marked open, which is what makes it collectable', () => {
-    // The failsafe only works if the flag actually survives the trip. Everything else in
-    // it is downstream of this one round trip.
-    const save = defaultSave();
-    save.overworld = {
-      ...newRun(7),
-      activeEncounter: { bountyId: 'adept_1_narrow_ruin', spoils: { ducats: 90, marrowShards: 1 } },
+  it('holds a Companion roster and clamps a hand-edited one', () => {
+    const file = fileWith('slot-1');
+    file.profiles['slot-1']!.companions.ignis = {
+      level: 4,
+      bonusMaxHp: 6,
+      startingArmor: 1,
+      bonusPips: 2,
     };
-    writeSave(save);
-
-    const { save: loaded } = loadSave();
-    expect(loaded.overworld?.activeEncounter?.bountyId).toBe('adept_1_narrow_ruin');
-    expect(loaded.overworld?.activeEncounter?.spoils, 'the payout survives the trip').toEqual({
-      ducats: 90,
-      marrowShards: 1,
-    });
-    expect(forfeitIfAbandoned(loaded.overworld!), 'and boot collects on it').toBe(true);
-    expect(loaded.overworld?.pact.currentHp).toBe(0);
-  });
-
-  it('treats a v4 boolean flag as no fight rather than inventing a payout', () => {
-    // v4 wrote `true` here. Reading that as an open contract would mean guessing at a
-    // payout, so it reads as no fight — one un-punished tab-close during an upgrade is
-    // cheaper than killing somebody who was standing safely in the hub.
-    localStorage.setItem(
-      'conjure.save',
-      JSON.stringify({ ...defaultSave(), version: 4, overworld: { ...newRun(7), activeEncounter: true } }),
-    );
-    expect(loadSave().save.overworld?.activeEncounter).toBeNull();
-  });
-
-  it('treats a missing flag as no fight, not as one to punish', () => {
-    // Every save written before this field existed was a run sitting safely in the hub.
-    const bare: Record<string, unknown> = { ...newRun(7) };
-    delete bare.activeEncounter;
-
-    localStorage.setItem(
-      'conjure.save',
-      JSON.stringify({ ...defaultSave(), version: 3, overworld: bare }),
-    );
-
-    const { save } = loadSave();
-    expect(save.overworld?.activeEncounter).toBeNull();
-    expect(forfeitIfAbandoned(save.overworld!)).toBe(false);
-  });
-
-  it('will not take a contract with no id, however much it promises', () => {
-    localStorage.setItem(
-      'conjure.save',
-      JSON.stringify({
-        ...defaultSave(),
-        overworld: { ...newRun(7), activeEncounter: { spoils: { ducats: 99999 } } },
-      }),
-    );
-    expect(loadSave().save.overworld?.activeEncounter).toBeNull();
-  });
-
-  it('rebuilds a hand-edited payout rather than trusting it', () => {
-    localStorage.setItem(
-      'conjure.save',
-      JSON.stringify({
-        ...defaultSave(),
-        overworld: {
-          ...newRun(7),
-          activeEncounter: { bountyId: 'x', spoils: { ducats: -5, marrowShards: 'lots' } },
-        },
-      }),
-    );
-    expect(loadSave().save.overworld?.activeEncounter?.spoils).toEqual({
-      ducats: 0,
-      marrowShards: 0,
-    });
-  });
-});
-
-describe('companion progression on disk', () => {
-  beforeEach(() => {
-    installStorage();
-  });
-
-  it('starts every Companion at level one', () => {
-    const { save } = loadSave();
-    for (const companion of COMPANIONS) {
-      expect(save.companions[companion.id], companion.name).toEqual(newCompanion());
-    }
-  });
-
-  it('round-trips a levelled Companion', () => {
-    const save = defaultSave();
-    save.companions.ignis = { level: 4, bonusMaxHp: 6, startingArmor: 1, bonusPips: 2 };
-    writeSave(save);
-
-    expect(loadSave().save.companions.ignis).toEqual({
+    writeSave(file);
+    expect(loadSave().save.profiles['slot-1']!.companions.ignis).toEqual({
       level: 4,
       bonusMaxHp: 6,
       startingArmor: 1,
       bonusPips: 2,
     });
+
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    raw.profiles['slot-1'].companions = { ignis: { level: -3, bonusMaxHp: -99 } };
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const ignis = loadSave().save.profiles['slot-1']!.companions.ignis!;
+    expect(ignis.level).toBe(1);
+    expect(ignis.bonusMaxHp).toBe(0);
   });
 
-  it('clamps a hand-edited Companion instead of trusting it', () => {
-    localStorage.setItem(
-      'conjure.save',
-      JSON.stringify({
-        ...defaultSave(),
-        companions: { ignis: { level: -3, bonusMaxHp: -99, startingArmor: 'lots' } },
-      }),
-    );
-
-    const ignis = loadSave().save.companions.ignis!;
-    expect(ignis.level, 'never below one').toBe(1);
-    expect(ignis.bonusMaxHp, 'never a penalty').toBe(0);
-    expect(ignis.startingArmor).toBe(0);
-  });
-
-  it('carries the active Companion over from a v5 save that called it something else', () => {
-    localStorage.setItem(
-      'conjure.save',
-      JSON.stringify({ ...defaultSave(), version: 5, activeCompanionId: undefined, lastCompanionId: 'boreas' }),
-    );
-    expect(loadSave().save.activeCompanionId).toBe('boreas');
-  });
-
-  it('fills in a Companion the save has never heard of', () => {
-    localStorage.setItem(
-      'conjure.save',
-      JSON.stringify({ ...defaultSave(), companions: { ignis: { level: 2, bonusMaxHp: 2 } } }),
-    );
-    const { save } = loadSave();
-    expect(save.companions.ignis!.level).toBe(2);
+  it('starts every Companion at level one', () => {
+    const p = newProfile('slot-1');
     for (const companion of COMPANIONS) {
-      expect(save.companions[companion.id], companion.name).toBeDefined();
+      expect(p.companions[companion.id], companion.name).toEqual(newCompanion());
     }
+  });
+
+  it('renames a card held anywhere it names one', () => {
+    const file = fileWith('slot-1');
+    writeSave(file);
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    raw.profiles['slot-1'].collection = { owned: { spark_wisp: 2 }, ascended: ['spark_wisp'] };
+    raw.profiles['slot-1'].decks.ignis = { companionId: 'ignis', cards: ['spark_wisp'] };
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const p = loadSave().save.profiles['slot-1']!;
+    expect(p.collection.owned.marrow_wisp).toBeGreaterThan(0);
+    expect(p.collection.owned.spark_wisp).toBeUndefined();
+    expect(p.decks.ignis!.cards).toEqual(['marrow_wisp']);
+  });
+
+  it('restamps the poster metadata on every write', () => {
+    const file = fileWith('slot-1');
+    file.profiles['slot-1']!.companions.ignis = {
+      level: 6,
+      bonusMaxHp: 10,
+      startingArmor: 0,
+      bonusPips: 0,
+    };
+    file.profiles['slot-1']!.level = 1;
+    writeSave(file);
+
+    expect(loadSave().save.profiles['slot-1']!.level, 'cache caught up').toBe(6);
+  });
+
+  it('drops a character whose slot holds nonsense', () => {
+    const file = fileWith('slot-1', 'slot-2');
+    writeSave(file);
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    raw.profiles['slot-2'] = 'not a character';
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const { save } = loadSave();
+    expect(save.profiles['slot-1'], 'the good one survives').toBeDefined();
+    expect(save.profiles['slot-2']).toBeUndefined();
   });
 });

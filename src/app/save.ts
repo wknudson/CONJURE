@@ -1,5 +1,15 @@
 /**
- * Local persistence.
+ * Local persistence: three Profiles, one of them active.
+ *
+ * CONJURE is a persistent RPG rather than a roguelike, so the unit of storage is a
+ * **character**, not a session. Three of them live side by side and never touch: a
+ * purchase made by one may not be visible to another, which is the single rule this file
+ * exists to guarantee. Every write goes through `writeSave`, which takes the whole file,
+ * so a save can never be assembled from one profile and half of another.
+ *
+ * `Profile` carries its metadata — name, level, the purse — at the top rather than only
+ * inside `state`, so the title wall can paint three posters without deserialising three
+ * engine states. Those fields are a cache, refreshed on every write by `stampProfile`.
  *
  * Module 8's rule, adopted from the first save rather than retrofitted: every save
  * carries a `version`, and loading an older one runs a migration that re-reads static
@@ -21,12 +31,31 @@ import type {
   Consumable,
   OverworldState,
 } from '../core/overworld/state.js';
-import { INVENTORY_LIMIT, isBuffId } from '../core/overworld/state.js';
-import { newCompanion, type CompanionProgress } from '../core/overworld/vivarium.js';
+import type { GlobalGameState } from '../core/overworld/state.js';
+import { INVENTORY_LIMIT, isBuffId, newRun } from '../core/overworld/state.js';
+import { newCompanion, syncPactCeiling, type CompanionProgress } from '../core/overworld/vivarium.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
+
+/** Posters on the wall. Three, and the wall is the reason it is three. */
+export const PROFILE_SLOTS = 3;
+
+/**
+ * Slot ids are fixed rather than generated.
+ *
+ * A poster is a place on a wall, so its identity is the place. Fixed ids mean an empty
+ * slot is simply a missing key, deleting a character is deleting one, and the active
+ * profile survives a reload as a string that means the same thing next time.
+ */
+export const SLOT_IDS = ['slot-1', 'slot-2', 'slot-3'] as const;
+
+export type SlotId = (typeof SLOT_IDS)[number];
+
+export function isSlotId(value: unknown): value is SlotId {
+  return typeof value === 'string' && (SLOT_IDS as readonly string[]).includes(value);
+}
 
 /**
  * Cards that have been renamed, old id to new.
@@ -52,8 +81,27 @@ export interface SavedDeck {
   invalid?: boolean;
 }
 
-export interface SaveData {
-  version: number;
+/**
+ * One character, and everything they own.
+ *
+ * `state` is the live game state — the Pact, the purse, the satchel, the open contract.
+ * Everything beside it is property that outlives any single fight: the collection, the
+ * decks, the Companions. The split is the same one the rest of the codebase draws, and
+ * keeping it here means `GlobalGameState` needed no widening to be storable.
+ */
+export interface Profile {
+  profileId: string;
+  /** What the poster is made out to. */
+  name: string;
+  /**
+   * Shown on the poster without opening the profile.
+   *
+   * A cache of the active Companion's level, restamped on every write. Denormalised on
+   * purpose: the title wall reads three of these and should not have to reason about
+   * Companion progression to do it.
+   */
+  level: number;
+  state: GlobalGameState;
   collection: Collection;
   /** One deck per companion, keyed by companion id. */
   decks: Record<string, SavedDeck>;
@@ -72,8 +120,6 @@ export interface SaveData {
    * A Companion missing from this map has simply never been levelled.
    */
   companions: Record<string, CompanionProgress>;
-  /** AI tier name, matched against AI_PROFILES on load. */
-  difficulty: string;
   record: { wins: number; losses: number; bound: number };
   /**
    * The last fight as it was actually set up, seed included.
@@ -89,20 +135,32 @@ export interface SaveData {
     /** The adapted deck, which may differ from the saved one by up to MAX_SWAPS. */
     deck: string[];
   };
-  /**
-   * The character outside combat: Pact, purse, satchel, open contract (added in v4).
-   *
-   * Optional because "not started" is a real state, not a broken one — a fresh save, or a
-   * player who has never left the title. Its absence needs no repair, the same reason
-   * `lastRun` is optional.
-   *
-   * Deliberately holds no deck. The master deck lives in `decks`, and under the RPG model
-   * that *is* the active deck; a copy here would be the run deck the design discarded.
-   */
-  overworld?: OverworldState;
 }
 
-export function defaultSave(): SaveData {
+/**
+ * The whole file: three slots and a pointer at one of them.
+ *
+ * `difficulty` sits here rather than on a Profile because the AI tier is a preference
+ * about how the player likes to be challenged, not something a character owns — changing
+ * it should not mean changing it three times.
+ */
+export interface SaveFile {
+  version: number;
+  activeProfileId: SlotId | null;
+  /** AI tier name, matched against AI_PROFILES on load. */
+  difficulty: string;
+  /** Keyed by slot. A missing key is an empty poster, which is a real state. */
+  profiles: Partial<Record<SlotId, Profile>>;
+}
+
+/**
+ * A character at the moment of creation.
+ *
+ * The starter decks, the full collection floor, every Companion at level 1, a Pact at 40,
+ * and an empty purse. Nothing is handed over: the first contract is what pays for the
+ * first tonic, which is what makes the first contract mean something.
+ */
+export function newProfile(profileId: string, name = 'Commander'): Profile {
   const decks: Record<string, SavedDeck> = {};
   for (const companion of COMPANIONS) {
     decks[companion.id] = { companionId: companion.id, cards: [...companion.deck] };
@@ -112,19 +170,50 @@ export function defaultSave(): SaveData {
   // Trial, most likely — this seeds only the starter and the Vivarium narrows with it.
   for (const companion of COMPANIONS) companions[companion.id] = newCompanion();
 
+  // Seeded once, at creation, so two characters do not stare at the same board forever.
+  const overworld = newRun(Math.floor(Math.random() * 1e9) >>> 0);
+
   return {
-    version: SAVE_VERSION,
+    profileId,
+    name,
+    level: 1,
+    state: { overworld, combat: null },
     collection: startingCollection(),
     decks,
     activeCompanionId: DEFAULT_COMPANION.id,
     companions,
-    difficulty: NOVICE_AI.name,
     record: { wins: 0, losses: 0, bound: 0 },
   };
 }
 
+/** An empty wall. Three blank posters and nobody chosen. */
+export function emptySave(): SaveFile {
+  return {
+    version: SAVE_VERSION,
+    activeProfileId: null,
+    difficulty: NOVICE_AI.name,
+    profiles: {},
+  };
+}
+
+/**
+ * Refreshes the metadata the title wall reads without opening a profile.
+ *
+ * Called on every write rather than at each of the places `level` could change, so the
+ * cache cannot fall behind the thing it caches. Cheap, and it is the only reason the
+ * poster can be painted from the file alone.
+ */
+export function stampProfile(profile: Profile): void {
+  profile.level = profile.companions[profile.activeCompanionId]?.level ?? 1;
+}
+
+/** The first slot with nothing pinned to it, or null when the wall is full. */
+export function firstEmptySlot(file: SaveFile): SlotId | null {
+  return SLOT_IDS.find((id) => !file.profiles[id]) ?? null;
+}
+
 export interface LoadResult {
-  save: SaveData;
+  save: SaveFile;
   /** Non-fatal issues worth telling the player about. */
   notes: string[];
 }
@@ -138,7 +227,7 @@ export function loadSave(): LoadResult {
 
     try {
       const parsed = JSON.parse(raw) as unknown;
-      const result = migrate(parsed, notes);
+      const result = migrateFile(parsed, notes);
       if (key === BACKUP_KEY) notes.push('Your save was damaged; the previous one was restored.');
       return { save: result, notes };
     } catch {
@@ -146,23 +235,66 @@ export function loadSave(): LoadResult {
     }
   }
 
-  return { save: defaultSave(), notes };
+  return { save: emptySave(), notes };
 }
 
 /**
- * Brings any older or partial save up to the current shape. Unknown fields are dropped
- * and missing ones filled from defaults, so a save can never be *partly* valid.
+ * Reads the file, from either shape it has ever had.
+ *
+ * A v6 save held one character at the root with no notion of a slot. Rather than discard
+ * it — which would be a player's whole collection thrown away by an upgrade — it is
+ * migrated onto the first poster and set active, so the next boot looks exactly like
+ * carrying on.
  */
-function migrate(raw: unknown, notes: string[]): SaveData {
-  const base = defaultSave();
-  if (!raw || typeof raw !== 'object') return base;
-  const data = raw as Partial<SaveData>;
+function migrateFile(raw: unknown, notes: string[]): SaveFile {
+  if (!raw || typeof raw !== 'object') return emptySave();
+  const data = raw as Partial<SaveFile> & { collection?: unknown };
 
   const version = typeof data.version === 'number' ? data.version : 0;
   if (version > SAVE_VERSION) {
     notes.push('This save came from a newer version; some of it was ignored.');
-    return base;
+    return emptySave();
   }
+
+  const difficulty = profileByName(String((data as { difficulty?: unknown }).difficulty ?? ''))
+    ? String(data.difficulty)
+    : NOVICE_AI.name;
+
+  // --- the single-character shape, v6 and earlier ---
+  if (!data.profiles && data.collection) {
+    const only = migrateProfile(raw, SLOT_IDS[0], notes);
+    notes.push('Your character was pinned to the first poster.');
+    return {
+      version: SAVE_VERSION,
+      activeProfileId: SLOT_IDS[0],
+      difficulty,
+      profiles: { [SLOT_IDS[0]]: only },
+    };
+  }
+
+  const profiles: Partial<Record<SlotId, Profile>> = {};
+  for (const slot of SLOT_IDS) {
+    const saved = data.profiles?.[slot];
+    if (!saved || typeof saved !== 'object') continue;
+    profiles[slot] = migrateProfile(saved, slot, notes);
+  }
+
+  // A pointer at an empty slot is worse than no pointer: it would open a character that
+  // is not there. Dropped rather than repaired, which puts the player back at the wall.
+  const claimed = data.activeProfileId;
+  const activeProfileId = isSlotId(claimed) && profiles[claimed] ? claimed : null;
+
+  return { version: SAVE_VERSION, activeProfileId, difficulty, profiles };
+}
+
+/**
+ * Brings one character up to the current shape. Unknown fields are dropped and missing
+ * ones filled from defaults, so a profile can never be *partly* valid.
+ */
+function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
+  const base = newProfile(slot);
+  if (!raw || typeof raw !== 'object') return base;
+  const data = raw as Partial<Profile> & { overworld?: unknown };
 
   // --- collection ---
   // Renames are applied before reconciliation, which is the whole point: reconciliation
@@ -227,10 +359,6 @@ function migrate(raw: unknown, notes: string[]): SaveData {
         }
       : base.record;
 
-  // An unknown tier (renamed, or from a future version) falls back rather than leaving
-  // the game with no AI to run.
-  const difficulty = profileByName(String(data.difficulty ?? '')) ? data.difficulty! : base.difficulty;
-
   // --- last run (added in v2) ---
   // A v1 save simply has none, which is the same as never having played: the field is
   // optional precisely so the absence needs no repair.
@@ -249,20 +377,34 @@ function migrate(raw: unknown, notes: string[]): SaveData {
         }
       : undefined;
 
-  // --- the run in progress (added in v4) ---
-  const overworld = readOverworld(data.overworld);
+  // --- the live state ---
+  // Read from `state.overworld` (v7) or from a root `overworld` (v4 to v6), so an upgrade
+  // does not cost a player the Pact they were carrying. `combat` is a live handle to a
+  // fight in progress and is deliberately never restored: a reload is not a resume, and
+  // the open contract on `overworld` is what the forfeit failsafe reads instead.
+  const nested = (data.state as { overworld?: unknown } | undefined)?.overworld;
+  const overworld = readOverworld(nested ?? data.overworld) ?? newRun(
+    Math.floor(Math.random() * 1e9) >>> 0,
+  );
 
-  return {
-    version: SAVE_VERSION,
+  const profile: Profile = {
+    profileId: slot,
+    name: typeof data.name === 'string' && data.name.trim() ? data.name.trim().slice(0, 24) : base.name,
+    level: 1,
+    state: { overworld, combat: null },
     collection,
     decks,
     activeCompanionId,
     companions,
-    difficulty,
     record,
     ...(lastRun ? { lastRun } : {}),
-    ...(overworld ? { overworld } : {}),
   };
+
+  // The ceiling belongs to whoever is standing beside the Pact, and a levelled Companion
+  // restored from disk would otherwise sit at the base 40 until the next level was bought.
+  syncPactCeiling(profile.state.overworld, profile.companions[profile.activeCompanionId]);
+  stampProfile(profile);
+  return profile;
 }
 
 /**
@@ -381,9 +523,18 @@ function numberOr(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-/** Writes the save, keeping the previous one as a backup in case this write is torn. */
-export function writeSave(save: SaveData): boolean {
+/**
+ * Writes the whole file, keeping the previous one as a backup in case this write is torn.
+ *
+ * The *whole* file, always. Writing a single profile back on its own is how two
+ * characters end up sharing a purse, so there is deliberately no function that can.
+ */
+export function writeSave(save: SaveFile): boolean {
   try {
+    for (const slot of SLOT_IDS) {
+      const profile = save.profiles[slot];
+      if (profile) stampProfile(profile);
+    }
     const previous = readRaw(KEY);
     if (previous !== null) localStorage.setItem(BACKUP_KEY, previous);
     localStorage.setItem(KEY, JSON.stringify({ ...save, version: SAVE_VERSION }));
