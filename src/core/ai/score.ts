@@ -17,6 +17,7 @@ import { applyCommand } from '../engine/engine.js';
 import { unitsOf } from '../engine/board.js';
 import { opposite } from '../engine/board.js';
 import { threatMap } from '../engine/threat.js';
+import { threatensFrom } from '../engine/targeting.js';
 import { coordKey } from '../../contract/ids.js';
 
 export interface UtilityWeights {
@@ -33,6 +34,14 @@ export interface UtilityWeights {
   counterRisk: number;
   friendlyCollateral: number;
   advance: number;
+  /**
+   * Ending a move somewhere the unit can actually shoot from.
+   *
+   * Only consulted for units whose best ground is not simply "as far forward as
+   * possible" — a mortar with a blind spot, a marksman confined to a firing line. For
+   * everything else `advance` already points the right way and this would be noise.
+   */
+  firingPosition: number;
   /** Board development: getting bodies onto the grid is how pressure is built. */
   developAtk: number;
   developHp: number;
@@ -68,6 +77,9 @@ export const NOVICE_WEIGHTS: UtilityWeights = {
   counterRisk: 12,
   friendlyCollateral: 15,
   advance: 3,
+  // Must outweigh the two rows of `advance` a mortar gives up by stopping short of its
+  // own blind spot, or the archetype walks itself out of the fight every time.
+  firingPosition: 8,
   developAtk: 4,
   developHp: 1.5,
   armorValue: 1.5,
@@ -196,6 +208,20 @@ export function scoreAction(
       const forward = side === 'player' ? -1 : 1;
       const progress = (command.to.y - unit.anchor.y) * forward;
       utility += weights.advance * progress;
+
+      // `advance` says "forward is better", which is true of almost every unit and false
+      // of exactly the ones §3 introduced. A mortar has a blind spot at its feet and a
+      // marksman fires only down a line, so for those two the last row of ground gained
+      // can be the row that disarms them. Reward standing somewhere they could actually
+      // shoot from, and only for units whose reach is genuinely non-monotonic — for
+      // everything else closer is never worse, and this would be noise in the scores.
+      const constrained = unit.rangeMin > 1 || unit.attackProfile === 'lineOnly';
+      if (constrained && weights.firingPosition > 0) {
+        const moved = next.units[unit.id];
+        if (moved && threatensFrom(next, moved, command.to)) {
+          utility += weights.firingPosition;
+        }
+      }
 
       // Strike and withdraw. Independent actions let a unit attack and then step out of
       // reach, so a unit that has already swung this turn values safety instead of

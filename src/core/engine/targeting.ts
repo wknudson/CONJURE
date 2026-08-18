@@ -21,7 +21,7 @@ import {
 } from './board.js';
 import { canAttack, canAct } from './movement.js';
 import { hasLoS, hasLoSToPortrait } from './los.js';
-import { DIRS_8, cellsOf } from '../util/grid.js';
+import { DIRS_8, cellsAt, cellsOf } from '../util/grid.js';
 import { inBounds, portraitRow, territoryRows, visionClamp } from '../types/state.js';
 
 /**
@@ -264,6 +264,28 @@ export function canStrike(
   // Reaching past arm's length means seeing what you are reaching for; melee never does.
   if (best <= 1) return true;
   return from.some((c) => targets.some((t) => hasLoS(state, c, t, ignoreIds)));
+}
+
+/**
+ * Does this unit threaten any enemy from `anchor`?
+ *
+ * Asked of a tile a unit is *considering* moving to, which is why it deliberately does
+ * not consult exhaustion the way `legalAttacks` does: the question is what the position
+ * will be worth on the next turn, not what can be done from it this instant.
+ *
+ * Walks the enemies rather than the board — `strikeableFrom` in threat.ts answers the
+ * mirror-image question by sweeping every tile, which is the right shape for drawing an
+ * overlay once and the wrong shape for scoring dozens of candidate moves.
+ */
+export function threatensFrom(state: GameState, unit: Unit, anchor: Coord): boolean {
+  const from = cellsAt(anchor, unit.footprint);
+  const foeSide = opposite(unit.side);
+
+  for (const foe of unitsOf(state, foeSide)) {
+    if (foe.id === unit.id) continue;
+    if (canStrike(state, unit, from, cellsOf(foe), [unit.id, foe.id])) return true;
+  }
+  return canHitPortrait(state, { ...unit, anchor }, foeSide);
 }
 
 /**

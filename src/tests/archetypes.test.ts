@@ -8,6 +8,8 @@ import { makeCtx } from '../core/engine/context.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { stableStringify } from './replay.js';
 import type { GameState } from '../core/types/state.js';
+import { planTurn } from '../core/ai/controller.js';
+import { enumerateActions } from '../core/ai/enumerate.js';
 
 /**
  * The three ways of fighting at range.
@@ -159,5 +161,70 @@ describe('the data behind them', () => {
     void lobber;
     const imp = findUnit(state, 'cinder_lobber', 'player');
     expect(state.units[imp.id]!.attackProfile).toBe('arcing');
+  });
+});
+
+/**
+ * The AI half of §3. The engine rules are only half the feature: a planner that walks a
+ * mortar into its own blind spot has taken the archetype off the board just as surely as
+ * a rule that forbade it from firing.
+ *
+ * Both cases below fail without the `firingPosition` term — verified by probe before it
+ * was written, not assumed.
+ */
+describe('the planner reading the archetypes', () => {
+  const forcedChoice = () => {
+    // A lane one tile wide: every maximally-advancing tile sits inside the blind spot,
+    // so the AI has to give up a row of ground to stay able to shoot.
+    //
+    // The board is deliberately tall. On a short one the mortar can lob at the enemy
+    // *portrait* from the forward tile, which makes advancing correct and the test
+    // vacuous — the first draft of this test failed for exactly that reason, and the
+    // planner was right. Here the far edge is well outside its four-tile envelope, so
+    // the only thing worth shooting is the minion.
+    const state = scenario({ width: 3, height: 12 });
+    state.activeSide = 'enemy';
+    const lobber = addUnit(state, { def: 'cinder_lobber', side: 'enemy', at: { x: 1, y: 2 } });
+    addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 1, y: 5 }, hp: 30 });
+    state.units[lobber.id]!.attackedThisTurn = true;
+    return { state, lobber };
+  };
+
+  it('stops the mortar short of its own blind spot', () => {
+    const { state, lobber } = forcedChoice();
+    const plan = planTurn(state, 'enemy');
+    const move = plan.find((c) => c.type === 'moveUnit' && c.unit === lobber.id);
+
+    const to = move && move.type === 'moveUnit' ? move.to : state.units[lobber.id]!.anchor;
+    const dist = Math.max(Math.abs(to.x - 1), Math.abs(to.y - 5));
+    expect(dist, 'a mortar that cannot depress its aim has disarmed itself').toBeGreaterThanOrEqual(2);
+  });
+
+  it('puts the marksman on a firing line rather than merely forward', () => {
+    const state = scenario({ width: 7, height: 8 });
+    state.activeSide = 'enemy';
+    const sniper = addUnit(state, { def: 'longshot_stalker', side: 'enemy', at: { x: 2, y: 2 } });
+    addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 3, y: 6 }, hp: 30 });
+    state.units[sniper.id]!.attackedThisTurn = true;
+
+    const plan = planTurn(state, 'enemy');
+    const move = plan.find((c) => c.type === 'moveUnit' && c.unit === sniper.id);
+    const to = move && move.type === 'moveUnit' ? move.to : state.units[sniper.id]!.anchor;
+
+    const dx = Math.abs(to.x - 3);
+    const dy = Math.abs(to.y - 6);
+    expect(dx === 0 || dy === 0 || dx === dy, `ended at ${to.x},${to.y}, off every line`).toBe(true);
+  });
+
+  it('never enumerates a move for an emplacement, however open the ground', () => {
+    const state = scenario({ width: 6, height: 8 });
+    state.activeSide = 'enemy';
+    const turret = addUnit(state, { def: 'arc_turret', side: 'enemy', at: { x: 3, y: 1 } });
+    addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 3, y: 6 }, hp: 30 });
+
+    const moves = enumerateActions(state, 'enemy').filter(
+      (c) => c.type === 'moveUnit' && c.unit === turret.id,
+    );
+    expect(moves).toHaveLength(0);
   });
 });
