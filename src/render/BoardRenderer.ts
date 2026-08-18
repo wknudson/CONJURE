@@ -178,8 +178,7 @@ export class BoardRenderer {
     this.drawHazards(pulse);
     this.drawOverlays(pulse);
     this.drawIntents(pulse);
-    this.drawCommanders(pulse);
-    this.drawEntities(pulse);
+    this.drawBoardObjects(pulse);
     this.drawGhost();
     this.drawPredictions();
 
@@ -439,22 +438,20 @@ export class BoardRenderer {
     }
   }
 
-  private drawCommanders(pulse: number): void {
+  private drawCommanderModel(c: CommanderModel, pulse: number): void {
     const { ctx, cam } = this;
-    for (const c of this.commanders) {
-      const centre = cam.worldToScreen(c.at.x + 0.5, c.at.y + 0.5, 0);
-      drawCommander(ctx, cam, centre, {
-        school: c.school,
-        ally: c.side === 'player',
-        kind: c.kind,
-        hp: c.hp,
-        maxHp: c.maxHp,
-        armor: c.armor,
-        name: c.name,
-        targetable: c.targetable,
-        pulse,
-      });
-    }
+    const centre = cam.worldToScreen(c.at.x + 0.5, c.at.y + 0.5, 0);
+    drawCommander(ctx, cam, centre, {
+      school: c.school,
+      ally: c.side === 'player',
+      kind: c.kind,
+      hp: c.hp,
+      maxHp: c.maxHp,
+      armor: c.armor,
+      name: c.name,
+      targetable: c.targetable,
+      pulse,
+    });
   }
 
   /** Hit-tests a screen point against the Commander models standing beside the board. */
@@ -528,104 +525,148 @@ export class BoardRenderer {
     }
   }
 
-  private drawEntities(pulse: number): void {
-    const { ctx, cam } = this;
+  /**
+   * Everything standing on the floor, drawn back to front in one pass.
+   *
+   * Commanders used to have a pass of their own, ahead of the units. That was survivable
+   * only while the board was locked to quarter-turns, where they were reliably at the far
+   * end; once it can sit at any angle a Commander is as often in front of a unit as
+   * behind one, and a fixed order gets it wrong roughly half the time — a Hero calmly
+   * painted underneath a Behemoth it is standing in front of.
+   *
+   * They are off the grid at fractional coordinates, which is not a special case: the
+   * same depth key runs them through the same rotation as everything else, and where
+   * they land in the order falls out of the arithmetic.
+   */
+  private drawBoardObjects(pulse: number): void {
+    const { cam } = this;
 
-    const sorted = this.views.all().slice().sort((a, b) => {
-      const fa = a.snapshot?.footprint ?? 1;
-      const fb = b.snapshot?.footprint ?? 1;
-      return (
-        cam.depthKey(cellsAt(roundCoord(a.pos), fa)) -
-        cam.depthKey(cellsAt(roundCoord(b.pos), fb))
-      );
-    });
+    // Commanders key on their logical coordinate, not their drawn centre, because that is
+    // the convention entities use — a unit sorts on its cell and draws half a tile in.
+    // Mixing the two would bias every Commander by half a tile, in a direction that
+    // changes with the angle.
+    const queue: { depth: number; view?: EntityView; model?: CommanderModel }[] = [];
+    const entities = this.views.all();
+
+    for (const view of entities) {
+      const footprint = view.snapshot?.footprint ?? 1;
+      queue.push({ depth: cam.depthKey(cellsAt(roundCoord(view.pos), footprint)), view });
+    }
+    for (const model of this.commanders) {
+      queue.push({ depth: cam.depthKey([model.at]), model });
+    }
+
+    queue.sort((a, b) => a.depth - b.depth);
 
     // Track occupied screen boxes so 1x1s hidden behind a Behemoth can be silhouetted.
     const behemothBoxes: { x: number; y: number; r: number }[] = [];
 
-    for (const view of sorted) {
-      const footprint = view.snapshot?.footprint ?? 1;
-      const centre = cam.worldToScreen(
-        view.pos.x + footprint / 2,
-        view.pos.y + footprint / 2,
-        view.elev,
-      );
-
-      const ally = view.snapshot ? view.snapshot.side === 'player' : false;
-
-      ctx.save();
-      // Spent units fade back so the eye lands on the ones that can still act.
-      ctx.globalAlpha = view.alpha * (view.spent ? 0.5 : 1);
-
-      if (view.snapshot) {
-        drawBasePlate(ctx, cam, centre, footprint, ally);
-
-        // A unit that has grown mechanically should look it. Scaled about its own feet so
-        // it rises off the base plate rather than sinking through it.
-        const growth = 1 + Math.min(view.escalation, 6) * ESCALATION_SCALE_PER_STACK;
-        const scaled = growth !== 1;
-        if (scaled) {
-          ctx.save();
-          ctx.translate(centre.x, centre.y);
-          ctx.scale(growth, growth);
-          ctx.translate(-centre.x, -centre.y);
-        }
-
-        drawUnitBody(ctx, cam, centre, {
-          archetype: view.snapshot.archetype,
-          school: view.snapshot.school,
-          footprint,
-          ally,
-          bob: (this.clock / 1400) % 1,
-        });
-
-        if (scaled) ctx.restore();
-      } else if (view.obstacle?.cover) {
-        // Cover is knee-high: it must read as something you walk through, not around.
-        drawCover(ctx, cam, centre);
-      } else if (view.obstacle) {
-        drawUnitBody(ctx, cam, centre, {
-          archetype: 'obstacle',
-          school: 'neutral',
-          footprint: 1,
-          ally: false,
-          bob: 0,
-        });
-      }
-
-      if (view.rune) {
-        const brandY = centre.y - (footprint === 2 ? 70 : 30) * cam.zoom;
-        drawRune(ctx, { x: centre.x, y: brandY }, view.rune.school, pulse, cam.zoom);
-      }
-
-      // The Bound Form's health is the Pact's, shown on the gauge above. A bar here
-      // would read as a second, separate pool -- and one that never moves.
-      if (view.snapshot?.keywords.includes('BoundForm')) {
-        drawBoundMark(ctx, centre, cam.zoom, pulse, view.snapshot.side === 'player');
-      } else {
-        drawStatBar(ctx, centre, view.hp, view.maxHp, view.armor, view.atk, cam.zoom);
-      }
-
-      if (view.escalation > 0) {
-        ctx.fillStyle = '#FDE047';
-        ctx.font = `700 ${Math.round(11 * cam.zoom)}px ui-sans-serif, system-ui, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText(`▲${view.escalation}`, centre.x, centre.y + 40 * cam.zoom);
-        ctx.textAlign = 'left';
-      }
-
-      this.drawStatusChips(view, centre);
-
-      ctx.restore();
-
-      if (footprint === 2) {
-        behemothBoxes.push({ x: centre.x, y: centre.y, r: cam.tileW * 1.1 });
-      }
+    for (const item of queue) {
+      if (item.model) this.drawCommanderModel(item.model, pulse);
+      else if (item.view) this.drawEntity(item.view, pulse, behemothBoxes);
     }
 
-    // Silhouette pass: anything a Behemoth swallowed gets a flat team-colour ghost so
-    // the board never hides a unit. This replaces the need for a rotating camera.
-    for (const view of sorted) {
+    this.drawSilhouettes(entities, behemothBoxes);
+  }
+
+  private drawEntity(
+    view: EntityView,
+    pulse: number,
+    behemothBoxes: { x: number; y: number; r: number }[],
+  ): void {
+    const { ctx, cam } = this;
+    const footprint = view.snapshot?.footprint ?? 1;
+    const centre = cam.worldToScreen(
+      view.pos.x + footprint / 2,
+      view.pos.y + footprint / 2,
+      view.elev,
+    );
+
+    const ally = view.snapshot ? view.snapshot.side === 'player' : false;
+
+    ctx.save();
+    // Spent units fade back so the eye lands on the ones that can still act.
+    ctx.globalAlpha = view.alpha * (view.spent ? 0.5 : 1);
+
+    if (view.snapshot) {
+      drawBasePlate(ctx, cam, centre, footprint, ally);
+
+      // A unit that has grown mechanically should look it. Scaled about its own feet so
+      // it rises off the base plate rather than sinking through it.
+      const growth = 1 + Math.min(view.escalation, 6) * ESCALATION_SCALE_PER_STACK;
+      const scaled = growth !== 1;
+      if (scaled) {
+        ctx.save();
+        ctx.translate(centre.x, centre.y);
+        ctx.scale(growth, growth);
+        ctx.translate(-centre.x, -centre.y);
+      }
+
+      drawUnitBody(ctx, cam, centre, {
+        archetype: view.snapshot.archetype,
+        school: view.snapshot.school,
+        footprint,
+        ally,
+        bob: (this.clock / 1400) % 1,
+      });
+
+      if (scaled) ctx.restore();
+    } else if (view.obstacle?.cover) {
+      // Cover is knee-high: it must read as something you walk through, not around.
+      drawCover(ctx, cam, centre);
+    } else if (view.obstacle) {
+      drawUnitBody(ctx, cam, centre, {
+        archetype: 'obstacle',
+        school: 'neutral',
+        footprint: 1,
+        ally: false,
+        bob: 0,
+      });
+    }
+
+    if (view.rune) {
+      const brandY = centre.y - (footprint === 2 ? 70 : 30) * cam.zoom;
+      drawRune(ctx, { x: centre.x, y: brandY }, view.rune.school, pulse, cam.zoom);
+    }
+
+    // The Bound Form's health is the Pact's, shown on the gauge above. A bar here
+    // would read as a second, separate pool -- and one that never moves.
+    if (view.snapshot?.keywords.includes('BoundForm')) {
+      drawBoundMark(ctx, centre, cam.zoom, pulse, view.snapshot.side === 'player');
+    } else {
+      drawStatBar(ctx, centre, view.hp, view.maxHp, view.armor, view.atk, cam.zoom);
+    }
+
+    if (view.escalation > 0) {
+      ctx.fillStyle = '#FDE047';
+      ctx.font = `700 ${Math.round(11 * cam.zoom)}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`▲${view.escalation}`, centre.x, centre.y + 40 * cam.zoom);
+      ctx.textAlign = 'left';
+    }
+
+    this.drawStatusChips(view, centre);
+
+    ctx.restore();
+
+    if (footprint === 2) {
+      behemothBoxes.push({ x: centre.x, y: centre.y, r: cam.tileW * 1.1 });
+    }
+  }
+
+  /**
+   * Anything a Behemoth swallowed gets a flat team-colour ghost, so the board never fully
+   * hides a unit.
+   *
+   * Kept to the units: a Commander is drawn beside the board rather than on it, and
+   * ghosting one would suggest a piece was hidden when it is simply standing off-grid.
+   */
+  private drawSilhouettes(
+    entities: EntityView[],
+    behemothBoxes: { x: number; y: number; r: number }[],
+  ): void {
+    const { ctx, cam } = this;
+    for (const view of entities) {
       const footprint = view.snapshot?.footprint ?? 1;
       if (footprint === 2 || !view.snapshot) continue;
       const centre = cam.worldToScreen(view.pos.x + 0.5, view.pos.y + 0.5, view.elev);
