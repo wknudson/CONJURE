@@ -153,10 +153,18 @@ export interface CombatCarry {
   /**
    * Pact health at the opening bell. Absent means full, as a standalone fight always is.
    *
-   * `maxHp` stays whatever the encounter says, so a wounded run fights at 12/40 rather
-   * than at 12/12 — the gauge has to show how much was already lost.
+   * The ceiling is untouched by this, so a wounded character fights at 12/40 rather than
+   * at 12/12 — the gauge has to show how much was already lost.
    */
   startingHp?: number;
+  /**
+   * The Pact's ceiling, overriding the encounter's own.
+   *
+   * Present when a character exists, because their gauge is the authority and it moves:
+   * a levelled Companion raises it. Absent for a standalone fight, which uses whatever
+   * the encounter printed.
+   */
+  maxHp?: number;
   boons?: CombatBoons;
 }
 
@@ -204,8 +212,14 @@ export function createCombat(
   player.commander.pips = opening + (carry?.boons?.pips ?? 0);
   enemy.commander.pips = opening;
 
-  // The Gauntlet: a Pact does not heal between rooms. Clamped to the encounter's own
-  // maximum so a stale carried value cannot start a fight above full.
+  // A raised ceiling has to land before the health is clamped against it, or levelling a
+  // Companion would buy a bigger gauge that the first clamp immediately spent.
+  if (carry?.maxHp !== undefined && carry.maxHp > 0) {
+    player.commander.maxHp = carry.maxHp;
+  }
+
+  // A Pact does not heal between contracts. Clamped to the ceiling so a stale carried
+  // value cannot start a fight above full.
   if (carry?.startingHp !== undefined) {
     player.commander.hp = Math.max(0, Math.min(player.commander.maxHp, carry.startingHp));
   }

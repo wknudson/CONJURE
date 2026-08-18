@@ -22,10 +22,11 @@ import type {
   OverworldState,
 } from '../core/overworld/state.js';
 import { INVENTORY_LIMIT, isBuffId } from '../core/overworld/state.js';
+import { newCompanion, type CompanionProgress } from '../core/overworld/vivarium.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 /**
  * Cards that have been renamed, old id to new.
@@ -56,7 +57,21 @@ export interface SaveData {
   collection: Collection;
   /** One deck per companion, keyed by companion id. */
   decks: Record<string, SavedDeck>;
-  lastCompanionId: string;
+  /**
+   * The Companion currently standing beside the player.
+   *
+   * Renamed from `lastCompanionId` in v6, because it stopped being a record of the last
+   * choice the moment the Vivarium made it a thing you set deliberately.
+   */
+  activeCompanionId: string;
+  /**
+   * Progression per Companion, keyed by id.
+   *
+   * Beside `collection` rather than on the character, because a levelled Companion is
+   * property in the same way a forged card is: earned once, kept through every knockout.
+   * A Companion missing from this map has simply never been levelled.
+   */
+  companions: Record<string, CompanionProgress>;
   /** AI tier name, matched against AI_PROFILES on load. */
   difficulty: string;
   record: { wins: number; losses: number; bound: number };
@@ -92,11 +107,17 @@ export function defaultSave(): SaveData {
   for (const companion of COMPANIONS) {
     decks[companion.id] = { companionId: companion.id, cards: [...companion.deck] };
   }
+  const companions: Record<string, CompanionProgress> = {};
+  // Every Companion starts at level 1 and available. When unlocking is gated — a bound
+  // Trial, most likely — this seeds only the starter and the Vivarium narrows with it.
+  for (const companion of COMPANIONS) companions[companion.id] = newCompanion();
+
   return {
     version: SAVE_VERSION,
     collection: startingCollection(),
     decks,
-    lastCompanionId: DEFAULT_COMPANION.id,
+    activeCompanionId: DEFAULT_COMPANION.id,
+    companions,
     difficulty: NOVICE_AI.name,
     record: { wins: 0, losses: 0, bound: 0 },
   };
@@ -188,9 +209,14 @@ function migrate(raw: unknown, notes: string[]): SaveData {
     }
   }
 
-  const lastCompanionId = COMPANIONS.some((c) => c.id === data.lastCompanionId)
-    ? data.lastCompanionId!
-    : base.lastCompanionId;
+  // v5 and earlier called this `lastCompanionId`; read either, write the new one.
+  const legacy = (data as { lastCompanionId?: unknown }).lastCompanionId;
+  const claimed = typeof data.activeCompanionId === 'string' ? data.activeCompanionId : legacy;
+  const activeCompanionId = COMPANIONS.some((c) => c.id === claimed)
+    ? (claimed as string)
+    : base.activeCompanionId;
+
+  const companions = readCompanions(data.companions, base.companions);
 
   const record =
     data.record && typeof data.record === 'object'
@@ -218,7 +244,7 @@ function migrate(raw: unknown, notes: string[]): SaveData {
       ? {
           encounterId: run.encounterId,
           seed: run.seed,
-          companionId: String(run.companionId ?? lastCompanionId),
+          companionId: String(run.companionId ?? activeCompanionId),
           deck: run.deck.filter((c): c is string => typeof c === 'string').map(rename),
         }
       : undefined;
@@ -230,7 +256,8 @@ function migrate(raw: unknown, notes: string[]): SaveData {
     version: SAVE_VERSION,
     collection,
     decks,
-    lastCompanionId,
+    activeCompanionId,
+    companions,
     difficulty,
     record,
     ...(lastRun ? { lastRun } : {}),
@@ -320,6 +347,34 @@ function isConsumable(value: unknown): value is Consumable {
   // A buff whose id no longer exists would sit in the satchel forever doing nothing when
   // drunk. Dropping it is kinder than keeping a dead bottle.
   return item.type !== 'buff' || isBuffId(item.id);
+}
+
+/**
+ * Companion progression, rebuilt rather than trusted.
+ *
+ * Only Companions that still exist survive the trip: an entry for one that has been cut
+ * would sit in the save forever, and `syncPactCeiling` would read a bonus for a body that
+ * cannot be picked. Levels are floored at 1 and the bonuses at 0, because these are
+ * exactly the numbers a curious player edits first.
+ */
+function readCompanions(
+  raw: unknown,
+  base: Record<string, CompanionProgress>,
+): Record<string, CompanionProgress> {
+  const out: Record<string, CompanionProgress> = { ...base };
+  if (!raw || typeof raw !== 'object') return out;
+
+  for (const companion of COMPANIONS) {
+    const saved = (raw as Record<string, Partial<CompanionProgress>>)[companion.id];
+    if (!saved || typeof saved !== 'object') continue;
+    out[companion.id] = {
+      level: Math.max(1, Math.round(numberOr(saved.level, 1))),
+      bonusMaxHp: Math.max(0, Math.round(numberOr(saved.bonusMaxHp, 0))),
+      startingArmor: Math.max(0, Math.round(numberOr(saved.startingArmor, 0))),
+      bonusPips: Math.max(0, Math.round(numberOr(saved.bonusPips, 0))),
+    };
+  }
+  return out;
 }
 
 function numberOr(value: unknown, fallback: number): number {

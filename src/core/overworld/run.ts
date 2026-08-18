@@ -12,6 +12,7 @@ import type { CombatBoons, CombatCarry } from '../engine/setup.js';
 import type { BuffId, GlobalGameState, OverworldState } from './state.js';
 import { INVENTORY_LIMIT } from './state.js';
 import { nextBountySeed } from '../data/bounties.js';
+import type { CompanionProgress } from './vivarium.js';
 
 /**
  * What each brew does to a fight.
@@ -30,16 +31,39 @@ export const BUFF_EFFECTS: Record<BuffId, CombatBoons> = {
 };
 
 /**
- * What the run hands the next fight.
+ * What the character hands the next fight.
  *
- * The buff is translated to its effects here and not carried as an id, so the engine is
- * handed armour and pips rather than a word it would have to interpret.
+ * Two sources of advantage meet here and nowhere else: the brew in hand, and the
+ * Companion standing beside you. Both are translated into the engine's own words —
+ * armour, pips, cards, a ceiling — so `createCombat` is handed numbers and never learns
+ * that either a brew or a Companion level exists.
+ *
+ * The two add rather than override. A levelled Companion and an Ironbrew are separate
+ * purchases, and a player who made both should get both.
  */
-export function carryFor(overworld: OverworldState): CombatCarry {
-  const boons = overworld.activeBuff ? BUFF_EFFECTS[overworld.activeBuff] : undefined;
+export function carryFor(
+  overworld: OverworldState,
+  companion?: CompanionProgress,
+): CombatCarry {
+  const brew = overworld.activeBuff ? BUFF_EFFECTS[overworld.activeBuff] : undefined;
+
+  const armor = (brew?.armor ?? 0) + (companion?.startingArmor ?? 0);
+  const pips = (brew?.pips ?? 0) + (companion?.bonusPips ?? 0);
+  const extraOpeningCards = brew?.extraOpeningCards ?? 0;
+
+  const boons: CombatBoons = {
+    ...(armor ? { armor } : {}),
+    ...(pips ? { pips } : {}),
+    ...(extraOpeningCards ? { extraOpeningCards } : {}),
+  };
+
   return {
     startingHp: overworld.pact.currentHp,
-    ...(boons ? { boons } : {}),
+    // The character's gauge, not the encounter's. `syncPactCeiling` has already folded
+    // the active Companion's bonus into it, so this is one number rather than a sum done
+    // differently at each end.
+    maxHp: overworld.pact.maxHp,
+    ...(Object.keys(boons).length > 0 ? { boons } : {}),
   };
 }
 

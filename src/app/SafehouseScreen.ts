@@ -28,6 +28,8 @@ import { Tooltip } from '../hud/Tooltip.js';
 export interface SafehouseOpts {
   global: GlobalGameState;
   companionId: string;
+  /** The active Companion's level, for the Vivarium door's status line. */
+  companionLevel: number;
   /** The three contracts currently pinned to the board. */
   bounties: Bounty[];
   collection: Collection;
@@ -43,6 +45,7 @@ export interface SafehouseOpts {
   onApothecary: () => void;
   onArtificer: () => void;
   onJournal: () => void;
+  onVivarium: () => void;
   onBounty: (bounty: Bounty) => void;
   /** Called after the run is mutated here — drinking something — so it reaches disk. */
   onChange?: () => void;
@@ -248,6 +251,17 @@ export class SafehouseScreen implements Screen {
           return cut === 0 ? 'Nothing on the bench' : `${cut} schematics on file`;
         },
         onOpen: this.opts.onArtificer,
+      },
+      {
+        key: 'vivarium',
+        name: 'The Vivarium',
+        trade: 'Companions',
+        blurb: 'Glass, condensation, and something breathing behind it. It knows your step.',
+        status: () => {
+          const name = companionById(this.opts.companionId)?.name ?? 'Nobody';
+          return `${name} · Level ${this.opts.companionLevel}`;
+        },
+        onOpen: this.opts.onVivarium,
       },
       {
         key: 'journal',

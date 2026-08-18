@@ -30,7 +30,7 @@ export class TitleScreen implements Screen {
   private difficulty: string;
 
   constructor(private readonly opts: TitleOptions) {
-    this.companionId = opts.save.lastCompanionId || DEFAULT_COMPANION.id;
+    this.companionId = opts.save.activeCompanionId || DEFAULT_COMPANION.id;
     this.difficulty = opts.save.difficulty;
   }
 

@@ -26,6 +26,7 @@ import {
   validateDeck,
 } from '../core/data/deckRules.js';
 import { CARDS } from '../core/data/cards/index.js';
+import { printedId } from '../core/data/collection.js';
 import { companionById } from '../core/data/companions.js';
 import { territoryDepthFor } from '../core/types/state.js';
 import { schoolOf } from '../render/palette.js';
@@ -177,6 +178,19 @@ export class PreCombatScreen implements Screen {
 
   // ------------------------------------------------------------------ the deck
 
+  /**
+   * The face a card wears here: its Rank 2 printing if the player has raised it.
+   *
+   * Display only, and deliberately a separate lookup from everything else on this screen.
+   * The swap budget, the copy limits and the deck handed to `onReady` all keep counting
+   * in base ids — `collection.owned` is keyed by base id, so a `_r2` reaching any of them
+   * would read as a card the player does not own and could not add. What changes here is
+   * what the player *sees*, which was the only thing that was ever wrong.
+   */
+  private facing(cardId: string): CardDef {
+    return CARDS[printedId(this.opts.collection, cardId)] ?? CARDS[cardId]!;
+  }
+
   private render(): void {
     this.renderCollection();
     this.renderDeck();
@@ -197,7 +211,8 @@ export class PreCombatScreen implements Screen {
       const inDeck = this.deck.filter((c) => baseIdOf(c) === def.id).length;
       const canAdd =
         remainingCopies(this.deck, def.id, this.opts.collection) > 0 && this.swapsLeft() > 0;
-      host.appendChild(this.cardRow(def, inDeck, canAdd, () => this.add(def.id)));
+      // The row shows the printing; the click still names the base card.
+      host.appendChild(this.cardRow(this.facing(def.id), inDeck, canAdd, () => this.add(def.id)));
     }
   }
 
@@ -213,9 +228,9 @@ export class PreCombatScreen implements Screen {
       .map(([id, n]) => ({ def: CARDS[id], id, n }))
       .sort((a, b) => (a.def ? cardCostTotal(a.def.cost) : 0) - (b.def ? cardCostTotal(b.def.cost) : 0));
 
-    for (const { def, n } of rows) {
+    for (const { def, id, n } of rows) {
       if (!def) continue;
-      host.appendChild(this.cardRow(def, n, true, () => this.remove(def.id), true));
+      host.appendChild(this.cardRow(this.facing(id), n, true, () => this.remove(id), true));
     }
   }
 

@@ -308,6 +308,10 @@ export class Hud {
 
   /** Full refresh from the authoritative board — used on load and after each action. */
   syncFromBoard(board: BoardView, hand: CardSnapshot[], playable: CardInstanceId[]): void {
+    // Maxima first. `setCommanderHp` prints the denominator, so setting it afterwards
+    // left the opening render showing the default 40 — invisible for as long as every
+    // Pact happened to be 40, and wrong the moment a levelled Companion raised one.
+    this.setMaxHp(board.player, board.enemy);
     this.setCommanderHp('player', board.player.hp);
     this.setCommanderHp('enemy', board.enemy.hp);
     this.setCommanderArmor('player', board.player.armor);
@@ -315,7 +319,6 @@ export class Hud {
     this.setResources('player', board.player.pips, board.player.marrow);
     this.setTurn(board.turn, board.activeSide);
     this.setPhase(board.phase, board.activeSide);
-    this.setMaxHp(board.player, board.enemy);
     this.syncHand(hand, playable);
     this.setResonance(board);
     this.setEnemyRead(board);

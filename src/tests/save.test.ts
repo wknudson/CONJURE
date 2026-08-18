@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SAVE_VERSION, clearSave, defaultSave, loadSave, writeSave } from '../app/save.js';
 import { COMPANIONS } from '../core/data/companions.js';
+import { newCompanion } from '../core/overworld/vivarium.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import {
   INVENTORY_LIMIT,
@@ -40,12 +41,12 @@ describe('save round-trip', () => {
   it('persists and reloads a change', () => {
     const save = defaultSave();
     save.record.wins = 3;
-    save.lastCompanionId = 'boreas';
+    save.activeCompanionId = 'boreas';
     expect(writeSave(save)).toBe(true);
 
     const { save: loaded } = loadSave();
     expect(loaded.record.wins).toBe(3);
-    expect(loaded.lastCompanionId).toBe('boreas');
+    expect(loaded.activeCompanionId).toBe('boreas');
   });
 
   it('keeps the previous save as a backup and recovers from corruption', () => {
@@ -203,10 +204,10 @@ describe('migration', () => {
 
   it('rejects a companion id that is not real', () => {
     const save = defaultSave();
-    (save as { lastCompanionId: string }).lastCompanionId = 'nobody';
+    (save as { activeCompanionId: string }).activeCompanionId = 'nobody';
     writeSave(save);
     const { save: loaded } = loadSave();
-    expect(COMPANIONS.some((c) => c.id === loaded.lastCompanionId)).toBe(true);
+    expect(COMPANIONS.some((c) => c.id === loaded.activeCompanionId)).toBe(true);
   });
 });
 
@@ -420,5 +421,66 @@ describe('a fight left open on disk', () => {
       ducats: 0,
       marrowShards: 0,
     });
+  });
+});
+
+describe('companion progression on disk', () => {
+  beforeEach(() => {
+    installStorage();
+  });
+
+  it('starts every Companion at level one', () => {
+    const { save } = loadSave();
+    for (const companion of COMPANIONS) {
+      expect(save.companions[companion.id], companion.name).toEqual(newCompanion());
+    }
+  });
+
+  it('round-trips a levelled Companion', () => {
+    const save = defaultSave();
+    save.companions.ignis = { level: 4, bonusMaxHp: 6, startingArmor: 1, bonusPips: 2 };
+    writeSave(save);
+
+    expect(loadSave().save.companions.ignis).toEqual({
+      level: 4,
+      bonusMaxHp: 6,
+      startingArmor: 1,
+      bonusPips: 2,
+    });
+  });
+
+  it('clamps a hand-edited Companion instead of trusting it', () => {
+    localStorage.setItem(
+      'conjure.save',
+      JSON.stringify({
+        ...defaultSave(),
+        companions: { ignis: { level: -3, bonusMaxHp: -99, startingArmor: 'lots' } },
+      }),
+    );
+
+    const ignis = loadSave().save.companions.ignis!;
+    expect(ignis.level, 'never below one').toBe(1);
+    expect(ignis.bonusMaxHp, 'never a penalty').toBe(0);
+    expect(ignis.startingArmor).toBe(0);
+  });
+
+  it('carries the active Companion over from a v5 save that called it something else', () => {
+    localStorage.setItem(
+      'conjure.save',
+      JSON.stringify({ ...defaultSave(), version: 5, activeCompanionId: undefined, lastCompanionId: 'boreas' }),
+    );
+    expect(loadSave().save.activeCompanionId).toBe('boreas');
+  });
+
+  it('fills in a Companion the save has never heard of', () => {
+    localStorage.setItem(
+      'conjure.save',
+      JSON.stringify({ ...defaultSave(), companions: { ignis: { level: 2, bonusMaxHp: 2 } } }),
+    );
+    const { save } = loadSave();
+    expect(save.companions.ignis!.level).toBe(2);
+    for (const companion of COMPANIONS) {
+      expect(save.companions[companion.id], companion.name).toBeDefined();
+    }
   });
 });

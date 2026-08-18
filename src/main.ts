@@ -37,6 +37,13 @@ import { carryFor, resolveCombat, type CombatOutcome } from './core/overworld/ru
 import { companionById } from './core/data/companions.js';
 import { grantCard, printedDeck, rollRewards } from './core/data/collection.js';
 import { ascendCard, forgeSchematic } from './core/overworld/forge.js';
+import {
+  levelCompanion,
+  newCompanion,
+  syncPactCeiling,
+  type CompanionProgress,
+} from './core/overworld/vivarium.js';
+import { VivariumScreen } from './app/VivariumScreen.js';
 import { makeRng } from './core/util/rng.js';
 import { NOVICE_AI, profileByName } from './core/ai/controller.js';
 import type { EncounterDef } from './core/data/encounters/registry.js';
@@ -53,6 +60,21 @@ const bootNotes = loaded.notes;
 
 function persist(): void {
   writeSave(save);
+}
+
+/**
+ * The active Companion's progression, created on demand.
+ *
+ * On demand rather than assumed present, because a save from before the Vivarium — or one
+ * naming a Companion added since — has no entry, and a missing one must read as "level 1"
+ * rather than as a crash on the way into the hub.
+ */
+function progressFor(companionId: string): CompanionProgress {
+  const existing = save.companions[companionId];
+  if (existing) return existing;
+  const fresh = newCompanion();
+  save.companions[companionId] = fresh;
+  return fresh;
 }
 
 /**
@@ -146,6 +168,10 @@ function adoptCharacter(): GlobalGameState {
 function showSafehouse(companionId: string): void {
   if (!run || isDown(run.overworld)) run = adoptCharacter();
   save.overworld = run.overworld;
+  // The gauge is resynced on every entry rather than only when a Companion changes: it
+  // is the one number every clamp in the game reads, and a save restored with a levelled
+  // Companion would otherwise sit at the base ceiling until the next level was bought.
+  syncPactCeiling(run.overworld, progressFor(companionId));
   persist();
   const global = run;
   const notice = pendingNotice;
@@ -155,6 +181,7 @@ function showSafehouse(companionId: string): void {
     new SafehouseScreen({
       global,
       companionId,
+      companionLevel: progressFor(companionId).level,
       bounties: rollBounties(global.overworld.bountySeed),
       collection: save.collection,
       deck: deckFor(companionId),
@@ -194,6 +221,26 @@ function showSafehouse(companionId: string): void {
             onBack: () => showSafehouse(companionId),
           }),
         ),
+      onVivarium: () =>
+        screens.go(
+          new VivariumScreen({
+            global,
+            companions: () => save.companions,
+            activeCompanionId: () => save.activeCompanionId,
+            onSelect: (id) => {
+              save.activeCompanionId = id;
+              // The Pact's ceiling belongs to whoever is standing beside it, so it moves
+              // the moment the choice does — not at the next fight.
+              syncPactCeiling(global.overworld, progressFor(id));
+            },
+            onLevel: (id) =>
+              levelCompanion(global, progressFor(id), id === save.activeCompanionId),
+            onChange: persist,
+            // Back through the hub rather than to it, so the room is rebuilt around
+            // whichever Companion the player walked out with.
+            onBack: () => showSafehouse(save.activeCompanionId),
+          }),
+        ),
       onJournal: () => showBuilder(companionId, () => showSafehouse(companionId)),
       onBounty: (bounty) => takeBounty(bounty, companionId),
       onLeave: showTitle,
@@ -207,7 +254,7 @@ function showTitle(): void {
       save,
       notes: bootNotes.splice(0),
       onStart: (companionId, difficulty) => {
-        save.lastCompanionId = companionId;
+        save.activeCompanionId = companionId;
         save.difficulty = difficulty;
         persist();
         showSafehouse(companionId);
@@ -228,7 +275,7 @@ function showBuilder(companionId: string, onDone: () => void = showTitle): void 
           companionId: result.companionId,
           cards: result.cards,
         };
-        save.lastCompanionId = result.companionId;
+        save.activeCompanionId = result.companionId;
         persist();
         onDone();
       },
@@ -303,7 +350,7 @@ function startCombat(
   seed: number,
   bounty: Bounty,
 ): void {
-  const carry = run ? carryFor(run.overworld) : undefined;
+  const carry = run ? carryFor(run.overworld, progressFor(companionId)) : undefined;
 
   // Commit to the fight on disk *before* it is mounted. From here until `resolveCombat`
   // clears it, the save says a fight is open, and a boot that finds it open collects on

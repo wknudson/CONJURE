@@ -1092,3 +1092,206 @@
   letter-spacing: 0.6px;
   color: var(--danger);
 }
+
+/* ---------------------------------------------------------------- vivarium */
+
+.screen--vivarium {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 30px;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse at 40% 0%, rgba(110, 231, 183, 0.07), transparent 55%),
+    var(--bg);
+}
+
+.vivarium__head {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 22px;
+}
+
+.vivarium__head > div:first-child { flex: 1; }
+
+.vivarium__title {
+  font: 800 22px var(--font);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--brass-lit);
+}
+
+.vivarium__sub {
+  margin-top: 4px;
+  font: 400 11.5px var(--font);
+  color: var(--text-dim);
+}
+
+.vivarium__purse { display: flex; gap: 20px; }
+
+.vivarium__body {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(0, 2fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.vivarium__tanks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* A lit tank with something in it. The sigil is the occupant. */
+.tank {
+  position: relative;
+  padding: 14px;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  border-left: 3px solid var(--school, var(--brass));
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.tank:hover { transform: translateY(-2px); }
+
+.tank.is-viewing {
+  background: linear-gradient(180deg, rgba(240, 178, 74, 0.12), rgba(22, 20, 16, 0.86));
+}
+
+.tank.is-active {
+  border-color: var(--school, var(--lamp));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--brass-lit) 26%, transparent),
+    0 0 22px color-mix(in srgb, var(--school, var(--lamp)) 30%, transparent);
+}
+
+.tank__glass {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 54px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(176, 148, 106, 0.3);
+  background: linear-gradient(180deg, rgba(125, 211, 252, 0.05), rgba(0, 0, 0, 0.4));
+}
+
+.tank__sigil {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in srgb, var(--school, #7dd3fc) 55%, white),
+    var(--school, #7dd3fc)
+  );
+  box-shadow: 0 0 18px color-mix(in srgb, var(--school, #7dd3fc) 70%, transparent);
+}
+
+.tank__name {
+  font: 800 14px var(--font);
+  color: var(--brass-lit);
+}
+
+.tank__level {
+  font: 600 10.5px var(--font);
+  color: var(--text-dim);
+}
+
+.tank__badge {
+  margin-top: 6px;
+  font: 700 8.5px var(--font);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--school, var(--lamp));
+}
+
+.vivarium__card,
+.vivarium__feed,
+.vivarium__empty {
+  padding: 20px;
+}
+
+.vivarium__feed { margin-top: 14px; }
+
+.vivarium__name {
+  font: 800 20px var(--font);
+  color: var(--brass-lit);
+}
+
+.vivarium__role {
+  margin: 3px 0 10px;
+  font: 700 9.5px var(--font);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--school, var(--brass));
+}
+
+.vivarium__blurb {
+  font: 400 12px/1.6 var(--font);
+  color: var(--text-dim);
+}
+
+.vivarium__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(176, 148, 106, 0.22);
+}
+
+.vivarium__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vivarium__stat-label {
+  font: 700 8.5px var(--font);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+}
+
+.vivarium__stat-value {
+  font: 800 18px var(--font);
+  color: var(--text);
+}
+
+.vivarium__stat-note {
+  font: 500 10px var(--font);
+  color: var(--text-dim);
+}
+
+.vivarium__feed-head {
+  font: 800 9px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+  margin-bottom: 8px;
+}
+
+.vivarium__feed-copy {
+  font: 400 11.5px/1.6 var(--font);
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.vivarium__feed-cost {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  font: 800 15px var(--font);
+}
+
+.vivarium__refusal {
+  margin-top: 8px;
+  font: 600 10px var(--font);
+  letter-spacing: 0.6px;
+  color: var(--danger);
+}
+
+.hub-zone--vivarium { --sigil: #6ee7b7; }
