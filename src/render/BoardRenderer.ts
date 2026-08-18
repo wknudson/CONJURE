@@ -62,6 +62,13 @@ export interface Overlays {
 }
 
 /** A Commander standing beside the board: on the field, off the grid. */
+/** The two ends of a live Aetheric Tether. */
+export interface TetherModel {
+  anchorId: UnitId;
+  /** The Alpha's body. Absent for a bodiless boss, in which case nothing is drawn. */
+  bossId?: UnitId;
+}
+
 export interface CommanderModel {
   side: Side;
   kind: 'hero' | 'companion' | 'boss';
@@ -102,6 +109,15 @@ export class BoardRenderer {
   private clock = 0;
   overlays: Overlays = emptyOverlays();
   commanders: CommanderModel[] = [];
+  /**
+   * The live tether, or null.
+   *
+   * Assembled by the animation handlers from the event stream rather than read off board
+   * state, because `BoardView` does not carry the protocol and widening it would mean
+   * editing the core. The events already say everything the cable needs to know, and a
+   * renderer that learns from them stays correct through a skipped animation.
+   */
+  tether: TetherModel | null = null;
   /** Column the player's Companion watches, highlighted as its Resonance lane. */
   resonanceLane: number | null = null;
   /** Rows of territory each side owns. Mirrors the engine; short arenas use one. */
@@ -179,6 +195,7 @@ export class BoardRenderer {
     this.drawOverlays(pulse);
     this.drawIntents(pulse);
     this.drawBoardObjects(pulse);
+    this.drawTether();
     this.drawGhost();
     this.drawPredictions();
 
@@ -187,6 +204,89 @@ export class BoardRenderer {
     // Screen effects sit outside the spin: a shake or a flash belongs to the camera, not
     // to the board being turned underneath it.
     this.fx.draw(ctx, rect.width, rect.height);
+  }
+
+  /**
+   * The Aetheric Tether: a heavy cable between the beast and whatever is holding it.
+   *
+   * Drawn as three strands rather than one line — a bright core with a darker strand
+   * either side of it — which is what makes it read as a braided cable under load rather
+   * than as a laser. The strands are offset perpendicular to the run, so the bundle stays
+   * a bundle whichever way the board is turned.
+   *
+   * The strain is sine-driven rather than random. Fresh noise every frame looks like
+   * static and reads as a rendering fault; two waves of different frequency travelling
+   * along the cable look like something being pulled, and cost nothing to compute.
+   *
+   * Colour runs orange to crimson as the beast closes, per the design note — so the
+   * cable itself tells the player how much trouble the anchor is in without a number.
+   */
+  private drawTether(): void {
+    const { ctx, cam, tether } = this;
+    if (!tether || !tether.bossId) return;
+
+    const anchor = this.views.get(tether.anchorId);
+    const boss = this.views.get(tether.bossId);
+    if (!anchor || !boss) return;
+
+    const centreOf = (v: EntityView) => {
+      const fp = v.snapshot?.footprint ?? 1;
+      return cam.worldToScreen(v.pos.x + fp / 2, v.pos.y + fp / 2, v.elev + 14);
+    };
+    const a = centreOf(anchor);
+    const b = centreOf(boss);
+
+    // Grid distance, not pixels: a diagonal is not further away than a straight line, and
+    // the camera's zoom must not change how close the beast reads as being.
+    const gap = Math.max(Math.abs(anchor.pos.x - boss.pos.x), Math.abs(anchor.pos.y - boss.pos.y));
+    const closeness = Math.max(0, Math.min(1, 1 - (gap - 1) / 4));
+
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    // Unit normal, for offsetting the outer strands and the strain wave.
+    const nx = -dy / len;
+    const ny = dx / len;
+
+    const SEGMENTS = 18;
+    const t = this.clock / 1000;
+    // A cable pulled taut whips less than a slack one, and one about to fail whips more.
+    const amplitude = (5 + closeness * 7) * cam.zoom;
+
+    const strand = (offset: number, width: number, color: string, glow: number): void => {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width * cam.zoom;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = color;
+      ctx.shadowBlur = glow * cam.zoom;
+      ctx.beginPath();
+
+      for (let i = 0; i <= SEGMENTS; i++) {
+        const k = i / SEGMENTS;
+        // Pinned at both ends: the cable is anchored, so the whip is greatest mid-span.
+        const slack = Math.sin(k * Math.PI);
+        const wave =
+          Math.sin(k * 9 - t * 7) * amplitude * slack +
+          Math.sin(k * 21 + t * 11) * amplitude * 0.35 * slack;
+        const push = offset * cam.zoom + wave;
+        const x = a.x + dx * k + nx * push;
+        const y = a.y + dy * k + ny * push;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    // Orange at rest, crimson as it closes.
+    const hot = closeness > 0.55 ? '#cc0000' : '#ff4500';
+    strand(-3.2, 2.4, '#7a1b00', 4);
+    strand(3.2, 2.4, '#7a1b00', 4);
+    strand(0, 4.2, hot, 14);
+    strand(0, 1.4, '#ffd9a0', 8);
   }
 
   /** The Companion's lane, marked so its Resonance reads as a place on the board. */

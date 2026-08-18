@@ -110,6 +110,18 @@
     0 0 20px rgba(103, 232, 249, 0.4);
 }
 
+/* Tether callouts: ANCHORED, TETHER SNAPPED. Stencilled and industrial, in the same
+   ember the cable itself burns at. */
+.floater--tether {
+  color: #ff7a2f;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-shadow:
+    0 0 10px rgba(255, 106, 0, 0.9),
+    0 0 20px rgba(204, 51, 0, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
 .floater--note {
   color: var(--text);
   font-size: 14px;

@@ -46,8 +46,13 @@ export class Hud {
   private marrowRing!: HTMLElement;
   private turnLabel!: HTMLElement;
   private weatherEl!: HTMLElement;
+  /** Last shown count, so a rise can be told from a redraw. -1 means hidden. */
+  private subjugationHeld = -1;
+  private subjugationEl!: HTMLElement;
+  private subjugationPips!: HTMLElement;
   private phaseLabel!: HTMLElement;
   private noticeEl!: HTMLElement;
+  private warningEl!: HTMLElement;
   private bannerEl!: HTMLElement;
   private endTurnBtn!: HTMLButtonElement;
   private heroArmorEl!: HTMLElement;
@@ -100,8 +105,11 @@ export class Hud {
     this.marrowRing = q('.dial__marrow');
     this.turnLabel = q('.status__turn');
     this.weatherEl = q('.weather-badge');
+    this.subjugationEl = q('.subjugation');
+    this.subjugationPips = q('.subjugation__pips');
     this.phaseLabel = q('.status__phase');
     this.noticeEl = q('.notice');
+    this.warningEl = q('.target-warning');
     this.bannerEl = q('.banner');
     this.endTurnBtn = q<HTMLButtonElement>('.end-turn');
     this.heroArmorEl = q('.pact__armor');
@@ -150,6 +158,53 @@ export class Hud {
       'data-tip',
       `${reading.label}|${reading.effect}|Fixed for this battle — it was named on the briefing before you committed your deck.`,
     );
+  }
+
+  /**
+   * The winch gauge. `null` hides it; a number shows that many rounds held.
+   *
+   * Pips rather than a bar: three is a small enough number that discrete notches read
+   * faster than a fill, and each one landing is a beat the player is meant to feel. The
+   * whole element pulses when the count rises, which is why the previous value is kept.
+   */
+  setSubjugation(held: number | null, of = 3): void {
+    this.subjugationEl.classList.toggle('is-hidden', held === null);
+    if (held === null) {
+      this.subjugationHeld = -1;
+      return;
+    }
+
+    const gained = held > this.subjugationHeld && this.subjugationHeld >= 0;
+    this.subjugationHeld = held;
+
+    this.subjugationPips.replaceChildren();
+    for (let i = 0; i < of; i++) {
+      const pip = document.createElement('span');
+      pip.className = `subjugation__pip${i < held ? ' is-locked' : ''}`;
+      this.subjugationPips.appendChild(pip);
+    }
+    this.subjugationEl.setAttribute(
+      'data-tip',
+      `Rite of Subjugation|The tether has held for ${held} of ${of} rounds.|Keep the anchor alive. If it falls the beast breaks free, one stack stronger.`,
+    );
+
+    if (gained) {
+      this.subjugationEl.classList.remove('is-locking');
+      void this.subjugationEl.offsetWidth; // restart the animation
+      this.subjugationEl.classList.add('is-locking');
+    }
+  }
+
+  /**
+   * A standing warning about the target under the cursor.
+   *
+   * Deliberately not a `flashNotice`: those fade, and this one has to persist for exactly
+   * as long as the cursor is over the thing it is warning about. It is the last thing
+   * between the player and tethering their own Pact.
+   */
+  setTargetWarning(text: string | null): void {
+    this.warningEl.classList.toggle('is-hidden', !text);
+    if (text) this.warningEl.textContent = text;
   }
 
   setUndoAvailable(on: boolean): void {
@@ -589,12 +644,17 @@ const TEMPLATE = `
     <div class="status">
       <div class="status__turn">Turn 1 · YOU</div>
       <div class="weather-badge is-hidden"></div>
+      <div class="subjugation is-hidden">
+        <div class="subjugation__title">Rite of Subjugation</div>
+        <div class="subjugation__pips"></div>
+      </div>
       <div class="status__phase"></div>
       <div class="status__threat-warning"></div>
     </div>
   </div>
 
   <div class="notice"></div>
+  <div class="target-warning is-hidden"></div>
   <div class="inspect"></div>
 
   <div class="bottom-bar">

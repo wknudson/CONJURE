@@ -14,12 +14,19 @@ import { lerpCoord } from '../render/EntityViews.js';
 import type { Fx } from '../render/Fx.js';
 import type { Sfx } from '../sound/Sfx.js';
 import type { Hud } from '../hud/Hud.js';
+import type { BoardRenderer } from '../render/BoardRenderer.js';
 
 export interface CombatView {
   views: EntityViewMap;
   fx: Fx;
   sfx: Sfx;
   hud: Hud;
+  /**
+   * Needed for board furniture that is driven by events rather than by board state — at
+   * present the Aetheric Tether, which `BoardView` does not carry and which cannot be
+   * added to it without editing the core.
+   */
+  renderer: BoardRenderer;
 }
 
 /** Held beat before a death resolves, so removing a piece has weight. */
@@ -33,6 +40,15 @@ function hold(ms: number): Promise<void> {
 }
 
 export function registerHandlers(seq: Sequencer<CombatView>): void {
+  /**
+   * The Alpha's body, remembered from the seal until the Rite is cast.
+   *
+   * The two events can be many turns apart — the beast seals itself, and the player takes
+   * as long as they like to draw the Rite and choose who holds it — so the id has to
+   * survive between them. Scoped to this registration, which is one combat.
+   */
+  let sealedBossId: string | undefined;
+
   // ---------------------------------------------------------------- board setup
 
   seq.on('unitSummoned', async (e, { view, t }) => {
@@ -468,6 +484,41 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     await tween(t(180), easeOutQuad, () => {});
   });
 
+  // ---------------------------------------------------------- the Harpoon Protocol
+
+  seq.on('subjugationBegan', async (e, { view, t }) => {
+    sealedBossId = e.bossUnitId;
+    view.hud.banner('AETHER-PLATED', 'boss');
+    view.fx.screenShake(14, t(560));
+    await tween(t(760), easeOutQuad, () => {});
+  });
+
+  seq.on('anchorSet', async (e, { view, t }) => {
+    view.renderer.tether = {
+      anchorId: e.unitId,
+      ...(sealedBossId ? { bossId: sealedBossId } : {}),
+    };
+    view.hud.setSubjugation(0);
+    view.fx.label(e.at, 'ANCHORED', 'tether');
+    view.fx.screenShake(8, t(300));
+    await tween(t(420), easeOutQuad, () => {});
+  });
+
+  seq.on('subjugationProgress', async (e, { view, t }) => {
+    view.hud.setSubjugation(e.turnsSurvived, e.of);
+    // One heavy notch of the winch per round held.
+    view.sfx.play('gear_lock');
+    await tween(t(360), easeOutQuad, () => {});
+  });
+
+  seq.on('tetherSnapped', async (e, { view, t }) => {
+    view.renderer.tether = null;
+    view.hud.setSubjugation(null);
+    view.fx.label(e.at, 'TETHER SNAPPED', 'tether');
+    view.fx.screenShake(18, t(620));
+    await tween(t(520), easeOutQuad, () => {});
+  });
+
   seq.on('bossPhaseShift', async (e, { view, t }) => {
     view.hud.banner(e.name.toUpperCase(), 'boss');
     view.fx.screenShake(12, t(500));
@@ -484,6 +535,11 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
 
   seq.on('combatEnded', (e, { view }) => {
     view.sfx.play(e.result === 'defeat' ? 'lose' : 'win');
+    // However the fight ended, the cable is no longer holding anything. `bound` is the
+    // subjugation succeeding; the others are the trial ending around it.
+    view.renderer.tether = null;
+    view.hud.setSubjugation(null);
+    sealedBossId = undefined;
   });
 
   seq.on('deckReshuffled', (e, { view }) => {

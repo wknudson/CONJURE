@@ -28,6 +28,8 @@ export interface TargetingCallbacks {
   setSelectedCard(id: CardInstanceId | null): void;
   setEnemyTargetable(on: boolean): void;
   notice(text: string): void;
+  /** A standing warning about what the hovered target would cost. Null clears it. */
+  warn(text: string | null): void;
   setInspected(unitId: UnitId | null): void;
 }
 
@@ -53,6 +55,7 @@ export class TargetingController {
   reset(): void {
     this.mode = { kind: 'idle' };
     this.hoveredCard = null;
+    this.cb.warn(null);
     this.cb.setSelectedCard(null);
     this.cb.setEnemyTargetable(false);
     this.cb.setInspected(null);
@@ -160,7 +163,33 @@ export class TargetingController {
     if (!this.enabled) return;
     if (this.hover && tile && coordEq(this.hover, tile)) return;
     this.hover = tile;
+    this.cb.warn(this.hoverWarning(tile));
     this.refresh();
+  }
+
+  /**
+   * What the player is about to do to themselves, if anything.
+   *
+   * Tethering the Bound Form is legal and is sometimes right — it is often the toughest
+   * body available, and on a thin board it may be the only one. But the beast will then
+   * spend three rounds hitting a unit whose wounds are dealt straight to the Pact, so it
+   * is a decision that has to be made knowingly rather than discovered afterwards.
+   */
+  private hoverWarning(tile: Coord | null): string | null {
+    // Captured into a local: narrowing `this.mode` does not survive into the closure.
+    const mode = this.mode;
+    if (!tile || mode.kind !== 'targeting') return null;
+
+    const card = this.rules.getHand().find((c) => c.instanceId === mode.card);
+    if (card?.defId !== 'rite_of_subjugation') return null;
+
+    const board = this.rules.getBoard();
+    const unit = board.units.find(
+      (u) => u.side === 'player' && cellsAt(u.anchor, u.footprint).some((c) => coordEq(c, tile)),
+    );
+    if (!unit?.keywords.includes('BoundForm')) return null;
+
+    return 'WARNING: tethering your Companion routes every blow the beast lands straight into your Pact.';
   }
 
   onTileClick(tile: Coord): void {

@@ -157,6 +157,7 @@ export class CombatScreen implements Screen {
         if (boss) boss.targetable = on;
       },
       notice: (text) => this.hud?.flashNotice(text),
+      warn: (text) => this.hud?.setTargetWarning(text),
       setInspected: (unitId) => {
         this.hud?.showInspect(this.session.getBoard(), unitId);
         // Selection is the only thing that changes what Channel would apply to, so the
@@ -170,6 +171,7 @@ export class CombatScreen implements Screen {
       fx: this.fx,
       sfx: this.sfx,
       hud: this.hud,
+      renderer: this.renderer,
     };
     this.sequencer = new Sequencer(view);
     registerHandlers(this.sequencer);

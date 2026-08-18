@@ -593,3 +593,120 @@
   border-color: rgba(190, 176, 138, 0.5);
   color: #e0d3a8;
 }
+
+/* ------------------------------------------------------- subjugation meter
+
+   A pressure gauge bolted to the arena wall, not a progress bar in a menu. Riveted
+   brass frame, stencilled label, and three notches that lock shut one at a time. */
+.subjugation {
+  margin-top: 6px;
+  padding: 5px 10px 6px;
+  border: 1px solid rgba(196, 128, 58, 0.55);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(62, 38, 20, 0.88), rgba(30, 18, 10, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 206, 140, 0.16),
+    0 0 14px rgba(204, 68, 0, 0.28);
+  cursor: help;
+}
+
+.subjugation.is-hidden {
+  display: none;
+}
+
+.subjugation__title {
+  font: 800 8px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #e8a765;
+  margin-bottom: 4px;
+}
+
+.subjugation__pips {
+  display: flex;
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+/* An open notch: dark, waiting. */
+.subjugation__pip {
+  width: 22px;
+  height: 8px;
+  border: 1px solid rgba(196, 128, 58, 0.5);
+  border-radius: 1px;
+  background: rgba(0, 0, 0, 0.6);
+  transition: background 200ms ease, box-shadow 200ms ease;
+}
+
+/* A notch the winch has taken up. */
+.subjugation__pip.is-locked {
+  background: linear-gradient(180deg, #ff7a2f, #cc3300);
+  border-color: #ffb066;
+  box-shadow: 0 0 9px rgba(255, 106, 0, 0.75);
+}
+
+/* The whole gauge kicks when a notch locks. */
+.subjugation.is-locking {
+  animation: winch-notch 420ms ease-out;
+}
+
+@keyframes winch-notch {
+  0% {
+    transform: translateX(0);
+    box-shadow: inset 0 1px 0 rgba(255, 206, 140, 0.16), 0 0 34px rgba(255, 106, 0, 0.85);
+  }
+  30% {
+    transform: translateX(-3px) scale(1.03);
+  }
+  60% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subjugation.is-locking {
+    animation: none;
+  }
+}
+
+/* A standing warning about the target under the cursor. Stark and unmissable: it is the
+   last thing between the player and tethering their own Pact. */
+.target-warning {
+  position: absolute;
+  top: 138px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 460px;
+  padding: 8px 16px;
+  border: 1px solid #e5484d;
+  border-left: 4px solid #e5484d;
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(70, 12, 14, 0.96), rgba(38, 8, 10, 0.96));
+  color: #ffd5d5;
+  font: 700 11px var(--font);
+  letter-spacing: 0.7px;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 0 20px rgba(229, 72, 77, 0.45);
+  animation: warning-throb 1.1s ease-in-out infinite;
+}
+
+.target-warning.is-hidden {
+  display: none;
+}
+
+@keyframes warning-throb {
+  50% {
+    border-color: #ff8a8a;
+    box-shadow: 0 0 30px rgba(229, 72, 77, 0.75);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .target-warning {
+    animation: none;
+  }
+}

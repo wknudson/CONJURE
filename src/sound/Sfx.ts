@@ -12,6 +12,7 @@ export type Cue =
   | 'card'
   | 'rasp'
   | 'shock'
+  | 'gear_lock'
   | 'hit'
   | 'crash'
   | 'detonate'
@@ -131,6 +132,13 @@ export class Sfx {
         this.tone(t, 'square', 3200, 1400, 0.04, 0.18);
         this.noise(t, 0.05, 7000, 0.26);
         this.tone(t + 0.045, 'square', 2100, 700, 0.05, 0.13);
+        break;
+      case 'gear_lock':
+        // A winch taking up one notch: a low mechanical thunk with a metallic scrape
+        // over it, and no ring afterwards. Machinery, not magic.
+        this.tone(t, 'square', 150, 70, 0.09, 0.34);
+        this.noise(t, 0.06, 1400, 0.3);
+        this.noise(t + 0.05, 0.1, 3400, 0.14);
         break;
       case 'shatter':
         // Brittle and bright: a high crack over a short, sharp noise burst.
