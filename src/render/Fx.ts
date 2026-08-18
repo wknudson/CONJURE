@@ -227,11 +227,16 @@ export class Fx {
     });
   }
 
-  damageNumber(at: Coord, amount: number, kind: 'damage' | 'heal' | 'armor' = 'damage'): void {
+  damageNumber(
+    at: Coord,
+    amount: number,
+    kind: 'damage' | 'heal' | 'armor' | 'shock' = 'damage',
+  ): void {
     const centre = this.cam.tileCenter(at);
     const el = document.createElement('div');
     el.className = `floater floater--${kind}`;
-    el.textContent = kind === 'damage' ? `-${amount}` : `+${amount}`;
+    // Shock is damage too, however it is coloured — only heal and armor add.
+    el.textContent = kind === 'heal' || kind === 'armor' ? `+${amount}` : `-${amount}`;
     el.style.left = `${centre.x}px`;
     el.style.top = `${centre.y - 30}px`;
     this.floaterLayer.appendChild(el);

@@ -22,6 +22,7 @@ import { registerHandlers, type CombatView } from '../anim/handlers.js';
 import { Hud } from '../hud/Hud.js';
 import { HelpOverlay } from '../hud/HelpOverlay.js';
 import { Tutorial } from '../hud/Tutorial.js';
+import { readWeather } from '../hud/weather.js';
 import { cellsAt } from '../core/util/grid.js';
 import type { CommanderModel } from '../render/BoardRenderer.js';
 import type { Coord } from '../contract/ids.js';
@@ -172,6 +173,19 @@ export class CombatScreen implements Screen {
     };
     this.sequencer = new Sequencer(view);
     registerHandlers(this.sequencer);
+
+    // The sky is read from the encounter rather than from board state: it is fixed when
+    // combat begins and never changes, so there is nothing for the view contract to
+    // carry and no core file to widen for the sake of a badge.
+    const sky = readWeather(this.encounter.weather);
+    this.hud.setWeather(sky);
+    // Drives the atmospheric overlay. One attribute on the screen root, so the whole
+    // effect is CSS and the renderer keeps its hands free for the tactical read.
+    if (sky) el.dataset.sky = sky.slug;
+    if (sky?.wind) {
+      el.style.setProperty('--wind-x', String(Math.sign(sky.wind.x)));
+      el.style.setProperty('--wind-y', String(Math.sign(sky.wind.y)));
+    }
     this.sequencer.onIdle = () => this.onSequencerIdle();
 
     canvas.addEventListener('mousemove', (ev) => this.handleMouseMove(ev));

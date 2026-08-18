@@ -11,6 +11,7 @@ export type Cue =
   | 'chime'
   | 'card'
   | 'rasp'
+  | 'shock'
   | 'hit'
   | 'crash'
   | 'detonate'
@@ -123,6 +124,13 @@ export class Sfx {
         // Deliberately harsh: spending life should sound like it costs something.
         this.tone(t, 'sawtooth', 240, 90, 0.16, 0.3);
         this.noise(t, 0.14, 3200, 0.22);
+        break;
+      case 'shock':
+        // A crack, not a boom: a very short high square burst over filtered noise, with
+        // a second snap a hair later so it reads as a discharge rather than a hit.
+        this.tone(t, 'square', 3200, 1400, 0.04, 0.18);
+        this.noise(t, 0.05, 7000, 0.26);
+        this.tone(t + 0.045, 'square', 2100, 700, 0.05, 0.13);
         break;
       case 'shatter':
         // Brittle and bright: a high crack over a short, sharp noise burst.

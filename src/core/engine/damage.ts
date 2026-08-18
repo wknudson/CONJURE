@@ -129,14 +129,10 @@ function conductShock(ctx: Ctx, req: DamageRequest, primary: Entity): void {
     // A Behemoth occupies cells adjacent to its own anchor, so it would otherwise
     // arc into itself; identity is by id, never by position.
     if (neighbour.id === primary.id) continue;
-    // Only the target's own side. Derived from the primary rather than from the caster,
-    // which needs no knowledge of who cast it and gives the same answer: the thing that
-    // was aimed at is by definition an enemy of whoever aimed.
-    //
-    // Note this is narrower than the volatile crystals, which hit friend and foe alike.
-    // A charge that spared allies is a kindness physics would not extend, but it is what
-    // keeps Arc Lash a clean offensive card rather than a second way to kill your own line.
-    if (!isUnit(primary) || neighbour.side !== primary.side) continue;
+    // Every unit touching it, whoever it belongs to. A charge that checked allegiance
+    // before jumping would be a spell effect wearing weather's clothes; this is the same
+    // indiscriminate rule the volatile crystals already follow, and it is what makes
+    // casting into a melee in the rain a decision rather than a free bonus.
     if (struck.includes(neighbour.id)) continue; // a 2x2 touches on several sides
     struck.push(neighbour.id);
   }

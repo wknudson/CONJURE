@@ -15,6 +15,7 @@ import type { Screen } from './ScreenManager.js';
 import type { CardDef } from '../core/types/cards.js';
 import type { Collection } from '../core/data/deckRules.js';
 import type { EncounterDef } from '../core/data/encounters/registry.js';
+import { readWeather } from '../hud/weather.js';
 import {
   MAX_SWAPS,
   baseIdOf,
@@ -55,15 +56,15 @@ function describeArena(enc: EncounterDef): string {
  * the deck is chosen — "fire is weaker here" is actionable in a way that "it is raining"
  * is not.
  */
+/**
+ * The briefing line, from the same reading the in-combat badge wears.
+ *
+ * Previously a second hand-written description that had already drifted: it promised
+ * rain blunted fire and said nothing about shock arcing, which by then it did.
+ */
 function describeWeather(enc: EncounterDef): string | undefined {
-  const w = enc.weather;
-  if (!w) return undefined;
-  if (w.kind === 'rain') return 'Torrential rain — fire damage is blunted.';
-  if (w.kind === 'fog') return 'Dense fog — nothing sees or shoots past 3 tiles.';
-  const { x, y } = w.wind;
-  const heading =
-    Math.abs(x) > Math.abs(y) ? (x > 0 ? 'east' : 'west') : y > 0 ? 'south' : 'north';
-  return `Gale blowing ${heading} — ranged attacks carry further with it, and fall short into it.`;
+  const reading = readWeather(enc.weather);
+  return reading && `${reading.label} — ${reading.effect}`;
 }
 
 export class PreCombatScreen implements Screen {

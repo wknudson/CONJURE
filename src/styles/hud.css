@@ -546,3 +546,50 @@
   font: 600 9px var(--font);
   color: rgba(110, 231, 183, 0.85);
 }
+
+/* ---------------------------------------------------------------- weather badge
+
+   Worn beside the round counter. Brass and etched glass rather than a weather app:
+   the conceit is an instrument bolted to the arena wall, not a forecast. */
+.weather-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 3px 9px 3px 7px;
+  border: 1px solid rgba(201, 168, 106, 0.38);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(58, 48, 32, 0.75), rgba(28, 24, 18, 0.85));
+  color: #d8c79b;
+  font: 700 9px var(--font);
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.14);
+  cursor: help;
+}
+
+.weather-badge.is-hidden {
+  display: none;
+}
+
+.weather-badge__icon {
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+/* Each sky tints its own lamp glass. */
+.weather-badge[data-sky='fog'] {
+  border-color: rgba(150, 168, 140, 0.45);
+  color: #c2d0bb;
+}
+
+.weather-badge[data-sky='rain'] {
+  border-color: rgba(120, 152, 190, 0.5);
+  color: #b9cde4;
+}
+
+.weather-badge[data-sky='gale'] {
+  border-color: rgba(190, 176, 138, 0.5);
+  color: #e0d3a8;
+}

@@ -130,11 +130,13 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     }
 
     if (e.at) {
-      if (e.hpLoss > 0) view.fx.damageNumber(e.at, e.hpLoss);
+      if (e.hpLoss > 0) view.fx.damageNumber(e.at, e.hpLoss, e.dtype === 'shock' ? 'shock' : 'damage');
       else if (e.absorbedByArmor > 0) view.fx.label(e.at, 'ABSORBED', 'absorb');
     }
 
-    if (e.hpLoss > 0) view.sfx.play('hit');
+    // A discharge sounds nothing like a blade. The arcs it throws off are `physical` and
+    // deliberately keep the ordinary hit, so one cast reads as a crack and then thumps.
+    if (e.hpLoss > 0) view.sfx.play(e.dtype === 'shock' ? 'shock' : 'hit');
     await tween(t(110), easeOutQuad, (k) => {
       if (v) v.squash = Math.sin(k * Math.PI) * 0.6;
     });

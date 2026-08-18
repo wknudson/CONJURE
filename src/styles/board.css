@@ -42,6 +42,25 @@
   color: #d6c4a0;
 }
 
+/* Shock. Arc-light cyan and skewed off true, so a discharge is distinguishable from an
+   ordinary blow at a glance — which matters in the rain, where one cast produces a shock
+   number and a scatter of physical ones from the arcs it throws. */
+.floater--shock {
+  color: #7df9ff;
+  transform: translate(-50%, -50%) skewX(-9deg);
+  text-shadow:
+    0 0 8px rgba(125, 249, 255, 0.95),
+    0 0 18px rgba(56, 189, 248, 0.55),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+  animation: floater-rise 900ms ease-out forwards, shock-jitter 140ms steps(2) 3;
+}
+
+@keyframes shock-jitter {
+  50% {
+    transform: translate(-50%, -50%) skewX(-9deg) translateX(2px);
+  }
+}
+
 .floater--crash {
   color: var(--danger);
   font-size: 20px;
@@ -129,5 +148,95 @@
   100% {
     opacity: 0;
     transform: translate(-50%, -80%) rotate(-7deg) scale(1);
+  }
+}
+
+/* ------------------------------------------------------- atmospheric overlays
+
+   Mood without cluttering the tactical read. Every one of these is a non-interactive
+   layer above the canvas and below the HUD, so nothing here can eat a click or hide a
+   unit outline: they tint and vignette, they never occlude.
+
+   Keyed off one `data-sky` attribute set once at mount, because weather is fixed for a
+   battle. Nothing animates position, so none of it forces layout. */
+.screen--combat[data-sky]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Smog: a sour industrial haze that closes in from the edges. Heavier in the corners,
+   nearly clear over the middle, so the board a player is reading stays readable. */
+.screen--combat[data-sky='fog']::after {
+  background:
+    radial-gradient(ellipse 68% 58% at 50% 48%, transparent 38%, rgba(122, 138, 116, 0.5) 100%),
+    linear-gradient(180deg, rgba(140, 152, 130, 0.12), rgba(96, 108, 92, 0.18));
+  mix-blend-mode: multiply;
+}
+
+/* Acid rain: a cold wash, plus streaks. The streaks are one repeating gradient panned
+   by transform — a compositor-only property, so it costs no layout per frame. */
+.screen--combat[data-sky='rain']::after {
+  background: linear-gradient(180deg, rgba(28, 48, 78, 0.34), rgba(16, 30, 54, 0.44));
+}
+
+.screen--combat[data-sky='rain']::before {
+  content: '';
+  position: absolute;
+  inset: -20% -10%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.16;
+  background: repeating-linear-gradient(
+    104deg,
+    transparent 0 7px,
+    rgba(198, 224, 255, 0.85) 7px 8px,
+    transparent 8px 15px
+  );
+  animation: rain-fall 0.6s linear infinite;
+}
+
+@keyframes rain-fall {
+  to {
+    transform: translate3d(-15px, 62px, 0);
+  }
+}
+
+/* Gale: dust streaming downwind. `--wind-x` / `--wind-y` are set from the encounter's
+   wind vector, so the drift genuinely follows the direction the engine is scoring. */
+.screen--combat[data-sky='gale']::after {
+  background: linear-gradient(180deg, rgba(120, 104, 68, 0.14), rgba(92, 78, 50, 0.2));
+}
+
+.screen--combat[data-sky='gale']::before {
+  content: '';
+  position: absolute;
+  inset: -10%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.2;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 40px,
+    rgba(226, 208, 160, 0.5) 40px 42px,
+    transparent 42px 120px
+  );
+  animation: gale-drift 1.4s linear infinite;
+}
+
+@keyframes gale-drift {
+  to {
+    transform: translate3d(calc(var(--wind-x, 1) * 120px), calc(var(--wind-y, 0) * 40px), 0);
+  }
+}
+
+/* Respect a reduced-motion preference: the tint and vignette carry the information,
+   the drifting is decoration and is the part that causes trouble. */
+@media (prefers-reduced-motion: reduce) {
+  .screen--combat[data-sky='rain']::before,
+  .screen--combat[data-sky='gale']::before {
+    animation: none;
   }
 }

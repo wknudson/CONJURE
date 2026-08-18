@@ -247,9 +247,11 @@ describe('torrential rain conducting a shock', () => {
     expect(out.units[clear.id]!.hp, 'two tiles away, untouched').toBe(20);
   });
 
-  it("spares the caster's own line, unlike a volatile crystal", () => {
+  it("strikes the caster's own line too, exactly as a volatile crystal does", () => {
+    // Electricity does not check allegiance. This is what makes casting into a melee in
+    // the rain a decision rather than a free bonus.
     const { state, primary, ally } = cluster({ kind: 'rain' });
-    expect(strike(state, primary.id, 'shock').units[ally.id]!.hp).toBe(20);
+    expect(strike(state, primary.id, 'shock').units[ally.id]!.hp).toBe(19);
   });
 
   it('does nothing under any other sky', () => {
@@ -277,7 +279,8 @@ describe('torrential rain conducting a shock', () => {
     const arcs = out.events.filter(
       (e) => e.t === 'damageDealt' && e.cause === 'reaction' && e.dtype === 'physical',
     );
-    expect(arcs).toHaveLength(2);
+    // Two of the target's own side plus the caster's unit pressed against it.
+    expect(arcs).toHaveLength(3);
     expect(
       out.events.some((e) => e.t === 'damageDealt' && e.dtype === 'shock' && e.cause === 'reaction'),
     ).toBe(false);

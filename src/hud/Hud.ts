@@ -9,6 +9,7 @@ import type { BoardView, CommanderView } from '../contract/query.js';
 import type { CardSnapshot } from '../contract/snapshots.js';
 import { CardView } from './CardView.js';
 import { Tooltip } from './Tooltip.js';
+import type { WeatherReading } from './weather.js';
 import { schoolOf } from '../render/palette.js';
 import { describeProjected, type ProjectedDamage } from './projection.js';
 
@@ -44,6 +45,7 @@ export class Hud {
   private pipRing!: HTMLElement;
   private marrowRing!: HTMLElement;
   private turnLabel!: HTMLElement;
+  private weatherEl!: HTMLElement;
   private phaseLabel!: HTMLElement;
   private noticeEl!: HTMLElement;
   private bannerEl!: HTMLElement;
@@ -97,6 +99,7 @@ export class Hud {
     this.pipRing = q('.dial__pips');
     this.marrowRing = q('.dial__marrow');
     this.turnLabel = q('.status__turn');
+    this.weatherEl = q('.weather-badge');
     this.phaseLabel = q('.status__phase');
     this.noticeEl = q('.notice');
     this.bannerEl = q('.banner');
@@ -128,6 +131,25 @@ export class Hud {
 
     this.tooltip = new Tooltip(document.body);
     this.tooltip.attach(this.root);
+  }
+
+  /**
+   * The sky, worn where the round counter is.
+   *
+   * Set once at mount: weather is fixed when combat begins and cannot change, so there
+   * is nothing to keep in sync afterwards. A clear sky shows nothing rather than a badge
+   * reading "Clear" — an indicator that is always present stops being read.
+   */
+  setWeather(reading: WeatherReading | undefined): void {
+    this.weatherEl.classList.toggle('is-hidden', !reading);
+    if (!reading) return;
+
+    this.weatherEl.dataset.sky = reading.slug;
+    this.weatherEl.innerHTML = `<span class="weather-badge__icon">${escapeHtml(reading.icon)}</span><span class="weather-badge__label">${escapeHtml(reading.label)}</span>`;
+    this.weatherEl.setAttribute(
+      'data-tip',
+      `${reading.label}|${reading.effect}|Fixed for this battle — it was named on the briefing before you committed your deck.`,
+    );
   }
 
   setUndoAvailable(on: boolean): void {
@@ -566,6 +588,7 @@ const TEMPLATE = `
     </div>
     <div class="status">
       <div class="status__turn">Turn 1 · YOU</div>
+      <div class="weather-badge is-hidden"></div>
       <div class="status__phase"></div>
       <div class="status__threat-warning"></div>
     </div>
