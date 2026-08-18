@@ -80,6 +80,17 @@
     0 0 18px rgba(168, 85, 247, 0.45);
 }
 
+/* A reaction refund. Cyan, the accent already used for anything the player gains back,
+   and deliberately unlike the crimson Marrow floater: one is banked, the other expires. */
+.floater--refund {
+  color: var(--accent);
+  font-size: 13px;
+  letter-spacing: 1.2px;
+  text-shadow:
+    0 0 10px rgba(103, 232, 249, 0.85),
+    0 0 20px rgba(103, 232, 249, 0.4);
+}
+
 .floater--note {
   color: var(--text);
   font-size: 14px;

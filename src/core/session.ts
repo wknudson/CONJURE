@@ -23,7 +23,7 @@ import type { GameState } from './types/state.js';
 import type { Command } from './types/commands.js';
 import type { ChosenTarget } from './types/cards.js';
 import type { EncounterDef } from './data/encounters/registry.js';
-import { applyCommand } from './engine/engine.js';
+import { applyCommand, channelRefusal } from './engine/engine.js';
 import { deepClone } from './util/clone.js';
 import { createCombat } from './engine/setup.js';
 import { toBoardView, toCardSnapshot } from './engine/views.js';
@@ -182,6 +182,18 @@ export class CombatSession implements RulesQuery {
       .filter((u) => legalMoves(this.state, u).length > 0 || legalAttacks(this.state, u).length > 0)
       .sort((a, b) => a.anchor.y - b.anchor.y || a.anchor.x - b.anchor.x)
       .map((u) => u.id);
+  }
+
+  /**
+   * Whether this unit could Channel right now.
+   *
+   * Delegates to the engine's own refusal check rather than re-deriving the rules from a
+   * snapshot: `exhausted` conflates having moved with having attacked, and a unit that
+   * has moved may still Channel, so the UI cannot answer this from a snapshot alone.
+   */
+  canChannel(unitId: UnitId): boolean {
+    if (this.state.activeSide !== 'player') return false;
+    return channelRefusal(this.state, unitId) === null;
   }
 
   /**

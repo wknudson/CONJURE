@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addUnit, eventsOf, findUnit, giveCard, run, scenario } from './scenario.js';
 import { applyCommand } from '../core/engine/engine.js';
 import { IllegalCommandError } from '../core/types/commands.js';
-import { CHANNEL_MARROW } from '../core/engine/engine.js';
+import { CHANNEL_MARROW, channelRefusal } from '../core/engine/engine.js';
 import { enumerateActions } from '../core/ai/enumerate.js';
 import { canAttack } from '../core/engine/movement.js';
 
@@ -152,5 +152,48 @@ describe('the AI and channelling', () => {
     for (const id of channelled) {
       expect(state.units[id]!.anchor).not.toEqual({ x: 2, y: 1 });
     }
+  });
+});
+
+/**
+ * The predicate the reducer and the UI both ask. If these two ever disagree the button
+ * offers an action the engine then refuses, which is the bug this exists to prevent.
+ */
+describe('channel legality', () => {
+  it('agrees with the reducer on every refusal it reports', () => {
+    const state = scenario({ marrow: 0 });
+    const cases = [
+      { name: 'a fresh unit', id: addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 1, y: 4 } }).id },
+      { name: 'an enemy unit', id: addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 0 } }).id },
+      { name: 'a frozen unit', id: addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 4 } }).id },
+      { name: 'a spent unit', id: addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 3, y: 4 } }).id },
+      { name: 'no unit at all', id: 'u-nonexistent' },
+    ];
+    state.units[cases[2]!.id]!.statuses.freeze = 1;
+    state.units[cases[3]!.id]!.attackedThisTurn = true;
+
+    for (const c of cases) {
+      const refusal = channelRefusal(state, c.id);
+      let threw: string | null = null;
+      try {
+        applyCommand(state, { type: 'channel', unit: c.id });
+      } catch (err) {
+        threw = err instanceof IllegalCommandError ? err.message : 'wrong error type';
+      }
+      // Null means allowed, and the reducer must then accept it; a string means refused,
+      // and the reducer must throw with exactly that reason.
+      expect(threw, `${c.name}`).toBe(refusal);
+    }
+  });
+
+  it('still allows a unit that has moved but not yet attacked', () => {
+    // `exhausted` on the snapshot conflates the two, which is why the UI cannot use it.
+    const state = scenario({ marrow: 0 });
+    const unit = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 4 } });
+    state.units[unit.id]!.movedThisTurn = true;
+
+    expect(channelRefusal(state, unit.id)).toBeNull();
+    const res = applyCommand(state, { type: 'channel', unit: unit.id });
+    expect(res.state.players.player.marrow).toBe(CHANNEL_MARROW);
   });
 });

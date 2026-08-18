@@ -54,6 +54,7 @@
 }
 
 .threat-toggle,
+.channel,
 .help {
   display: inline-flex;
   align-items: center;
@@ -70,6 +71,7 @@
 }
 
 .threat-toggle:hover,
+.channel:hover,
 .help:hover {
   border-color: rgba(255, 255, 255, 0.32);
   color: var(--text);
@@ -79,6 +81,28 @@
   width: 28px;
   justify-content: center;
   font-size: 13px;
+}
+
+/* Marrow crimson, matching the dial ring and the floater it produces, so the button
+   plainly belongs to the same resource. Appears only while a unit that can still attack
+   is selected; `is-hidden` is the shared utility. */
+.channel {
+  border-color: rgba(240, 86, 122, 0.4);
+  color: #f0567a;
+  background: rgba(240, 86, 122, 0.1);
+}
+
+.channel:hover {
+  border-color: rgba(240, 86, 122, 0.75);
+  color: #ff7d9b;
+  background: rgba(240, 86, 122, 0.18);
+}
+
+/* Beats the shared `.is-hidden` utility, which this file's own `display: inline-flex`
+   would otherwise override: both are single-class selectors and onboarding.css loads
+   last, so the utility loses on source order alone. */
+.channel.is-hidden {
+  display: none;
 }
 
 .threat-toggle__dot {

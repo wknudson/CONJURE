@@ -355,6 +355,45 @@ describe('reaction pip refunds', () => {
     expect(cycled.state.players.player.reactionPipsThisTurn).toBe(0);
   });
 
+  it('announces the refund as its own event, naming the reaction and where it fired', () => {
+    // A distinct event rather than the generic `pipGained`: the presentation layer shows
+    // a refund as a reward at the tile, and cannot tell one from turn income otherwise.
+    const { state } = vaporizeSetup();
+    const before = state.players.player.pips;
+
+    const res = run(state, play(handCard(state, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
+
+    const refunds = eventsOf(res.events, 'pipRefunded');
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0]!.side).toBe('player');
+    expect(refunds[0]!.amount).toBe(1);
+    expect(refunds[0]!.name).toBeTruthy();
+    // `total` drives the dial straight from the event, so it must be the post-gain bank.
+    expect(refunds[0]!.total).toBe(before - 2 + 1);
+
+    // The generic income event must NOT also fire, or the Pip would be announced twice.
+    expect(eventsOf(res.events, 'pipGained')).toHaveLength(0);
+  });
+
+  it('emits no refund event once the allowance is spent', () => {
+    let cur = vaporizeSetup(20).state;
+    const foe = findUnit(cur, 'grave_sentinel', 'enemy');
+    const counts: number[] = [];
+
+    for (let i = 0; i < 3; i++) {
+      const alive = cur.units[foe.id];
+      if (!alive) break;
+      alive.statuses.chill = 2;
+      alive.hp = 20;
+      const res = run(cur, play(handCard(cur, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
+      counts.push(eventsOf(res.events, 'pipRefunded').length);
+      cur = res.state;
+    }
+
+    // The third reaction still fires; it simply pays nothing and says nothing.
+    expect(counts).toEqual([1, 1, 0]);
+  });
+
   it('credits the side that caused it, not the side that suffered it', () => {
     // The enemy sets off a reaction on its own turn: the enemy is paid, not the player.
     const state = scenario({

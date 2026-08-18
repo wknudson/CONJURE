@@ -309,6 +309,20 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     if (e.side === 'player') view.sfx.play('pip');
   });
 
+  seq.on('pipRefunded', async (e, { view, t }) => {
+    // The dial moves for both sides; only the player is told about it. An enemy refund
+    // still has to reach the HUD or its bank would drift from the truth.
+    view.hud.setResources(e.side, e.total, undefined);
+    if (e.side !== 'player') return;
+
+    // Anchored to the tile the reaction fired on, not the portrait: the refund is the
+    // reward for a setup that landed *there*, and the eye is already looking at it.
+    view.fx.label(e.at, `+${e.amount} PIP`, 'refund');
+    view.fx.label(e.at, e.name.toUpperCase(), 'refund', -20);
+    view.sfx.play('chime');
+    await tween(t(200), easeOutQuad, () => {});
+  });
+
   seq.on('resourcesChanged', (e, { view }) => {
     view.hud.setResources(e.side, e.pips, e.marrow);
   });

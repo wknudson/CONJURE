@@ -18,7 +18,6 @@ import { DIRS_8 } from '../util/grid.js';
 import { inBounds } from '../types/state.js';
 import type { HazardKind } from '../types/state.js';
 import { entityAt } from './board.js';
-import { gainPips } from './deck.js';
 
 export interface PendingReaction {
   def: ReactionDef;
@@ -69,7 +68,7 @@ export function resolveReaction(
   newCause(ctx);
   emit(ctx, { t: 'reactionTriggered', reaction: def.id, name: def.name, at: { ...at } });
 
-  refundReactionPip(ctx);
+  refundReactionPip(ctx, def, at);
 
   switch (def.outcome.op) {
     case 'spawnHazard':
@@ -147,7 +146,7 @@ export const REACTION_PIP_CAP = 2;
  * burning unit into a chilled ally) are still your doing. This mirrors how `spawnHazard`
  * already decides ownership.
  */
-function refundReactionPip(ctx: Ctx): void {
+function refundReactionPip(ctx: Ctx, def: ReactionDef, at: Coord): void {
   const side = ctx.state.activeSide;
   const cmd = ctx.state.players[side];
   if (cmd.reactionPipsThisTurn >= REACTION_PIP_CAP) return;
@@ -155,7 +154,21 @@ function refundReactionPip(ctx: Ctx): void {
   cmd.reactionPipsThisTurn += 1;
   // Deliberately unclamped, like every other Pip gain: the cap of 8 is applied once, at
   // end-of-turn cleanup, so a refund near the ceiling still banks for this turn's use.
-  gainPips(ctx, side, REACTION_PIP_REFUND);
+  cmd.pips += REACTION_PIP_REFUND;
+
+  // `pipRefunded` rather than `gainPips`, which would emit the generic `pipGained`: the
+  // presentation layer has to be able to tell a reward from ordinary turn income, and it
+  // cannot do that from an event that describes both. It carries `total` for the same
+  // reason `pipGained` does, so the dial updates from one event either way.
+  emit(ctx, {
+    t: 'pipRefunded',
+    side,
+    amount: REACTION_PIP_REFUND,
+    total: cmd.pips,
+    reaction: def.id,
+    name: def.name,
+    at: { ...at },
+  });
 }
 
 export function spawnHazard(

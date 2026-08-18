@@ -140,6 +140,7 @@ export class CombatScreen implements Screen {
       onUndo: () => this.undo(),
       onToggleMute: () => this.sfx.toggleMute(),
       onToggleThreat: () => this.targeting?.toggleThreat() ?? false,
+      onChannel: () => this.channelSelected(),
       onHelp: () => this.help?.toggle(),
       onRotate: (steps) => void this.rotate(steps),
       onLastStand: (active) => this.sfx.setHeartbeat(active),
@@ -155,7 +156,12 @@ export class CombatScreen implements Screen {
         if (boss) boss.targetable = on;
       },
       notice: (text) => this.hud?.flashNotice(text),
-      setInspected: (unitId) => this.hud?.showInspect(this.session.getBoard(), unitId),
+      setInspected: (unitId) => {
+        this.hud?.showInspect(this.session.getBoard(), unitId);
+        // Selection is the only thing that changes what Channel would apply to, so the
+        // button's visibility rides along with it rather than polling every frame.
+        this.hud?.setChannelAvailable(unitId !== null && this.session.canChannel(unitId));
+      },
     });
 
     const view: CombatView = {
@@ -694,6 +700,10 @@ export class CombatScreen implements Screen {
     const board = this.session.getBoard();
     this.hud?.syncFromBoard(board, this.session.getHand(), this.session.getPlayableCards());
     this.syncCommanders(board);
+    // The selection survives an action but its legality may not — a unit that just
+    // channelled is still selected and must stop being offered the button.
+    const selected = this.targeting?.selectedUnit ?? null;
+    this.hud?.setChannelAvailable(selected !== null && this.session.canChannel(selected));
     this.hud?.setIncoming(
       calculateProjectedDamage(board),
       this.session.getThreat().commanderThreatCount,

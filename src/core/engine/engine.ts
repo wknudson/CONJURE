@@ -281,15 +281,30 @@ export const CHANNEL_MARROW = 1;
  * no offering to be worth anything. The Bound Form is still excluded: extracting Marrow for
  * free with the one unit that cannot be traded away is a turn with no downside at all.
  */
+/**
+ * Why this unit may not Channel, or null if it may.
+ *
+ * One rule in one place. The reducer throws whatever this returns, and the UI asks the
+ * same question to decide whether to offer the button — so the two can never disagree
+ * about what is legal, and the refusal the player reads is the engine's own words.
+ *
+ * A predicate rather than a boolean-plus-message pair because the caller that needs the
+ * reason and the caller that needs the yes/no are the same check either way.
+ */
+export function channelRefusal(state: GameState, unitId: string): string | null {
+  const unit = state.units[unitId];
+  if (!unit) return `no unit ${unitId}`;
+  if (unit.side !== state.activeSide) return 'not your unit';
+  if (unit.attackedThisTurn) return 'unit has already attacked';
+  if (!canAct(unit)) return 'unit cannot act';
+  if (unit.keywords.includes('BoundForm')) return 'the Bound Form cannot channel';
+  return null;
+}
+
 function channel(ctx: Ctx, unitId: string): void {
-  const unit = ctx.state.units[unitId];
-  if (!unit) throw new IllegalCommandError(`no unit ${unitId}`);
-  if (unit.side !== ctx.state.activeSide) throw new IllegalCommandError('not your unit');
-  if (unit.attackedThisTurn) throw new IllegalCommandError('unit has already attacked');
-  if (!canAct(unit)) throw new IllegalCommandError('unit cannot act');
-  if (unit.keywords.includes('BoundForm')) {
-    throw new IllegalCommandError('the Bound Form cannot channel');
-  }
+  const refusal = channelRefusal(ctx.state, unitId);
+  if (refusal) throw new IllegalCommandError(refusal);
+  const unit = ctx.state.units[unitId]!;
 
   const side = ctx.state.activeSide;
   const cmd = ctx.state.players[side];

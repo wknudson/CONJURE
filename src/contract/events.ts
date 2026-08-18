@@ -37,6 +37,22 @@ export type GameEvent = EventBase &
     | { t: 'turnStarted'; side: Side; turn: number }
     | { t: 'phaseChanged'; phase: Phase; side: Side }
     | { t: 'pipGained'; side: Side; amount: number; total: number }
+    /**
+     * A Pip paid back for landing an elemental reaction.
+     *
+     * Separate from `pipGained` because the two are the same arithmetic but different
+     * news: turn income is expected and silent, a refund is a reward for a setup that
+     * worked and is worth saying out loud, at the tile where it happened.
+     */
+    | {
+        t: 'pipRefunded';
+        side: Side;
+        amount: number;
+        total: number;
+        reaction: string;
+        name: string;
+        at: Coord;
+      }
     | { t: 'resourcesChanged'; side: Side; pips: number; marrow: number }
     | { t: 'cardDrawn'; side: Side; card: CardSnapshot }
     | { t: 'cardBurned'; side: Side; card: CardSnapshot }

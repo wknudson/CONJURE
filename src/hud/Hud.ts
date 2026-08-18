@@ -19,6 +19,7 @@ export interface HudCallbacks {
   onUndo(): void;
   onToggleMute(): boolean;
   onToggleThreat(): boolean;
+  onChannel(): void;
   onHelp(): void;
   onRotate(steps: number): void;
   onLastStand(active: boolean): void;
@@ -53,6 +54,7 @@ export class Hud {
   private resonanceEl!: HTMLElement;
   private threatBtn!: HTMLButtonElement;
   private undoBtn!: HTMLButtonElement;
+  private channelBtn!: HTMLButtonElement;
   private helpBtn!: HTMLButtonElement;
   private threatWarnEl!: HTMLElement;
   private enemyHandEl!: HTMLElement;
@@ -117,6 +119,8 @@ export class Hud {
     });
     this.undoBtn = q<HTMLButtonElement>('.undo');
     this.undoBtn.addEventListener('click', () => this.cb.onUndo());
+    this.channelBtn = q<HTMLButtonElement>('.channel');
+    this.channelBtn.addEventListener('click', () => this.cb.onChannel());
     this.threatBtn.addEventListener('click', () => this.setThreatActive(this.cb.onToggleThreat()));
     this.helpBtn.addEventListener('click', () => this.cb.onHelp());
     q('.rotate--ccw').addEventListener('click', () => this.cb.onRotate(-1));
@@ -128,6 +132,17 @@ export class Hud {
 
   setUndoAvailable(on: boolean): void {
     this.undoBtn.disabled = !on;
+  }
+
+  /**
+   * Shows the Channel button only while it would do something.
+   *
+   * Hidden rather than disabled: Channel applies to whatever is selected, so a permanently
+   * visible button would spend most of the game greyed out and reading as broken. The
+   * hotkey still works regardless, and refuses with the engine's reason.
+   */
+  setChannelAvailable(on: boolean): void {
+    this.channelBtn.classList.toggle('is-hidden', !on);
   }
 
   /**
@@ -577,6 +592,7 @@ const TEMPLATE = `
         <button class="threat-toggle" data-tip="Danger zone|Highlights every tile the enemy could strike on their next turn.|Press T to toggle. Red tiles are reachable; deeper red means more attackers.">
           <span class="threat-toggle__dot"></span> Threat
         </button>
+        <button class="channel is-hidden" data-tip="Channel|Gives up the selected unit's attack to extract 1 Marrow.|It keeps its move. Shown only while a unit that can still attack is selected. Press C.">✦ Channel</button>
       </div>
       <div class="hand"></div>
       <div class="right-controls">
