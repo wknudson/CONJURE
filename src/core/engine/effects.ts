@@ -144,31 +144,13 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       return;
     }
 
-    case 'shoveArea': {
-      const origin = originOf(ctx, play);
-      if (!origin) return;
-
-      // Collected before anything moves, for the reason Overload does the same: shoving
-      // one unit vacates a tile another would then be read from.
-      const caught: UnitId[] = [];
-      for (const ref of resolveArea(ctx, node.area, play)) {
-        if (ref.kind !== 'unit') continue;
-        if (!caught.includes(ref.id)) caught.push(ref.id);
-      }
-
-      for (const id of caught) {
-        if (ctx.state.encounter.chainCancelled || ctx.state.result) return;
-        const unit = ctx.state.units[id];
-        if (!unit) continue;
-        const dir = {
-          x: Math.sign(unit.anchor.x - origin.x),
-          y: Math.sign(unit.anchor.y - origin.y),
-        };
-        if (dir.x === 0 && dir.y === 0) continue;
-        pushUnit(ctx, unit, dir, node.distance);
-      }
+    case 'shoveArea':
+      displaceArea(ctx, play, node.area, node.distance, 'away');
       return;
-    }
+
+    case 'pullArea':
+      displaceArea(ctx, play, node.area, node.distance, 'toward');
+      return;
 
     case 'spawnConstruct': {
       if (play.chosen.kind !== 'tile') return;
@@ -224,6 +206,63 @@ function pushDirection(ctx: Ctx, play: CardPlayContext, victimAnchor: Coord): Co
   // Cast from the off-grid portrait: shove straight away from our own side.
   void ctx;
   return play.side === 'player' ? { x: 0, y: -1 } : { x: 0, y: 1 };
+}
+
+/**
+ * Moves everything in an area one way or the other along the line to the origin.
+ *
+ * Shove and pull are the same operation with the vector inverted, so they share a body
+ * rather than being two near-identical cases that could drift apart.
+ *
+ * Two things make the result predictable:
+ *
+ *  - The victims are collected before any of them moves. Displacing one vacates a tile
+ *    another would then be read from, and the blast should be judged on the board as it
+ *    was when it went off.
+ *  - They are then sorted row-then-column rather than left in board order. It matters
+ *    for a pull specifically: several units converging on one tile arrive in sequence,
+ *    and whoever gets there first is what the rest collide with. Board order is an
+ *    artefact of when units happened to be created, which is not something a player can
+ *    see or reason about; reading order at least always resolves the same way.
+ */
+function displaceArea(
+  ctx: Ctx,
+  play: CardPlayContext,
+  area: AreaSpec,
+  distance: number,
+  sense: 'toward' | 'away',
+): void {
+  const origin = originOf(ctx, play);
+  if (!origin) return;
+
+  const caught: UnitId[] = [];
+  for (const ref of resolveArea(ctx, area, play)) {
+    if (ref.kind !== 'unit') continue;
+    if (!caught.includes(ref.id)) caught.push(ref.id);
+  }
+
+  caught.sort((a, b) => {
+    const ua = ctx.state.units[a];
+    const ub = ctx.state.units[b];
+    if (!ua || !ub) return 0;
+    return ua.anchor.y - ub.anchor.y || ua.anchor.x - ub.anchor.x;
+  });
+
+  for (const id of caught) {
+    if (ctx.state.encounter.chainCancelled || ctx.state.result) return;
+    const unit = ctx.state.units[id];
+    if (!unit) continue;
+
+    const away = {
+      x: Math.sign(unit.anchor.x - origin.x),
+      y: Math.sign(unit.anchor.y - origin.y),
+    };
+    // A unit standing on the origin has no line to travel along, either way.
+    if (away.x === 0 && away.y === 0) continue;
+
+    const dir = sense === 'away' ? away : { x: -away.x, y: -away.y };
+    pushUnit(ctx, unit, dir, distance);
+  }
 }
 
 function resolveArea(ctx: Ctx, area: AreaSpec, play: CardPlayContext): TargetRef[] {

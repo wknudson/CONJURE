@@ -72,6 +72,32 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
   },
 
   /**
+   * The gravity bomb.
+   *
+   * Targets a tile rather than two units, which is what keeps `ChosenTarget` singular:
+   * one pick, and the area does the rest. Everything orthogonally beside the tile is
+   * dragged onto it — so the first arrival takes the spot and the others slam into it,
+   * which is where the damage comes from. The spell deals none of its own.
+   *
+   * A Companion card because its reach is the point. A Hero card ignores `range`
+   * entirely and reaches the whole board, which would make a five-tile limit a lie.
+   */
+  aetheric_tether: {
+    id: 'aetheric_tether',
+    name: 'Aetheric Tether',
+    cost: { pips: 1, marrow: 1 },
+    school: 'arcane',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Drag every unit orthogonally beside the target tile onto it. They collide with whatever arrives first.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'pullArea', distance: 1, area: { shape: 'adjacentCross' } },
+    keywords: [],
+    range: 5,
+    needsLoS: true,
+  },
+
+  /**
    * The tithe. Free to cast and paid for entirely in bodies.
    *
    * Capped at 4 so a fat minion cannot fund a whole turn on its own, and it draws a

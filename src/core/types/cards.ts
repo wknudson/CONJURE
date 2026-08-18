@@ -47,6 +47,14 @@ export type EffectNode =
   | { op: 'drawCards'; amount: number }
   /** Shoves everything in the area directly away from the point of origin. */
   | { op: 'shoveArea'; distance: number; area: AreaSpec }
+  /**
+   * Drags everything in the area directly toward the point of origin.
+   *
+   * The inverse of `shoveArea`, and interesting for the same reason a shove is not:
+   * several units converging on one tile arrive in sequence, so the second and later
+   * arrivals collide with whoever got there first.
+   */
+  | { op: 'pullArea'; distance: number; area: AreaSpec }
   | { op: 'detonateAllRunes'; bonusDamage: number }
   /** Magma Brute's on-deploy 2-tile cleave. */
   | { op: 'cleaveFront'; amount: number; dtype: DamageType; width: number }

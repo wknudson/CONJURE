@@ -112,6 +112,77 @@ describe('shoveArea', () => {
   });
 });
 
+describe('pullArea', () => {
+  const gravity = () =>
+    probe(
+      { op: 'pullArea', distance: 1, area: { shape: 'adjacentCross' } },
+      { target: { kind: 'emptyTile', zone: 'any', footprint: 1 } },
+    );
+
+  it('drags everything in the area onto the tile it was cast on', () => {
+    const state = board();
+    // One either side. The centre is empty, so the first to arrive takes it.
+    const north = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 }, hp: 20 });
+    const south = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 4 }, hp: 20 });
+    const id = giveCard(state, 'player', gravity());
+
+    const res = run(state, play(id, { kind: 'tile', at: { x: 3, y: 3 } }));
+
+    // Resolution is row-then-column, so the northern unit arrives first and takes (3,3).
+    expect(res.state.units[north.id]!.anchor, 'first arrival takes the centre').toEqual({ x: 3, y: 3 });
+    // The southern one cannot enter an occupied tile, so it stays put and they collide.
+    expect(res.state.units[south.id]!.anchor, 'blocked by the one already there').toEqual({ x: 3, y: 4 });
+  });
+
+  it('hurts them for converging, which is where the damage comes from', () => {
+    const state = board();
+    const north = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 }, hp: 20 });
+    const south = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 4 }, hp: 20 });
+    const id = giveCard(state, 'player', gravity());
+
+    const res = run(state, play(id, { kind: 'tile', at: { x: 3, y: 3 } }));
+
+    // The spell deals no damage of its own; every point here is the collision.
+    expect(res.events.some((e) => e.t === 'collision')).toBe(true);
+    expect(res.state.units[south.id]!.hp, 'the one that slammed into a body').toBeLessThan(20);
+    void north;
+  });
+
+  it('spares the diagonals, since the area does', () => {
+    const state = board();
+    const diag = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 2 }, hp: 20 });
+    const id = giveCard(state, 'player', gravity());
+
+    const res = run(state, play(id, { kind: 'tile', at: { x: 3, y: 3 } }));
+    expect(res.state.units[diag.id]!.anchor).toEqual({ x: 4, y: 2 });
+    expect(res.state.units[diag.id]!.hp).toBe(20);
+  });
+
+  it('resolves the same way every time, whatever order the units were created in', () => {
+    // The reason the victims are sorted: board order is an artefact of when things
+    // happened to be summoned, which no player can see or reason about.
+    const outcomes = new Set<string>();
+    for (const reversed of [false, true]) {
+      const state = board();
+      const specs = [
+        { def: 'grave_sentinel' as const, side: 'enemy' as const, at: { x: 3, y: 2 }, hp: 20 },
+        { def: 'grave_sentinel' as const, side: 'enemy' as const, at: { x: 3, y: 4 }, hp: 20 },
+      ];
+      for (const spec of reversed ? [...specs].reverse() : specs) addUnit(state, spec);
+      const id = giveCard(state, 'player', gravity());
+
+      const res = run(state, play(id, { kind: 'tile', at: { x: 3, y: 3 } }));
+      const layout = Object.values(res.state.units)
+        .filter((u) => u.side === 'enemy')
+        .map((u) => `${u.anchor.x},${u.anchor.y}:${u.hp}`)
+        .sort()
+        .join('|');
+      outcomes.add(layout);
+    }
+    expect(outcomes.size, 'one outcome, not two').toBe(1);
+  });
+});
+
 describe('drawCards', () => {
   it('draws through the ordinary path', () => {
     // The scenario builder starts with an empty deck; a draw test needs something in it.
