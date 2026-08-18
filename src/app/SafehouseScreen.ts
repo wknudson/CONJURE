@@ -17,7 +17,7 @@ import type { GlobalGameState } from '../core/overworld/state.js';
 import type { Bounty } from '../core/data/bounties.js';
 import { INVENTORY_LIMIT, isCritical } from '../core/overworld/state.js';
 import { useConsumable } from '../core/overworld/run.js';
-import { blueprintsFor } from '../core/data/artificer.js';
+import { ascendableFor } from '../core/data/collection.js';
 import { companionById } from '../core/data/companions.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import { encounterById } from '../core/data/encounters/index.js';
@@ -239,10 +239,12 @@ export class SafehouseScreen implements Screen {
         key: 'artificer',
         name: 'The Ironworks Artificer',
         trade: 'Forging & Splicing',
-        blurb: 'Belt-driven, and far too warm. Cards go in flat and come out as other cards.',
+        blurb: 'Belt-driven, and far too warm. A card goes in known and comes out mastered.',
         status: () => {
-          const n = blueprintsFor(collection).length;
-          return n === 0 ? 'Nothing left unforged' : `${n} blueprint${n === 1 ? '' : 's'} unforged`;
+          const n = ascendableFor(collection).length;
+          return n === 0
+            ? 'Nothing on the bench'
+            : `${n} card${n === 1 ? '' : 's'} ready to ascend`;
         },
         onOpen: this.opts.onArtificer,
       },

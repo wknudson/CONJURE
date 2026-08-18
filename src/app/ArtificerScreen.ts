@@ -6,10 +6,14 @@
  * satchel. The separation is enforced by what each file imports rather than by intent.
  *
  * Two trades share the workbench, and they are genuinely different jobs, so they are tabs
- * rather than columns: **Blueprint Forging** buys a card outright, **Aetheric Splicing**
- * presses two things into a third. Splicing is scaffolding only — the slots accept a
- * selection and the press stays cold, because a hybrid card has no representation in the
- * engine yet and a bench that produced one would be lying about what it made.
+ * rather than columns: the **Ascension Forge** upgrades a card you already know to its
+ * Rank 2 printing, and **Aetheric Splicing** presses two things into a third.
+ *
+ * Splicing is scaffolding only — the slots accept a selection and the press stays cold,
+ * because a hybrid card has no representation in the engine and a bench that produced one
+ * would be lying about what it made. The Forge is built out but not yet lit: the mutation
+ * it would perform is the Rank 2 id mapping still awaiting a ruling, and a button that
+ * charged three Shards for a decision nobody had made yet would be worse than a cold one.
  */
 
 import type { Screen } from './ScreenManager.js';
@@ -17,8 +21,9 @@ import type { CardDef } from '../core/types/cards.js';
 import type { Collection } from '../core/data/deckRules.js';
 import type { GlobalGameState } from '../core/overworld/state.js';
 import type { Catalyst } from '../core/data/artificer.js';
-import { CATALYSTS, blueprintsFor, canForge, forgeCostOf } from '../core/data/artificer.js';
-import { CARDS } from '../core/data/cards/index.js';
+import { CATALYSTS } from '../core/data/artificer.js';
+import { CARDS, ascendedId } from '../core/data/cards/index.js';
+import { ascendableFor } from '../core/data/collection.js';
 import { formatCost } from '../hud/cost.js';
 import { tierOf } from '../core/data/deckRules.js';
 import { schoolOf } from '../render/palette.js';
@@ -33,17 +38,21 @@ export interface ArtificerOpts {
    * object it was handed at mount would show a card it had just forged as still unowned.
    */
   collection: () => Collection;
-  /** Hands the forged card to whoever owns the collection; the bench does not. */
-  onForge: (cardId: string) => void;
   /**
-   * Called once after a forge, when both the purse and the collection have changed.
+   * Performs the Ascension, or absent while the forge is unlit.
    *
-   * Required rather than optional: it is the only write to disk on this screen, and a
-   * caller that forgot it would spend Ducats that came back on the next reload.
+   * The bench takes no payment and writes nothing itself: Shards and the collection both
+   * outlive this screen. Absent rather than a no-op function so the UI can *say* the
+   * forge is cold instead of silently swallowing a click.
    */
+  onAscend?: (cardId: string) => void;
+  /** Called once after an Ascension, when the purse and the collection have both moved. */
   onChange: () => void;
   onBack: () => void;
 }
+
+/** Flat rate, whatever the card. Ascension is a sink, not a market. */
+export const ASCENSION_COST_SHARDS = 3;
 
 type Bench = 'forge' | 'splice';
 
@@ -56,6 +65,9 @@ export class ArtificerScreen implements Screen {
   private slotA: string | null = null;
   private slotB: string | null = null;
 
+  /** The card laid on the Forge, whose two printings are being compared. */
+  private chosen: string | null = null;
+
   constructor(private readonly opts: ArtificerOpts) {}
 
   mount(root: HTMLElement): void {
@@ -65,7 +77,7 @@ export class ArtificerScreen implements Screen {
       <div class="workbench__head brass-panel">
         <div>
           <div class="workbench__title">The Ironworks Artificer</div>
-          <div class="workbench__sub">Blueprints hammered flat · reagents pressed in</div>
+          <div class="workbench__sub">Cards raised to Rank 2 · reagents pressed in</div>
         </div>
         <div class="workbench__purse">
           <span class="workbench__coin workbench__coin--gold">
@@ -81,7 +93,7 @@ export class ArtificerScreen implements Screen {
       </div>
 
       <div class="workbench-tabs">
-        <button class="workbench-tab" data-bench="forge">Blueprint Forging</button>
+        <button class="workbench-tab" data-bench="forge">Ascension Forge</button>
         <button class="workbench-tab" data-bench="splice">Aetheric Splicing</button>
       </div>
 
@@ -118,72 +130,133 @@ export class ArtificerScreen implements Screen {
     body.replaceChildren(this.bench === 'forge' ? this.forgeBench() : this.spliceBench());
   }
 
-  // ------------------------------------------------------- blueprint forging
+  // -------------------------------------------------------- ascension forge
 
   private forgeBench(): HTMLElement {
     const host = document.createElement('div');
     host.className = 'forge-bench';
 
-    const blueprints = blueprintsFor(this.opts.collection());
-    if (blueprints.length === 0) {
+    const candidates = ascendableFor(this.opts.collection());
+    if (candidates.length === 0) {
       host.innerHTML = `<div class="forge-empty brass-panel">
-        Nothing left to draw up. You own a copy of everything the bench knows how to make.
+        Nothing on the bench. Ascension needs a card you own and have not already raised —
+        win one, or come back when the Board has paid you better.
       </div>`;
       return host;
     }
 
+    // Default to the first candidate rather than an empty right-hand pane: the comparison
+    // is the whole point of the screen, and an empty one teaches nothing.
+    if (!this.chosen || !candidates.includes(this.chosen)) this.chosen = candidates[0]!;
+
+    const layout = document.createElement('div');
+    layout.className = 'forge-layout';
+
     const list = document.createElement('div');
     list.className = 'forge-list';
-    for (const def of blueprints) list.appendChild(this.blueprintRow(def));
+    for (const id of candidates) list.appendChild(this.candidateRow(id));
 
-    const note = document.createElement('div');
-    note.className = 'forge-note';
-    note.textContent =
-      'Forging buys the first copy only. Further copies are what winning is for.';
-
-    host.append(list, note);
+    layout.append(list, this.comparison(this.chosen));
+    host.appendChild(layout);
     return host;
   }
 
-  private blueprintRow(def: CardDef): HTMLElement {
-    const cost = forgeCostOf(def);
-    const { economy } = this.opts.global.overworld;
-    const affordable = canForge(cost, economy);
-    const colors = schoolOf(def.school as never);
-
-    const row = document.createElement('div');
-    row.className = 'blueprint-row brass-panel';
-    row.style.setProperty('--school', colors.main);
-    row.dataset.tip = `${def.name}|${def.text}|${def.source === 'companion' ? 'Companion' : 'Hero'} · Tier ${tierOf(def)}`;
+  private candidateRow(cardId: string): HTMLElement {
+    const def = CARDS[cardId]!;
+    const row = document.createElement('button');
+    row.className = 'forge-row brass-panel';
+    row.classList.toggle('is-chosen', this.chosen === cardId);
+    row.style.setProperty('--school', schoolOf(def.school as never).main);
     row.innerHTML = `
-      <span class="blueprint-row__cost">${formatCost(def.cost)}</span>
-      <span class="blueprint-row__body">
-        <span class="blueprint-row__name">${def.name}</span>
-        <span class="blueprint-row__text">${def.text}</span>
-      </span>
-      <span class="blueprint-row__price">
-        <span class="blueprint-row__coin blueprint-row__coin--gold">${cost.ducats} d</span>
-        <span class="blueprint-row__coin blueprint-row__coin--marrow">${cost.shards} shard${cost.shards === 1 ? '' : 's'}</span>
-      </span>
-      <button class="brass-btn blueprint-row__forge">Forge</button>
+      <span class="forge-row__cost">${formatCost(def.cost)}</span>
+      <span class="forge-row__name">${def.name}</span>
+      <span class="forge-row__tier">T${tierOf(def)}</span>
     `;
-
-    const btn = row.querySelector<HTMLButtonElement>('.blueprint-row__forge')!;
-    btn.disabled = !affordable;
-    btn.addEventListener('click', () => this.forge(def, cost));
+    row.addEventListener('click', () => {
+      this.chosen = cardId;
+      this.render();
+    });
     return row;
   }
 
-  private forge(def: CardDef, cost: { ducats: number; shards: number }): void {
-    const { economy } = this.opts.global.overworld;
-    if (!canForge(cost, economy)) return;
+  /**
+   * Rank 1 beside Rank 2, printed from the same data the fight will use.
+   *
+   * Both panes read out of `CARDS`, and the Rank 2 entry there was merged from the card's
+   * own `rank2` block at load. So this is not a preview of what Ascension would do — it
+   * is the card, shown early. A hand-written "after" pane is how the shop and the fight
+   * end up disagreeing.
+   */
+  private comparison(cardId: string): HTMLElement {
+    const before = CARDS[cardId]!;
+    const after = CARDS[ascendedId(cardId)];
+    const shards = this.opts.global.overworld.economy.marrowShards;
+    const affordable = shards >= ASCENSION_COST_SHARDS;
+    const lit = Boolean(this.opts.onAscend);
 
-    economy.ducats -= cost.ducats;
-    economy.marrowShards -= cost.shards;
-    // The collection is not the run's to write — it outlives the run. The owner of the
-    // save takes it from here.
-    this.opts.onForge(def.id);
+    const host = document.createElement('div');
+    host.className = 'forge-compare';
+    host.innerHTML = `
+      <div class="forge-compare__panes">
+        ${this.printing(before, 'Rank 1', 'before')}
+        <div class="forge-arrow">→</div>
+        ${after ? this.printing(after, 'Rank 2', 'after') : '<div class="forge-print">No Rank 2 printing.</div>'}
+      </div>
+
+      <div class="forge-till brass-panel">
+        <div class="forge-till__cost">
+          <span class="forge-till__label">Ascension</span>
+          <span class="forge-till__shards">${ASCENSION_COST_SHARDS} Aether Shards</span>
+          <span class="forge-till__held">You hold ${shards}</span>
+        </div>
+        <button class="brass-btn forge-till__go">Ascend Card</button>
+        <div class="forge-till__refusal">${
+          !affordable ? 'Not enough Shards' : !lit ? 'The forge is not lit' : ''
+        }</div>
+      </div>
+    `;
+
+    const btn = host.querySelector<HTMLButtonElement>('.forge-till__go')!;
+    btn.disabled = !affordable || !lit || !after;
+    btn.addEventListener('click', () => this.ascend(cardId));
+    return host;
+  }
+
+  /** One printing as a card face. Same markup both sides, so differences are the data. */
+  private printing(def: CardDef, rank: string, side: string): string {
+    const colors = schoolOf(def.school as never);
+    const unit = def.unit;
+    return `
+      <div class="forge-print forge-print--${side}" style="--school:${colors.main}">
+        <div class="forge-print__rank">${rank}</div>
+        <div class="forge-print__name">${def.name}</div>
+        <div class="forge-print__cost">${formatCost(def.cost)}</div>
+        <div class="forge-print__text">${def.text}</div>
+        ${
+          unit
+            ? `<div class="forge-print__stats">
+                 <span>ATK ${unit.atk}</span><span>HP ${unit.hp}</span><span>MOV ${unit.mov}</span>
+                 <span>RNG ${unit.rangeMin}-${unit.rangeMax}</span>
+               </div>`
+            : ''
+        }
+        ${
+          def.range !== undefined
+            ? `<div class="forge-print__reach">reach ${def.range}${def.minRange ? ` (min ${def.minRange})` : ''}</div>`
+            : ''
+        }
+      </div>
+    `;
+  }
+
+  private ascend(cardId: string): void {
+    const perform = this.opts.onAscend;
+    if (!perform) return;
+    if (this.opts.global.overworld.economy.marrowShards < ASCENSION_COST_SHARDS) return;
+
+    perform(cardId);
     this.opts.onChange();
+    this.chosen = null;
     this.render();
   }
 

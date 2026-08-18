@@ -174,11 +174,9 @@ function showSafehouse(companionId: string): void {
           new ArtificerScreen({
             global,
             collection: () => save.collection,
-            // No write here: `onChange` fires immediately after and would only make it
-            // a second one.
-            onForge: (cardId) => {
-              save.collection = grantCard(save.collection, cardId);
-            },
+            // `onAscend` is deliberately absent until the Rank 2 mapping is ruled on.
+            // The Forge shows both printings and the price; it will not take Shards for a
+            // decision that has not been made.
             onChange: persist,
             onBack: () => showSafehouse(companionId),
           }),
@@ -305,8 +303,7 @@ function startCombat(
   screens.go(
     new CombatScreen(
       encounter,
-      (result, played, outcome) =>
-        finishCombat(result, played, outcome, companionId, deck, seed, bounty),
+      (result, played, outcome) => finishCombat(result, played, outcome, companionId),
       companionId,
       seed,
       deck,
@@ -316,14 +313,13 @@ function startCombat(
   );
 }
 
+// Nothing about the fight is carried past its end any more: with the rematch gone, the
+// results screen only reports and returns.
 function finishCombat(
   result: CombatResult,
   played: EncounterDef,
   outcome: CombatOutcome,
   companionId: string,
-  deck: string[],
-  seed: number,
-  bounty: Bounty,
 ): void {
   // Fold the fight back into the character first: the Pact is written back wounds and
   // all, the brew is spent whether it was won or lost, and a win is paid at the rate the
@@ -351,12 +347,9 @@ function finishCombat(
         save.collection = grantCard(save.collection, cardId);
         persist();
       },
-      // A rematch is the same fight: same seed, same adapted deck. Rerolling would make
-      // "again" mean a different battle, which is not what the button says.
-      // Offered only while the player is still standing: a rematch from the floor would
-      // open the same fight with a Pact at zero.
-      canRematch: !run || !isDown(run.overworld),
-      onRematch: () => startCombat(played, companionId, deck, seed, bounty),
+      // No rematch. In a hub-based RPG the way back to a fight is through the Bounty
+      // Board, and a button that re-ran the same contract for the same pay was a money
+      // printer sitting on the results screen.
       // Back to the hub rather than the title: the Safehouse is where a character lives
       // between contracts, and the title is only the way out.
       onTitle: () => showSafehouse(companionId),

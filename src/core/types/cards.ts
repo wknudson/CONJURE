@@ -227,6 +227,40 @@ export interface CardDef {
    * `omni` — free aim within range.
    */
   vector?: 'omni' | 'linear';
+  /**
+   * What this card becomes when it is Ascended.
+   *
+   * Only what a Rank 2 is allowed to change. `id`, `school`, `source`, `kind` and
+   * `target` are deliberately absent: a Rank 2 that picked its targets differently, or
+   * moved from Hero to Companion, would be a different card wearing the same name — and
+   * since both ranks share one copy cap through `baseIdOf`, it would be a different card
+   * smuggled past the deck rules.
+   *
+   * Authored as overrides rather than as a whole second `CardDef` so a change to the
+   * Rank 1 printing — a nerf, a keyword, a re-cost — carries into Rank 2 automatically
+   * instead of quietly leaving the upgraded copy on last season's numbers.
+   */
+  rank2?: Rank2Overrides;
+}
+
+/**
+ * The Rank 2 printing, as a diff against Rank 1.
+ *
+ * `unit` is a partial: most ascensions raise one or two stats, and restating a whole
+ * block to change `atk` is how the other five drift.
+ */
+export interface Rank2Overrides {
+  name?: string;
+  cost?: CardCost;
+  text?: string;
+  effect?: EffectNode;
+  keywords?: Keyword[];
+  unit?: Partial<UnitStatBlock>;
+  obstacleHp?: number;
+  range?: number;
+  minRange?: number;
+  needsLoS?: boolean;
+  vector?: 'omni' | 'linear';
 }
 
 export interface CardInstance {

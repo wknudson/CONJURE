@@ -155,7 +155,13 @@ function migrate(raw: unknown, notes: string[]): SaveData {
       // and the player should end up with the cards from both.
       owned[to] = (owned[to] ?? 0) + count;
     }
-    const reconciled = reconcileCollection({ owned });
+    // Ascensions are keyed by base card id, so they go through the same rename map as
+    // everything else that names a card.
+    const ascended = Array.isArray(data.collection.ascended)
+      ? data.collection.ascended.filter((c): c is string => typeof c === 'string').map(rename)
+      : [];
+
+    const reconciled = reconcileCollection({ owned, ascended });
     collection = reconciled.collection;
     if (reconciled.dropped.length > 0) {
       notes.push(`${reconciled.dropped.length} card(s) no longer exist and were removed.`);

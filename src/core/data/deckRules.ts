@@ -81,6 +81,15 @@ export interface DeckProblem {
 export interface Collection {
   /** Copies owned, by card id. */
   owned: Record<string, number>;
+  /**
+   * Base ids the player has Ascended, account-wide.
+   *
+   * Ascension is a property of knowing the card, not of one copy of it: paying three
+   * Shards upgrades every copy in every deck at once. Stored as a set of base ids rather
+   * than by rewriting deck lists to `_r2`, so a deck built before an Ascension keeps
+   * working and nothing has to be migrated when the forge is used.
+   */
+  ascended?: string[];
 }
 
 /**

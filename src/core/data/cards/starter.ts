@@ -241,6 +241,18 @@ export const STARTER_CARDS: Record<string, CardDef> = {
       ],
     },
     keywords: [],
+    // A staple ascension: the same shape, harder. Two tiles of shove is what turns this
+    // from a tempo card into a wall-kill, which is worth three Shards on a Tier 1 card.
+    rank2: {
+      text: 'Deals 3 damage to an enemy and shoves it 2 tiles away. Triggers standard Collision Damage (3 / 2).',
+      effect: {
+        op: 'seq',
+        effects: [
+          { op: 'damage', amount: 3, dtype: 'physical', area: { shape: 'target' } },
+          { op: 'push', distance: 2 },
+        ],
+      },
+    },
   },
 
   stone_barricade: {

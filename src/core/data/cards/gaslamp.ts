@@ -36,6 +36,21 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     keywords: [],
     range: 3,
     needsLoS: true,
+    // Ascension buys depth, not damage. A four-deep cone clears the whole doorway and the
+    // room behind it, which changes where the card can be aimed from rather than how hard
+    // it hits — the same reason the shove goes to 2 instead of the damage going to 4.
+    rank2: {
+      cost: { pips: 2, marrow: 0 },
+      text: 'Vent a widening blast: 3 fire damage in a 4-deep cone, then shove everything caught 2 tiles away.',
+      effect: {
+        op: 'seq',
+        effects: [
+          { op: 'damage', amount: 3, dtype: 'fire', area: { shape: 'cone', depth: 4 } },
+          { op: 'shoveArea', distance: 2, area: { shape: 'cone', depth: 4 } },
+        ],
+      },
+      range: 4,
+    },
   },
 
   /**
@@ -69,6 +84,13 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
       escalationBonus: { atk: 1, hp: 0 },
       attackProfile: 'arcing',
     },
+    // A bigger gun on the same carriage. The blind spot stays — a mortar that could
+    // depress its aim would stop being a mortar, and the card is priced around having to
+    // be screened.
+    rank2: {
+      text: 'Lobber. Fires 2-5 tiles, arcing over cover, and cannot depress its aim onto anything adjacent. Leaves rubble when it breaks.',
+      unit: { atk: 3, hp: 8, rangeMax: 5 },
+    },
   },
 
   /**
@@ -95,6 +117,14 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     keywords: [],
     range: 5,
     needsLoS: true,
+    // Reach, and one more ring of victims. The diagonals were the whole restraint on this
+    // card, so giving them up is the ascension.
+    rank2: {
+      cost: { pips: 1, marrow: 1 },
+      text: 'Drag every unit beside the target tile onto it, diagonals included. They collide with whatever arrives first.',
+      effect: { op: 'pullArea', distance: 1, area: { shape: 'adjacent8' } },
+      range: 6,
+    },
   },
 
   /**
@@ -121,5 +151,17 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
       ],
     },
     keywords: [],
+    // The cap is the card, so the cap is what moves. Still free, still paid for in bodies.
+    rank2: {
+      text: 'Sacrifice a friendly minion. Extract Marrow equal to its remaining health, up to 6, and draw two cards.',
+      effect: {
+        op: 'seq',
+        effects: [
+          { op: 'sacrificeTarget' },
+          { op: 'extractMarrow', amount: { from: 'sacrificedHp', max: 6 } },
+          { op: 'drawCards', amount: 2 },
+        ],
+      },
+    },
   },
 };

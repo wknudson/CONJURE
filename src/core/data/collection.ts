@@ -9,7 +9,7 @@
 
 import type { Collection } from './deckRules.js';
 import type { CardDef } from '../types/cards.js';
-import { CARDS } from './cards/index.js';
+import { CARDS, ascendableIds, ascendedId, isAscendedId } from './cards/index.js';
 import { COMPANIONS } from './companions.js';
 import type { RngState } from '../util/rng.js';
 import { nextInt } from '../util/rng.js';
@@ -57,9 +57,50 @@ export function ownedCount(collection: Collection, cardId: string): number {
   return collection.owned[cardId] ?? 0;
 }
 
+/** Whether this base card has been Ascended, account-wide. */
+export function isAscended(collection: Collection, cardId: string): boolean {
+  return (collection.ascended ?? []).includes(cardId);
+}
+
+/**
+ * The printing a deck entry actually resolves to.
+ *
+ * The single place a base id becomes `_r2`. Ascension is account-wide, so a deck list
+ * written before the forge was used still names the base card — this is what makes that
+ * list mean the upgraded printing without anything having been migrated.
+ */
+export function printedId(collection: Collection, cardId: string): string {
+  return isAscended(collection, cardId) && CARDS[ascendedId(cardId)]
+    ? ascendedId(cardId)
+    : cardId;
+}
+
+/** A deck as the engine should receive it, with every Ascension applied. */
+export function printedDeck(collection: Collection, deck: string[]): string[] {
+  return deck.map((id) => printedId(collection, id));
+}
+
+/**
+ * What the forge can still offer: owned, upgradeable, and not already upgraded.
+ *
+ * Owning at least one copy is the gate. Ascension teaches you the card rather than
+ * upgrading a copy, so a second copy buys nothing — but you cannot learn a card you have
+ * never held.
+ */
+export function ascendableFor(collection: Collection): string[] {
+  return ascendableIds().filter(
+    (id) => ownedCount(collection, id) > 0 && !isAscended(collection, id),
+  );
+}
+
 export function grantCard(collection: Collection, cardId: string): Collection {
   if (!CARDS[cardId]) return collection;
-  return { owned: { ...collection.owned, [cardId]: (collection.owned[cardId] ?? 0) + 1 } };
+  // Spread the whole collection, not just `owned`. Rebuilding it field by field is how
+  // claiming a reward card silently erased every Ascension the player had paid for.
+  return {
+    ...collection,
+    owned: { ...collection.owned, [cardId]: (collection.owned[cardId] ?? 0) + 1 },
+  };
 }
 
 /**
@@ -71,6 +112,11 @@ export function grantCard(collection: Collection, cardId: string): Collection {
  * last time the rule lived in two places, a rename left one of them offering the Rite.
  */
 export function isObtainable(def: CardDef): boolean {
+  // A Rank 2 printing is not something you obtain — it is something you upgrade into, at
+  // the forge, for Shards. Letting one into this predicate would put ascended cards in
+  // reward rolls and on the Artificer's shelf, handing out for free the exact thing the
+  // Ascension sink exists to charge for.
+  if (isAscendedId(def.id)) return false;
   return !def.setupOnly && def.id !== 'rite_of_subjugation';
 }
 
@@ -119,5 +165,14 @@ export function reconcileCollection(collection: Collection): {
     owned[id] = Math.max(owned[id] ?? 0, 3);
   }
 
-  return { collection: { owned }, dropped };
+  // An Ascension of a card that no longer has a Rank 2 printing is dropped rather than
+  // carried: it would sit in the save forever, unreadable, and `printedId` would keep
+  // asking for an id that is not in the registry.
+  const upgradeable = new Set(ascendableIds());
+  const ascended = [...new Set(collection.ascended ?? [])].filter((id) => upgradeable.has(id)).sort();
+
+  return {
+    collection: { owned, ...(ascended.length > 0 ? { ascended } : {}) },
+    dropped,
+  };
 }

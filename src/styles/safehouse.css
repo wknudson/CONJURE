@@ -927,3 +927,165 @@
   color: var(--lamp);
   margin-bottom: 10px;
 }
+
+/* -------- the ascension forge -------- */
+
+.forge-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(0, 2.2fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.forge-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  border-left: 3px solid var(--school, var(--brass));
+}
+
+.forge-row.is-chosen {
+  border-color: var(--lamp);
+  background: linear-gradient(180deg, rgba(240, 178, 74, 0.16), rgba(22, 20, 16, 0.86));
+}
+
+.forge-row__cost {
+  font: 800 12px var(--font);
+  color: var(--school, var(--brass-lit));
+  min-width: 40px;
+}
+
+.forge-row__name {
+  flex: 1;
+  font: 700 12.5px var(--font);
+}
+
+.forge-row__tier {
+  font: 700 9px var(--font);
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+
+/* Before and after, same markup both sides so a difference is always the data. */
+.forge-compare__panes {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.forge-print {
+  flex: 1 1 220px;
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--school, var(--brass)) 45%, transparent);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.forge-print--after {
+  border-color: var(--lamp);
+  background: linear-gradient(180deg, rgba(240, 178, 74, 0.1), rgba(0, 0, 0, 0.34));
+  box-shadow: inset 0 0 26px rgba(240, 178, 74, 0.12);
+}
+
+.forge-print__rank {
+  font: 800 9px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+  margin-bottom: 8px;
+}
+
+.forge-print--after .forge-print__rank { color: var(--lamp); }
+
+.forge-print__name {
+  font: 800 15px var(--font);
+  color: var(--brass-lit);
+}
+
+.forge-print__cost {
+  margin: 4px 0 10px;
+  font: 800 13px var(--font);
+  color: var(--school, var(--brass));
+}
+
+.forge-print__text {
+  font: 400 11.5px/1.6 var(--font);
+  color: var(--text-dim);
+}
+
+.forge-print__stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(176, 148, 106, 0.22);
+  font: 700 10.5px var(--font);
+  color: var(--text);
+}
+
+.forge-print__reach {
+  margin-top: 8px;
+  font: 600 10px var(--font);
+  letter-spacing: 0.6px;
+  color: var(--text-dim);
+}
+
+.forge-arrow {
+  display: flex;
+  align-items: center;
+  font: 700 20px var(--font);
+  color: var(--lamp);
+}
+
+.forge-till {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 14px 18px;
+}
+
+.forge-till__cost {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.forge-till__label {
+  font: 700 9px var(--font);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+}
+
+.forge-till__shards {
+  font: 800 16px var(--font);
+  color: var(--marrow);
+}
+
+.forge-till__held {
+  font: 500 10.5px var(--font);
+  color: var(--text-dim);
+}
+
+.forge-till__go {
+  font-size: 12px;
+  padding: 12px 24px;
+}
+
+.forge-till__refusal {
+  width: 100%;
+  font: 600 10px var(--font);
+  letter-spacing: 0.6px;
+  color: var(--danger);
+}

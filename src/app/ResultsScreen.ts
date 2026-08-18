@@ -29,15 +29,7 @@ export interface ResultsOptions {
   encounter: EncounterDef;
   /** Cards offered as a reward. Empty on a loss. */
   rewards: string[];
-  /**
-   * Whether the fight can be taken again.
-   *
-   * False once a run is spent: replaying would open the same encounter with a Pact at
-   * zero, which the Gauntlet has no answer for. Defaults to true for a standalone fight.
-   */
-  canRematch?: boolean;
   onClaim: (cardId: string) => void;
-  onRematch: () => void;
   onTitle: () => void;
 }
 
@@ -57,12 +49,10 @@ export class ResultsScreen implements Screen {
       <div class="results__meta">${this.opts.encounter.name}</div>
       <div class="results__rewards"></div>
       <div class="results__buttons">
-        ${this.opts.canRematch === false ? '' : '<button class="results__btn results__rematch">Rematch</button>'}
         <button class="results__btn results__menu">Back to Safehouse</button>
       </div>
     `;
 
-    el.querySelector('.results__rematch')?.addEventListener('click', () => this.opts.onRematch());
     el.querySelector('.results__menu')!.addEventListener('click', () => this.opts.onTitle());
 
     this.renderRewards(el);
