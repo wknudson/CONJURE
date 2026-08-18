@@ -9,8 +9,9 @@
  * can be tested without mounting a screen.
  */
 
-import type { BuffId, CombatBoons, Consumable } from '../overworld/state.js';
-import { BUFF_EFFECTS } from '../overworld/state.js';
+import type { BuffId, Consumable } from '../overworld/state.js';
+import type { CombatBoons } from '../engine/setup.js';
+import { BUFF_EFFECTS } from '../overworld/run.js';
 
 export interface StockItem {
   item: Consumable;
@@ -38,9 +39,9 @@ export const APOTHECARY_STOCK: readonly StockItem[] = [
     blurb: 'Filings suspended in tallow. The first blow lands on the brew, not on you.',
   },
   {
-    item: { id: 'spark_cell', name: 'Spark Cell', type: 'buff', value: 0 },
+    item: { id: 'kinetic_capacitor', name: 'Kinetic Capacitor', type: 'buff', value: 0 },
     price: 45,
-    blurb: 'A charged brass canister, still warm. Opens the ledger with more to spend.',
+    blurb: 'A wound brass flywheel, still turning. Opens the ledger with more to spend.',
   },
 ];
 
@@ -61,7 +62,7 @@ export function effectOf(stock: StockItem): string {
 export function describeBoons(boons: CombatBoons): string {
   const parts: string[] = [];
   if (boons.armor) parts.push(`open with ${boons.armor} Armor`);
-  if (boons.pips) parts.push(`+${boons.pips} starting Pips`);
+  if (boons.pips) parts.push(`+${boons.pips} Pips`);
   if (boons.extraOpeningCards) parts.push(`+${boons.extraOpeningCards} opening cards`);
   return parts.length > 0 ? `${parts.join(', ')}.` : 'nothing at all.';
 }

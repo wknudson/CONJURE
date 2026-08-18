@@ -16,10 +16,12 @@ import type { EncounterDef } from '../core/data/encounters/registry.js';
 import type { Collection } from '../core/data/deckRules.js';
 import type { GlobalGameState } from '../core/overworld/state.js';
 import { INVENTORY_LIMIT, isRunOver } from '../core/overworld/state.js';
+import { useConsumable } from '../core/overworld/run.js';
 import { blueprintsFor } from '../core/data/artificer.js';
 import { companionById } from '../core/data/companions.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import { schoolOf } from '../render/palette.js';
+import { Tooltip } from '../hud/Tooltip.js';
 
 export interface SafehouseOpts {
   global: GlobalGameState;
@@ -33,6 +35,8 @@ export interface SafehouseOpts {
   onArtificer: () => void;
   onJournal: () => void;
   onBounty: (encounter: EncounterDef) => void;
+  /** Called after the run is mutated here — drinking something — so it reaches disk. */
+  onChange?: () => void;
   /** Out the front door, back to the title. */
   onLeave: () => void;
 }
@@ -50,6 +54,7 @@ interface Zone {
 
 export class SafehouseScreen implements Screen {
   private el: HTMLElement | null = null;
+  private tooltip: Tooltip | null = null;
 
   constructor(private readonly opts: SafehouseOpts) {}
 
@@ -77,6 +82,8 @@ export class SafehouseScreen implements Screen {
 
     root.appendChild(el);
     this.el = el;
+    this.tooltip = new Tooltip(document.body);
+    this.tooltip.attach(el);
     this.renderLedger();
     this.renderZones();
   }
@@ -93,7 +100,6 @@ export class SafehouseScreen implements Screen {
     const { pact, economy, inventory, activeBuff } = this.opts.global.overworld;
 
     const pactPct = Math.max(0, Math.min(100, (pact.currentHp / pact.maxHp) * 100));
-    const held = inventory.map((i) => i.name).join(', ') || 'empty';
     const spent = isRunOver(this.opts.global.overworld);
 
     host.innerHTML = `
@@ -113,7 +119,7 @@ export class SafehouseScreen implements Screen {
         </div>
         <div class="ledger__stat">
           <span class="ledger__label">Satchel ${inventory.length}/${INVENTORY_LIMIT}</span>
-          <span class="ledger__held">${held}</span>
+          <span class="ledger__satchel"></span>
         </div>
         <div class="ledger__stat">
           <span class="ledger__label">Brew held</span>
@@ -121,6 +127,48 @@ export class SafehouseScreen implements Screen {
         </div>
       </div>
     `;
+    this.renderSatchel();
+  }
+
+  /**
+   * The satchel, and the only place anything in it can be drunk.
+   *
+   * Here rather than in the Apothecary because this is the room you are standing in when
+   * you decide what to take into the next fight — and because items are barred once the
+   * fight starts, this is in fact the *last* place the decision can be made.
+   */
+  private renderSatchel(): void {
+    const host = this.el?.querySelector('.ledger__satchel');
+    if (!host) return;
+    const { overworld } = this.opts.global;
+    host.innerHTML = '';
+
+    if (overworld.inventory.length === 0) {
+      host.innerHTML = '<span class="ledger__held">empty</span>';
+      return;
+    }
+
+    overworld.inventory.forEach((item, index) => {
+      // A tonic drunk at full health is simply gone. Refusing the click is kinder than
+      // charging for nothing, and the label says which of the two it is.
+      const wasted =
+        item.type === 'healing' && overworld.pact.currentHp >= overworld.pact.maxHp;
+
+      const chip = document.createElement('button');
+      chip.className = 'ledger__item';
+      chip.disabled = wasted;
+      chip.textContent = item.name;
+      chip.dataset.tip = wasted
+        ? `${item.name}|Already at full health.|Satchel`
+        : `${item.name}|Click to use.|Satchel`;
+      chip.addEventListener('click', () => {
+        if (!useConsumable(this.opts.global, index)) return;
+        this.opts.onChange?.();
+        this.renderLedger();
+        this.renderZones();
+      });
+      host.appendChild(chip);
+    });
   }
 
   // ------------------------------------------------------------------- doors
@@ -207,6 +255,8 @@ export class SafehouseScreen implements Screen {
   }
 
   unmount(): void {
+    this.tooltip?.destroy();
+    this.tooltip = null;
     this.el?.remove();
     this.el = null;
   }

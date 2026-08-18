@@ -7,11 +7,26 @@
  * rather than a habit.
  */
 
-import type { GameState } from '../types/state.js';
 import type { CombatResult } from '../../contract/events.js';
-import type { CombatCarry } from '../engine/setup.js';
-import type { GlobalGameState, OverworldState } from './state.js';
-import { BUFF_EFFECTS, INVENTORY_LIMIT } from './state.js';
+import type { CombatBoons, CombatCarry } from '../engine/setup.js';
+import type { BuffId, GlobalGameState, OverworldState } from './state.js';
+import { INVENTORY_LIMIT } from './state.js';
+
+/**
+ * What each brew does to a fight.
+ *
+ * The translation table, and the reason this module exists. `state.ts` owns which brews
+ * a run may carry; saying what one *does* needs the engine's vocabulary, so it is said
+ * here — the one file allowed to hold both. Adding a fourth brew is adding a row.
+ */
+export const BUFF_EFFECTS: Record<BuffId, CombatBoons> = {
+  /** Armour to soak the first exchange. */
+  ironbrew: { armor: 5 },
+  /** Opens on a bigger bank, so a turn-one Power Tier play is briefly possible. */
+  kinetic_capacitor: { pips: 2 },
+  /** A wider opening hand: more options rather than more power. */
+  quicksilver: { extraOpeningCards: 2 },
+};
 
 /**
  * What the run hands the next fight.
@@ -33,6 +48,18 @@ export interface CombatSpoils {
 }
 
 /**
+ * What a finished fight tells the run.
+ *
+ * A named payload rather than the whole `GameState`: the run needs exactly one number
+ * out of a fight, and handing it the entire board would invite the overworld to start
+ * reading combat internals it has no business knowing about.
+ */
+export interface CombatOutcome {
+  /** The Pact as it stood when the bell rang. */
+  pactHp: number;
+}
+
+/**
  * Closes a fight and folds it back into the run.
  *
  * Three things happen in a fixed order, and the order matters:
@@ -51,16 +78,13 @@ export interface CombatSpoils {
  */
 export function resolveCombat(
   global: GlobalGameState,
-  finished: GameState,
+  outcome: CombatOutcome,
   result: CombatResult,
   spoils: CombatSpoils = {},
 ): void {
   const { overworld } = global;
 
-  overworld.pact.currentHp = Math.max(
-    0,
-    Math.min(overworld.pact.maxHp, finished.players.player.hp),
-  );
+  overworld.pact.currentHp = Math.max(0, Math.min(overworld.pact.maxHp, outcome.pactHp));
 
   overworld.activeBuff = null;
 

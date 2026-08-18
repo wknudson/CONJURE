@@ -18,6 +18,12 @@ import { APOTHECARY_STOCK, effectOf } from '../core/data/apothecary.js';
 
 export interface ShopOpts {
   global: GlobalGameState;
+  /**
+   * Called after the run has been mutated, so the purchase is on disk before the player
+   * has finished looking at the shelf. Saving on the way out instead would lose a tonic
+   * to a closed tab.
+   */
+  onChange?: () => void;
   onBack: () => void;
 }
 
@@ -157,6 +163,7 @@ export class ShopScreen implements Screen {
     if (!taken) return;
     overworld.economy.ducats -= stock.price;
 
+    this.opts.onChange?.();
     this.render();
   }
 

@@ -25,7 +25,7 @@ import type { ChosenTarget } from './types/cards.js';
 import type { EncounterDef } from './data/encounters/registry.js';
 import { applyCommand, channelRefusal } from './engine/engine.js';
 import { deepClone } from './util/clone.js';
-import { createCombat } from './engine/setup.js';
+import { createCombat, type CombatCarry } from './engine/setup.js';
 import { toBoardView, toCardSnapshot } from './engine/views.js';
 import { CARDS } from './data/cards/index.js';
 import { canAfford } from './engine/deck.js';
@@ -51,8 +51,9 @@ export class CombatSession implements RulesQuery {
     ai: AiProfile = NOVICE_AI,
     companionId?: string,
     deck?: string[],
+    carry?: CombatCarry,
   ) {
-    const { state, events } = createCombat(encounter, seed, companionId, deck);
+    const { state, events } = createCombat(encounter, seed, companionId, deck, carry);
     this.state = state;
     this.openingEvents = events;
     this.ai = ai;
@@ -332,6 +333,16 @@ export class CombatSession implements RulesQuery {
 
   isOver(): boolean {
     return Boolean(this.state.result);
+  }
+
+  /**
+   * The Pact as it stands, which is the one number a run needs back out of a fight.
+   *
+   * A named getter rather than letting the teardown reach through `debugState`: the run
+   * should be able to close a fight without being handed the whole board.
+   */
+  get pactHp(): number {
+    return this.state.players.player.hp;
   }
 
   get result() {

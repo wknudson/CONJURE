@@ -35,6 +35,13 @@ export interface ArtificerOpts {
   collection: () => Collection;
   /** Hands the forged card to whoever owns the collection; the bench does not. */
   onForge: (cardId: string) => void;
+  /**
+   * Called once after a forge, when both the purse and the collection have changed.
+   *
+   * Required rather than optional: it is the only write to disk on this screen, and a
+   * caller that forgot it would spend Ducats that came back on the next reload.
+   */
+  onChange: () => void;
   onBack: () => void;
 }
 
@@ -176,6 +183,7 @@ export class ArtificerScreen implements Screen {
     // The collection is not the run's to write — it outlives the run. The owner of the
     // save takes it from here.
     this.opts.onForge(def.id);
+    this.opts.onChange();
     this.render();
   }
 

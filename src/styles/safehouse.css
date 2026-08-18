@@ -722,3 +722,32 @@
   border-style: solid;
   letter-spacing: 0.5px;
 }
+
+/* Satchel chits in the ledger. The only place an item can actually be drunk. */
+.ledger__satchel {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ledger__item {
+  padding: 3px 9px;
+  border: 1px solid rgba(176, 148, 106, 0.45);
+  border-radius: 3px;
+  background: rgba(176, 148, 106, 0.14);
+  color: var(--brass-lit);
+  font: 600 11px var(--font);
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+
+.ledger__item:hover:not(:disabled) {
+  border-color: var(--lamp);
+  background: rgba(240, 178, 74, 0.24);
+  color: #fff3dc;
+}
+
+.ledger__item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

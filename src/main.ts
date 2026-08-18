@@ -26,6 +26,7 @@ import { ShopScreen } from './app/ShopScreen.js';
 import { ArtificerScreen } from './app/ArtificerScreen.js';
 import { loadSave, writeSave, type SaveData } from './app/save.js';
 import { isRunOver, newRun, type GlobalGameState } from './core/overworld/state.js';
+import { carryFor, resolveCombat, type CombatOutcome } from './core/overworld/run.js';
 import { companionById } from './core/data/companions.js';
 import { grantCard, rollRewards } from './core/data/collection.js';
 import { makeRng } from './core/util/rng.js';
@@ -54,27 +55,40 @@ function deckFor(companionId: string): string[] {
 }
 
 /**
- * The Gauntlet run, held for the session.
+ * The Gauntlet run in progress.
  *
- * Deliberately not in `SaveData`: the run is a single sitting's progress, the save is
- * everything that outlives one. They meet only where a forged card crosses from the purse
- * into the collection.
+ * Held here and stored under `save.overworld` as the very same object, so a purchase is
+ * in the save the moment it happens and `persist()` is only ever a write. The run and the
+ * collection are still different lifetimes — a forged card outlives the run that paid for
+ * it — which is why they are separate fields rather than one.
  */
 let run: GlobalGameState | null = null;
 
-/**
- * Ducats and Shards to open with.
- *
- * Scaffolding, not balance. Combat does not pay into the run yet — that needs a carry
- * through `CombatSession`, which is engine plumbing rather than routing — so without a
- * stipend the Apothecary and the Artificer would both be shelves nobody could shop at.
- */
+/** What a run opens with, before it has won anything. */
 const OPENING_PURSE = { ducats: 120, marrowShards: 3 };
+
+/** What a fight pays. Granted only on a win — `resolveCombat` owns that gate. */
+const VICTORY_SPOILS = { ducats: 50, marrowShards: 1 };
 
 function startRun(companionId: string): GlobalGameState {
   const overworld = newRun(deckFor(companionId));
   overworld.economy = { ...OPENING_PURSE };
   return { overworld, combat: null };
+}
+
+/**
+ * The run this session is playing, adopted from the save or started fresh.
+ *
+ * `save.overworld` is set to the very same object rather than a copy, so every mutation
+ * a screen makes is already in the save by the time `persist()` is called. One object,
+ * one truth — a copy taken here would be a second one to keep in step.
+ */
+function adoptRun(companionId: string): GlobalGameState {
+  const restored = save.overworld;
+  const global =
+    restored && !isRunOver(restored) ? { overworld: restored, combat: null } : startRun(companionId);
+  save.overworld = global.overworld;
+  return global;
 }
 
 /**
@@ -85,8 +99,10 @@ function startRun(companionId: string): GlobalGameState {
  * back is asking to start again.
  */
 function showSafehouse(encounter: EncounterDef, companionId: string): void {
-  if (!run || isRunOver(run.overworld)) run = startRun(companionId);
+  if (!run || isRunOver(run.overworld)) run = adoptRun(companionId);
   run.overworld.deck = deckFor(companionId);
+  save.overworld = run.overworld;
+  persist();
   const global = run;
 
   screens.go(
@@ -96,19 +112,26 @@ function showSafehouse(encounter: EncounterDef, companionId: string): void {
       posted: encounter,
       collection: save.collection,
       deck: deckFor(companionId),
+      onChange: persist,
       onApothecary: () =>
         screens.go(
-          new ShopScreen({ global, onBack: () => showSafehouse(encounter, companionId) }),
+          new ShopScreen({
+            global,
+            onChange: persist,
+            onBack: () => showSafehouse(encounter, companionId),
+          }),
         ),
       onArtificer: () =>
         screens.go(
           new ArtificerScreen({
             global,
             collection: () => save.collection,
+            // No write here: `onChange` fires immediately after and would only make it
+            // a second one.
             onForge: (cardId) => {
               save.collection = grantCard(save.collection, cardId);
-              persist();
             },
+            onChange: persist,
             onBack: () => showSafehouse(encounter, companionId),
           }),
         ),
@@ -176,20 +199,36 @@ function showPreCombat(encounter: EncounterDef, companionId: string): void {
   );
 }
 
+/**
+ * Opens the fight, carrying the run into it.
+ *
+ * The deck reaches the engine through `createCombat`'s own parameter rather than through
+ * the carry, because the deck that fights is the one the pre-combat screen adapted — up
+ * to five swaps away from the run's stored list. Two routes to the same field would only
+ * be an argument about which one wins.
+ */
 function startCombat(
   encounter: EncounterDef,
   companionId: string,
   deck: string[],
   seed: number,
 ): void {
+  const carry = run ? carryFor(run.overworld) : undefined;
+  // `combat !== null` is what "we are not in the overworld" means, and it is what stops
+  // a tonic being drunk out of a lethal turn.
+  if (run) run.combat = { encounterId: encounter.id, seed };
+  persist();
+
   screens.go(
     new CombatScreen(
       encounter,
-      (result, played) => finishCombat(result, played, companionId, deck, seed),
+      (result, played, outcome) =>
+        finishCombat(result, played, outcome, companionId, deck, seed),
       companionId,
       seed,
       deck,
       profileByName(save.difficulty) ?? NOVICE_AI,
+      carry,
     ),
   );
 }
@@ -197,10 +236,15 @@ function startCombat(
 function finishCombat(
   result: CombatResult,
   played: EncounterDef,
+  outcome: CombatOutcome,
   companionId: string,
   deck: string[],
   seed: number,
 ): void {
+  // Fold the fight back into the run first: the Pact is written back wounds and all, the
+  // brew is spent whether it was won or lost, and only a win is paid for.
+  if (run) resolveCombat(run, outcome, result, VICTORY_SPOILS);
+
   if (result === 'victory') save.record.wins += 1;
   else if (result === 'bound') save.record.bound += 1;
   else save.record.losses += 1;
@@ -224,6 +268,9 @@ function finishCombat(
       },
       // A rematch is the same fight: same seed, same adapted deck. Rerolling would make
       // "again" mean a different battle, which is not what the button says.
+      // Offered only while the run can still stand: a rematch after a defeat would open
+      // the same fight with a Pact at zero.
+      canRematch: !run || !isRunOver(run.overworld),
       onRematch: () => startCombat(played, companionId, deck, seed),
       // Back to the hub rather than the title: the Safehouse is where a run lives between
       // contracts, and the title is only the way out of one.

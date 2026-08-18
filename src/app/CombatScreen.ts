@@ -13,6 +13,8 @@ import type { Action } from '../contract/query.js';
 import type { CombatResult } from '../contract/events.js';
 import type { EncounterDef } from '../core/data/encounters/registry.js';
 import { CombatSession } from '../core/session.js';
+import type { CombatCarry } from '../core/engine/setup.js';
+import type { CombatOutcome } from '../core/overworld/run.js';
 import { IsoCamera } from '../render/IsoCamera.js';
 import { BoardRenderer, emptyOverlays, type Overlays } from '../render/BoardRenderer.js';
 import { EntityViewMap } from '../render/EntityViews.js';
@@ -105,13 +107,18 @@ export class CombatScreen implements Screen {
 
   constructor(
     private readonly encounter: EncounterDef,
-    private readonly onFinish: (result: CombatResult, encounter: EncounterDef) => void,
+    private readonly onFinish: (
+      result: CombatResult,
+      encounter: EncounterDef,
+      outcome: CombatOutcome,
+    ) => void,
     companionId?: string,
     seed = Math.floor(Math.random() * 1e9),
     deck?: string[],
     ai?: AiProfile,
+    carry?: CombatCarry,
   ) {
-    this.session = new CombatSession(encounter, seed, ai, companionId, deck);
+    this.session = new CombatSession(encounter, seed, ai, companionId, deck, carry);
     this.cam = new IsoCamera(encounter.width, encounter.height);
   }
 
@@ -815,7 +822,11 @@ export class CombatScreen implements Screen {
       if (result) {
         this.hud?.setInteractive(false);
         this.targeting?.setEnabled(false);
-        window.setTimeout(() => this.onFinish(result, this.encounter), 900);
+        // Read the Pact now rather than inside the timeout: nothing can move the board
+        // once the result is set, but taking it at the moment of the bell keeps what is
+        // reported and what ended the fight the same instant.
+        const outcome: CombatOutcome = { pactHp: this.session.pactHp };
+        window.setTimeout(() => this.onFinish(result, this.encounter, outcome), 900);
       }
       return;
     }

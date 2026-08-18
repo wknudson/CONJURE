@@ -14,6 +14,10 @@
  * engine, and the engine never imports this.** They meet in `run.ts`, which knows about
  * both. A `createCombat` that understood what an "overworld" was would be a combat engine
  * you could not test without one.
+ *
+ * That is also why the brew *table* is not here. This file owns which brews exist;
+ * `run.ts` owns what one does to a fight, because saying so requires the engine's
+ * vocabulary. `src/tests/boundaries.test.ts` holds the rule to it.
  */
 
 /** A carried item. Healing is spent immediately; a buff is held until the next fight. */
@@ -21,12 +25,23 @@ export interface Consumable {
   id: BuffId | string;
   name: string;
   type: 'healing' | 'buff';
-  /** Points restored, for healing. Buffs read their strength from `BUFF_EFFECTS`. */
+  /** Points restored, for healing. A buff reads its strength from `BUFF_EFFECTS` in `run.ts`. */
   value: number;
 }
 
-/** The three brews a run can carry into a fight. */
-export type BuffId = 'ironbrew' | 'spark_cell' | 'quicksilver';
+/**
+ * The three brews a run can carry into a fight.
+ *
+ * The list is the runtime value and the type is derived from it, so a save holding an
+ * unknown brew can be checked against the same thing the type is made of.
+ */
+export const BUFF_IDS = ['ironbrew', 'kinetic_capacitor', 'quicksilver'] as const;
+
+export type BuffId = (typeof BUFF_IDS)[number];
+
+export function isBuffId(value: unknown): value is BuffId {
+  return typeof value === 'string' && (BUFF_IDS as readonly string[]).includes(value);
+}
 
 export interface OverworldState {
   playerPos: { x: number; y: number; mapId: string };
@@ -73,37 +88,6 @@ export type CombatSnapshotRef = unknown;
 
 /** Items a run may carry at once. */
 export const INVENTORY_LIMIT = 3;
-
-/**
- * What each brew does to a fight, in the engine's own terms.
- *
- * The translation lives here rather than in `createCombat` so that adding a brew is
- * adding a row to this table — the combat engine is handed armor, pips and cards, and
- * never learns that a thing called "ironbrew" exists.
- */
-export const BUFF_EFFECTS: Record<BuffId, CombatBoons> = {
-  /** Armour to soak the first exchange. */
-  ironbrew: { armor: 5 },
-  /** Opens on a bigger bank, so a turn-one Power Tier play is briefly possible. */
-  spark_cell: { pips: 2 },
-  /** A wider opening hand: more options rather than more power. */
-  quicksilver: { extraOpeningCards: 2 },
-};
-
-/**
- * Advantages a fight can begin with, expressed as things the engine already understands.
- *
- * Every field is additive and optional, so a fight with no boons is the same fight the
- * engine has always built.
- */
-export interface CombatBoons {
-  /** Persistent Armor on the Commander at the opening bell. */
-  armor?: number;
-  /** Added to the starting Pip bank. */
-  pips?: number;
-  /** Drawn on top of the ordinary opening hand. */
-  extraOpeningCards?: number;
-}
 
 /** A fresh run. */
 export function newRun(deck: string[], maxHp = 40): OverworldState {

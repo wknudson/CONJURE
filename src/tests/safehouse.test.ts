@@ -8,7 +8,8 @@ import {
   canForge,
   forgeCostOf,
 } from '../core/data/artificer.js';
-import { BUFF_EFFECTS, type BuffId } from '../core/overworld/state.js';
+import { BUFF_EFFECTS } from '../core/overworld/run.js';
+import { type BuffId } from '../core/overworld/state.js';
 import { isObtainable, startingCollection } from '../core/data/collection.js';
 import { tierOf } from '../core/data/deckRules.js';
 import type { Collection } from '../core/data/deckRules.js';

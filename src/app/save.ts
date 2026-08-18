@@ -16,10 +16,12 @@ import { reconcileCollection, startingCollection } from '../core/data/collection
 import { validateDeck } from '../core/data/deckRules.js';
 import { COMPANIONS, DEFAULT_COMPANION } from '../core/data/companions.js';
 import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
+import type { Consumable, OverworldState } from '../core/overworld/state.js';
+import { INVENTORY_LIMIT, isBuffId } from '../core/overworld/state.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 /**
  * Cards that have been renamed, old id to new.
@@ -68,6 +70,17 @@ export interface SaveData {
     /** The adapted deck, which may differ from the saved one by up to MAX_SWAPS. */
     deck: string[];
   };
+  /**
+   * The run in progress, if there is one (added in v4).
+   *
+   * Optional because "no run" is a real state, not a broken one: a fresh save, or a
+   * player who has never left the title. Its absence needs no repair, which is the same
+   * reason `lastRun` is optional.
+   *
+   * Note this is the *run*, not the collection — a forged card lands in `collection` and
+   * outlives the run, while the purse that paid for it dies with it.
+   */
+  overworld?: OverworldState;
 }
 
 export function defaultSave(): SaveData {
@@ -200,6 +213,9 @@ function migrate(raw: unknown, notes: string[]): SaveData {
         }
       : undefined;
 
+  // --- the run in progress (added in v4) ---
+  const overworld = readOverworld(data.overworld);
+
   return {
     version: SAVE_VERSION,
     collection,
@@ -208,7 +224,71 @@ function migrate(raw: unknown, notes: string[]): SaveData {
     difficulty,
     record,
     ...(lastRun ? { lastRun } : {}),
+    ...(overworld ? { overworld } : {}),
   };
+}
+
+/**
+ * Rebuilds a run from whatever is on disk, or gives up and returns nothing.
+ *
+ * Every field is reconstructed rather than trusted, on the same rule the rest of this
+ * file follows: a save may not be *partly* valid. The values here are the ones a player
+ * would most want to edit by hand — health, money, a full satchel — so the clamps are
+ * load-bearing rather than paranoid, and a run that cannot be rebuilt is dropped whole
+ * instead of resurrected with holes in it.
+ */
+function readOverworld(raw: unknown): OverworldState | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const data = raw as Partial<OverworldState>;
+  if (!data.pact || typeof data.pact !== 'object') return undefined;
+
+  const maxHp = Math.max(1, Math.round(numberOr(data.pact.maxHp, 40)));
+  const currentHp = Math.max(
+    0,
+    Math.min(maxHp, Math.round(numberOr(data.pact.currentHp, maxHp))),
+  );
+
+  const pos = data.playerPos;
+  const playerPos = {
+    x: numberOr(pos?.x, 0),
+    y: numberOr(pos?.y, 0),
+    mapId: typeof pos?.mapId === 'string' ? pos.mapId : 'start',
+  };
+
+  // The deck holds card ids, so it goes through the same rename map as the collection
+  // and the saved decks — a card renamed under a run in progress must not vanish from it.
+  const deck = (Array.isArray(data.deck) ? data.deck : [])
+    .filter((c): c is string => typeof c === 'string')
+    .map(rename);
+
+  const inventory = (Array.isArray(data.inventory) ? data.inventory : [])
+    .filter(isConsumable)
+    .slice(0, INVENTORY_LIMIT);
+
+  return {
+    playerPos,
+    pact: { currentHp, maxHp },
+    economy: {
+      ducats: Math.max(0, Math.round(numberOr(data.economy?.ducats, 0))),
+      marrowShards: Math.max(0, Math.round(numberOr(data.economy?.marrowShards, 0))),
+    },
+    deck,
+    inventory,
+    // An unknown brew becomes none rather than being carried as a word the fight cannot
+    // read. `BUFF_IDS` is the same list the type is made of, so this cannot drift.
+    activeBuff: isBuffId(data.activeBuff) ? data.activeBuff : null,
+  };
+}
+
+function isConsumable(value: unknown): value is Consumable {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as Partial<Consumable>;
+  if (typeof item.id !== 'string' || typeof item.name !== 'string') return false;
+  if (item.type !== 'healing' && item.type !== 'buff') return false;
+  if (typeof item.value !== 'number' || !Number.isFinite(item.value)) return false;
+  // A buff whose id no longer exists would sit in the satchel forever doing nothing when
+  // drunk. Dropping it is kinder than keeping a dead bottle.
+  return item.type !== 'buff' || isBuffId(item.id);
 }
 
 function numberOr(value: unknown, fallback: number): number {

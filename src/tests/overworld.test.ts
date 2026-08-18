@@ -6,10 +6,17 @@ import {
   isRunOver,
   newRun,
   INVENTORY_LIMIT,
+  type BuffId,
   type Consumable,
   type GlobalGameState,
 } from '../core/overworld/state.js';
-import { carryFor, consumableRefusal, resolveCombat, useConsumable } from '../core/overworld/run.js';
+import {
+  carryFor,
+  consumableRefusal,
+  resolveCombat,
+  useConsumable,
+  type CombatOutcome,
+} from '../core/overworld/run.js';
 
 /**
  * The run that persists between fights.
@@ -31,7 +38,7 @@ const potion = (value = 10): Consumable => ({
   value,
 });
 
-const brew = (id: 'ironbrew' | 'spark_cell' | 'quicksilver'): Consumable => ({
+const brew = (id: BuffId): Consumable => ({
   id,
   name: id,
   type: 'buff',
@@ -127,7 +134,7 @@ describe('carrying a run into a fight', () => {
   });
 
   describe('the brews', () => {
-    const withBuff = (id: 'ironbrew' | 'spark_cell' | 'quicksilver') => {
+    const withBuff = (id: BuffId) => {
       const g = global();
       addConsumable(g.overworld, brew(id));
       useConsumable(g, 0);
@@ -139,9 +146,9 @@ describe('carrying a run into a fight', () => {
       expect(createCombat(NOVICE_DUELIST, 7).state.players.player.armor, 'baseline').toBe(0);
     });
 
-    it('spark_cell opens with a bigger bank', () => {
+    it('kinetic_capacitor opens with a bigger bank', () => {
       const plain = createCombat(NOVICE_DUELIST, 7).state.players.player.pips;
-      expect(withBuff('spark_cell').players.player.pips).toBe(plain + 2);
+      expect(withBuff('kinetic_capacitor').players.player.pips).toBe(plain + 2);
     });
 
     it('quicksilver opens with a wider hand', () => {
@@ -151,7 +158,7 @@ describe('carrying a run into a fight', () => {
 
     it('gives the enemy nothing', () => {
       const plain = createCombat(NOVICE_DUELIST, 7).state;
-      const buffed = withBuff('spark_cell');
+      const buffed = withBuff('kinetic_capacitor');
       expect(buffed.players.enemy.pips).toBe(plain.players.enemy.pips);
       expect(buffed.players.enemy.armor).toBe(plain.players.enemy.armor);
     });
@@ -159,11 +166,7 @@ describe('carrying a run into a fight', () => {
 });
 
 describe('resolving a fight back into the run', () => {
-  const finished = (hp: number) => {
-    const { state } = createCombat(NOVICE_DUELIST, 7);
-    state.players.player.hp = hp;
-    return state;
-  };
+  const finished = (hp: number): CombatOutcome => ({ pactHp: hp });
 
   it('writes the surviving Pact back, wounds and all', () => {
     const g = global();
@@ -221,9 +224,58 @@ describe('resolving a fight back into the run', () => {
     expect(state.players.player.hp).toBe(30);
 
     state.players.player.hp = 22;
-    resolveCombat(g, state, 'victory');
+    resolveCombat(g, { pactHp: state.players.player.hp }, 'victory');
 
     expect(g.overworld.pact.currentHp).toBe(22);
     expect(g.combat).toBeNull();
+  });
+});
+
+describe('the loop, closed', () => {
+  it('carries wounds and winnings from one fight into the next', () => {
+    // The whole point of the Gauntlet in one test: fight, survive badly, get paid, and
+    // arrive at the next door still hurt and richer.
+    const g = global();
+    g.overworld.pact.currentHp = 34;
+
+    const first = createCombat(NOVICE_DUELIST, 7, undefined, undefined, carryFor(g.overworld));
+    expect(first.state.players.player.hp, 'opens where the run left it').toBe(34);
+
+    g.combat = first.state;
+    resolveCombat(g, { pactHp: 19 }, 'victory', { ducats: 50, marrowShards: 1 });
+
+    expect(g.overworld.pact.currentHp).toBe(19);
+    expect(g.overworld.economy.ducats).toBe(50);
+    expect(g.overworld.economy.marrowShards).toBe(1);
+
+    const second = createCombat(NOVICE_DUELIST, 11, undefined, undefined, carryFor(g.overworld));
+    expect(second.state.players.player.hp, 'the next room is fought at 19').toBe(19);
+    expect(second.state.players.player.maxHp, 'against the full gauge').toBe(NOVICE_DUELIST.playerHp);
+  });
+
+  it('spends a brew on the fight it was carried into, not the one after', () => {
+    const g = global();
+    addConsumable(g.overworld, brew('ironbrew'));
+    useConsumable(g, 0);
+
+    const first = createCombat(NOVICE_DUELIST, 7, undefined, undefined, carryFor(g.overworld));
+    expect(first.state.players.player.armor).toBe(5);
+
+    resolveCombat(g, { pactHp: 20 }, 'victory');
+
+    const second = createCombat(NOVICE_DUELIST, 7, undefined, undefined, carryFor(g.overworld));
+    expect(second.state.players.player.armor, 'the bottle is empty').toBe(0);
+  });
+
+  it('hands the engine numbers, never a brew id', () => {
+    // The import boundary in behavioural form: whatever `carryFor` produces has to be
+    // readable by a `createCombat` that has never heard of a brew.
+    const g = global();
+    addConsumable(g.overworld, brew('kinetic_capacitor'));
+    useConsumable(g, 0);
+
+    const carry = carryFor(g.overworld);
+    expect(carry.boons).toEqual({ pips: 2 });
+    expect(JSON.stringify(carry)).not.toContain('kinetic_capacitor');
   });
 });

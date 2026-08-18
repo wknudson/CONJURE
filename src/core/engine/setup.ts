@@ -14,7 +14,6 @@ import { makeRng, nextInt, shuffle } from '../util/rng.js';
 import { makeCtx, emit } from './context.js';
 import { DEFAULT_COMPANION, companionById } from '../data/companions.js';
 import { HAND_LIMIT, OPENING_HAND, drawCards } from './deck.js';
-import type { CombatBoons } from '../overworld/state.js';
 import { placeOpeningUnit, spawnObstacle } from './spawn.js';
 import { beginTurn } from './turn.js';
 
@@ -123,6 +122,22 @@ export function validateEncounter(encounter: EncounterDef): void {
       throw new Error(`${id}: opening unit ${defId} at ${x},${y} is outside the arena`);
     }
   }
+}
+
+/**
+ * Advantages a fight can begin with, in the engine's own vocabulary.
+ *
+ * Every field is additive and optional, so a fight with no boons is the same fight the
+ * engine has always built. Defined here rather than beside the brews that produce them:
+ * the engine may not import the overworld, and this is the engine's word for the thing.
+ */
+export interface CombatBoons {
+  /** Persistent Armor on the Commander at the opening bell. */
+  armor?: number;
+  /** Added to the starting Pip bank. */
+  pips?: number;
+  /** Drawn on top of the ordinary opening hand. */
+  extraOpeningCards?: number;
 }
 
 /**
