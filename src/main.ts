@@ -13,6 +13,7 @@ import './styles/cards.css';
 import './styles/screens.css';
 import './styles/onboarding.css';
 import './styles/builder.css';
+import './styles/safehouse.css';
 
 import { ScreenManager } from './app/ScreenManager.js';
 import { TitleScreen } from './app/TitleScreen.js';
@@ -20,7 +21,11 @@ import { CombatScreen } from './app/CombatScreen.js';
 import { ResultsScreen } from './app/ResultsScreen.js';
 import { DeckBuilderScreen } from './app/DeckBuilderScreen.js';
 import { PreCombatScreen } from './app/PreCombatScreen.js';
+import { SafehouseScreen } from './app/SafehouseScreen.js';
+import { ShopScreen } from './app/ShopScreen.js';
+import { ArtificerScreen } from './app/ArtificerScreen.js';
 import { loadSave, writeSave, type SaveData } from './app/save.js';
+import { isRunOver, newRun, type GlobalGameState } from './core/overworld/state.js';
 import { companionById } from './core/data/companions.js';
 import { grantCard, rollRewards } from './core/data/collection.js';
 import { makeRng } from './core/util/rng.js';
@@ -48,6 +53,72 @@ function deckFor(companionId: string): string[] {
   return companionById(companionId)?.deck ?? [];
 }
 
+/**
+ * The Gauntlet run, held for the session.
+ *
+ * Deliberately not in `SaveData`: the run is a single sitting's progress, the save is
+ * everything that outlives one. They meet only where a forged card crosses from the purse
+ * into the collection.
+ */
+let run: GlobalGameState | null = null;
+
+/**
+ * Ducats and Shards to open with.
+ *
+ * Scaffolding, not balance. Combat does not pay into the run yet — that needs a carry
+ * through `CombatSession`, which is engine plumbing rather than routing — so without a
+ * stipend the Apothecary and the Artificer would both be shelves nobody could shop at.
+ */
+const OPENING_PURSE = { ducats: 120, marrowShards: 3 };
+
+function startRun(companionId: string): GlobalGameState {
+  const overworld = newRun(deckFor(companionId));
+  overworld.economy = { ...OPENING_PURSE };
+  return { overworld, combat: null };
+}
+
+/**
+ * The hub between fights.
+ *
+ * A dead run is replaced on the way in rather than blocking the door: the Bounty Board
+ * already refuses to hire a broken Pact, and a player who walked out to the title and
+ * back is asking to start again.
+ */
+function showSafehouse(encounter: EncounterDef, companionId: string): void {
+  if (!run || isRunOver(run.overworld)) run = startRun(companionId);
+  run.overworld.deck = deckFor(companionId);
+  const global = run;
+
+  screens.go(
+    new SafehouseScreen({
+      global,
+      companionId,
+      posted: encounter,
+      collection: save.collection,
+      deck: deckFor(companionId),
+      onApothecary: () =>
+        screens.go(
+          new ShopScreen({ global, onBack: () => showSafehouse(encounter, companionId) }),
+        ),
+      onArtificer: () =>
+        screens.go(
+          new ArtificerScreen({
+            global,
+            collection: () => save.collection,
+            onForge: (cardId) => {
+              save.collection = grantCard(save.collection, cardId);
+              persist();
+            },
+            onBack: () => showSafehouse(encounter, companionId),
+          }),
+        ),
+      onJournal: () => showBuilder(companionId, () => showSafehouse(encounter, companionId)),
+      onBounty: (enc) => showPreCombat(enc, companionId),
+      onLeave: showTitle,
+    }),
+  );
+}
+
 function showTitle(): void {
   screens.go(
     new TitleScreen({
@@ -57,14 +128,14 @@ function showTitle(): void {
         save.lastCompanionId = companionId;
         save.difficulty = difficulty;
         persist();
-        showPreCombat(encounter, companionId);
+        showSafehouse(encounter, companionId);
       },
       onEditDeck: (companionId) => showBuilder(companionId),
     }),
   );
 }
 
-function showBuilder(companionId: string): void {
+function showBuilder(companionId: string, onDone: () => void = showTitle): void {
   screens.go(
     new DeckBuilderScreen(
       companionId,
@@ -77,9 +148,9 @@ function showBuilder(companionId: string): void {
         };
         save.lastCompanionId = result.companionId;
         persist();
-        showTitle();
+        onDone();
       },
-      showTitle,
+      onDone,
     ),
   );
 }
@@ -99,7 +170,8 @@ function showPreCombat(encounter: EncounterDef, companionId: string): void {
         persist();
         startCombat(encounter, companionId, deck, seed);
       },
-      onBack: showTitle,
+      // Back to the Safehouse, because that is where the contract was taken down from.
+      onBack: () => showSafehouse(encounter, companionId),
     }),
   );
 }
@@ -153,7 +225,9 @@ function finishCombat(
       // A rematch is the same fight: same seed, same adapted deck. Rerolling would make
       // "again" mean a different battle, which is not what the button says.
       onRematch: () => startCombat(played, companionId, deck, seed),
-      onTitle: showTitle,
+      // Back to the hub rather than the title: the Safehouse is where a run lives between
+      // contracts, and the title is only the way out of one.
+      onTitle: () => showSafehouse(played, companionId),
     }),
   );
 }

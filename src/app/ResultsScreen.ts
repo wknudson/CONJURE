@@ -51,7 +51,7 @@ export class ResultsScreen implements Screen {
       <div class="results__rewards"></div>
       <div class="results__buttons">
         <button class="results__btn results__rematch">Rematch</button>
-        <button class="results__btn results__menu">Back to menu</button>
+        <button class="results__btn results__menu">Back to Safehouse</button>
       </div>
     `;
 

@@ -8,6 +8,7 @@
  */
 
 import type { Collection } from './deckRules.js';
+import type { CardDef } from '../types/cards.js';
 import { CARDS } from './cards/index.js';
 import { COMPANIONS } from './companions.js';
 import type { RngState } from '../util/rng.js';
@@ -62,14 +63,24 @@ export function grantCard(collection: Collection, cardId: string): Collection {
 }
 
 /**
+ * Whether a card is something a player can come to own at all.
+ *
+ * Setup-only stat blocks are placed by the engine and are not cards anyone can hold; the
+ * Rite is injected by the Trial itself. One predicate rather than one filter per caller —
+ * the reward roller and the Artificer's blueprint list have to agree about this, and the
+ * last time the rule lived in two places, a rename left one of them offering the Rite.
+ */
+export function isObtainable(def: CardDef): boolean {
+  return !def.setupOnly && def.id !== 'rite_of_subjugation';
+}
+
+/**
  * A win offers a choice of cards. Drawn from what exists rather than what is owned, so
  * rewards can introduce a school the player has never played.
  */
 export function rollRewards(rng: RngState, count = 3): string[] {
   const pool = Object.values(CARDS)
-    // Setup-only stat blocks are placed by the engine and are not cards anyone can own;
-    // the Rite is injected by the Trial itself.
-    .filter((c) => !c.setupOnly && c.id !== 'rite_of_subjugation')
+    .filter(isObtainable)
     .map((c) => c.id)
     .sort();
 

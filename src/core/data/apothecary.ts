@@ -1,0 +1,67 @@
+/**
+ * The Apothecary's stock.
+ *
+ * Data rather than markup, for the same reason cards are: a price is a balance decision,
+ * and balance decisions should be readable in one file instead of buried in a template
+ * string. The shop screen renders this list and knows nothing else about it.
+ *
+ * Deliberately DOM-free and beside the rest of `src/core/data/`, so what the shop sells
+ * can be tested without mounting a screen.
+ */
+
+import type { BuffId, CombatBoons, Consumable } from '../overworld/state.js';
+import { BUFF_EFFECTS } from '../overworld/state.js';
+
+export interface StockItem {
+  item: Consumable;
+  /** Ducats. */
+  price: number;
+  /** The flavour line. What it *does* is derived, not written twice — see `effectOf`. */
+  blurb: string;
+}
+
+/**
+ * Three things, always the same three.
+ *
+ * A rotating stock would make the Apothecary a slot machine; a fixed shelf makes it a
+ * budgeting decision, which is the one this screen is for.
+ */
+export const APOTHECARY_STOCK: readonly StockItem[] = [
+  {
+    item: { id: 'mending_tonic', name: 'Mending Tonic', type: 'healing', value: 12 },
+    price: 25,
+    blurb: 'Bitter, and it seals the smaller tears. Drunk here, not out there.',
+  },
+  {
+    item: { id: 'ironbrew', name: 'Ironbrew', type: 'buff', value: 0 },
+    price: 45,
+    blurb: 'Filings suspended in tallow. The first blow lands on the brew, not on you.',
+  },
+  {
+    item: { id: 'spark_cell', name: 'Spark Cell', type: 'buff', value: 0 },
+    price: 45,
+    blurb: 'A charged brass canister, still warm. Opens the ledger with more to spend.',
+  },
+];
+
+/**
+ * What an item actually does, in the fight's own terms.
+ *
+ * Buff text is read out of `BUFF_EFFECTS` rather than written on the shelf, so the price
+ * tag and the fight can never disagree about what was bought. The same anti-drift rule
+ * the pre-combat weather line follows.
+ */
+export function effectOf(stock: StockItem): string {
+  if (stock.item.type === 'healing') return `Restores ${stock.item.value} Pact health.`;
+  const boons = BUFF_EFFECTS[stock.item.id as BuffId];
+  return boons ? `Next fight: ${describeBoons(boons)}` : 'No effect.';
+}
+
+/** The boon table as a sentence. Every field is optional, so an empty one reads honestly. */
+export function describeBoons(boons: CombatBoons): string {
+  const parts: string[] = [];
+  if (boons.armor) parts.push(`open with ${boons.armor} Armor`);
+  if (boons.pips) parts.push(`+${boons.pips} starting Pips`);
+  if (boons.extraOpeningCards) parts.push(`+${boons.extraOpeningCards} opening cards`);
+  return parts.length > 0 ? `${parts.join(', ')}.` : 'nothing at all.';
+}

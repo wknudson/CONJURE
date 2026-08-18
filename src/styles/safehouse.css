@@ -1,0 +1,724 @@
+/**
+ * Safehouse, Apothecary, and Artificer.
+ *
+ * The Gaslamp palette, stated once as tokens and then used: brass and lamp-oil against
+ * the same cold neutral the rest of the game sits on. Saturated colour still means
+ * something — gold is money, crimson is Marrow, the school tint is whose card it is —
+ * so the furniture itself stays in metal and shadow.
+ */
+
+.screen--safehouse,
+.screen--shop,
+.screen--artificer {
+  --brass: #b0946a;
+  --brass-lit: #d6c4a0;
+  --brass-deep: #4a3d28;
+  --lamp: #f0b24a;
+  --marrow: #e0466b;
+  --plate: linear-gradient(180deg, rgba(46, 40, 30, 0.72), rgba(22, 20, 16, 0.86));
+}
+
+/* Brass plate, riveted. One rule, every panel in all three rooms. */
+.brass-panel {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--brass) 42%, transparent);
+  border-radius: 6px;
+  background: var(--plate);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--brass-lit) 22%, transparent),
+    0 10px 26px rgba(0, 0, 0, 0.5);
+}
+
+.brass-btn {
+  padding: 9px 16px;
+  border: 1px solid color-mix(in srgb, var(--brass) 55%, transparent);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(176, 148, 106, 0.24), rgba(74, 61, 40, 0.34));
+  color: var(--brass-lit);
+  font: 700 11px var(--font);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.brass-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(240, 178, 74, 0.3), rgba(112, 84, 40, 0.4));
+  border-color: var(--lamp);
+  color: #fff3dc;
+}
+
+.brass-btn:disabled {
+  opacity: 0.34;
+  cursor: not-allowed;
+}
+
+/* Rivets on the hub panels. Decorative, and the only thing here that is. */
+.rivet {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--brass-lit), var(--brass-deep));
+  opacity: 0.75;
+}
+.rivet--tl { top: 7px; left: 7px; }
+.rivet--tr { top: 7px; right: 7px; }
+.rivet--bl { bottom: 7px; left: 7px; }
+.rivet--br { bottom: 7px; right: 7px; }
+
+/* ---------------------------------------------------------------- safehouse */
+
+.screen--safehouse {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px 34px;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(240, 178, 74, 0.09), transparent 58%),
+    var(--bg);
+}
+
+.safehouse__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.safehouse__title {
+  font: 800 30px var(--font);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--brass-lit);
+}
+
+.safehouse__sub {
+  margin-top: 5px;
+  font: 500 11px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* -------- the ledger on the wall -------- */
+
+.hub-ledger {
+  display: flex;
+  align-items: center;
+  gap: 34px;
+  padding: 16px 22px;
+}
+
+.ledger__pact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 320px;
+}
+
+.ledger__gauge {
+  flex: 1;
+  height: 9px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--brass) 40%, transparent);
+  background: rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.ledger__gauge i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #0c4a6e, var(--pact, #7dd3fc));
+  box-shadow: 0 0 10px rgba(125, 211, 252, 0.5);
+}
+
+.ledger__coins {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.ledger__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ledger__label {
+  font: 700 9px var(--font);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+}
+
+.ledger__value {
+  font: 800 17px var(--font);
+  color: var(--text);
+}
+
+.ledger__value--gold { color: var(--lamp); }
+.ledger__value--marrow { color: var(--marrow); }
+
+/* A run that ended reads as ended, in the same place the number lives. */
+.ledger__value.is-spent {
+  color: var(--danger);
+  text-decoration: line-through;
+}
+
+.ledger__held {
+  font: 500 11px var(--font);
+  color: var(--text-dim);
+}
+
+/* -------- the four doors -------- */
+
+.hub-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.hub-zone {
+  position: relative;
+  min-height: 210px;
+  padding: 24px 22px 20px;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.hub-zone:hover:not(:disabled) {
+  transform: translateY(-4px);
+  border-color: var(--lamp);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--brass-lit) 30%, transparent),
+    0 0 28px rgba(240, 178, 74, 0.18),
+    0 16px 34px rgba(0, 0, 0, 0.6);
+}
+
+.hub-zone:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+/* A lamp-lit sigil per door. Colour is the only thing that distinguishes them. */
+.hub-zone__sigil {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 14px;
+  border-radius: 3px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--sigil, var(--brass-lit)), var(--brass-deep));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--sigil, var(--brass)) 55%, transparent);
+}
+
+.hub-zone--apothecary { --sigil: #6ee7b7; }
+.hub-zone--artificer { --sigil: var(--lamp); }
+.hub-zone--journal { --sigil: #7dd3fc; }
+.hub-zone--bounty { --sigil: var(--marrow); }
+
+.hub-zone__name {
+  font: 800 17px var(--font);
+  letter-spacing: 0.4px;
+  color: var(--brass-lit);
+}
+
+.hub-zone__trade {
+  margin: 4px 0 12px;
+  font: 700 9px var(--font);
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--sigil, var(--brass));
+}
+
+.hub-zone__blurb {
+  font: 400 12px/1.6 var(--font);
+  color: var(--text-dim);
+}
+
+.hub-zone__status {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 18px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(176, 148, 106, 0.22);
+  font: 600 11px var(--font);
+  color: color-mix(in srgb, var(--sigil, var(--brass-lit)) 80%, white);
+}
+
+/* -------------------------------------------------------------- apothecary */
+
+.screen--shop,
+.screen--artificer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 30px;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(110, 231, 183, 0.06), transparent 55%),
+    var(--bg);
+}
+
+.shop__head,
+.workbench__head {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 22px;
+}
+
+.shop__head > div:first-child,
+.workbench__head > div:first-child {
+  flex: 1;
+}
+
+.shop__title,
+.workbench__title {
+  font: 800 22px var(--font);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--brass-lit);
+}
+
+.shop__sub,
+.workbench__sub {
+  margin-top: 4px;
+  font: 400 11.5px var(--font);
+  color: var(--text-dim);
+}
+
+.shop__purse {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.shop__purse-label {
+  font: 700 9px var(--font);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+}
+
+.shop__purse-value {
+  font: 800 24px var(--font);
+  color: var(--lamp);
+}
+
+.shop__body {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.shop__section-title {
+  margin-bottom: 12px;
+  font: 800 9px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.shop-stock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 20px;
+}
+
+/* A vial on the shelf, tinted by what is in it. */
+.shop-item__vial {
+  width: 18px;
+  height: 40px;
+  flex: none;
+  border-radius: 3px 3px 8px 8px;
+  border: 1px solid rgba(214, 196, 160, 0.4);
+  background: linear-gradient(180deg, transparent 22%, var(--vial, #6ee7b7) 22%);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--vial, #6ee7b7) 45%, transparent);
+}
+
+.shop-item--healing { --vial: #6ee7b7; }
+.shop-item--buff { --vial: var(--lamp); }
+
+.shop-item__body { flex: 1; }
+
+.shop-item__name {
+  font: 700 15px var(--font);
+  color: var(--text);
+}
+
+.shop-item__effect {
+  margin: 3px 0 5px;
+  font: 600 11.5px var(--font);
+  color: var(--vial, var(--brass-lit));
+}
+
+.shop-item__blurb {
+  font: 400 11.5px/1.5 var(--font);
+  color: var(--text-dim);
+}
+
+.shop-item__buy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 110px;
+}
+
+.shop-item__price {
+  font: 800 18px var(--font);
+  color: var(--lamp);
+}
+
+.shop-item__price span {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.shop-item__refusal {
+  min-height: 13px;
+  font: 600 10px var(--font);
+  letter-spacing: 0.6px;
+  color: var(--danger);
+}
+
+.shop__satchel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.shop__satchel-label {
+  font: 700 9px var(--font);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+}
+
+.shop__chit {
+  padding: 4px 10px;
+  border: 1px solid rgba(176, 148, 106, 0.4);
+  border-radius: 3px;
+  background: rgba(176, 148, 106, 0.12);
+  font: 600 11px var(--font);
+  color: var(--brass-lit);
+}
+
+.shop__chit--empty {
+  border-style: dashed;
+  background: none;
+  color: var(--text-dim);
+}
+
+.shop__soon {
+  padding: 26px 22px;
+  text-align: center;
+}
+
+.shop__soon-mark {
+  font: 800 11px var(--font);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin-bottom: 10px;
+}
+
+.shop__soon-copy {
+  font: 400 12px/1.7 var(--font);
+  color: var(--text-dim);
+}
+
+/* --------------------------------------------------------------- artificer */
+
+.screen--artificer {
+  background:
+    radial-gradient(ellipse at 80% 0%, rgba(240, 178, 74, 0.08), transparent 55%),
+    var(--bg);
+}
+
+.workbench__purse {
+  display: flex;
+  gap: 20px;
+}
+
+.workbench__coin {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font: 800 20px var(--font);
+}
+
+.workbench__coin--gold { color: var(--lamp); }
+.workbench__coin--marrow { color: var(--marrow); }
+
+.workbench__coin-label {
+  font: 700 9px var(--font);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+}
+
+.workbench-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.workbench-tab {
+  padding: 11px 22px;
+  border: 1px solid color-mix(in srgb, var(--brass) 30%, transparent);
+  border-bottom: none;
+  border-radius: 5px 5px 0 0;
+  background: rgba(20, 18, 14, 0.6);
+  color: var(--text-dim);
+  font: 700 11px var(--font);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.workbench-tab.is-active {
+  background: var(--plate);
+  border-color: var(--lamp);
+  color: var(--brass-lit);
+  box-shadow: inset 0 2px 0 var(--lamp);
+}
+
+.workbench__body {
+  flex: 1;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--brass) 30%, transparent);
+  border-radius: 0 6px 6px 6px;
+  background: rgba(14, 13, 11, 0.5);
+}
+
+/* -------- blueprint forging -------- */
+
+.forge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.blueprint-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 16px;
+  border-left: 3px solid var(--school, var(--brass));
+}
+
+.blueprint-row__cost {
+  flex: none;
+  min-width: 46px;
+  font: 800 13px var(--font);
+  color: var(--school, var(--brass-lit));
+}
+
+.blueprint-row__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.blueprint-row__name {
+  font: 700 13px var(--font);
+  color: var(--text);
+}
+
+.blueprint-row__text {
+  font: 400 11px/1.45 var(--font);
+  color: var(--text-dim);
+}
+
+.blueprint-row__price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font: 700 11px var(--font);
+}
+
+.blueprint-row__coin--gold { color: var(--lamp); }
+.blueprint-row__coin--marrow { color: var(--marrow); }
+
+.forge-note,
+.forge-empty {
+  margin-top: 16px;
+  font: 400 11.5px/1.7 var(--font);
+  color: var(--text-dim);
+}
+
+.forge-empty {
+  padding: 26px;
+  text-align: center;
+}
+
+/* -------- aetheric splicing -------- */
+
+.splicing-rig {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.splicing-slot {
+  flex: 1 1 200px;
+  padding: 14px;
+  border: 1px dashed color-mix(in srgb, var(--brass) 55%, transparent);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.splicing-slot__label {
+  font: 700 9px var(--font);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+  margin-bottom: 10px;
+}
+
+.splicing-slot__well {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 74px;
+  border-radius: 4px;
+  border: 1px solid rgba(176, 148, 106, 0.22);
+  background: rgba(255, 255, 255, 0.02);
+  font: 600 12px var(--font);
+  color: var(--text-dim);
+  text-align: center;
+  padding: 8px;
+}
+
+.splicing-slot__well.is-loaded {
+  border-color: var(--school, var(--lamp));
+  background: color-mix(in srgb, var(--school, var(--lamp)) 12%, transparent);
+  color: var(--text);
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--school, var(--lamp)) 22%, transparent);
+}
+
+/* The drive belt between the slots and the die. */
+.splicing-arm {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.splicing-arm i {
+  display: block;
+  width: 12px;
+  height: 2px;
+  background: rgba(176, 148, 106, 0.45);
+}
+
+.splicing-rig.is-loaded .splicing-arm i {
+  background: var(--lamp);
+  box-shadow: 0 0 8px rgba(240, 178, 74, 0.7);
+}
+
+.splicing-output {
+  flex: 1 1 220px;
+  padding: 14px;
+}
+
+.splicing-output__label {
+  font: 700 9px var(--font);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+  margin-bottom: 10px;
+}
+
+.splicing-output__plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 74px;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(176, 148, 106, 0.3);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.02) 0 8px,
+    transparent 8px 16px
+  );
+  font: 600 11.5px var(--font);
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.splicing-output__plate.is-ready {
+  border-color: var(--lamp);
+  color: var(--brass-lit);
+}
+
+.splicing-trays {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(200px, 1fr);
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.splicing-tray__title {
+  margin-bottom: 10px;
+  font: 800 9px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.splicing-tray__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.splicing-chip {
+  padding: 6px 11px;
+  border: 1px solid color-mix(in srgb, var(--school, var(--brass)) 45%, transparent);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-dim);
+  font: 600 11px var(--font);
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.splicing-chip:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--school, var(--brass)) 16%, transparent);
+}
+
+.splicing-chip.is-loaded {
+  border-color: var(--school, var(--lamp));
+  background: color-mix(in srgb, var(--school, var(--lamp)) 24%, transparent);
+  color: #fff;
+}
+
+.splicing-chip--reagent {
+  border-style: solid;
+  letter-spacing: 0.5px;
+}
