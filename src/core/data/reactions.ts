@@ -25,6 +25,15 @@ export interface ReactionDef {
   requires: StatusKind;
   /** Folded into the triggering hit, before armor. */
   bonusDamage?: number;
+  /**
+   * Dealt to the target after the hit resolves, bypassing armor entirely.
+   *
+   * Distinct from `bonusDamage`, which rides the triggering blow and is therefore
+   * absorbed by armor like the rest of it. A reaction that is supposed to bite through
+   * plate has to land separately and as `true` damage, or a well-armoured target simply
+   * shrugs off the thing the reaction exists to do.
+   */
+  trueDamage?: number;
   /** Consume the required status when it fires. Almost always true. */
   consumes: boolean;
   /**
@@ -60,8 +69,9 @@ export const REACTIONS: ReactionDef[] = [
     requires: 'chill',
     consumes: true,
     requiresHpLoss: true,
-    outcome: { op: 'spawnHazard', kind: 'steam_fog', turns: 2 },
-    text: 'Fire on a Chilled target flashes it to steam, fogging the tile for 2 turns. Ranged attacks cannot see through fog.',
+    trueDamage: 2,
+    outcome: { op: 'spawnHazard', kind: 'steam_fog', turns: 1 },
+    text: 'Fire on a Chilled target flash-boils it: 2 damage through any armor, and the tile fogs for a turn. Ranged attacks cannot see through fog.',
   },
   {
     id: 'shatter',

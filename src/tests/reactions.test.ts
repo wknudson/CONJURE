@@ -155,6 +155,43 @@ describe('Vaporize', () => {
   });
 });
 
+describe('Vaporize biting through plate', () => {
+  it('deals its damage as true, so armor cannot absorb it', () => {
+    // The distinction that matters: `bonusDamage` rides the triggering blow and is
+    // soaked with it, so armor would eat the reaction's payload along with the hit.
+    //
+    // Armor of 2 against 3 fire, deliberately. Vaporize needs the blow to draw blood at
+    // all (`requiresHpLoss`), so armor thick enough to swallow the whole hit stops the
+    // reaction before piercing is even a question — the true damage is what survives
+    // *partial* plate, not what defeats plate outright.
+    const state = scenario({
+      width: 6,
+      height: 6,
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, keywords: [] }],
+      hand: ['flame_surge'],
+      pips: 8,
+    });
+    const foe = findUnit(state, 'grave_sentinel', 'enemy');
+    state.units[foe.id]!.statuses.chill = 2;
+    state.units[foe.id]!.armor = 2;
+    const before = state.units[foe.id]!.hp;
+
+    const res = run(
+      state,
+      play(handCard(state, 'player', 'flame_surge'), {
+        kind: 'line',
+        from: { x: 2, y: 2 },
+        dir: { x: 0, y: -1 },
+      }),
+    );
+
+    expect(eventsOf(res.events, 'reactionTriggered').length).toBeGreaterThan(0);
+    const after = res.state.units[foe.id];
+    // Armor soaked 2 of the 3 fire, so 1 landed; the 2 true damage then landed whole.
+    expect(after && before - after.hp).toBe(3);
+  });
+});
+
 describe('Shatter', () => {
   it('strips all armor and splashes the neighbours', () => {
     const state = scenario({

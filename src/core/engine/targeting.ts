@@ -59,12 +59,25 @@ function inCastRange(
   // it cannot see. Gale is deliberately not applied — it bends arrows, not sorcery.
   const clamp = visionClamp(state);
   const range = Math.min(def.range ?? Infinity, clamp ?? Infinity);
+  const minRange = def.minRange ?? 0;
+
   return origin.some((o) =>
-    cells.some(
-      (c) =>
-        Math.max(Math.abs(o.x - c.x), Math.abs(o.y - c.y)) <= range &&
-        (!def.needsLoS || hasLoS(state, o, c, ignore)),
-    ),
+    cells.some((c) => {
+      const dx = c.x - o.x;
+      const dy = c.y - o.y;
+      const distance = Math.max(Math.abs(dx), Math.abs(dy));
+
+      if (distance < minRange || distance > range) return false;
+
+      // A linear cast travels a rank, file or diagonal and nothing else — deliberately
+      // the same geometry `canStrike` gives a marksman, so a beam is a beam whether a
+      // unit or a card threw it.
+      if (def.vector === 'linear' && dx !== 0 && dy !== 0 && Math.abs(dx) !== Math.abs(dy)) {
+        return false;
+      }
+
+      return !def.needsLoS || hasLoS(state, o, c, ignore);
+    }),
   );
 }
 

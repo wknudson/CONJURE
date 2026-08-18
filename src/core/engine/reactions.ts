@@ -70,6 +70,21 @@ export function resolveReaction(
 
   refundReactionPip(ctx, def, at);
 
+  // Armor-piercing damage lands before the outcome, and separately from the triggering
+  // blow, so plate cannot absorb it. Guarded on the chain flag like everything else: a
+  // boss Damage Gate that cancelled mid-chain must stop this too.
+  if (def.trueDamage && !ctx.state.encounter.chainCancelled) {
+    const victim = entityAt(ctx.state, at);
+    if (victim) {
+      dealDamage(ctx, {
+        target: isUnit(victim) ? { kind: 'unit', id: victim.id } : { kind: 'obstacle', id: victim.id },
+        amount: def.trueDamage,
+        dtype: 'true',
+        cause: 'reaction',
+      });
+    }
+  }
+
   switch (def.outcome.op) {
     case 'spawnHazard':
       spawnHazard(ctx, at, def.outcome.kind, def.outcome.turns);

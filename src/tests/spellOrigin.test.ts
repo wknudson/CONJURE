@@ -4,6 +4,7 @@ import { legalCardTargets } from '../core/engine/targeting.js';
 import { CARDS } from '../core/data/cards/index.js';
 import type { CardDef } from '../core/types/cards.js';
 import type { GameState } from '../core/types/state.js';
+import type { Coord } from '../contract/ids.js';
 
 /**
  * Where a spell is cast from.
@@ -199,5 +200,71 @@ describe('what origin does not change', () => {
     for (const [id, range] of Object.entries(expected)) {
       expect(CARDS[id]!.range, id).toBe(range);
     }
+  });
+});
+
+/**
+ * The ranged archetype modifiers, applied to spells.
+ *
+ * Deliberately the same geometry units get from `rangeMin` and `attackProfile`, so a
+ * blind spot is a blind spot and a beam is a beam whichever threw it.
+ */
+describe('cast shape', () => {
+  const withCard = (extra: Partial<CardDef>) => {
+    const state = scenario({ width: 8, height: 8 });
+    const body = addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 3, y: 4 } });
+    state.players.player.companionUnitId = body.id;
+    state.players.player.companionUnitDefId = 'ignis_bound';
+
+    const id = 'probe_cast';
+    CARDS[id] = {
+      id,
+      name: 'Probe',
+      cost: { pips: 0, marrow: 0 },
+      school: 'arcane',
+      source: 'companion',
+      kind: 'spell',
+      text: '',
+      target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+      effect: { op: 'damage', amount: 1, dtype: 'spell', area: { shape: 'target' } },
+      keywords: [],
+      range: 5,
+      ...extra,
+    };
+    return { state, id };
+  };
+
+  const canReach = (state: GameState, id: string, at: Coord): boolean => {
+    const foe = addUnit(state, { def: 'scout_imp', side: 'enemy', at });
+    const legal = legalCardTargets(state, 'player', id);
+    return legal.some((t) => t.kind === 'entity' && t.ref.kind === 'unit' && t.ref.id === foe.id);
+  };
+
+  it('refuses a target inside the blind spot', () => {
+    const { state, id } = withCard({ minRange: 2 });
+    expect(canReach(state, id, { x: 3, y: 3 }), 'adjacent is inside the minimum').toBe(false);
+  });
+
+  it('still reaches past the blind spot', () => {
+    const { state, id } = withCard({ minRange: 2 });
+    expect(canReach(state, id, { x: 3, y: 1 })).toBe(true);
+  });
+
+  it('confines a linear cast to ranks, files and diagonals', () => {
+    const { state, id } = withCard({ vector: 'linear' });
+    // From (3,4): same file, and a true diagonal.
+    expect(canReach(state, id, { x: 3, y: 1 }), 'same file').toBe(true);
+    expect(canReach(state, id, { x: 5, y: 2 }), 'perfect diagonal').toBe(true);
+  });
+
+  it('refuses a target off every line', () => {
+    const { state, id } = withCard({ vector: 'linear' });
+    // dx 2, dy 1 — neither straight nor diagonal.
+    expect(canReach(state, id, { x: 5, y: 3 })).toBe(false);
+  });
+
+  it('leaves an ordinary spell on free aim', () => {
+    const { state, id } = withCard({});
+    expect(canReach(state, id, { x: 5, y: 3 })).toBe(true);
   });
 });
