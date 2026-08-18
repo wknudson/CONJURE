@@ -67,9 +67,9 @@ export interface CombatOutcome {
  *  1. The surviving Pact is written back, whatever it is. A defeat writes zero rather
  *     than being suppressed — a run that ended should read as ended, and `isRunOver`
  *     should not need a second flag to agree with the number beside it.
- *  2. The buff clears regardless of outcome. It was drunk on the way in; losing does not
- *     give it back, and a brew that survived a defeat would make retrying strictly better
- *     than winning.
+ *  2. The buff clears regardless of outcome, and so does `activeEncounter`. The brew was
+ *     drunk on the way in; losing does not give it back, and a brew that survived a
+ *     defeat would make retrying strictly better than winning.
  *  3. Spoils are granted only on a win, and only after the Pact is settled, so a victory
  *     at one health still pays.
  *
@@ -87,6 +87,10 @@ export function resolveCombat(
   overworld.pact.currentHp = Math.max(0, Math.min(overworld.pact.maxHp, outcome.pactHp));
 
   overworld.activeBuff = null;
+  // The fight is answered for, so the forfeit flag comes down. Whoever calls this owns
+  // writing it to disk — a cleared flag that never reaches storage would forfeit a run
+  // the player actually finished.
+  overworld.activeEncounter = false;
 
   // 'bound' is a win: the companion was subjugated rather than the enemy killed.
   if (result === 'victory' || result === 'bound') {
@@ -110,7 +114,12 @@ export function consumableRefusal(
   // Items are an overworld affordance. Allowing one mid-fight would let a player heal
   // out of a lethal turn the engine had already committed to, and would put a source of
   // healing outside the deterministic reducer entirely.
-  if (global.combat !== null) return 'in-combat';
+  //
+  // Two flags are consulted, and either one is enough. `combat` is the live handle and
+  // `activeEncounter` is its persisted mirror; asking for both to agree would mean a
+  // desync unlocks the satchel, where asking for either means a desync merely locks it.
+  // Failing shut is the right way round for a rule that exists to stop an exploit.
+  if (global.combat !== null || global.overworld.activeEncounter) return 'in-combat';
   const item = global.overworld.inventory[inventoryIndex];
   if (!item) return 'no-such-item';
   return null;

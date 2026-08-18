@@ -5,6 +5,7 @@ import { validateDeck } from '../core/data/deckRules.js';
 import {
   INVENTORY_LIMIT,
   addConsumable,
+  forfeitIfAbandoned,
   newRun,
   type OverworldState,
 } from '../core/overworld/state.js';
@@ -342,5 +343,50 @@ describe('the run on disk', () => {
       }),
     );
     expect(loadSave().save.overworld?.deck).toEqual(['marrow_wisp', 'scout_imp']);
+  });
+});
+
+describe('a fight left open on disk', () => {
+  beforeEach(() => {
+    installStorage();
+  });
+
+  it('comes back marked open, which is what makes it collectable', () => {
+    // The failsafe only works if the flag actually survives the trip. Everything else in
+    // it is downstream of this one round trip.
+    const save = defaultSave();
+    save.overworld = { ...newRun(['scout_imp']), activeEncounter: true };
+    writeSave(save);
+
+    const { save: loaded } = loadSave();
+    expect(loaded.overworld?.activeEncounter).toBe(true);
+    expect(forfeitIfAbandoned(loaded.overworld!), 'and boot collects on it').toBe(true);
+    expect(loaded.overworld?.pact.currentHp).toBe(0);
+  });
+
+  it('treats a missing flag as no fight, not as one to punish', () => {
+    // Every save written before this field existed was a run sitting safely in the hub.
+    const bare: Record<string, unknown> = { ...newRun(['scout_imp']) };
+    delete bare.activeEncounter;
+
+    localStorage.setItem(
+      'conjure.save',
+      JSON.stringify({ ...defaultSave(), version: 3, overworld: bare }),
+    );
+
+    const { save } = loadSave();
+    expect(save.overworld?.activeEncounter).toBe(false);
+    expect(forfeitIfAbandoned(save.overworld!)).toBe(false);
+  });
+
+  it('will not take a truthy string for a raised flag', () => {
+    localStorage.setItem(
+      'conjure.save',
+      JSON.stringify({
+        ...defaultSave(),
+        overworld: { ...newRun(['scout_imp']), activeEncounter: 'no' },
+      }),
+    );
+    expect(loadSave().save.overworld?.activeEncounter).toBe(false);
   });
 });

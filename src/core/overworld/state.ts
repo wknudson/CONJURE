@@ -20,6 +20,8 @@
  * vocabulary. `src/tests/boundaries.test.ts` holds the rule to it.
  */
 
+import { STARTER_DECK } from '../data/cards/starter.js';
+
 /** A carried item. Healing is spent immediately; a buff is held until the next fight. */
 export interface Consumable {
   id: BuffId | string;
@@ -64,6 +66,14 @@ export interface OverworldState {
    * decision is always "which one", never "how many".
    */
   activeBuff: BuffId | null;
+  /**
+   * True from the moment a fight is committed to until it is resolved.
+   *
+   * Written to disk *before* the Combat Screen mounts, which is the whole point: a
+   * player who closes the tab on a losing turn leaves this set, and the next boot reads
+   * it as a forfeit. Without it, walking away is strictly better than losing.
+   */
+  activeEncounter: boolean;
 }
 
 /**
@@ -98,6 +108,7 @@ export function newRun(deck: string[], maxHp = 40): OverworldState {
     deck: [...deck],
     inventory: [],
     activeBuff: null,
+    activeEncounter: false,
   };
 }
 
@@ -116,4 +127,56 @@ export function addConsumable(state: OverworldState, item: Consumable): boolean 
 /** Whether the run is over. A Pact at zero does not recover between rooms. */
 export function isRunOver(state: OverworldState): boolean {
   return state.pact.currentHp <= 0;
+}
+
+/**
+ * Collects on an abandoned fight, and reports whether it had to.
+ *
+ * A run loaded with `activeEncounter` still set was interrupted between committing to a
+ * fight and finishing one, which in practice means the tab was closed. Treated as a
+ * lethal forfeit rather than a resume: the alternative is that quitting a fight going
+ * badly costs nothing, which makes every defeat optional.
+ *
+ * Idempotent — the flag is cleared as the Pact is emptied, so a second boot finds an
+ * ordinary dead run rather than forfeiting it again.
+ */
+export function forfeitIfAbandoned(state: OverworldState): boolean {
+  if (!state.activeEncounter) return false;
+  state.activeEncounter = false;
+  state.pact.currentHp = 0;
+  return true;
+}
+
+/**
+ * What a dead run leaves behind: nothing but the gauge it starts with.
+ *
+ * The Ducats a corpse was carrying do not follow it back. Only the *collection* survives
+ * a death — a forged card was bought once and stays bought — which is the line between
+ * progress that persists and progress that is wagered on a run.
+ */
+export const SURVIVAL_STIPEND = 0;
+
+/**
+ * Wipes a spent run back to its opening state, in place.
+ *
+ * Mutates rather than returning a fresh object because the run is referenced from the
+ * save, and swapping the object would leave `save.overworld` pointing at the corpse.
+ *
+ * `maxHp` is deliberately untouched: it is the shape of the Pact rather than something
+ * the run spent, and a permanent upgrade to it should survive a death.
+ */
+export function resetRun(state: GlobalGameState): void {
+  const { overworld } = state;
+
+  overworld.playerPos = { x: 0, y: 0, mapId: 'start' };
+  overworld.pact.currentHp = overworld.pact.maxHp;
+  overworld.deck = [...STARTER_DECK];
+  overworld.inventory = [];
+  overworld.economy = { ducats: SURVIVAL_STIPEND, marrowShards: 0 };
+  // Not in the brief, but a wipe that left a brew in hand or a fight marked open would
+  // be a wipe with a hole in it.
+  overworld.activeBuff = null;
+  overworld.activeEncounter = false;
+
+  state.combat = null;
 }

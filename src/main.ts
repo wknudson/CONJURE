@@ -25,7 +25,13 @@ import { SafehouseScreen } from './app/SafehouseScreen.js';
 import { ShopScreen } from './app/ShopScreen.js';
 import { ArtificerScreen } from './app/ArtificerScreen.js';
 import { loadSave, writeSave, type SaveData } from './app/save.js';
-import { isRunOver, newRun, type GlobalGameState } from './core/overworld/state.js';
+import {
+  forfeitIfAbandoned,
+  isRunOver,
+  newRun,
+  resetRun,
+  type GlobalGameState,
+} from './core/overworld/state.js';
 import { carryFor, resolveCombat, type CombatOutcome } from './core/overworld/run.js';
 import { companionById } from './core/data/companions.js';
 import { grantCard, rollRewards } from './core/data/collection.js';
@@ -46,6 +52,28 @@ const bootNotes = loaded.notes;
 function persist(): void {
   writeSave(save);
 }
+
+/**
+ * Collect on anything abandoned last session, before a screen can show otherwise.
+ *
+ * Done at boot rather than at the Safehouse door because the Pact has to already read
+ * zero by the time anything renders it — a hub that showed a healthy run for one frame
+ * and then killed it would look like a bug rather than a rule. Written back immediately,
+ * so closing the tab again cannot undo the collection.
+ */
+if (save.overworld && forfeitIfAbandoned(save.overworld)) {
+  bootNotes.push('You left a fight unfinished. The Magistracy collected on the Pact.');
+  persist();
+}
+
+/**
+ * A message the Safehouse owes the player on its next mount, shown once.
+ *
+ * Held here rather than on the run because it is news about a transition, not a fact
+ * about the state — and the hub is re-entered every time a shop door closes, so a flag
+ * that lived on the run would announce the same death over and over.
+ */
+let pendingNotice: { title: string; body: string } | null = null;
 
 /** The deck a companion will actually fight with, falling back to its default. */
 function deckFor(companionId: string): string[] {
@@ -77,7 +105,12 @@ function startRun(companionId: string): GlobalGameState {
 }
 
 /**
- * The run this session is playing, adopted from the save or started fresh.
+ * The run this session is playing: resumed, wiped, or started.
+ *
+ * Three cases, and the middle one is the point. A run that came back dead is **not**
+ * handed a fresh opening purse — that would make dying the cheapest way to restock. It
+ * is wiped instead: same object, emptied, back to the starter deck with nothing in the
+ * satchel. Only a player who has never had a run at all gets the opening stipend.
  *
  * `save.overworld` is set to the very same object rather than a copy, so every mutation
  * a screen makes is already in the save by the time `persist()` is called. One object,
@@ -85,8 +118,21 @@ function startRun(companionId: string): GlobalGameState {
  */
 function adoptRun(companionId: string): GlobalGameState {
   const restored = save.overworld;
-  const global =
-    restored && !isRunOver(restored) ? { overworld: restored, combat: null } : startRun(companionId);
+
+  let global: GlobalGameState;
+  if (!restored) {
+    global = startRun(companionId);
+  } else if (isRunOver(restored)) {
+    global = { overworld: restored, combat: null };
+    resetRun(global);
+    pendingNotice = {
+      title: 'Run Failed',
+      body: 'The Magistracy retrieved your body. What you were carrying went with the bill.',
+    };
+  } else {
+    global = { overworld: restored, combat: null };
+  }
+
   save.overworld = global.overworld;
   return global;
 }
@@ -104,6 +150,8 @@ function showSafehouse(encounter: EncounterDef, companionId: string): void {
   save.overworld = run.overworld;
   persist();
   const global = run;
+  const notice = pendingNotice;
+  pendingNotice = null;
 
   screens.go(
     new SafehouseScreen({
@@ -112,6 +160,9 @@ function showSafehouse(encounter: EncounterDef, companionId: string): void {
       posted: encounter,
       collection: save.collection,
       deck: deckFor(companionId),
+      // Consumed on the way in, so a death is announced once rather than every time a
+      // shop door closes behind the player.
+      notice: notice ?? undefined,
       onChange: persist,
       onApothecary: () =>
         screens.go(
@@ -214,9 +265,15 @@ function startCombat(
   seed: number,
 ): void {
   const carry = run ? carryFor(run.overworld) : undefined;
-  // `combat !== null` is what "we are not in the overworld" means, and it is what stops
-  // a tonic being drunk out of a lethal turn.
-  if (run) run.combat = { encounterId: encounter.id, seed };
+
+  // Commit to the fight on disk *before* it is mounted. From here until `resolveCombat`
+  // clears it, the save says a fight is open, and a boot that finds it open collects on
+  // it. This ordering is the whole failsafe: the write has to happen before the player
+  // can see a single turn, or the first turn is a free look.
+  if (run) {
+    run.combat = { encounterId: encounter.id, seed };
+    run.overworld.activeEncounter = true;
+  }
   persist();
 
   screens.go(

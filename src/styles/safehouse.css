@@ -751,3 +751,46 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* -------- the death notice -------- */
+
+.hub-notice {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 5, 4, 0.78);
+  backdrop-filter: blur(2px);
+}
+
+.hub-notice__card {
+  width: min(440px, 88vw);
+  padding: 34px 30px 26px;
+  text-align: center;
+}
+
+/* A wax seal, stamped and broken. */
+.hub-notice__seal {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #b8323f, #5c1219);
+  box-shadow: 0 0 22px rgba(184, 50, 63, 0.5);
+}
+
+.hub-notice__title {
+  font: 800 22px var(--font);
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--danger);
+  margin-bottom: 12px;
+}
+
+.hub-notice__body {
+  font: 400 13px/1.7 var(--font);
+  color: var(--text-dim);
+  margin-bottom: 24px;
+}

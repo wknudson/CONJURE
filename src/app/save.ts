@@ -277,6 +277,10 @@ function readOverworld(raw: unknown): OverworldState | undefined {
     // An unknown brew becomes none rather than being carried as a word the fight cannot
     // read. `BUFF_IDS` is the same list the type is made of, so this cannot drift.
     activeBuff: isBuffId(data.activeBuff) ? data.activeBuff : null,
+    // Anything but an explicit `true` is "no fight in progress". A save written before
+    // this field existed is a run that was sitting safely in the Safehouse, not one to
+    // punish on the next boot.
+    activeEncounter: data.activeEncounter === true,
   };
 }
 

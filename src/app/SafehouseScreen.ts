@@ -31,6 +31,13 @@ export interface SafehouseOpts {
   collection: Collection;
   /** The deck the Field Journal would open on, for the summary line. */
   deck: string[];
+  /**
+   * A one-off announcement to put in front of the room — a death, so far.
+   *
+   * Passed in rather than derived from the run, because it is news about a transition
+   * and the hub is re-entered every time a shop door closes. The caller consumes it.
+   */
+  notice?: { title: string; body: string };
   onApothecary: () => void;
   onArtificer: () => void;
   onJournal: () => void;
@@ -78,6 +85,8 @@ export class SafehouseScreen implements Screen {
       <div class="hub-menu"></div>
     `;
 
+    if (this.opts.notice) el.appendChild(this.buildNotice(this.opts.notice));
+
     el.querySelector('.safehouse__leave')!.addEventListener('click', () => this.opts.onLeave());
 
     root.appendChild(el);
@@ -86,6 +95,29 @@ export class SafehouseScreen implements Screen {
     this.tooltip.attach(el);
     this.renderLedger();
     this.renderZones();
+  }
+
+  /**
+   * The death notice: a magistracy seal over the whole room until it is acknowledged.
+   *
+   * Modal on purpose. A player who lost a run to a fight they thought they could win
+   * should have to look at the bill before the shelves are in front of them again.
+   */
+  private buildNotice(notice: { title: string; body: string }): HTMLElement {
+    const veil = document.createElement('div');
+    veil.className = 'hub-notice';
+    veil.innerHTML = `
+      <div class="hub-notice__card brass-panel">
+        <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
+        <i class="rivet rivet--bl"></i><i class="rivet rivet--br"></i>
+        <div class="hub-notice__seal"></div>
+        <div class="hub-notice__title">${notice.title}</div>
+        <div class="hub-notice__body">${notice.body}</div>
+        <button class="brass-btn hub-notice__ack">Begin again</button>
+      </div>
+    `;
+    veil.querySelector('.hub-notice__ack')!.addEventListener('click', () => veil.remove());
+    return veil;
   }
 
   // ------------------------------------------------------------------ ledger

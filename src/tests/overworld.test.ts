@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { createCombat } from '../core/engine/setup.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
+import { STARTER_DECK } from '../core/data/cards/starter.js';
 import {
   addConsumable,
+  forfeitIfAbandoned,
   isRunOver,
   newRun,
+  resetRun,
+  SURVIVAL_STIPEND,
   INVENTORY_LIMIT,
   type BuffId,
   type Consumable,
@@ -277,5 +281,120 @@ describe('the loop, closed', () => {
     const carry = carryFor(g.overworld);
     expect(carry.boons).toEqual({ pips: 2 });
     expect(JSON.stringify(carry)).not.toContain('kinetic_capacitor');
+  });
+});
+
+describe('walking away from a fight', () => {
+  it('costs the run, exactly as losing it would', () => {
+    // The exploit this closes: close the tab on a losing turn, reopen, and the fight
+    // never happened. With the flag written before the board is mounted, it did.
+    const g = global();
+    g.overworld.activeEncounter = true;
+
+    expect(forfeitIfAbandoned(g.overworld), 'a forfeit was collected').toBe(true);
+    expect(g.overworld.pact.currentHp).toBe(0);
+    expect(isRunOver(g.overworld)).toBe(true);
+  });
+
+  it('leaves an ordinary run alone', () => {
+    const g = global();
+    g.overworld.pact.currentHp = 25;
+    expect(forfeitIfAbandoned(g.overworld)).toBe(false);
+    expect(g.overworld.pact.currentHp).toBe(25);
+  });
+
+  it('collects once, not on every boot after', () => {
+    const g = global();
+    g.overworld.activeEncounter = true;
+    forfeitIfAbandoned(g.overworld);
+    expect(forfeitIfAbandoned(g.overworld), 'already collected').toBe(false);
+  });
+
+  it('is raised by committing to a fight and lowered by finishing one', () => {
+    const g = global();
+    g.overworld.activeEncounter = true;
+    g.combat = { pretend: 'a live fight' };
+
+    resolveCombat(g, { pactHp: 14 }, 'victory');
+
+    expect(g.overworld.activeEncounter, 'the fight was answered for').toBe(false);
+    expect(g.overworld.pact.currentHp).toBe(14);
+  });
+
+  it('locks the satchel even if the live handle went missing', () => {
+    // The two flags fail shut rather than open: a desync should stop an item, never
+    // permit one, because the rule exists to close an exploit.
+    const g = global();
+    addConsumable(g.overworld, potion());
+    g.combat = null;
+    g.overworld.activeEncounter = true;
+
+    expect(consumableRefusal(g, 0)).toBe('in-combat');
+    expect(useConsumable(g, 0)).toBe(false);
+  });
+});
+
+describe('the wipe', () => {
+  const spent = (): GlobalGameState => {
+    const g = global();
+    g.overworld.pact.currentHp = 0;
+    g.overworld.economy = { ducats: 300, marrowShards: 9 };
+    g.overworld.deck = ['scout_imp'];
+    addConsumable(g.overworld, potion());
+    addConsumable(g.overworld, brew('ironbrew'));
+    g.overworld.activeBuff = 'quicksilver';
+    g.overworld.activeEncounter = true;
+    g.combat = { pretend: 'a fight that killed you' };
+    return g;
+  };
+
+  it('takes back everything the run was carrying', () => {
+    const g = spent();
+    resetRun(g);
+
+    expect(g.overworld.economy).toEqual({ ducats: SURVIVAL_STIPEND, marrowShards: 0 });
+    expect(g.overworld.inventory, 'satchel emptied').toHaveLength(0);
+    expect(g.overworld.activeBuff, 'and the bottle in hand').toBeNull();
+  });
+
+  it('is not a restock: dying must never beat surviving', () => {
+    // The rule the whole phase exists for. A dead run that came back with the opening
+    // purse would make the fastest route to 120 Ducats a deliberate loss.
+    const g = spent();
+    const before = g.overworld.economy.ducats;
+    resetRun(g);
+    expect(g.overworld.economy.ducats).toBeLessThan(before);
+    expect(g.overworld.economy.ducats).toBe(SURVIVAL_STIPEND);
+  });
+
+  it('stands the Pact back up at its full gauge', () => {
+    const g = spent();
+    resetRun(g);
+    expect(g.overworld.pact.currentHp).toBe(g.overworld.pact.maxHp);
+    expect(isRunOver(g.overworld), 'and it is a live run again').toBe(false);
+  });
+
+  it('keeps the gauge itself, which was never the run to spend', () => {
+    const g = spent();
+    g.overworld.pact.maxHp = 55;
+    resetRun(g);
+    expect(g.overworld.pact.maxHp, 'a permanent upgrade outlives a death').toBe(55);
+    expect(g.overworld.pact.currentHp).toBe(55);
+  });
+
+  it('puts the starter deck back', () => {
+    const g = spent();
+    resetRun(g);
+    expect(g.overworld.deck).toEqual(STARTER_DECK);
+    expect(g.overworld.deck, 'a full opening list').toHaveLength(15);
+  });
+
+  it('leaves no fight marked open behind it', () => {
+    const g = spent();
+    resetRun(g);
+    expect(g.overworld.activeEncounter).toBe(false);
+    expect(g.combat).toBeNull();
+    // Which means the next boot has nothing to collect on.
+    expect(forfeitIfAbandoned(g.overworld)).toBe(false);
   });
 });
