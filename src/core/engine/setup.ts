@@ -14,6 +14,7 @@ import { makeRng, nextInt, shuffle } from '../util/rng.js';
 import { makeCtx, emit } from './context.js';
 import { DEFAULT_COMPANION, companionById } from '../data/companions.js';
 import { HAND_LIMIT, OPENING_HAND, drawCards } from './deck.js';
+import type { CombatBoons } from '../overworld/state.js';
 import { placeOpeningUnit, spawnObstacle } from './spawn.js';
 import { beginTurn } from './turn.js';
 
@@ -124,11 +125,32 @@ export function validateEncounter(encounter: EncounterDef): void {
   }
 }
 
+/**
+ * What a run carries into a fight.
+ *
+ * Deliberately expressed in the engine's own terms — health, armour, pips, cards — and
+ * not as a buff id or an overworld reference. A `createCombat` that knew what
+ * "ironbrew" meant would be a combat engine you could not test without an overworld, and
+ * adding a fourth brew would mean editing the reducer. The overworld translates; the
+ * engine only ever receives numbers.
+ */
+export interface CombatCarry {
+  /**
+   * Pact health at the opening bell. Absent means full, as a standalone fight always is.
+   *
+   * `maxHp` stays whatever the encounter says, so a wounded run fights at 12/40 rather
+   * than at 12/12 — the gauge has to show how much was already lost.
+   */
+  startingHp?: number;
+  boons?: CombatBoons;
+}
+
 export function createCombat(
   encounter: EncounterDef,
   seed: number,
   companionId?: string,
   deck?: string[],
+  carry?: CombatCarry,
 ): StepResult {
   validateEncounter(encounter);
 
@@ -164,8 +186,15 @@ export function createCombat(
   // Frontal contact opens symmetric at 3 Pips (Module 3). beginTurn adds the first
   // turn's +1 on top, so the player acts meaningfully from turn one.
   const opening = encounter.startingPips ?? 3;
-  player.commander.pips = opening;
+  player.commander.pips = opening + (carry?.boons?.pips ?? 0);
   enemy.commander.pips = opening;
+
+  // The Gauntlet: a Pact does not heal between rooms. Clamped to the encounter's own
+  // maximum so a stale carried value cannot start a fight above full.
+  if (carry?.startingHp !== undefined) {
+    player.commander.hp = Math.max(0, Math.min(player.commander.maxHp, carry.startingHp));
+  }
+  player.commander.armor += carry?.boons?.armor ?? 0;
 
   const state: GameState = {
     rng,
@@ -281,7 +310,7 @@ export function createCombat(
   scatterGeodes(ctx, encounter);
 
   // Opening hands, then the encounter script, then turn 1.
-  drawCards(ctx, 'player', OPENING_HAND);
+  drawCards(ctx, 'player', OPENING_HAND + (carry?.boons?.extraOpeningCards ?? 0));
   drawCards(ctx, 'enemy', OPENING_HAND);
 
   getEncounterScript(encounter.id)?.setup?.(ctx);
