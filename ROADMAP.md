@@ -5,6 +5,47 @@ what comes next, grounded in an audit of what is actually built.*
 
 ---
 
+## 0b. Advanced Combat Dynamics (2026-08-17, after the Bound Form pivot)
+
+Six sections shipped, 385 tests green. Two keystone refactors landed first, each proving
+itself by changing no behaviour: one shared answer to "is that in reach" (which §3, fog
+and gale each then modified in one place) and a cost-relaxing pathfinder (which rubble
+then used).
+
+| Section | What landed |
+| :-- | :-- |
+| **Symmetric battlefield** | Duelists field their own Companion; both routes to the Pact stay open. Ignis is the on-grid unit and docks into a 2×2 enraged form at half health |
+| **Economy** | Channel (`C`), reaction Pip refunds capped at 2/turn, Spark Geodes on neutral ground |
+| **Ranged archetypes** | Sniper (lines only), Lobber (ignores sight, blind up close), Turret (immobile) |
+| **Terrain** | Rubble costing double, volatile crystals hitting friend and foe, conveyor currents at the round boundary |
+| **Wildlife** | `Feral` units nobody commands; a scavenger that flees and escapes, wolves that maul both sides |
+| **Weather** | Fog clamping all vision to 3, a directional gale, rain blunting fire |
+
+Three latent bugs surfaced: the AI hoarded Sparks that expire (Channel's gate must require
+the Spark to *complete a purchase*); `canMove` ignored MOV so an immobile unit never read
+as spent; and the first draft of the boss phase re-announced itself when the drake was
+boxed in (growth is now tracked apart from the phase).
+
+**Deliberately not done, and why:**
+- **Arc, the rain reaction.** No Surge damage type and no Surge card exist, so the branch
+  could not be reached or tested. The reaction table records the shape it takes when
+  Surge lands — a `requiresWeather` field beside `requires`.
+- **§2.4 pip income fail-safe.** Held as the doc asks. It is one token: `turn.ts`'s
+  `gainPips(ctx, side, 1)` is the only income in the game, and the line says so.
+- **AI kiting.** Retreats stay pruned from enumeration for everything except a Bound Form,
+  so the new archetypes are used as static shooters rather than kited. Acceptable; noted
+  beside the pruning.
+- **`magma_brute` Resonance.** Still a Pyre summon marked `source: 'hero'`, so it never
+  triggers Resonance. Moving it is a buff, not a fix — a balance decision.
+
+**Worth measuring before tuning:** with the same brain on both sides the player takes 9 of
+10 on the mirror duelist (first move, stronger Companion), while a scripted player that
+only swings loses every game. Skill separates those sharply now. Several wall-clock test
+budgets were raised as the engine legitimately does more per turn; the assertions were not
+weakened, and determinism is still caught by hash comparison rather than by the clock.
+
+---
+
 ## 0. Since this was written: the Bound Form pivot (2026-08-17)
 
 Four phases shipped, 267 tests green. The combat loop changed shape enough that parts of

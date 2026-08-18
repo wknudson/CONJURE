@@ -204,7 +204,9 @@ battleboard by area:
 | Encounter | Arena | Character |
 | :-- | :-- | :-- |
 | Wandering Novice Duelist | 6 × 8 | A narrow lane. Four neutral rows means closing the distance costs turns. |
-| Subjugation Trial: Ignis | 8 × 8 | An open arena with room to circle the drake and its Behemoth. |
+| The Narrow Ruin | 4 × 6 | A corridor with no flank. A gale down its length, a turret at the end, and a moving floor on one side. |
+| Open Glacial Field | 8 × 8 | The widest board, under fog that blinds it. Pillars, crystals, and wolves that arrive uninvited. |
+| Subjugation Trial: Ignis | 8 × 8 | An open arena with room to circle the drake — until it grows. |
 
 Terrain comes in two kinds. **Rubble walls** block movement and sight. **Bramble
 screens** are cover: they block sight but *not* movement, so units may stand in them and
@@ -222,6 +224,66 @@ mistakes in hand-written data, so they fail loudly at construction rather than p
 subtly wrong game. Territory depth is derived rather than fixed: two rows per side
 normally, one on a board five rows or shorter, since two-deep territories on a four-row
 board would consume the whole map and leave no neutral ground to fight over.
+
+### The economy
+
+Three ways to find resources when the hand is bad, because a turn spent passing is a
+turn the game did not ask you anything.
+
+**Channel** (`C`) spends a unit's attack to bank a Spark. It keeps its move, so this is a
+use for the swing rather than exhaustion. **Reactions pay a Pip back** — capped at two a
+turn, which is the whole design: without the cap a three-reaction cascade funds the card
+that caused it. **Spark Geodes** are 1 HP and worth two Sparks, scattered only on neutral
+ground, so taking one means walking somewhere you would rather not stand yet.
+
+If play still feels starved, the fail-safe is one token: `gainPips(ctx, side, 1)` in
+`turn.ts` is the game's only income, and the line says so.
+
+### Fighting at a distance
+
+Reach on a large board is simply strength unless it costs something specific, so each
+archetype buys its range with a weakness you can see and play around.
+
+| Unit | Reach | Bought with |
+| :-- | :-- | :-- |
+| **Longshot Stalker** | Any distance, straight lines only | One sidestep is a complete defence; anything on the line eats the shot |
+| **Cinder Lobber** | 2–4, ignores line of sight entirely | Cannot hit what is adjacent — walking into its face beats it |
+| **Arc Turret** | 5, hits hardest | Never moves, so where it lands is the whole decision |
+
+The profiles apply to the Commander too. Otherwise reach carefully priced against units
+would be unpriced against the thing that actually ends the game.
+
+### The ground itself
+
+**Rubble** is what a broken wall leaves: rough ground costing double to cross, so
+demolition opens a route without making it a fast one. **Volatile crystals** freeze or
+burn everything in the nine tiles around them, including whoever broke them — the question
+is never "should I shoot it" but "who is standing there". **Conveyor currents** carry
+whatever stands on them one tile at the end of each round, both armies alike, and a
+current running into a wall is a weapon.
+
+### Weather
+
+Chosen per encounter and named before the deck is locked, because it changes which cards
+are worth bringing.
+
+- **Dense fog** clamps everything to three tiles — units, spells, and the Commander alike.
+  Snipers are humbled; a mortar still cannot shell what nobody can see.
+- **A gale** carries ranged attacks further downwind and makes them fall short into it.
+  Melee is untouched, and so is sorcery: it bends arrows, not spells.
+- **Torrential rain** blunts fire before armor is considered, so a burn in a downpour is
+  genuinely weaker. A Pyre unit's swing is physical and stays dry.
+
+### Wildlife
+
+Some things on the board belong to nobody. A **Ridge Wolf** hunts whatever is nearest
+without consulting sides, and either army may put it down — so shoving an enemy into its
+path is as good as striking them yourself. A **Gilded Scavenger** never fights, runs for
+the edge, and leaves with its purse if ignored long enough; it departs by escaping rather
+than dying, because nothing killed it and nobody is owed the kill.
+
+They are filed under the enemy for bookkeeping only. Nothing treats them as allies: not
+targeting, not sacrifice, not the AI, not the threat map.
 
 ### Before the fight
 
@@ -369,8 +431,21 @@ That gives the enemy a second, on-grid route to your Pact, and the HUD treats it
 a declared blow on the Companion counts as incoming Pact damage in the forecast, and a foe
 that can reach it is flagged as a threat to your Commander.
 
-Enemy Commanders have no body and remain off-grid. Giving a boss one means deciding what
-its Resonance lane does, which is a separate design question.
+**The enemy fights the same way.** A duelist fields their own Companion — their spells are
+cast from it, their Pact bleeds when it is struck, and shoving it into a wall costs them
+what it would cost you. Their portrait stays attackable alongside it: the body is a second
+route to the same pool, not a replacement, since anything else would be asymmetric while
+your own portrait remains reachable.
+
+One difference is worth knowing. A blow declared against a body is committed to the *tile*,
+so moving it makes the blow miss; a blow declared against a portrait cannot be dodged. The
+embodied defender has an option the off-grid one does not.
+
+The Ignis Trial goes further: the drake **is** the unit. At half health it grows into a
+2×2 enraged form that hits harder, moves slower, and blocks line of sight through itself —
+so the arena's lanes are redrawn by the transformation alone, and every declared intent is
+cleared with it. Not every enemy has a body; the Ruin Warden commands wholly from off the
+board, as all of them once did.
 
 ### Origin casting
 
@@ -409,7 +484,7 @@ Frost armors, Dusk drains. Once per turn, so a multi-card turn cannot spiral.
 npm test
 ```
 
-267 tests covering collision splits and Mass Invariance, rune cascades and the armor
+385 tests covering collision splits and Mass Invariance, rune cascades and the armor
 gate that stops them, fizzle rules, line of sight and Guardian occlusion, the turn and
 resource machine, escalation caps, movement commitment, boss phase gates and the Rite of
 Binding, Resonance firing once per turn in the right lane, AI lethal-taking and the
