@@ -13,6 +13,8 @@ export type Cue =
   | 'rasp'
   | 'shock'
   | 'gear_lock'
+  | 'cable_snap'
+  | 'vault_lock'
   | 'hit'
   | 'crash'
   | 'detonate'
@@ -24,6 +26,23 @@ export type Cue =
   | 'win'
   | 'lose';
 
+/** A running ambience. Ids are distinct so several can play at once. */
+export type LoopId = 'last_stand' | 'tether_strain';
+
+/** The figure an ambience repeats. */
+export type LoopTrack = 'heartbeat' | 'winch_grind';
+
+/**
+ * How often each figure repeats.
+ *
+ * The winch repeats sooner than its own sound lasts, so the tail of one grind overlaps
+ * the head of the next and the strain reads as continuous rather than as a pulse.
+ */
+const LOOP_PERIOD_MS: Record<LoopTrack, number> = {
+  heartbeat: 1150,
+  winch_grind: 620,
+};
+
 const MUTE_KEY = 'conjure.muted';
 
 export class Sfx {
@@ -32,8 +51,15 @@ export class Sfx {
   private _muted: boolean;
   /** Multiplier applied to the current cue's frequencies. Reset on every play(). */
   private pitch = 1;
-  /** Interval handle for the Last Stand heartbeat, or null when it is not running. */
-  private heartbeat: number | null = null;
+  /**
+   * Every ambience currently running, by id.
+   *
+   * A registry rather than a field per loop, because the loops are deliberately not
+   * exclusive: a player dying while holding the tether should hear the heartbeat under
+   * the winch, and the two together are the point. Keyed by id rather than by track so
+   * the same sound could in principle be run twice for different reasons.
+   */
+  private activeLoops = new Map<LoopId, number>();
 
   constructor() {
     this._muted = localStorage.getItem(MUTE_KEY) === '1';
@@ -66,34 +92,84 @@ export class Sfx {
   }
 
   /**
-   * `pitch` scales every frequency in the cue. Used by the cascade crescendo, where each
-   * link in a rune chain rings a little higher than the last.
-   */
-  /**
-   * A slow heartbeat under everything, for Last Stand.
+   * Starts an ambience, or does nothing if that id is already running.
    *
-   * Scheduled rather than looped from a file: the whole sound layer is synthesised, and a
-   * pulse is two oscillator thumps a moment apart, repeated.
+   * Scheduled repeats of a synthesised figure rather than a looped buffer: the whole
+   * sound layer is synthesised and there are no asset files to loop. Re-starting an id
+   * that is already live is a deliberate no-op — the alternative is a second interval
+   * nobody holds a handle to, which is how a sound ends up unstoppable.
+   *
+   * Safe to call before the audio context exists. The ticks check for it and fall silent
+   * until `unlock` has run, so a loop started during a muted or un-gestured session
+   * simply produces nothing and can still be stopped normally.
    */
-  setHeartbeat(on: boolean): void {
-    if (on === (this.heartbeat !== null)) return;
+  startLoop(id: LoopId, track: LoopTrack): void {
+    if (this.activeLoops.has(id)) return;
 
-    if (!on) {
-      if (this.heartbeat !== null) window.clearInterval(this.heartbeat);
-      this.heartbeat = null;
-      return;
-    }
-
-    const beat = (): void => {
+    const tick = (): void => {
       if (this._muted || !this.ctx) return;
-      const t = this.ctx.currentTime;
+      // Reset per tick: `pitch` is shared with `play`, and a cue that scaled it would
+      // otherwise leave every later beat of the ambience detuned.
       this.pitch = 1;
-      // Lub, then a softer dub a fifth of a second later.
-      this.tone(t, 'sine', 82, 46, 0.16, 0.32);
-      this.tone(t + 0.2, 'sine', 66, 38, 0.14, 0.2);
+      this.runLoopTrack(track, this.ctx.currentTime);
     };
-    beat();
-    this.heartbeat = window.setInterval(beat, 1150);
+
+    tick();
+    this.activeLoops.set(id, window.setInterval(tick, LOOP_PERIOD_MS[track]));
+  }
+
+  stopLoop(id: LoopId): void {
+    const handle = this.activeLoops.get(id);
+    if (handle === undefined) return;
+    window.clearInterval(handle);
+    this.activeLoops.delete(id);
+  }
+
+  /**
+   * Silences every ambience.
+   *
+   * Called on the way out of combat. Loops are the one part of this class that outlives
+   * the thing that started them — a one-shot is over by the time a screen tears down,
+   * an interval is not — so leaving a screen has to sweep them explicitly or a heartbeat
+   * follows the player into the overworld.
+   */
+  stopAllLoops(): void {
+    for (const id of [...this.activeLoops.keys()]) this.stopLoop(id);
+  }
+
+  /** True while that ambience is running. Exposed for tests and for the mute toggle. */
+  isLooping(id: LoopId): boolean {
+    return this.activeLoops.has(id);
+  }
+
+  /** Last Stand's heartbeat, in the terms the HUD already speaks. */
+  setHeartbeat(on: boolean): void {
+    if (on) this.startLoop('last_stand', 'heartbeat');
+    else this.stopLoop('last_stand');
+  }
+
+  /** One repetition of an ambience, scheduled from `t`. */
+  private runLoopTrack(track: LoopTrack, t: number): void {
+    switch (track) {
+      case 'heartbeat':
+        // Lub, then a softer dub a fifth of a second later.
+        this.tone(t, 'sine', 82, 46, 0.16, 0.32);
+        this.tone(t + 0.2, 'sine', 66, 38, 0.14, 0.2);
+        break;
+
+      case 'winch_grind':
+        // A cable under load. Two detuned saws beat against each other to give the
+        // wavering an engine has, with grinding underneath and a scrape over the top.
+        //
+        // Quiet on purpose: this plays under combat for rounds at a time, and an
+        // ambience that competes with the hits is one the player turns the game off to
+        // escape. It is meant to be noticed and then felt rather than heard.
+        this.tone(t, 'sawtooth', 62, 54, 0.72, 0.1);
+        this.tone(t, 'sawtooth', 67, 59, 0.72, 0.07);
+        this.noise(t, 0.6, 900, 0.07);
+        this.noise(t + 0.34, 0.16, 5200, 0.045);
+        break;
+    }
   }
 
   play(cue: Cue, opts: { pitch?: number } = {}): void {
@@ -139,6 +215,23 @@ export class Sfx {
         this.tone(t, 'square', 150, 70, 0.09, 0.34);
         this.noise(t, 0.06, 1400, 0.3);
         this.noise(t + 0.05, 0.1, 3400, 0.14);
+        break;
+      case 'cable_snap':
+        // Steel letting go. A hard crack with no warning, then the two severed ends
+        // whipping — a bright shard-scatter over a low recoil thump.
+        this.tone(t, 'square', 2600, 320, 0.05, 0.4);
+        this.noise(t, 0.07, 7800, 0.42);
+        this.tone(t + 0.02, 'sawtooth', 900, 110, 0.22, 0.26);
+        this.noise(t + 0.06, 0.3, 2200, 0.2);
+        this.tone(t + 0.05, 'sine', 90, 44, 0.36, 0.3);
+        break;
+      case 'vault_lock':
+        // The opposite sound: nothing breaks, something closes. A heavy travel, a
+        // seated clunk, and a low ring of settled metal underneath.
+        this.noise(t, 0.14, 700, 0.24);
+        this.tone(t + 0.12, 'square', 120, 58, 0.16, 0.42);
+        this.noise(t + 0.12, 0.1, 1600, 0.3);
+        this.tone(t + 0.2, 'sine', 74, 62, 0.7, 0.26);
         break;
       case 'shatter':
         // Brittle and bright: a high crack over a short, sharp noise burst.
