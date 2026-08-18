@@ -33,6 +33,13 @@ export type StatusKind =
   /** Frost: the target takes +2 from every hit until it wears off. */
   | 'brittle'
   /**
+   * Surge: residual charge, left behind by a shock hit.
+   *
+   * On its own it does nothing at all, which is what makes a Surge hit a setup move
+   * rather than merely damage — fire sets the charge off, frost conducts through it.
+   */
+  | 'charged'
+  /**
    * Wild magic sealing a cornered Alpha. Nothing reduces its health while this holds.
    *
    * Neither of the two below ever ticks: the status tick walks explicit lists, and these

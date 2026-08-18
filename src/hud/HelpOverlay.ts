@@ -55,9 +55,12 @@ const SECTIONS: { heading: string; rows: [string, string][] }[] = [
   {
     heading: 'Elemental reactions',
     rows: [
-      ['Vaporize', 'Fire on a Chilled target flashes it to fog that blocks ranged sight for 2 turns.'],
+      ['Vaporize', 'Fire on a Chilled target flash-boils it: 2 damage through any armor, and the tile fogs for a turn.'],
       ['Shatter', 'A physical hit — or a shove into a wall — on a Frozen target strips all its Armor and sprays 4 damage to its neighbours.'],
       ['Wildfire', 'Fire on a Toxined target burns off every stack for 2 damage per stack, all around it.'],
+      ['Overload', 'Fire into a Charged target detonates it, throwing everything adjacent a tile clear.'],
+      ['Superconduct', 'Frost through a Charged target strips all its Armor and leaves it Brittle.'],
+      ['Charged', 'Left behind by Surge damage. Harmless alone — it is what fire and frost react to.'],
       ['Chill', 'Three stacks freeze a unit solid instead of stacking a fourth.'],
       ['Brittle', 'The target takes +2 from every hit until it wears off.'],
     ],

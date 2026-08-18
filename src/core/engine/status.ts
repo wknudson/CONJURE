@@ -44,6 +44,7 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
     decay(unit, 'stun');
     decay(unit, 'chill');
     decay(unit, 'brittle');
+    decay(unit, 'charged');
   }
 
   // 4. Tile hazards age here, per Module 1's order.

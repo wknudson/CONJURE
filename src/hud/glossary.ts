@@ -114,11 +114,17 @@ export const TERMS: Record<string, GlossaryEntry> = {
   chill: {
     title: 'Chill',
     body: 'Stacks toward freezing. The third stack freezes the unit solid instead of stacking again.',
-    detail: 'Fire on a Chilled target Vaporizes it into sight-blocking fog.',
+    detail: 'Fire on a Chilled target Vaporizes it: 2 damage through any armor, and the tile fogs.',
   },
   brittle: {
     title: 'Brittle',
     body: 'The target takes +2 damage from every hit until it wears off.',
+  },
+  charged: {
+    title: 'Charged',
+    body: 'Residual Surge energy. On its own it does nothing — it is what fire and frost react to.',
+    detail:
+      'Fire into it Overloads: the charge detonates and throws everything adjacent a tile clear. Frost through it Superconducts: all Armor is stripped and the target is left Brittle.',
   },
   fog: {
     title: 'Steam Fog',
@@ -133,7 +139,8 @@ export const TERMS: Record<string, GlossaryEntry> = {
   reactions: {
     title: 'Elemental reactions',
     body: 'Damage of one school landing on the status of another produces something new.',
-    detail: 'Fire on Chill vaporizes. A physical hit on Frozen shatters. Fire on Toxin ignites it.',
+    detail:
+      'Fire on Chill vaporizes. A physical hit on Frozen shatters. Fire on Toxin ignites it. Fire on Charged overloads; frost on Charged superconducts.',
   },
   freeze: {
     title: 'Frozen',

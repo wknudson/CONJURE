@@ -9,7 +9,7 @@
 import type { Coord, DamageType } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
 import { emit, newCause } from './context.js';
-import type { Entity } from '../types/units.js';
+import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import type { ReactionDef } from '../data/reactions.js';
 import { findReaction } from '../data/reactions.js';
@@ -18,6 +18,8 @@ import { DIRS_8 } from '../util/grid.js';
 import { inBounds } from '../types/state.js';
 import type { HazardKind } from '../types/state.js';
 import { entityAt } from './board.js';
+import { pushUnit } from './displacement.js';
+import { applyStatusTo } from './status.js';
 
 export interface PendingReaction {
   def: ReactionDef;
@@ -110,6 +112,48 @@ export function resolveReaction(
         });
         if (ctx.state.result) return;
       }
+      break;
+    }
+
+    case 'overload': {
+      // Everything around the target is thrown directly away from it. Collected before
+      // any of them move: pushing one unit can vacate a tile another would then be read
+      // from, and the blast should be judged on the board as it was when it went off.
+      const host = entityAt(ctx.state, at);
+      const caught: Unit[] = [];
+      for (const c of adjacentTiles(ctx, at)) {
+        const victim = entityAt(ctx.state, c);
+        if (!victim || !isUnit(victim)) continue;
+        if (host && victim.id === host.id) continue;
+        if (!caught.some((u) => u.id === victim.id)) caught.push(victim);
+      }
+
+      for (const unit of caught) {
+        if (ctx.state.encounter.chainCancelled || ctx.state.result) return;
+        if (!ctx.state.units[unit.id]) continue;
+        // Away from the blast, by the sign of the offset — a diagonal neighbour is thrown
+        // diagonally, so nothing is dragged sideways past the tile it was standing on.
+        const dir = {
+          x: Math.sign(unit.anchor.x - at.x),
+          y: Math.sign(unit.anchor.y - at.y),
+        };
+        if (dir.x === 0 && dir.y === 0) continue;
+        pushUnit(ctx, unit, dir, def.outcome.shove);
+      }
+      break;
+    }
+
+    case 'superconduct': {
+      const host = entityAt(ctx.state, at);
+      if (!host || !isUnit(host)) break;
+      if (host.armor > 0) {
+        emit(ctx, { t: 'armorStripped', unitId: host.id, amount: host.armor });
+        host.armor = 0;
+      }
+      // Brittle rather than a second status meaning the same thing: "takes extra damage"
+      // already exists, is already drawn and explained, and a near-duplicate at a
+      // different number would be indistinguishable on the board.
+      applyStatusTo(ctx, host, 'brittle', def.outcome.brittle);
       break;
     }
 

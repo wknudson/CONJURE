@@ -10,6 +10,7 @@ import type { Coord, DamageCause, DamageType, Side, TargetRef, UnitId } from '..
 import type { Ctx } from './context.js';
 import { emit } from './context.js';
 import { prepareReaction, resolveReaction } from './reactions.js';
+import { applyStatusTo } from './status.js';
 import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import { getEntity, entityAt, opposite } from './board.js';
@@ -268,6 +269,12 @@ function damageEntity(ctx: Ctx, entity: Entity, req: DamageRequest): DamageOutco
 
   // Wet ground conducts. Placed with the other secondary hits and for the same reason:
   // after the HP write, so what arcs is a blow that actually landed.
+  // A Surge hit leaves residual charge for fire or frost to find later. Applied after
+  // the HP write like everything else here, and only to units — scenery holds no charge.
+  if (isUnit(entity) && req.dtype === 'shock' && entity.hp > 0) {
+    applyStatusTo(ctx, entity, 'charged', 1);
+  }
+
   conductShock(ctx, req, entity);
 
   // Reactions and runes both resolve after the HP write, so the "at least 1 point of

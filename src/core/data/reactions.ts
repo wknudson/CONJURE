@@ -56,6 +56,10 @@ export type ReactionOutcome =
   | { op: 'spawnHazard'; kind: 'steam_fog'; turns: number }
   /** Shatter: strip all armor, then splash the neighbours. */
   | { op: 'shatter'; splash: number }
+  /** Overload: the charge blows outward, throwing everything around the target clear. */
+  | { op: 'overload'; shove: number }
+  /** Superconduct: cold runs through the charge, stripping plate and leaving it Brittle. */
+  | { op: 'superconduct'; brittle: number }
   /** Wildfire: burn off every Toxin stack for area damage scaled by the stacks consumed. */
   | { op: 'consumeForAoe'; perStack: number; dtype: DamageType }
   /** Nothing beyond the bonus damage and the status change. */
@@ -83,6 +87,30 @@ export const REACTIONS: ReactionDef[] = [
     requiresHpLoss: false,
     outcome: { op: 'shatter', splash: 4 },
     text: 'A physical hit on a Frozen target breaks the ice: it loses all Armor, and adjacent units take 4 shrapnel damage.',
+  },
+  {
+    id: 'overload',
+    name: 'Overload',
+    triggers: ['fire'],
+    requires: 'charged',
+    consumes: true,
+    requiresHpLoss: true,
+    // Small on the target and violent around it: the point is the shove, not the number.
+    trueDamage: 1,
+    outcome: { op: 'overload', shove: 1 },
+    text: 'Fire into a Charged target detonates the charge: 1 damage through armor, and everything adjacent is thrown a tile directly away, taking collision damage if it hits something.',
+  },
+  {
+    id: 'superconduct',
+    name: 'Superconduct',
+    triggers: ['frost'],
+    requires: 'charged',
+    consumes: true,
+    // Like Shatter, this happens to what is encasing the target rather than to the target,
+    // so armor absorbing the blow must not prevent the armor being stripped.
+    requiresHpLoss: false,
+    outcome: { op: 'superconduct', brittle: 2 },
+    text: 'Frost through a Charged target conducts straight past its plate: all Armor is stripped and it is left Brittle.',
   },
   {
     id: 'wildfire',

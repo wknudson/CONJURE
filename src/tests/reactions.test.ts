@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { atTile, atUnit, eventsOf, findUnit, giveCard, handCard, play, run, scenario } from './scenario.js';
+import { addUnit, atTile, atUnit, eventsOf, findUnit, giveCard, handCard, play, run, scenario } from './scenario.js';
+import type { Coord } from '../contract/ids.js';
+import type { GameState } from '../core/types/state.js';
+
+/** The id of whatever unit stands on this tile. */
+function findUnitAt(state: GameState, at: Coord): string {
+  return Object.values(state.units).find((u) => u.anchor.x === at.x && u.anchor.y === at.y)!.id;
+}
 import { coordKey } from '../contract/ids.js';
 import { hasLoS } from '../core/engine/los.js';
 import { CHILL_TO_FREEZE } from '../core/engine/status.js';
@@ -260,6 +267,98 @@ describe('Shatter', () => {
     expect(eventsOf(res.events, 'collision').length).toBeGreaterThan(0);
     expect(eventsOf(res.events, 'reactionTriggered').map((e) => e.reaction)).toContain('shatter');
     expect(res.state.units[foe.id]!.armor).toBe(0);
+  });
+});
+
+describe('Surge reactions', () => {
+  /** A charged target and a Companion able to throw the element that sets it off. */
+  const charged = (extra: Record<string, unknown> = {}) => {
+    const state = scenario({
+      width: 7,
+      height: 7,
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 3 }, hp: 30, keywords: [] }],
+      hand: ['flame_surge'],
+      pips: 8,
+      ...extra,
+    });
+    const foe = findUnit(state, 'grave_sentinel', 'enemy');
+    state.units[foe.id]!.statuses.charged = 1;
+    return { state, foe };
+  };
+
+  it('leaves charge behind when shock lands, so Surge is a setup move', () => {
+    const state = scenario({
+      width: 6,
+      height: 6,
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, keywords: [] }],
+      hand: ['arc_lash'],
+      pips: 8,
+    });
+    const foe = findUnit(state, 'grave_sentinel', 'enemy');
+    const res = run(state, play(handCard(state, 'player', 'arc_lash'), atUnit(foe.id)));
+    expect(res.state.units[foe.id]?.statuses.charged).toBe(1);
+  });
+
+  it('Overload throws the neighbours clear of the blast', () => {
+    const { state, foe } = charged();
+    // One either side, so the two are pushed in opposite directions.
+    const north = { def: 'scout_imp' as const, side: 'enemy' as const, at: { x: 3, y: 2 } };
+    const south = { def: 'scout_imp' as const, side: 'enemy' as const, at: { x: 3, y: 4 } };
+    for (const spec of [north, south]) addUnit(state, spec);
+    const a = findUnitAt(state, { x: 3, y: 2 });
+    const b = findUnitAt(state, { x: 3, y: 4 });
+
+    const res = run(
+      state,
+      play(handCard(state, 'player', 'flame_surge'), {
+        kind: 'line',
+        from: { x: 3, y: 3 },
+        dir: { x: 0, y: -1 },
+      }),
+    );
+
+    expect(res.events.some((e) => e.t === 'reactionTriggered' && e.reaction === 'overload')).toBe(true);
+    // Directly away from the target tile, each on its own side.
+    expect(res.state.units[a]?.anchor.y ?? 1).toBeLessThan(2);
+    expect(res.state.units[b]?.anchor.y ?? 5).toBeGreaterThan(4);
+    // And the target itself took the pierce.
+    expect(res.state.units[foe.id]!.hp).toBeLessThan(30);
+  });
+
+  it('Superconduct strips plate and leaves the target Brittle', () => {
+    const { state, foe } = charged({ hand: ['glacial_spike'] });
+    state.units[foe.id]!.armor = 6;
+
+    const res = run(state, play(handCard(state, 'player', 'glacial_spike'), atUnit(foe.id)));
+
+    expect(res.events.some((e) => e.t === 'reactionTriggered' && e.reaction === 'superconduct')).toBe(true);
+    expect(res.state.units[foe.id]?.armor, 'all of it, not some').toBe(0);
+    expect(res.state.units[foe.id]?.statuses.brittle).toBeGreaterThan(0);
+  });
+
+  it('strips armor even when the blow itself was fully absorbed', () => {
+    // Like Shatter: this happens to the plate, so the plate stopping the hit must not
+    // be what prevents it.
+    const { state, foe } = charged({ hand: ['glacial_spike'] });
+    state.units[foe.id]!.armor = 50;
+
+    const res = run(state, play(handCard(state, 'player', 'glacial_spike'), atUnit(foe.id)));
+    expect(res.state.units[foe.id]?.armor).toBe(0);
+  });
+
+  it('does nothing to a target carrying no charge', () => {
+    const { state, foe } = charged();
+    delete state.units[foe.id]!.statuses.charged;
+
+    const res = run(
+      state,
+      play(handCard(state, 'player', 'flame_surge'), {
+        kind: 'line',
+        from: { x: 3, y: 3 },
+        dir: { x: 0, y: -1 },
+      }),
+    );
+    expect(res.events.some((e) => e.t === 'reactionTriggered' && e.reaction === 'overload')).toBe(false);
   });
 });
 
