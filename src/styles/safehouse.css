@@ -509,7 +509,7 @@
   background: rgba(14, 13, 11, 0.5);
 }
 
-/* -------- blueprint forging -------- */
+/* -------- schematic forging -------- */
 
 .forge-list {
   display: flex;
@@ -517,7 +517,7 @@
   gap: 9px;
 }
 
-.blueprint-row {
+.schematic-row {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -525,31 +525,31 @@
   border-left: 3px solid var(--school, var(--brass));
 }
 
-.blueprint-row__cost {
+.schematic-row__cost {
   flex: none;
   min-width: 46px;
   font: 800 13px var(--font);
   color: var(--school, var(--brass-lit));
 }
 
-.blueprint-row__body {
+.schematic-row__body {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.blueprint-row__name {
+.schematic-row__name {
   font: 700 13px var(--font);
   color: var(--text);
 }
 
-.blueprint-row__text {
+.schematic-row__text {
   font: 400 11px/1.45 var(--font);
   color: var(--text-dim);
 }
 
-.blueprint-row__price {
+.schematic-row__price {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -557,8 +557,11 @@
   font: 700 11px var(--font);
 }
 
-.blueprint-row__coin--gold { color: var(--lamp); }
-.blueprint-row__coin--marrow { color: var(--marrow); }
+.schematic-row__coin { color: var(--lamp); }
+.schematic-row__refusal {
+  font: 600 9.5px var(--font);
+  color: var(--danger);
+}
 
 .forge-note,
 .forge-empty {

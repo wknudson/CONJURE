@@ -5,15 +5,19 @@
  * sells nothing that goes in a deck, and this screen sells nothing that goes in a
  * satchel. The separation is enforced by what each file imports rather than by intent.
  *
- * Two trades share the workbench, and they are genuinely different jobs, so they are tabs
- * rather than columns: the **Ascension Forge** upgrades a card you already know to its
- * Rank 2 printing, and **Aetheric Splicing** presses two things into a third.
+ * Three trades share the workbench, and they are genuinely different jobs, so they are
+ * tabs rather than columns:
+ *
+ *  - **Schematic Forging** cuts a card you have never held, for Ducats.
+ *  - **The Ascension Forge** raises one you know to its Rank 2 printing, for Shards.
+ *  - **Aetheric Splicing** presses a card and a reagent into a hybrid.
  *
  * Splicing is scaffolding only — the slots accept a selection and the press stays cold,
  * because a hybrid card has no representation in the engine and a bench that produced one
- * would be lying about what it made. The Forge is built out but not yet lit: the mutation
- * it would perform is the Rank 2 id mapping still awaiting a ruling, and a button that
- * charged three Shards for a decision nobody had made yet would be worse than a cold one.
+ * would be lying about what it made. The other two are live.
+ *
+ * No prices are decided here. The screen asks `forge.ts` whether a thing may be bought
+ * and shows what it says, so a greyed-out button and a refused click always agree.
  */
 
 import type { Screen } from './ScreenManager.js';
@@ -21,7 +25,13 @@ import type { CardDef } from '../core/types/cards.js';
 import type { Collection } from '../core/data/deckRules.js';
 import type { GlobalGameState } from '../core/overworld/state.js';
 import type { Catalyst } from '../core/data/artificer.js';
-import { CATALYSTS } from '../core/data/artificer.js';
+import { CATALYSTS, schematicsFor } from '../core/data/artificer.js';
+import {
+  ASCENSION_COST_SHARDS,
+  SCHEMATIC_COST_DUCATS,
+  ascensionRefusal,
+  schematicRefusal,
+} from '../core/overworld/forge.js';
 import { CARDS, ascendedId } from '../core/data/cards/index.js';
 import { ascendableFor } from '../core/data/collection.js';
 import { formatCost } from '../hud/cost.js';
@@ -39,27 +49,35 @@ export interface ArtificerOpts {
    */
   collection: () => Collection;
   /**
-   * Performs the Ascension, or absent while the forge is unlit.
+   * Performs the transaction and reports whether it happened.
    *
-   * The bench takes no payment and writes nothing itself: Shards and the collection both
-   * outlive this screen. Absent rather than a no-op function so the UI can *say* the
-   * forge is cold instead of silently swallowing a click.
+   * The bench never writes the collection itself — it outlives this screen and belongs to
+   * the save. Both of these take payment and hand back a result, and the screen simply
+   * re-renders whatever the till decided.
    */
-  onAscend?: (cardId: string) => void;
-  /** Called once after an Ascension, when the purse and the collection have both moved. */
+  onAscend: (cardId: string) => boolean;
+  onForgeSchematic: (cardId: string) => boolean;
+  /** Called once after either, when the purse and the collection have both moved. */
   onChange: () => void;
   onBack: () => void;
 }
 
-/** Flat rate, whatever the card. Ascension is a sink, not a market. */
-export const ASCENSION_COST_SHARDS = 3;
+type Bench = 'schematic' | 'ascend' | 'splice';
 
-type Bench = 'forge' | 'splice';
+/** Every way the till can say no, in the player's words rather than the code's. */
+const REFUSAL_COPY: Record<string, string> = {
+  none: '',
+  'in-combat': 'Not while a contract is open',
+  'not-owned': 'You have never held this card',
+  'already-ascended': 'Already raised',
+  'no-rank-2': 'This card has no Rank 2',
+  'too-poor': 'Not enough Shards',
+};
 
 export class ArtificerScreen implements Screen {
   private el: HTMLElement | null = null;
   private tooltip: Tooltip | null = null;
-  private bench: Bench = 'forge';
+  private bench: Bench = 'schematic';
 
   /** The splicing bench's two slots. Held, displayed, and otherwise inert. */
   private slotA: string | null = null;
@@ -93,7 +111,8 @@ export class ArtificerScreen implements Screen {
       </div>
 
       <div class="workbench-tabs">
-        <button class="workbench-tab" data-bench="forge">Ascension Forge</button>
+        <button class="workbench-tab" data-bench="schematic">Schematic Forging</button>
+        <button class="workbench-tab" data-bench="ascend">Ascension Forge</button>
         <button class="workbench-tab" data-bench="splice">Aetheric Splicing</button>
       </div>
 
@@ -103,7 +122,7 @@ export class ArtificerScreen implements Screen {
     el.querySelector('.workbench__back')!.addEventListener('click', () => this.opts.onBack());
     for (const tab of el.querySelectorAll<HTMLElement>('.workbench-tab')) {
       tab.addEventListener('click', () => {
-        this.bench = (tab.dataset.bench as Bench) ?? 'forge';
+        this.bench = (tab.dataset.bench as Bench) ?? 'schematic';
         this.render();
       });
     }
@@ -127,7 +146,79 @@ export class ArtificerScreen implements Screen {
     }
 
     const body = el.querySelector('.workbench__body')!;
-    body.replaceChildren(this.bench === 'forge' ? this.forgeBench() : this.spliceBench());
+    body.replaceChildren(
+      this.bench === 'schematic'
+        ? this.schematicBench()
+        : this.bench === 'ascend'
+          ? this.forgeBench()
+          : this.spliceBench(),
+    );
+  }
+
+  // ------------------------------------------------------- schematic forging
+
+  /**
+   * Cards the player has never held, and what it costs to cut one.
+   *
+   * Every card is assumed to have a Schematic for now. When Schematics become things a
+   * player finds, this list narrows and nothing else on the screen changes.
+   */
+  private schematicBench(): HTMLElement {
+    const host = document.createElement('div');
+    host.className = 'forge-bench';
+
+    const available = schematicsFor(this.opts.collection());
+    if (available.length === 0) {
+      host.innerHTML = `<div class="forge-empty brass-panel">
+        You hold a copy of everything the bench knows how to cut. Try the Ascension Forge.
+      </div>`;
+      return host;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'forge-list';
+    for (const def of available) list.appendChild(this.schematicRow(def));
+
+    const note = document.createElement('div');
+    note.className = 'forge-note';
+    note.textContent =
+      'One copy per Schematic. Further copies are what winning contracts is for.';
+
+    host.append(list, note);
+    return host;
+  }
+
+  private schematicRow(def: CardDef): HTMLElement {
+    const refusal = schematicRefusal(this.opts.global, this.opts.collection(), def.id);
+    const colors = schoolOf(def.school as never);
+
+    const row = document.createElement('div');
+    row.className = 'schematic-row brass-panel';
+    row.style.setProperty('--school', colors.main);
+    row.dataset.tip = `${def.name}|${def.text}|${def.source === 'companion' ? 'Companion' : 'Hero'} · Tier ${tierOf(def)}`;
+    row.innerHTML = `
+      <span class="schematic-row__cost">${formatCost(def.cost)}</span>
+      <span class="schematic-row__body">
+        <span class="schematic-row__name">${def.name}</span>
+        <span class="schematic-row__text">${def.text}</span>
+      </span>
+      <span class="schematic-row__price">
+        <span class="schematic-row__coin">${SCHEMATIC_COST_DUCATS} d</span>
+        <span class="schematic-row__refusal">${refusal === 'too-poor' ? 'Not enough Ducats' : ''}</span>
+      </span>
+      <button class="brass-btn schematic-row__cut">Forge</button>
+    `;
+
+    const btn = row.querySelector<HTMLButtonElement>('.schematic-row__cut')!;
+    btn.disabled = refusal !== null;
+    btn.addEventListener('click', () => this.cut(def.id));
+    return row;
+  }
+
+  private cut(cardId: string): void {
+    if (!this.opts.onForgeSchematic(cardId)) return;
+    this.opts.onChange();
+    this.render();
   }
 
   // -------------------------------------------------------- ascension forge
@@ -191,8 +282,7 @@ export class ArtificerScreen implements Screen {
     const before = CARDS[cardId]!;
     const after = CARDS[ascendedId(cardId)];
     const shards = this.opts.global.overworld.economy.marrowShards;
-    const affordable = shards >= ASCENSION_COST_SHARDS;
-    const lit = Boolean(this.opts.onAscend);
+    const refusal = ascensionRefusal(this.opts.global, this.opts.collection(), cardId);
 
     const host = document.createElement('div');
     host.className = 'forge-compare';
@@ -210,14 +300,12 @@ export class ArtificerScreen implements Screen {
           <span class="forge-till__held">You hold ${shards}</span>
         </div>
         <button class="brass-btn forge-till__go">Ascend Card</button>
-        <div class="forge-till__refusal">${
-          !affordable ? 'Not enough Shards' : !lit ? 'The forge is not lit' : ''
-        }</div>
+        <div class="forge-till__refusal">${REFUSAL_COPY[refusal ?? 'none']}</div>
       </div>
     `;
 
     const btn = host.querySelector<HTMLButtonElement>('.forge-till__go')!;
-    btn.disabled = !affordable || !lit || !after;
+    btn.disabled = refusal !== null || !after;
     btn.addEventListener('click', () => this.ascend(cardId));
     return host;
   }
@@ -250,11 +338,8 @@ export class ArtificerScreen implements Screen {
   }
 
   private ascend(cardId: string): void {
-    const perform = this.opts.onAscend;
-    if (!perform) return;
-    if (this.opts.global.overworld.economy.marrowShards < ASCENSION_COST_SHARDS) return;
-
-    perform(cardId);
+    // The till decides, not the button state: a stale render must not be able to spend.
+    if (!this.opts.onAscend(cardId)) return;
     this.opts.onChange();
     this.chosen = null;
     this.render();

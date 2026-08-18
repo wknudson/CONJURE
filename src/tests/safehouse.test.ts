@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { CARDS } from '../core/data/cards/index.js';
 import {
   APOTHECARY_STOCK,
   CLINIC_RATE,
@@ -7,18 +6,11 @@ import {
   describeBoons,
   effectOf,
 } from '../core/data/apothecary.js';
-import {
-  CATALYSTS,
-  FORGE_COST,
-  blueprintsFor,
-  canForge,
-  forgeCostOf,
-} from '../core/data/artificer.js';
+import { CATALYSTS, schematicsFor } from '../core/data/artificer.js';
 import { BUFF_EFFECTS } from '../core/overworld/run.js';
 import { newRun } from '../core/overworld/state.js';
 import { type BuffId } from '../core/overworld/state.js';
 import { isObtainable, startingCollection } from '../core/data/collection.js';
-import { tierOf } from '../core/data/deckRules.js';
 import type { Collection } from '../core/data/deckRules.js';
 
 /**
@@ -66,46 +58,28 @@ describe('the Artificer bench', () => {
     owned: Object.fromEntries(ids.map((id) => [id, 1])),
   });
 
-  it('offers nothing the player already owns', () => {
+  it('offers a Schematic for nothing the player already owns', () => {
     const collection = startingCollection();
-    const offered = blueprintsFor(collection).map((d) => d.id);
+    const offered = schematicsFor(collection).map((d) => d.id);
     for (const id of Object.keys(collection.owned)) {
       expect(offered, id).not.toContain(id);
     }
   });
 
-  it('never offers the Rite or a setup-only stat block', () => {
-    // Both are engine furniture rather than cards. The reward roller and this list agree
-    // because they ask the same predicate — which is the point of `isObtainable`.
-    const offered = blueprintsFor(owning([]));
+  it('never offers the Rite, a setup-only block, or a Rank 2 printing', () => {
+    // All three are things you cannot come to own by buying. They agree with the reward
+    // roller because they ask the same predicate — which is the point of `isObtainable`.
+    const offered = schematicsFor(owning([]));
     expect(offered.map((d) => d.id)).not.toContain('rite_of_subjugation');
     expect(offered.every((d) => !d.setupOnly)).toBe(true);
     expect(offered.every(isObtainable)).toBe(true);
   });
 
   it('offers a card the moment the last copy is gone', () => {
-    const withIt = blueprintsFor(owning(['scout_imp'])).map((d) => d.id);
-    const without = blueprintsFor(owning([])).map((d) => d.id);
+    const withIt = schematicsFor(owning(['scout_imp'])).map((d) => d.id);
+    const without = schematicsFor(owning([])).map((d) => d.id);
     expect(withIt).not.toContain('scout_imp');
     expect(without).toContain('scout_imp');
-  });
-
-  it('charges more for a bigger card', () => {
-    expect(FORGE_COST[2].ducats).toBeGreaterThan(FORGE_COST[1].ducats);
-    expect(FORGE_COST[3].ducats).toBeGreaterThan(FORGE_COST[2].ducats);
-    expect(FORGE_COST[3].shards).toBeGreaterThan(FORGE_COST[1].shards);
-  });
-
-  it('prices a card off its tier, not off a second table', () => {
-    const def = CARDS.scout_imp!;
-    expect(forgeCostOf(def)).toEqual(FORGE_COST[tierOf(def)]);
-  });
-
-  it('wants both currencies, not whichever is larger', () => {
-    const cost = { ducats: 30, shards: 1 };
-    expect(canForge(cost, { ducats: 30, marrowShards: 1 })).toBe(true);
-    expect(canForge(cost, { ducats: 999, marrowShards: 0 }), 'no shards').toBe(false);
-    expect(canForge(cost, { ducats: 29, marrowShards: 99 }), 'no ducats').toBe(false);
   });
 
   it('names catalysts only for schools the reaction engine knows', () => {

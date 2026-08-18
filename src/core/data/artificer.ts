@@ -1,64 +1,45 @@
 /**
- * The Ironworks Artificer's bench: what can be forged, and what it costs.
+ * The Ironworks Artificer's bench: what it can make.
  *
- * Two trades share the bench. **Blueprint Forging** buys a card you do not own outright,
- * paid in Ducats and Marrow Shards. **Aetheric Splicing** is the other one — a base card
- * and a catalyst reagent pressed into a hybrid — and is not built yet; only its
- * vocabulary lives here, so the scaffolding has something real to name.
+ * Three trades share it. **Schematic Forging** cuts a card you have never held.
+ * **Ascension** raises one you already know to its Rank 2 printing. **Aetheric Splicing**
+ * presses a card and a reagent into a hybrid, and is not built yet — only its vocabulary
+ * lives here, so the scaffolding has something real to name.
  *
- * DOM-free and beside the rest of `src/core/data/`: a forge price is a balance number,
- * and balance numbers do not belong in a template string.
+ * The prices are not here: they are in `overworld/forge.ts` with the transactions that
+ * charge them, because a cost and the check that it can be paid drifting apart is how a
+ * button ends up promising something the till refuses.
+ *
+ * DOM-free and beside the rest of `src/core/data/`, so what the bench offers is testable
+ * without mounting a screen.
  */
 
 import type { CardDef } from '../types/cards.js';
 import type { School } from '../../contract/ids.js';
-import type { CardTier, Collection } from './deckRules.js';
+import type { Collection } from './deckRules.js';
 import { CARDS } from './cards/index.js';
 import { isObtainable } from './collection.js';
 import { tierOf } from './deckRules.js';
 
-// ------------------------------------------------------------------ forging
-
-export interface ForgeCost {
-  ducats: number;
-  shards: number;
-}
+// --------------------------------------------------------------- schematics
 
 /**
- * Price by Tier, not by card.
- *
- * A per-card price list is a second balance table to keep in step with the first; tier
- * already encodes "how big is this", so the forge reads it rather than restating it. The
- * curve is steep on Shards deliberately — Ducats are earned by winning, Shards by
- * butchery, and a Tier 3 card should want both.
- */
-export const FORGE_COST: Record<CardTier, ForgeCost> = {
-  1: { ducats: 30, shards: 1 },
-  2: { ducats: 70, shards: 2 },
-  3: { ducats: 130, shards: 4 },
-};
-
-export function forgeCostOf(def: CardDef): ForgeCost {
-  return FORGE_COST[tierOf(def)];
-}
-
-/**
- * Everything the player could forge but does not have.
+ * Every card the player could cut but does not have.
  *
  * Owning one copy takes a card off the list entirely rather than offering the second and
- * third: the Artificer sells access to a card, and extra copies are what wins are for.
+ * third: the bench sells *access* to a card, and extra copies are what winning is for —
+ * which is what stops a rich player buying a finished deck outright.
+ *
+ * `isObtainable` is the gate, so Rank 2 printings and engine furniture stay off the shelf
+ * for the same reason they stay out of reward rolls.
+ *
+ * Every unowned card is assumed to have a Schematic available. When Schematics become
+ * things a player finds, this grows a second argument and nothing else changes.
  */
-export function blueprintsFor(collection: Collection): CardDef[] {
+export function schematicsFor(collection: Collection): CardDef[] {
   return Object.values(CARDS)
     .filter((def) => isObtainable(def) && (collection.owned[def.id] ?? 0) === 0)
     .sort((a, b) => tierOf(a) - tierOf(b) || a.name.localeCompare(b.name));
-}
-
-export function canForge(
-  cost: ForgeCost,
-  purse: { ducats: number; marrowShards: number },
-): boolean {
-  return purse.ducats >= cost.ducats && purse.marrowShards >= cost.shards;
 }
 
 // ----------------------------------------------------------------- splicing

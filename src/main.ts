@@ -35,7 +35,8 @@ import {
 import { encounterForBounty, rollBounties, type Bounty } from './core/data/bounties.js';
 import { carryFor, resolveCombat, type CombatOutcome } from './core/overworld/run.js';
 import { companionById } from './core/data/companions.js';
-import { grantCard, rollRewards } from './core/data/collection.js';
+import { grantCard, printedDeck, rollRewards } from './core/data/collection.js';
+import { ascendCard, forgeSchematic } from './core/overworld/forge.js';
 import { makeRng } from './core/util/rng.js';
 import { NOVICE_AI, profileByName } from './core/ai/controller.js';
 import type { EncounterDef } from './core/data/encounters/registry.js';
@@ -174,9 +175,21 @@ function showSafehouse(companionId: string): void {
           new ArtificerScreen({
             global,
             collection: () => save.collection,
-            // `onAscend` is deliberately absent until the Rank 2 mapping is ruled on.
-            // The Forge shows both printings and the price; it will not take Shards for a
-            // decision that has not been made.
+            // Both tills return whether they fired. The collection is replaced rather
+            // than mutated — it is the save's, not the character's — so a refusal simply
+            // leaves the old one in place and nothing has been charged.
+            onAscend: (cardId) => {
+              const next = ascendCard(global, save.collection, cardId);
+              if (!next) return false;
+              save.collection = next;
+              return true;
+            },
+            onForgeSchematic: (cardId) => {
+              const next = forgeSchematic(global, save.collection, cardId);
+              if (!next) return false;
+              save.collection = next;
+              return true;
+            },
             onChange: persist,
             onBack: () => showSafehouse(companionId),
           }),
@@ -270,12 +283,18 @@ function showPreCombat(
 }
 
 /**
- * Opens the fight, carrying the run into it.
+ * Opens the fight, carrying the character into it.
  *
  * The deck reaches the engine through `createCombat`'s own parameter rather than through
  * the carry, because the deck that fights is the one the pre-combat screen adapted — up
- * to five swaps away from the run's stored list. Two routes to the same field would only
- * be an argument about which one wins.
+ * to five swaps away from the saved list. Two routes to the same field would only be an
+ * argument about which one wins.
+ *
+ * This is also the one place a base card id becomes its Rank 2 printing, and it is the
+ * *last* possible moment on purpose. Everything upstream — the builder, the collection,
+ * the swap budget — counts by base id, and handing any of them an `_r2` would break the
+ * copy limits that `baseIdOf` exists to enforce. The engine, which only resolves ids,
+ * neither knows nor needs to know that a substitution happened.
  */
 function startCombat(
   encounter: EncounterDef,
@@ -306,7 +325,7 @@ function startCombat(
       (result, played, outcome) => finishCombat(result, played, outcome, companionId),
       companionId,
       seed,
-      deck,
+      printedDeck(save.collection, deck),
       profileByName(save.difficulty) ?? NOVICE_AI,
       carry,
     ),

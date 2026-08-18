@@ -18,6 +18,8 @@ import {
 } from '../core/data/collection.js';
 import { baseIdOf, tierOf, validateDeck, type Collection } from '../core/data/deckRules.js';
 import { makeRng } from '../core/util/rng.js';
+import { createCombat } from '../core/engine/setup.js';
+import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
 
 /**
  * Card Ascension.
@@ -169,5 +171,47 @@ describe('the account-wide mark', () => {
     expect(printed, 'the upgrade did land').toContain(ascendedId('shield_bash'));
     expect(validateDeck(printed, collection)).toEqual([]);
     expect(validateDeck(STARTER_DECK, collection), 'and so was it before').toEqual([]);
+  });
+});
+
+describe('a Rank 2 card in a fight', () => {
+  /** Every card the player's deck and opening hand resolve to. */
+  const printings = (deck: string[]) => {
+    const { state } = createCombat(NOVICE_DUELIST, 7, undefined, deck);
+    const player = state.players.player;
+    return [...player.hand, ...player.deck].map((instanceId) => {
+      const card = player.cards[instanceId];
+      return card ? card.defId : instanceId;
+    });
+  };
+
+  it('is dealt as an ordinary card, with no resolver told about Ascension', () => {
+    // This is the payoff of merging at load: the engine has no branch for Ascension and
+    // needs none. A Rank 2 id is just an id it looks up like any other.
+    const deck = Array.from({ length: 12 }, () => ascendedId('shield_bash'));
+    expect(printings(deck).every((id) => id === ascendedId('shield_bash'))).toBe(true);
+  });
+
+  it('arrives at the printed strength, not the base one', () => {
+    const base = CARDS.shield_bash!;
+    const up = CARDS[ascendedId('shield_bash')]!;
+    // Guard against this test passing on a card whose ascension changed nothing.
+    expect(up.text).not.toBe(base.text);
+
+    const deck = Array.from({ length: 12 }, () => ascendedId('shield_bash'));
+    const { state } = createCombat(NOVICE_DUELIST, 7, undefined, deck);
+    const first = state.players.player.hand[0]!;
+
+    expect(CARDS[state.players.player.cards[first]!.defId]!.text).toBe(up.text);
+  });
+
+  it('is what a deck of base ids becomes once the card is raised', () => {
+    // The whole chain in one assertion: saved deck of base ids, account-wide mark, and
+    // the fight that receives the upgraded printing without anything having migrated.
+    const collection = withAscended(['shield_bash']);
+    const saved = Array.from({ length: 12 }, () => 'shield_bash');
+
+    expect(printings(printedDeck(collection, saved)).every((id) => id === ascendedId('shield_bash'))).toBe(true);
+    expect(printings(saved).every((id) => id === 'shield_bash'), 'and not before').toBe(true);
   });
 });

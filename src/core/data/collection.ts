@@ -108,7 +108,7 @@ export function grantCard(collection: Collection, cardId: string): Collection {
  *
  * Setup-only stat blocks are placed by the engine and are not cards anyone can hold; the
  * Rite is injected by the Trial itself. One predicate rather than one filter per caller —
- * the reward roller and the Artificer's blueprint list have to agree about this, and the
+ * the reward roller and the Artificer's Schematic list have to agree about this, and the
  * last time the rule lived in two places, a rename left one of them offering the Rite.
  */
 export function isObtainable(def: CardDef): boolean {

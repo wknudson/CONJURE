@@ -8,7 +8,7 @@
  *
  * The ledger is the point of the room. The Gauntlet does not heal you between encounters,
  * so the Pact gauge here is the only place a player sees what the last fight actually
- * cost before deciding whether the purse goes on a tonic or a blueprint.
+ * cost before deciding whether the purse goes on a tonic or a Schematic.
  */
 
 import type { Screen } from './ScreenManager.js';
@@ -18,6 +18,7 @@ import type { Bounty } from '../core/data/bounties.js';
 import { INVENTORY_LIMIT, isCritical } from '../core/overworld/state.js';
 import { useConsumable } from '../core/overworld/run.js';
 import { ascendableFor } from '../core/data/collection.js';
+import { schematicsFor } from '../core/data/artificer.js';
 import { companionById } from '../core/data/companions.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import { encounterById } from '../core/data/encounters/index.js';
@@ -241,10 +242,10 @@ export class SafehouseScreen implements Screen {
         trade: 'Forging & Splicing',
         blurb: 'Belt-driven, and far too warm. A card goes in known and comes out mastered.',
         status: () => {
-          const n = ascendableFor(collection).length;
-          return n === 0
-            ? 'Nothing on the bench'
-            : `${n} card${n === 1 ? '' : 's'} ready to ascend`;
+          const raise = ascendableFor(collection).length;
+          const cut = schematicsFor(collection).length;
+          if (raise > 0) return `${raise} ready to ascend · ${cut} schematics`;
+          return cut === 0 ? 'Nothing on the bench' : `${cut} schematics on file`;
         },
         onOpen: this.opts.onArtificer,
       },
