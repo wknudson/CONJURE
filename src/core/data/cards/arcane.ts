@@ -8,9 +8,12 @@
  * one of these wants reach, it buys it with the shape of its target instead, which is a
  * thing the board can actually check.
  *
- * The four here deliberately cover the two ends of a Hero's job: reaching out to move the
- * enemy where you want them (Grapple Line, Cull the Weak) and building something between
- * them and the Pact (Scrap Phalanx, Alchemist's Barricade).
+ * The set covers the two ends of a Hero's job: reaching out to move the enemy where you
+ * want them (Grapple Line, Cull the Weak) and building something between them and the Pact
+ * (Scrap Phalanx, Alchemist's Barricade, Volatile Munitions Cask).
+ *
+ * Only the first four are seeded into a new collection — see `ARCANE_BASELINE`. The Cask
+ * is content to be earned rather than part of the floor.
  */
 
 import type { CardDef } from '../../types/cards.js';
@@ -118,6 +121,43 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
     target: { kind: 'global' },
     effect: { op: 'damage', amount: 4, dtype: 'true', area: { shape: 'lowestHpEnemy' } },
     keywords: [],
+  },
+
+  /**
+   * A wall that is also a bomb.
+   *
+   * Two ops in one `seq`: raise the cask, then wire it. The second half only works because
+   * `spawnConstruct` records what it built into the play context — a card aimed at an
+   * *empty tile* has no entity in `chosen`, so without that handoff the rune would find no
+   * host and the cask would go up unwired, silently.
+   *
+   * The rune's trigger is `death`, not `hpLoss`, which is the whole decision the card
+   * asks. Chipping the cask does nothing. Somebody has to actually break it — and whoever
+   * breaks it is standing next to it when it goes.
+   *
+   * Four health is deliberately thin. It is not there to hold a lane; it is there to be
+   * destroyed, by them in a hurry or by you on purpose.
+   */
+  volatile_cask: {
+    id: 'volatile_cask',
+    name: 'Volatile Munitions Cask',
+    cost: { pips: 2, marrow: 0 },
+    school: 'arcane',
+    source: 'hero',
+    kind: 'obstacle',
+    text: 'Raises a 4 HP cask on an empty tile. When it is destroyed it detonates for 3 impact damage in a cross around it, and leaves rubble.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'spawnConstruct', obstacleDef: 'volatile_cask', hp: 4 },
+        { op: 'attachRune', rune: 'cask_blast' },
+      ],
+    },
+    keywords: [],
+    obstacleHp: 4,
+    // Broken masonry either way — the blast does not tidy the tile up after itself.
+    leavesRubble: true,
   },
 
   /**

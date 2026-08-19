@@ -56,14 +56,25 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
     case 'spawnObstacle': {
       const at = play.chosen.kind === 'tile' ? play.chosen.at : undefined;
       if (!at) return;
-      spawnObstacle(ctx, node.obstacleDef, play.side, at, wallHp(ctx, play.side, node.obstacleDef));
+      play.spawnedObstacleId = spawnObstacle(
+        ctx,
+        node.obstacleDef,
+        play.side,
+        at,
+        wallHp(ctx, play.side, node.obstacleDef),
+      );
       return;
     }
 
     case 'attachRune': {
+      // Whatever was picked, or — for a card aimed at an empty tile — whatever this same
+      // play just raised there. That fallback is what lets one card build a thing and
+      // wire it in a single `seq`; without it the rune would have no host and vanish.
       const ref = chosenRef(play);
-      if (!ref || ref.kind === 'portrait') return;
-      const host = getEntity(ctx.state, ref.id);
+      const hostId = ref && ref.kind !== 'portrait' ? ref.id : play.spawnedObstacleId;
+      if (!hostId) return;
+
+      const host = getEntity(ctx.state, hostId);
       if (!host) return;
       attachRune(ctx, host, node.rune);
       return;
@@ -170,7 +181,7 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       if (play.chosen.kind !== 'tile') return;
       // Raised at this spell's strength rather than the definition's, plus whatever the
       // caster's gear adds — both settled here so the spawn emits the true number.
-      spawnObstacle(
+      play.spawnedObstacleId = spawnObstacle(
         ctx,
         node.obstacleDef,
         play.side,

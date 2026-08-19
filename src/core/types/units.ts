@@ -29,6 +29,17 @@ export interface RuneDef {
   dtype: DamageType;
   /** Blast pattern the renderer highlights and the engine damages. */
   blast: BlastPattern;
+  /**
+   * Statuses the blast leaves on the units it catches.
+   *
+   * A list, because a trap can do two things at once — roots that hold *and* poison — and
+   * modelling that as two runes would mean two attachments on a target that may hold one.
+   *
+   * Statuses only, never a damage number: `damage` is already the field for that, and a
+   * second one would be two ways to say the same thing. A rune with `damage: 0` and an
+   * entry here is a pure control trap, which is a real card and not a broken one.
+   */
+  applies?: { status: StatusKind; stacks: number }[];
   text: string;
 }
 

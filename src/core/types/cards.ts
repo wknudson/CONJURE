@@ -311,4 +311,14 @@ export interface CardPlayContext {
   chosen: ChosenTarget;
   sacrificedHp?: number;
   summonedUnitId?: UnitId;
+  /**
+   * The obstacle this card just raised, for the ops that come after it.
+   *
+   * The counterpart to `summonedUnitId`, and needed for the same reason: a card aimed at
+   * an *empty tile* has no entity in `chosen`, so anything downstream that wants to touch
+   * what was just built — attaching a rune to it, most obviously — has no other way to
+   * name it. Without this a `seq` of "raise a cask, then wire it" silently raises an
+   * unwired cask.
+   */
+  spawnedObstacleId?: UnitId;
 }

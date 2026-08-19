@@ -9,14 +9,15 @@
  *     rune without detonating.
  */
 
-import type { Coord, DamageType, UnitId } from '../../contract/ids.js';
+import type { Coord, TargetRef, UnitId } from '../../contract/ids.js';
 import { coordEq } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
 import { emit, newCause } from './context.js';
-import type { BlastPattern, Entity } from '../types/units.js';
+import type { BlastPattern, Entity, RuneDef } from '../types/units.js';
 import { RUNES } from '../data/runes.js';
 import { allEntities, entityAt, getEntity, lowestHpEnemy, refOf } from './board.js';
 import { dealDamage, type DamageRequest } from './damage.js';
+import { applyStatusTo } from './status.js';
 import { cellsOf, chebyshev, manhattan } from '../util/grid.js';
 
 /** Cascades deeper than this abort — a hard backstop against pathological loops. */
@@ -123,7 +124,39 @@ export function detonate(ctx: Ctx, host: Entity, chainDepth: number, bonusDamage
     chainDepth,
   });
 
-  applyBlast(ctx, host, def.blast, def.damage + bonusDamage, def.dtype, chainDepth, affected);
+  applyBlast(ctx, host, def, def.damage + bonusDamage, chainDepth, affected);
+}
+
+/**
+ * What a detonation does to one victim: the damage, then whatever it leaves behind.
+ *
+ * Both halves in one place so a rune can never damage without applying, or the reverse.
+ *
+ * A zero-damage rune skips `dealDamage` entirely rather than calling it with nothing — an
+ * empty hit still emits a `damageDealt` the HUD would draw as a "0", and it would run the
+ * whole reaction and rune-trigger pipeline for a blow that never landed.
+ *
+ * Statuses land after the damage and only on a survivor, the same discipline `onHit`
+ * keeps: entangling a corpse is bookkeeping nobody reads.
+ */
+function strike(
+  ctx: Ctx,
+  def: RuneDef,
+  target: TargetRef,
+  amount: number,
+  chainDepth: number,
+): void {
+  if (amount > 0) {
+    dealDamage(ctx, { target, amount, dtype: def.dtype, cause: 'rune', chainDepth });
+  }
+
+  if (!def.applies?.length || target.kind !== 'unit') return;
+  const victim = ctx.state.units[target.id];
+  if (!victim) return;
+
+  for (const rider of def.applies) {
+    applyStatusTo(ctx, victim, rider.status, rider.stacks);
+  }
 }
 
 function blastTiles(ctx: Ctx, host: Entity, blast: BlastPattern): Coord[] {
@@ -163,22 +196,15 @@ function blastTiles(ctx: Ctx, host: Entity, blast: BlastPattern): Coord[] {
 function applyBlast(
   ctx: Ctx,
   host: Entity,
-  blast: BlastPattern,
+  def: RuneDef,
   amount: number,
-  dtype: DamageType,
   chainDepth: number,
   affected: Coord[],
 ): void {
-  if (blast.shape === 'lowestHpEnemy') {
+  if (def.blast.shape === 'lowestHpEnemy') {
     const victim = lowestHpEnemy(ctx.state, host.side);
     if (victim) {
-      dealDamage(ctx, {
-        target: { kind: 'unit', id: victim.id },
-        amount,
-        dtype,
-        cause: 'rune',
-        chainDepth,
-      });
+      strike(ctx, def, refOf(victim), amount, chainDepth);
     }
     return;
   }
@@ -193,13 +219,7 @@ function applyBlast(
   for (const id of victims) {
     const e = getEntity(ctx.state, id);
     if (!e || e.hp <= 0) continue;
-    dealDamage(ctx, {
-      target: refOf(e),
-      amount,
-      dtype,
-      cause: 'rune',
-      chainDepth,
-    });
+    strike(ctx, def, refOf(e), amount, chainDepth);
   }
 
   // A detonation on an enemy-owned host also chips the opposing commander is NOT a rule;
