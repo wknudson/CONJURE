@@ -44,6 +44,7 @@ export function summonUnit(
     rangeMin: stats.rangeMin,
     rangeMax: stats.rangeMax,
     ...(stats.attackProfile ? { attackProfile: stats.attackProfile } : {}),
+    ...(stats.onHit ? { onHit: { ...stats.onHit } } : {}),
     school: def.school,
     archetype: stats.archetype,
     keywords: [...def.keywords],

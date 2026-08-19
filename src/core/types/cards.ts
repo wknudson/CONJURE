@@ -121,6 +121,22 @@ export type AttackProfile =
   /** Lobs over everything, and so needs no line at all — but cannot hit what is close. */
   | 'arcing';
 
+/**
+ * What a unit's ordinary attack leaves behind, beyond damage.
+ *
+ * Deliberately a *status*, never a number: a rider that added damage would be an attack
+ * stat wearing a different name, and the same reason relics have nowhere to put one
+ * applies here. What this buys is setup — a body that charges what it hits is a body that
+ * makes somebody else's fire spell into an Overload.
+ *
+ * Applied after the blow resolves and only to a survivor. Branding a corpse means nothing,
+ * and it would be removed from the board in the same step.
+ */
+export interface OnHitRider {
+  status: StatusKind;
+  stacks: number;
+}
+
 export interface UnitStatBlock {
   atk: number;
   hp: number;
@@ -132,6 +148,8 @@ export interface UnitStatBlock {
   sacrificeValue: number;
   escalationBonus: { atk: number; hp: number };
   attackProfile?: AttackProfile;
+  /** A status its ordinary attacks leave on whatever survives them. */
+  onHit?: OnHitRider;
 }
 
 /**

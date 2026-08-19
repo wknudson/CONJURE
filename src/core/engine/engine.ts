@@ -12,6 +12,7 @@ import type { TargetRef } from '../../contract/ids.js';
 import type { Command } from '../types/commands.js';
 import { IllegalCommandError } from '../types/commands.js';
 import type { GameState, StepResult } from '../types/state.js';
+import type { Unit } from '../types/units.js';
 import type { CardDef, CardPlayContext, ChosenTarget } from '../types/cards.js';
 import type { Ctx } from './context.js';
 import { emit, makeCtx, newCause } from './context.js';
@@ -22,6 +23,7 @@ import { executeEffect } from './effects.js';
 import { canAct, canAttack, canMove, findMove, setAnchor } from './movement.js';
 import { legalAttacks, legalCardTargets } from './targeting.js';
 import { dealDamage } from './damage.js';
+import { applyStatusTo } from './status.js';
 import { killEntity, checkLethal } from './death.js';
 import { getEntity, refOf } from './board.js';
 import { toCardSnapshot } from './views.js';
@@ -249,6 +251,27 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
     ...(isMelee ? { sourceUnitId: attackerId } : {}),
   });
 
+  applyOnHit(ctx, attacker.onHit, target);
+}
+
+/**
+ * The rider an attack leaves behind, if it has one.
+ *
+ * Three things it deliberately does not do. It does not brand a corpse — a status on
+ * something already removed is bookkeeping nobody reads, and the kill is the better
+ * outcome anyway. It does not touch obstacles or portraits, neither of which carries a
+ * status field. And it is applied *after* the damage rather than before, so the blow is
+ * resolved against the board as it was swung at: charging a target and then hitting it
+ * would let a single Bombardier set up and cash in its own Overload.
+ */
+function applyOnHit(ctx: Ctx, rider: Unit['onHit'], target: TargetRef): void {
+  if (!rider || target.kind !== 'unit') return;
+  if (ctx.state.result) return;
+
+  const victim = ctx.state.units[target.id];
+  if (!victim) return;
+
+  applyStatusTo(ctx, victim, rider.status, rider.stacks);
 }
 
 /**

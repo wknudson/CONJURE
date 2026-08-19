@@ -176,6 +176,10 @@ export function addUnit(state: GameState, spec: UnitSpec): Unit {
     rangeMin: stats.rangeMin,
     rangeMax: spec.rangeMax ?? stats.rangeMax,
     ...(stats.attackProfile ? { attackProfile: stats.attackProfile } : {}),
+    // Kept in step with `spawn.ts`. This builder duplicates that construction rather than
+    // calling it, so every field added to a stat block has to be added here too — miss one
+    // and the tests quietly exercise a different unit than the game spawns.
+    ...(stats.onHit ? { onHit: { ...stats.onHit } } : {}),
     school: def.school,
     archetype: stats.archetype,
     keywords: (spec.keywords as Unit['keywords']) ?? [...def.keywords],

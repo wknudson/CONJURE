@@ -87,6 +87,50 @@ export const SURGE_CARDS: Record<string, CardDef> = {
     },
   },
 
+  /**
+   * The siege engine that sets the table.
+   *
+   * `arcing`, so it drops its shells over walls, Guardians and its own front line without
+   * needing a clear line to anything — and `rangeMin: 2`, because an arcing profile with
+   * no blind spot is simply a better crossbow. It cannot depress its aim onto whatever
+   * walks up to it, which is the price of shooting over everything else.
+   *
+   * The rider is what it is really for. One damage a turn is nothing; one damage a turn
+   * that leaves the target **Charged** is a standing invitation for a Pyre or Frost card
+   * to Overload or Superconduct it. A Bombardier behind a Slag-Iron Golem is a machine for
+   * making somebody else's spell land twice as hard.
+   *
+   * Deliberately unable to cash in its own setup: the charge lands *after* its blow
+   * resolves, so it can never charge and detonate a target in one swing.
+   */
+  clockwork_bombardier: {
+    id: 'clockwork_bombardier',
+    name: 'Clockwork Bombardier',
+    cost: { pips: 3, marrow: 0 },
+    school: 'surge',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Lobber. Fires 2-4 tiles, arcing over cover, and cannot depress its aim onto anything adjacent. Whatever survives a shell is left Charged.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'clockwork_bombardier' },
+    keywords: [],
+    unit: {
+      atk: 1,
+      hp: 4,
+      mov: 1,
+      // The mortar profile, matching the two lobbers already in the game.
+      rangeMin: 2,
+      rangeMax: 4,
+      footprint: 1,
+      archetype: 'sniper',
+      sacrificeValue: 1,
+      attackProfile: 'arcing',
+      onHit: { status: 'charged', stacks: 1 },
+      // Unreachable without the Escalate keyword; the stat block demands the field anyway.
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
   arc_lash: {
     id: 'arc_lash',
     name: 'Arc Lash',

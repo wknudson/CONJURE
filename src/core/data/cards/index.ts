@@ -15,6 +15,8 @@ import { TERRAIN_CARDS } from './terrain.js';
 import { RANGED_CARDS } from './ranged.js';
 import { SURGE_CARDS } from './surge.js';
 import { BLOOM_CARDS } from './bloom.js';
+import { BULWARK_CARDS } from './bulwark.js';
+import { DUSK_CARDS } from './dusk.js';
 import { GASLAMP_CARDS } from './gaslamp.js';
 import { WILDLIFE_CARDS } from './wildlife.js';
 import { HYBRID_CARDS } from './hybrid.js';
@@ -28,6 +30,8 @@ const RANK1: Record<string, CardDef> = {
   ...RANGED_CARDS,
   ...SURGE_CARDS,
   ...BLOOM_CARDS,
+  ...BULWARK_CARDS,
+  ...DUSK_CARDS,
   ...GASLAMP_CARDS,
   ...WILDLIFE_CARDS,
   ...HYBRID_CARDS,
@@ -116,6 +120,8 @@ for (const source of [
   RANGED_CARDS,
   SURGE_CARDS,
   BLOOM_CARDS,
+  BULWARK_CARDS,
+  DUSK_CARDS,
   GASLAMP_CARDS,
   WILDLIFE_CARDS,
   HYBRID_CARDS,

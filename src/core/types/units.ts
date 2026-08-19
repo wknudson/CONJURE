@@ -10,7 +10,7 @@ import type {
   UnitId,
 } from '../../contract/ids.js';
 import type { UnitArchetype } from '../../contract/snapshots.js';
-import type { AttackProfile } from './cards.js';
+import type { AttackProfile, OnHitRider } from './cards.js';
 
 /** How a rune decides to detonate. */
 export type RuneTrigger =
@@ -59,6 +59,8 @@ export interface Unit {
   rangeMax: number;
   /** How its attacks travel. Undefined is free aim, needing a clear line. */
   attackProfile?: AttackProfile;
+  /** What its attacks leave on a survivor. Undefined is an ordinary swing. */
+  onHit?: OnHitRider;
   school: School;
   archetype: UnitArchetype;
   keywords: Keyword[];
