@@ -80,7 +80,41 @@ export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
     catalystId: 'core_surge',
     resultId: 'superconduct_strike',
   },
+  // The mirror of the first row, and the only thing a Pyre Core is good for. Until this
+  // existed the bench had no recipe taking one at all, so a core earned from a Master
+  // contract could sit in the bag forever with nothing to spend it on.
+  {
+    baseCardId: 'glacial_spike',
+    catalystId: 'core_pyre',
+    resultId: 'cryo_combustion',
+  },
+  {
+    baseCardId: 'spore_cloud',
+    catalystId: 'core_surge',
+    resultId: 'galvanic_spores',
+  },
+  {
+    baseCardId: 'dark_tithe',
+    catalystId: 'core_surge',
+    resultId: 'aetheric_defibrillator',
+  },
 ];
+
+/**
+ * Guards the book against two rows claiming the same pressing.
+ *
+ * `recipeFor` takes the first match, so a duplicate pairing would make the later row
+ * unreachable — a card in the registry that no amount of play could ever produce. Checked
+ * at module load rather than in a test, because the failure is silent everywhere else.
+ */
+{
+  const seen = new Set<string>();
+  for (const r of SPLICE_RECIPES) {
+    const key = `${r.baseCardId}+${r.catalystId}`;
+    if (seen.has(key)) throw new Error(`duplicate splice recipe: ${key}`);
+    seen.add(key);
+  }
+}
 
 /** The recipe for a pairing, or undefined if the bench has never heard of it. */
 export function recipeFor(baseCardId: string, catalystId: string): SpliceRecipe | undefined {

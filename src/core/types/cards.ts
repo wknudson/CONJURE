@@ -321,4 +321,13 @@ export interface CardPlayContext {
    * unwired cask.
    */
   spawnedObstacleId?: UnitId;
+  /**
+   * The tile a `sacrificeTarget` just emptied.
+   *
+   * The third of these handoffs, and the same shape as the other two. A card that offers
+   * up a body and then puts something in its place has to name that place, and the body
+   * is gone by the time the second op runs — so the tile is remembered at the moment it
+   * is vacated rather than looked up afterwards.
+   */
+  vacatedAt?: Coord;
 }

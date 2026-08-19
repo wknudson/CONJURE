@@ -46,7 +46,10 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
     }
 
     case 'summon': {
-      const at = play.chosen.kind === 'tile' ? play.chosen.at : undefined;
+      // The chosen tile, or — for a card that just offered something up — the ground that
+      // offering was standing on. Without the fallback a `seq` of "spend this, raise that"
+      // has nowhere to raise it, because an entity-targeted card carries no tile at all.
+      const at = play.chosen.kind === 'tile' ? play.chosen.at : play.vacatedAt;
       if (!at) return;
       const id = summonUnit(ctx, node.unitDef, play.side, at);
       if (id) play.summonedUnitId = id;
@@ -120,6 +123,8 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       const unit = ctx.state.units[ref.id];
       if (!unit) return;
       play.sacrificedHp = unit.hp;
+      // Remembered before the body is removed: whatever comes next may want this ground.
+      play.vacatedAt = { ...unit.anchor };
 
       // An offering made by a card is still an offering. `sacrificeTarget` pays nothing
       // of its own — Dark Tithe's Marrow comes from its own `extractMarrow` — but the

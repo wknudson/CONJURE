@@ -13,6 +13,45 @@ import type { CardDef } from '../../types/cards.js';
 
 export const DUSK_CARDS: Record<string, CardDef> = {
   /**
+   * What an Aetheric Defibrillator leaves standing.
+   *
+   * `setupOnly`, so it is never drawn, owned, offered as a reward or put in a deck — the
+   * same guard the Vanguard Footman and the Bound Forms use. It exists only as the stat
+   * block that card summons.
+   *
+   * Haste is on the block itself because there is nowhere else to put it: no op grants a
+   * keyword at summon time, and adding one for a single caller would be a rule with one
+   * user. A body that could not act the turn it was jolted upright would also miss the
+   * entire point of the card.
+   */
+  galvanic_revenant: {
+    id: 'galvanic_revenant',
+    name: 'Galvanic Revenant',
+    cost: { pips: 0, marrow: 0 },
+    school: 'dusk',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Haste. Jolted upright and already moving. It does not remember what it was.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'galvanic_revenant' },
+    keywords: ['Haste'],
+    setupOnly: true,
+    unit: {
+      atk: 2,
+      hp: 3,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'skirmisher',
+      // Worth nothing as an offering. Sacrificing the thing you just made by sacrificing
+      // something else is a loop, and a cheap one.
+      sacrificeValue: 0,
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /**
    * A Wisp's worth of Marrow on a body that cannot chase anything.
    *
    * Two attack on two health with no movement at all: it threatens exactly the tile it was

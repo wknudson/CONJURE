@@ -19,6 +19,117 @@ import type { CardDef } from '../../types/cards.js';
 
 export const HYBRID_CARDS: Record<string, CardDef> = {
   /**
+   * Frost pressed with a Pyre core.
+   *
+   * The mirror of Vaporize Blast, and deliberately the other way round: that card is a
+   * fire spell taught to freeze first, this one is a cold spell taught to burn after.
+   *
+   * The order is the card. `impact` lands first, so anything already Frozen **Shatters**
+   * — losing all its armour — and the Burn that follows goes on a target that has just
+   * had its plate taken off. Against anything unprepared it is two damage and a fire,
+   * which is a fair price for a card that costs a Pyre core.
+   *
+   * What it does *not* do is Vaporize on the cast, and that is worth stating because it is
+   * the obvious thing to assume. Reactions are evaluated inside `dealDamage`; applying a
+   * status is not damage. The flame lands as a status and sets nothing off — but the burn
+   * *tick* deals real `fire` damage, and it runs before Chill decays in the same
+   * start-of-turn order, so a Chilled target Vaporizes on its own next turn instead.
+   *
+   * Aimed at a body rather than a tile: this is a finisher pointed at something already
+   * set up, not a burst thrown into a crowd.
+   */
+  cryo_combustion: {
+    id: 'cryo_combustion',
+    name: 'Cryo-Combustion',
+    cost: { pips: 3, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 2 impact damage, then sets the target alight for 2 Burn. A Frozen target Shatters first and loses all Armor. A Chilled one Vaporizes when the fire next bites, on its own turn.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 2, dtype: 'impact', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'burn', stacks: 2, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * Bloom pressed with a Surge core.
+   *
+   * Spore Cloud already lays the fuse for Wildfire; this lays that fuse *and* the one
+   * Overload and Superconduct read, on the same cross, in one card. It is the only thing
+   * in the game that puts two different reagents' worth of setup on a tile at once.
+   *
+   * One Toxin rather than Spore Cloud's two: the card buys breadth, not depth, and a
+   * hybrid that beat its own base card at the base card's job would make the base card
+   * pointless.
+   */
+  galvanic_spores: {
+    id: 'galvanic_spores',
+    name: 'Galvanic Spores',
+    cost: { pips: 2, marrow: 1 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Everything orthogonally beside the target tile is left Charged and takes 1 Toxin. Fire Overloads or ignites it; frost Superconducts.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'applyStatus', status: 'charged', stacks: 1, area: { shape: 'adjacentCross' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'adjacentCross' } },
+      ],
+    },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * Dusk pressed with a Surge core.
+   *
+   * Dark Tithe spends a body for armour and Marrow. This spends one for a *different
+   * body*, standing on the same ground and able to act at once — the tempo card the Dusk
+   * school never had.
+   *
+   * Two engine seams meet here. `sacrificeTarget` remembers the tile it emptied, and
+   * `summon` falls back to it, because a card aimed at an ally carries no tile of its own.
+   * And the Haste is baked into the revenant's own stat block rather than granted at
+   * summon time: nothing in the engine can add a keyword to a body mid-play, and inventing
+   * that for one card would be a rule with a single caller.
+   *
+   * Deliberately no Marrow. Dark Tithe pays out; this one converts, and a card that did
+   * both would simply be Dark Tithe plus a free minion.
+   */
+  aetheric_defibrillator: {
+    id: 'aetheric_defibrillator',
+    name: 'Aetheric Defibrillator',
+    cost: { pips: 3, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Sacrifice an un-exhausted friendly minion. A Galvanic Revenant stands up on the same tile, ready to move and strike this turn.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false, requireUnexhausted: true },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'sacrificeTarget' },
+        { op: 'summon', unitDef: 'galvanic_revenant' },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    spliceOnly: true,
+  },
+  /**
    * Pyre pressed with a Frost core.
    *
    * Fire that arrives on something already frozen, in one card. It applies the frost
