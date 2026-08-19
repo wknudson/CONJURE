@@ -12,7 +12,7 @@
 
 import type { CardInstanceId, Coord, TargetRef, UnitId } from '../contract/ids.js';
 import { coordEq, coordKey } from '../contract/ids.js';
-import type { Action, RulesQuery, TargetSpec } from '../contract/query.js';
+import type { Action, BoardView, RulesQuery, TargetSpec } from '../contract/query.js';
 import type { Overlays } from '../render/BoardRenderer.js';
 import { emptyOverlays } from '../render/BoardRenderer.js';
 import { cellsAt } from '../core/util/grid.js';
@@ -313,6 +313,9 @@ export class TargetingController {
     if (this.mode.kind === 'targeting') {
       this.paintCardTargets(overlays, this.mode.spec);
       this.paintCastOrigin(overlays, this.mode.card);
+      // After the targets and the origin, both of which it reads.
+      this.paintDimmed(overlays, this.mode.card);
+      this.paintCardTrajectory(overlays, this.mode.card);
       this.previewInto(overlays, this.mode.card, this.mode.spec);
     } else if (this.mode.kind === 'unit') {
       this.paintUnitOptions(overlays, this.mode.unit);
@@ -321,6 +324,8 @@ export class TargetingController {
       const spec = this.rules.getLegalTargets(this.hoveredCard);
       this.paintCardTargets(overlays, spec);
       this.paintCastOrigin(overlays, this.hoveredCard);
+      this.paintDimmed(overlays, this.hoveredCard);
+      this.paintCardTrajectory(overlays, this.hoveredCard);
     }
 
     this.cb.setOverlays(overlays);
@@ -339,6 +344,103 @@ export class TargetingController {
     if (!info) return;
     overlays.castOrigin = info.origin;
     if (info.occluded.length) overlays.fog = info.occluded;
+  }
+
+  /**
+   * Shades what the cast can reach and cannot use.
+   *
+   * The highlighting says where you may aim; on its own it says nothing about why the
+   * rest are refused, and "not lit" covers both "too far to bother showing you" and "you
+   * could reach that and it will not work". Only the second is worth drawing, so the
+   * shading is bounded by the card's own reach: everything inside the envelope that is
+   * neither a legal target nor already hatched as unseeable.
+   *
+   * Chebyshev, like every other distance in the game.
+   */
+  private paintDimmed(overlays: Overlays, cardId: CardInstanceId): void {
+    const info = this.rules.castInfo(cardId);
+    if (!info) return;
+
+    const legal = new Set(overlays.highlight.map((c) => coordKey(c)));
+    const unseen = new Set(overlays.fog.map((c) => coordKey(c)));
+    const board = this.rules.getBoard();
+    const out: Coord[] = [];
+
+    for (let y = 0; y < board.height; y += 1) {
+      for (let x = 0; x < board.width; x += 1) {
+        const at = { x, y };
+        const key = coordKey(at);
+        if (legal.has(key) || unseen.has(key)) continue;
+        const reach = Math.max(
+          Math.abs(x - info.origin.x),
+          Math.abs(y - info.origin.y),
+        );
+        if (reach === 0 || reach > info.range) continue;
+        out.push(at);
+      }
+    }
+
+    overlays.dimmed = out;
+  }
+
+  /**
+   * The one flight line, drawn to whatever is under the cursor.
+   *
+   * Deliberately one rather than one per legal tile: thirty lines fanning out of a body
+   * is a starburst, not an answer. The question a player is asking while hovering is
+   * "what happens if I click *here*", and the line answers exactly that.
+   *
+   * A card that does not need a line of sight is drawn as a lob, because that is what
+   * not needing one means — it goes over rather than through, and on an isometric board
+   * the arc is the only thing that says so.
+   */
+  private paintCardTrajectory(overlays: Overlays, cardId: CardInstanceId): void {
+    if (!this.hover) return;
+    const info = this.rules.castInfo(cardId);
+    if (!info) return;
+    if (!overlays.highlight.some((c) => coordEq(c, this.hover!))) return;
+
+    const card = this.rules.getHand().find((c) => c.instanceId === cardId);
+    overlays.trajectory = [
+      {
+        from: info.origin,
+        to: this.hover,
+        school: card?.school ?? 'neutral',
+        arcing: !info.needsLoS,
+      },
+    ];
+  }
+
+  /**
+   * The selected body's own reach: the ring around all of it, and the badge beside it.
+   *
+   * A Behemoth ringed on its anchor alone reads as a 1x1 standing inside a 2x2, so the
+   * footprint is expanded here, where it is known, rather than guessed at in the renderer.
+   */
+  private paintReach(overlays: Overlays, unit: BoardView['units'][number]): void {
+    overlays.selectedCells = cellsAt(unit.anchor, unit.footprint);
+
+    const profile: 'melee' | 'ranged' | 'arcing' =
+      unit.attackProfile === 'arcing' ? 'arcing' : unit.rangeMax > 1 ? 'ranged' : 'melee';
+
+    overlays.badges = [
+      { unitId: unit.id, profile, rangeMin: unit.rangeMin, rangeMax: unit.rangeMax },
+    ];
+
+    // A shot at whatever is under the cursor, if it is something this body may hit.
+    if (this.hover && profile !== 'melee') {
+      const reachable = overlays.attack.some((c) => coordEq(c, this.hover!));
+      if (reachable) {
+        overlays.trajectory = [
+          {
+            from: unit.anchor,
+            to: this.hover,
+            school: unit.school,
+            arcing: profile === 'arcing',
+          },
+        ];
+      }
+    }
   }
 
   private paintCardTargets(overlays: Overlays, spec: TargetSpec): void {
@@ -368,6 +470,10 @@ export class TargetingController {
     const attacks = this.rules.getLegalAttacks(unitId);
     overlays.attack = attacks.flatMap((ref) => this.refCells(ref));
     this.cb.setEnemyTargetable(attacks.some((r) => r.kind === 'portrait'));
+
+    // After `attack` is filled: the trajectory is only drawn to a tile this body may
+    // actually strike, and that list is what says so.
+    if (unit) this.paintReach(overlays, unit);
 
     // Ranged units show their shadow cone so occlusion is visible, not guessed at.
     if (unit && unit.rangeMax >= 3) {

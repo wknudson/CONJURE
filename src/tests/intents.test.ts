@@ -28,7 +28,50 @@ describe('declaration', () => {
     expect(board.activeSide).toBe('player');
     expect(board.intents.length).toBeGreaterThan(0);
     for (const intent of board.intents) {
-      expect(['attack', 'commander', 'card']).toContain(intent.kind);
+      expect(['attack', 'commander', 'card', 'move', 'channel']).toContain(intent.kind);
+    }
+  });
+
+  it('actually produces the two new categories', () => {
+    // The `stun` lesson, applied to a vocabulary: a category that is typed, drawn and
+    // documented but never emitted is a rule nothing can reach. Swept across seeds
+    // because which body walks and which one swings is a property of the plan, not of
+    // the engine — one seed proving nothing would be a vacuous test.
+    const seen = new Set<string>();
+    for (let seed = 1; seed <= 14; seed += 1) {
+      for (const intent of afterEnemyDeclares(0, seed).getBoard().intents) {
+        seen.add(intent.kind);
+      }
+    }
+
+    expect(seen, `only saw ${[...seen].join(', ')}`).toContain('move');
+    // Channel is rarer — it needs an idle body with nothing worth hitting — so it is
+    // asserted across the wider sweep below rather than demanded of this encounter.
+    expect(seen.size).toBeGreaterThan(1);
+  });
+
+  it('keeps the whole vocabulary reachable across the catalogue', () => {
+    const seen = new Set<string>();
+    for (let e = 0; e < ENCOUNTERS.length; e += 1) {
+      for (let seed = 1; seed <= 6; seed += 1) {
+        for (const intent of afterEnemyDeclares(e, seed).getBoard().intents) {
+          seen.add(intent.kind);
+        }
+      }
+    }
+    // Every category the renderer draws a badge for has to be something the game emits.
+    expect(seen.has('attack') || seen.has('commander'), 'no hostile intent anywhere').toBe(true);
+    expect(seen.has('move'), 'nothing ever telegraphs a reposition').toBe(true);
+  });
+
+  it('announces a move once, not twice', () => {
+    // A move followed by a strike is one commitment. The approach is already carried as
+    // the attack's `path`, so a separate `move` badge would telegraph it a second time.
+    const board = afterEnemyDeclares().getBoard();
+    const byUnit = new Map<string, number>();
+    for (const i of board.intents) byUnit.set(i.unitId, (byUnit.get(i.unitId) ?? 0) + 1);
+    for (const [id, n] of byUnit) {
+      expect(n, `${id} declared ${n} intents`).toBe(1);
     }
   });
 

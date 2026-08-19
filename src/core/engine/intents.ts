@@ -83,6 +83,18 @@ export function declareIntents(
         break;
       }
 
+      case 'channel': {
+        const unit = state.units[command.unit];
+        if (!unit) break;
+        state.intents.push({
+          unitId: command.unit,
+          kind: 'channel',
+          at: { ...unit.anchor },
+          damage: 0,
+        });
+        break;
+      }
+
       case 'playCard': {
         // Card plays are the hidden half at higher difficulty: an Adept keeps what it is
         // holding to itself, so only its blows are foreseeable.
@@ -103,6 +115,28 @@ export function declareIntents(
 
       default:
         break;
+    }
+  }
+
+  // A body that only walks. Declared after the loop rather than inside it, because a
+  // move followed by a strike is *one* intent — the approach is already drawn as the
+  // attack's `path`, and announcing both would telegraph the same commitment twice.
+  //
+  // Gated behind the same telegraph setting as card plays: a Novice tells you everything,
+  // and an Adept keeps its footwork to itself. Without the gate this would hand the
+  // higher difficulty *more* information than the lower one.
+  if (telegraph === 'all') {
+    for (const [unitId, path] of plannedPath) {
+      if (state.intents.some((i) => i.unitId === unitId)) continue;
+      const to = path[path.length - 1];
+      if (!to) continue;
+      state.intents.push({
+        unitId,
+        kind: 'move',
+        at: { ...to },
+        path: path.map((c) => ({ ...c })),
+        damage: 0,
+      });
     }
   }
 

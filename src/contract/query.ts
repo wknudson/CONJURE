@@ -72,7 +72,7 @@ export interface BoardView {
   /** What the enemy has committed to next turn. Empty during the enemy's own turn. */
   intents: {
     unitId: UnitId;
-    kind: 'attack' | 'commander' | 'card';
+    kind: 'attack' | 'commander' | 'card' | 'move' | 'channel';
     at?: Coord;
     path?: Coord[];
     damage: number;

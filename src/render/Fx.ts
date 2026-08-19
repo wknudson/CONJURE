@@ -19,6 +19,24 @@ interface Ring {
   flatten?: number;
 }
 
+/**
+ * A shot in flight: a line that draws itself from thrower to target and fades.
+ *
+ * Transient by design — it exists for the length of the swing and leaves nothing behind.
+ * The board already says where bodies *are*; this says, for a moment, what just crossed
+ * between two of them, which is the half a still frame can never show.
+ */
+interface Tracer {
+  from: Coord;
+  to: Coord;
+  color: string;
+  /** Lobbed rather than flat. An arcing shot goes over things and has to look like it. */
+  arcing: boolean;
+  /** 1 at launch, 0 when spent. */
+  life: number;
+  decay: number;
+}
+
 interface Particle {
   x: number;
   y: number;
@@ -39,6 +57,7 @@ interface Particle {
 }
 
 export class Fx {
+  private tracers: Tracer[] = [];
   private rings: Ring[] = [];
   private particles: Particle[] = [];
   private flashAlpha = 0;
@@ -272,11 +291,37 @@ export class Fx {
     window.setTimeout(() => el.remove(), 1100);
   }
 
+  /** Drops every shot still in the air. Used when a fight ends mid-flight. */
+  clearTracers(): void {
+    this.tracers = [];
+  }
+
   clearFloaters(): void {
     this.floaterLayer.replaceChildren();
   }
 
+  /**
+   * Draws a shot crossing the board.
+   *
+   * Melee swings deliberately do not get one: a blade that already reached is not a
+   * projectile, and a tracer between adjacent tiles is a smear rather than a shot. The
+   * lunge animation is what sells those.
+   */
+  tracer(from: Coord, to: Coord, color: string, arcing: boolean, duration: number): void {
+    this.tracers.push({
+      from: { ...from },
+      to: { ...to },
+      color,
+      arcing,
+      life: 1,
+      decay: 1 / Math.max(60, duration),
+    });
+  }
+
   update(dt: number): void {
+    for (const tr of this.tracers) tr.life -= dt * tr.decay;
+    this.tracers = this.tracers.filter((tr) => tr.life > 0);
+
     for (const p of this.particles) {
       p.x += p.vx * dt * 0.06;
       p.y += p.vy * dt * 0.06;
@@ -287,6 +332,44 @@ export class Fx {
   }
 
   draw(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number): void {
+    // Tracers first: a shot passes behind the blast it causes.
+    for (const tr of this.tracers) {
+      const a = this.cam.tileCenter(tr.from);
+      const b = this.cam.tileCenter(tr.to);
+      // The head runs ahead of the tail, so the line reads as travelling rather than as
+      // simply appearing. Both are clamped, so the tail never overshoots the target.
+      const head = Math.min(1, (1 - tr.life) * 1.8);
+      const tail = Math.max(0, head - 0.45);
+
+      const at = (k: number): { x: number; y: number } => {
+        const x = a.x + (b.x - a.x) * k;
+        const y = a.y + (b.y - a.y) * k;
+        if (!tr.arcing) return { x, y };
+        // A parabola peaking at the midpoint, scaled to the span it has to cross.
+        const span = Math.hypot(b.x - a.x, b.y - a.y);
+        const lift = Math.min(90, 24 + span * 0.3);
+        return { x, y: y - Math.sin(k * Math.PI) * lift };
+      };
+
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, Math.min(1, tr.life * 1.4));
+      ctx.strokeStyle = tr.color;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = tr.color;
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      const steps = tr.arcing ? 12 : 1;
+      for (let i = 0; i <= steps; i += 1) {
+        const k = tail + ((head - tail) * i) / steps;
+        const pt = at(k);
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
     for (const ring of this.rings) {
       const centre = this.cam.tileCenter(ring.at);
       const squash = ring.flatten ?? 0.5;

@@ -200,7 +200,16 @@ export type HazardKind =
 export interface Intent {
   /** The acting unit, or `card:<instanceId>` for a declared card play. */
   unitId: UnitId;
-  kind: 'attack' | 'commander' | 'card';
+  /**
+   * What the body has committed to, as a **category** rather than as a plan.
+   *
+   * `move` and `channel` exist so that a unit which is doing *something* never reads as
+   * doing nothing: before them, only a declared strike produced an intent, so a beast
+   * walking into position and a beast standing idle were drawn identically. Both carry
+   * the same vagueness as the rest — where it is going, not what it will do when it
+   * arrives.
+   */
+  kind: 'attack' | 'commander' | 'card' | 'move' | 'channel';
   at?: Coord;
   /** Movement committed before the strike, for drawing the approach. */
   path?: Coord[];

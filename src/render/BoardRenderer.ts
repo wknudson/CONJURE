@@ -9,7 +9,8 @@ import type { IsoCamera } from './IsoCamera.js';
 import { TILE_H, TILE_W } from './IsoCamera.js';
 import type { EntityViewMap, EntityView } from './EntityViews.js';
 import type { Fx } from './Fx.js';
-import { PALETTE } from './palette.js';
+import { PALETTE, schoolOf } from './palette.js';
+import type { School } from '../contract/ids.js';
 import {
   drawBasePlate,
   drawBoundMark,
@@ -57,7 +58,7 @@ export interface Overlays {
   /** What the enemy has committed to next turn. */
   intents: {
     unitId: UnitId;
-    kind: 'attack' | 'commander' | 'card';
+    kind: 'attack' | 'commander' | 'card' | 'move' | 'channel';
     at?: Coord;
     damage: number;
     label?: string;
@@ -66,6 +67,46 @@ export interface Overlays {
   showThreat: boolean;
   /** Tile a Companion card is being cast from, marked while aiming it. */
   castOrigin: Coord | null;
+  /**
+   * Tiles in reach of the thing being aimed, but not legal targets for it.
+   *
+   * The counterpart to `highlight`, and the half that was missing: highlighting the legal
+   * tiles says *where* you may aim, and says nothing about why the rest are refused. A
+   * tile shaded here is one the card can see and cannot use — wrong shape, wrong
+   * occupant, too close for a mortar. Blocked sight keeps its own hatching (`fog`),
+   * because "you cannot see it" and "you can see it and it will not do" are different
+   * answers and a player acts on them differently.
+   */
+  dimmed: Coord[];
+  /**
+   * The flight the shot would take, drawn from where it is thrown to where it lands.
+   *
+   * A list because one cast can produce several — a beam down a rank touches every body
+   * on it. `arcing` lobs the line into a parabola instead of drawing it flat, which is
+   * the only way the profile reads on an isometric board: an arcing shot and a straight
+   * one cover the same tiles and differ entirely in what they may cross.
+   */
+  trajectory: { from: Coord; to: Coord; school: string; arcing: boolean }[];
+  /**
+   * Every cell of the selected body, rather than its anchor.
+   *
+   * A Behemoth anchored at one corner was ringed on that corner alone, which reads as a
+   * 1x1 standing inside a 2x2 rather than as the Behemoth being selected. `cellsAt` is
+   * the one expansion, done where the footprint is known.
+   */
+  selectedCells: Coord[];
+  /**
+   * Reach badges, drawn beside a body's stat bar while it is selected.
+   *
+   * Carried as data rather than read off the snapshot in the renderer, so the rule about
+   * *which* bodies show one stays in the controller with the rest of the targeting rules.
+   */
+  badges: {
+    unitId: UnitId;
+    profile: 'melee' | 'ranged' | 'arcing';
+    rangeMin: number;
+    rangeMax: number;
+  }[];
 }
 
 /** A Commander standing beside the board: on the field, off the grid. */
@@ -107,6 +148,10 @@ export function emptyOverlays(): Overlays {
     intents: [],
     showThreat: false,
     castOrigin: null,
+    dimmed: [],
+    trajectory: [],
+    selectedCells: [],
+    badges: [],
   };
 }
 
@@ -200,11 +245,17 @@ export class BoardRenderer {
     this.drawResonanceLane(pulse);
     this.drawHazards(pulse);
     this.drawOverlays(pulse);
+    // Above the tiles, below the bodies: a flight path passes behind what it is aimed at.
+    this.drawTrajectories(pulse);
     this.drawIntents(pulse);
     this.drawBoardObjects(pulse);
     this.drawTether();
     this.drawGhosts();
     this.drawPredictions();
+    // Last, and above everything: a badge that a body could stand in front of is a badge
+    // nobody can read.
+    this.drawIntentBadges(pulse);
+    this.drawReachBadges();
 
     if (spinning) ctx.restore();
 
@@ -545,6 +596,88 @@ export class BoardRenderer {
     }
   }
 
+  /**
+   * A category badge over every enemy that has committed to something.
+   *
+   * Deliberately **vague**: a blade, a boot, an orb. It answers "is that thing coming for
+   * me, repositioning, or casting" and refuses to answer "at whom, for how much" — the
+   * precise trajectory lines are a separate overlay, reserved for what earns them.
+   *
+   * Drawn over the body rather than over the destination, because the question is about
+   * that creature. The lines already say where.
+   */
+  private drawIntentBadges(pulse: number): void {
+    const { ctx, cam, overlays } = this;
+
+    for (const intent of overlays.intents) {
+      // Declared card plays are keyed `card:<id>` and have no body to sit over.
+      const view = this.views.get(intent.unitId);
+      if (!view || view.dead) continue;
+
+      const span = view.snapshot?.footprint === 2 ? 0.5 : 0;
+      const centre = cam.worldToScreen(
+        view.pos.x + 0.5 + span,
+        view.pos.y + 0.5 + span,
+        (54 + view.elev) * cam.zoom,
+      );
+      const r = 10 * cam.zoom;
+      const hostile = intent.kind === 'attack' || intent.kind === 'commander';
+
+      ctx.save();
+      ctx.translate(centre.x, centre.y);
+      ctx.globalAlpha = 0.82 + 0.18 * pulse;
+
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = hostile ? 'rgba(60, 12, 16, 0.9)' : 'rgba(12, 16, 26, 0.88)';
+      ctx.fill();
+      ctx.strokeStyle = hostile ? 'rgba(248, 113, 113, 0.9)' : 'rgba(148, 163, 184, 0.8)';
+      ctx.lineWidth = Math.max(1, 1.3 * cam.zoom);
+      ctx.stroke();
+
+      ctx.strokeStyle = hostile ? '#FECACA' : '#CBD5E1';
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.lineWidth = Math.max(1.2, 1.6 * cam.zoom);
+      ctx.lineCap = 'round';
+      const u = r * 0.5;
+
+      if (intent.kind === 'move') {
+        // A boot: sole and upper.
+        ctx.beginPath();
+        ctx.moveTo(-u * 0.7, -u);
+        ctx.lineTo(-u * 0.7, u * 0.5);
+        ctx.lineTo(u, u * 0.5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-u, u);
+        ctx.lineTo(u, u);
+        ctx.stroke();
+      } else if (intent.kind === 'channel' || intent.kind === 'card') {
+        // An orb with a spark through it.
+        ctx.beginPath();
+        ctx.arc(0, 0, u * 0.75, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -u * 1.25);
+        ctx.lineTo(0, -u * 0.75);
+        ctx.moveTo(0, u * 0.75);
+        ctx.lineTo(0, u * 1.25);
+        ctx.stroke();
+      } else {
+        // A blade on the diagonal, matching the melee reach badge.
+        ctx.beginPath();
+        ctx.moveTo(-u, u);
+        ctx.lineTo(u, -u);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-u * 0.2, -u * 0.9);
+        ctx.lineTo(u * 0.9, u * 0.2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
   private drawCommanderModel(c: CommanderModel, pulse: number): void {
     const { ctx, cam } = this;
     const centre = cam.worldToScreen(c.at.x + 0.5, c.at.y + 0.5, 0);
@@ -599,6 +732,16 @@ export class BoardRenderer {
     // Danger zone first, underneath everything else: it is context, not a choice.
     if (overlays.showThreat && overlays.threat.length) this.drawThreat();
 
+    // Refusals under the offers, so a legal tile is never drawn on top of its own denial.
+    // Dimming first, then hatching: a tile can be both out of shape *and* out of sight,
+    // and the sight answer is the more specific one.
+    for (const c of overlays.dimmed) {
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      fillTile(ctx, cam, c, 'rgba(8, 11, 18, 0.42)');
+      ctx.restore();
+    }
+
     for (const c of overlays.fog) hatchTile(ctx, cam, c);
 
     for (const c of overlays.highlight) {
@@ -617,10 +760,17 @@ export class BoardRenderer {
       ctx.restore();
     }
 
-    if (overlays.selected) {
+    // The selection ring, around the whole body. `selectedCells` is authoritative; the
+    // single `selected` anchor remains for anything still reading it.
+    const ringed = overlays.selectedCells.length
+      ? overlays.selectedCells
+      : overlays.selected
+        ? [overlays.selected]
+        : [];
+    for (const c of ringed) {
       ctx.save();
       ctx.globalAlpha = 0.5 + 0.35 * pulse;
-      fillTile(ctx, cam, overlays.selected, 'rgba(255,255,255,0.06)', '#FFFFFF');
+      fillTile(ctx, cam, c, 'rgba(255,255,255,0.06)', '#FFFFFF');
       ctx.restore();
     }
 
@@ -696,6 +846,8 @@ export class BoardRenderer {
     ctx.globalAlpha = view.alpha * (view.spent ? 0.5 : 1);
 
     if (view.snapshot) {
+      // Under the plate: the stain is ground the body is standing in, not paint on it.
+      this.drawStatusAura(view, pulse);
       drawBasePlate(ctx, cam, centre, footprint, ally);
 
       // A unit that has grown mechanically should look it. Scaled about its own feet so
@@ -795,6 +947,10 @@ export class BoardRenderer {
   private drawStatusChips(view: EntityView, centre: { x: number; y: number }): void {
     if (view.statuses.length === 0) return;
     const { ctx, cam } = this;
+    // Every status the game can apply has a face here. `brittle` and `charged` were the
+    // two that fell through to the `•` default — the first is what Superconduct leaves
+    // and the second is half of three reactions, so both were invisible exactly when they
+    // mattered most.
     const icons: Record<string, string> = {
       burn: '🔥',
       toxin: '☠',
@@ -802,6 +958,10 @@ export class BoardRenderer {
       freeze: '❄',
       entangle: '🌿',
       stun: '💫',
+      brittle: '🜃',
+      charged: '⚡',
+      aetherPlated: '🛡',
+      anchor: '⚓',
     };
 
     ctx.save();
@@ -816,6 +976,218 @@ export class BoardRenderer {
       );
       dx += 16 * cam.zoom;
     }
+    ctx.restore();
+  }
+
+
+  /**
+   * The flight a shot would take, in the school's own colour.
+   *
+   * Drawn above the tiles and below the bodies, so a line reads as passing *behind* what
+   * it is aimed at rather than being painted over it.
+   *
+   * A straight cast is a dashed line; an `arcing` one is lifted into a parabola. That
+   * difference is the whole point of the pass: an arcing shot and a flat one can cover
+   * exactly the same tiles and differ completely in what they are allowed to cross, and
+   * on an isometric board there is no other way to show which one you are holding.
+   */
+  private drawTrajectories(pulse: number): void {
+    const { ctx, cam, overlays } = this;
+    if (overlays.trajectory.length === 0) return;
+
+    for (const shot of overlays.trajectory) {
+      const colour = schoolColour(shot.school);
+      const from = cam.worldToScreen(shot.from.x + 0.5, shot.from.y + 0.5, 16 * cam.zoom);
+      const to = cam.worldToScreen(shot.to.x + 0.5, shot.to.y + 0.5, 16 * cam.zoom);
+
+      ctx.save();
+      ctx.globalAlpha = 0.5 + 0.3 * pulse;
+      ctx.strokeStyle = colour;
+      ctx.lineWidth = Math.max(1.5, 2.5 * cam.zoom);
+      ctx.lineCap = 'round';
+      ctx.setLineDash([6, 5]);
+      // Crawls toward the target, so the line reads as a direction rather than a tether.
+      ctx.lineDashOffset = -(this.clock / 14) % 11;
+
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      if (shot.arcing) {
+        // Height scaled to span: a lob across the board climbs, a lob next door barely
+        // leaves the ground, which is what makes the blind spot legible.
+        const span = Math.hypot(to.x - from.x, to.y - from.y);
+        const lift = Math.min(90, 26 + span * 0.32) * cam.zoom;
+        const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 - lift };
+        ctx.quadraticCurveTo(mid.x, mid.y, to.x, to.y);
+      } else {
+        ctx.lineTo(to.x, to.y);
+      }
+      ctx.stroke();
+
+      // A mark where it lands, so the end of the line is a point rather than a fade.
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.75 + 0.25 * pulse;
+      ctx.beginPath();
+      ctx.arc(to.x, to.y, Math.max(2.5, 4 * cam.zoom), 0, Math.PI * 2);
+      ctx.fillStyle = colour;
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  /**
+   * Reach badges beside a selected body's stat bar.
+   *
+   * Three shapes rather than three words, because this sits on the board rather than in a
+   * panel and has to be readable at a glance and at any zoom: a blade for melee, a
+   * crosshair for a straight shot, an arc for a lob. Only the lob carries numbers, and
+   * only because its **minimum** is a rule nothing else on the board expresses — a mortar
+   * that cannot defend its own feet looks exactly like one that can.
+   */
+  private drawReachBadges(): void {
+    const { ctx, cam, overlays } = this;
+    if (overlays.badges.length === 0) return;
+
+    for (const badge of overlays.badges) {
+      const view = this.views.get(badge.unitId);
+      if (!view || view.dead) continue;
+
+      const span = view.snapshot?.footprint === 2 ? 0.5 : 0;
+      const centre = cam.worldToScreen(
+        view.pos.x + 0.5 + span,
+        view.pos.y + 0.5 + span,
+        (34 + view.elev) * cam.zoom,
+      );
+      // Beside the stat bar rather than under it: the bar is a number that changes and
+      // this is a fact that does not, so they must not be mistaken for one reading.
+      const x = centre.x + 26 * cam.zoom;
+      const y = centre.y - 34 * cam.zoom;
+      const r = 9 * cam.zoom;
+
+      ctx.save();
+      ctx.translate(x, y);
+
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(9, 12, 20, 0.82)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(226, 232, 240, 0.55)';
+      ctx.lineWidth = Math.max(1, 1.2 * cam.zoom);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#E2E8F0';
+      ctx.lineWidth = Math.max(1.2, 1.6 * cam.zoom);
+      ctx.lineCap = 'round';
+      const u = r * 0.55;
+
+      if (badge.profile === 'melee') {
+        // A blade on the diagonal, with a crossguard.
+        ctx.beginPath();
+        ctx.moveTo(-u, u);
+        ctx.lineTo(u, -u);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-u * 0.2, -u * 0.9);
+        ctx.lineTo(u * 0.9, u * 0.2);
+        ctx.stroke();
+      } else if (badge.profile === 'ranged') {
+        // A crosshair: a ring with four ticks.
+        ctx.beginPath();
+        ctx.arc(0, 0, u * 0.8, 0, Math.PI * 2);
+        ctx.stroke();
+        for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
+          ctx.beginPath();
+          ctx.moveTo(dx * u * 0.8, dy * u * 0.8);
+          ctx.lineTo(dx * u * 1.35, dy * u * 1.35);
+          ctx.stroke();
+        }
+      } else {
+        // A lob: an arc over a baseline.
+        ctx.beginPath();
+        ctx.moveTo(-u, u * 0.7);
+        ctx.quadraticCurveTo(0, -u * 1.5, u, u * 0.7);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      if (badge.profile !== 'melee') {
+        // `2–4` for a mortar, `4` for a bow. The dash is only printed when the minimum is
+        // a real constraint, so an ordinary archer does not read as having a blind spot.
+        const label =
+          badge.rangeMin > 1 ? `${badge.rangeMin}\u2013${badge.rangeMax}` : `${badge.rangeMax}`;
+        ctx.save();
+        ctx.font = `800 ${Math.round(9 * cam.zoom)}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+        ctx.lineWidth = 3;
+        ctx.strokeText(label, x, y + r + 7 * cam.zoom);
+        ctx.fillStyle = '#E2E8F0';
+        ctx.fillText(label, x, y + r + 7 * cam.zoom);
+        ctx.restore();
+      }
+    }
+  }
+
+  /**
+   * The colour a status stains a body with, and how strongly.
+   *
+   * Separate from the chips: a chip is a *count* you read when you look at a unit, and an
+   * aura is a *state* you notice without looking. Burning bodies glow, poisoned ones go
+   * green at the edges, charged ones hum — all of it legible while your eye is somewhere
+   * else on the board, which is the point.
+   *
+   * Statuses that mean "held in place" share one cold blue, because what matters about
+   * Freeze, Entangle, Stun and Anchor at a glance is the same thing: that body is not
+   * going anywhere this turn.
+   */
+  private auraFor(view: EntityView): { colour: string; weight: number } | null {
+    const held = ['freeze', 'entangle', 'stun', 'anchor'];
+    let best: { colour: string; weight: number } | null = null;
+
+    const consider = (colour: string, weight: number): void => {
+      if (!best || weight > best.weight) best = { colour, weight };
+    };
+
+    for (const s of view.statuses) {
+      const stacks = Math.max(1, s.stacks);
+      if (held.includes(s.kind)) consider('#7DD3FC', 3 + stacks);
+      else if (s.kind === 'burn') consider('#FF6B35', 2 + stacks);
+      else if (s.kind === 'toxin') consider('#4ADE80', 2 + stacks);
+      else if (s.kind === 'charged') consider('#FDE047', 2 + stacks);
+      else if (s.kind === 'chill') consider('#BAE6FD', 1 + stacks);
+      else if (s.kind === 'brittle') consider('#B49CF0', 1 + stacks);
+      else if (s.kind === 'aetherPlated') consider('#E2E8F0', 9);
+    }
+    return best;
+  }
+
+  /**
+   * The stain itself: a soft ring on the floor under the body.
+   *
+   * Under rather than over, so it never competes with the token's own silhouette — a
+   * status is a condition the body is standing in, not a hat it is wearing.
+   */
+  private drawStatusAura(view: EntityView, pulse: number): void {
+    const aura = this.auraFor(view);
+    if (!aura) return;
+
+    const { ctx, cam } = this;
+    const span = view.snapshot?.footprint === 2 ? 0.5 : 0;
+    const centre = cam.worldToScreen(view.pos.x + 0.5 + span, view.pos.y + 0.5 + span, 0);
+    const r = (view.snapshot?.footprint === 2 ? 46 : 26) * cam.zoom;
+
+    ctx.save();
+    ctx.globalAlpha = (0.16 + 0.12 * pulse) * Math.min(1, aura.weight / 6) * view.alpha;
+    ctx.translate(centre.x, centre.y);
+    // Squashed into the floor plane, like every other ground mark on the board.
+    ctx.scale(1, TILE_H / TILE_W);
+    const grad = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r);
+    grad.addColorStop(0, aura.colour);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
@@ -926,6 +1298,11 @@ export class BoardRenderer {
       ctx.restore();
     }
   }
+}
+
+/** A school's line colour, defaulting to neutral for anything unrecognised. */
+function schoolColour(school: string): string {
+  return schoolOf(school as School).main;
 }
 
 function roundCoord(c: Coord): Coord {

@@ -15,6 +15,7 @@ import type { Fx } from '../render/Fx.js';
 import type { Sfx } from '../sound/Sfx.js';
 import type { Hud } from '../hud/Hud.js';
 import type { BoardRenderer } from '../render/BoardRenderer.js';
+import { schoolOf } from '../render/palette.js';
 
 export interface CombatView {
   views: EntityViewMap;
@@ -118,6 +119,28 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
   seq.on('attackDeclared', async (e, { view, t }) => {
     const v = view.views.get(e.attackerId);
     if (!v) return;
+
+    // A shot that crosses ground gets a tracer; a melee swing does not. A blade that
+    // already reached is not a projectile, and a line drawn between two adjacent tiles is
+    // a smear rather than a shot — the lunge below is what sells those.
+    const snap = v.snapshot;
+    const target = e.target.kind !== 'portrait' ? view.views.get(e.target.id) : undefined;
+    if (snap && target) {
+      const reach = Math.max(
+        Math.abs(target.pos.x - v.pos.x),
+        Math.abs(target.pos.y - v.pos.y),
+      );
+      if (reach > 1) {
+        view.fx.tracer(
+          v.pos,
+          target.pos,
+          schoolOf(snap.school).main,
+          snap.attackProfile === 'arcing',
+          t(220),
+        );
+      }
+    }
+
     // A short lunge toward the target sells the swing.
     await tween(t(110), easeOutQuad, (k) => {
       v.elev = Math.sin(k * Math.PI) * 10;
