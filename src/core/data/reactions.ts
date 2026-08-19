@@ -15,14 +15,30 @@
  */
 
 import type { DamageType, StatusKind } from '../../contract/ids.js';
+import type { Weather } from '../types/state.js';
 
 export interface ReactionDef {
   id: string;
   name: string;
   /** Damage schools that can set it off. */
   triggers: DamageType[];
-  /** Status the target must already be carrying. */
-  requires: StatusKind;
+  /**
+   * Status the target must already be carrying.
+   *
+   * Optional, because not every reaction is a collision of two schools *on a body*. Arc
+   * is a collision between a school and the **ground**, and there is nothing on the
+   * target to name.
+   */
+  requires?: StatusKind;
+  /**
+   * Weather the fight must be had in.
+   *
+   * The field the Arc note asked for, and the reason it could not be written down before:
+   * `requires` names a status and the sky is not one. A reaction may gate on either, or
+   * on both — a definition naming neither would fire on every hit of its type, which is
+   * why `findReaction` refuses one.
+   */
+  requiresWeather?: Weather['kind'];
   /** Folded into the triggering hit, before armor. */
   bonusDamage?: number;
   /**
@@ -34,7 +50,12 @@ export interface ReactionDef {
    * shrugs off the thing the reaction exists to do.
    */
   trueDamage?: number;
-  /** Consume the required status when it fires. Almost always true. */
+  /**
+   * Consume the required status when it fires. Almost always true.
+   *
+   * Necessarily false for a weather-gated reaction: the sky is not a resource a hit can
+   * spend, so Arc fires every time the conditions are met rather than once.
+   */
   consumes: boolean;
   /**
    * Whether the hit must actually reach health, as a rune must.
@@ -62,6 +83,8 @@ export type ReactionOutcome =
   | { op: 'superconduct'; brittle: number }
   /** Wildfire: burn off every Toxin stack for area damage scaled by the stacks consumed. */
   | { op: 'consumeForAoe'; perStack: number; dtype: DamageType }
+  /** Arc: the charge jumps to every body touching the target. */
+  | { op: 'conduct'; damage: number; dtype: DamageType }
   /** Nothing beyond the bonus damage and the status change. */
   | { op: 'none' };
 
@@ -112,6 +135,40 @@ export const REACTIONS: ReactionDef[] = [
     outcome: { op: 'superconduct', brittle: 2 },
     text: 'Frost through a Charged target conducts straight past its plate: all Armor is stripped and it is left Brittle.',
   },
+  /**
+   * **Arc.** The one reaction that collides a school with the ground rather than with a
+   * status, and the last item on the sandbox audit.
+   *
+   * It was shipped and documented as unshipped: the behaviour lived in `conductShock`, a
+   * private function in the damage pipeline, while both this file and the Lexicon said
+   * Arc was deliberately not implemented and could not be expressed. Both premises had
+   * quietly stopped being true — `shock` is a `DamageType` and the Surge set ships four
+   * cards — so what was left was a reaction that fired without announcing itself, paid no
+   * refund, and was invisible to `findReaction`.
+   *
+   * Two things change by making it a `ReactionDef` rather than a special case:
+   *
+   *  - It **emits `reactionTriggered` and pays the Pip refund**, under the same 2/turn cap
+   *    as everything else. Setting up a storm arc is as much work as setting up a Vaporize
+   *    and is now paid the same.
+   *  - It **requires the hit to land.** `conductShock` ran regardless of `hpLoss`, so a
+   *    shock fully absorbed by plate still arced. Nothing else in the table works that way,
+   *    and the inconsistency was invisible because nothing announced it.
+   *
+   * The arcs deal `physical`, not `shock`, so an arc cannot arc: the depth is exactly one
+   * by construction, independently of the cascade ceiling that now also bounds it.
+   */
+  {
+    id: 'arc',
+    name: 'Arc',
+    triggers: ['shock'],
+    requiresWeather: 'rain',
+    // Nothing to spend. The rain does not run out.
+    consumes: false,
+    requiresHpLoss: true,
+    outcome: { op: 'conduct', damage: 1, dtype: 'physical' },
+    text: 'Surge damage in the rain earths itself through everything touching the target: 1 damage to every adjacent unit, whoever it belongs to.',
+  },
   {
     id: 'wildfire',
     name: 'Wildfire',
@@ -125,24 +182,24 @@ export const REACTIONS: ReactionDef[] = [
 ];
 
 /**
- * Not implemented, deliberately: **Arc**, the rain reaction.
+ * The reaction a hit of this school would provoke, here, now.
  *
- * The design calls for Surge damage landing on wet ground to chain a point of damage to
- * adjacent units. There is no Surge damage type and no Surge card, so the branch could
- * not be reached, could not be tested, and would rot quietly until someone trusted it.
+ * First match wins, so the array order above is the priority order: a target carrying
+ * chill *and* charged *and* toxin, hit by fire, Vaporizes and does nothing else.
  *
- * When Surge lands, this is the shape it takes: a fourth entry here triggering on the
- * new dtype, gated on `state.encounter.weather?.kind === 'rain'` rather than on a
- * status — which is the one thing the table cannot currently express, since `requires`
- * names a status. Adding a `requiresWeather` field beside it is the smaller change.
+ * A definition that named neither a status nor a weather would match every hit of its
+ * type and fire forever; the guard makes that unrepresentable rather than merely unwise.
  */
-
-/** The reaction a hit of this school would provoke on a target carrying these statuses. */
 export function findReaction(
   dtype: DamageType,
   statuses: Partial<Record<StatusKind, number>>,
+  weather?: Weather['kind'],
 ): ReactionDef | undefined {
-  return REACTIONS.find(
-    (r) => r.triggers.includes(dtype) && (statuses[r.requires] ?? 0) > 0,
-  );
+  return REACTIONS.find((r) => {
+    if (!r.triggers.includes(dtype)) return false;
+    if (!r.requires && !r.requiresWeather) return false;
+    if (r.requires && (statuses[r.requires] ?? 0) <= 0) return false;
+    if (r.requiresWeather && weather !== r.requiresWeather) return false;
+    return true;
+  });
 }

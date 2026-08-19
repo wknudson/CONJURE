@@ -13,9 +13,15 @@ Audited at `0d8a189`, against a green suite (843 tests, 58 files).
 > §5.1 (dangling attacker), §5.2 (the pipeline gates), the Bound Form hole in §1, §5.4
 > (both hybrids) and §7.2 (the Harpoon payoff) are **done** — see `onHitGates.test.ts` and
 > `subjugationPayoff.test.ts`. The findings below are left as written, because an audit
-> that edits itself as it is answered stops being a record of what was found. Items still
-> open: §5.3 (`activeSide` toxin attribution), §5.5 (chain depth), §3.1 (`stun` has no
-> source), §4.4 (what Arc is), and all of Part 2.
+> that edits itself as it is answered stops being a record of what was found.
+>
+> **Part 1 is now closed.** §5.3 (toxin attribution), §3.1 (`stun` had no source), §5.5
+> (chain depth) and §4.4 (what Arc is) have all been actioned — see
+> `finalCompanions.test.ts` and `cascades.test.ts`. Part 2 remains as written.
+>
+> One finding survives its own fix and is worth keeping visible: **no encounter is fought
+> in rain**, so Arc is formal, tested, and still unreachable in play. It is held in
+> `elements.test.ts`'s `KNOWN_UNREACHABLE` ledger rather than left to be rediscovered.
 
 ---
 ---

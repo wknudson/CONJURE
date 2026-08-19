@@ -23,6 +23,7 @@ import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
 import { legalMoves } from '../core/engine/movement.js';
 import type { EffectNode } from '../core/types/cards.js';
 import { REACTIONS, findReaction } from '../core/data/reactions.js';
+import { ENCOUNTERS } from '../core/data/encounters/index.js';
 import { CHILL_TO_FREEZE, applyStatusTo } from '../core/engine/status.js';
 
 /**
@@ -453,12 +454,55 @@ describe('the Reaction matrix, as content', () => {
     const types = dealableTypes();
 
     for (const reaction of REACTIONS) {
-      expect(statuses.has(reaction.requires), `${reaction.name}: nothing applies ${reaction.requires}`)
-        .toBe(true);
+      // Both halves have to be reachable, but a reaction's *priming* half is whichever
+      // gate it uses: a status on the body for most, the sky for Arc.
+      if (reaction.requires) {
+        expect(
+          statuses.has(reaction.requires),
+          `${reaction.name}: nothing applies ${reaction.requires}`,
+        ).toBe(true);
+      }
+      expect(
+        reaction.requires ?? reaction.requiresWeather,
+        `${reaction.name}: gates on nothing, so it would fire on every hit of its type`,
+      ).toBeDefined();
       expect(
         reaction.triggers.some((t) => types.has(t)),
         `${reaction.name}: no card deals ${reaction.triggers.join(' or ')}`,
       ).toBe(true);
+    }
+  });
+
+  /**
+   * Weather-gated reactions need a fight actually *had* in that weather.
+   *
+   * Kept apart from the card-coverage test above because it fails for a different reason
+   * and is fixed in a different file: no card can make it pass, only an encounter can.
+   *
+   * `KNOWN_UNREACHABLE` is a ledger, not an exemption. A reaction listed here is formal,
+   * tested, and unplayable — and the assertion runs in *both* directions, so the gap
+   * cannot be forgotten and closing it cannot go unrecorded.
+   */
+  const KNOWN_UNREACHABLE = new Set(['arc']);
+
+  it('knows which weather no encounter provides', () => {
+    const skies = new Set(ENCOUNTERS.map((e) => e.weather?.kind).filter(Boolean));
+
+    for (const reaction of REACTIONS) {
+      if (!reaction.requiresWeather) continue;
+      const reachable = skies.has(reaction.requiresWeather);
+
+      if (KNOWN_UNREACHABLE.has(reaction.id)) {
+        expect(
+          reachable,
+          `${reaction.name} is reachable now — take it out of KNOWN_UNREACHABLE`,
+        ).toBe(false);
+      } else {
+        expect(
+          reachable,
+          `${reaction.name}: no encounter is fought in ${reaction.requiresWeather}`,
+        ).toBe(true);
+      }
     }
   });
 

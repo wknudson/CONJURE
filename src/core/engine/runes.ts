@@ -16,12 +16,13 @@ import { emit, newCause } from './context.js';
 import type { BlastPattern, Entity, RuneDef } from '../types/units.js';
 import { RUNES } from '../data/runes.js';
 import { allEntities, entityAt, getEntity, lowestHpEnemy, refOf } from './board.js';
-import { dealDamage, type DamageRequest } from './damage.js';
+import { MAX_CHAIN_DEPTH, dealDamage, type DamageRequest } from './damage.js';
 import { applyStatusTo } from './status.js';
 import { cellsOf, chebyshev, manhattan } from '../util/grid.js';
 
 /** Cascades deeper than this abort — a hard backstop against pathological loops. */
-const MAX_CHAIN_DEPTH = 8;
+// Imported rather than declared: the ceiling is a property of cascades, not of runes,
+// and a second copy here is how `rune -> collision -> rune` came to be bounded by nothing.
 
 export function attachRune(ctx: Ctx, host: Entity, runeDefId: string): void {
   const def = RUNES[runeDefId];
@@ -74,7 +75,17 @@ export function evaluateRuneOnDamage(
 }
 
 /** Fired when a unit dies or is sacrificed without a damage instance driving it. */
-export function evaluateRuneOnDeath(ctx: Ctx, host: Entity, devoured: boolean): void {
+export function evaluateRuneOnDeath(
+  ctx: Ctx,
+  host: Entity,
+  devoured: boolean,
+  /**
+   * Depth the death itself arrived at. A death rune is a link like any other: a rune that
+   * kills a rune-holder whose own rune kills the next is the cascade the ceiling exists
+   * for, and this was hardcoded to 1 -- so every death in a chain restarted the count.
+   */
+  chainDepth = 1,
+): void {
   const attached = host.rune;
   if (!attached) return;
   const def = RUNES[attached.defId];
@@ -87,7 +98,7 @@ export function evaluateRuneOnDeath(ctx: Ctx, host: Entity, devoured: boolean): 
   }
 
   if (def.trigger.kind === 'death') {
-    detonate(ctx, host, 1);
+    detonate(ctx, host, chainDepth);
   } else {
     host.rune = undefined;
     emit(ctx, { t: 'runeFizzled', hostId: host.id, rune: def.id, reason: 'unaligned' });

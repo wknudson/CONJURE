@@ -57,7 +57,21 @@ function isGrounded(ctx: Ctx, unit: Unit): boolean {
   return unit.keywords.includes('BoundForm') && ctx.state.players[unit.side].boundFormGrounded;
 }
 
-export function pushUnit(ctx: Ctx, unit: Unit, dir: Coord, distance: number): DisplacementResult {
+export function pushUnit(
+  ctx: Ctx,
+  unit: Unit,
+  dir: Coord,
+  distance: number,
+  /**
+   * Depth this shove inherits, if it is itself a link in a cascade.
+   *
+   * Zero for the ordinary cases — a card's shove, a current at the round boundary — which
+   * genuinely are the start of a chain. Overload passes its own depth, because a reaction
+   * throwing a body into a wall that kills a rune-holder is the exact shape the ceiling
+   * exists to bound.
+   */
+  chainDepth = 0,
+): DisplacementResult {
   const path: Coord[] = [{ ...unit.anchor }];
 
   // Rooted where it stands. Checked at the one chokepoint every displacement goes
@@ -77,7 +91,7 @@ export function pushUnit(ctx: Ctx, unit: Unit, dir: Coord, distance: number): Di
 
     const offBoard = cells.some((c) => !inBounds(ctx.state, c));
     if (offBoard) {
-      applyWallCollision(ctx, unit);
+      applyWallCollision(ctx, unit, chainDepth);
       return { path, collision: { at: { ...unit.anchor }, against: 'wall' } };
     }
 
@@ -105,6 +119,7 @@ export function pushUnit(ctx: Ctx, unit: Unit, dir: Coord, distance: number): Di
         amount: braced(ctx.state, unit, COLLISION_TARGET_DAMAGE),
         dtype: 'impact',
         cause: 'collision',
+        chainDepth,
       });
 
       // The blocker may already be gone if the pushed unit's rune detonated.
@@ -119,6 +134,7 @@ export function pushUnit(ctx: Ctx, unit: Unit, dir: Coord, distance: number): Di
           ),
           dtype: 'impact',
           cause: 'collision',
+          chainDepth,
         });
       }
 
@@ -126,7 +142,7 @@ export function pushUnit(ctx: Ctx, unit: Unit, dir: Coord, distance: number): Di
     }
 
     if (!canPlace(ctx.state, nextAnchor, unit.footprint, unit.id)) {
-      applyWallCollision(ctx, unit);
+      applyWallCollision(ctx, unit, chainDepth);
       return { path, collision: { at: { ...unit.anchor }, against: 'wall' } };
     }
 
@@ -142,7 +158,7 @@ export function pushUnit(ctx: Ctx, unit: Unit, dir: Coord, distance: number): Di
   return { path };
 }
 
-function applyWallCollision(ctx: Ctx, unit: Unit): void {
+function applyWallCollision(ctx: Ctx, unit: Unit, chainDepth: number): void {
   emit(ctx, {
     t: 'collision',
     unitId: unit.id,
@@ -154,5 +170,6 @@ function applyWallCollision(ctx: Ctx, unit: Unit): void {
     amount: braced(ctx.state, unit, COLLISION_TARGET_DAMAGE),
     dtype: 'impact',
     cause: 'collision',
+    chainDepth,
   });
 }

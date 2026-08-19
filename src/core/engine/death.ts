@@ -22,7 +22,13 @@ import { DIRS_8 } from '../util/grid.js';
  * Removes an entity from the board. `devoured` routes to the fizzle path: a devoured
  * host's rune is discarded without detonating, per Draft 7 §4.2.
  */
-export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoured = false): void {
+export function killEntity(
+  ctx: Ctx,
+  entity: Entity,
+  cause: DamageCause,
+  devoured = false,
+  chainDepth = 0,
+): void {
   const live: Entity | undefined = getEntity(ctx.state, entity.id);
   if (!live) return;
 
@@ -59,13 +65,13 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
     if (CARDS[live.defId]?.leavesRubble) {
       spawnHazard(ctx, at, 'rubble', 1, true);
     }
-    burstObstacle(ctx, live.defId, at);
+    burstObstacle(ctx, live.defId, at, chainDepth);
   }
 
   // Rune resolution happens after removal so a death-triggered blast cannot hit its
   // own dead host, and so the board state the blast sees is already correct.
   if (live.rune) {
-    evaluateRuneOnDeath(ctx, live, devoured);
+    evaluateRuneOnDeath(ctx, live, devoured, Math.max(1, chainDepth));
   }
 
   checkLethal(ctx);
@@ -81,7 +87,7 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
  * Runs inside the death cascade, so it respects a cancelled chain the same way a rune
  * blast does — a boss Damage Gate that stops a chain stops this with it.
  */
-function burstObstacle(ctx: Ctx, defId: string, at: Coord): void {
+function burstObstacle(ctx: Ctx, defId: string, at: Coord, chainDepth: number): void {
   const burst = CARDS[defId]?.obstacleDeath;
   if (!burst) return;
   if (ctx.state.encounter.chainCancelled) return;
@@ -111,6 +117,7 @@ function burstObstacle(ctx: Ctx, defId: string, at: Coord): void {
       amount: burst.damage,
       dtype: 'true',
       cause: 'spell',
+      chainDepth,
     });
   }
 }

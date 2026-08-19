@@ -479,6 +479,7 @@ in.
 | **Overload** | fire | charged | **yes** | 1 `true` damage; everything adjacent thrown a tile clear |
 | **Superconduct** | frost | charged | **no** | strips **all** Armor, leaves Brittle 2 |
 | **Wildfire** | fire | toxin | **yes** | consumes **every** Toxin stack for 2 fire each to adjacent |
+| **Arc** | shock | *rain* (weather) | **yes** | 1 `physical` to every adjacent unit, either side |
 
 ### How they interact with Armor
 
@@ -510,7 +511,9 @@ the target and violent around it — the point is the shove, not the number.
 
 ### Consumption
 
-All five set `consumes: true` — the status is spent when it fires. Wildfire consumes
+All but Arc set `consumes: true` — the status is spent when it fires. Arc gates on the
+**sky** rather than on a status (`requiresWeather`), and the rain does not run out, so it
+fires every time the conditions are met rather than once. Wildfire consumes
 *every* stack at once and scales its area damage by how many it took (`perStack: 2`), so a
 tile dosed twice is a four-stack detonation waiting for somebody's torch.
 
@@ -518,22 +521,39 @@ Reactions also respect `chainCancelled`, so a boss Damage Gate stops one mid-cha
 
 ### Coverage
 
-All five are currently reachable from obtainable cards:
+The five **status**-gated reactions are all reachable from obtainable cards:
 
 | Status | Applied by |
 |---|---|
 | `chill` | Glacial Spike, Frost Nova, Flash Freeze |
 | `freeze` | *indirectly* — three stacks of Chill |
-| `charged` | Static Arc |
-| `toxin` | Spore Cloud |
+| `charged` | Static Arc; Clockwork Bombardier's rider; **any `shock` damage** |
+| `toxin` | Spore Cloud; Rot-Root Snare |
+| `burn` | Ember Watch (the pyre Resonance) — no obtainable *card* applies it |
 
-`src/tests/elements.test.ts` asserts this and names the missing half by reaction if it
-ever reopens.
+**Arc is the exception**, and gates on weather rather than on a status. No shipped
+encounter is fought in rain, so it is reachable in principle and not in play.
 
-> **Arc**, the rain/Surge reaction, is deliberately **not implemented**. It would need to
-> gate on weather rather than on a status, which the table cannot currently express —
-> `requires` names a status. Adding a `requiresWeather` field beside it is the smaller
-> change when Surge damage lands.
+`src/tests/elements.test.ts` asserts both halves: the card coverage above, and a
+`KNOWN_UNREACHABLE` ledger for the weather gap that fails in *both* directions — so the
+gap cannot be forgotten and closing it cannot go unrecorded.
+
+> **Arc** is the one reaction that collides a school with the *ground* rather than with a
+> status, and `requiresWeather` is the field that lets the table say so. A definition must
+> gate on a status, a weather, or both — `findReaction` refuses one that names neither,
+> since it would fire on every hit of its type.
+>
+> It was shipped long before it was written down. The behaviour lived in `conductShock`, a
+> private function in the damage pipeline, while this document and `reactions.ts` both
+> said Arc was deliberately absent and could not be expressed — on two premises that had
+> quietly stopped being true, since `shock` is a `DamageType` and the Surge set ships four
+> cards. Formalising it changed two things: it now **announces itself** (`reactionTriggered`)
+> and **pays the Pip refund** under the standard 2/turn cap, and it now **requires the hit
+> to land**, which the special case never did.
+>
+> **No shipped encounter is fought in rain**, so Arc is reachable in principle and not yet
+> in play. `elements.test.ts` holds that gap in a `KNOWN_UNREACHABLE` ledger which fails in
+> *both* directions — the gap cannot be forgotten, and closing it cannot go unrecorded.
 
 ---
 
@@ -611,8 +631,27 @@ takes that opening bite when the thing it has decided on is already in front of 
 Both break ties by health, then row, then column, so a replay sends the beast after the
 same body.
 
-**Cascade:** a detonation reaching another rune-holder's *health* sets theirs off too,
-tracked by `chainDepth`. Armor can stop a chain reaction cold.
+**Cascade:** a detonation reaching another rune-holder's *health* sets theirs off too.
+Armor can stop a chain reaction cold.
+
+`chainDepth` counts how deep in a cascade a hit is, and **every** secondary carries it:
+a rune blast, a reaction's splash or shove, a Counter, a collision, a death. Absent means
+depth zero — a card, a swing, a status tick, or a current, all of which genuinely start a
+chain. `MAX_CHAIN_DEPTH` is **8**.
+
+At the ceiling a hit still **lands and still kills**; it simply causes nothing further.
+That is the same courtesy `chainCancelled` extends, and it is why removal is never gated:
+a cascade running out of budget must not leave a body standing at zero health.
+
+> Two things are deliberately *outside* the gate. Leaving a **status** is not a cascade
+> link — `charged` causes nothing by itself, so a hit at the ceiling still marks what it
+> hit, and the reaction that mark later enables is what the ceiling is there to stop. And
+> **death removal**, for the reason above; what a death then *causes* inherits the depth
+> and meets the same ceiling one level down.
+>
+> The count lived in `runes.ts` while only runes read it, which meant `rune → collision →
+> rune` restarted at one and was bounded by nothing. A death rune was worse: it was
+> hardcoded to depth 1, so every death in a chain began a fresh one.
 
 Shipped: **Cinder Rune** (pyre; fire or spell; 4 fire to adjacent8), **Rot-Root Snare**
 (bloom; entangle and toxin, `damage: 0`), **Cask Blast** (the Volatile Cask's detonation,

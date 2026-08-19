@@ -13,9 +13,7 @@ import { prepareReaction, resolveReaction } from './reactions.js';
 import { applyStatusTo } from './status.js';
 import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
-import { getEntity, entityAt, opposite } from './board.js';
-import { DIRS_8 } from '../util/grid.js';
-import { inBounds } from '../types/state.js';
+import { getEntity, opposite } from './board.js';
 import { getEncounterScript } from '../data/encounters/registry.js';
 // Circular by design: runes/death call back into dealDamage. ESM hoists function
 // declarations, so these resolve correctly at call time.
@@ -23,12 +21,33 @@ import { evaluateRuneOnDamage } from './runes.js';
 import { killEntity } from './death.js';
 import { isSealed } from './subjugation.js';
 
+/**
+ * How many links a single cascade may run before the engine stops following it.
+ *
+ * Lives here, beside the pipeline, because **every** secondary effect is a link: a rune
+ * detonating, a reaction splashing, a Counter answering, an Overload shoving a body into
+ * a wall, a crystal bursting as it dies. It sat in `runes.ts` while only runes counted it,
+ * and the consequence was that `rune -> collision -> rune` restarted the count at one and
+ * was bounded by nothing at all.
+ *
+ * Eight is far above anything a real board produces. It is a backstop against a cycle
+ * somebody builds by accident, not a balance number.
+ */
+export const MAX_CHAIN_DEPTH = 8;
+
 export interface DamageRequest {
   target: TargetRef;
   amount: number;
   dtype: DamageType;
   cause: DamageCause;
-  /** Set for cascade bookkeeping; runes detonated by this hit inherit depth + 1. */
+  /**
+   * How deep in a cascade this hit is. Absent means depth zero — a fresh chain, which is
+   * what a card, a swing, a status tick, or a current is.
+   *
+   * Every secondary hit the pipeline produces carries `nextDepth(req)`, so a chain is
+   * counted the same however it is spelled: `MAX_CHAIN_DEPTH` bounds a rune detonating a
+   * rune exactly as it bounds a rune shoving a body into a wall that kills a crystal.
+   */
   chainDepth?: number;
   /** Attacker, for Counter resolution. */
   sourceUnitId?: UnitId;
@@ -52,6 +71,24 @@ export interface DamageOutcome {
  */
 /** Brittle (Module 1): a frozen-through target takes this much extra from every hit. */
 export const BRITTLE_BONUS = 2;
+
+/** The depth a secondary effect of this hit should carry. */
+export function nextDepth(req: { chainDepth?: number }): number {
+  return (req.chainDepth ?? 0) + 1;
+}
+
+/**
+ * Whether this hit is too deep to be allowed to cause anything further.
+ *
+ * Read once, in `damageEntity`, and it gates every secondary at the same place rather
+ * than each of them checking separately. The damage itself always lands: a cascade that
+ * hits the ceiling stops *spreading*, it does not stop hurting. That is the same courtesy
+ * `chainCancelled` extends, and it means a bounded chain and a cancelled one leave the
+ * board in shapes a player can tell apart.
+ */
+export function atChainLimit(req: { chainDepth?: number }): boolean {
+  return (req.chainDepth ?? 0) >= MAX_CHAIN_DEPTH;
+}
 
 export function dealDamage(ctx: Ctx, req: DamageRequest): DamageOutcome {
   if (ctx.state.result) return { absorbedByArmor: 0, hpLoss: 0, died: false };
@@ -111,63 +148,6 @@ function dampenFire(ctx: Ctx, req: DamageRequest): number {
 
 /** How much a downpour takes off every point of fire. */
 export const RAIN_FIRE_PENALTY = 1;
-
-/** What each arc carries to a neighbour. Deliberately small: it is a bonus, not the spell. */
-export const RAIN_ARC_DAMAGE = 1;
-
-/**
- * Rain conduction: a shock that lands in a downpour jumps to everything touching it.
- *
- * There is no queue here, and there does not need to be one. The reducer is synchronous
- * and resolves a command's cascades completely before returning, so a secondary hit is
- * simply an ordered recursive call placed after the primary HP write — the same shape
- * Counter and the reaction outcomes already use a few lines below.
- *
- * Three things keep it deterministic and bounded:
- *   - `DIRS_8` is a fixed row-then-column list, so the arcs always resolve in one order.
- *   - The neighbours are collected into ids *before* any of them are dealt damage. Read
- *     lazily, a death mid-loop would mutate the board being iterated.
- *   - Arcs deal `physical`, not `shock`, so an arc cannot arc. That is what makes the
- *     recursion depth exactly one rather than a chain reaction across the board.
- *
- * `chainCancelled` is honoured, so a boss Damage Gate stops the arcs with everything else.
- */
-function conductShock(ctx: Ctx, req: DamageRequest, primary: Entity): void {
-  if (req.dtype !== 'shock') return;
-  if (ctx.state.encounter.weather?.kind !== 'rain') return;
-  if (ctx.state.encounter.chainCancelled) return;
-
-  const struck: UnitId[] = [];
-  for (const dir of DIRS_8) {
-    const cell = { x: primary.anchor.x + dir.x, y: primary.anchor.y + dir.y };
-    if (!inBounds(ctx.state, cell)) continue;
-    const neighbour = entityAt(ctx.state, cell);
-    // Units only: arcing through scenery would make every wall a lightning rod.
-    if (!neighbour || !isUnit(neighbour)) continue;
-    // A Behemoth occupies cells adjacent to its own anchor, so it would otherwise
-    // arc into itself; identity is by id, never by position.
-    if (neighbour.id === primary.id) continue;
-    // Every unit touching it, whoever it belongs to. A charge that checked allegiance
-    // before jumping would be a spell effect wearing weather's clothes; this is the same
-    // indiscriminate rule the volatile crystals already follow, and it is what makes
-    // casting into a melee in the rain a decision rather than a free bonus.
-    if (struck.includes(neighbour.id)) continue; // a 2x2 touches on several sides
-    struck.push(neighbour.id);
-  }
-
-  for (const id of struck) {
-    if (ctx.state.encounter.chainCancelled) return;
-    // Re-read: an earlier arc in this same loop may already have killed it.
-    if (!ctx.state.units[id]) continue;
-    dealDamage(ctx, {
-      target: { kind: 'unit', id },
-      amount: RAIN_ARC_DAMAGE,
-      dtype: 'physical',
-      cause: 'reaction',
-      ...(req.sourceUnitId ? { sourceUnitId: req.sourceUnitId } : {}),
-    });
-  }
-}
 
 function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side, at?: Coord): DamageOutcome {
   const cmd = ctx.state.players[side];
@@ -253,51 +233,70 @@ function damageEntity(ctx: Ctx, entity: Entity, req: DamageRequest): DamageOutco
 
   const died = entity.hp <= 0;
 
-  // Counter (Riposte): only against melee attacks, and only if the defender survives.
-  if (
-    !died &&
-    isUnit(entity) &&
-    entity.keywords.includes('Counter') &&
-    req.cause === 'attack' &&
-    req.sourceUnitId
-  ) {
-    const attacker = ctx.state.units[req.sourceUnitId];
-    if (attacker && attacker.hp > 0) {
-      dealDamage(ctx, {
-        target: { kind: 'unit', id: attacker.id },
-        amount: entity.atk,
-        dtype: 'physical',
-        cause: 'counter',
-        sourceUnitId: entity.id,
-      });
-    }
-  }
-
-  // Wet ground conducts. Placed with the other secondary hits and for the same reason:
-  // after the HP write, so what arcs is a blow that actually landed.
   // A Surge hit leaves residual charge for fire or frost to find later. Applied after
   // the HP write like everything else here, and only to units — scenery holds no charge.
+  //
+  // Outside the chain gate deliberately: leaving a status is not a cascade link. It causes
+  // nothing by itself — `charged` is inert until something else arrives — so a hit at the
+  // ceiling should still mark what it hit, and the *reaction* that mark later enables is
+  // what the ceiling is there to stop.
   if (isUnit(entity) && req.dtype === 'shock' && entity.hp > 0) {
     // Charge, so the bonus never applies — the source is named anyway rather than
     // left to default, so this line does not become the odd one out later.
     applyStatusTo(ctx, entity, 'charged', 1, req.sourceUnitId ? ctx.state.units[req.sourceUnitId]?.side : undefined);
   }
 
-  conductShock(ctx, req, entity);
+  // Everything in here *causes something else*, and this is where a cascade is allowed to
+  // end. One check in front of all of them rather than one inside each: a rule that has to
+  // be remembered at three call sites is a rule that will be missed at the fourth.
+  //
+  // The damage itself has already landed above. A chain at its ceiling stops *spreading*,
+  // not hurting — the same courtesy `chainCancelled` extends, and what keeps a bounded
+  // chain and a cancelled one distinguishable from a hit that silently did nothing.
+  //
+  // Counter is inside despite being limited to one link by its own `cause` test: being
+  // unable to recurse is not the same as being free to extend somebody else's chain.
+  if (!atChainLimit(req)) {
+    // Counter (Riposte): only against melee attacks, and only if the defender survives.
+    if (
+      !died &&
+      isUnit(entity) &&
+      entity.keywords.includes('Counter') &&
+      req.cause === 'attack' &&
+      req.sourceUnitId
+    ) {
+      const attacker = ctx.state.units[req.sourceUnitId];
+      if (attacker && attacker.hp > 0) {
+        dealDamage(ctx, {
+          target: { kind: 'unit', id: attacker.id },
+          amount: entity.atk,
+          dtype: 'physical',
+          cause: 'counter',
+          sourceUnitId: entity.id,
+          chainDepth: nextDepth(req),
+        });
+      }
+    }
 
-  // Reactions and runes both resolve after the HP write, so the "at least 1 point of
-  // actual HP loss" penetration rule is checked against reality rather than intent.
-  // The reaction goes first: Shatter stripping armor should be able to expose a rune.
-  if (pending) {
-    resolveReaction(ctx, pending, hpLoss, dealDamage as never);
+    // Reactions and runes both resolve after the HP write, so the "at least 1 point of
+    // actual HP loss" penetration rule is checked against reality rather than intent.
+    // The reaction goes first: Shatter stripping armor should be able to expose a rune.
+    if (pending) {
+      resolveReaction(ctx, pending, hpLoss, dealDamage as never, nextDepth(req));
+    }
+
+    if (entity.rune) {
+      evaluateRuneOnDamage(ctx, entity, req, hpLoss, died);
+    }
   }
 
-  if (entity.rune) {
-    evaluateRuneOnDamage(ctx, entity, req, hpLoss, died);
-  }
-
+  // Removal is **never** gated. A cascade running out of budget must not leave a body
+  // standing at zero health: death is bookkeeping the board cannot be correct without,
+  // not a link in a chain. What the death then *causes* — a crystal bursting, a rune on
+  // a corpse — inherits the depth and meets the same ceiling one level down.
   if (died && entity.hp <= 0) {
-    killEntity(ctx, entity, req.cause);
+    // The death is a link too: a crystal that bursts as it dies can set off the next.
+    killEntity(ctx, entity, req.cause, false, nextDepth(req));
   }
 
   return { absorbedByArmor: absorbed, hpLoss, died };

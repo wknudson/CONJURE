@@ -6,7 +6,7 @@
  * shrapnel, a toxin bloom — can only resolve once we know the hit actually drew blood.
  */
 
-import type { Coord, DamageType, Side } from '../../contract/ids.js';
+import type { Coord, DamageType, Side, UnitId } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
 import { emit, newCause } from './context.js';
 import type { Entity, Unit } from '../types/units.js';
@@ -40,11 +40,13 @@ export function prepareReaction(
   if (!isUnit(entity)) return { bonus: 0, pending: undefined };
   if (ctx.state.encounter.chainCancelled) return { bonus: 0, pending: undefined };
 
-  const def = findReaction(dtype, entity.statuses);
+  const def = findReaction(dtype, entity.statuses, ctx.state.encounter.weather?.kind);
   if (!def) return { bonus: 0, pending: undefined };
 
-  const consumed = entity.statuses[def.requires] ?? 0;
-  if (def.consumes) delete entity.statuses[def.requires];
+  // A weather-gated reaction has no status to read or spend: `consumed` is what Wildfire
+  // scales its blast by, and for Arc there is nothing on the body to have consumed.
+  const consumed = def.requires ? entity.statuses[def.requires] ?? 0 : 0;
+  if (def.consumes && def.requires) delete entity.statuses[def.requires];
 
   return {
     bonus: def.bonusDamage ?? 0,
@@ -62,6 +64,7 @@ export function resolveReaction(
   pending: PendingReaction,
   hpLoss: number,
   dealDamage: DealDamageFn,
+  chainDepth: number,
 ): void {
   if (hpLoss <= 0 && pending.def.requiresHpLoss) return;
   if (ctx.state.encounter.chainCancelled) return;
@@ -83,6 +86,7 @@ export function resolveReaction(
         amount: def.trueDamage,
         dtype: 'true',
         cause: 'reaction',
+        chainDepth,
       });
     }
   }
@@ -109,6 +113,7 @@ export function resolveReaction(
           amount: def.outcome.splash,
           dtype: 'impact',
           cause: 'reaction',
+          chainDepth,
         });
         if (ctx.state.result) return;
       }
@@ -138,7 +143,8 @@ export function resolveReaction(
           y: Math.sign(unit.anchor.y - at.y),
         };
         if (dir.x === 0 && dir.y === 0) continue;
-        pushUnit(ctx, unit, dir, def.outcome.shove);
+        // A shove is a cascade link too: what it slams the body into takes real damage.
+        pushUnit(ctx, unit, dir, def.outcome.shove, chainDepth);
       }
       break;
     }
@@ -170,8 +176,41 @@ export function resolveReaction(
           amount,
           dtype: def.outcome.dtype,
           cause: 'reaction',
+          chainDepth,
         });
         if (ctx.state.result) return;
+      }
+      break;
+    }
+
+    case 'conduct': {
+      // Every body touching the target, whoever it belongs to. A charge that checked
+      // allegiance before jumping would be a spell effect wearing weather's clothes, and
+      // it is what makes casting into a melee in the rain a decision rather than a bonus.
+      const host = entityAt(ctx.state, at);
+      const struck: UnitId[] = [];
+      for (const c of adjacentTiles(ctx, at)) {
+        const victim = entityAt(ctx.state, c);
+        // Units only: arcing through scenery would make every wall a lightning rod.
+        if (!victim || !isUnit(victim)) continue;
+        // A Behemoth occupies cells adjacent to its own anchor, so identity is by id and
+        // never by position — otherwise it would arc into itself.
+        if (host && victim.id === host.id) continue;
+        if (struck.includes(victim.id)) continue;
+        struck.push(victim.id);
+      }
+
+      for (const id of struck) {
+        if (ctx.state.encounter.chainCancelled || ctx.state.result) return;
+        // Re-read: an earlier arc in this same loop may already have killed it.
+        if (!ctx.state.units[id]) continue;
+        dealDamage(ctx, {
+          target: { kind: 'unit', id },
+          amount: def.outcome.damage,
+          dtype: def.outcome.dtype,
+          cause: 'reaction',
+          chainDepth,
+        });
       }
       break;
     }
@@ -189,6 +228,7 @@ type DealDamageFn = (
     amount: number;
     dtype: DamageType;
     cause: string;
+    chainDepth?: number;
   },
 ) => unknown;
 
