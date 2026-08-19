@@ -156,6 +156,8 @@ function blankCommander(
     boundFormIgnoresHazards: false,
     boundFormGrounded: false,
     doubleResonance: false,
+    collisionResist: 0,
+    ignoresGuardians: false,
     discountHybrids: false,
   };
 }

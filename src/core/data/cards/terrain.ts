@@ -38,12 +38,19 @@ export const TERRAIN_CARDS: Record<string, CardDef> = {
     // Masonry does not vanish when it falls.
     leavesRubble: true,
   },
-  terrain_cover: scenery(
-    'terrain_cover',
-    'Bramble Screen',
-    'Blocks sight but not movement. Units may stand in it.',
-    4,
-  ),
+  terrain_cover: {
+    ...scenery(
+      'terrain_cover',
+      'Bramble Screen',
+      'Blocks sight but not movement. Units may stand in it.',
+      4,
+    ),
+    // Encounter terrain builds its obstacles directly rather than through `spawnObstacle`,
+    // so this flag is not what makes *that* path work. It is here so the definition is not
+    // lying about what it is, and so the two paths cannot describe the same thing
+    // differently.
+    obstacleCover: true,
+  },
 
   /**
    * A geode is one hit and a decision. It is worth two Marrow to whoever cracks it,

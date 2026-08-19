@@ -173,35 +173,48 @@ export const CHILL_TO_FREEZE = 3;
  * Shared by the card effect interpreter and by scenery that bursts.
  */
 /**
- * Extra Toxin stacks the *acting* side folds into everything it poisons.
+ * Extra Toxin stacks a side folds into everything **it** poisons.
  *
- * Attributed by `activeSide` rather than by a caster the function is handed, because
- * `applyStatusTo` is given the victim and nothing else — every caller from a card to a
- * rune to an on-hit rider goes through it, and threading a source through all of them to
- * serve one trait would be a wide change for a narrow rule.
+ * Attributed to the `source` the caller names, not to whoever's turn it happens to be.
+ * This read `activeSide` once, and the approximation was visible exactly where a Bloom
+ * deck lives: a Rot-Root Snare you laid springs on the *enemy's* turn, so the trap you
+ * built and paid for poisoned on their clock and collected nothing. The same reading
+ * would have handed the bonus to an enemy Plague-Bearer the moment an encounter granted
+ * the enemy commander the stat, with no card text saying so.
  *
- * The approximation is visible in one place: a trap you laid that springs on the enemy's
- * turn is poisoning on *their* clock, so it does not get the bonus. That reads as the
- * roots being spent rather than as a bug, and it errs toward giving less than promised
- * rather than more.
+ * A `source` of `undefined` means nobody's poison — scenery bursting, a crystal
+ * shattering. Those are the board's doing and collect nothing, which is the honest answer
+ * rather than crediting them to whoever is standing nearby.
  */
-function toxinBonus(ctx: Ctx, status: StatusKind): number {
-  if (status !== 'toxin') return 0;
-  return ctx.state.players[ctx.state.activeSide].bonusToxinStacks;
+function toxinBonus(ctx: Ctx, status: StatusKind, source: Side | undefined): number {
+  if (status !== 'toxin' || !source) return 0;
+  return ctx.state.players[source].bonusToxinStacks;
 }
 
+/**
+ * Puts a status on a unit.
+ *
+ * `source` is who is doing it, and it exists for one reason: the amplified count is
+ * resolved **here, at the moment of application**, and then stored. Everything downstream
+ * — the tick, the decay, Wildfire's consumption — reads a plain number off the unit and
+ * never asks whose poison it was. That is what keeps `tickStatus` side-agnostic, and it
+ * is why the bonus cannot be applied at tick time instead: by then the clock has moved
+ * and the only side available is the wrong one.
+ */
 export function applyStatusTo(
   ctx: Ctx,
   unit: Unit,
   status: StatusKind,
   stacks: number,
+  source?: Side,
 ): void {
   if (status === 'chill') {
     applyChill(ctx, unit, stacks);
     return;
   }
 
-  unit.statuses[status] = (unit.statuses[status] ?? 0) + stacks + toxinBonus(ctx, status);
+  unit.statuses[status] =
+    (unit.statuses[status] ?? 0) + stacks + toxinBonus(ctx, status, source);
   emit(ctx, {
     t: 'statusApplied',
     unitId: unit.id,

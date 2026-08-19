@@ -228,6 +228,7 @@ export function spawnObstacle(
     hp: health,
     maxHp: health,
     destructible: true,
+    ...(def.obstacleCover ? { cover: true } : {}),
   };
 
   ctx.state.obstacles[obstacle.id] = obstacle;
@@ -240,6 +241,9 @@ export function spawnObstacle(
       anchor: { ...obstacle.anchor },
       hp: obstacle.hp,
       maxHp: obstacle.maxHp,
+      // Carried into the snapshot or the renderer draws a screen as a solid wall: the
+      // event embeds what is drawn and is never re-read against live state.
+      ...(obstacle.cover ? { cover: true } : {}),
     },
   });
   return obstacle.id;

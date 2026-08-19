@@ -22,20 +22,32 @@ import { formatCost } from '../hud/cost.js';
 /**
  * The Arcane set.
  *
- * These are the Hero's own cards, and the Hero has no position on the board — so the
+ * These began as the Hero's own cards, and the Hero has no position on the board — so the
  * thing worth testing hardest is that each one's reach is expressed as something the
  * board can actually check, rather than as a `range` the engine will silently ignore.
+ *
+ * The school has a Companion now (Lexis), so "arcane" and "the Hero's" have stopped being
+ * the same statement. The reach rule below is therefore split by **source** rather than
+ * asserted over the whole set: it was only ever a rule about Hero cards, and it held for
+ * every arcane card by the accident of there being no arcane Companion to cast one.
  */
 
 const ids = Object.keys(ARCANE_CARDS);
 
 describe('the set as a whole', () => {
-  it('is registered, and every card is arcane and the Hero\'s', () => {
+  it('is registered, and every card is arcane', () => {
     for (const id of ids) {
       const def = CARDS[id];
       expect(def, id).toBeDefined();
       expect(def!.school, id).toBe('arcane');
-      expect(def!.source, id).toBe('hero');
+    }
+  });
+
+  it('keeps the Hero baseline the Hero\'s', () => {
+    // The four cards that existed before the school had a Companion. Named individually
+    // rather than derived, so a new Companion card cannot quietly reclassify one of them.
+    for (const id of ['grapple_line', 'scrap_phalanx', 'cull_the_weak', 'alchemists_barricade']) {
+      expect(CARDS[id]!.source, id).toBe('hero');
     }
   });
 
@@ -55,16 +67,29 @@ describe('the set as a whole', () => {
     for (const id of ids) expect(isObtainable(CARDS[id]!), id).toBe(true);
   });
 
-  it('states no reach it cannot enforce', () => {
+  it('states no reach a Hero card cannot enforce', () => {
     // `castOriginCells` returns 'global' for any non-companion source, so range,
     // minRange, vector and needsLoS are never read on a Hero card. Authoring one would
     // be a rule written in the card that the engine does not apply.
     for (const id of ids) {
       const def = CARDS[id]!;
+      if (def.source !== 'hero') continue;
       expect(def.range, id).toBeUndefined();
       expect(def.minRange, id).toBeUndefined();
       expect(def.vector, id).toBeUndefined();
       expect(def.needsLoS, id).toBeUndefined();
+    }
+  });
+
+  it('gives every Companion card a reach the board can check', () => {
+    // The inverse, and the reason the split above is not just a loosening: a
+    // companion-source card is cast from the Bound Form's cells, so a missing `range`
+    // would mean an unbounded one. Whatever a Companion card declares, it must declare
+    // something.
+    for (const id of ids) {
+      const def = CARDS[id]!;
+      if (def.source !== 'companion') continue;
+      expect(def.range, `${id} casts from a body but names no reach`).toBeGreaterThan(0);
     }
   });
 });

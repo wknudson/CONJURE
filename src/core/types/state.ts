@@ -23,6 +23,10 @@ export interface CommanderState {
   resonancesThisTurn: number;
   /** Resonance may fire twice a turn rather than once. */
   doubleResonance: boolean;
+  /** Collision damage this side's units shrug off, per hit. Floored at zero on read. */
+  collisionResist: number;
+  /** This side sees past Guardians. A wall is still a wall. */
+  ignoresGuardians: boolean;
   /** Spliced cards cost this side 1 Pip less, never below one. */
   discountHybrids: boolean;
   /** Pips refunded by elemental reactions this turn, capped so cascades cannot self-fund. */

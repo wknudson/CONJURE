@@ -23,6 +23,49 @@ const GRAPPLE_REACH = 4;
 
 export const ARCANE_CARDS: Record<string, CardDef> = {
   /**
+   * A beam, and the first card in the game to say so.
+   *
+   * Two separate spellings of "straight line" are in play here and they are not
+   * interchangeable:
+   *
+   * - `target: { kind: 'line', length: 4 }` is what the **player picks** — an origin tile
+   *   and one of the eight directions. `line` is the only target kind that carries a
+   *   direction at all, which is why a cone needs one too.
+   * - `area: { shape: 'line', length: 4 }` is which tiles the effect then **touches**,
+   *   walked from the chosen origin along the chosen direction.
+   * - `vector: 'linear'` constrains the **cast** itself to a rank, file or diagonal from
+   *   the Bound Form. Implemented since the beginning and used by nothing until now.
+   *
+   * There is no `kind: 'linear'` target: the spec asks for a shape the engine does not
+   * have a word for, and these three fields are what it means.
+   *
+   * It hits **everything** on the line, allies included, because a beam does not check
+   * sides on the way past. `spell` damage, so it does not shatter ice — and so it is
+   * aligned for the Cinder Rune, which makes it an opener for a cascade rather than a
+   * finisher.
+   */
+  aether_beam: {
+    id: 'aether_beam',
+    name: 'Aether Beam',
+    cost: { pips: 2, marrow: 0 },
+    school: 'arcane',
+    source: 'companion',
+    kind: 'spell',
+    text: 'A line of light drawn through the arena. 3 damage to everything standing in it, yours included.',
+    target: { kind: 'line', length: 4 },
+    effect: {
+      op: 'damage',
+      amount: 3,
+      dtype: 'spell',
+      area: { shape: 'line', length: 4 },
+    },
+    keywords: [],
+    range: 4,
+    vector: 'linear',
+    needsLoS: true,
+  },
+
+  /**
    * The pull card.
    *
    * A `line` target rather than an `entity` one, and not for flavour: `originOf` reads an

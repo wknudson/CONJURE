@@ -287,6 +287,8 @@ export function boonsOfRelics(equipped: RelicLoadout): CombatBoons {
     if (b.boundFormGrounded) out.boundFormGrounded = true;
     if (b.doubleResonance) out.doubleResonance = true;
     if (b.discountHybrids) out.discountHybrids = true;
+    if (b.ignoreGuardians) out.ignoreGuardians = true;
+    if (b.collisionResist) out.collisionResist = (out.collisionResist ?? 0) + b.collisionResist;
     if (b.bonusHandLimit) out.bonusHandLimit = (out.bonusHandLimit ?? 0) + b.bonusHandLimit;
   }
 

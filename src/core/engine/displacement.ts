@@ -12,16 +12,33 @@
 import type { Coord } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
 import { emit } from './context.js';
-import type { Unit } from '../types/units.js';
+import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import { canPlace, entityAt, refOf } from './board.js';
 import { dealDamage } from './damage.js';
 import { cellsAt, add } from '../util/grid.js';
 import { inBounds } from '../types/state.js';
+import type { GameState } from '../types/state.js';
 
 export const COLLISION_TARGET_DAMAGE = 3;
 export const COLLISION_BLOCKER_DAMAGE = 2;
 export const COLLISION_OBSTACLE_DAMAGE = 3;
+
+/**
+ * What a collision actually costs a given body, after its side's plate.
+ *
+ * Applied here rather than inside `dealDamage` so it stays a rule about *collisions*
+ * specifically. Trench plate is bracing for an impact, not damage reduction — a Vaporize
+ * still burns exactly as much through it.
+ *
+ * Obstacles and walls are unmoved by it: scenery has no commander to have bought plate,
+ * and a barricade that got tougher because the shover's owner wore boots would be a rule
+ * nobody could see. Floored at zero, never negative.
+ */
+function braced(state: GameState, entity: Entity | undefined, amount: number): number {
+  if (!entity || !isUnit(entity)) return amount;
+  return Math.max(0, amount - state.players[entity.side].collisionResist);
+}
 
 export interface DisplacementResult {
   path: Coord[];
@@ -85,7 +102,7 @@ export function pushUnit(ctx: Ctx, unit: Unit, dir: Coord, distance: number): Di
 
       dealDamage(ctx, {
         target: { kind: 'unit', id: unit.id },
-        amount: COLLISION_TARGET_DAMAGE,
+        amount: braced(ctx.state, unit, COLLISION_TARGET_DAMAGE),
         dtype: 'impact',
         cause: 'collision',
       });
@@ -95,7 +112,11 @@ export function pushUnit(ctx: Ctx, unit: Unit, dir: Coord, distance: number): Di
       if (stillThere) {
         dealDamage(ctx, {
           target: refOf(stillThere),
-          amount: against === 'obstacle' ? COLLISION_OBSTACLE_DAMAGE : COLLISION_BLOCKER_DAMAGE,
+          amount: braced(
+            ctx.state,
+            stillThere,
+            against === 'obstacle' ? COLLISION_OBSTACLE_DAMAGE : COLLISION_BLOCKER_DAMAGE,
+          ),
           dtype: 'impact',
           cause: 'collision',
         });
@@ -130,7 +151,7 @@ function applyWallCollision(ctx: Ctx, unit: Unit): void {
   });
   dealDamage(ctx, {
     target: { kind: 'unit', id: unit.id },
-    amount: COLLISION_TARGET_DAMAGE,
+    amount: braced(ctx.state, unit, COLLISION_TARGET_DAMAGE),
     dtype: 'impact',
     cause: 'collision',
   });

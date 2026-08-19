@@ -123,6 +123,44 @@ export const COMPANIONS: CompanionDef[] = [
     ],
     unitCardId: 'sylva_bound',
   },
+  {
+    id: 'ferrum',
+    name: 'Ferrum',
+    title: 'Vault Boar',
+    school: 'bulwark',
+    blurb:
+      'Ground. Walls, shoves, and a body that will not be moved. Shield Oath armours everything standing in its lane.',
+    deck: [
+      ...HERO_SPINE,
+      'concussive_blow',
+      'concussive_blow',
+      'seismic_slam',
+      'seismic_slam',
+      'slag_iron_golem',
+      // A second wall. Bulwark is the only school whose Companion cards are mostly other
+      // people's problems, so its own deck wants one more thing to hide behind.
+      'stone_barricade',
+    ],
+    unitCardId: 'ferrum_bound',
+  },
+  {
+    id: 'lexis',
+    name: 'Lexis',
+    title: 'Ink Owl',
+    school: 'arcane',
+    blurb:
+      'Cards. Beams, hooks, and a hand that keeps refilling. Marginalia draws you one more every turn you cast.',
+    deck: [
+      ...HERO_SPINE,
+      'aether_beam',
+      'aether_beam',
+      'grapple_line',
+      'grapple_line',
+      'scrap_phalanx',
+      'cull_the_weak',
+    ],
+    unitCardId: 'lexis_bound',
+  },
 ];
 
 export function companionById(id: string): CompanionDef | undefined {

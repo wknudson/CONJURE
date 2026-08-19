@@ -18,6 +18,49 @@ import type { CardDef } from '../../types/cards.js';
 
 export const BULWARK_CARDS: Record<string, CardDef> = {
   /**
+   * The game's first source of Stun.
+   *
+   * `stun` has been in `StatusKind` since the beginning with every *consumer* already
+   * built — `canAct` gates move and attack on it, the tick decays it, the threat
+   * projection skips a stunned foe, the renderer has an icon, the glossary has an entry,
+   * and the targeting layer has a refusal that names it. Every one of those was writing
+   * about something no card, rune, or rider could produce. This is the missing half, and
+   * it is one line of data.
+   *
+   * Delivered as a **rider** rather than as a spell, deliberately. Hard CC that arrives
+   * on a body has to walk up, survive a turn in the open, and connect — and since the
+   * gates went on `onHit`, connecting means actually wounding: armour that eats the blow
+   * eats the Stun with it. A spell version would be the same effect with none of that
+   * asked for.
+   *
+   * 1 MOV and 4 HP is the price. It threatens the tile in front of it and nothing else.
+   */
+  concussive_blow: {
+    id: 'concussive_blow',
+    name: 'Concussive Blow',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'hero',
+    kind: 'minion',
+    text: 'A slab of a thing with a hammer. Whatever it wounds is Stunned: no moving, no swinging.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'concussive_blow' },
+    keywords: [],
+    unit: {
+      atk: 2,
+      hp: 4,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      sacrificeValue: 1,
+      escalationBonus: { atk: 1, hp: 1 },
+      onHit: { status: 'stun', stacks: 1 },
+    },
+  },
+
+  /**
    * The board-clearing shove.
    *
    * Aimed at a tile, so `originOf` reads the epicentre and `shoveArea` throws everything

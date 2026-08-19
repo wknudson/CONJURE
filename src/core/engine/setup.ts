@@ -90,6 +90,8 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       resonancesThisTurn: 0,
       doubleResonance: false,
       discountHybrids: false,
+      collisionResist: 0,
+      ignoresGuardians: false,
     },
     nextId: id,
   };
@@ -203,6 +205,24 @@ export interface CombatBoons {
   doubleResonance?: boolean;
   /** Spliced cards cost 1 Pip less, never below one. Marrow is untouched. */
   discountHybrids?: boolean;
+  /**
+   * Collision damage this side's units shrug off, per hit.
+   *
+   * A subtraction rather than a flag, because a collision comes in three sizes — 3 into
+   * the body shoved, 2 into whatever it hit, 3 into a wall — and a plate that cancelled
+   * all of them equally would be a different rule at each. Floored at zero where it is
+   * read: a shove that ends up dealing nothing still *moves* the body, which is most of
+   * what a shove was for.
+   */
+  collisionResist?: number;
+  /**
+   * This side's ranged attacks and spells see past a **Guardian**.
+   *
+   * Deliberately narrow. It does not see through walls, cover, Behemoths or fog: it is a
+   * rule about a keyword, not about geometry, which keeps `arcing` the answer to terrain
+   * and makes this the answer to a screen.
+   */
+  ignoreGuardians?: boolean;
 }
 
 /**
@@ -307,11 +327,13 @@ export function createCombat(
   player.commander.bonusSacrificeMarrow += Math.max(0, carry?.boons?.bonusSacrificeMarrow ?? 0);
   player.commander.healOnSacrifice += Math.max(0, carry?.boons?.healOnSacrifice ?? 0);
   player.commander.bonusToxinStacks += Math.max(0, carry?.boons?.bonusToxinStacks ?? 0);
+  player.commander.collisionResist += Math.max(0, carry?.boons?.collisionResist ?? 0);
 
   if (carry?.boons?.boundFormIgnoresHazards) player.commander.boundFormIgnoresHazards = true;
   if (carry?.boons?.boundFormGrounded) player.commander.boundFormGrounded = true;
   if (carry?.boons?.doubleResonance) player.commander.doubleResonance = true;
   if (carry?.boons?.discountHybrids) player.commander.discountHybrids = true;
+  if (carry?.boons?.ignoreGuardians) player.commander.ignoresGuardians = true;
 
   // Only ever upward, like the Pip ceiling: gear bends a rule in the player's favour or
   // not at all, so a malformed carry cannot hand them a smaller hand than the rules give.

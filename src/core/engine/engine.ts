@@ -334,7 +334,7 @@ function applyOnHit(ctx: Ctx, attackerId: string, target: TargetRef, hpLoss: num
   if (victim.keywords.includes('BoundForm')) return;
   if (isSealed(ctx.state, target)) return;
 
-  applyStatusTo(ctx, victim, attacker.onHit.status, attacker.onHit.stacks);
+  applyStatusTo(ctx, victim, attacker.onHit.status, attacker.onHit.stacks, attacker.side);
 }
 
 /**

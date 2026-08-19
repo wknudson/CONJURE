@@ -30,6 +30,8 @@ export const ALL_BOONS: Record<keyof CombatBoons, true> = {
   bonusHandLimit: true,
   doubleResonance: true,
   discountHybrids: true,
+  collisionResist: true,
+  ignoreGuardians: true,
 };
 
 export const BOON_KEYS = Object.keys(ALL_BOONS) as (keyof CombatBoons)[];

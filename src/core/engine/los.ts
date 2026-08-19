@@ -81,7 +81,12 @@ export function occluderCells(
   const set = new Set<string>();
   for (const e of allEntities(state)) {
     if (ignoreIds.includes(e.id)) continue;
-    const blocks = !isUnit(e) || e.keywords.includes('Guardian') || e.footprint === 2;
+    // A Behemoth's bulk is geometry and blocks for everyone. A Guardian is a *posture* —
+    // a body deliberately interposing — and that is the half a piercing eye can read
+    // around. Trench plate does not make a 2x2 transparent.
+    const screens = isUnit(e) && e.keywords.includes('Guardian') && e.footprint !== 2;
+    const pierced = screens && viewer !== undefined && state.players[viewer].ignoresGuardians;
+    const blocks = !isUnit(e) || e.footprint === 2 || (screens && !pierced);
     if (!blocks) continue;
     for (const c of cellsOf(e)) set.add(coordKey(c));
   }

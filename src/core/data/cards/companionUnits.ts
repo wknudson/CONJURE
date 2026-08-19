@@ -226,6 +226,72 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     },
   },
 
+  /**
+   * Ferrum's body. The slowest thing in the game and the hardest to move off a tile.
+   *
+   * 1 MOV is the whole design: Shield Oath armours the Companion's own column, so the
+   * lane it is standing in is the lane it is defending, and a body that could reposition
+   * freely would make that choice cost nothing. Where you walk it in the first two turns
+   * is where the fight happens.
+   */
+  ferrum_bound: {
+    id: 'ferrum_bound',
+    name: 'Ferrum',
+    cost: { pips: 0, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Bulwark cards are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm', 'Guardian'],
+    setupOnly: true,
+    unit: {
+      atk: 2,
+      hp: PACT_HP,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      sacrificeValue: 0,
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /**
+   * Lexis's body. Fragile, far-sighted, and the only Bound Form that wants to be nowhere
+   * near the fighting.
+   *
+   * Marginalia does not care where the owl stands, so unlike every other Companion its
+   * position is purely about cast reach — which makes walking it forward a decision with
+   * no compensation, and that is the point of a caster whose passive is in the hand.
+   */
+  lexis_bound: {
+    id: 'lexis_bound',
+    name: 'Lexis',
+    cost: { pips: 0, marrow: 0 },
+    school: 'arcane',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Arcane cards are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 1,
+      hp: PACT_HP,
+      mov: 3,
+      rangeMin: 1,
+      rangeMax: 2,
+      footprint: 1,
+      archetype: 'caster',
+      sacrificeValue: 0,
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
   boreas_bound: {
     id: 'boreas_bound',
     name: 'Boreas',

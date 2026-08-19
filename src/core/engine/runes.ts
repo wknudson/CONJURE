@@ -9,7 +9,7 @@
  *     rune without detonating.
  */
 
-import type { Coord, TargetRef, UnitId } from '../../contract/ids.js';
+import type { Coord, Side, TargetRef, UnitId } from '../../contract/ids.js';
 import { coordEq } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
 import { emit, newCause } from './context.js';
@@ -107,6 +107,10 @@ export function detonate(ctx: Ctx, host: Entity, chainDepth: number, bonusDamage
   if (chainDepth > MAX_CHAIN_DEPTH) return;
   if (ctx.state.encounter.chainCancelled) return;
 
+  // Read the owner before consuming: `host.rune` is cleared on the next line, and the
+  // riders below still need to know whose trap this was.
+  const ownerSide = attached.ownerSide;
+
   // Consume before resolving, so a rune can never re-trigger itself.
   host.rune = undefined;
 
@@ -124,7 +128,7 @@ export function detonate(ctx: Ctx, host: Entity, chainDepth: number, bonusDamage
     chainDepth,
   });
 
-  applyBlast(ctx, host, def, def.damage + bonusDamage, chainDepth, affected);
+  applyBlast(ctx, host, def, def.damage + bonusDamage, chainDepth, affected, ownerSide);
 }
 
 /**
@@ -145,6 +149,7 @@ function strike(
   target: TargetRef,
   amount: number,
   chainDepth: number,
+  ownerSide: Side,
 ): void {
   if (amount > 0) {
     dealDamage(ctx, { target, amount, dtype: def.dtype, cause: 'rune', chainDepth });
@@ -155,7 +160,10 @@ function strike(
   if (!victim) return;
 
   for (const rider of def.applies) {
-    applyStatusTo(ctx, victim, rider.status, rider.stacks);
+    // The side that *laid* the rune, not the side whose turn sprang it. A trap springs on
+    // the enemy's clock by definition, so reading the clock here credited every trap in
+    // the game to the player who walked into it.
+    applyStatusTo(ctx, victim, rider.status, rider.stacks, ownerSide);
   }
 }
 
@@ -200,11 +208,12 @@ function applyBlast(
   amount: number,
   chainDepth: number,
   affected: Coord[],
+  ownerSide: Side,
 ): void {
   if (def.blast.shape === 'lowestHpEnemy') {
     const victim = lowestHpEnemy(ctx.state, host.side);
     if (victim) {
-      strike(ctx, def, refOf(victim), amount, chainDepth);
+      strike(ctx, def, refOf(victim), amount, chainDepth, ownerSide);
     }
     return;
   }
@@ -219,7 +228,7 @@ function applyBlast(
   for (const id of victims) {
     const e = getEntity(ctx.state, id);
     if (!e || e.hp <= 0) continue;
-    strike(ctx, def, refOf(e), amount, chainDepth);
+    strike(ctx, def, refOf(e), amount, chainDepth, ownerSide);
   }
 
   // A detonation on an enemy-owned host also chips the opposing commander is NOT a rule;

@@ -278,7 +278,9 @@ function damageEntity(ctx: Ctx, entity: Entity, req: DamageRequest): DamageOutco
   // A Surge hit leaves residual charge for fire or frost to find later. Applied after
   // the HP write like everything else here, and only to units — scenery holds no charge.
   if (isUnit(entity) && req.dtype === 'shock' && entity.hp > 0) {
-    applyStatusTo(ctx, entity, 'charged', 1);
+    // Charge, so the bonus never applies — the source is named anyway rather than
+    // left to default, so this line does not become the odd one out later.
+    applyStatusTo(ctx, entity, 'charged', 1, req.sourceUnitId ? ctx.state.units[req.sourceUnitId]?.side : undefined);
   }
 
   conductShock(ctx, req, entity);

@@ -112,7 +112,8 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
         const unit = ctx.state.units[ref.id];
         if (!unit) continue;
 
-        applyStatusTo(ctx, unit, node.status, node.stacks);
+        // The caster, not the clock: a card poisons for whoever played it.
+        applyStatusTo(ctx, unit, node.status, node.stacks, play.side);
       }
       return;
     }

@@ -206,6 +206,16 @@ export interface CardDef {
   keywords: Keyword[];
   /** Present for minion cards. */
   unit?: UnitStatBlock;
+  /**
+   * The obstacle this definition raises is **cover**: it blocks sight and nothing else,
+   * and units may stand in it.
+   *
+   * On the definition rather than on the spawning op, because what a thing *is* belongs
+   * with the thing. `terrain_cover` carries it too, even though encounter terrain builds
+   * its obstacles directly — a definition that describes itself wrongly is how the two
+   * paths drift.
+   */
+  obstacleCover?: true;
   /** Present for obstacle cards. */
   obstacleHp?: number;
   /**

@@ -13,6 +13,49 @@ import type { CardDef } from '../../types/cards.js';
 
 export const DUSK_CARDS: Record<string, CardDef> = {
   /**
+   * The first cover any card has ever put on the board.
+   *
+   * Cover has existed as long as encounter terrain has, and only an encounter could place
+   * it. It blocks sight and nothing else, so units stand *in* it: this is a screen your
+   * own melee can walk through and your own archers cannot shoot through, which makes it a
+   * genuinely different object from Stone Barricade rather than a cheaper one.
+   *
+   * `spawnConstruct` rather than `spawnObstacle` so the bank's health comes from the
+   * spell. Three is deliberately flimsy — it is a held breath, not masonry — and the
+   * caster's `bonusObstacleHp` still stacks on top, which is the one way to make smoke
+   * that lingers.
+   */
+  smoke_bomb: {
+    id: 'smoke_bomb',
+    name: 'Smoke Bomb',
+    cost: { pips: 1, marrow: 0 },
+    school: 'dusk',
+    source: 'hero',
+    kind: 'spell',
+    text: 'A held breath of black smoke. Blocks line of sight; anyone may walk into it.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'spawnConstruct', obstacleDef: 'smoke_bank', hp: 3 },
+    keywords: [],
+  },
+
+  /** What the Bomb raises. Never drawn, never owned — the card is the only way to it. */
+  smoke_bank: {
+    id: 'smoke_bank',
+    name: 'Smoke Bank',
+    cost: { pips: 0, marrow: 0 },
+    school: 'dusk',
+    source: 'hero',
+    kind: 'obstacle',
+    text: 'Blocks sight but not movement. Units may stand in it.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: [],
+    setupOnly: true,
+    obstacleHp: 3,
+    obstacleCover: true,
+  },
+
+  /**
    * What an Aetheric Defibrillator leaves standing.
    *
    * `setupOnly`, so it is never drawn, owned, offered as a reward or put in a deck — the

@@ -12,12 +12,13 @@
 
 import type { School, Side } from '../../contract/ids.js';
 import type { Ctx } from '../engine/context.js';
-import { emit } from '../engine/context.js';
+import { applyStatusTo } from '../engine/status.js';
 import { dealDamage, grantArmor } from '../engine/damage.js';
 import { creditRefund } from '../engine/reactions.js';
 import { healCommander } from '../engine/damage.js';
 import { lowestHpEnemy, opposite, unitsOf } from '../engine/board.js';
 import { cellsOf } from '../util/grid.js';
+import { drawCards } from '../engine/deck.js';
 
 export interface ResonanceDef {
   school: School;
@@ -37,14 +38,52 @@ export const RESONANCE: Partial<Record<School, ResonanceDef>> = {
     apply(ctx, side, column) {
       for (const foe of unitsOf(ctx.state, opposite(side))) {
         if (!cellsOf(foe).some((c) => c.x === column)) continue;
-        foe.statuses.burn = (foe.statuses.burn ?? 0) + 1;
-        emit(ctx, {
-          t: 'statusApplied',
-          unitId: foe.id,
-          status: 'burn',
-          stacks: foe.statuses.burn,
-        });
+        // Through the dispatcher like everything else. This wrote `foe.statuses.burn`
+        // directly for as long as it has existed — the only status application in the
+        // game that skipped `applyStatusTo`, and so the only one that would have missed
+        // the chill threshold or the source attribution had it ever applied those.
+        applyStatusTo(ctx, foe, 'burn', 1, side);
       }
+    },
+  },
+
+  /**
+   * The defensive mirror of Ember Watch, and deliberately the same shape.
+   *
+   * Pyre's lane is dangerous to *stand* in; Bulwark's is safe to hold. Both read the
+   * Companion's column, so both make walking the body forward the decision it was always
+   * meant to be — the difference is only ever which side of the line benefits.
+   *
+   * Persistent armour on the units rather than on the Hero, because Bulwark's whole
+   * argument is that the line holds. Armouring the portrait would be Rime Guard with a
+   * different name.
+   */
+  bulwark: {
+    school: 'bulwark',
+    name: 'Shield Oath',
+    text: "Your first Companion card each turn grants +1 Persistent Armor to your units in the Companion's column.",
+    apply(ctx, side, column) {
+      for (const ally of unitsOf(ctx.state, side)) {
+        if (!cellsOf(ally).some((c) => c.x === column)) continue;
+        grantArmor(ctx, { kind: 'unit', id: ally.id }, 1);
+      }
+    },
+  },
+
+  /**
+   * The first Resonance that touches the hand rather than the board.
+   *
+   * Routed through the ordinary draw, so the hand limit and the overdraw burn both still
+   * apply: a full hand turns the passive into a Marrow and a burnt card. That is a real
+   * cost rather than a punishment, and it is what makes `bonusHandLimit` — the Gambler's
+   * Coin, the Ink Owl's own Hoarder knack — a build instead of a nicety.
+   */
+  arcane: {
+    school: 'arcane',
+    name: 'Marginalia',
+    text: 'Your first Companion card each turn draws a card.',
+    apply(ctx, side) {
+      drawCards(ctx, side, 1);
     },
   },
 

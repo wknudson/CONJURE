@@ -175,6 +175,8 @@ turn dumps several cards.
 | surge | **Storm Tithe** | Pays 1 Pip back |
 | dusk | **Grave Tithe** | Drains 2 HP from the lowest-HP enemy |
 | bloom | **Verdant Growth** | Returns 2 HP to the Pact (`VERDANT_GROWTH_HEAL`) |
+| bulwark | **Shield Oath** | +1 Persistent Armor to your units in the Companion's column |
+| arcane | **Marginalia** | Draws a card |
 
 Every school a Companion can belong to has one. A species whose school had no entry would
 promise a passive on the selection screen and deliver nothing in the fight, so a test holds
@@ -187,6 +189,16 @@ the two lists together.
 
 > The trigger is **source**, not school. A Surge card marked `source: 'hero'` does not fire
 > Storm Tithe; a Pyre Companion card in a Voltara deck would.
+
+> **Shield Oath** is Ember Watch's shape pointed the other way: same column, same
+> `apply(ctx, side, column)`, allies instead of enemies. Armour on the *bodies* rather than
+> on the Hero, because Bulwark's argument is that the line holds — armouring the portrait
+> would be Rime Guard under another name.
+
+> **Marginalia** is the first Resonance to touch the hand rather than the board. It routes
+> through the ordinary draw, so the hand limit and the overdraw burn both still apply: a
+> full hand turns the passive into a Marrow and a burnt card. That is what makes
+> `bonusHandLimit` a build rather than a nicety.
 
 ---
 
@@ -430,11 +442,11 @@ as much as bodies — shoving into a wall is free damage.
 | Status | Rule |
 |---|---|
 | **Burn** | 1 fire per stack at the start of the affected side's turn, then loses a stack |
-| **Toxin** | 1 per stack at turn start, **as `true` damage** — armor is bypassed, not spent |
+| **Toxin** | 1 per stack at turn start, **as `true` damage** — armor is bypassed, not spent. `bonusToxinStacks` is resolved from the **source's** side when the poison is applied and stored amplified, so the tick never asks whose it was — and a trap collects for whoever laid it, not for whoever's turn sprang it |
 | **Chill** | stacks toward freezing; the third stack (`CHILL_TO_FREEZE`) freezes instead of stacking |
 | **Freeze** | cannot move or attack. Still Escalates. A physical blow Shatters it |
 | **Entangle** | cannot move, but **can** attack |
-| **Stun** | cannot move or attack |
+| **Stun** | cannot move or attack. Applied by **Concussive Blow**'s rider — the first and only source |
 | **Brittle** | +2 damage from every hit (`BRITTLE_BONUS`) until it wears off |
 | **Charged** | residual Surge energy. Does nothing alone — it is what fire and frost react to |
 | **aetherPlated** | the seal on a cornered Alpha. Nothing reduces its health. Never ticks |
