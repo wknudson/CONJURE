@@ -20,7 +20,7 @@ import {
   forfeitIfAbandoned,
   newRun,
 } from '../core/overworld/state.js';
-import { HP_ROLL_MAX, HP_ROLL_MIN } from '../core/overworld/vivarium.js';
+import { BASE_PACT_HP, HP_ROLL_MAX, HP_ROLL_MIN } from '../core/overworld/vivarium.js';
 
 /** A minimal in-memory localStorage, so these run without a DOM. */
 function installStorage(): Map<string, string> {
@@ -306,9 +306,17 @@ describe('one character on disk', () => {
 
     const restored = loadSave().save.profiles['slot-1']!;
     const over = restored.state.overworld;
-    expect(over.pact.currentHp, 'cannot exceed the gauge').toBe(
-      restored.companions[0]!.baseHpRoll,
-    );
+
+    // Two clamps run here, in this order, and the second is not the first undone:
+    // `readOverworld` caps the hand-edited 9999 at the *stored* gauge of 40, and then
+    // `syncPactCeiling` sets the real ceiling from the beast standing beside them. A
+    // bigger beast is a bigger gauge, not a heal — so a 43 HP companion leaves this
+    // character at 40 with room to spare, and asserting the roll itself would fail
+    // whenever the roll came up above the stored gauge.
+    const ceiling = restored.companions[0]!.baseHpRoll;
+    expect(over.pact.maxHp, 'the gauge belongs to the beast').toBe(ceiling);
+    expect(over.pact.currentHp, 'cannot exceed the gauge').toBeLessThanOrEqual(over.pact.maxHp);
+    expect(over.pact.currentHp, 'clamped down from 9999').toBe(Math.min(BASE_PACT_HP, ceiling));
     expect(over.economy.ducats, 'no negative purse').toBe(0);
     expect(Number.isInteger(over.economy.marrowShards)).toBe(true);
     expect(over.inventory.length, 'capped at the satchel limit').toBe(INVENTORY_LIMIT);

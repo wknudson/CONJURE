@@ -217,7 +217,14 @@ describe('fuzz soak', () => {
     }
 
     expect(violations.slice(0, 10).join('\n')).toBe('');
-  }, 120_000);
+    // No local deadline: this inherits the generous global one, like every other test in
+    // this file. It carried 120s while the three lighter tests beside it carried 180s,
+    // which left the heaviest test in the suite with the least headroom — it ran 109s of
+    // its 120s budget on an idle machine and blew it the moment anything else wanted a
+    // core. That is the exact flakiness vitest.config.ts describes and the exact remedy
+    // its comment prescribes: this soak exists to catch a hang or a divergence, never to
+    // measure how busy the machine was.
+  });
 
   it('always reaches a terminal state or a legal ongoing one', () => {
     for (let seed = 1; seed <= 8; seed++) {
