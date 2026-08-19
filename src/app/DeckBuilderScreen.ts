@@ -29,7 +29,14 @@ import { Tooltip } from '../hud/Tooltip.js';
 import { ledgerFor, ledgerProgress } from '../core/data/bestiary.js';
 import type { Bestiary, GlobalGameState } from '../core/overworld/state.js';
 import { equipRefusal, equipRelic, unequipRelic } from '../core/overworld/state.js';
-import { RELICS, RELIC_SLOTS, relicById } from '../core/data/relics.js';
+import {
+  RELIC_SLOT_BLURBS,
+  RELIC_SLOT_LABELS,
+  relicById,
+  relicsForSlot,
+  slotOf,
+} from '../core/data/relics.js';
+import { RELIC_SLOT_ORDER } from '../core/overworld/state.js';
 
 export interface DeckBuilderResult {
   companionId: string;
@@ -44,7 +51,10 @@ const EQUIP_REFUSAL: Record<string, string> = {
   'in-combat': 'Not while a contract is open',
   'not-owned': 'You do not have that',
   'already-worn': 'Already worn',
-  'no-slot': 'All four slots are full — take something off first',
+  // `no-slot` is gone with the flat list: a relic names its own slot, so wearing one over
+  // another swaps rather than refusing. This is the case that remains — gear the
+  // catalogue no longer places anywhere.
+  'unknown-slot': 'Nowhere to put that',
 };
 
 export class DeckBuilderScreen implements Screen {
@@ -163,61 +173,83 @@ export class DeckBuilderScreen implements Screen {
     slots.innerHTML = '';
     shelf.innerHTML = '';
 
-    for (let i = 0; i < RELIC_SLOTS; i++) {
-      const id = equippedRelics[i];
+    for (const slot of RELIC_SLOT_ORDER) {
+      const id = equippedRelics[slot];
       const relic = id ? relicById(id) : undefined;
 
-      const slot = document.createElement('button');
-      slot.className = `relic-slot${relic ? ' is-worn' : ' is-bare'}`;
-      slot.innerHTML = relic
-        ? `<span class="relic-slot__domain relic-slot__domain--${relic.domain}"></span>
+      const cell = document.createElement('button');
+      cell.className = `relic-slot relic-slot--${slot}${relic ? ' is-worn' : ' is-bare'}`;
+      cell.innerHTML = relic
+        ? `<span class="relic-slot__domain relic-slot__domain--${slot}"></span>
+           <span class="relic-slot__label">${RELIC_SLOT_LABELS[slot]}</span>
            <span class="relic-slot__name">${relic.name}</span>
            <span class="relic-slot__text">${relic.text}</span>
            <span class="relic-slot__action">Take off</span>`
-        : `<span class="relic-slot__empty">Empty slot ${i + 1}</span>`;
+        : `<span class="relic-slot__domain relic-slot__domain--${slot}"></span>
+           <span class="relic-slot__label">${RELIC_SLOT_LABELS[slot]}</span>
+           <span class="relic-slot__empty">${RELIC_SLOT_BLURBS[slot]}</span>`;
 
       if (relic) {
-        slot.addEventListener('click', () => {
+        cell.addEventListener('click', () => {
           unequipRelic(this.global, relic.id);
           this.say('');
           this.onLoadoutChange();
           this.render();
         });
       }
-      slots.appendChild(slot);
+      slots.appendChild(cell);
     }
 
-    const spare = relics.filter((id) => !equippedRelics.includes(id) && RELICS[id]);
-    if (spare.length === 0) {
+    // The footlocker, grouped by slot rather than as one list. A flat shelf would make
+    // the player work out for themselves which of their gear competes with which — which
+    // is the entire question the slots exist to answer.
+    let anything = false;
+
+    for (const slot of RELIC_SLOT_ORDER) {
+      const spare = relicsForSlot(slot).filter(
+        (r) => relics.includes(r.id) && equippedRelics[slot] !== r.id,
+      );
+      if (spare.length === 0) continue;
+      anything = true;
+
+      const group = document.createElement('div');
+      group.className = 'relic-group';
+      group.innerHTML = `<div class="relic-group__head">${RELIC_SLOT_LABELS[slot]}</div>`;
+
+      for (const relic of spare) {
+        const row = document.createElement('button');
+        row.className = 'relic-row';
+        // Named on the button, because putting this on means taking that off and the
+        // player should read which before they click rather than after.
+        const worn = equippedRelics[slot];
+        const action = worn ? `Swap for ${relicById(worn)?.name ?? 'the other'}` : 'Put on';
+        row.innerHTML = `
+          <span class="relic-slot__domain relic-slot__domain--${slot}"></span>
+          <span class="relic-row__body">
+            <span class="relic-slot__name">${relic.name}</span>
+            <span class="relic-slot__text">${relic.text}</span>
+          </span>
+          <span class="relic-slot__action">${action}</span>
+        `;
+        row.addEventListener('click', () => {
+          const refusal = equipRefusal(this.global, relic.id, slotOf(relic.id));
+          // The state decides, not the button: a stale render must not be able to dress
+          // the player in something they no longer own.
+          if (!equipRelic(this.global, relic.id, slotOf(relic.id))) {
+            this.say(EQUIP_REFUSAL[refusal ?? 'none'] ?? '');
+            return;
+          }
+          this.say('');
+          this.onLoadoutChange();
+          this.render();
+        });
+        group.appendChild(row);
+      }
+      shelf.appendChild(group);
+    }
+
+    if (!anything) {
       shelf.innerHTML = '<span class="loadout__empty">Nothing else to your name.</span>';
-      return;
-    }
-
-    for (const id of spare) {
-      const relic = relicById(id)!;
-      const row = document.createElement('button');
-      row.className = 'relic-row';
-      row.innerHTML = `
-        <span class="relic-slot__domain relic-slot__domain--${relic.domain}"></span>
-        <span class="relic-row__body">
-          <span class="relic-slot__name">${relic.name}</span>
-          <span class="relic-slot__text">${relic.text}</span>
-        </span>
-        <span class="relic-slot__action">Put on</span>
-      `;
-      row.addEventListener('click', () => {
-        const refusal = equipRefusal(this.global, relic.id, RELIC_SLOTS);
-        // The state decides, not the button: a stale render must not be able to field a
-        // fifth relic.
-        if (!equipRelic(this.global, relic.id, RELIC_SLOTS)) {
-          this.say(EQUIP_REFUSAL[refusal ?? 'none'] ?? '');
-          return;
-        }
-        this.say('');
-        this.onLoadoutChange();
-        this.render();
-      });
-      shelf.appendChild(row);
     }
   }
 

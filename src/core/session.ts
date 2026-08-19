@@ -467,7 +467,11 @@ export class CombatSession implements RulesQuery {
     // answering a known threat. Planned against a forecast board on which the enemy's
     // units have refreshed, since they are all spent at this exact moment.
     const next = planTurn(boardForNextEnemyTurn(this.state), 'enemy', this.ai);
-    const declared = applyCommand(this.state, { type: 'declareIntents', plan: next, telegraph: this.ai.telegraph });
+    // The Monocle buys back what the difficulty hides. Resolved here rather than inside
+    // the reducer because the engine has no idea an AI tier exists — it is handed a
+    // telegraph setting and honours it, exactly as before.
+    const telegraph = this.state.players.player.revealsIntents ? 'all' : this.ai.telegraph;
+    const declared = applyCommand(this.state, { type: 'declareIntents', plan: next, telegraph });
     this.state = declared.state;
     events.push(...declared.events);
 

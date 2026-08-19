@@ -55,6 +55,19 @@ export interface CommanderState {
   ignoresFog: boolean;
   /** Burn does not tick on this side. */
   immuneToBurn: boolean;
+  /** Toxin does not tick on this side. */
+  immuneToToxin: boolean;
+  /**
+   * This side sees everything the opposition means to do, card plays included.
+   *
+   * Read by the session when it asks the AI to declare, so the engine never learns that
+   * a difficulty setting exists — only that this commander is owed the full telegraph.
+   */
+  revealsIntents: boolean;
+  /** Added to the health of obstacles this side raises from a card. */
+  bonusObstacleHp: number;
+  /** Added to what each of this side's sacrifices pays out. */
+  bonusSacrificeMarrow: number;
   /** Ice underfoot costs this side nothing. */
   ignoresIceSlip: boolean;
 }

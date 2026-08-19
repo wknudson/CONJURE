@@ -27,6 +27,42 @@
  * vocabulary. `src/tests/boundaries.test.ts` holds the rule to it.
  */
 
+/**
+ * Where on the Commander a relic sits.
+ *
+ * Four named places rather than four interchangeable holes. A slotted loadout asks a
+ * better question than a flat list did: the flat version made every relic compete with
+ * every other for the same four openings, so the answer was always "the four strongest"
+ * and the decision was arithmetic. Anatomy means a pair of goggles competes with other
+ * goggles, and the Will slot cannot be filled with more armour.
+ *
+ * Declared here rather than beside `RELICS`, because this is the shape of what gets
+ * written to disk. `relics.ts` imports the type to tag each piece of gear, the same
+ * direction `bounties.ts` already reads `CombatSpoils` from this file.
+ */
+export type RelicSlot = 'optics' | 'vestment' | 'trinket' | 'will';
+
+/** The order the loadout is drawn and iterated in. Head downward, then the intangible. */
+export const RELIC_SLOT_ORDER: readonly RelicSlot[] = ['optics', 'vestment', 'trinket', 'will'];
+
+/**
+ * What is worn, by slot.
+ *
+ * Every slot is present and explicitly `null` when bare rather than absent, so reading a
+ * loadout never has to distinguish "empty" from "this save predates the slot" — the
+ * migration settles that once, on load.
+ */
+export type RelicLoadout = Record<RelicSlot, string | null>;
+
+export function emptyLoadout(): RelicLoadout {
+  return { optics: null, vestment: null, trinket: null, will: null };
+}
+
+/** The ids currently worn, in slot order, skipping bare slots. */
+export function wornRelics(loadout: RelicLoadout): string[] {
+  return RELIC_SLOT_ORDER.map((slot) => loadout[slot]).filter((id): id is string => id !== null);
+}
+
 /** A carried item. Healing is spent immediately; a buff is held until the next fight. */
 export interface Consumable {
   id: BuffId | string;
@@ -107,12 +143,13 @@ export interface OverworldState {
   /**
    * Gear owned, and the four pieces currently worn.
    *
-   * Two lists rather than a flag on each relic: "what I have" and "what I am wearing" are
-   * different questions, and the loadout screen asks both at once. `equippedRelics` is
-   * always a subset of `relics` — `equipRelic` is what holds that, not convention.
+   * Two collections rather than a flag on each relic: "what I have" and "what I am
+   * wearing" are different questions, and the loadout screen asks both at once. Every id
+   * in the loadout is always also in `relics` — `equipRelic` is what holds that, not
+   * convention.
    */
   relics: string[];
-  equippedRelics: string[];
+  equippedRelics: RelicLoadout;
   /**
    * The single brew that will be consumed by the next fight, if any.
    *
@@ -171,7 +208,7 @@ export function newRun(bountySeed = 1, maxHp = 40): OverworldState {
     economy: { ducats: 0, marrowShards: 0, reagents: {} },
     inventory: [],
     relics: [],
-    equippedRelics: [],
+    equippedRelics: emptyLoadout(),
     activeBuff: null,
     activeEncounter: null,
     bountySeed,
@@ -190,13 +227,19 @@ export function addConsumable(state: OverworldState, item: Consumable): boolean 
   return true;
 }
 
-/** Why a relic could not be worn, or null if it can. */
-export type EquipRefusal = 'in-combat' | 'not-owned' | 'already-worn' | 'no-slot' | null;
+/**
+ * Why a relic could not be worn, or null if it can.
+ *
+ * `no-slot` is gone with the flat list. A relic names the slot it belongs in, so there is
+ * always exactly one place it could go — the only question is whether something is
+ * already there, and that is answered by swapping rather than by refusing.
+ */
+export type EquipRefusal = 'in-combat' | 'not-owned' | 'already-worn' | 'unknown-slot' | null;
 
 export function equipRefusal(
   state: GlobalGameState,
   relicId: string,
-  slots: number,
+  slot: RelicSlot | undefined,
 ): EquipRefusal {
   // Gear is chosen before the bell, like everything else the Safehouse sells. Changing
   // what you are wearing after a contract is accepted would change a fight the board was
@@ -205,29 +248,48 @@ export function equipRefusal(
 
   const { relics, equippedRelics } = state.overworld;
   if (!relics.includes(relicId)) return 'not-owned';
-  if (equippedRelics.includes(relicId)) return 'already-worn';
-  if (equippedRelics.length >= slots) return 'no-slot';
+  // The caller looks the slot up, because this module holds no registry — a relic the
+  // catalogue has forgotten has nowhere to go and must not be silently dropped anywhere.
+  if (!slot || !RELIC_SLOT_ORDER.includes(slot)) return 'unknown-slot';
+  if (equippedRelics[slot] === relicId) return 'already-worn';
   return null;
 }
 
 /**
  * Puts a relic on, and reports whether it went on.
  *
- * A boolean rather than a throw, like every other affordance here: a click on a full
- * loadout is a thing players do, and `equipRefusal` gives the screen the reason.
+ * **Wearing something in an occupied slot swaps it**, rather than refusing. With a flat
+ * list a full loadout had to say no, because the game could not know which of the four to
+ * drop. A slot answers that by construction: there is one thing in the way and it is the
+ * thing being replaced. Refusing here would mean two clicks to change goggles, and the
+ * first of them would be "take off the pair I am about to stop wearing".
+ *
+ * The displaced relic is not lost — `relics` is ownership and is never touched here.
+ *
+ * A boolean rather than a throw, like every other affordance in the Safehouse: a click on
+ * a stale render is a thing players do, and `equipRefusal` gives the screen the reason.
  */
-export function equipRelic(state: GlobalGameState, relicId: string, slots: number): boolean {
-  if (equipRefusal(state, relicId, slots) !== null) return false;
-  state.overworld.equippedRelics.push(relicId);
+export function equipRelic(
+  state: GlobalGameState,
+  relicId: string,
+  slot: RelicSlot | undefined,
+): boolean {
+  if (equipRefusal(state, relicId, slot) !== null) return false;
+  state.overworld.equippedRelics[slot!] = relicId;
   return true;
 }
 
 /** Takes a relic off. Always allowed out of combat — there is no cost to bare slots. */
 export function unequipRelic(state: GlobalGameState, relicId: string): boolean {
   if (state.combat !== null || state.overworld.activeEncounter !== null) return false;
-  const at = state.overworld.equippedRelics.indexOf(relicId);
-  if (at < 0) return false;
-  state.overworld.equippedRelics.splice(at, 1);
+
+  const loadout = state.overworld.equippedRelics;
+  // Found by id rather than by slot, so the screen can say "take this off" about the
+  // thing the player is looking at without also having to know where it sits.
+  const slot = RELIC_SLOT_ORDER.find((s) => loadout[s] === relicId);
+  if (!slot) return false;
+
+  loadout[slot] = null;
   return true;
 }
 

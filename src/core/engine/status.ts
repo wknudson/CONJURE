@@ -62,10 +62,15 @@ function tickStatus(ctx: Ctx, unit: Unit, status: 'toxin' | 'burn'): void {
   const stacks = unit.statuses[status] ?? 0;
   if (stacks <= 0) return;
 
-  // A side that cannot burn does not burn: the stacks still come off, so the fire goes
-  // out at the same rate, it simply never costs anything on the way. Clearing them
-  // instead would make the immunity a cleanse, which is a different and stronger thing.
-  if (status === 'burn' && ctx.state.players[unit.side].immuneToBurn) {
+  // A side that cannot burn does not burn, and a side that cannot be poisoned does not
+  // tick: the stacks still come off, so the affliction runs out at the same rate, it
+  // simply never costs anything on the way. Clearing them outright would make the
+  // immunity a *cleanse*, which is a different and stronger thing — and it would also
+  // deny Wildfire the Toxin it consumes, so a Lead-Lined coat would quietly disarm an
+  // ally's Bloom deck as well as protecting its wearer.
+  const cmd = ctx.state.players[unit.side];
+  const immune = status === 'burn' ? cmd.immuneToBurn : cmd.immuneToToxin;
+  if (immune) {
     unit.statuses[status] = stacks - 1;
     if (unit.statuses[status]! <= 0) delete unit.statuses[status];
     return;

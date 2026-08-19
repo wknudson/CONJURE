@@ -146,7 +146,11 @@ function blankCommander(
     pipCap: PIP_CAP,
     ignoresFog: false,
     immuneToBurn: false,
+    immuneToToxin: false,
     ignoresIceSlip: false,
+    revealsIntents: false,
+    bonusObstacleHp: 0,
+    bonusSacrificeMarrow: 0,
   };
 }
 

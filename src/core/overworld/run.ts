@@ -64,6 +64,8 @@ export function carryFor(
   const extraOpeningCards =
     (brew?.extraOpeningCards ?? 0) + (gear.extraOpeningCards ?? 0) + (knack.extraOpeningCards ?? 0);
   const maxPips = Math.max(gear.maxPips ?? 0, knack.maxPips ?? 0);
+  const obstacleHp = (gear.bonusObstacleHp ?? 0) + (knack.bonusObstacleHp ?? 0);
+  const sacrificeMarrow = (gear.bonusSacrificeMarrow ?? 0) + (knack.bonusSacrificeMarrow ?? 0);
 
   const boons: CombatBoons = {
     ...(armor ? { armor } : {}),
@@ -71,8 +73,12 @@ export function carryFor(
     ...(extraOpeningCards ? { extraOpeningCards } : {}),
     ...(maxPips ? { maxPips } : {}),
     ...(gear.ignoreFog || knack.ignoreFog ? { ignoreFog: true } : {}),
-    ...(knack.immuneToBurn ? { immuneToBurn: true } : {}),
-    ...(knack.ignoreIceSlip ? { ignoreIceSlip: true } : {}),
+    ...(gear.immuneToBurn || knack.immuneToBurn ? { immuneToBurn: true } : {}),
+    ...(gear.immuneToToxin || knack.immuneToToxin ? { immuneToToxin: true } : {}),
+    ...(gear.ignoreIceSlip || knack.ignoreIceSlip ? { ignoreIceSlip: true } : {}),
+    ...(gear.revealIntents || knack.revealIntents ? { revealIntents: true } : {}),
+    ...(obstacleHp ? { bonusObstacleHp: obstacleHp } : {}),
+    ...(sacrificeMarrow ? { bonusSacrificeMarrow: sacrificeMarrow } : {}),
   };
 
   return {

@@ -248,6 +248,7 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
     cause: 'attack',
     ...(isMelee ? { sourceUnitId: attackerId } : {}),
   });
+
 }
 
 /**
@@ -333,9 +334,11 @@ function sacrifice(ctx: Ctx, unitId: string): void {
 
   const side = ctx.state.activeSide;
   const cmd = ctx.state.players[side];
-  cmd.marrow += unit.sacrificeValue;
+  // What the body is worth, plus what this commander is willing to take for it.
+  const extracted = unit.sacrificeValue + cmd.bonusSacrificeMarrow;
+  cmd.marrow += extracted;
 
-  emit(ctx, { t: 'unitSacrificed', unitId, marrowExtracted: unit.sacrificeValue });
+  emit(ctx, { t: 'unitSacrificed', unitId, marrowExtracted: extracted });
   emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
 
   killEntity(ctx, unit, 'spell');

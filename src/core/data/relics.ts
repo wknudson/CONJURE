@@ -12,17 +12,30 @@
  * words, never as an id the reducer has to recognise. `createCombat` receives "the pip
  * ceiling is 9" and has never heard of a Galvanic Battery — the same rule that keeps
  * brews and Companion levels out of the engine.
+ *
+ * Every relic also names the **slot** it is worn in. That is what stops the loadout being
+ * arithmetic: a flat list of four openings made every relic compete with every other, so
+ * the answer was always "the four strongest". Anatomy means goggles compete with goggles,
+ * and the Will slot cannot be filled with more armour.
  */
 
 import type { CombatBoons } from '../engine/setup.js';
+import type { RelicLoadout, RelicSlot } from '../overworld/state.js';
+import { RELIC_SLOT_ORDER, wornRelics } from '../overworld/state.js';
 
 export interface RelicDef {
   id: string;
   name: string;
   /** One line, as it reads on the slot. */
   text: string;
-  /** The rule it bends, in a word, for grouping and colour. */
-  domain: 'armour' | 'energy' | 'sight';
+  /**
+   * Where it is worn.
+   *
+   * Replaces the old free-floating `domain`, which described roughly the same thing and
+   * bound nothing. A slot groups the gear *and* decides what it competes with, so one
+   * field does the work the two would have shared — and the loadout can enforce it.
+   */
+  slot: RelicSlot;
   /**
    * What it does, in the engine's vocabulary.
    *
@@ -33,33 +46,125 @@ export interface RelicDef {
 }
 
 /** Slots on the coat. Four, and the fourth is the interesting one. */
-export const RELIC_SLOTS = 4;
+export const RELIC_SLOTS = RELIC_SLOT_ORDER.length;
+
+/** What each slot is called on the loadout screen. */
+export const RELIC_SLOT_LABELS: Record<RelicSlot, string> = {
+  optics: 'Optics',
+  vestment: 'Vestment',
+  trinket: 'Trinket',
+  will: 'Will',
+};
+
+/** One line on what belongs there, shown while the slot is bare. */
+export const RELIC_SLOT_BLURBS: Record<RelicSlot, string> = {
+  optics: 'What you see through.',
+  vestment: 'What you wear against the world.',
+  trinket: 'What you carry in a pocket.',
+  will: 'What you are prepared to do.',
+};
 
 export const RELICS: Record<string, RelicDef> = {
-  relic_coat: {
-    id: 'relic_coat',
-    name: 'Heavy Trenchcoat',
-    text: 'Oilcloth over plate. Start every contract wearing 3 Armor.',
-    domain: 'armour',
-    boons: { armor: 3 },
-  },
-
-  relic_battery: {
-    id: 'relic_battery',
-    name: 'Galvanic Battery',
-    text: 'Banks one more than the body should hold. Pip ceiling raised to 9.',
-    domain: 'energy',
-    // Stated as the ceiling it produces rather than as "+1", so two batteries are one
-    // battery and the number in the data is the number the engine uses.
-    boons: { maxPips: 9 },
-  },
+  // ----------------------------------------------------------------- optics
 
   relic_goggles: {
     id: 'relic_goggles',
     name: 'Soot-Stained Goggles',
     text: 'Smoked glass and a tight seal. Fog and steam no longer blind you.',
-    domain: 'sight',
+    slot: 'optics',
     boons: { ignoreFog: true },
+  },
+
+  /**
+   * The counter to the Adept's one real advantage.
+   *
+   * A Novice telegraphs everything; an Adept keeps its hand to itself and shows only its
+   * blows. The Monocle buys that back — a *rule* bent rather than a number moved, which
+   * is exactly what this system is for. It cannot make the enemy weaker; it can only stop
+   * them being unreadable.
+   */
+  relic_monocle: {
+    id: 'relic_monocle',
+    name: "Magistrate's Monocle",
+    text: 'Ground for reading warrants, not faces. The enemy declares every card it means to play, however good it is at hiding.',
+    slot: 'optics',
+    boons: { revealIntents: true },
+  },
+
+  // --------------------------------------------------------------- vestment
+
+  relic_coat: {
+    id: 'relic_coat',
+    name: 'Heavy Trenchcoat',
+    text: 'Oilcloth over plate. Start every contract wearing 3 Armor.',
+    slot: 'vestment',
+    boons: { armor: 3 },
+  },
+
+  /**
+   * Bloom's answer, worn rather than played.
+   *
+   * Toxin is the one status armour cannot help with — it ticks as `true` damage precisely
+   * so plate is not the answer to it. This is the answer to it, and it costs the slot the
+   * Heavy Trenchcoat wants, so soaking blows and shrugging off poison are two different
+   * coats and you may only wear one.
+   */
+  relic_lead_coat: {
+    id: 'relic_lead_coat',
+    name: 'Lead-Lined Trenchcoat',
+    text: 'Heavier than it looks, and it does not breathe. Toxin no longer touches your side.',
+    slot: 'vestment',
+    boons: { immuneToToxin: true },
+  },
+
+  // ---------------------------------------------------------------- trinket
+
+  relic_battery: {
+    id: 'relic_battery',
+    name: 'Galvanic Battery',
+    text: 'Banks one more than the body should hold. Pip ceiling raised to 9.',
+    slot: 'trinket',
+    // Stated as the ceiling it produces rather than as "+1", so two batteries are one
+    // battery and the number in the data is the number the engine uses.
+    boons: { maxPips: 9 },
+  },
+
+  /**
+   * Two health on everything you raise.
+   *
+   * Deliberately small. An obstacle's job is to survive one more swing than the attacker
+   * expected, and two is that swing on most of them — a Stone Barricade goes 6 to 8,
+   * which is one extra hit from almost anything on the board.
+   *
+   * It only ever touches walls the player *conjures*. The map's own crystals and geodes
+   * are spawned through the same function during setup, and thickening those would be the
+   * Mortar quietly rewriting the arena — so the bonus is applied at the effect ops, which
+   * only a played card reaches.
+   */
+  relic_mortar: {
+    id: 'relic_mortar',
+    name: "Alchemist's Mortar",
+    text: 'Ground glass and quicklime, worked into the mix. Every wall you raise stands 2 HP sturdier.',
+    slot: 'trinket',
+    boons: { bonusObstacleHp: 2 },
+  },
+
+  // ------------------------------------------------------------------- will
+
+  /**
+   * What you are prepared to do, priced.
+   *
+   * The Marrow economy's only permanent multiplier, and the reason the Will slot exists:
+   * every other relic changes what happens *to* you, and this one changes what you are
+   * willing to spend. A deck built on Marrow Wisps and Dark Tithe gets a whole extra point
+   * of fuel per offering.
+   */
+  relic_ledger: {
+    id: 'relic_ledger',
+    name: 'Blood-Ink Ledger',
+    text: 'Every name in it is one you wrote. Each sacrifice extracts 1 more Marrow.',
+    slot: 'will',
+    boons: { bonusSacrificeMarrow: 1 },
   },
 };
 
@@ -72,27 +177,47 @@ export function allRelics(): RelicDef[] {
   return Object.values(RELICS).sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** Where a relic belongs, or undefined if the catalogue has forgotten it. */
+export function slotOf(relicId: string): RelicSlot | undefined {
+  return RELICS[relicId]?.slot;
+}
+
+/** Every relic that belongs in a given slot, for the loadout shelf. */
+export function relicsForSlot(slot: RelicSlot): RelicDef[] {
+  return allRelics().filter((r) => r.slot === slot);
+}
+
 /**
- * Folds a set of equipped relics into one set of capabilities.
+ * Folds a worn loadout into one set of capabilities.
  *
  * Additive where adding makes sense and maximal where it does not — a second coat is more
  * armour, a second battery is not a higher ceiling. Unknown ids are skipped rather than
  * throwing: a save naming a relic that has since been cut should lose the relic, not the
  * fight.
  */
-export function boonsOfRelics(equipped: readonly string[]): CombatBoons {
+export function boonsOfRelics(equipped: RelicLoadout): CombatBoons {
   const out: CombatBoons = {};
 
-  for (const id of equipped) {
+  for (const id of wornRelics(equipped)) {
     const relic = RELICS[id];
     if (!relic) continue;
-    const { armor, pips, extraOpeningCards, maxPips, ignoreFog } = relic.boons;
+    const b = relic.boons;
 
-    if (armor) out.armor = (out.armor ?? 0) + armor;
-    if (pips) out.pips = (out.pips ?? 0) + pips;
-    if (extraOpeningCards) out.extraOpeningCards = (out.extraOpeningCards ?? 0) + extraOpeningCards;
-    if (maxPips) out.maxPips = Math.max(out.maxPips ?? 0, maxPips);
-    if (ignoreFog) out.ignoreFog = true;
+    if (b.armor) out.armor = (out.armor ?? 0) + b.armor;
+    if (b.pips) out.pips = (out.pips ?? 0) + b.pips;
+    if (b.extraOpeningCards) {
+      out.extraOpeningCards = (out.extraOpeningCards ?? 0) + b.extraOpeningCards;
+    }
+    if (b.bonusObstacleHp) out.bonusObstacleHp = (out.bonusObstacleHp ?? 0) + b.bonusObstacleHp;
+    if (b.bonusSacrificeMarrow) {
+      out.bonusSacrificeMarrow = (out.bonusSacrificeMarrow ?? 0) + b.bonusSacrificeMarrow;
+    }
+    if (b.maxPips) out.maxPips = Math.max(out.maxPips ?? 0, b.maxPips);
+    if (b.ignoreFog) out.ignoreFog = true;
+    if (b.immuneToBurn) out.immuneToBurn = true;
+    if (b.immuneToToxin) out.immuneToToxin = true;
+    if (b.ignoreIceSlip) out.ignoreIceSlip = true;
+    if (b.revealIntents) out.revealIntents = true;
   }
 
   return out;

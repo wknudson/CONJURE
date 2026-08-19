@@ -4,13 +4,19 @@ import {
   RELIC_SLOTS,
   allRelics,
   boonsOfRelics,
+  relicsForSlot,
+  slotOf,
 } from '../core/data/relics.js';
 import {
+  RELIC_SLOT_ORDER,
+  emptyLoadout,
   equipRefusal,
   equipRelic,
   newRun,
   unequipRelic,
+  wornRelics,
   type GlobalGameState,
+  type RelicLoadout,
 } from '../core/overworld/state.js';
 import { carryFor, resolveCombat } from '../core/overworld/run.js';
 import { createCombat } from '../core/engine/setup.js';
@@ -31,6 +37,16 @@ const geared = (...owned: string[]): GlobalGameState => {
   return { overworld, combat: null };
 };
 
+/** Dresses a loadout from a list of ids, each into the slot it belongs in. */
+const worn = (...ids: string[]): RelicLoadout => {
+  const loadout = emptyLoadout();
+  for (const id of ids) {
+    const slot = slotOf(id);
+    if (slot) loadout[slot] = id;
+  }
+  return loadout;
+};
+
 describe('the house rule', () => {
   it('has no relic that touches a damage number', () => {
     // A relic that added two damage would be worth exactly what a card that did is, which
@@ -47,7 +63,19 @@ describe('the house rule', () => {
     for (const relic of allRelics()) {
       for (const key of Object.keys(relic.boons)) {
         expect(
-          ['armor', 'pips', 'extraOpeningCards', 'maxPips', 'ignoreFog'],
+          [
+            'armor',
+            'pips',
+            'extraOpeningCards',
+            'maxPips',
+            'ignoreFog',
+            'immuneToBurn',
+            'immuneToToxin',
+            'ignoreIceSlip',
+            'revealIntents',
+            'bonusObstacleHp',
+            'bonusSacrificeMarrow',
+          ],
           `${relic.name} names ${key}`,
         ).toContain(key);
       }
@@ -57,45 +85,64 @@ describe('the house rule', () => {
 
 describe('folding gear into capabilities', () => {
   it('adds armour across pieces', () => {
-    expect(boonsOfRelics(['relic_coat', 'relic_coat']).armor).toBe(6);
+    // One coat per loadout now — the slot is what stops two — so this reads the fold
+    // directly rather than through a loadout that could not legally exist.
+    expect(boonsOfRelics(worn('relic_coat')).armor).toBe(3);
   });
 
   it('takes the highest ceiling rather than summing it', () => {
     // Two batteries are one battery. Summing would make the ceiling a stacking stat,
     // which is the bloat the whole philosophy is against.
-    expect(boonsOfRelics(['relic_battery', 'relic_battery']).maxPips).toBe(
+    expect(boonsOfRelics(worn('relic_battery')).maxPips).toBe(
       RELICS.relic_battery!.boons.maxPips,
     );
   });
 
   it('skips a relic that no longer exists rather than throwing', () => {
     // A save naming a cut relic should lose the relic, not the fight.
-    expect(boonsOfRelics(['relic_coat', 'relic_that_was_cut']).armor).toBe(3);
+    expect(boonsOfRelics({ ...worn('relic_coat'), optics: 'relic_that_was_cut' }).armor).toBe(3);
   });
 
   it('is empty for bare slots', () => {
-    expect(boonsOfRelics([])).toEqual({});
+    expect(boonsOfRelics(emptyLoadout())).toEqual({});
   });
 });
 
 describe('wearing them', () => {
-  it('takes four and refuses a fifth', () => {
-    const g = geared('relic_coat', 'relic_battery', 'relic_goggles');
-    g.overworld.relics.push('a', 'b');
-    g.overworld.equippedRelics = ['relic_coat', 'relic_battery', 'relic_goggles', 'a'];
+  it('holds one of each slot and no more', () => {
+    const g = geared('relic_coat', 'relic_battery', 'relic_goggles', 'relic_ledger');
+    for (const id of g.overworld.relics) equipRelic(g, id, slotOf(id));
 
-    expect(equipRefusal(g, 'b', RELIC_SLOTS)).toBe('no-slot');
-    expect(equipRelic(g, 'b', RELIC_SLOTS)).toBe(false);
-    expect(g.overworld.equippedRelics).toHaveLength(RELIC_SLOTS);
+    expect(wornRelics(g.overworld.equippedRelics)).toHaveLength(RELIC_SLOTS);
+    expect(RELIC_SLOT_ORDER.every((s) => g.overworld.equippedRelics[s] !== null)).toBe(true);
+  });
+
+  it('swaps rather than refusing when the slot is taken', () => {
+    // The flat list had to say no, because it could not know which of four to drop. A
+    // slot answers that by construction: there is one thing in the way and it is the
+    // thing being replaced.
+    const g = geared('relic_goggles', 'relic_monocle');
+    equipRelic(g, 'relic_goggles', slotOf('relic_goggles'));
+
+    expect(equipRelic(g, 'relic_monocle', slotOf('relic_monocle'))).toBe(true);
+    expect(g.overworld.equippedRelics.optics).toBe('relic_monocle');
+    expect(g.overworld.relics, 'the displaced pair is not lost').toContain('relic_goggles');
+  });
+
+  it('refuses gear the catalogue cannot place', () => {
+    const g = geared('relic_coat');
+    g.overworld.relics.push('relic_that_was_cut');
+    expect(equipRefusal(g, 'relic_that_was_cut', slotOf('relic_that_was_cut'))).toBe('unknown-slot');
+    expect(equipRelic(g, 'relic_that_was_cut', undefined)).toBe(false);
   });
 
   it('refuses what is not owned, and what is already on', () => {
     const g = geared('relic_coat');
-    expect(equipRefusal(g, 'relic_battery', RELIC_SLOTS)).toBe('not-owned');
+    expect(equipRefusal(g, 'relic_battery', slotOf('relic_battery'))).toBe('not-owned');
 
-    equipRelic(g, 'relic_coat', RELIC_SLOTS);
-    expect(equipRefusal(g, 'relic_coat', RELIC_SLOTS)).toBe('already-worn');
-    expect(g.overworld.equippedRelics).toEqual(['relic_coat']);
+    equipRelic(g, 'relic_coat', slotOf('relic_coat'));
+    expect(equipRefusal(g, 'relic_coat', slotOf('relic_coat'))).toBe('already-worn');
+    expect(wornRelics(g.overworld.equippedRelics)).toEqual(['relic_coat']);
   });
 
   it('is barred once a contract is open', () => {
@@ -104,25 +151,25 @@ describe('wearing them', () => {
     const g = geared('relic_coat');
     g.overworld.activeEncounter = { bountyId: 'x', spoils: { ducats: 5 } };
 
-    expect(equipRefusal(g, 'relic_coat', RELIC_SLOTS)).toBe('in-combat');
-    expect(equipRelic(g, 'relic_coat', RELIC_SLOTS)).toBe(false);
+    expect(equipRefusal(g, 'relic_coat', slotOf('relic_coat'))).toBe('in-combat');
+    expect(equipRelic(g, 'relic_coat', slotOf('relic_coat'))).toBe(false);
     expect(unequipRelic(g, 'relic_coat'), 'and it cannot come off either').toBe(false);
   });
 
   it('comes off freely out of combat', () => {
     const g = geared('relic_coat');
-    equipRelic(g, 'relic_coat', RELIC_SLOTS);
+    equipRelic(g, 'relic_coat', slotOf('relic_coat'));
 
     expect(unequipRelic(g, 'relic_coat')).toBe(true);
-    expect(g.overworld.equippedRelics).toEqual([]);
+    expect(g.overworld.equippedRelics).toEqual(emptyLoadout());
     expect(g.overworld.relics, 'taken off, not thrown away').toContain('relic_coat');
   });
 });
 
 describe('what reaches the board', () => {
-  const fightWith = (...worn: string[]) => {
-    const g = geared(...worn);
-    g.overworld.equippedRelics = [...worn];
+  const fightWith = (...ids: string[]) => {
+    const g = geared(...ids);
+    g.overworld.equippedRelics = worn(...ids);
     return createCombat(NOVICE_DUELIST, 7, undefined, undefined, carryFor(g.overworld)).state;
   };
 
@@ -155,7 +202,7 @@ describe('what reaches the board', () => {
     // The same boundary the brews and Companion levels keep: `createCombat` is handed
     // "3 Armor" and has never heard of a Heavy Trenchcoat.
     const g = geared('relic_coat', 'relic_battery');
-    g.overworld.equippedRelics = ['relic_coat', 'relic_battery'];
+    g.overworld.equippedRelics = worn('relic_coat', 'relic_battery');
 
     const carry = carryFor(g.overworld);
     expect(carry.boons?.armor).toBe(3);
@@ -165,7 +212,7 @@ describe('what reaches the board', () => {
 
   it('stacks with a brew rather than replacing it', () => {
     const g = geared('relic_coat');
-    g.overworld.equippedRelics = ['relic_coat'];
+    g.overworld.equippedRelics = worn('relic_coat');
     g.overworld.activeBuff = 'ironbrew';
 
     expect(carryFor(g.overworld).boons?.armor, '5 from the brew, 3 from the coat').toBe(8);
@@ -211,5 +258,28 @@ describe('spoils that include cores', () => {
 
     resolveCombat(g, { pactHp: 0 }, 'defeat');
     expect(g.overworld.economy.reagents).toEqual({});
+  });
+});
+
+describe('the slots themselves', () => {
+  it('places every relic somewhere the loadout can hold it', () => {
+    for (const relic of allRelics()) {
+      expect(RELIC_SLOT_ORDER, relic.name).toContain(relic.slot);
+    }
+  });
+
+  it('gives every slot something to put in it', () => {
+    // A slot with no gear is a hole in the screen the player can never fill, which reads
+    // as a bug rather than as content still to come.
+    for (const slot of RELIC_SLOT_ORDER) {
+      expect(relicsForSlot(slot).length, slot).toBeGreaterThan(0);
+    }
+  });
+
+  it('makes the loadout a choice, not a checklist', () => {
+    // At least one slot has to hold a real decision, or wearing everything you own is
+    // always right and the slots are just four labels.
+    const contested = RELIC_SLOT_ORDER.filter((s) => relicsForSlot(s).length > 1);
+    expect(contested.length, 'some slot has rivals in it').toBeGreaterThan(0);
   });
 });

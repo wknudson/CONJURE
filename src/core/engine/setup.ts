@@ -79,7 +79,11 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       pipCap: PIP_CAP,
       ignoresFog: false,
       immuneToBurn: false,
+      immuneToToxin: false,
       ignoresIceSlip: false,
+      revealsIntents: false,
+      bonusObstacleHp: 0,
+      bonusSacrificeMarrow: 0,
     },
     nextId: id,
   };
@@ -161,6 +165,19 @@ export interface CombatBoons {
   immuneToBurn?: boolean;
   /** Ice underfoot no longer costs this side its footing. */
   ignoreIceSlip?: boolean;
+  /** Toxin stops ticking on this side. The one status armour cannot answer. */
+  immuneToToxin?: boolean;
+  /**
+   * The opposition declares its card plays as well as its blows.
+   *
+   * Phrased as a capability of the side that *reads* them rather than as a difficulty
+   * setting, so the engine still knows nothing about who is watching or why.
+   */
+  revealIntents?: boolean;
+  /** Added to the health of every obstacle this side raises from a card. */
+  bonusObstacleHp?: number;
+  /** Added to the Marrow every sacrifice this side makes pays out. */
+  bonusSacrificeMarrow?: number;
 }
 
 /**
@@ -255,7 +272,14 @@ export function createCombat(
 
   if (carry?.boons?.ignoreFog) player.commander.ignoresFog = true;
   if (carry?.boons?.immuneToBurn) player.commander.immuneToBurn = true;
+  if (carry?.boons?.immuneToToxin) player.commander.immuneToToxin = true;
   if (carry?.boons?.ignoreIceSlip) player.commander.ignoresIceSlip = true;
+  if (carry?.boons?.revealIntents) player.commander.revealsIntents = true;
+
+  // Additive, and floored at zero for the same reason the ceiling only moves up: a
+  // hand-edited negative must not make the player's walls flimsier than the card says.
+  player.commander.bonusObstacleHp += Math.max(0, carry?.boons?.bonusObstacleHp ?? 0);
+  player.commander.bonusSacrificeMarrow += Math.max(0, carry?.boons?.bonusSacrificeMarrow ?? 0);
 
   const state: GameState = {
     rng,

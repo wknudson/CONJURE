@@ -203,10 +203,17 @@ export function spawnObstacle(
   defId: CardDefId,
   side: Side,
   anchor: Coord,
+  hp?: number,
 ): UnitId | undefined {
   const def = CARDS[defId];
-  if (!def || def.obstacleHp === undefined) return undefined;
+  if (def?.obstacleHp === undefined) return undefined;
   if (!canPlace(ctx.state, anchor, 1)) return undefined;
+
+  // Health is settled before the event goes out, never after. `obstacleSpawned` embeds a
+  // snapshot the renderer draws from and never re-reads, so a wall raised at one number
+  // and adjusted at another would be drawn permanently wrong — a 6 HP pillar on screen
+  // that takes eight to break. Callers that change the number pass it in here.
+  const health = Math.max(1, Math.round(hp ?? def.obstacleHp));
 
   const obstacle: Obstacle = {
     id: nextId(ctx, 'o'),
@@ -215,8 +222,8 @@ export function spawnObstacle(
     side,
     anchor: { ...anchor },
     footprint: 1,
-    hp: def.obstacleHp,
-    maxHp: def.obstacleHp,
+    hp: health,
+    maxHp: health,
     destructible: true,
   };
 

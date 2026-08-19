@@ -24,7 +24,7 @@
 import type { Collection } from '../core/data/deckRules.js';
 import { reconcileCollection, startingCollection } from '../core/data/collection.js';
 import { CARDS } from '../core/data/cards/index.js';
-import { RELICS, RELIC_SLOTS } from '../core/data/relics.js';
+import { RELICS, slotOf } from '../core/data/relics.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import { COMPANIONS, DEFAULT_COMPANION } from '../core/data/companions.js';
 import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
@@ -34,7 +34,8 @@ import type {
   OverworldState,
 } from '../core/overworld/state.js';
 import type { Bestiary, GlobalGameState } from '../core/overworld/state.js';
-import { INVENTORY_LIMIT, isBuffId, newRun } from '../core/overworld/state.js';
+import { INVENTORY_LIMIT, isBuffId, newRun, emptyLoadout, RELIC_SLOT_ORDER } from '../core/overworld/state.js';
+import type { RelicLoadout } from '../core/overworld/state.js';
 import {
   syncPactCeiling,
   BASE_PACT_HP,
@@ -48,7 +49,7 @@ import { makeRng } from '../core/util/rng.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 /** Posters on the wall. Three, and the wall is the reason it is three. */
 export const PROFILE_SLOTS = 3;
@@ -201,8 +202,15 @@ export function newProfile(profileId: string, name = 'Commander'): Profile {
   overworld.economy.reagents = { core_frost: 2, core_surge: 2 };
   // The coat, worn. A character who started with four bare slots would meet the loadout
   // screen as an empty grid and learn nothing from it.
-  overworld.relics = ['relic_coat'];
-  overworld.equippedRelics = ['relic_coat'];
+  //
+  // The rest of the footlocker comes with it, and that is a **placeholder**: nothing in
+  // the game grants a relic. Bounty spoils pay coin, shards and cores; the Artificer
+  // sells cards. Until relics have a source of their own, handing them over at creation
+  // is the difference between gear that exists and gear that can be worn — six of the
+  // seven were unreachable content before this line. Whatever grants them later should
+  // take this list away.
+  overworld.relics = Object.keys(RELICS);
+  overworld.equippedRelics = { ...emptyLoadout(), vestment: 'relic_coat' };
 
   return {
     profileId,
@@ -601,17 +609,44 @@ function readBestiary(raw: unknown): Bestiary {
  */
 function readRelics(data: { relics?: unknown; equippedRelics?: unknown }): {
   relics: string[];
-  equippedRelics: string[];
+  equippedRelics: RelicLoadout;
 } {
   const strings = (raw: unknown): string[] =>
     (Array.isArray(raw) ? raw : []).filter((v): v is string => typeof v === 'string');
 
   const relics = [...new Set(strings(data.relics))].filter((id) => RELICS[id]);
-  const equippedRelics = [...new Set(strings(data.equippedRelics))]
-    .filter((id) => relics.includes(id))
-    .slice(0, RELIC_SLOTS);
+  const loadout = emptyLoadout();
 
-  return { relics, equippedRelics };
+  /** Puts an owned relic in its own slot, first writer wins. */
+  const wear = (id: unknown): void => {
+    if (typeof id !== 'string' || !relics.includes(id)) return;
+    const slot = slotOf(id);
+    // A relic whose slot the catalogue no longer recognises stays owned but comes off:
+    // there is nowhere legitimate to put it, and guessing would be worse than bare.
+    if (!slot || loadout[slot] !== null) return;
+    loadout[slot] = id;
+  };
+
+  const raw = data.equippedRelics;
+
+  if (Array.isArray(raw)) {
+    // v9 and earlier: a flat list of up to four. Each piece goes to the slot it now
+    // belongs in, in the order it was worn — so a save holding two vestments keeps the
+    // one the player equipped first and drops the other back to the footlocker rather
+    // than silently choosing for them.
+    for (const id of strings(raw)) wear(id);
+  } else if (raw && typeof raw === 'object') {
+    // v10 onward: already a loadout. Re-read rather than trusted, because a hand-edited
+    // file could put a coat in the Optics slot, and `slotOf` is the only authority on
+    // where a thing goes.
+    const saved = raw as Partial<Record<string, unknown>>;
+    for (const slot of RELIC_SLOT_ORDER) {
+      const id = saved[slot];
+      if (typeof id === 'string' && slotOf(id) === slot) wear(id);
+    }
+  }
+
+  return { relics, equippedRelics: loadout };
 }
 
 function isConsumable(value: unknown): value is Consumable {

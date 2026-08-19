@@ -713,7 +713,7 @@
   color: rgba(148, 163, 184, 0.5);
 }
 
-/* Colour by the rule it bends, so a loadout reads at a glance. */
+/* Colour by the slot it is worn in, so a loadout reads at a glance. */
 .relic-slot__domain {
   display: block;
   width: 26px;
@@ -723,9 +723,33 @@
   transform: rotate(45deg);
 }
 
-.relic-slot__domain--armour { background: linear-gradient(135deg, #d6c4a0, #4a3d28); }
-.relic-slot__domain--energy { background: linear-gradient(135deg, #fde047, #854d0e); }
-.relic-slot__domain--sight { background: linear-gradient(135deg, #7dd3fc, #0c4a6e); }
+.relic-slot__domain--optics { background: linear-gradient(135deg, #7dd3fc, #0c4a6e); }
+.relic-slot__domain--vestment { background: linear-gradient(135deg, #d6c4a0, #4a3d28); }
+.relic-slot__domain--trinket { background: linear-gradient(135deg, #fde047, #854d0e); }
+.relic-slot__domain--will { background: linear-gradient(135deg, #f0abfc, #4a0d4a); }
+
+/* The slot's own name, above whatever is in it. Present whether worn or bare, because
+   the shape of what you could wear is the information the grid exists to give. */
+.relic-slot__label {
+  display: block;
+  font: 800 10px var(--font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brass, #b0946a);
+  opacity: 0.75;
+  margin-bottom: 4px;
+}
+
+/* Groups the footlocker by slot, so what competes with what is visible. */
+.relic-group { margin-bottom: 14px; }
+
+.relic-group__head {
+  font: 800 10px var(--font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin: 0 0 6px 2px;
+}
 
 .relic-slot__name {
   display: block;

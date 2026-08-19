@@ -9,7 +9,7 @@ import {
   type CompanionInstance,
 } from '../core/overworld/vivarium.js';
 import { COMPANION_TRAITS, traitsFor } from '../core/data/companionTraits.js';
-import { newRun, type GlobalGameState } from '../core/overworld/state.js';
+import { emptyLoadout, newRun, type GlobalGameState } from '../core/overworld/state.js';
 import { carryFor } from '../core/overworld/run.js';
 import { createCombat } from '../core/engine/setup.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
@@ -157,7 +157,7 @@ describe('the knack reaching the board', () => {
   it('stacks a knack with gear rather than replacing it', () => {
     const g = character();
     g.overworld.relics = ['relic_coat'];
-    g.overworld.equippedRelics = ['relic_coat'];
+    g.overworld.equippedRelics = { ...emptyLoadout(), vestment: 'relic_coat' };
 
     expect(carryFor(g.overworld, wearing('banked_coals')).boons?.armor, '3 coat + 2 coals').toBe(5);
   });
@@ -165,7 +165,7 @@ describe('the knack reaching the board', () => {
   it('takes the higher ceiling when gear and knack both raise it', () => {
     const g = character();
     g.overworld.relics = ['relic_battery'];
-    g.overworld.equippedRelics = ['relic_battery'];
+    g.overworld.equippedRelics = { ...emptyLoadout(), trinket: 'relic_battery' };
     const beast: CompanionInstance = { ...tameCompanion(makeRng(1), 'boreas', 1), traitId: 'deep_reserve' };
 
     expect(carryFor(g.overworld, beast).boons?.maxPips, 'not 18').toBe(9);

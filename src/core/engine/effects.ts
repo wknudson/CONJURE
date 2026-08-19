@@ -20,6 +20,7 @@ import { setAnchor } from './subjugation.js';
 import { attachRune, detonateAllRunes } from './runes.js';
 import { pushUnit } from './displacement.js';
 import { spawnObstacle, summonUnit } from './spawn.js';
+import { CARDS } from '../data/cards/index.js';
 import { cellsOf, chebyshev, manhattan, toDirection } from '../util/grid.js';
 import { inBounds } from '../types/state.js';
 
@@ -55,7 +56,7 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
     case 'spawnObstacle': {
       const at = play.chosen.kind === 'tile' ? play.chosen.at : undefined;
       if (!at) return;
-      spawnObstacle(ctx, node.obstacleDef, play.side, at);
+      spawnObstacle(ctx, node.obstacleDef, play.side, at, wallHp(ctx, play.side, node.obstacleDef));
       return;
     }
 
@@ -108,7 +109,20 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       const unit = ctx.state.units[ref.id];
       if (!unit) return;
       play.sacrificedHp = unit.hp;
-      emit(ctx, { t: 'unitSacrificed', unitId: unit.id, marrowExtracted: 0 });
+
+      // An offering made by a card is still an offering. `sacrificeTarget` pays nothing
+      // of its own — Dark Tithe's Marrow comes from its own `extractMarrow` — but the
+      // Ledger is a rule about *sacrificing*, not about one command, so it applies here
+      // too. Skipping this would make the relic silently worthless to the deck most
+      // likely to want it.
+      const cmd = ctx.state.players[play.side];
+      const tithe = cmd.bonusSacrificeMarrow;
+      if (tithe > 0) {
+        cmd.marrow += tithe;
+        emit(ctx, { t: 'resourcesChanged', side: play.side, pips: cmd.pips, marrow: cmd.marrow });
+      }
+
+      emit(ctx, { t: 'unitSacrificed', unitId: unit.id, marrowExtracted: tithe });
       killEntity(ctx, unit, 'spell');
       return;
     }
@@ -154,14 +168,15 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
 
     case 'spawnConstruct': {
       if (play.chosen.kind !== 'tile') return;
-      const id = spawnObstacle(ctx, node.obstacleDef, play.side, play.chosen.at);
-      if (!id) return;
-      // Raised at this spell's strength rather than the definition's.
-      const built = ctx.state.obstacles[id];
-      if (built) {
-        built.hp = node.hp;
-        built.maxHp = node.hp;
-      }
+      // Raised at this spell's strength rather than the definition's, plus whatever the
+      // caster's gear adds — both settled here so the spawn emits the true number.
+      spawnObstacle(
+        ctx,
+        node.obstacleDef,
+        play.side,
+        play.chosen.at,
+        node.hp + ctx.state.players[play.side].bonusObstacleHp,
+      );
       return;
     }
 
@@ -186,6 +201,21 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       return;
     }
   }
+}
+
+/**
+ * What an obstacle raised by this side should actually stand at.
+ *
+ * Computed at the effect ops rather than inside `spawnObstacle`, and that is the whole
+ * point: setup spawns the map's own crystals and Marrow Geodes through the same function,
+ * filed under `'player'` because the engine has two sides and scenery belongs to neither.
+ * A bonus applied down there would have the Alchemist's Mortar silently thickening every
+ * rock on the board, including the ones the player wants to break. Only a played card
+ * reaches this path.
+ */
+function wallHp(ctx: Ctx, side: Side, defId: string): number {
+  const base = CARDS[defId]?.obstacleHp ?? 0;
+  return base + ctx.state.players[side].bonusObstacleHp;
 }
 
 // ------------------------------------------------------------------ targeting helpers
