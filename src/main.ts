@@ -25,6 +25,7 @@ import { ScreenManager } from './app/ScreenManager.js';
 import { TitleScreen } from './app/TitleScreen.js';
 import { CombatScreen } from './app/CombatScreen.js';
 import { ResultsScreen } from './app/ResultsScreen.js';
+import { VictoryScreen } from './app/VictoryScreen.js';
 import { DeckBuilderScreen } from './app/DeckBuilderScreen.js';
 import { PreCombatScreen } from './app/PreCombatScreen.js';
 import { SafehouseScreen } from './app/SafehouseScreen.js';
@@ -316,6 +317,8 @@ function showBuilder(companionId: string, onDone: () => void): void {
       deckFor(companionId),
       profile().collection,
       profile().bestiary,
+      profile().state,
+      persist,
       (result) => {
         profile().decks[result.companionId] = {
           companionId: result.companionId,
@@ -432,6 +435,9 @@ function finishCombat(
   outcome: CombatOutcome,
   companionId: string,
 ): void {
+  // Read the contract before `resolveCombat` closes it — the receipt is itemised from
+  // what was actually accepted, not from whatever the board offers next.
+  const paid = profile().state.overworld.activeEncounter?.spoils ?? {};
   // Fold the fight back into the character first: the Pact is written back wounds and
   // all, the brew is spent whether it was won or lost, and a win is paid at the rate the
   // accepted contract promised.
@@ -449,6 +455,30 @@ function finishCombat(
     ? rollRewards(makeRng(p.record.wins * 7919 + p.record.bound * 31 + 5), 3)
     : [];
   persist();
+
+  if (won) {
+    screens.go(
+      new VictoryScreen({
+        result,
+        encounter: played,
+        // Already banked. `resolveCombat` credited them and `persist()` has run, because
+        // the forfeit failsafe requires the open contract to be closed on disk before
+        // anything is rendered — a tab shut on an uncommitted victory screen would boot
+        // into a forfeit of the fight the player just won.
+        spoils: paid,
+        rewards,
+        onClaim: (cardId) => {
+          p.collection = grantCard(p.collection, cardId);
+          persist();
+        },
+        onLeave: () => {
+          persist();
+          showSafehouse(companionId);
+        },
+      }),
+    );
+    return;
+  }
 
   screens.go(
     new ResultsScreen({

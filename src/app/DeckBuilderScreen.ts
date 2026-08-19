@@ -27,14 +27,25 @@ import { companionById } from '../core/data/companions.js';
 import { schoolOf } from '../render/palette.js';
 import { Tooltip } from '../hud/Tooltip.js';
 import { ledgerFor, ledgerProgress } from '../core/data/bestiary.js';
-import type { Bestiary } from '../core/overworld/state.js';
+import type { Bestiary, GlobalGameState } from '../core/overworld/state.js';
+import { equipRefusal, equipRelic, unequipRelic } from '../core/overworld/state.js';
+import { RELICS, RELIC_SLOTS, relicById } from '../core/data/relics.js';
 
 export interface DeckBuilderResult {
   companionId: string;
   cards: string[];
 }
 
-type Tab = 'deck' | 'ledger';
+type Tab = 'deck' | 'ledger' | 'loadout';
+
+/** Every way the loadout can say no, in the player's words. */
+const EQUIP_REFUSAL: Record<string, string> = {
+  none: '',
+  'in-combat': 'Not while a contract is open',
+  'not-owned': 'You do not have that',
+  'already-worn': 'Already worn',
+  'no-slot': 'All four slots are full — take something off first',
+};
 
 export class DeckBuilderScreen implements Screen {
   private el: HTMLElement | null = null;
@@ -47,6 +58,8 @@ export class DeckBuilderScreen implements Screen {
     startingDeck: string[],
     private readonly collection: Collection,
     private readonly bestiary: Bestiary,
+    private readonly global: GlobalGameState,
+    private readonly onLoadoutChange: () => void,
     private readonly onDone: (result: DeckBuilderResult) => void,
     private readonly onCancel: () => void,
   ) {
@@ -73,6 +86,7 @@ export class DeckBuilderScreen implements Screen {
       <div class="journal-tabs">
         <button class="journal-tab" data-tab="deck">The Deck</button>
         <button class="journal-tab" data-tab="ledger">The Threat Ledger</button>
+        <button class="journal-tab" data-tab="loadout">Commander Loadout</button>
       </div>
 
       <div class="builder__body">
@@ -88,6 +102,19 @@ export class DeckBuilderScreen implements Screen {
           <div class="builder__deck"></div>
           <div class="builder__problems"></div>
         </div>
+      </div>
+
+      <div class="loadout">
+        <div class="loadout__head">
+          <span class="loadout__title">Commander Loadout</span>
+          <span class="loadout__note">
+            Four slots. Gear here bends a rule — it will not make anything hit harder.
+          </span>
+        </div>
+        <div class="loadout__slots"></div>
+        <div class="loadout__refusal"></div>
+        <div class="loadout__shelf-title">In the footlocker</div>
+        <div class="loadout__shelf"></div>
       </div>
 
       <div class="threat-ledger">
@@ -118,6 +145,85 @@ export class DeckBuilderScreen implements Screen {
     this.tooltip = new Tooltip(document.body);
     this.tooltip.attach(el);
     this.render();
+  }
+
+  /**
+   * Four slots and a footlocker.
+   *
+   * The slots are drawn whether or not anything is in them, because the shape of what you
+   * could be wearing is the information: three worn and one bare is a decision you have
+   * not made yet, and a grid that collapsed to what is equipped would hide it.
+   */
+  private renderLoadout(): void {
+    const slots = this.el?.querySelector('.loadout__slots');
+    const shelf = this.el?.querySelector('.loadout__shelf');
+    if (!slots || !shelf) return;
+
+    const { relics, equippedRelics } = this.global.overworld;
+    slots.innerHTML = '';
+    shelf.innerHTML = '';
+
+    for (let i = 0; i < RELIC_SLOTS; i++) {
+      const id = equippedRelics[i];
+      const relic = id ? relicById(id) : undefined;
+
+      const slot = document.createElement('button');
+      slot.className = `relic-slot${relic ? ' is-worn' : ' is-bare'}`;
+      slot.innerHTML = relic
+        ? `<span class="relic-slot__domain relic-slot__domain--${relic.domain}"></span>
+           <span class="relic-slot__name">${relic.name}</span>
+           <span class="relic-slot__text">${relic.text}</span>
+           <span class="relic-slot__action">Take off</span>`
+        : `<span class="relic-slot__empty">Empty slot ${i + 1}</span>`;
+
+      if (relic) {
+        slot.addEventListener('click', () => {
+          unequipRelic(this.global, relic.id);
+          this.say('');
+          this.onLoadoutChange();
+          this.render();
+        });
+      }
+      slots.appendChild(slot);
+    }
+
+    const spare = relics.filter((id) => !equippedRelics.includes(id) && RELICS[id]);
+    if (spare.length === 0) {
+      shelf.innerHTML = '<span class="loadout__empty">Nothing else to your name.</span>';
+      return;
+    }
+
+    for (const id of spare) {
+      const relic = relicById(id)!;
+      const row = document.createElement('button');
+      row.className = 'relic-row';
+      row.innerHTML = `
+        <span class="relic-slot__domain relic-slot__domain--${relic.domain}"></span>
+        <span class="relic-row__body">
+          <span class="relic-slot__name">${relic.name}</span>
+          <span class="relic-slot__text">${relic.text}</span>
+        </span>
+        <span class="relic-slot__action">Put on</span>
+      `;
+      row.addEventListener('click', () => {
+        const refusal = equipRefusal(this.global, relic.id, RELIC_SLOTS);
+        // The state decides, not the button: a stale render must not be able to field a
+        // fifth relic.
+        if (!equipRelic(this.global, relic.id, RELIC_SLOTS)) {
+          this.say(EQUIP_REFUSAL[refusal ?? 'none'] ?? '');
+          return;
+        }
+        this.say('');
+        this.onLoadoutChange();
+        this.render();
+      });
+      shelf.appendChild(row);
+    }
+  }
+
+  private say(message: string): void {
+    const host = this.el?.querySelector('.loadout__refusal');
+    if (host) host.textContent = message;
   }
 
   /**
@@ -184,9 +290,11 @@ export class DeckBuilderScreen implements Screen {
         tab.classList.toggle('is-active', tab.dataset.tab === this.tab);
       }
       el.classList.toggle('is-ledger', this.tab === 'ledger');
+      el.classList.toggle('is-loadout', this.tab === 'loadout');
     }
 
     this.renderLedger();
+    this.renderLoadout();
     this.renderCollection();
     this.renderDeck();
     this.renderCurve();

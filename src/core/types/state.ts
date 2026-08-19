@@ -37,6 +37,14 @@ export interface CommanderState {
   discard: CardInstanceId[];
   cards: Record<CardInstanceId, CardInstance>;
   handLimit: number;
+  /**
+   * The most Pips this side may bank through end of turn.
+   *
+   * A field rather than the `PIP_CAP` constant read directly, for the same reason
+   * `handLimit` is one: gear can move it, and a rule that gear bends has to be a value
+   * somebody can hold rather than a number compiled into the cleanup.
+   */
+  pipCap: number;
 }
 
 /**

@@ -15,6 +15,7 @@ import type { EncounterDef } from './encounters/registry.js';
 import type { CombatSpoils } from '../overworld/state.js';
 import { ENCOUNTERS, encounterById } from './encounters/index.js';
 import { makeRng, nextInt } from '../util/rng.js';
+import { REAGENTS } from './splicing.js';
 
 export type BountyDifficulty = 'novice' | 'adept' | 'master';
 
@@ -60,6 +61,19 @@ const TIER_PAY: Record<BountyDifficulty, { ducats: number; marrowShards: number 
   novice: { ducats: 40, marrowShards: 0 },
   adept: { ducats: 85, marrowShards: 1 },
   master: { ducats: 160, marrowShards: 3 },
+};
+
+/**
+ * Cores a contract pays, by tier.
+ *
+ * The only way to earn one. Novice work pays none — the two a character starts with are
+ * meant to be spent learning what the bench does, and everything after that is worked
+ * for. Which core is rolled, so a run of Adept contracts is not a run of the same core.
+ */
+const TIER_CORES: Record<BountyDifficulty, number> = {
+  novice: 0,
+  adept: 1,
+  master: 2,
 };
 
 /** How far a tier's Ducat pay can swing, so two Adept contracts are not interchangeable. */
@@ -124,6 +138,9 @@ export function rollBounties(seed: number): Bounty[] {
       spoils: {
         ducats: pay.ducats + nextInt(rng, spread + 1),
         marrowShards: pay.marrowShards,
+        ...(TIER_CORES[difficulty] > 0
+          ? { reagents: { [REAGENTS[nextInt(rng, REAGENTS.length)]!.id]: TIER_CORES[difficulty] } }
+          : {}),
       },
       flavour: FLAVOUR[difficulty],
     };

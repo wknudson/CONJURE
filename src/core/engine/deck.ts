@@ -153,6 +153,6 @@ export function endOfTurnCleanup(ctx: Ctx, side: Side): void {
   }
 
   cmd.marrow = 0;
-  cmd.pips = Math.min(cmd.pips, PIP_CAP);
+  cmd.pips = Math.min(cmd.pips, cmd.pipCap);
   emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
 }

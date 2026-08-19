@@ -13,6 +13,7 @@ import type { Bestiary, BuffId, GlobalGameState, OverworldState } from './state.
 import { INVENTORY_LIMIT } from './state.js';
 import { nextBountySeed } from '../data/bounties.js';
 import type { CompanionProgress } from './vivarium.js';
+import { boonsOfRelics } from '../data/relics.js';
 
 /**
  * What each brew does to a fight.
@@ -46,15 +47,21 @@ export function carryFor(
   companion?: CompanionProgress,
 ): CombatCarry {
   const brew = overworld.activeBuff ? BUFF_EFFECTS[overworld.activeBuff] : undefined;
+  // Relics are translated here, not passed on as ids. `createCombat` is handed "3 Armor"
+  // and "the ceiling is 9"; it has never heard of a Heavy Trenchcoat, exactly as it has
+  // never heard of an Ironbrew. Adding a fourth relic is a row in a data table.
+  const gear = boonsOfRelics(overworld.equippedRelics);
 
-  const armor = (brew?.armor ?? 0) + (companion?.startingArmor ?? 0);
-  const pips = (brew?.pips ?? 0) + (companion?.bonusPips ?? 0);
-  const extraOpeningCards = brew?.extraOpeningCards ?? 0;
+  const armor = (brew?.armor ?? 0) + (companion?.startingArmor ?? 0) + (gear.armor ?? 0);
+  const pips = (brew?.pips ?? 0) + (companion?.bonusPips ?? 0) + (gear.pips ?? 0);
+  const extraOpeningCards = (brew?.extraOpeningCards ?? 0) + (gear.extraOpeningCards ?? 0);
 
   const boons: CombatBoons = {
     ...(armor ? { armor } : {}),
     ...(pips ? { pips } : {}),
     ...(extraOpeningCards ? { extraOpeningCards } : {}),
+    ...(gear.maxPips ? { maxPips: gear.maxPips } : {}),
+    ...(gear.ignoreFog ? { ignoreFog: true } : {}),
   };
 
   return {
@@ -137,6 +144,9 @@ export function resolveCombat(
   if (result === 'victory' || result === 'bound') {
     overworld.economy.ducats += spoils.ducats ?? 0;
     overworld.economy.marrowShards += spoils.marrowShards ?? 0;
+    for (const [id, count] of Object.entries(spoils.reagents ?? {})) {
+      if (count > 0) overworld.economy.reagents[id] = (overworld.economy.reagents[id] ?? 0) + count;
+    }
   }
 
   overworld.bountySeed = nextBountySeed(overworld.bountySeed);

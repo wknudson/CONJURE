@@ -24,6 +24,7 @@
 import type { Collection } from '../core/data/deckRules.js';
 import { reconcileCollection, startingCollection } from '../core/data/collection.js';
 import { CARDS } from '../core/data/cards/index.js';
+import { RELICS, RELIC_SLOTS } from '../core/data/relics.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import { COMPANIONS, DEFAULT_COMPANION } from '../core/data/companions.js';
 import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
@@ -184,10 +185,14 @@ export function newProfile(profileId: string, name = 'Commander'): Profile {
 
   // Seeded once, at creation, so two characters do not stare at the same board forever.
   const overworld = newRun(Math.floor(Math.random() * 1e9) >>> 0);
-  // Two cores in the satchel from the start. The splicing bench is the one trade with no
-  // other way in — there is nowhere to buy a reagent yet — so a character who could not
-  // reach it at all would never find out it exists.
+  // Two cores in the satchel from the start. Contracts pay more from Adept upward, so
+  // these are the ones you learn the bench with rather than the only ones you will ever
+  // hold.
   overworld.economy.reagents = { core_frost: 2, core_surge: 2 };
+  // The coat, worn. A character who started with four bare slots would meet the loadout
+  // screen as an empty grid and learn nothing from it.
+  overworld.relics = ['relic_coat'];
+  overworld.equippedRelics = ['relic_coat'];
 
   return {
     profileId,
@@ -485,6 +490,7 @@ function readOverworld(raw: unknown): OverworldState | undefined {
       reagents: readCounts(data.economy?.reagents),
     },
     inventory,
+    ...readRelics(data),
     // An unknown brew becomes none rather than being carried as a word the fight cannot
     // read. `BUFF_IDS` is the same list the type is made of, so this cannot drift.
     activeBuff: isBuffId(data.activeBuff) ? data.activeBuff : null,
@@ -560,6 +566,29 @@ function readBestiary(raw: unknown): Bestiary {
     if (encountered > 0) out[defId] = { encountered, defeated };
   }
   return out;
+}
+
+/**
+ * Gear, rebuilt.
+ *
+ * Relics that no longer exist are dropped, and anything worn must also be owned — the
+ * equipped list is a *view* of the owned one, and a save claiming otherwise would put a
+ * relic in a slot that the loadout screen could not take back out. Trimmed to the slot
+ * count last, so a hand-edited file cannot field six.
+ */
+function readRelics(data: { relics?: unknown; equippedRelics?: unknown }): {
+  relics: string[];
+  equippedRelics: string[];
+} {
+  const strings = (raw: unknown): string[] =>
+    (Array.isArray(raw) ? raw : []).filter((v): v is string => typeof v === 'string');
+
+  const relics = [...new Set(strings(data.relics))].filter((id) => RELICS[id]);
+  const equippedRelics = [...new Set(strings(data.equippedRelics))]
+    .filter((id) => relics.includes(id))
+    .slice(0, RELIC_SLOTS);
+
+  return { relics, equippedRelics };
 }
 
 function isConsumable(value: unknown): value is Consumable {

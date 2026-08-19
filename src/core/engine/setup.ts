@@ -13,7 +13,7 @@ import { getEncounterScript } from '../data/encounters/registry.js';
 import { makeRng, nextInt, shuffle } from '../util/rng.js';
 import { makeCtx, emit } from './context.js';
 import { DEFAULT_COMPANION, companionById } from '../data/companions.js';
-import { HAND_LIMIT, OPENING_HAND, drawCards } from './deck.js';
+import { HAND_LIMIT, OPENING_HAND, PIP_CAP, drawCards } from './deck.js';
 import { placeOpeningUnit, spawnObstacle } from './spawn.js';
 import { beginTurn } from './turn.js';
 
@@ -76,6 +76,7 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       discard: [],
       cards,
       handLimit: HAND_LIMIT,
+      pipCap: PIP_CAP,
     },
     nextId: id,
   };
@@ -138,6 +139,21 @@ export interface CombatBoons {
   pips?: number;
   /** Drawn on top of the ordinary opening hand. */
   extraOpeningCards?: number;
+  /**
+   * Raises the Pip ceiling for the whole fight.
+   *
+   * The ceiling rather than a delta, so two sources of the same relic are one relic and
+   * the number here is the number the cleanup uses. Ignored when lower than the default:
+   * gear bends a rule in the player's favour or not at all.
+   */
+  maxPips?: number;
+  /**
+   * Line of sight is no longer broken by fog or steam.
+   *
+   * A flag rather than a number, because this is the shape most of this gear takes: it
+   * changes what is *possible*, not what anything hits for.
+   */
+  ignoreFog?: boolean;
 }
 
 /**
@@ -224,6 +240,11 @@ export function createCombat(
     player.commander.hp = Math.max(0, Math.min(player.commander.maxHp, carry.startingHp));
   }
   player.commander.armor += carry?.boons?.armor ?? 0;
+
+  // Only upward. A relic may raise the ceiling; nothing in the data may lower it, so a
+  // malformed save cannot hand the player a worse fight than the rules give them.
+  const ceiling = carry?.boons?.maxPips ?? 0;
+  if (ceiling > player.commander.pipCap) player.commander.pipCap = ceiling;
 
   const state: GameState = {
     rng,

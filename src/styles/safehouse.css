@@ -1686,3 +1686,164 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* --------------------------------------------------------- spoils of war */
+
+.screen--victory {
+  --brass: #b0946a;
+  --brass-lit: #d6c4a0;
+  --lamp: #f0b24a;
+  --marrow: #e0466b;
+  --plate: linear-gradient(180deg, rgba(46, 40, 30, 0.72), rgba(22, 20, 16, 0.86));
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 30px;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(240, 178, 74, 0.14), transparent 62%),
+    var(--bg);
+}
+
+/* Wax, pressed and unbroken — the opposite of the revocation seal. */
+.victory__seal {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #f0b24a, #6b4308);
+  box-shadow: 0 0 30px rgba(240, 178, 74, 0.5);
+}
+
+/* Stamped rather than printed: rotated, outlined, and slightly too big. */
+.victory__stamp {
+  padding: 8px 22px;
+  border: 3px solid var(--lamp);
+  border-radius: 4px;
+  transform: rotate(-2deg);
+  font: 800 30px var(--font);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--lamp);
+  text-shadow: 0 2px 12px rgba(240, 178, 74, 0.4);
+}
+
+.victory__sub {
+  font: 600 11px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.spoils {
+  width: min(420px, 90vw);
+  padding: 20px 24px;
+}
+
+.spoils__head {
+  font: 800 10px var(--font);
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+  padding-bottom: 10px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(176, 148, 106, 0.3);
+}
+
+.spoils__line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 0;
+}
+
+.spoils__line + .spoils__line {
+  border-top: 1px dashed rgba(176, 148, 106, 0.18);
+}
+
+.spoils__label {
+  font: 600 12px var(--font);
+  color: var(--text-dim);
+}
+
+.spoils__value {
+  font: 800 19px var(--font);
+  color: var(--text);
+}
+
+.spoils__line--gold .spoils__value { color: var(--lamp); }
+.spoils__line--marrow .spoils__value { color: var(--marrow); }
+.spoils__line--reagent .spoils__value { color: #7dd3fc; }
+.spoils__line--empty .spoils__value {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.55);
+}
+
+.victory__rewards-title {
+  margin: 18px 0 10px;
+  font: 800 9px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.7);
+  text-align: center;
+}
+
+.victory__reward-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.reward-card {
+  width: 180px;
+  padding: 14px;
+  text-align: left;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--school, #94a3b8) 45%, transparent);
+  border-top: 3px solid var(--school, #94a3b8);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.reward-card:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.55);
+}
+
+.reward-card:disabled { cursor: default; }
+.victory__reward-row.is-claimed .reward-card:not(.is-taken) { opacity: 0.32; }
+.reward-card.is-taken {
+  box-shadow: 0 0 22px color-mix(in srgb, var(--school, #94a3b8) 50%, transparent);
+}
+
+.reward-card__cost {
+  display: block;
+  font: 800 13px var(--font);
+  color: var(--school, var(--brass-lit));
+}
+
+.reward-card__name {
+  display: block;
+  font: 700 13px var(--font);
+  margin: 2px 0 6px;
+}
+
+.reward-card__text {
+  display: block;
+  font: 400 10.5px/1.5 var(--font);
+  color: var(--text-dim);
+}
+
+.victory__leave {
+  margin-top: 22px;
+  padding: 13px 28px;
+  font-size: 12px;
+}

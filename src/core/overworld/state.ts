@@ -60,6 +60,8 @@ export function isBuffId(value: unknown): value is BuffId {
 export interface CombatSpoils {
   ducats?: number;
   marrowShards?: number;
+  /** Splicing materials, by reagent id. The only way to earn a core. */
+  reagents?: Record<string, number>;
 }
 
 /**
@@ -102,6 +104,15 @@ export interface OverworldState {
   };
   /** Hard cap of `INVENTORY_LIMIT`; enforced by `addConsumable`, not by convention. */
   inventory: Consumable[];
+  /**
+   * Gear owned, and the four pieces currently worn.
+   *
+   * Two lists rather than a flag on each relic: "what I have" and "what I am wearing" are
+   * different questions, and the loadout screen asks both at once. `equippedRelics` is
+   * always a subset of `relics` — `equipRelic` is what holds that, not convention.
+   */
+  relics: string[];
+  equippedRelics: string[];
   /**
    * The single brew that will be consumed by the next fight, if any.
    *
@@ -159,6 +170,8 @@ export function newRun(bountySeed = 1, maxHp = 40): OverworldState {
     pact: { currentHp: maxHp, maxHp },
     economy: { ducats: 0, marrowShards: 0, reagents: {} },
     inventory: [],
+    relics: [],
+    equippedRelics: [],
     activeBuff: null,
     activeEncounter: null,
     bountySeed,
@@ -174,6 +187,47 @@ export function newRun(bountySeed = 1, maxHp = 40): OverworldState {
 export function addConsumable(state: OverworldState, item: Consumable): boolean {
   if (state.inventory.length >= INVENTORY_LIMIT) return false;
   state.inventory.push(item);
+  return true;
+}
+
+/** Why a relic could not be worn, or null if it can. */
+export type EquipRefusal = 'in-combat' | 'not-owned' | 'already-worn' | 'no-slot' | null;
+
+export function equipRefusal(
+  state: GlobalGameState,
+  relicId: string,
+  slots: number,
+): EquipRefusal {
+  // Gear is chosen before the bell, like everything else the Safehouse sells. Changing
+  // what you are wearing after a contract is accepted would change a fight the board was
+  // already built against.
+  if (state.combat !== null || state.overworld.activeEncounter !== null) return 'in-combat';
+
+  const { relics, equippedRelics } = state.overworld;
+  if (!relics.includes(relicId)) return 'not-owned';
+  if (equippedRelics.includes(relicId)) return 'already-worn';
+  if (equippedRelics.length >= slots) return 'no-slot';
+  return null;
+}
+
+/**
+ * Puts a relic on, and reports whether it went on.
+ *
+ * A boolean rather than a throw, like every other affordance here: a click on a full
+ * loadout is a thing players do, and `equipRefusal` gives the screen the reason.
+ */
+export function equipRelic(state: GlobalGameState, relicId: string, slots: number): boolean {
+  if (equipRefusal(state, relicId, slots) !== null) return false;
+  state.overworld.equippedRelics.push(relicId);
+  return true;
+}
+
+/** Takes a relic off. Always allowed out of combat — there is no cost to bare slots. */
+export function unequipRelic(state: GlobalGameState, relicId: string): boolean {
+  if (state.combat !== null || state.overworld.activeEncounter !== null) return false;
+  const at = state.overworld.equippedRelics.indexOf(relicId);
+  if (at < 0) return false;
+  state.overworld.equippedRelics.splice(at, 1);
   return true;
 }
 

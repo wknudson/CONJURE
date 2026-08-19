@@ -14,7 +14,7 @@ import type { ChosenTarget } from '../core/types/cards.js';
 import { applyCommand } from '../core/engine/engine.js';
 import { makeRng } from '../core/util/rng.js';
 import { CARDS } from '../core/data/cards/index.js';
-import { HAND_LIMIT } from '../core/engine/deck.js';
+import { HAND_LIMIT, PIP_CAP } from '../core/engine/deck.js';
 import { flankColumns } from '../core/engine/setup.js';
 
 export interface UnitSpec {
@@ -143,6 +143,7 @@ function blankCommander(
     discard: [] as string[],
     cards: {},
     handLimit: HAND_LIMIT,
+    pipCap: PIP_CAP,
   };
 }
 
