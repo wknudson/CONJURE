@@ -62,6 +62,15 @@ function tickStatus(ctx: Ctx, unit: Unit, status: 'toxin' | 'burn'): void {
   const stacks = unit.statuses[status] ?? 0;
   if (stacks <= 0) return;
 
+  // A side that cannot burn does not burn: the stacks still come off, so the fire goes
+  // out at the same rate, it simply never costs anything on the way. Clearing them
+  // instead would make the immunity a cleanse, which is a different and stronger thing.
+  if (status === 'burn' && ctx.state.players[unit.side].immuneToBurn) {
+    unit.statuses[status] = stacks - 1;
+    if (unit.statuses[status]! <= 0) delete unit.statuses[status];
+    return;
+  }
+
   const spec = TICK_DAMAGE[status];
   if (!spec) return;
 

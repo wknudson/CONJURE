@@ -50,6 +50,7 @@ function castOriginCells(state: GameState, side: Side, def: CardDef): Coord[] | 
 /** Whether any origin cell can reach any target cell, within range and sight. */
 function inCastRange(
   state: GameState,
+  side: Side,
   origin: Coord[],
   cells: Coord[],
   def: CardDef,
@@ -76,7 +77,7 @@ function inCastRange(
         return false;
       }
 
-      return !def.needsLoS || hasLoS(state, o, c, ignore);
+      return !def.needsLoS || hasLoS(state, o, c, ignore, side);
     }),
   );
 }
@@ -92,7 +93,7 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
   // The caster never blocks its own line.
   const ignore = bodyId ? [bodyId] : [];
   const reaches = (cells: Coord[], alsoIgnore: string[] = []): boolean =>
-    origin === 'global' || inCastRange(state, origin, cells, def, [...ignore, ...alsoIgnore]);
+    origin === 'global' || inCastRange(state, side, origin, cells, def, [...ignore, ...alsoIgnore]);
 
   switch (def.target.kind) {
     case 'none':
@@ -276,7 +277,7 @@ export function canStrike(
 
   // Reaching past arm's length means seeing what you are reaching for; melee never does.
   if (best <= 1) return true;
-  return from.some((c) => targets.some((t) => hasLoS(state, c, t, ignoreIds)));
+  return from.some((c) => targets.some((t) => hasLoS(state, c, t, ignoreIds, unit.side)));
 }
 
 /**
@@ -364,7 +365,7 @@ export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): 
   if (unit.attackProfile === 'lineOnly' && !onLine(cells, portraitCells)) return false;
 
   // Ranged: needs a clear vector to the off-grid portrait.
-  return cells.some((c) => hasLoSToPortrait(state, c, targetSide, [unit.id]));
+  return cells.some((c) => hasLoSToPortrait(state, c, targetSide, [unit.id], unit.side));
 }
 
 /** Units the given side may sacrifice for Marrow right now. */

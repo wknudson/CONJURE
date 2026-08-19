@@ -77,6 +77,9 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       cards,
       handLimit: HAND_LIMIT,
       pipCap: PIP_CAP,
+      ignoresFog: false,
+      immuneToBurn: false,
+      ignoresIceSlip: false,
     },
     nextId: id,
   };
@@ -154,6 +157,10 @@ export interface CombatBoons {
    * changes what is *possible*, not what anything hits for.
    */
   ignoreFog?: boolean;
+  /** Burn stops ticking on this side entirely. */
+  immuneToBurn?: boolean;
+  /** Ice underfoot no longer costs this side its footing. */
+  ignoreIceSlip?: boolean;
 }
 
 /**
@@ -245,6 +252,10 @@ export function createCombat(
   // malformed save cannot hand the player a worse fight than the rules give them.
   const ceiling = carry?.boons?.maxPips ?? 0;
   if (ceiling > player.commander.pipCap) player.commander.pipCap = ceiling;
+
+  if (carry?.boons?.ignoreFog) player.commander.ignoresFog = true;
+  if (carry?.boons?.immuneToBurn) player.commander.immuneToBurn = true;
+  if (carry?.boons?.ignoreIceSlip) player.commander.ignoresIceSlip = true;
 
   const state: GameState = {
     rng,

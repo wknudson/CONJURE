@@ -16,6 +16,9 @@
  */
 
 import type { GlobalGameState, OverworldState } from './state.js';
+import type { RngState } from '../util/rng.js';
+import { nextInt } from '../util/rng.js';
+import { traitsFor } from '../data/companionTraits.js';
 
 /**
  * What levelling has bought a Companion so far.
@@ -34,11 +37,59 @@ export interface CompanionProgress {
   bonusPips: number;
 }
 
+/**
+ * One tamed beast, not one species.
+ *
+ * The roster is a list of these rather than a map keyed by species, because two Ignis are
+ * two different animals: same bloodline, different constitution, different knack. That is
+ * the whole point of a taming roll — a roster keyed by `baseId` could only ever hold one
+ * of each, and there would be nothing to roll *for*.
+ *
+ * `baseHpRoll` is the Pact ceiling this one supports, before anything levelling adds. It
+ * is stored rather than re-rolled because a beast's constitution is a fact about the
+ * beast: rolling it again on load would make every reload a re-roll.
+ */
+export interface CompanionInstance extends CompanionProgress {
+  instanceId: string;
+  baseId: string;
+  baseHpRoll: number;
+  traitId: string;
+}
+
 export function newCompanion(): CompanionProgress {
   return { level: 1, bonusMaxHp: 0, startingArmor: 0, bonusPips: 0 };
 }
 
-/** The Pact's ceiling before any Companion is standing beside it. */
+/** The band a wild Companion's constitution falls in. Tight on purpose. */
+export const HP_ROLL_MIN = 36;
+export const HP_ROLL_MAX = 44;
+
+/**
+ * Rolls a wild beast.
+ *
+ * Seeded, like everything else in this project that has a die in it — the caller owns the
+ * stream, so a taming can be replayed and a test can pin one. The instance id carries the
+ * species and a counter rather than a random string, so a save is readable by a human and
+ * two rolls in the same millisecond cannot collide.
+ */
+export function tameCompanion(
+  rng: RngState,
+  baseId: string,
+  sequence: number,
+): CompanionInstance {
+  const pool = traitsFor(baseId);
+  const traitId = pool.length > 0 ? pool[nextInt(rng, pool.length)]!.id : '';
+
+  return {
+    ...newCompanion(),
+    instanceId: `${baseId}-${sequence}`,
+    baseId,
+    baseHpRoll: HP_ROLL_MIN + nextInt(rng, HP_ROLL_MAX - HP_ROLL_MIN + 1),
+    traitId,
+  };
+}
+
+/** The Pact's ceiling with nobody standing beside it — and the roll's own midpoint. */
 export const BASE_PACT_HP = 40;
 
 /** Health a level buys. The whole benefit, for now. */
@@ -128,8 +179,13 @@ export function levelCompanion(
  */
 export function syncPactCeiling(
   overworld: OverworldState,
-  progress: CompanionProgress | undefined,
+  companion: CompanionInstance | CompanionProgress | undefined,
 ): void {
-  overworld.pact.maxHp = BASE_PACT_HP + (progress?.bonusMaxHp ?? 0);
+  // A tamed instance carries its own constitution; a bare progress object — a test, or a
+  // save from before the roster existed — falls back to the standard body.
+  const base =
+    companion && 'baseHpRoll' in companion ? companion.baseHpRoll : BASE_PACT_HP;
+
+  overworld.pact.maxHp = base + (companion?.bonusMaxHp ?? 0);
   overworld.pact.currentHp = Math.min(overworld.pact.currentHp, overworld.pact.maxHp);
 }

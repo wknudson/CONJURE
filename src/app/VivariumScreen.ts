@@ -1,36 +1,40 @@
 /**
  * The Vivarium.
  *
- * Glass, condensation, and something breathing behind it. Where the Artificer trades in
- * cards and the Apothecary in bottles, this room trades in the body that fights beside
- * you — which is why it is the only bench whose purchases change the Pact gauge itself.
+ * Glass, condensation, and something breathing behind it. Every tank holds a *specific*
+ * animal rather than a species — two Ignis are two beasts with different constitutions
+ * and different knacks, which is the entire reason a taming roll is worth doing.
  *
- * Two jobs, and they are deliberately one screen: choosing who stands beside you, and
- * paying to make them stand longer. Splitting them would mean picking a Companion in one
- * room and discovering what it was worth in another.
+ * Three jobs, deliberately one screen: choosing who stands beside you, paying to make
+ * them stronger, and deciding which bad rolls to let go. Splitting them would mean
+ * comparing two beasts in one room and releasing one in another.
  *
- * The screen decides nothing. `vivarium.ts` owns the price and the refusal; this shows
- * what it says, so a greyed button and a refused click can never disagree.
+ * The screen decides nothing. `vivarium.ts` owns the price and the refusal, and the
+ * caller owns who may be released; this shows what they say.
  */
 
 import type { Screen } from './ScreenManager.js';
 import type { GlobalGameState } from '../core/overworld/state.js';
-import type { CompanionProgress } from '../core/overworld/vivarium.js';
-import type { CompanionDef } from '../core/data/companions.js';
-import { BASE_PACT_HP, HP_PER_LEVEL, levelCost, levelRefusal } from '../core/overworld/vivarium.js';
-import { COMPANIONS } from '../core/data/companions.js';
+import type { CompanionInstance } from '../core/overworld/vivarium.js';
+import { HP_ROLL_MAX, HP_ROLL_MIN, levelCost, levelRefusal } from '../core/overworld/vivarium.js';
+import { companionById } from '../core/data/companions.js';
+import { traitById } from '../core/data/companionTraits.js';
 import { schoolOf } from '../render/palette.js';
 import { Tooltip } from '../hud/Tooltip.js';
 
 export interface VivariumOpts {
   global: GlobalGameState;
-  /** Progression per Companion. Read live — levelling writes into it. */
-  companions: () => Record<string, CompanionProgress>;
-  activeCompanionId: () => string;
+  /** Every beast this character has tamed. Read live — levelling writes into it. */
+  roster: () => CompanionInstance[];
+  activeInstanceId: () => string;
   /** Sets who stands beside the player, and resyncs the Pact's ceiling. */
-  onSelect: (companionId: string) => void;
+  onSelect: (instanceId: string) => void;
   /** Pays for a level. Returns whether it happened. */
-  onLevel: (companionId: string) => boolean;
+  onLevel: (instanceId: string) => boolean;
+  /** Lets one go. Returns false when it is the last on the roster. */
+  onRelease: (instanceId: string) => boolean;
+  /** Dev affordance: rolls a wild one onto the roster until the Overworld exists. */
+  onTame: () => CompanionInstance;
   onChange: () => void;
   onBack: () => void;
 }
@@ -43,14 +47,26 @@ const REFUSAL_COPY: Record<string, string> = {
   'too-poor': 'Not enough to feed it',
 };
 
+/** Where a roll sits in its band, as a word. The reason to keep one or let it go. */
+function verdict(roll: number): string {
+  const span = HP_ROLL_MAX - HP_ROLL_MIN;
+  const k = span > 0 ? (roll - HP_ROLL_MIN) / span : 1;
+  if (k >= 0.999) return 'perfect';
+  if (k >= 0.75) return 'strong';
+  if (k >= 0.4) return 'fair';
+  return 'runt';
+}
+
 export class VivariumScreen implements Screen {
   private el: HTMLElement | null = null;
   private tooltip: Tooltip | null = null;
   /** Who is being *looked at*, which is not always who is standing beside you. */
   private viewing: string;
+  /** The instance whose release is awaiting a second click. */
+  private confirming: string | null = null;
 
   constructor(private readonly opts: VivariumOpts) {
-    this.viewing = opts.activeCompanionId();
+    this.viewing = opts.activeInstanceId();
   }
 
   mount(root: HTMLElement): void {
@@ -72,6 +88,7 @@ export class VivariumScreen implements Screen {
             <span class="vivarium__shards"></span>
           </span>
         </div>
+        <button class="brass-btn vivarium__tame">Dev: Tame Wild Ignis</button>
         <button class="brass-btn vivarium__back">Back to Safehouse</button>
       </div>
 
@@ -82,6 +99,15 @@ export class VivariumScreen implements Screen {
     `;
 
     el.querySelector('.vivarium__back')!.addEventListener('click', () => this.opts.onBack());
+    el.querySelector('.vivarium__tame')!.addEventListener('click', () => {
+      const beast = this.opts.onTame();
+      // Look at what was just caught. A roll you have to go and find is a roll you did
+      // not feel yourself make.
+      this.viewing = beast.instanceId;
+      this.confirming = null;
+      this.opts.onChange();
+      this.render();
+    });
 
     root.appendChild(el);
     this.el = el;
@@ -90,8 +116,8 @@ export class VivariumScreen implements Screen {
     this.render();
   }
 
-  private progressFor(id: string): CompanionProgress | undefined {
-    return this.opts.companions()[id];
+  private beast(instanceId: string): CompanionInstance | undefined {
+    return this.opts.roster().find((c) => c.instanceId === instanceId);
   }
 
   private render(): void {
@@ -113,28 +139,30 @@ export class VivariumScreen implements Screen {
     if (!host) return;
     host.innerHTML = '';
 
-    const active = this.opts.activeCompanionId();
+    const active = this.opts.activeInstanceId();
 
-    for (const companion of COMPANIONS) {
-      const progress = this.progressFor(companion.id);
-      // A Companion with no progression entry has never been unlocked. Nothing gates
-      // that yet, so in practice this shows every one — but the filter is the seam the
-      // gate will need, and leaving it out now would mean adding it in three places.
-      if (!progress) continue;
+    for (const beast of this.opts.roster()) {
+      const species = companionById(beast.baseId);
+      const trait = traitById(beast.traitId);
 
       const tank = document.createElement('button');
-      tank.className = 'tank brass-panel';
-      tank.classList.toggle('is-active', companion.id === active);
-      tank.classList.toggle('is-viewing', companion.id === this.viewing);
-      tank.style.setProperty('--school', schoolOf(companion.school as never).main);
+      tank.className = `tank brass-panel tank--${verdict(beast.baseHpRoll)}`;
+      tank.classList.toggle('is-active', beast.instanceId === active);
+      tank.classList.toggle('is-viewing', beast.instanceId === this.viewing);
+      tank.style.setProperty('--school', schoolOf((species?.school ?? 'neutral') as never).main);
       tank.innerHTML = `
         <div class="tank__glass"><i class="tank__sigil"></i></div>
-        <div class="tank__name">${companion.name}</div>
-        <div class="tank__level">Level ${progress.level}</div>
-        ${companion.id === active ? '<div class="tank__badge">Standing with you</div>' : ''}
+        <div class="tank__name">${species?.name ?? beast.baseId}</div>
+        <div class="tank__roll">
+          <span class="tank__hp">${beast.baseHpRoll} HP</span>
+          <span class="tank__verdict">${verdict(beast.baseHpRoll)}</span>
+        </div>
+        <div class="tank__level">Level ${beast.level}${trait ? ` · ${trait.name}` : ''}</div>
+        ${beast.instanceId === active ? '<div class="tank__badge">Standing with you</div>' : ''}
       `;
       tank.addEventListener('click', () => {
-        this.viewing = companion.id;
+        this.viewing = beast.instanceId;
+        this.confirming = null;
         this.render();
       });
       host.appendChild(tank);
@@ -147,57 +175,73 @@ export class VivariumScreen implements Screen {
     const host = this.el?.querySelector('.vivarium__detail');
     if (!host) return;
 
-    const companion = COMPANIONS.find((c) => c.id === this.viewing);
-    const progress = this.progressFor(this.viewing);
-    if (!companion || !progress) {
-      host.innerHTML = '<div class="brass-panel vivarium__empty">Nothing in this tank.</div>';
+    const beast = this.beast(this.viewing) ?? this.opts.roster()[0];
+    if (!beast) {
+      host.innerHTML = '<div class="brass-panel vivarium__empty">Every tank is empty.</div>';
       return;
     }
+    this.viewing = beast.instanceId;
 
-    const active = this.opts.activeCompanionId() === companion.id;
-    const cost = levelCost(progress);
-    const refusal = levelRefusal(this.opts.global, progress);
-    const colors = schoolOf(companion.school as never);
+    const species = companionById(beast.baseId);
+    const trait = traitById(beast.traitId);
+    const active = this.opts.activeInstanceId() === beast.instanceId;
+    const cost = levelCost(beast);
+    const refusal = levelRefusal(this.opts.global, beast);
+    const colors = schoolOf((species?.school ?? 'neutral') as never);
+    const onlyOne = this.opts.roster().length <= 1;
 
     host.innerHTML = `
       <div class="brass-panel vivarium__card" style="--school:${colors.main}">
-        <div class="vivarium__name">${companion.name}</div>
-        <div class="vivarium__role">${companion.title} · ${companion.school}</div>
-        <div class="vivarium__blurb">${companion.blurb}</div>
+        <div class="vivarium__name">${species?.name ?? beast.baseId}</div>
+        <div class="vivarium__role">${species?.title ?? ''} · ${species?.school ?? ''}</div>
+        <div class="vivarium__blurb">${species?.blurb ?? ''}</div>
 
         <div class="vivarium__stats">
           <div class="vivarium__stat">
+            <span class="vivarium__stat-label">Constitution</span>
+            <span class="vivarium__stat-value">${beast.baseHpRoll}</span>
+            <span class="vivarium__stat-note">${HP_ROLL_MIN}–${HP_ROLL_MAX} · ${verdict(beast.baseHpRoll)}</span>
+          </div>
+          <div class="vivarium__stat">
             <span class="vivarium__stat-label">Level</span>
-            <span class="vivarium__stat-value">${progress.level}</span>
+            <span class="vivarium__stat-value">${beast.level}</span>
           </div>
           <div class="vivarium__stat">
             <span class="vivarium__stat-label">Pact ceiling</span>
-            <span class="vivarium__stat-value">${BASE_PACT_HP + progress.bonusMaxHp}</span>
+            <span class="vivarium__stat-value">${beast.baseHpRoll + beast.bonusMaxHp}</span>
             <span class="vivarium__stat-note">${
-              progress.bonusMaxHp > 0 ? `${BASE_PACT_HP} + ${progress.bonusMaxHp}` : 'base'
+              beast.bonusMaxHp > 0 ? `${beast.baseHpRoll} + ${beast.bonusMaxHp}` : 'unlevelled'
             }</span>
           </div>
           <div class="vivarium__stat">
             <span class="vivarium__stat-label">Opening Armor</span>
-            <span class="vivarium__stat-value">${progress.startingArmor}</span>
+            <span class="vivarium__stat-value">${beast.startingArmor}</span>
           </div>
-          <div class="vivarium__stat">
-            <span class="vivarium__stat-label">Bonus Pips</span>
-            <span class="vivarium__stat-value">${progress.bonusPips}</span>
-          </div>
+        </div>
+
+        <div class="vivarium__trait">
+          <span class="vivarium__stat-label">Knack</span>
+          <span class="vivarium__trait-name">${trait?.name ?? 'None'}</span>
+          <span class="vivarium__trait-text">${trait?.text ?? 'Nothing remarkable about this one.'}</span>
         </div>
 
         <div class="vivarium__actions">
           <button class="brass-btn vivarium__pick" ${active ? 'disabled' : ''}>
             ${active ? 'Standing with you' : 'Take this one'}
           </button>
+          <button class="brass-btn vivarium__release" ${onlyOne ? 'disabled' : ''}>
+            ${this.confirming === beast.instanceId ? 'Release — sure?' : 'Release'}
+          </button>
         </div>
+        <div class="vivarium__release-note">${
+          onlyOne ? 'The last one stays. You cannot walk into a contract alone.' : ''
+        }</div>
       </div>
 
       <div class="brass-panel vivarium__feed">
         <div class="vivarium__feed-head">Feed</div>
         <div class="vivarium__feed-copy">
-          Another level. ${HP_PER_LEVEL} more health on the Pact while it stands beside you.
+          Another level. More health on the Pact while this one stands beside you.
         </div>
         <div class="vivarium__feed-cost">
           <span class="workbench__coin--gold">${cost.ducats} d</span>
@@ -208,22 +252,43 @@ export class VivariumScreen implements Screen {
       </div>
     `;
 
-    host.querySelector('.vivarium__pick')!.addEventListener('click', () => this.pick(companion));
+    host.querySelector('.vivarium__pick')!.addEventListener('click', () => {
+      this.opts.onSelect(beast.instanceId);
+      this.opts.onChange();
+      this.render();
+    });
 
     const feed = host.querySelector<HTMLButtonElement>('.vivarium__level')!;
     feed.disabled = refusal !== null;
-    feed.addEventListener('click', () => this.feed(companion));
+    feed.addEventListener('click', () => {
+      // The pen decides, not the button state: a stale render must not be able to spend.
+      if (!this.opts.onLevel(beast.instanceId)) return;
+      this.opts.onChange();
+      this.render();
+    });
+
+    host.querySelector('.vivarium__release')!.addEventListener('click', () =>
+      this.release(beast.instanceId),
+    );
   }
 
-  private pick(companion: CompanionDef): void {
-    this.opts.onSelect(companion.id);
-    this.opts.onChange();
-    this.render();
-  }
+  /**
+   * Two clicks to let one go.
+   *
+   * The button becomes its own confirmation rather than opening a dialog: releasing is
+   * destructive but small and frequent — you will do it to most of what you catch — and a
+   * modal for every runt would make the roll loop miserable.
+   */
+  private release(instanceId: string): void {
+    if (this.confirming !== instanceId) {
+      this.confirming = instanceId;
+      this.render();
+      return;
+    }
 
-  private feed(companion: CompanionDef): void {
-    // The pen decides, not the button state: a stale render must not be able to spend.
-    if (!this.opts.onLevel(companion.id)) return;
+    this.confirming = null;
+    if (!this.opts.onRelease(instanceId)) return;
+    this.viewing = this.opts.activeInstanceId();
     this.opts.onChange();
     this.render();
   }

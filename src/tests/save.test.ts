@@ -20,7 +20,7 @@ import {
   forfeitIfAbandoned,
   newRun,
 } from '../core/overworld/state.js';
-import { newCompanion } from '../core/overworld/vivarium.js';
+import { HP_ROLL_MAX, HP_ROLL_MIN } from '../core/overworld/vivarium.js';
 
 /** A minimal in-memory localStorage, so these run without a DOM. */
 function installStorage(): Map<string, string> {
@@ -79,7 +79,9 @@ describe('the wall', () => {
     // character who could not reach it at all would never learn it exists.
     expect(p.state.overworld.economy.reagents).toEqual({ core_frost: 2, core_surge: 2 });
     expect(p.state.overworld.pact).toEqual({ currentHp: 40, maxHp: 40 });
-    expect(p.activeCompanionId).toBe(COMPANIONS[0]!.id);
+    expect(p.activeCompanionId, 'an instance id, not a species').toBe(
+      p.companions[0]!.instanceId,
+    );
     for (const companion of COMPANIONS) {
       expect(validateDeck(p.decks[companion.id]!.cards, p.collection), companion.name).toEqual([]);
     }
@@ -219,7 +221,11 @@ describe('the upgrade from one character to three', () => {
     // was bought, because nothing resynced the gauge on load.
     legacy();
     const p = loadSave().save.profiles['slot-1']!;
-    expect(p.activeCompanionId).toBe('boreas');
+    // The pointer is an instance now, and the migrated beast keeps the body it had been
+    // fighting with — 40, not a fresh roll, so upgrading is not a lottery ticket.
+    const active = p.companions.find((c) => c.instanceId === p.activeCompanionId)!;
+    expect(active.baseId).toBe('boreas');
+    expect(active.baseHpRoll).toBe(40);
     expect(p.state.overworld.pact.maxHp).toBe(44);
     expect(p.level, 'and the poster shows the level without opening them').toBe(3);
   });
@@ -262,7 +268,10 @@ describe('one character on disk', () => {
       });
     });
 
-    expect(p.state.overworld.pact).toEqual({ currentHp: 17, maxHp: 40 });
+    expect(p.state.overworld.pact.currentHp).toBe(17);
+    // The ceiling comes from whichever beast is standing there, so it is the roll rather
+    // than a constant — the point of the taming loop.
+    expect(p.state.overworld.pact.maxHp).toBe(p.companions[0]!.baseHpRoll);
     expect(p.state.overworld.economy.ducats).toBe(95);
     expect(p.state.overworld.economy.marrowShards).toBe(4);
     expect(p.state.overworld.activeBuff).toBe('ironbrew');
@@ -295,8 +304,11 @@ describe('one character on disk', () => {
     };
     localStorage.setItem('conjure.save', JSON.stringify(raw));
 
-    const over = loadSave().save.profiles['slot-1']!.state.overworld;
-    expect(over.pact.currentHp, 'cannot exceed the gauge').toBe(40);
+    const restored = loadSave().save.profiles['slot-1']!;
+    const over = restored.state.overworld;
+    expect(over.pact.currentHp, 'cannot exceed the gauge').toBe(
+      restored.companions[0]!.baseHpRoll,
+    );
     expect(over.economy.ducats, 'no negative purse').toBe(0);
     expect(Number.isInteger(over.economy.marrowShards)).toBe(true);
     expect(over.inventory.length, 'capped at the satchel limit').toBe(INVENTORY_LIMIT);
@@ -308,36 +320,41 @@ describe('one character on disk', () => {
     expect(p.state.overworld as unknown as Record<string, unknown>).not.toHaveProperty('deck');
   });
 
-  it('holds a Companion roster and clamps a hand-edited one', () => {
+  it('holds a roster of instances, and clamps a hand-edited one', () => {
     const file = fileWith('slot-1');
-    file.profiles['slot-1']!.companions.ignis = {
-      level: 4,
-      bonusMaxHp: 6,
-      startingArmor: 1,
-      bonusPips: 2,
-    };
+    file.profiles['slot-1']!.companions[0]!.level = 4;
+    file.profiles['slot-1']!.companions[0]!.bonusMaxHp = 6;
     writeSave(file);
-    expect(loadSave().save.profiles['slot-1']!.companions.ignis).toEqual({
-      level: 4,
-      bonusMaxHp: 6,
-      startingArmor: 1,
-      bonusPips: 2,
-    });
+
+    const back = loadSave().save.profiles['slot-1']!.companions[0]!;
+    expect(back.level).toBe(4);
+    expect(back.bonusMaxHp).toBe(6);
+    expect(back.baseHpRoll).toBeGreaterThanOrEqual(HP_ROLL_MIN);
+    expect(back.baseHpRoll).toBeLessThanOrEqual(HP_ROLL_MAX);
 
     const raw = JSON.parse(localStorage.getItem('conjure.save')!);
-    raw.profiles['slot-1'].companions = { ignis: { level: -3, bonusMaxHp: -99 } };
+    raw.profiles['slot-1'].companions = [
+      { instanceId: 'ignis-1', baseId: 'ignis', level: -3, bonusMaxHp: -99, baseHpRoll: 400 },
+    ];
     localStorage.setItem('conjure.save', JSON.stringify(raw));
 
-    const ignis = loadSave().save.profiles['slot-1']!.companions.ignis!;
-    expect(ignis.level).toBe(1);
-    expect(ignis.bonusMaxHp).toBe(0);
+    const fixed = loadSave().save.profiles['slot-1']!.companions[0]!;
+    expect(fixed.level).toBe(1);
+    expect(fixed.bonusMaxHp).toBe(0);
+    expect(fixed.baseHpRoll, 'clamped into the band it could have been rolled in').toBe(
+      HP_ROLL_MAX,
+    );
   });
 
-  it('starts every Companion at level one', () => {
+  it('starts a character with one tamed beast, rolled', () => {
     const p = newProfile('slot-1');
-    for (const companion of COMPANIONS) {
-      expect(p.companions[companion.id], companion.name).toEqual(newCompanion());
-    }
+    expect(p.companions).toHaveLength(1);
+    expect(p.companions[0]!.baseId).toBe(COMPANIONS[0]!.id);
+    expect(p.companions[0]!.baseHpRoll).toBeGreaterThanOrEqual(HP_ROLL_MIN);
+    expect(p.companions[0]!.baseHpRoll).toBeLessThanOrEqual(HP_ROLL_MAX);
+    expect(p.activeCompanionId, 'and the pointer names the instance').toBe(
+      p.companions[0]!.instanceId,
+    );
   });
 
   it('renames a card held anywhere it names one', () => {
@@ -356,12 +373,7 @@ describe('one character on disk', () => {
 
   it('restamps the poster metadata on every write', () => {
     const file = fileWith('slot-1');
-    file.profiles['slot-1']!.companions.ignis = {
-      level: 6,
-      bonusMaxHp: 10,
-      startingArmor: 0,
-      bonusPips: 0,
-    };
+    file.profiles['slot-1']!.companions[0]!.level = 6;
     file.profiles['slot-1']!.level = 1;
     writeSave(file);
 

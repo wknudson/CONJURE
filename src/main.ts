@@ -43,15 +43,15 @@ import {
 import { forfeitIfAbandoned, isDown, rescuePlayer } from './core/overworld/state.js';
 import { encounterForBounty, rollBounties, type Bounty } from './core/data/bounties.js';
 import { carryFor, resolveCombat, type CombatOutcome } from './core/overworld/run.js';
-import { companionById } from './core/data/companions.js';
+import { companionById, DEFAULT_COMPANION } from './core/data/companions.js';
 import { grantCard, printedDeck, rollRewards } from './core/data/collection.js';
 import { ascendCard, forgeSchematic } from './core/overworld/forge.js';
 import { spliceCard } from './core/overworld/splice.js';
 import {
   levelCompanion,
-  newCompanion,
+  tameCompanion,
   syncPactCeiling,
-  type CompanionProgress,
+  type CompanionInstance,
 } from './core/overworld/vivarium.js';
 import { VivariumScreen } from './app/VivariumScreen.js';
 import { makeRng } from './core/util/rng.js';
@@ -93,19 +93,72 @@ function profile(): Profile {
 }
 
 /**
- * The active Companion's progression, created on demand.
+ * The beast standing beside the player.
  *
- * On demand rather than assumed present, because a save from before the Vivarium — or one
- * naming a Companion added since — has no entry, and a missing one must read as "level 1"
- * rather than as a crash on the way into the hub.
+ * A roster can be empty — every entry released — so this tames a replacement rather than
+ * returning undefined. Walking into the hub with no Companion at all would be a Pact with
+ * no ceiling, and every screen below would have to check for it.
  */
-function progressFor(companionId: string): CompanionProgress {
+function activeCompanion(): CompanionInstance {
   const p = profile();
-  const existing = p.companions[companionId];
-  if (existing) return existing;
-  const fresh = newCompanion();
-  p.companions[companionId] = fresh;
-  return fresh;
+  const found = p.companions.find((c) => c.instanceId === p.activeCompanionId);
+  if (found) return found;
+
+  if (p.companions.length === 0) {
+    p.companions.push(tameCompanion(makeRng(p.state.overworld.bountySeed), DEFAULT_COMPANION.id, 1));
+  }
+  p.activeCompanionId = p.companions[0]!.instanceId;
+  return p.companions[0]!;
+}
+
+/** The species the active instance belongs to — decks, schools and Bound Forms want this. */
+function activeBaseId(): string {
+  return activeCompanion().baseId;
+}
+
+/**
+ * Rolls a wild beast onto the roster.
+ *
+ * The seed is the character's own bounty seed advanced by the roster length, so two
+ * tamings in a session cannot land on the same numbers and a replay of the same character
+ * produces the same beasts. Dev-only until the Overworld has somewhere to actually find
+ * one, but the roll it performs is the real one.
+ */
+function tameWild(baseId: string = DEFAULT_COMPANION.id): CompanionInstance {
+  const p = profile();
+  const sequence = p.companions.length + 1;
+  const beast = tameCompanion(
+    makeRng((p.state.overworld.bountySeed + sequence * 7919) >>> 0),
+    baseId,
+    sequence,
+  );
+  p.companions.push(beast);
+  return beast;
+}
+
+/**
+ * Lets one go, and reports whether it went.
+ *
+ * The last beast on the roster cannot be released. A character with no Companion has no
+ * Pact ceiling and no body on the board — the screens below would all have to grow a
+ * branch for it, and the player would have made themselves unplayable with one click.
+ */
+function releaseCompanion(instanceId: string): boolean {
+  const p = profile();
+  if (p.companions.length <= 1) return false;
+
+  const at = p.companions.findIndex((c) => c.instanceId === instanceId);
+  if (at < 0) return false;
+
+  p.companions.splice(at, 1);
+  // Releasing whoever was standing beside you promotes the next one, and the Pact's
+  // ceiling moves with them — a gauge left at the released beast's roll would be a
+  // ceiling nothing on the roster supports.
+  if (p.activeCompanionId === instanceId) {
+    p.activeCompanionId = p.companions[0]!.instanceId;
+  }
+  syncPactCeiling(p.state.overworld, activeCompanion());
+  return true;
 }
 
 /**
@@ -157,7 +210,10 @@ function openProfile(slot: SlotId): void {
   active = p;
   saveFile.activeProfileId = slot;
   persist();
-  showSafehouse(p.activeCompanionId);
+  // The *species*, not the instance: everything below the hub keys decks, schools and
+  // Bound Forms off the bloodline. Passing the roster id here left the pre-combat screen
+  // looking up a companion that does not exist and handing the fight an empty deck.
+  showSafehouse(activeBaseId());
 }
 
 /** Draws up a new commission on an empty poster, then opens it. */
@@ -195,7 +251,7 @@ function showSafehouse(companionId: string): void {
   // The gauge is resynced on every entry rather than only when a Companion changes: it
   // is the one number every clamp in the game reads, and a profile restored with a
   // levelled Companion would otherwise sit at the base ceiling until the next level.
-  syncPactCeiling(global.overworld, progressFor(companionId));
+  syncPactCeiling(global.overworld, activeCompanion());
   persist();
   const notice = pendingNotice;
   pendingNotice = null;
@@ -204,7 +260,7 @@ function showSafehouse(companionId: string): void {
     new SafehouseScreen({
       global,
       companionId,
-      companionLevel: progressFor(companionId).level,
+      companionLevel: activeCompanion().level,
       bounties: rollBounties(global.overworld.bountySeed),
       collection: profile().collection,
       deck: deckFor(companionId),
@@ -258,20 +314,24 @@ function showSafehouse(companionId: string): void {
         screens.go(
           new VivariumScreen({
             global,
-            companions: () => profile().companions,
-            activeCompanionId: () => profile().activeCompanionId,
-            onSelect: (id) => {
-              profile().activeCompanionId = id;
+            roster: () => profile().companions,
+            activeInstanceId: () => profile().activeCompanionId,
+            onSelect: (instanceId) => {
+              profile().activeCompanionId = instanceId;
               // The Pact's ceiling belongs to whoever is standing beside it, so it moves
               // the moment the choice does — not at the next fight.
-              syncPactCeiling(global.overworld, progressFor(id));
+              syncPactCeiling(global.overworld, activeCompanion());
             },
-            onLevel: (id) =>
-              levelCompanion(global, progressFor(id), id === profile().activeCompanionId),
+            onLevel: (instanceId) => {
+              const beast = profile().companions.find((c) => c.instanceId === instanceId);
+              return levelCompanion(global, beast, instanceId === profile().activeCompanionId);
+            },
+            onRelease: (instanceId) => releaseCompanion(instanceId),
+            onTame: () => tameWild(),
             onChange: persist,
             // Back through the hub rather than to it, so the room is rebuilt around
             // whichever Companion the player walked out with.
-            onBack: () => showSafehouse(profile().activeCompanionId),
+            onBack: () => showSafehouse(activeBaseId()),
           }),
         ),
       onJournal: () => showBuilder(companionId, () => showSafehouse(companionId)),
@@ -324,7 +384,6 @@ function showBuilder(companionId: string, onDone: () => void): void {
           companionId: result.companionId,
           cards: result.cards,
         };
-        profile().activeCompanionId = result.companionId;
         persist();
         onDone();
       },
@@ -400,7 +459,7 @@ function startCombat(
   bounty: Bounty,
 ): void {
   const global = profile().state;
-  const carry = carryFor(global.overworld, progressFor(companionId));
+  const carry = carryFor(global.overworld, activeCompanion());
 
   // Commit to the fight on disk *before* it is mounted. From here until `resolveCombat`
   // clears it, the save says a fight is open, and a boot that finds it open collects on

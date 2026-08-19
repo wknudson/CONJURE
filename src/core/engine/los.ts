@@ -65,8 +65,19 @@ function pushIfBetween(out: Coord[], c: Coord, a: Coord, b: Coord): void {
   out.push(c);
 }
 
-/** Cells that block sight. Excludes the shooter and the intended target. */
-export function occluderCells(state: GameState, ignoreIds: UnitId[] = []): Set<string> {
+/**
+ * Cells that block sight. Excludes the shooter and the intended target.
+ *
+ * `viewer` is who is doing the looking, when anyone is. It matters only for smoke: a side
+ * that ignores fog reads the cloud as empty air, and everything solid still stops them.
+ * Omitting it means "nobody in particular", which is the strictest reading and therefore
+ * the safe default for a caller that has not thought about it.
+ */
+export function occluderCells(
+  state: GameState,
+  ignoreIds: UnitId[] = [],
+  viewer?: Side,
+): Set<string> {
   const set = new Set<string>();
   for (const e of allEntities(state)) {
     if (ignoreIds.includes(e.id)) continue;
@@ -76,9 +87,14 @@ export function occluderCells(state: GameState, ignoreIds: UnitId[] = []): Set<s
   }
 
   // Steam fog occludes exactly like a cover screen: you cannot shoot through the cloud,
-  // but a unit standing inside it is still a legal target.
-  for (const [key, hazard] of Object.entries(state.hazards)) {
-    if (hazard.kind === 'steam_fog') set.add(key);
+  // but a unit standing inside it is still a legal target. Smoked glass and a tight seal
+  // are what get you out of that — and only out of *that*: a Guardian is still a Guardian
+  // to somebody wearing goggles.
+  const seesThroughSmoke = viewer !== undefined && state.players[viewer].ignoresFog;
+  if (!seesThroughSmoke) {
+    for (const [key, hazard] of Object.entries(state.hazards)) {
+      if (hazard.kind === 'steam_fog') set.add(key);
+    }
   }
 
   return set;
@@ -89,8 +105,9 @@ export function hasLoS(
   from: Coord,
   to: Coord,
   ignoreIds: UnitId[] = [],
+  viewer?: Side,
 ): boolean {
-  const blockers = occluderCells(state, ignoreIds);
+  const blockers = occluderCells(state, ignoreIds, viewer);
   return supercoverLine(from, to).every((c) => !blockers.has(coordKey(c)));
 }
 
@@ -105,6 +122,7 @@ export function hasLoSToPortrait(
   from: Coord,
   targetSide: Side,
   ignoreIds: UnitId[] = [],
+  viewer?: Side,
 ): boolean {
   const row = portraitRow(state, targetSide);
   const candidates: Coord[] = [
@@ -112,17 +130,17 @@ export function hasLoSToPortrait(
     { x: from.x - 1, y: row },
     { x: from.x + 1, y: row },
   ];
-  return candidates.some((c) => hasLoS(state, from, c, ignoreIds));
+  return candidates.some((c) => hasLoS(state, from, c, ignoreIds, viewer));
 }
 
 /** Tiles the given origin cannot see — the renderer's shadow-cone fog. */
-export function occludedTiles(state: GameState, from: Coord): Coord[] {
+export function occludedTiles(state: GameState, from: Coord, viewer?: Side): Coord[] {
   const out: Coord[] = [];
   for (let y = 0; y < state.height; y++) {
     for (let x = 0; x < state.width; x++) {
       const c = { x, y };
       if (c.x === from.x && c.y === from.y) continue;
-      if (!hasLoS(state, from, c)) out.push(c);
+      if (!hasLoS(state, from, c, [], viewer)) out.push(c);
     }
   }
   return out;

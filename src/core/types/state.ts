@@ -45,6 +45,18 @@ export interface CommanderState {
    * somebody can hold rather than a number compiled into the cleanup.
    */
   pipCap: number;
+  /**
+   * Smoke does not blind this side.
+   *
+   * A capability on the commander rather than a check against an item, because the engine
+   * is only ever handed rules: whether it came from goggles, a Companion's trait or a
+   * spell is the overworld's business and never this layer's.
+   */
+  ignoresFog: boolean;
+  /** Burn does not tick on this side. */
+  immuneToBurn: boolean;
+  /** Ice underfoot costs this side nothing. */
+  ignoresIceSlip: boolean;
 }
 
 /**

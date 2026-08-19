@@ -35,11 +35,20 @@ import type {
 } from '../core/overworld/state.js';
 import type { Bestiary, GlobalGameState } from '../core/overworld/state.js';
 import { INVENTORY_LIMIT, isBuffId, newRun } from '../core/overworld/state.js';
-import { newCompanion, syncPactCeiling, type CompanionProgress } from '../core/overworld/vivarium.js';
+import {
+  syncPactCeiling,
+  BASE_PACT_HP,
+  HP_ROLL_MAX,
+  HP_ROLL_MIN,
+  tameCompanion,
+  type CompanionInstance,
+} from '../core/overworld/vivarium.js';
+import { traitById, traitsFor } from '../core/data/companionTraits.js';
+import { makeRng } from '../core/util/rng.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 /** Posters on the wall. Three, and the wall is the reason it is three. */
 export const PROFILE_SLOTS = 3;
@@ -111,20 +120,21 @@ export interface Profile {
   /** One deck per companion, keyed by companion id. */
   decks: Record<string, SavedDeck>;
   /**
-   * The Companion currently standing beside the player.
+   * The **instance** currently standing beside the player, by `instanceId` (v9).
    *
-   * Renamed from `lastCompanionId` in v6, because it stopped being a record of the last
-   * choice the moment the Vivarium made it a thing you set deliberately.
+   * A roster entry, not a species. Everything that needs the species — the deck, the
+   * school, the Bound Form — reads `baseId` off the instance, so the two can never be
+   * confused for one another by a caller that guessed.
    */
   activeCompanionId: string;
   /**
-   * Progression per Companion, keyed by id.
+   * The roster: every beast this character has tamed (v9).
    *
-   * Beside `collection` rather than on the character, because a levelled Companion is
-   * property in the same way a forged card is: earned once, kept through every knockout.
-   * A Companion missing from this map has simply never been levelled.
+   * A list rather than a map keyed by species, because two Ignis are two animals. Before
+   * v9 this was `Record<baseId, progress>`, which could hold exactly one of each and so
+   * had nothing to roll for.
    */
-  companions: Record<string, CompanionProgress>;
+  companions: CompanionInstance[];
   record: { wins: number; losses: number; bound: number };
   /**
    * What this character has met and put down, by unit definition id (v8).
@@ -178,10 +188,10 @@ export function newProfile(profileId: string, name = 'Commander'): Profile {
   for (const companion of COMPANIONS) {
     decks[companion.id] = { companionId: companion.id, cards: [...companion.deck] };
   }
-  const companions: Record<string, CompanionProgress> = {};
-  // Every Companion starts at level 1 and available. When unlocking is gated — a bound
-  // Trial, most likely — this seeds only the starter and the Vivarium narrows with it.
-  for (const companion of COMPANIONS) companions[companion.id] = newCompanion();
+  // One tamed beast to start, rolled like any other. A character who began with a
+  // guaranteed 40/40 would learn nothing from their second roll.
+  const rng = makeRng(Math.floor(Math.random() * 1e9) >>> 0);
+  const companions: CompanionInstance[] = [tameCompanion(rng, DEFAULT_COMPANION.id, 1)];
 
   // Seeded once, at creation, so two characters do not stare at the same board forever.
   const overworld = newRun(Math.floor(Math.random() * 1e9) >>> 0);
@@ -201,7 +211,7 @@ export function newProfile(profileId: string, name = 'Commander'): Profile {
     state: { overworld, combat: null },
     collection: startingCollection(),
     decks,
-    activeCompanionId: DEFAULT_COMPANION.id,
+    activeCompanionId: companions[0]!.instanceId,
     companions,
     record: { wins: 0, losses: 0, bound: 0 },
     bestiary: {},
@@ -226,7 +236,17 @@ export function emptySave(): SaveFile {
  * poster can be painted from the file alone.
  */
 export function stampProfile(profile: Profile): void {
-  profile.level = profile.companions[profile.activeCompanionId]?.level ?? 1;
+  profile.level = activeCompanionOf(profile)?.level ?? 1;
+}
+
+/**
+ * The instance standing beside this character, or undefined if the roster is empty.
+ *
+ * The one lookup, so nothing anywhere has to decide for itself whether
+ * `activeCompanionId` names a species or a roster entry. It names a roster entry.
+ */
+export function activeCompanionOf(profile: Profile): CompanionInstance | undefined {
+  return profile.companions.find((c) => c.instanceId === profile.activeCompanionId);
 }
 
 /**
@@ -383,14 +403,17 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
     }
   }
 
-  // v5 and earlier called this `lastCompanionId`; read either, write the new one.
+  const companions = readRoster(data.companions, base.companions);
+
+  // v5 and earlier called this `lastCompanionId`; v8 and earlier held a *species* id.
+  // Read any of the three, write an instance id — falling back to whoever is first on the
+  // roster, because a pointer at nobody would open a fight with no Companion at all.
   const legacy = (data as { lastCompanionId?: unknown }).lastCompanionId;
   const claimed = typeof data.activeCompanionId === 'string' ? data.activeCompanionId : legacy;
-  const activeCompanionId = COMPANIONS.some((c) => c.id === claimed)
-    ? (claimed as string)
-    : base.activeCompanionId;
-
-  const companions = readCompanions(data.companions, base.companions);
+  const byInstance = companions.find((c) => c.instanceId === claimed);
+  const bySpecies = companions.find((c) => c.baseId === claimed);
+  const activeCompanionId =
+    (byInstance ?? bySpecies ?? companions[0])?.instanceId ?? base.activeCompanionId;
 
   const record =
     data.record && typeof data.record === 'object'
@@ -445,7 +468,7 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
 
   // The ceiling belongs to whoever is standing beside the Pact, and a levelled Companion
   // restored from disk would otherwise sit at the base 40 until the next level was bought.
-  syncPactCeiling(profile.state.overworld, profile.companions[profile.activeCompanionId]);
+  syncPactCeiling(profile.state.overworld, activeCompanionOf(profile));
   stampProfile(profile);
   return profile;
 }
@@ -603,31 +626,72 @@ function isConsumable(value: unknown): value is Consumable {
 }
 
 /**
- * Companion progression, rebuilt rather than trusted.
+ * The roster, rebuilt — from either shape it has ever had.
  *
- * Only Companions that still exist survive the trip: an entry for one that has been cut
- * would sit in the save forever, and `syncPactCeiling` would read a bonus for a body that
- * cannot be picked. Levels are floored at 1 and the bonuses at 0, because these are
- * exactly the numbers a curious player edits first.
+ * A v8 save held `Record<baseId, progress>`: one entry per species, no constitution and
+ * no knack. Those become instances rather than being thrown away, and the levels they
+ * had earned come with them. A beast that predates the roll gets `BASE_PACT_HP` — the
+ * body it has been fighting with all along — rather than a fresh roll, because rolling
+ * on migration would hand some players a god roll and others a dud for having upgraded.
+ *
+ * Species that no longer exist are dropped, and a trait that no longer exists is replaced
+ * with one the species can actually have, so the Vivarium never prints a blank knack.
  */
-function readCompanions(
-  raw: unknown,
-  base: Record<string, CompanionProgress>,
-): Record<string, CompanionProgress> {
-  const out: Record<string, CompanionProgress> = { ...base };
-  if (!raw || typeof raw !== 'object') return out;
+function readRoster(raw: unknown, base: CompanionInstance[]): CompanionInstance[] {
+  if (!raw || typeof raw !== 'object') return base;
+  const known = new Set(COMPANIONS.map((c) => c.id));
 
-  for (const companion of COMPANIONS) {
-    const saved = (raw as Record<string, Partial<CompanionProgress>>)[companion.id];
-    if (!saved || typeof saved !== 'object') continue;
-    out[companion.id] = {
+  const clean = (
+    saved: Partial<CompanionInstance>,
+    baseId: string,
+    fallbackId: string,
+  ): CompanionInstance => {
+    const pool = traitsFor(baseId);
+    const traitId =
+      typeof saved.traitId === 'string' && traitById(saved.traitId)?.baseId === baseId
+        ? saved.traitId
+        : (pool[0]?.id ?? '');
+
+    return {
+      instanceId: typeof saved.instanceId === 'string' && saved.instanceId ? saved.instanceId : fallbackId,
+      baseId,
+      // Clamped to the band it could have been rolled in, so a hand-edited 400 is a 44.
+      baseHpRoll: Math.min(
+        HP_ROLL_MAX,
+        Math.max(HP_ROLL_MIN, Math.round(numberOr(saved.baseHpRoll, BASE_PACT_HP))),
+      ),
       level: Math.max(1, Math.round(numberOr(saved.level, 1))),
       bonusMaxHp: Math.max(0, Math.round(numberOr(saved.bonusMaxHp, 0))),
       startingArmor: Math.max(0, Math.round(numberOr(saved.startingArmor, 0))),
       bonusPips: Math.max(0, Math.round(numberOr(saved.bonusPips, 0))),
+      traitId,
     };
+  };
+
+  // --- v9 onward: a list of instances ---
+  if (Array.isArray(raw)) {
+    const seen = new Set<string>();
+    const roster = raw
+      .filter((v): v is Partial<CompanionInstance> => Boolean(v) && typeof v === 'object')
+      .filter((v) => typeof v.baseId === 'string' && known.has(v.baseId))
+      .map((v, i) => clean(v, v.baseId as string, `${v.baseId}-${i + 1}`))
+      // Two entries claiming one id would make "release this one" ambiguous.
+      .filter((c) => (seen.has(c.instanceId) ? false : (seen.add(c.instanceId), true)));
+
+    return roster.length > 0 ? roster : base;
   }
-  return out;
+
+  // --- v8 and earlier: one entry per species ---
+  const legacy: CompanionInstance[] = [];
+  let n = 0;
+  for (const companion of COMPANIONS) {
+    const saved = (raw as Record<string, Partial<CompanionInstance>>)[companion.id];
+    if (!saved || typeof saved !== 'object') continue;
+    n += 1;
+    legacy.push(clean({ ...saved, baseHpRoll: BASE_PACT_HP }, companion.id, `${companion.id}-${n}`));
+  }
+
+  return legacy.length > 0 ? legacy : base;
 }
 
 function numberOr(value: unknown, fallback: number): number {

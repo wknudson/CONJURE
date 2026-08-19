@@ -12,8 +12,9 @@ import type { CombatBoons, CombatCarry } from '../engine/setup.js';
 import type { Bestiary, BuffId, GlobalGameState, OverworldState } from './state.js';
 import { INVENTORY_LIMIT } from './state.js';
 import { nextBountySeed } from '../data/bounties.js';
-import type { CompanionProgress } from './vivarium.js';
+import type { CompanionInstance, CompanionProgress } from './vivarium.js';
 import { boonsOfRelics } from '../data/relics.js';
+import { traitById } from '../data/companionTraits.js';
 
 /**
  * What each brew does to a fight.
@@ -44,24 +45,34 @@ export const BUFF_EFFECTS: Record<BuffId, CombatBoons> = {
  */
 export function carryFor(
   overworld: OverworldState,
-  companion?: CompanionProgress,
+  companion?: CompanionInstance | CompanionProgress,
 ): CombatCarry {
   const brew = overworld.activeBuff ? BUFF_EFFECTS[overworld.activeBuff] : undefined;
   // Relics are translated here, not passed on as ids. `createCombat` is handed "3 Armor"
   // and "the ceiling is 9"; it has never heard of a Heavy Trenchcoat, exactly as it has
   // never heard of an Ironbrew. Adding a fourth relic is a row in a data table.
   const gear = boonsOfRelics(overworld.equippedRelics);
+  // The tamed beast's knack, translated like everything else. `createCombat` learns that
+  // this side is immune to Burn; it never learns there is such a thing as an Ash-Walker.
+  const knack =
+    companion && 'traitId' in companion ? (traitById(companion.traitId)?.boons ?? {}) : {};
 
-  const armor = (brew?.armor ?? 0) + (companion?.startingArmor ?? 0) + (gear.armor ?? 0);
-  const pips = (brew?.pips ?? 0) + (companion?.bonusPips ?? 0) + (gear.pips ?? 0);
-  const extraOpeningCards = (brew?.extraOpeningCards ?? 0) + (gear.extraOpeningCards ?? 0);
+  const armor =
+    (brew?.armor ?? 0) + (companion?.startingArmor ?? 0) + (gear.armor ?? 0) + (knack.armor ?? 0);
+  const pips =
+    (brew?.pips ?? 0) + (companion?.bonusPips ?? 0) + (gear.pips ?? 0) + (knack.pips ?? 0);
+  const extraOpeningCards =
+    (brew?.extraOpeningCards ?? 0) + (gear.extraOpeningCards ?? 0) + (knack.extraOpeningCards ?? 0);
+  const maxPips = Math.max(gear.maxPips ?? 0, knack.maxPips ?? 0);
 
   const boons: CombatBoons = {
     ...(armor ? { armor } : {}),
     ...(pips ? { pips } : {}),
     ...(extraOpeningCards ? { extraOpeningCards } : {}),
-    ...(gear.maxPips ? { maxPips: gear.maxPips } : {}),
-    ...(gear.ignoreFog ? { ignoreFog: true } : {}),
+    ...(maxPips ? { maxPips } : {}),
+    ...(gear.ignoreFog || knack.ignoreFog ? { ignoreFog: true } : {}),
+    ...(knack.immuneToBurn ? { immuneToBurn: true } : {}),
+    ...(knack.ignoreIceSlip ? { ignoreIceSlip: true } : {}),
   };
 
   return {

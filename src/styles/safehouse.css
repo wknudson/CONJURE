@@ -1847,3 +1847,76 @@
   padding: 13px 28px;
   font-size: 12px;
 }
+
+/* -------- the roster -------- */
+
+/* The roll is the reason to keep one, so it is the loudest thing on the tank. */
+.tank__roll {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 2px 0;
+}
+
+.tank__hp {
+  font: 800 16px var(--font);
+  color: var(--text);
+}
+
+.tank__verdict {
+  font: 700 8.5px var(--font);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.tank--perfect { border-color: var(--lamp); }
+.tank--perfect .tank__verdict { color: var(--lamp); }
+.tank--strong .tank__verdict { color: #6ee7b7; }
+.tank--fair .tank__verdict { color: var(--text-dim); }
+.tank--runt .tank__verdict { color: rgba(224, 70, 107, 0.8); }
+
+.vivarium__trait {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 0;
+  margin-bottom: 6px;
+  border-top: 1px solid rgba(176, 148, 106, 0.22);
+}
+
+.vivarium__trait-name {
+  font: 800 14px var(--font);
+  color: var(--school, var(--brass-lit));
+}
+
+.vivarium__trait-text {
+  font: 400 11.5px/1.6 var(--font);
+  color: var(--text-dim);
+}
+
+.vivarium__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.vivarium__release {
+  border-color: rgba(224, 70, 107, 0.55);
+  color: rgba(255, 200, 210, 0.9);
+}
+
+.vivarium__release:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(143, 42, 20, 0.6), rgba(94, 26, 12, 0.7));
+  border-color: #a8323c;
+}
+
+.vivarium__release-note {
+  margin-top: 8px;
+  font: 600 10px var(--font);
+  color: var(--text-dim);
+}
+
+.vivarium__tame {
+  border-style: dashed;
+  opacity: 0.85;
+}

@@ -144,6 +144,9 @@ function blankCommander(
     cards: {},
     handLimit: HAND_LIMIT,
     pipCap: PIP_CAP,
+    ignoresFog: false,
+    immuneToBurn: false,
+    ignoresIceSlip: false,
   };
 }
 
