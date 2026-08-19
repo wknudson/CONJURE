@@ -226,6 +226,10 @@ export const IGNIS_TRIAL: EncounterDef = registerEncounter({
   ],
   // The drake fights on the board. Its 44 HP is the pool its body draws on.
   enemyCompanion: { unitCardId: 'ignis_drake_bound' },
+  // Bind it and it is yours. The same species the player may already be fielding: what a
+  // taming produces is a *roll* -- its own constitution and its own knack -- so a second
+  // Ignis is a different animal rather than a duplicate.
+  subjugationPrize: 'ignis',
   // Four pillars in the middle of the arena: cover on the diagonals to break the drake's
   // sightlines, solid rubble at the centre to fight around rather than through.
   terrain: [

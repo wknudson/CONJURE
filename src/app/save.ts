@@ -49,7 +49,7 @@ import { makeRng } from '../core/util/rng.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 /** Posters on the wall. Three, and the wall is the reason it is three. */
 export const PROFILE_SLOTS = 3;
@@ -82,7 +82,12 @@ const RENAMED_CARDS: Record<string, string> = {
   spark_wisp: 'marrow_wisp',
   // Hybrids shed the odd `spell_` prefix nothing else in the registry wore (v8).
   spell_vaporize_blast: 'vaporize_blast',
-  spell_superconduct_strike: 'superconduct_strike',
+  // Superconduct Strike was named for a reaction it cannot produce; it makes an Overload
+  // (v11). Both historical spellings point at the current id rather than chaining through
+  // each other, because `rename` is a single lookup and a chain would strand the oldest
+  // saves on an id that no longer exists.
+  spell_superconduct_strike: 'overload_strike',
+  superconduct_strike: 'overload_strike',
 };
 
 function rename(id: string): string {

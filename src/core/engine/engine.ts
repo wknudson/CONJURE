@@ -33,6 +33,7 @@ import { coordEq } from '../../contract/ids.js';
 import { spawnHazard } from './reactions.js';
 import { resonanceFor } from '../data/resonance.js';
 import { declareIntents } from './intents.js';
+import { isSealed } from './subjugation.js';
 
 export function applyCommand(prev: GameState, command: Command): StepResult {
   const state = deepClone(prev);
@@ -272,7 +273,7 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
     : false;
 
   newCause(ctx);
-  dealDamage(ctx, {
+  const landed = dealDamage(ctx, {
     target,
     amount: attacker.atk,
     dtype: 'physical',
@@ -280,27 +281,60 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
     ...(isMelee ? { sourceUnitId: attackerId } : {}),
   });
 
-  applyOnHit(ctx, attacker.onHit, target);
+  applyOnHit(ctx, attackerId, target, landed.hpLoss);
 }
 
 /**
  * The rider an attack leaves behind, if it has one.
  *
- * Three things it deliberately does not do. It does not brand a corpse — a status on
- * something already removed is bookkeeping nobody reads, and the kill is the better
- * outcome anyway. It does not touch obstacles or portraits, neither of which carries a
- * status field. And it is applied *after* the damage rather than before, so the blow is
- * resolved against the board as it was swung at: charging a target and then hitting it
- * would let a single Bombardier set up and cash in its own Overload.
+ * It is applied *after* the damage rather than before, so the blow resolves against the
+ * board as it was swung at: charging a target and then hitting it would let a single
+ * Bombardier set up and cash in its own Overload.
+ *
+ * Six things it deliberately does not do, and the first five are all the same rule --
+ * **a rider is something a landed blow leaves on a living body.**
+ *
+ * - It does not brand a corpse. A status on something already removed is bookkeeping
+ *   nobody reads, and the kill is the better outcome anyway.
+ * - It does not swing from one. The attacker is re-read here rather than captured before
+ *   the blow, because `dealDamage` resolves Counter, rune blasts and the lethal check
+ *   before returning: an attacker can be dead by the time its own rider would land, and
+ *   `killEntity` removes a unit from the map without mutating the object a caller still
+ *   holds. Reading `onHit` off that reference is reading a corpse's intentions.
+ * - It does not land on a blow that was entirely soaked. `hpLoss` is the same test runes
+ *   and three of the five reactions use: armor that stops the hit stops what rode in on
+ *   it. Venom still needs a wound.
+ * - It does not touch obstacles or portraits, neither of which carries a status field.
+ * - It does not mark a **sealed** Alpha. The seal is the point where damage has stopped
+ *   being the answer; branding something the damage pipeline refuses to touch would tick
+ *   for numbers that are swallowed on arrival, which reads as a bug rather than a rule.
+ *   **This check is belt-and-braces and currently unreachable**: `isSealed` is the first
+ *   gate in `dealDamage`, so a sealed target always reports zero `hpLoss` and the wound
+ *   test above returns first. It is kept because the two say different things — one is
+ *   "the blow did nothing", the other is "this thing is not a legal host" — and the day
+ *   the wound rule is loosened for some rider that should mark a blocked hit, the seal
+ *   must not be loosened with it. Deleting the gates that never fire is how the case they
+ *   guard comes back.
+ * - It does not touch a **Bound Form**. That body keeps no health of its own, so a
+ *   damaging status on it is not an affliction of the body at all -- every tick would be
+ *   redirected straight to the Pact, turning a melee rider into the one thing in the game
+ *   that poisons a portrait. It joins armor, Counter, Brittle, reactions and
+ *   rune-on-damage on the list of things a Bound Form cannot host meaningfully.
  */
-function applyOnHit(ctx: Ctx, rider: Unit['onHit'], target: TargetRef): void {
-  if (!rider || target.kind !== 'unit') return;
+function applyOnHit(ctx: Ctx, attackerId: string, target: TargetRef, hpLoss: number): void {
+  if (target.kind !== 'unit') return;
   if (ctx.state.result) return;
+  if (hpLoss <= 0) return;
+
+  const attacker = ctx.state.units[attackerId];
+  if (!attacker?.onHit) return;
 
   const victim = ctx.state.units[target.id];
-  if (!victim) return;
+  if (!victim || victim.hp <= 0) return;
+  if (victim.keywords.includes('BoundForm')) return;
+  if (isSealed(ctx.state, target)) return;
 
-  applyStatusTo(ctx, victim, rider.status, rider.stacks);
+  applyStatusTo(ctx, victim, attacker.onHit.status, attacker.onHit.stacks);
 }
 
 /**

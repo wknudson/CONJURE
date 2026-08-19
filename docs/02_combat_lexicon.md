@@ -288,12 +288,29 @@ A status an ordinary attack leaves on whatever **survives** it. Deliberately a s
 never a number: a rider that added damage would be an attack stat wearing a different
 name, which is the same reason `CombatBoons` has nowhere to put one.
 
-Three rules the engine holds to:
+Applied **after** the blow resolves, so a unit can never charge a target and cash in its
+own reaction in one swing. Opt-in: a stat block without `onHit` swings exactly as before.
 
-- Applied **after** the blow resolves, so a unit can never charge a target and cash in its
-  own reaction in one swing.
-- Never applied to a corpse, an obstacle, or a portrait — only units carry statuses.
-- Opt-in. A stat block without `onHit` swings exactly as before.
+Five refusals, and the first four are one rule — **a rider is what a landed blow leaves on
+a living body**:
+
+| It will not brand | Because |
+|---|---|
+| a corpse | a status on something already removed is bookkeeping nobody reads |
+| *from* a corpse | the attacker is re-read after the blow; Counter and rune blasts resolve first, so an attacker can be dead by the time its own rider would land |
+| a blow armour ate whole | `hpLoss > 0`, the same test runes and three of the five reactions use. Plate is a real answer to a Plague-Bearer |
+| an obstacle or a portrait | neither carries a status field |
+| a **Bound Form** | it keeps no health of its own, so every tick would be redirected to the Pact — a melee rider would be the one thing in the game that poisons a portrait |
+
+A **sealed** Alpha is refused too, though that gate never fires on its own: `isSealed` is
+the first thing `dealDamage` checks, so a sealed target always reports zero `hpLoss` and
+the wound rule turns the rider away first. Kept because the two say different things, and
+the day the wound rule is loosened the seal must not loosen with it.
+
+> The rider is bound to the **`attack` command**, not to the damage pipeline. Counter
+> retaliation, `cleaveFront`, collisions, spells and rune blasts all deal damage without
+> one. It also still ignores `chainCancelled` — deliberately: a Damage Gate stops a
+> *cascade*, and venom is not a cascade.
 
 > `scenario.ts:addUnit` builds units by hand rather than calling `spawn.ts`, so **every new
 > stat-block field has to be added in both places**. It copied `attackProfile` but not
@@ -585,8 +602,10 @@ same body.
 **Cascade:** a detonation reaching another rune-holder's *health* sets theirs off too,
 tracked by `chainDepth`. Armor can stop a chain reaction cold.
 
-Shipped: **Cinder Rune** (pyre; fire or spell; 4 fire to adjacent8) and **Soul Splinter
-Rune** (dusk; on death; 5 to the lowest-HP enemy).
+Shipped: **Cinder Rune** (pyre; fire or spell; 4 fire to adjacent8), **Rot-Root Snare**
+(bloom; entangle and toxin, `damage: 0`), **Cask Blast** (the Volatile Cask's detonation,
+attached by no card) and **Soul Splinter Rune** (dusk; on death; 5 to the lowest-HP
+enemy).
 
 ---
 
@@ -620,6 +639,7 @@ itself, and the fight stops being a damage race.
 
 | Term | Meaning |
 |---|---|
+| **Prize** | the species binding it adds to the roster, named by `EncounterDef.subjugationPrize`. The engine never learns a species name; which beast is on the end of a tether belongs to the encounter, the same way opting in does |
 | **Sealed** | set at the enrage and **never cleared** — a failed tether leaves it just as unkillable, forcing you back to the Rite rather than back to swinging |
 | **Rite of Subjugation** | the card the protocol deals (`RITE_CARD_DEF`) |
 | **Anchor** | the tethered unit. Cannot move, strike, or channel |
@@ -634,3 +654,10 @@ accident.
 Nothing in the system names a specific beast. A boss opts in by calling `beginSubjugation`
 from its own script: the rules of the tether belong to the engine, which beast has one
 belongs to the encounter.
+
+**A binding is paid in the beast.** `resolveCombat` reads a `bound` result and rolls the
+encounter's `subjugationPrize` through `tameCompanion` — the same roll a wild taming makes,
+with its own constitution and its own knack, so a second Ignis is a different animal rather
+than a duplicate. Rolled from the bounty seed *before* it advances, so a subjugation
+replays to the same creature. An encounter that seals without naming a prize still pays
+like a victory, which is what every fight did before the field existed.

@@ -199,7 +199,9 @@ describe('Marrow-Hound', () => {
 });
 
 describe('Plague-Bearer', () => {
-  const bearer = () => {
+  // `armor` is a knob because the rider now depends on whether the blow lands: the
+  // plated case and the wounded case are two different rules and want two setups.
+  const bearer = (opts: { armor?: number } = {}) => {
     const state = scenario({ width: 8, height: 8 });
     const carrier = addUnit(state, {
       def: 'plague_bearer',
@@ -212,14 +214,15 @@ describe('Plague-Bearer', () => {
       side: 'player',
       at: { x: 3, y: 5 },
       hp: 12,
-      armor: 6,
+      armor: opts.armor ?? 6,
     });
     state.activeSide = 'enemy';
     return { state, carrier, victim };
   };
 
-  it('leaves Toxin on whatever it touches', () => {
-    const { state, carrier, victim } = bearer();
+  it('leaves Toxin on whatever it wounds', () => {
+    // Unarmoured, so the blow lands and the venom rides in with it.
+    const { state, carrier, victim } = bearer({ armor: 0 });
 
     const res = run(state, {
       type: 'attack',
@@ -230,9 +233,12 @@ describe('Plague-Bearer', () => {
     expect(res.state.units[victim.id]!.statuses.toxin).toBe(1);
   });
 
-  it('is answered by killing it, not by armouring up', () => {
-    // Six armour eats the whole attack, and the Toxin lands anyway — then ticks through
-    // that armour as `true` damage on the victim's own turn.
+  it('is turned away by armour that stops the blow outright', () => {
+    // This assertion used to run the other way: six armour ate the whole attack and the
+    // Toxin landed regardless, because the rider was the one secondary effect in the
+    // engine that never asked whether the hit connected. It asks now, on the same
+    // `hpLoss` test runes and reactions already used — so plate is a real answer to a
+    // Plague-Bearer, and the creature has to be let through before it can poison.
     const { state, carrier, victim } = bearer();
     const hit = run(state, {
       type: 'attack',
@@ -241,11 +247,25 @@ describe('Plague-Bearer', () => {
     });
 
     expect(damageTo(hit.events, victim.id), 'the blow itself is absorbed').toBe(0);
-    expect(hit.state.units[victim.id]!.statuses.toxin, 'the poison is not').toBe(1);
-    // Armour is spent as it soaks (`cmd.armor -= absorbed`), so the swing did chip a
-    // point off. That is the attack's only real contribution.
-    const platedAfterHit = hit.state.units[victim.id]!.armor;
-    expect(platedAfterHit).toBe(5);
+    expect(hit.state.units[victim.id]!.statuses.toxin, 'and so is the venom').toBeUndefined();
+    // Armour is still spent as it soaks (`cmd.armor -= absorbed`), so the swing was not
+    // free for the defender either.
+    expect(hit.state.units[victim.id]!.armor).toBe(5);
+  });
+
+  it('goes around armour once it is actually in', () => {
+    // The half that did not change, and the creature's whole point: a wound lets the
+    // Toxin in, and from then on the plate is irrelevant — it ticks as `true` damage.
+    const { state, carrier, victim } = bearer({ armor: 0 });
+    const hit = run(state, {
+      type: 'attack',
+      attacker: carrier.id,
+      target: { kind: 'unit', id: victim.id },
+    });
+
+    // Re-plate the victim *after* the poison is in, so the tick has armour to ignore.
+    hit.state.units[victim.id]!.armor = 5;
+    expect(hit.state.units[victim.id]!.statuses.toxin).toBe(1);
 
     const ticked = run(hit.state, { type: 'endTurn' });
     const ticks = eventsOf(ticked.events, 'statusTicked').filter(
@@ -256,7 +276,7 @@ describe('Plague-Bearer', () => {
     expect(
       ticked.state.units[victim.id]!.armor,
       'the tick goes around the armour rather than through it',
-    ).toBe(platedAfterHit);
+    ).toBe(5);
   });
 
   it('hits for almost nothing, which is the point', () => {

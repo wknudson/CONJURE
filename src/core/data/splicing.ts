@@ -78,7 +78,7 @@ export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
   {
     baseCardId: 'flame_surge',
     catalystId: 'core_surge',
-    resultId: 'superconduct_strike',
+    resultId: 'overload_strike',
   },
   // The mirror of the first row, and the only thing a Pyre Core is good for. Until this
   // existed the bench had no recipe taking one at all, so a core earned from a Master

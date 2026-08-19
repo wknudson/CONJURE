@@ -82,6 +82,12 @@ export function dealDamage(ctx: Ctx, req: DamageRequest): DamageOutcome {
   // Brittle, elemental reactions, and rune-on-damage. A Bound Form can host none of
   // those meaningfully, so targeting refuses to attach them (see legalCardTargets)
   // rather than letting a card be spent on an effect that would never fire.
+  //
+  // **On-hit riders are bypassed too**, and they are the one member of that list the
+  // redirect cannot enforce by itself: a rider is applied by the attack reducer rather
+  // than by this pipeline, so `applyOnHit` carries the refusal instead. Left in, it was
+  // the only route in the game from a melee swing to poisoning a portrait -- the status
+  // landed on the body, and every tick came back through here to the Pact.
   if (isUnit(entity) && entity.keywords.includes('BoundForm')) {
     return damagePortrait(ctx, req, entity.side, entity.anchor);
   }

@@ -76,6 +76,19 @@ export interface EncounterDef {
   turfwar?: { count: number; unitCardId: string };
   /** Free opening unit placed for both sides. Set to null to skip. */
   vanguard?: string | null;
+  /**
+   * The species a successful subjugation adds to the roster, by Companion id.
+   *
+   * Here rather than in the engine for the same reason `beginSubjugation` is called from
+   * a script rather than fired by a rule: the tether belongs to the engine, *which beast
+   * is on the end of it* belongs to the encounter. The engine never learns a species name
+   * and the overworld never learns how a tether works.
+   *
+   * Optional, and absent from every ordinary fight. An encounter that seals without
+   * naming one binds a beast that cannot be kept, which is a `bound` result that pays
+   * like a victory -- the behaviour every subjugation had before this field existed.
+   */
+  subjugationPrize?: string;
   script?: EncounterScript;
 }
 

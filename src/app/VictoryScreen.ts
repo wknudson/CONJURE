@@ -16,7 +16,10 @@ import type { Screen } from './ScreenManager.js';
 import type { EncounterDef } from '../core/data/encounters/registry.js';
 import type { CombatSpoils } from '../core/overworld/state.js';
 import type { CombatResult } from '../contract/events.js';
+import type { CompanionInstance } from '../core/overworld/vivarium.js';
 import { CARDS } from '../core/data/cards/index.js';
+import { companionById } from '../core/data/companions.js';
+import { traitById } from '../core/data/companionTraits.js';
 import { reagentById } from '../core/data/splicing.js';
 import { formatCost } from '../hud/cost.js';
 import { schoolOf } from '../render/palette.js';
@@ -28,6 +31,8 @@ export interface VictoryOptions {
   spoils: CombatSpoils;
   /** Cards offered as a reward, if any. */
   rewards: string[];
+  /** The beast a subjugation added to the roster, if this was a binding. */
+  tamed?: CompanionInstance | null;
   onClaim: (cardId: string) => void;
   onLeave: () => void;
 }
@@ -78,6 +83,7 @@ export class VictoryScreen implements Screen {
         }
       </div>
 
+      ${this.bindingPanel()}
       <div class="victory__rewards"></div>
       <button class="brass-btn victory__leave">Return to Safehouse</button>
     `;
@@ -87,6 +93,34 @@ export class VictoryScreen implements Screen {
     root.appendChild(el);
     this.el = el;
     this.renderRewards();
+  }
+
+  /**
+   * The animal, when the Rite took hold.
+   *
+   * Its own panel rather than a line in the Spoils, because it is not a payout: the
+   * ducats were promised by the contract, and this was taken off the board. It names the
+   * roll — the constitution and the knack — since those are what make one bound Ignis a
+   * different animal from the next.
+   */
+  private bindingPanel(): string {
+    const tamed = this.opts.tamed;
+    if (!tamed) return '';
+
+    const def = companionById(tamed.baseId);
+    const trait = traitById(tamed.traitId);
+
+    return `
+      <div class="spoils brass-panel spoils--binding">
+        <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
+        <i class="rivet rivet--bl"></i><i class="rivet rivet--br"></i>
+        <div class="spoils__head">Bound to the Pact</div>
+        ${line('Beast', def?.name ?? tamed.baseId, 'beast')}
+        ${line('Constitution', String(tamed.baseHpRoll), 'marrow')}
+        ${trait ? line('Knack', trait.name, 'trait') : line('Knack', 'none', 'empty')}
+        <div class="spoils__note">It waits for you in the Vivarium.</div>
+      </div>
+    `;
   }
 
   /**

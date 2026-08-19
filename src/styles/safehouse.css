@@ -1784,6 +1784,29 @@
   color: rgba(148, 163, 184, 0.55);
 }
 
+.spoils__line--beast .spoils__value { color: #fb923c; }
+.spoils__line--trait .spoils__value { color: #a5b4fc; }
+
+/* The binding panel. Set apart from the Spoils above it because it is not a payout:
+   the ducats were promised by the contract, this was taken off the board. */
+.spoils--binding {
+  margin-top: 14px;
+  border-color: rgba(165, 180, 252, 0.45);
+  box-shadow: 0 0 22px rgba(129, 140, 248, 0.18) inset;
+}
+
+.spoils--binding .spoils__head {
+  color: #c7d2fe;
+}
+
+.spoils__note {
+  margin-top: 10px;
+  font: italic 600 11px var(--font);
+  letter-spacing: 0.4px;
+  text-align: center;
+  color: rgba(199, 210, 254, 0.7);
+}
+
 .victory__rewards-title {
   margin: 18px 0 10px;
   font: 800 9px var(--font);

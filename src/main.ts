@@ -501,7 +501,13 @@ function finishCombat(
   // all, the brew is spent whether it was won or lost, and a win is paid at the rate the
   // accepted contract promised.
   const p = profile();
-  resolveCombat(p.state, outcome, result, p.bestiary);
+  // The roster is handed in so a binding can be folded into it here, in the same call
+  // that settles everything else about the fight. `played` is the encounter actually
+  // fought, which is what knows whether it had a beast worth keeping.
+  const tamed = resolveCombat(p.state, outcome, result, p.bestiary, {
+    ...(played.subjugationPrize ? { prize: played.subjugationPrize } : {}),
+    roster: p.companions,
+  });
 
   if (result === 'victory') p.record.wins += 1;
   else if (result === 'bound') p.record.bound += 1;
@@ -526,6 +532,7 @@ function finishCombat(
         // into a forfeit of the fight the player just won.
         spoils: paid,
         rewards,
+        tamed,
         onClaim: (cardId) => {
           p.collection = grantCard(p.collection, cardId);
           persist();

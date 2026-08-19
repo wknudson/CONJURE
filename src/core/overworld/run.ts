@@ -15,6 +15,8 @@ import { nextBountySeed } from '../data/bounties.js';
 import type { CompanionInstance, CompanionProgress } from './vivarium.js';
 import { boonsOfRelics } from '../data/relics.js';
 import { traitById } from '../data/companionTraits.js';
+import { tameCompanion } from './vivarium.js';
+import { makeRng } from '../util/rng.js';
 
 /**
  * What each brew does to a fight.
@@ -110,6 +112,20 @@ export function carryFor(
  * out of a fight, and handing it the entire board would invite the overworld to start
  * reading combat internals it has no business knowing about.
  */
+/**
+ * The roster a subjugation would be added to, and what it would add.
+ *
+ * Passed in rather than reached for, because the roster lives on the Profile and this
+ * module only knows about the run. It is the same shape the Ledger uses: hand the thing
+ * in, let the resolver fold one fight into it.
+ */
+export interface SubjugationClaim {
+  /** The species the encounter offers, from `EncounterDef.subjugationPrize`. */
+  prize?: string;
+  /** The player's beasts. The new one is pushed here. */
+  roster: CompanionInstance[];
+}
+
 export interface CombatOutcome {
   /** The Pact as it stood when the bell rang. */
   pactHp: number;
@@ -150,7 +166,8 @@ export function resolveCombat(
   outcome: CombatOutcome,
   result: CombatResult,
   bestiary?: Bestiary,
-): void {
+  claim?: SubjugationClaim,
+): CompanionInstance | null {
   const { overworld } = global;
 
   // The Ledger is written win or lose. Killing a thing teaches you what it was, and
@@ -178,8 +195,50 @@ export function resolveCombat(
     }
   }
 
+  // The beast itself, if one was bound and the encounter named a species for it.
+  //
+  // Rolled *before* the bounty seed moves on, so the animal a given fight yields is fixed
+  // by the board that offered the fight rather than by the one that replaces it -- a
+  // subjugation replays to the same creature.
+  const tamed = claimSubjugation(overworld.bountySeed, result, claim);
+
   overworld.bountySeed = nextBountySeed(overworld.bountySeed);
   global.combat = null;
+
+  return tamed;
+}
+
+/**
+ * Turns a `bound` result into an animal.
+ *
+ * The payoff the Harpoon Protocol was built for and went without: `bound` was recognised
+ * as a win and paid like one, so the only difference between killing a boss and binding
+ * it was a line in the record. Three rounds of holding a tether now produce the thing the
+ * fiction always said they produced.
+ *
+ * Every other result returns null, including a `bound` from an encounter that names no
+ * prize -- binding something the catalogue has no species for should pay like a victory
+ * rather than crash or invent one.
+ */
+function claimSubjugation(
+  seed: number,
+  result: CombatResult,
+  claim?: SubjugationClaim,
+): CompanionInstance | null {
+  if (result !== 'bound' || !claim?.prize) return null;
+
+  // The same stream `tameWild` uses, so a bound beast and a wild one are rolled by one
+  // rule. The sequence both numbers the instance id and moves the seed on, so two
+  // tamings in a run cannot land on the same constitution.
+  const sequence = claim.roster.length + 1;
+  const beast = tameCompanion(
+    makeRng((seed + sequence * 7919) >>> 0),
+    claim.prize,
+    sequence,
+  );
+
+  claim.roster.push(beast);
+  return beast;
 }
 
 /**

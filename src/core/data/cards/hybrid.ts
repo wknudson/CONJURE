@@ -132,9 +132,19 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   /**
    * Pyre pressed with a Frost core.
    *
-   * Fire that arrives on something already frozen, in one card. It applies the frost
-   * first and the flame second, so the Vaporize reaction fires off its own setup rather
-   * than needing a second caster — which is the whole point of paying for a hybrid.
+   * Fire that arrives on something already frozen, in one card. It chills first and
+   * burns second, so the Vaporize reaction fires off its own setup rather than needing a
+   * second caster — which is the whole point of paying for a hybrid.
+   *
+   * The leading `applyStatus` is load-bearing and was missing for a sprint. **Frost
+   * damage does not chill**: the engine has exactly one automatic status-from-damage
+   * rule, shock leaving `charged` (`damage.ts:274`). Without the status node the fire
+   * half found nothing to react with and the card only worked on a target somebody else
+   * had already chilled — precisely the case this paragraph claims it removes.
+   *
+   * The frost damage is kept anyway. It is what makes the card read as one motion rather
+   * than a status and an unrelated burn, and it is a second Vaporize trigger of its own
+   * if the target was already chilled when it arrived.
    */
   vaporize_blast: {
     id: 'vaporize_blast',
@@ -148,6 +158,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
     effect: {
       op: 'seq',
       effects: [
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'target' } },
         { op: 'damage', amount: 1, dtype: 'frost', area: { shape: 'target' } },
         { op: 'damage', amount: 3, dtype: 'fire', area: { shape: 'target' } },
       ],
@@ -164,10 +175,17 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    * The charge lands first so the flame has something to argue with. Cheaper in Marrow
    * than the Frost hybrid and shorter-ranged: this one is meant to be thrown into a
    * crowd you are already standing near.
+   *
+   * **Named for the reaction it actually produces.** Shock into fire is fire-on-charged,
+   * which is *Overload* — Superconduct wants a `frost` trigger (`data/reactions.ts:106`)
+   * this card never deals, so under its old name it promised a reaction it could not
+   * make. The effect is deliberately unchanged: shock-then-fire is the better card, the
+   * text already described Overload's shove, and Superconduct keeps its own route
+   * through Glacial Spike.
    */
-  superconduct_strike: {
-    id: 'superconduct_strike',
-    name: 'Superconduct Strike',
+  overload_strike: {
+    id: 'overload_strike',
+    name: 'Overload Strike',
     cost: { pips: 2, marrow: 1 },
     school: 'surge',
     source: 'companion',
