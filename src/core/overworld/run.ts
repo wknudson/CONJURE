@@ -9,7 +9,7 @@
 
 import type { CombatResult } from '../../contract/events.js';
 import type { CombatBoons, CombatCarry } from '../engine/setup.js';
-import type { BuffId, GlobalGameState, OverworldState } from './state.js';
+import type { Bestiary, BuffId, GlobalGameState, OverworldState } from './state.js';
 import { INVENTORY_LIMIT } from './state.js';
 import { nextBountySeed } from '../data/bounties.js';
 import type { CompanionProgress } from './vivarium.js';
@@ -77,6 +77,15 @@ export function carryFor(
 export interface CombatOutcome {
   /** The Pact as it stood when the bell rang. */
   pactHp: number;
+  /**
+   * Enemy stat blocks met and killed during the fight, by **definition** id.
+   *
+   * Definition ids rather than instance ids, despite the name: the Ledger is about kinds
+   * of thing, and a list of `u7` would grow without bound and identify nothing. Both are
+   * optional so a fight resolved without them — a test, a standalone bout — still closes.
+   */
+  encounteredUnitIds?: string[];
+  defeatedUnitIds?: string[];
 }
 
 /**
@@ -104,8 +113,13 @@ export function resolveCombat(
   global: GlobalGameState,
   outcome: CombatOutcome,
   result: CombatResult,
+  bestiary?: Bestiary,
 ): void {
   const { overworld } = global;
+
+  // The Ledger is written win or lose. Killing a thing teaches you what it was, and
+  // losing the fight afterwards does not un-teach it.
+  if (bestiary) recordSightings(bestiary, outcome);
 
   // Read the contract before closing it: the payout was fixed when the bounty was
   // accepted, and clearing first would settle every win at nothing.
@@ -127,6 +141,26 @@ export function resolveCombat(
 
   overworld.bountySeed = nextBountySeed(overworld.bountySeed);
   global.combat = null;
+}
+
+/**
+ * Folds one fight's sightings into the running Ledger.
+ *
+ * Both tallies are cumulative counts rather than flags, so "met eleven, killed two" is a
+ * sentence the Ledger can say. A kind is only ever created here — an entry that exists
+ * means the player has laid eyes on it.
+ */
+function recordSightings(bestiary: Bestiary, outcome: CombatOutcome): void {
+  const bump = (defId: string, field: 'encountered' | 'defeated'): void => {
+    const entry = (bestiary[defId] ??= { encountered: 0, defeated: 0 });
+    entry[field] += 1;
+  };
+
+  for (const defId of outcome.encounteredUnitIds ?? []) bump(defId, 'encountered');
+  // A kill implies a meeting, but the two lists come from the same fight and the meeting
+  // was already counted when the thing walked on. Counting it twice here would make
+  // `defeated` exceed `encountered`, which reads as a bug in the Ledger.
+  for (const defId of outcome.defeatedUnitIds ?? []) bump(defId, 'defeated');
 }
 
 /** Why a consumable could not be used, or null if it can. */

@@ -178,6 +178,15 @@ export interface CardDef {
    * more durable than the list of exceptions the reward roller used to carry.
    */
   setupOnly?: true;
+  /**
+   * Only ever obtained at the splicing bench.
+   *
+   * The same guard `setupOnly` provides, for the opposite reason: this card is real and
+   * playable, but it is the *product* of a sink. Letting a reward roll or the Schematic
+   * shelf hand one over would give away for free the thing the Forge exists to charge
+   * for — which is exactly how Rank 2 printings leaked before `isObtainable` caught them.
+   */
+  spliceOnly?: true;
   /** Paid to whoever breaks this obstacle. Present only on obstacle cards. */
   onDestroyReward?: { marrow: number };
   /** Paid to whoever kills this creature. What makes a scavenger worth chasing. */

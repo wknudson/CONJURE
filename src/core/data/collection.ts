@@ -117,6 +117,9 @@ export function isObtainable(def: CardDef): boolean {
   // reward rolls and on the Artificer's shelf, handing out for free the exact thing the
   // Ascension sink exists to charge for.
   if (isAscendedId(def.id)) return false;
+  // Hybrids are the splicing bench's product, and free access to a sink's output is the
+  // sink not existing.
+  if (def.spliceOnly) return false;
   return !def.setupOnly && def.id !== 'rite_of_subjugation';
 }
 

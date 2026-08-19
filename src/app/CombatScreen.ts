@@ -825,7 +825,11 @@ export class CombatScreen implements Screen {
         // Read the Pact now rather than inside the timeout: nothing can move the board
         // once the result is set, but taking it at the moment of the bell keeps what is
         // reported and what ended the fight the same instant.
-        const outcome: CombatOutcome = { pactHp: this.session.pactHp };
+        const outcome: CombatOutcome = {
+          pactHp: this.session.pactHp,
+          encounteredUnitIds: this.session.encounteredEnemies,
+          defeatedUnitIds: this.session.defeatedEnemies,
+        };
         window.setTimeout(() => this.onFinish(result, this.encounter, outcome), 900);
       }
       return;

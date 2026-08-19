@@ -252,6 +252,8 @@ export function createCombat(
     commanderDamagedThisRound: false,
     stalledRounds: 0,
     causeCounter: 0,
+    encountered: [],
+    defeated: [],
   };
 
   const ctx = makeCtx(state);

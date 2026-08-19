@@ -73,7 +73,11 @@ describe('the wall', () => {
     const p = newProfile('slot-1');
     expect(p.name).toBe('Commander');
     expect(p.level).toBe(1);
-    expect(p.state.overworld.economy).toEqual({ ducats: 0, marrowShards: 0 });
+    expect(p.state.overworld.economy.ducats).toBe(0);
+    expect(p.state.overworld.economy.marrowShards).toBe(0);
+    // Two cores in the satchel: the splicing bench has no other way in yet, so a
+    // character who could not reach it at all would never learn it exists.
+    expect(p.state.overworld.economy.reagents).toEqual({ core_frost: 2, core_surge: 2 });
     expect(p.state.overworld.pact).toEqual({ currentHp: 40, maxHp: 40 });
     expect(p.activeCompanionId).toBe(COMPANIONS[0]!.id);
     for (const companion of COMPANIONS) {
@@ -166,7 +170,7 @@ describe('the upgrade from one character to three', () => {
   /** A v6 file: one character at the root, no notion of a slot. */
   function legacy(over: Record<string, unknown> = {}): void {
     const overworld = newRun(5);
-    overworld.economy = { ducats: 640, marrowShards: 4 };
+    overworld.economy = { ducats: 640, marrowShards: 4, reagents: {} };
     overworld.pact = { currentHp: 22, maxHp: 40 };
 
     localStorage.setItem(
@@ -198,7 +202,8 @@ describe('the upgrade from one character to three', () => {
     legacy();
     const p = loadSave().save.profiles['slot-1']!;
 
-    expect(p.state.overworld.economy).toEqual({ ducats: 640, marrowShards: 4 });
+    expect(p.state.overworld.economy.ducats).toBe(640);
+    expect(p.state.overworld.economy.marrowShards).toBe(4);
     expect(p.state.overworld.pact.currentHp).toBe(22);
     expect(p.collection.ascended).toContain('shield_bash');
     expect(p.record.wins).toBe(4);
@@ -247,7 +252,7 @@ describe('one character on disk', () => {
   it('carries a wounded, half-spent character', () => {
     const p = saved((c) => {
       c.state.overworld.pact = { currentHp: 17, maxHp: 40 };
-      c.state.overworld.economy = { ducats: 95, marrowShards: 4 };
+      c.state.overworld.economy = { ducats: 95, marrowShards: 4, reagents: {} };
       c.state.overworld.activeBuff = 'ironbrew';
       addConsumable(c.state.overworld, {
         id: 'mending_tonic',
@@ -258,7 +263,8 @@ describe('one character on disk', () => {
     });
 
     expect(p.state.overworld.pact).toEqual({ currentHp: 17, maxHp: 40 });
-    expect(p.state.overworld.economy).toEqual({ ducats: 95, marrowShards: 4 });
+    expect(p.state.overworld.economy.ducats).toBe(95);
+    expect(p.state.overworld.economy.marrowShards).toBe(4);
     expect(p.state.overworld.activeBuff).toBe('ironbrew');
     expect(p.state.overworld.inventory).toHaveLength(1);
   });

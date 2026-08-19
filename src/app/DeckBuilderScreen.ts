@@ -26,21 +26,27 @@ import { CARDS } from '../core/data/cards/index.js';
 import { companionById } from '../core/data/companions.js';
 import { schoolOf } from '../render/palette.js';
 import { Tooltip } from '../hud/Tooltip.js';
+import { ledgerFor, ledgerProgress } from '../core/data/bestiary.js';
+import type { Bestiary } from '../core/overworld/state.js';
 
 export interface DeckBuilderResult {
   companionId: string;
   cards: string[];
 }
 
+type Tab = 'deck' | 'ledger';
+
 export class DeckBuilderScreen implements Screen {
   private el: HTMLElement | null = null;
   private deck: string[];
   private tooltip: Tooltip | null = null;
+  private tab: Tab = 'deck';
 
   constructor(
     private readonly companionId: string,
     startingDeck: string[],
     private readonly collection: Collection,
+    private readonly bestiary: Bestiary,
     private readonly onDone: (result: DeckBuilderResult) => void,
     private readonly onCancel: () => void,
   ) {
@@ -54,7 +60,7 @@ export class DeckBuilderScreen implements Screen {
     el.innerHTML = `
       <div class="builder__head">
         <div>
-          <div class="builder__title">Deck Builder</div>
+          <div class="builder__title">The Field Journal</div>
           <div class="builder__sub">${companion?.name ?? 'Companion'} · ${companion?.school ?? ''}</div>
         </div>
         <div class="builder__actions">
@@ -62,6 +68,11 @@ export class DeckBuilderScreen implements Screen {
           <button class="builder__cancel">Back</button>
           <button class="builder__confirm">Save deck</button>
         </div>
+      </div>
+
+      <div class="journal-tabs">
+        <button class="journal-tab" data-tab="deck">The Deck</button>
+        <button class="journal-tab" data-tab="ledger">The Threat Ledger</button>
       </div>
 
       <div class="builder__body">
@@ -78,6 +89,14 @@ export class DeckBuilderScreen implements Screen {
           <div class="builder__problems"></div>
         </div>
       </div>
+
+      <div class="threat-ledger">
+        <div class="threat-ledger__head">
+          <span class="threat-ledger__title">The Threat Ledger</span>
+          <span class="threat-ledger__progress"></span>
+        </div>
+        <div class="threat-ledger__grid"></div>
+      </div>
     `;
 
     el.querySelector('.builder__cancel')!.addEventListener('click', () => this.onCancel());
@@ -87,6 +106,13 @@ export class DeckBuilderScreen implements Screen {
       this.render();
     });
 
+    for (const tab of el.querySelectorAll<HTMLElement>('.journal-tab')) {
+      tab.addEventListener('click', () => {
+        this.tab = (tab.dataset.tab as Tab) ?? 'deck';
+        this.render();
+      });
+    }
+
     root.appendChild(el);
     this.el = el;
     this.tooltip = new Tooltip(document.body);
@@ -94,9 +120,73 @@ export class DeckBuilderScreen implements Screen {
     this.render();
   }
 
+  /**
+   * Everything the player has faced, and what is known about it.
+   *
+   * The roster comes from the card registry rather than from the Ledger, so a creature
+   * never met still occupies its place in the list as a blank — which is the point. An
+   * entry you have not identified tells you there is something you have not met, and
+   * where it sits among the things you have.
+   */
+  private renderLedger(): void {
+    const host = this.el?.querySelector('.threat-ledger__grid');
+    const progress = this.el?.querySelector('.threat-ledger__progress');
+    if (!host || !progress) return;
+
+    const { known, total } = ledgerProgress(this.bestiary);
+    progress.textContent = `${known} of ${total} identified`;
+
+    host.innerHTML = '';
+    for (const entry of ledgerFor(this.bestiary)) {
+      const { def, identified } = entry;
+      const card = document.createElement('div');
+      card.className = `threat${identified ? '' : ' threat--unknown'}`;
+
+      if (!identified) {
+        // Deliberately not the creature's name, its school, or even its silhouette shape:
+        // the only thing an unidentified entry may leak is that it exists. A sighting is
+        // shown, because "seen three, killed none" is a fact the player earned.
+        card.innerHTML = `
+          <div class="threat__plate"></div>
+          <div class="threat__name">???</div>
+          <div class="threat__meta">${
+            entry.encountered > 0 ? `Seen ${entry.encountered} · never taken` : 'Unrecorded'
+          }</div>
+        `;
+        host.appendChild(card);
+        continue;
+      }
+
+      const unit = def.unit!;
+      const colors = schoolOf(def.school as never);
+      card.style.setProperty('--school', colors.main);
+      card.dataset.tip = `${def.name}|${def.text}|${def.school}`;
+      card.innerHTML = `
+        <div class="threat__plate threat__plate--known"></div>
+        <div class="threat__name">${def.name}</div>
+        <div class="threat__school">${def.school}</div>
+        <div class="threat__stats">
+          <span>HP ${unit.hp}</span><span>ATK ${unit.atk}</span><span>MOV ${unit.mov}</span>
+          <span>RNG ${unit.rangeMin}-${unit.rangeMax}</span>
+        </div>
+        <div class="threat__meta">Seen ${entry.encountered} · taken ${entry.defeated}</div>
+      `;
+      host.appendChild(card);
+    }
+  }
+
   // ------------------------------------------------------------------ rendering
 
   private render(): void {
+    const el = this.el;
+    if (el) {
+      for (const tab of el.querySelectorAll<HTMLElement>('.journal-tab')) {
+        tab.classList.toggle('is-active', tab.dataset.tab === this.tab);
+      }
+      el.classList.toggle('is-ledger', this.tab === 'ledger');
+    }
+
+    this.renderLedger();
     this.renderCollection();
     this.renderDeck();
     this.renderCurve();

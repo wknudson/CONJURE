@@ -86,6 +86,8 @@ export function scenario(opts: {
     commanderDamagedThisRound: false,
     stalledRounds: 0,
     causeCounter: 0,
+    encountered: [],
+    defeated: [],
   };
 
   for (const spec of opts.units ?? []) addUnit(state, spec);

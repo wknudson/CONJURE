@@ -181,6 +181,19 @@ export interface GameState {
   stalledRounds: number;
   /** Incremented per atomic resolution step; stamped onto events as causeId. */
   causeCounter: number;
+  /**
+   * Enemy stat blocks that have appeared on this board, and those that have fallen.
+   *
+   * Definition ids, not instance ids: the Threat Ledger is about *kinds* of thing, and
+   * a list of `u7` would grow forever and mean nothing. Duplicates are kept — three dead
+   * Scout Imps is three, which is what a tally wants.
+   *
+   * Held in `GameState` rather than accumulated by the session for one reason: undo.
+   * `snapshot`/`restore` deep-clone the state, so rewinding a turn that killed something
+   * un-counts it for free. A tally kept beside the state would have to remember to.
+   */
+  encountered: string[];
+  defeated: string[];
 }
 
 export interface StepResult {

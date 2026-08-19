@@ -89,7 +89,17 @@ export interface OverworldState {
    * player back up at exactly 1.
    */
   pact: { currentHp: number; maxHp: number };
-  economy: { ducats: number; marrowShards: number };
+  economy: {
+    ducats: number;
+    marrowShards: number;
+    /**
+     * Splicing materials, by reagent id.
+     *
+     * A bag rather than named fields: reagents are content, and a new one should be a
+     * row in a data table rather than a migration. A missing key is zero.
+     */
+    reagents: Record<string, number>;
+  };
   /** Hard cap of `INVENTORY_LIMIT`; enforced by `addConsumable`, not by convention. */
   inventory: Consumable[];
   /**
@@ -131,6 +141,14 @@ export interface GlobalGameState {
  */
 export type CombatSnapshotRef = unknown;
 
+/**
+ * What a character has met and what they have put down, by unit definition id.
+ *
+ * Kept per character rather than globally: a second Commander starts knowing nothing,
+ * which is what makes the Ledger filling up feel like their own doing.
+ */
+export type Bestiary = Record<string, { encountered: number; defeated: number }>;
+
 /** Items a character may carry at once. */
 export const INVENTORY_LIMIT = 3;
 
@@ -139,7 +157,7 @@ export function newRun(bountySeed = 1, maxHp = 40): OverworldState {
   return {
     playerPos: { x: 0, y: 0, mapId: 'start' },
     pact: { currentHp: maxHp, maxHp },
-    economy: { ducats: 0, marrowShards: 0 },
+    economy: { ducats: 0, marrowShards: 0, reagents: {} },
     inventory: [],
     activeBuff: null,
     activeEncounter: null,

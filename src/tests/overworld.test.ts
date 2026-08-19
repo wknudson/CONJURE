@@ -345,7 +345,7 @@ describe('the rescue', () => {
   const floored = (): GlobalGameState => {
     const g = global();
     g.overworld.pact.currentHp = 0;
-    g.overworld.economy = { ducats: 300, marrowShards: 9 };
+    g.overworld.economy = { ducats: 300, marrowShards: 9, reagents: {} };
     addConsumable(g.overworld, potion());
     addConsumable(g.overworld, brew('ironbrew'));
     g.overworld.activeBuff = 'quicksilver';

@@ -15,6 +15,7 @@ import { RANGED_CARDS } from './ranged.js';
 import { SURGE_CARDS } from './surge.js';
 import { GASLAMP_CARDS } from './gaslamp.js';
 import { WILDLIFE_CARDS } from './wildlife.js';
+import { HYBRID_CARDS } from './hybrid.js';
 
 const RANK1: Record<string, CardDef> = {
   ...STARTER_CARDS,
@@ -25,6 +26,7 @@ const RANK1: Record<string, CardDef> = {
   ...SURGE_CARDS,
   ...GASLAMP_CARDS,
   ...WILDLIFE_CARDS,
+  ...HYBRID_CARDS,
 };
 
 /**
@@ -110,6 +112,7 @@ for (const source of [
   SURGE_CARDS,
   GASLAMP_CARDS,
   WILDLIFE_CARDS,
+  HYBRID_CARDS,
 ]) {
   for (const id of Object.keys(source)) {
     if (seen.has(id)) throw new Error(`duplicate card id across school files: ${id}`);

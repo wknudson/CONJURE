@@ -59,6 +59,10 @@ export function summonUnit(
   };
 
   ctx.state.units[unit.id] = unit;
+  // Everything the player has *met*, recorded where every unit enters the board — the
+  // opening placement and every summon come through here, so there is one place to be
+  // wrong rather than three.
+  if (unit.side === 'enemy') ctx.state.encountered.push(unit.defId);
   emit(ctx, { t: 'unitSummoned', unit: toSnapshot(unit) });
   return unit.id;
 }

@@ -345,6 +345,16 @@ export class CombatSession implements RulesQuery {
     return this.state.players.player.hp;
   }
 
+  /** Enemy stat blocks met on this board, by definition id. Duplicates kept. */
+  get encounteredEnemies(): string[] {
+    return [...this.state.encountered];
+  }
+
+  /** Enemy stat blocks killed on this board, by definition id. Duplicates kept. */
+  get defeatedEnemies(): string[] {
+    return [...this.state.defeated];
+  }
+
   get result() {
     return this.state.result;
   }

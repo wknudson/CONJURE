@@ -45,6 +45,10 @@ export function killEntity(ctx: Ctx, entity: Entity, cause: DamageCause, devoure
       footprint: live.footprint,
       cause,
     });
+    // One tally, at the only place a unit actually leaves the board. Devoured, shoved
+    // into a wall, burned by a hazard or cut down — the Ledger counts them all the same,
+    // because the player killed it either way.
+    if (live.side === 'enemy') ctx.state.defeated.push(live.defId);
     payBounty(ctx, live.defId, at);
   } else {
     delete ctx.state.obstacles[live.id];

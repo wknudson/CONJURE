@@ -45,6 +45,7 @@ import { carryFor, resolveCombat, type CombatOutcome } from './core/overworld/ru
 import { companionById } from './core/data/companions.js';
 import { grantCard, printedDeck, rollRewards } from './core/data/collection.js';
 import { ascendCard, forgeSchematic } from './core/overworld/forge.js';
+import { spliceCard } from './core/overworld/splice.js';
 import {
   levelCompanion,
   newCompanion,
@@ -238,6 +239,16 @@ function showSafehouse(companionId: string): void {
               profile().collection = next;
               return true;
             },
+            // The one purchase that also *removes* a card, so it is handed the decks as
+            // well: a copy spent out from under a deck that was running three would leave
+            // the player with an illegal list and no idea why.
+            onSplice: (baseCardId, catalystId) => {
+              const p = profile();
+              const done = spliceCard(global, p.collection, p.decks, baseCardId, catalystId);
+              if (!done) return null;
+              p.collection = done.collection;
+              return done;
+            },
             onChange: persist,
             onBack: () => showSafehouse(companionId),
           }),
@@ -304,6 +315,7 @@ function showBuilder(companionId: string, onDone: () => void): void {
       companionId,
       deckFor(companionId),
       profile().collection,
+      profile().bestiary,
       (result) => {
         profile().decks[result.companionId] = {
           companionId: result.companionId,
@@ -424,7 +436,7 @@ function finishCombat(
   // all, the brew is spent whether it was won or lost, and a win is paid at the rate the
   // accepted contract promised.
   const p = profile();
-  resolveCombat(p.state, outcome, result);
+  resolveCombat(p.state, outcome, result, p.bestiary);
 
   if (result === 'victory') p.record.wins += 1;
   else if (result === 'bound') p.record.bound += 1;

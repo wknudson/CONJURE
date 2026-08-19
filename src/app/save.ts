@@ -23,6 +23,7 @@
 
 import type { Collection } from '../core/data/deckRules.js';
 import { reconcileCollection, startingCollection } from '../core/data/collection.js';
+import { CARDS } from '../core/data/cards/index.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import { COMPANIONS, DEFAULT_COMPANION } from '../core/data/companions.js';
 import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
@@ -31,13 +32,13 @@ import type {
   Consumable,
   OverworldState,
 } from '../core/overworld/state.js';
-import type { GlobalGameState } from '../core/overworld/state.js';
+import type { Bestiary, GlobalGameState } from '../core/overworld/state.js';
 import { INVENTORY_LIMIT, isBuffId, newRun } from '../core/overworld/state.js';
 import { newCompanion, syncPactCeiling, type CompanionProgress } from '../core/overworld/vivarium.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 /** Posters on the wall. Three, and the wall is the reason it is three. */
 export const PROFILE_SLOTS = 3;
@@ -122,6 +123,14 @@ export interface Profile {
   companions: Record<string, CompanionProgress>;
   record: { wins: number; losses: number; bound: number };
   /**
+   * What this character has met and put down, by unit definition id (v8).
+   *
+   * Per character rather than shared, so a second Commander starts the Ledger blank —
+   * which is what makes filling it in feel like their own work rather than an unlock
+   * inherited from somebody else's play.
+   */
+  bestiary: Bestiary;
+  /**
    * The last fight as it was actually set up, seed included.
    *
    * The seed used to be an unnamed default deep inside the combat screen: never shown,
@@ -172,6 +181,10 @@ export function newProfile(profileId: string, name = 'Commander'): Profile {
 
   // Seeded once, at creation, so two characters do not stare at the same board forever.
   const overworld = newRun(Math.floor(Math.random() * 1e9) >>> 0);
+  // Two cores in the satchel from the start. The splicing bench is the one trade with no
+  // other way in — there is nowhere to buy a reagent yet — so a character who could not
+  // reach it at all would never find out it exists.
+  overworld.economy.reagents = { core_frost: 2, core_surge: 2 };
 
   return {
     profileId,
@@ -183,6 +196,7 @@ export function newProfile(profileId: string, name = 'Commander'): Profile {
     activeCompanionId: DEFAULT_COMPANION.id,
     companions,
     record: { wins: 0, losses: 0, bound: 0 },
+    bestiary: {},
   };
 }
 
@@ -417,6 +431,7 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
     activeCompanionId,
     companions,
     record,
+    bestiary: readBestiary(data.bestiary),
     ...(lastRun ? { lastRun } : {}),
   };
 
@@ -464,6 +479,7 @@ function readOverworld(raw: unknown): OverworldState | undefined {
     economy: {
       ducats: Math.max(0, Math.round(numberOr(data.economy?.ducats, 0))),
       marrowShards: Math.max(0, Math.round(numberOr(data.economy?.marrowShards, 0))),
+      reagents: readCounts(data.economy?.reagents),
     },
     inventory,
     // An unknown brew becomes none rather than being carried as a word the fight cannot
@@ -498,6 +514,49 @@ function readActiveEncounter(raw: unknown): ActiveEncounterState | null {
       marrowShards: Math.max(0, Math.round(numberOr(data.spoils?.marrowShards, 0))),
     },
   };
+}
+
+/**
+ * A bag of counts, rebuilt: whole numbers, nothing negative, nothing at zero.
+ *
+ * Shared by the reagent bag and the Ledger's tallies, because both are the same shape and
+ * both are exactly the kind of number a curious player edits first.
+ */
+function readCounts(raw: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!raw || typeof raw !== 'object') return out;
+
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    const n = Math.max(0, Math.round(numberOr(value, 0)));
+    if (n > 0) out[key] = n;
+  }
+  return out;
+}
+
+/**
+ * The Ledger, rebuilt.
+ *
+ * Entries for units the game no longer has are dropped: they would sit in the save for
+ * ever, and the Ledger renders from the registry, so a tally with nothing to attach to is
+ * invisible weight. `defeated` is clamped to `encountered` — you cannot have killed more
+ * of a thing than you ever met, and a Ledger saying otherwise reads as a bug.
+ */
+function readBestiary(raw: unknown): Bestiary {
+  const out: Bestiary = {};
+  if (!raw || typeof raw !== 'object') return out;
+
+  for (const [defId, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!CARDS[defId] || !value || typeof value !== 'object') continue;
+    const tally = value as { encountered?: unknown; defeated?: unknown };
+
+    const encountered = Math.max(0, Math.round(numberOr(tally.encountered, 0)));
+    const defeated = Math.min(
+      encountered,
+      Math.max(0, Math.round(numberOr(tally.defeated, 0))),
+    );
+    if (encountered > 0) out[defId] = { encountered, defeated };
+  }
+  return out;
 }
 
 function isConsumable(value: unknown): value is Consumable {

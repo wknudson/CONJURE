@@ -24,8 +24,10 @@ import type { Screen } from './ScreenManager.js';
 import type { CardDef } from '../core/types/cards.js';
 import type { Collection } from '../core/data/deckRules.js';
 import type { GlobalGameState } from '../core/overworld/state.js';
-import type { Catalyst } from '../core/data/artificer.js';
-import { CATALYSTS, schematicsFor } from '../core/data/artificer.js';
+import type { Reagent } from '../core/data/splicing.js';
+import { schematicsFor } from '../core/data/artificer.js';
+import { REAGENTS, recipeFor, spliceableBaseIds } from '../core/data/splicing.js';
+import { spliceRefusal, type SpliceResult } from '../core/overworld/splice.js';
 import {
   ASCENSION_COST_SHARDS,
   SCHEMATIC_COST_DUCATS,
@@ -57,6 +59,8 @@ export interface ArtificerOpts {
    */
   onAscend: (cardId: string) => boolean;
   onForgeSchematic: (cardId: string) => boolean;
+  /** Presses a card and a core together. Null when the bench refused. */
+  onSplice: (baseCardId: string, catalystId: string) => SpliceResult | null;
   /** Called once after either, when the purse and the collection have both moved. */
   onChange: () => void;
   onBack: () => void;
@@ -72,6 +76,8 @@ const REFUSAL_COPY: Record<string, string> = {
   'already-ascended': 'Already raised',
   'no-rank-2': 'This card has no Rank 2',
   'too-poor': 'Not enough Shards',
+  'no-recipe': 'The bench knows no such pressing',
+  'no-reagent': 'You hold none of that core',
 };
 
 export class ArtificerScreen implements Screen {
@@ -85,6 +91,8 @@ export class ArtificerScreen implements Screen {
 
   /** The card laid on the Forge, whose two printings are being compared. */
   private chosen: string | null = null;
+  /** The last thing the press produced, so the bench can say what it made. */
+  private lastSplice: SpliceResult | null = null;
 
   constructor(private readonly opts: ArtificerOpts) {}
 
@@ -348,45 +356,57 @@ export class ArtificerScreen implements Screen {
   // -------------------------------------------------------- aetheric splicing
 
   /**
-   * The press: a base card in slot A, a catalyst in slot B, a hybrid out of the die.
+   * The press: a base card in slot A, a core in slot B, a hybrid out of the die.
    *
-   * Visual scaffolding. Both slots take a real selection so the layout can be judged with
-   * something in it, and the output plate stays explicitly cold rather than showing an
-   * invented result — a hybrid card would need an engine representation that does not
-   * exist, and a mock of one here would be the thing everyone forgot was a mock.
+   * A hybrid is *looked up*, never assembled — the recipe book names a card that already
+   * exists in the registry, so the bench cannot produce something the engine has no idea
+   * how to resolve. The output pane reads that card straight out of `CARDS`, which means
+   * what is previewed here and what lands in the collection are the same object.
    */
   private spliceBench(): HTMLElement {
     const host = document.createElement('div');
     host.className = 'splicing-bench';
     host.innerHTML = `
       <div class="splicing-rig">
-        <div class="splicing-slot splicing-slot--base" data-slot="a">
+        <div class="splicing-slot splicing-slot--base">
           <div class="splicing-slot__label">Slot A · Base Card</div>
           <div class="splicing-slot__well"></div>
         </div>
         <div class="splicing-arm"><i></i><i></i><i></i></div>
-        <div class="splicing-slot splicing-slot--catalyst" data-slot="b">
-          <div class="splicing-slot__label">Slot B · Catalyst Reagent</div>
+        <div class="splicing-slot splicing-slot--catalyst">
+          <div class="splicing-slot__label">Slot B · Catalyst Core</div>
           <div class="splicing-slot__well"></div>
         </div>
         <div class="splicing-arm"><i></i><i></i><i></i></div>
         <div class="splicing-output brass-panel">
           <div class="splicing-output__label">Output</div>
           <div class="splicing-output__plate"></div>
+          <button class="brass-btn splicing-output__go">Splice</button>
+          <div class="splicing-output__refusal"></div>
         </div>
       </div>
 
       <div class="splicing-trays">
         <div class="splicing-tray splicing-tray--cards">
-          <div class="splicing-tray__title">Owned cards</div>
+          <div class="splicing-tray__title">Cards the bench can press</div>
           <div class="splicing-tray__items" data-tray="a"></div>
         </div>
         <div class="splicing-tray splicing-tray--reagents">
-          <div class="splicing-tray__title">Reagents</div>
+          <div class="splicing-tray__title">Cores held</div>
           <div class="splicing-tray__items" data-tray="b"></div>
         </div>
       </div>
     `;
+
+    if (this.lastSplice) {
+      const said = document.createElement('div');
+      said.className = 'splicing-said brass-panel';
+      const made = CARDS[this.lastSplice.resultId];
+      said.textContent = this.lastSplice.trimmed > 0
+        ? `The press yields ${made?.name ?? 'something'}. ${this.lastSplice.trimmed} copy pulled from a deck to pay for it.`
+        : `The press yields ${made?.name ?? 'something'}.`;
+      host.prepend(said);
+    }
 
     this.fillCardTray(host);
     this.fillReagentTray(host);
@@ -394,19 +414,31 @@ export class ArtificerScreen implements Screen {
     return host;
   }
 
+  /**
+   * Only cards the book has a recipe for, and only ones the player owns.
+   *
+   * Offering the whole collection would mean most clicks land on "the bench knows no such
+   * pressing", which teaches nothing. Narrowing the tray makes the choice legible: these
+   * are the things that go in the press.
+   */
   private fillCardTray(host: HTMLElement): void {
     const tray = host.querySelector('[data-tray="a"]')!;
     const collection = this.opts.collection();
-    const owned = Object.keys(collection.owned)
+    const owned = spliceableBaseIds()
       .filter((id) => (collection.owned[id] ?? 0) > 0 && CARDS[id])
-      .map((id) => CARDS[id]!)
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .map((id) => CARDS[id]!);
+
+    if (owned.length === 0) {
+      tray.innerHTML =
+        '<span class="splicing-tray__empty">Nothing here presses. The book wants a Pyre spell.</span>';
+      return;
+    }
 
     for (const def of owned) {
       const chip = document.createElement('button');
       chip.className = 'splicing-chip';
       chip.style.setProperty('--school', schoolOf(def.school as never).main);
-      chip.textContent = def.name;
+      chip.textContent = `${def.name} ×${collection.owned[def.id] ?? 0}`;
       chip.classList.toggle('is-loaded', this.slotA === def.id);
       chip.addEventListener('click', () => {
         this.slotA = this.slotA === def.id ? null : def.id;
@@ -416,14 +448,19 @@ export class ArtificerScreen implements Screen {
     }
   }
 
+  /** The bag, as chips. A core the player holds none of is shown spent rather than hidden. */
   private fillReagentTray(host: HTMLElement): void {
     const tray = host.querySelector('[data-tray="b"]')!;
-    for (const reagent of CATALYSTS) {
+    const { reagents } = this.opts.global.overworld.economy;
+
+    for (const reagent of REAGENTS) {
+      const held = reagents[reagent.id] ?? 0;
       const chip = document.createElement('button');
       chip.className = 'splicing-chip splicing-chip--reagent';
       chip.style.setProperty('--school', schoolOf(reagent.school).main);
-      chip.dataset.tip = `${reagent.name}|${reagent.blurb}|Catalyst`;
-      chip.textContent = reagent.name;
+      chip.dataset.tip = `${reagent.name}|${reagent.blurb}|${held} held`;
+      chip.textContent = `${reagent.name} ×${held}`;
+      chip.disabled = held <= 0;
       chip.classList.toggle('is-loaded', this.slotB === reagent.id);
       chip.addEventListener('click', () => {
         this.slotB = this.slotB === reagent.id ? null : reagent.id;
@@ -435,7 +472,7 @@ export class ArtificerScreen implements Screen {
 
   private paintSlots(host: HTMLElement): void {
     const base = this.slotA ? CARDS[this.slotA] : undefined;
-    const reagent: Catalyst | undefined = CATALYSTS.find((c) => c.id === this.slotB);
+    const reagent: Reagent | undefined = REAGENTS.find((r) => r.id === this.slotB);
 
     const wellA = host.querySelector<HTMLElement>('.splicing-slot--base .splicing-slot__well')!;
     wellA.classList.toggle('is-loaded', Boolean(base));
@@ -447,14 +484,46 @@ export class ArtificerScreen implements Screen {
     wellB.textContent = reagent?.name ?? 'empty';
     if (reagent) wellB.style.setProperty('--school', schoolOf(reagent.school).main);
 
-    const plate = host.querySelector<HTMLElement>('.splicing-output__plate')!;
-    const loaded = Boolean(base && reagent);
-    plate.classList.toggle('is-ready', loaded);
-    plate.textContent = loaded
-      ? `${base!.name} · ${reagent!.name} — the press is cold`
-      : 'Load both slots';
+    const recipe = base && reagent ? recipeFor(base.id, reagent.id) : undefined;
+    const result = recipe ? CARDS[recipe.resultId] : undefined;
+    const refusal =
+      base && reagent
+        ? spliceRefusal(this.opts.global, this.opts.collection(), base.id, reagent.id)
+        : null;
 
-    host.querySelector('.splicing-rig')!.classList.toggle('is-loaded', loaded);
+    const plate = host.querySelector<HTMLElement>('.splicing-output__plate')!;
+    plate.classList.toggle('is-ready', Boolean(result && refusal === null));
+    plate.innerHTML = result
+      ? `<span class="splicing-output__name">${result.name}</span>
+         <span class="splicing-output__text">${result.text}</span>`
+      : base && reagent
+        ? 'Nothing comes of that pairing.'
+        : 'Load both slots';
+
+    const btn = host.querySelector<HTMLButtonElement>('.splicing-output__go')!;
+    btn.disabled = !result || refusal !== null;
+    btn.addEventListener('click', () => this.splice());
+
+    host.querySelector('.splicing-output__refusal')!.textContent =
+      base && reagent ? REFUSAL_COPY[refusal ?? 'none'] ?? '' : '';
+
+    host.querySelector('.splicing-rig')!.classList.toggle('is-loaded', Boolean(result));
+  }
+
+  private splice(): void {
+    if (!this.slotA || !this.slotB) return;
+    // The bench decides, not the button state: a stale render must not be able to spend.
+    const done = this.opts.onSplice(this.slotA, this.slotB);
+    if (!done) return;
+
+    this.opts.onChange();
+    // The base card may be gone from the tray entirely now, and the core certainly is one
+    // lighter. Clearing both slots is the honest reset — leaving them loaded would show a
+    // press the player may no longer be able to make.
+    this.slotA = null;
+    this.slotB = null;
+    this.lastSplice = done;
+    this.render();
   }
 
   unmount(): void {

@@ -1642,3 +1642,47 @@
 .revoke__cancel:hover {
   background: rgba(255, 255, 255, 0.38);
 }
+
+/* -------- what the press said -------- */
+
+.splicing-said {
+  margin-bottom: 14px;
+  padding: 12px 16px;
+  font: 600 11.5px var(--font);
+  color: var(--brass-lit);
+}
+
+.splicing-tray__empty {
+  font: 500 11px var(--font);
+  color: var(--text-dim);
+}
+
+.splicing-output__go {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.splicing-output__refusal {
+  margin-top: 8px;
+  font: 600 10px var(--font);
+  letter-spacing: 0.6px;
+  color: var(--danger);
+}
+
+.splicing-output__name {
+  display: block;
+  font: 800 13px var(--font);
+  color: var(--brass-lit);
+  margin-bottom: 4px;
+}
+
+.splicing-output__text {
+  display: block;
+  font: 400 10.5px/1.5 var(--font);
+  color: var(--text-dim);
+}
+
+.splicing-chip:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

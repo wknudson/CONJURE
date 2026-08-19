@@ -23,7 +23,7 @@ import type { Collection } from '../core/data/deckRules.js';
 
 const rich = (): GlobalGameState => {
   const overworld = newRun(1);
-  overworld.economy = { ducats: 500, marrowShards: 9 };
+  overworld.economy = { ducats: 500, marrowShards: 9, reagents: {} };
   return { overworld, combat: null };
 };
 

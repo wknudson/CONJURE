@@ -24,7 +24,7 @@ import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
 
 const flush = (): GlobalGameState => {
   const overworld = newRun(1);
-  overworld.economy = { ducats: 5000, marrowShards: 50 };
+  overworld.economy = { ducats: 5000, marrowShards: 50, reagents: {} };
   return { overworld, combat: null };
 };
 
@@ -65,7 +65,7 @@ describe('feeding a Companion', () => {
   it('charges nothing when the purse is short', () => {
     const g = flush();
     const pet = newCompanion();
-    g.overworld.economy = { ducats: 0, marrowShards: 50 };
+    g.overworld.economy = { ducats: 0, marrowShards: 50, reagents: {} };
 
     expect(levelRefusal(g, pet)).toBe('too-poor');
     expect(levelCompanion(g, pet, true)).toBe(false);
