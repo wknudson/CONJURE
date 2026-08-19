@@ -8,6 +8,7 @@
 
 import type { CardDef } from '../../types/cards.js';
 import { STARTER_CARDS, STARTER_DECK } from './starter.js';
+import { ARCANE_CARDS } from './arcane.js';
 import { FROST_CARDS } from './frost.js';
 import { COMPANION_UNIT_CARDS } from './companionUnits.js';
 import { TERRAIN_CARDS } from './terrain.js';
@@ -19,6 +20,7 @@ import { HYBRID_CARDS } from './hybrid.js';
 
 const RANK1: Record<string, CardDef> = {
   ...STARTER_CARDS,
+  ...ARCANE_CARDS,
   ...FROST_CARDS,
   ...COMPANION_UNIT_CARDS,
   ...TERRAIN_CARDS,
@@ -105,6 +107,7 @@ export function cardsOfSchool(school: CardDef['school']): CardDef[] {
 const seen = new Set<string>();
 for (const source of [
   STARTER_CARDS,
+  ARCANE_CARDS,
   FROST_CARDS,
   COMPANION_UNIT_CARDS,
   TERRAIN_CARDS,

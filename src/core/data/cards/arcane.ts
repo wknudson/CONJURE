@@ -1,0 +1,150 @@
+/**
+ * The Arcane set: the Hero's own baseline.
+ *
+ * Everything here is `source: 'hero'`, which is the constraint the whole file is built
+ * around. The Hero is off-grid and has no anchor, so `castOriginCells` returns `'global'`
+ * for these cards and `range` / `minRange` / `vector` / `needsLoS` are never consulted.
+ * A Hero card cannot say "within 4 tiles of me" — it has no "me" to measure from. Where
+ * one of these wants reach, it buys it with the shape of its target instead, which is a
+ * thing the board can actually check.
+ *
+ * The four here deliberately cover the two ends of a Hero's job: reaching out to move the
+ * enemy where you want them (Grapple Line, Cull the Weak) and building something between
+ * them and the Pact (Scrap Phalanx, Alchemist's Barricade).
+ */
+
+import type { CardDef } from '../../types/cards.js';
+
+/** The reach of a grapple, in tiles. Both the target line and its area, kept in step. */
+const GRAPPLE_REACH = 4;
+
+export const ARCANE_CARDS: Record<string, CardDef> = {
+  /**
+   * The pull card.
+   *
+   * A `line` target rather than an `entity` one, and not for flavour: `originOf` reads an
+   * entity target's own anchor as the origin, so `displaceArea` computes a direction of
+   * `{0,0}` and skips the unit entirely. An entity-targeted pull is a silent no-op. A
+   * line carries its own origin — the near end, where the hook was thrown from — so the
+   * drag has something to be *toward*.
+   *
+   * Damage lands before the pull so the line is judged on the board as it was thrown at,
+   * and anything the point kills is not then dragged home as a corpse. Survivors converge
+   * in reading order, which is where a grapple gets its collisions from.
+   */
+  grapple_line: {
+    id: 'grapple_line',
+    name: 'Grapple Line',
+    cost: { pips: 1, marrow: 0 },
+    school: 'arcane',
+    source: 'hero',
+    kind: 'spell',
+    text: 'Deals 1 physical damage down a 4-tile line, then drags everything caught 2 tiles back toward the near end. Triggers standard Collision Damage (3 / 2).',
+    target: { kind: 'line', length: GRAPPLE_REACH },
+    effect: {
+      op: 'seq',
+      effects: [
+        {
+          op: 'damage',
+          amount: 1,
+          dtype: 'physical',
+          area: { shape: 'line', length: GRAPPLE_REACH },
+        },
+        { op: 'pullArea', distance: 2, area: { shape: 'line', length: GRAPPLE_REACH } },
+      ],
+    },
+    keywords: [],
+  },
+
+  /**
+   * The wall.
+   *
+   * Guardian without Counter, which is the whole point: it is scrap, not a soldier, and
+   * it answers a marksman by standing in the way rather than by hitting back. One ATK is
+   * there so a spent wall is not entirely inert, not because anyone should be attacking
+   * with it.
+   */
+  scrap_phalanx: {
+    id: 'scrap_phalanx',
+    name: 'Scrap Phalanx',
+    cost: { pips: 2, marrow: 0 },
+    school: 'arcane',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Guardian: blocks line of sight behind it. Six health of bolted-together plate, and almost no interest in moving.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'scrap_phalanx' },
+    keywords: ['Guardian'],
+    unit: {
+      atk: 1,
+      hp: 6,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      // Worth something as an offering, but not much: `sacrificeValue > 0` is the only
+      // gate the sacrifice command applies — the Sacrifice keyword is glossary text, not
+      // a rule — so this number alone decides whether a wall can be cashed in. One keeps
+      // the option honest without making a 2-Pip body a Marrow engine.
+      sacrificeValue: 1,
+      // Unreachable while the card carries no Escalate keyword; the stat block requires
+      // the field regardless. Zeroed rather than guessed, so a future grant of Escalate
+      // has to state what this thing actually grows into.
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /**
+   * The finisher.
+   *
+   * Priced entirely in Marrow, which Pips cannot substitute for at any price — so this is
+   * castable only on a turn you have already opened something up. Free in Pips and lethal
+   * to anything nearly dead, gated behind having made the sacrifice first.
+   *
+   * `true` damage, so armor is not an answer to it. The victim is whoever has the least
+   * health, chosen by the same helper Soul Splinter uses — which includes an enemy Bound
+   * Form, and therefore reaches the enemy Pact directly when their body is the weakest
+   * thing standing.
+   */
+  cull_the_weak: {
+    id: 'cull_the_weak',
+    name: 'Cull the Weak',
+    cost: { pips: 0, marrow: 1 },
+    school: 'arcane',
+    source: 'hero',
+    kind: 'spell',
+    text: 'Costs 1 Marrow, which no amount of banked Pips will cover. Deals 4 damage through any armor to the enemy with the least health.',
+    target: { kind: 'global' },
+    effect: { op: 'damage', amount: 4, dtype: 'true', area: { shape: 'lowestHpEnemy' } },
+    keywords: [],
+  },
+
+  /**
+   * The construct.
+   *
+   * Raised with `spawnConstruct` rather than `spawnObstacle` so its durability belongs to
+   * the casting, not to the definition — the seam that lets a later spell raise this same
+   * barricade at a different strength without it becoming a second card. `obstacleHp` is
+   * still required and still 8: `spawnObstacle` refuses any def without one, and the
+   * construct op overwrites the value immediately afterward.
+   *
+   * `leavesRubble` sits on this def because it describes what breaking *this thing*
+   * leaves behind. Masonry leaves rough ground; a geode shatters into nothing worth
+   * walking around. Blowing it open opens a route without making it a fast one.
+   */
+  alchemists_barricade: {
+    id: 'alchemists_barricade',
+    name: "Alchemist's Barricade",
+    cost: { pips: 2, marrow: 0 },
+    school: 'arcane',
+    source: 'hero',
+    kind: 'obstacle',
+    text: 'Raises a destructible 8 HP barricade on an empty tile. Blocks line of sight, and leaves rubble when it breaks.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'spawnConstruct', obstacleDef: 'alchemists_barricade', hp: 8 },
+    keywords: [],
+    obstacleHp: 8,
+    leavesRubble: true,
+  },
+};

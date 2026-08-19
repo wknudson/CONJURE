@@ -4,7 +4,7 @@
  */
 
 import type { Coord, Side, TargetRef, UnitId } from '../../contract/ids.js';
-import type { CardDef, ChosenTarget } from '../types/cards.js';
+import type { CardDef, ChosenTarget, EffectNode } from '../types/cards.js';
 import { effectContainsOp } from '../types/cards.js';
 import type { GameState } from '../types/state.js';
 import type { Unit } from '../types/units.js';
@@ -14,6 +14,7 @@ import {
   emptyTiles,
   entityAt,
   getEntity,
+  lowestHpEnemy,
   opposite,
   refOf,
   summonSpots,
@@ -82,6 +83,18 @@ function inCastRange(
   );
 }
 
+/**
+ * Whether a card's effects pick their own victim off the board rather than being aimed.
+ *
+ * Only `lowestHpEnemy` does today. It is asked of the whole tree, `seq` included, because
+ * a card that damages a chosen tile *and* culls the weakest is still unplayable-in-part
+ * with no foes -- and the half that still works is not worth a wasted cast.
+ */
+function effectSelfTargets(node: EffectNode): boolean {
+  if (node.op === 'seq') return node.effects.some(effectSelfTargets);
+  return 'area' in node && node.area.shape === 'lowestHpEnemy';
+}
+
 /** Every legal way to play this card right now. Empty means it is unplayable. */
 export function legalCardTargets(state: GameState, side: Side, defId: string): ChosenTarget[] {
   const def = CARDS[defId];
@@ -103,6 +116,14 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
       // A board-wide detonation with nothing to detonate would silently burn its whole
       // cost, so treat it as having no legal target rather than letting it be wasted.
       if (def.effect.op === 'detonateAllRunes' && !allEntities(state).some((e) => e.rune)) {
+        return [];
+      }
+      // The same hole, for the same reason: a global card that picks its own victim has
+      // nothing to pick when the board is empty of foes. Worse than the detonation case,
+      // in fact -- a card priced in Marrow would burn a resource that expires this turn
+      // and cannot be banked back. Checked by area rather than by card id so the next
+      // card to aim itself this way inherits the guard instead of re-finding the bug.
+      if (effectSelfTargets(def.effect) && !lowestHpEnemy(state, side)) {
         return [];
       }
       return [{ kind: 'global' }];

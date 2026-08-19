@@ -14,6 +14,21 @@ import { COMPANIONS } from './companions.js';
 import type { RngState } from '../util/rng.js';
 import { nextInt } from '../util/rng.js';
 
+/**
+ * The Hero's arcane baseline, handed to every new character.
+ *
+ * Seeded but *not* soulbound: the un-loseable core exists to guarantee a legal 12-card
+ * deck exists no matter what a player does, and eight cards already does that. Adding
+ * four more would make the guarantee no stronger and the collection four cards less
+ * yours to spend.
+ */
+export const ARCANE_BASELINE: readonly string[] = [
+  'grapple_line',
+  'scrap_phalanx',
+  'cull_the_weak',
+  'alchemists_barricade',
+];
+
 /** Cards the player can never lose. Enough on their own to build a legal deck. */
 export const SOULBOUND: readonly string[] = [
   'vanguard_footman',
@@ -48,6 +63,15 @@ export function startingCollection(): Collection {
   // until a reward roll happened to offer one.
   for (const id of ['longshot_stalker', 'cinder_lobber']) {
     owned[id] = Math.max(owned[id] ?? 0, 1);
+  }
+
+  // The Hero's own arcane baseline. Two copies rather than the full Tier allowance: enough
+  // to build around, not so many that the deck builds itself. These are the Hero's half of
+  // the pairing — a wall, a construct, a hook, and a finisher, none of which belong to a
+  // Companion — so without seeding them a new character would meet their own school only
+  // when a reward roll happened to offer it.
+  for (const id of ARCANE_BASELINE) {
+    owned[id] = Math.max(owned[id] ?? 0, 2);
   }
 
   return { owned };

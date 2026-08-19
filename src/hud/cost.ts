@@ -9,9 +9,13 @@
 
 import type { CardCost } from '../core/types/cards.js';
 
-/** The cost badge: `3`, or `1+2✦` when Marrow is strictly required. */
+/** The cost badge: `3`, `1+2✦` when Marrow is also required, or `1✦` when only Marrow is. */
 export function formatCost(cost: CardCost): string {
-  return cost.marrow > 0 ? `${cost.pips}+${cost.marrow}✦` : `${cost.pips}`;
+  if (cost.marrow <= 0) return `${cost.pips}`;
+  // A card priced purely in Marrow would otherwise read `0+1✦`, and a leading zero looks
+  // like a rendering fault rather than a price. Dropping it says the true thing more
+  // plainly: this costs one Marrow, and no Pips enter into it.
+  return cost.pips > 0 ? `${cost.pips}+${cost.marrow}✦` : `${cost.marrow}✦`;
 }
 
 /** Prose for a shortfall, naming which pool is missing. */
