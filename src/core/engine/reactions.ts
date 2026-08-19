@@ -6,7 +6,7 @@
  * shrapnel, a toxin bloom — can only resolve once we know the hit actually drew blood.
  */
 
-import type { Coord, DamageType } from '../../contract/ids.js';
+import type { Coord, DamageType, Side } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
 import { emit, newCause } from './context.js';
 import type { Entity, Unit } from '../types/units.js';
@@ -211,6 +211,30 @@ function refundReactionPip(ctx: Ctx, def: ReactionDef, at: Coord): void {
   if (cmd.reactionPipsThisTurn >= REACTION_PIP_CAP) return;
 
   cmd.reactionPipsThisTurn += 1;
+  creditRefund(ctx, side, { id: def.id, name: def.name }, at);
+}
+
+/**
+ * Pays one Pip and announces it as a reward rather than as income.
+ *
+ * Split out of `refundReactionPip` so a passive can pay the same way a reaction does —
+ * Voltara's Storm Tithe is the first — without either re-deriving the amount or
+ * re-inventing what the payment looks like on screen.
+ *
+ * Note what is deliberately **not** in here: `reactionPipsThisTurn`. That counter exists
+ * so a cascade cannot fund itself, and it is checked by the one caller that can fire more
+ * than once in a turn. A passive limited to once per turn by its own rule does not need
+ * the budget and must not spend it — a Resonance that ate one of the two reaction slots
+ * would leave the Surge school paying for its own passive out of the reactions it exists
+ * to set up.
+ */
+export function creditRefund(
+  ctx: Ctx,
+  side: Side,
+  source: { id: string; name: string },
+  at: Coord,
+): void {
+  const cmd = ctx.state.players[side];
   // Deliberately unclamped, like every other Pip gain: the cap of 8 is applied once, at
   // end-of-turn cleanup, so a refund near the ceiling still banks for this turn's use.
   cmd.pips += REACTION_PIP_REFUND;
@@ -224,8 +248,8 @@ function refundReactionPip(ctx: Ctx, def: ReactionDef, at: Coord): void {
     side,
     amount: REACTION_PIP_REFUND,
     total: cmd.pips,
-    reaction: def.id,
-    name: def.name,
+    reaction: source.id,
+    name: source.name,
     at: { ...at },
   });
 }

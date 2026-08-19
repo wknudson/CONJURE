@@ -64,6 +64,27 @@ export const COMPANIONS: CompanionDef[] = [
     ],
     unitCardId: 'boreas_bound',
   },
+  {
+    id: 'voltara',
+    name: 'Voltara',
+    title: 'Storm Lynx',
+    school: 'surge',
+    blurb:
+      'Setup. Charge a cluster and let somebody else light it — fire Overloads, frost Superconducts. Storm Tithe pays a Pip back for the first card each turn.',
+    // Three Static Arcs, because charging is the whole plan and one copy would make the
+    // plan a coincidence. Arc Lash and the Hound are Hero cards and would be legal in any
+    // deck; they are here because this is the deck that wants them.
+    deck: [
+      ...HERO_SPINE,
+      'static_arc',
+      'static_arc',
+      'static_arc',
+      'arc_lash',
+      'arc_lash',
+      'voltaic_hound',
+    ],
+    unitCardId: 'voltara_bound',
+  },
 ];
 
 export function companionById(id: string): CompanionDef | undefined {

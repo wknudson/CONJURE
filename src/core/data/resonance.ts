@@ -14,6 +14,7 @@ import type { School, Side } from '../../contract/ids.js';
 import type { Ctx } from '../engine/context.js';
 import { emit } from '../engine/context.js';
 import { dealDamage, grantArmor } from '../engine/damage.js';
+import { creditRefund } from '../engine/reactions.js';
 import { lowestHpEnemy, opposite, unitsOf } from '../engine/board.js';
 import { cellsOf } from '../util/grid.js';
 
@@ -49,6 +50,32 @@ export const RESONANCE: Partial<Record<School, ResonanceDef>> = {
     text: 'Your first Companion card each turn grants your Hero +2 Persistent Armor.',
     apply(ctx, side) {
       grantArmor(ctx, { kind: 'portrait', side }, 2);
+    },
+  },
+
+  surge: {
+    school: 'surge',
+    name: 'Storm Tithe',
+    text: 'Your first Companion card each turn pays a Pip back.',
+    apply(ctx, side) {
+      // Paid through the reaction refund rather than through `gainPips`, so it reads on
+      // screen as a reward for doing the thing rather than as turn income — and so the
+      // amount is the one number the game already means by "a Pip back".
+      //
+      // Anchored at the Companion's own body, which is where the player is looking when
+      // a Companion card resolves. A side with no body on the board falls back to the
+      // lane it watches from its own back row, so the label never lands off-grid.
+      const cmd = ctx.state.players[side];
+      const bodyId = cmd.companionUnitId;
+      const body = bodyId ? ctx.state.units[bodyId] : undefined;
+      const at = body
+        ? { ...body.anchor }
+        : {
+            x: Math.min(Math.max(cmd.companionColumn, 0), ctx.state.width - 1),
+            y: side === 'player' ? ctx.state.height - 1 : 0,
+          };
+
+      creditRefund(ctx, side, { id: 'storm_tithe', name: 'Storm Tithe' }, at);
     },
   },
 

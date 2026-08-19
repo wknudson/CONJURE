@@ -144,6 +144,34 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     },
   },
 
+  voltara_bound: {
+    id: 'voltara_bound',
+    name: 'Voltara',
+    cost: { pips: 0, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      // Fast and thin, between the drake and the bear: Surge's bursts are thrown short,
+      // so the body that throws them has to be able to reposition every turn and cannot
+      // afford to be the thing standing in the way when it gets there.
+      atk: 2,
+      hp: PACT_HP,
+      mov: 3,
+      rangeMin: 1,
+      rangeMax: 2,
+      footprint: 1,
+      archetype: 'skirmisher',
+      sacrificeValue: 0,
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
   boreas_bound: {
     id: 'boreas_bound',
     name: 'Boreas',

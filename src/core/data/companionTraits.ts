@@ -77,6 +77,40 @@ export const COMPANION_TRAITS: Record<string, CompanionTrait> = {
   },
 };
 
+/**
+ * Voltara's bloodline.
+ *
+ * Required, not decorative: a species with fewer than two traits to roll would make
+ * taming one a formality, and `tameCompanion` would hand every Storm Lynx an empty knack.
+ */
+const VOLTARA_TRAITS: Record<string, CompanionTrait> = {
+  storm_lungs: {
+    id: 'storm_lungs',
+    name: 'Storm Lungs',
+    text: 'Breathes the air off a lightning strike. Holds 9 Pips instead of 8.',
+    baseId: 'voltara',
+    boons: { maxPips: 9 },
+  },
+
+  earthed_pelt: {
+    id: 'earthed_pelt',
+    name: 'Earthed Pelt',
+    text: 'Grounded to the bone. Opens every contract wearing 2 Armor.',
+    baseId: 'voltara',
+    boons: { armor: 2 },
+  },
+
+  static_cling: {
+    id: 'static_cling',
+    name: 'Static Cling',
+    text: 'Keeps its feet on ground that takes everyone else off theirs.',
+    baseId: 'voltara',
+    boons: { ignoreIceSlip: true },
+  },
+};
+
+for (const [id, trait] of Object.entries(VOLTARA_TRAITS)) COMPANION_TRAITS[id] = trait;
+
 export function traitById(id: string): CompanionTrait | undefined {
   return COMPANION_TRAITS[id];
 }
