@@ -19,6 +19,7 @@ import { BULWARK_CARDS } from './bulwark.js';
 import { DUSK_CARDS } from './dusk.js';
 import { GASLAMP_CARDS } from './gaslamp.js';
 import { WILDLIFE_CARDS } from './wildlife.js';
+import { THREAT_CARDS } from './threats.js';
 import { HYBRID_CARDS } from './hybrid.js';
 
 const RANK1: Record<string, CardDef> = {
@@ -34,6 +35,7 @@ const RANK1: Record<string, CardDef> = {
   ...DUSK_CARDS,
   ...GASLAMP_CARDS,
   ...WILDLIFE_CARDS,
+  ...THREAT_CARDS,
   ...HYBRID_CARDS,
 };
 
@@ -124,6 +126,7 @@ for (const source of [
   DUSK_CARDS,
   GASLAMP_CARDS,
   WILDLIFE_CARDS,
+  THREAT_CARDS,
   HYBRID_CARDS,
 ]) {
   for (const id of Object.keys(source)) {

@@ -24,13 +24,27 @@ function chebyshev(a: Coord, b: Coord): number {
   return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 }
 
-/** Deterministic ordering: nearest first, then by row, then by column. */
-function nearest(from: Coord, options: { at: Coord }[]): { at: Coord } | undefined {
-  return [...options].sort(
-    (a, b) =>
-      chebyshev(from, a.at) - chebyshev(from, b.at) ||
-      a.at.y - b.at.y ||
-      a.at.x - b.at.x,
+/**
+ * The one this beast is actually hunting.
+ *
+ * `nearest` is the rule every beast followed before there was a choice: whatever is
+ * closest, on either side. `weakest` walks past a healthy body to reach a hurt one, which
+ * makes the creature a finisher rather than a hazard — and makes a wounded unit somewhere
+ * behind your line into a liability.
+ *
+ * Ties break by health, then by row, then by column, so a replay of the same game sends
+ * it after the same body.
+ */
+function quarry(self: Unit, targets: Unit[]): Unit | undefined {
+  if (targets.length === 0) return undefined;
+
+  const byPosition = (a: Unit, b: Unit): number => a.anchor.y - b.anchor.y || a.anchor.x - b.anchor.x;
+
+  if (self.hunts === 'weakest') {
+    return [...targets].sort((a, b) => a.hp - b.hp || byPosition(a, b))[0];
+  }
+  return [...targets].sort(
+    (a, b) => chebyshev(self.anchor, a.anchor) - chebyshev(self.anchor, b.anchor) || byPosition(a, b),
   )[0];
 }
 
@@ -52,17 +66,26 @@ export function feralAggressStep(ctx: Ctx, unitId: UnitId): void {
   const self = ctx.state.units[unitId];
   if (!self || !self.keywords.includes('Feral')) return;
 
+  const wanted = quarry(self, prey(ctx, self));
+
   // Bite first if something is already in reach, so a beast never walks away from a meal.
-  if (strikeNearest(ctx, unitId)) return;
+  //
+  // A blood-hunter is the exception, and it is the whole creature: it will walk away from
+  // a healthy meal to reach a dying one, so it only takes the opening bite when the thing
+  // it has decided on is already in front of it. Every other beast keeps the old rule
+  // exactly, which is why this branches rather than replacing it.
+  const impatient = self.hunts !== 'weakest' || (wanted !== undefined && inReachOf(ctx, self, wanted));
+  if (impatient && strikeNearest(ctx, unitId)) return;
 
   if (canMove(self)) {
-    const targets = prey(ctx, self);
-    if (targets.length > 0) {
+    if (wanted) {
       const moves = legalMoves(ctx.state, self);
-      // The step that ends closest to the nearest living thing.
+      // The step that ends closest to what it is hunting. For a `nearest` beast that is
+      // the closest living thing, which is the behaviour it always had; for a `weakest`
+      // one it is the hurt body it has decided on, wherever that is.
       let best: { to: Coord; score: number } | undefined;
       for (const move of moves) {
-        const closest = Math.min(...targets.map((t) => chebyshev(move.to, t.anchor)));
+        const closest = chebyshev(move.to, wanted.anchor);
         const score = closest * 100 + move.to.y + move.to.x / 100;
         if (!best || score < best.score) best = { to: move.to, score };
       }
@@ -76,24 +99,31 @@ export function feralAggressStep(ctx: Ctx, unitId: UnitId): void {
   strikeNearest(ctx, unitId);
 }
 
-/** Swings at the nearest thing in reach. Returns whether it found one. */
+/** Whether this beast could swing at that body without moving first. */
+function inReachOf(ctx: Ctx, self: Unit, target: Unit): boolean {
+  return legalAttacks(ctx.state, self).some((ref) => ref.kind === 'unit' && ref.id === target.id);
+}
+
+/** Swings at whatever in reach it most wants. Returns whether it found one. */
 function strikeNearest(ctx: Ctx, unitId: UnitId): boolean {
   const self = ctx.state.units[unitId];
   if (!self || !canAttack(self)) return false;
 
-  const options = legalAttacks(ctx.state, self)
-    .flatMap((ref) => {
-      if (ref.kind !== 'unit') return [];
-      const victim = ctx.state.units[ref.id];
-      if (!victim || victim.keywords.includes('Feral')) return [];
-      return [{ ref, at: victim.anchor }];
-    });
+  const inReach: Unit[] = [];
+  for (const ref of legalAttacks(ctx.state, self)) {
+    if (ref.kind !== 'unit') continue;
+    const victim = ctx.state.units[ref.id];
+    if (!victim || victim.keywords.includes('Feral')) continue;
+    inReach.push(victim);
+  }
 
-  const pick = nearest(self.anchor, options) as { ref: { kind: 'unit'; id: UnitId }; at: Coord } | undefined;
+  // The same preference that decides where it walks decides what it bites, so a beast
+  // never crosses the board for a wounded target and then mauls somebody else on arrival.
+  const pick = quarry(self, inReach);
   if (!pick) return false;
 
   newCause(ctx);
-  runCommand(ctx, { type: 'attack', attacker: unitId, target: pick.ref });
+  runCommand(ctx, { type: 'attack', attacker: unitId, target: { kind: 'unit', id: pick.id } });
   return true;
 }
 

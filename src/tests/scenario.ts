@@ -180,6 +180,8 @@ export function addUnit(state: GameState, spec: UnitSpec): Unit {
     // calling it, so every field added to a stat block has to be added here too — miss one
     // and the tests quietly exercise a different unit than the game spawns.
     ...(stats.onHit ? { onHit: { ...stats.onHit } } : {}),
+    ...(stats.trail ? { trail: stats.trail } : {}),
+    ...(stats.hunts ? { hunts: stats.hunts } : {}),
     school: def.school,
     archetype: stats.archetype,
     keywords: (spec.keywords as Unit['keywords']) ?? [...def.keywords],

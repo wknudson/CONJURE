@@ -238,7 +238,7 @@ spells — it bends arrows, not sorcery.
 | **PowerTier** | a high-cost finisher |
 | **Sacrifice** | glossary text only — see below |
 | **BoundForm** | the Companion's body; its wounds are the Pact's |
-| **Feral** | wild; belongs to no one, fights everyone, everyone may fight it |
+| **Feral** | wild; belongs to no one, fights everyone, everyone may fight it. What it goes *after* is set by `hunts` |
 
 > **Sacrifice is not a gate.** The `sacrifice` command checks `sacrificeValue > 0` and
 > never looks at the keyword. Any unit worth Marrow can be offered; the keyword is
@@ -535,6 +535,42 @@ trap — **`strike` skips `dealDamage` entirely at zero**, so an empty blow neve
 pipeline for a hit that did not land.
 
 Riders land after the damage and only on a survivor, the same discipline `onHit` keeps.
+
+### Trails
+
+```ts
+trail?: HazardKind;
+```
+
+A hazard laid on every tile a unit walks **off**, under its own power. Only the cells it
+actually left — a 2×2 body stepping one square still stands on half of where it was, and
+burying its own feet would immobilise it.
+
+Being **shoved leaves nothing**. A body dragged by a Seismic Slam is not grinding its way
+forward, and letting displacement lay a trail would hand the player a way to wreck their
+own board by pushing the wrong creature around.
+
+> A `rubble` trail is permanent and costs 2 MOV to cross, so a 1 MOV creature can never
+> step back over its own wake. The Scrap-Titan commits to a direction, and the arena is
+> different afterwards.
+
+### What a Feral creature hunts
+
+```ts
+hunts?: 'nearest' | 'weakest';
+```
+
+`nearest` is the default and the rule every beast followed before the field existed: go
+for whatever is closest, on either side. Hostility to both armies is not a special case —
+it falls out of picking a target without consulting sides at all.
+
+`weakest` makes a creature a finisher instead. It walks *past* a healthy body to reach a
+hurt one, and it is the one exception to the "never walk away from a meal" rule: an
+ordinary beast bites whatever is already in reach before moving, while a blood-hunter only
+takes that opening bite when the thing it has decided on is already in front of it.
+
+Both break ties by health, then row, then column, so a replay sends the beast after the
+same body.
 
 **Cascade:** a detonation reaching another rune-holder's *health* sets theirs off too,
 tracked by `chainDepth`. Armor can stop a chain reaction cold.

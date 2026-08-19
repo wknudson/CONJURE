@@ -11,6 +11,7 @@ import type {
 } from '../../contract/ids.js';
 import type { UnitArchetype } from '../../contract/snapshots.js';
 import type { AttackProfile, OnHitRider } from './cards.js';
+import type { HazardKind } from './state.js';
 
 /** How a rune decides to detonate. */
 export type RuneTrigger =
@@ -72,6 +73,10 @@ export interface Unit {
   attackProfile?: AttackProfile;
   /** What its attacks leave on a survivor. Undefined is an ordinary swing. */
   onHit?: OnHitRider;
+  /** A hazard laid on every tile it walks off under its own power. */
+  trail?: HazardKind;
+  /** What it hunts, if it is Feral. Undefined is `nearest`. */
+  hunts?: 'nearest' | 'weakest';
   school: School;
   archetype: UnitArchetype;
   keywords: Keyword[];

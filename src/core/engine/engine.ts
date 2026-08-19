@@ -8,7 +8,7 @@
  * the ordered event batch the sequencer will animate.
  */
 
-import type { TargetRef } from '../../contract/ids.js';
+import type { Coord, TargetRef } from '../../contract/ids.js';
 import type { Command } from '../types/commands.js';
 import { IllegalCommandError } from '../types/commands.js';
 import type { GameState, StepResult } from '../types/state.js';
@@ -28,7 +28,9 @@ import { killEntity, checkLethal } from './death.js';
 import { getEntity, refOf } from './board.js';
 import { toCardSnapshot } from './views.js';
 import { endTurn } from './turn.js';
-import { footprintDistance } from '../util/grid.js';
+import { cellsOf, footprintDistance } from '../util/grid.js';
+import { coordEq } from '../../contract/ids.js';
+import { spawnHazard } from './reactions.js';
 import { resonanceFor } from '../data/resonance.js';
 import { declareIntents } from './intents.js';
 
@@ -211,10 +213,36 @@ function moveUnit(ctx: Ctx, unitId: string, to: { x: number; y: number }): void 
   const option = findMove(ctx.state, unit, to);
   if (!option) throw new IllegalCommandError('illegal destination');
 
+  // Read before the move: for a 2x2 body these are two tiles, and after `setAnchor` there
+  // is no way to know which ones they were.
+  const leaving = unit.trail ? cellsOf(unit) : [];
+
   setAnchor(ctx.state, unitId, to);
   unit.movedThisTurn = true;
 
   emit(ctx, { t: 'unitMoved', unitId, path: option.path.map((c) => ({ ...c })) });
+
+  if (unit.trail) layTrail(ctx, unit, leaving);
+}
+
+/**
+ * Wrecks the ground a heavy thing has just walked off.
+ *
+ * Only the tiles it actually left: a 2x2 body stepping one square still stands on half of
+ * where it was, and burying its own feet would be both wrong and a way to immobilise it.
+ *
+ * Rubble is permanent and costs 2 MOV to cross, so a Titan with 1 MOV can never step back
+ * over its own trail. That is the creature, not an oversight — it commits to a direction
+ * and the arena is different afterwards.
+ */
+function layTrail(ctx: Ctx, unit: Unit, leaving: Coord[]): void {
+  if (!unit.trail) return;
+  const now = cellsOf(unit);
+
+  for (const cell of leaving) {
+    if (now.some((c) => coordEq(c, cell))) continue;
+    spawnHazard(ctx, cell, unit.trail, 1, unit.trail === 'rubble');
+  }
 }
 
 function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {

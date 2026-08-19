@@ -12,6 +12,7 @@ import type {
   UnitId,
 } from '../../contract/ids.js';
 import type { UnitArchetype } from '../../contract/snapshots.js';
+import type { HazardKind } from './state.js';
 
 /**
  * Effect primitives. Card rules text compiles down to a tree of these, interpreted by
@@ -150,6 +151,23 @@ export interface UnitStatBlock {
   attackProfile?: AttackProfile;
   /** A status its ordinary attacks leave on whatever survives them. */
   onHit?: OnHitRider;
+  /**
+   * A hazard laid on every tile this thing walks off.
+   *
+   * Only when it moves under its own power. Being shoved leaves nothing — a body dragged
+   * by a Seismic Slam is not grinding its way forward, and letting displacement lay the
+   * trail would hand the player a way to wreck their own board by pushing the wrong
+   * creature around.
+   */
+  trail?: HazardKind;
+  /**
+   * What a Feral creature goes after, when it has a choice.
+   *
+   * `nearest` is the default and the rule every beast followed before this: hunt whatever
+   * is closest, on either side. `weakest` makes one a finisher instead — it walks past a
+   * healthy body to reach a hurt one, which is a genuinely different thing to play around.
+   */
+  hunts?: 'nearest' | 'weakest';
 }
 
 /**
