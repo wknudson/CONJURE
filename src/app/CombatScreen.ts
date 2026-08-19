@@ -9,7 +9,7 @@
  */
 
 import type { Screen } from './ScreenManager.js';
-import type { Action } from '../contract/query.js';
+import type { Action, BoardView } from '../contract/query.js';
 import type { CombatResult } from '../contract/events.js';
 import type { EncounterDef } from '../core/data/encounters/registry.js';
 import { CombatSession } from '../core/session.js';
@@ -32,7 +32,11 @@ import type { GameState } from '../core/types/state.js';
 import { calculateProjectedDamage } from '../hud/projection.js';
 
 /** Below this share of the Pact, the presentation turns to panic. */
-const LAST_STAND_FRACTION = 0.2;
+/**
+ * A quarter of the gauge. Below this the room changes: the board drains of colour, the
+ * edges close in red, and a heartbeat comes up under everything.
+ */
+const LAST_STAND_FRACTION = 0.25;
 import type { AiProfile } from '../core/ai/controller.js';
 import { easeOutQuad, tween } from '../anim/tween.js';
 
@@ -249,8 +253,18 @@ export class CombatScreen implements Screen {
     this.syncCommanders(board);
     this.hud.setSchoolAccent(board.player.companionSchool);
     this.hud.syncFromBoard(board, this.session.getHand(), this.session.getPlayableCards());
+    // At the opening bell too, not only after an action. Under the RPG model a character
+    // routinely *starts* a contract already below the line — a wounded Pact carries from
+    // the last fight — and a room that only turned red once you moved was telling you
+    // something you needed before you decided to.
+    this.refreshLastStand(board);
     this.hud.setInteractive(false);
     this.sequencer.enqueue(this.session.openingEvents);
+  }
+
+  /** Last Stand is a property of the board, so it is asked wherever the board is read. */
+  private refreshLastStand(board: BoardView): void {
+    this.hud?.setLastStand(board.player.hp <= board.player.maxHp * LAST_STAND_FRACTION);
   }
 
   unmount(): void {
@@ -731,8 +745,7 @@ export class CombatScreen implements Screen {
       calculateProjectedDamage(board),
       this.session.getThreat().commanderThreatCount,
     );
-    // Last Stand is a property of the board, so it is re-evaluated wherever the board is.
-    this.hud?.setLastStand(board.player.hp <= board.player.maxHp * LAST_STAND_FRACTION);
+    this.refreshLastStand(board);
     // Undo availability and the End Turn warning are both properties of the turn as it
     // now stands, so they are recomputed every time control comes back to the player.
     this.refreshTurnUi();

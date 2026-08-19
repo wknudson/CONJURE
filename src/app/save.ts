@@ -69,6 +69,9 @@ export function isSlotId(value: unknown): value is SlotId {
 const RENAMED_CARDS: Record<string, string> = {
   // The Sparks -> Marrow consolidation (v3).
   spark_wisp: 'marrow_wisp',
+  // Hybrids shed the odd `spell_` prefix nothing else in the registry wore (v8).
+  spell_vaporize_blast: 'vaporize_blast',
+  spell_superconduct_strike: 'superconduct_strike',
 };
 
 function rename(id: string): string {

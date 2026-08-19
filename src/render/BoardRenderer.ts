@@ -39,8 +39,15 @@ export interface Overlays {
   selected: Coord | null;
   /** Predicted damage badges, shown while previewing. */
   predicted: { at: Coord; damage?: number; kind: string }[];
-  /** Trajectory ghost: a translucent copy sliding to the collision point. */
-  ghost: { unitId: UnitId; path: Coord[]; crashAt?: Coord } | null;
+  /**
+   * Trajectory ghosts: a translucent copy per displaced unit, sliding to where it lands.
+   *
+   * A list rather than one, because an area shove moves everything in the wedge and a
+   * gravity pull drags four bodies onto a tile. Showing only the first is worse than
+   * showing none — it reads as "this one moves and the others do not", which is exactly
+   * the wrong answer to the question the ghost exists to answer.
+   */
+  ghosts: { unitId: UnitId; path: Coord[]; crashAt?: Coord }[];
   /** Shift-held expanded prediction. */
   expanded: boolean;
   /** Tiles enemies can strike next turn, with incoming damage. */
@@ -93,7 +100,7 @@ export function emptyOverlays(): Overlays {
     hover: null,
     selected: null,
     predicted: [],
-    ghost: null,
+    ghosts: [],
     expanded: false,
     threat: [],
     hazards: [],
@@ -196,7 +203,7 @@ export class BoardRenderer {
     this.drawIntents(pulse);
     this.drawBoardObjects(pulse);
     this.drawTether();
-    this.drawGhost();
+    this.drawGhosts();
     this.drawPredictions();
 
     if (spinning) ctx.restore();
@@ -812,11 +819,14 @@ export class BoardRenderer {
     ctx.restore();
   }
 
-  /** Trajectory ghosting: a translucent copy sliding along the displacement vector. */
-  private drawGhost(): void {
-    const ghost = this.overlays.ghost;
-    if (!ghost || ghost.path.length < 2) return;
+  /** Trajectory ghosting: one translucent copy per unit the cast would move. */
+  private drawGhosts(): void {
+    for (const ghost of this.overlays.ghosts) {
+      if (ghost.path.length >= 2) this.drawGhost(ghost);
+    }
+  }
 
+  private drawGhost(ghost: { unitId: UnitId; path: Coord[]; crashAt?: Coord }): void {
     const { ctx, cam } = this;
     const view = this.views.get(ghost.unitId);
     if (!view?.snapshot) return;

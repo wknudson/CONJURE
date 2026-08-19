@@ -404,18 +404,30 @@ export class TargetingController {
       kind: e.kind,
     }));
 
-    // Trajectory ghosting: show the first displacement's slide and its crash point.
-    const displacement = preview.displacements[0];
-    if (displacement && displacement.path.length > 1) {
-      overlays.ghost = {
-        unitId: displacement.unitId,
-        path: displacement.path,
-        ...(displacement.collision ? { crashAt: displacement.collision.at } : {}),
-      };
-      if (displacement.collision) {
+    // Trajectory ghosting: every unit the cast would move, and every wall it would put
+    // one into. `previewAction` simulates on a clone and reads the resulting events, so
+    // this is not an estimate — it is what will happen, shown early.
+    overlays.ghosts = preview.displacements
+      .filter((d) => d.path.length > 1)
+      .map((d) => ({
+        unitId: d.unitId,
+        path: d.path,
+        ...(d.collision ? { crashAt: d.collision.at } : {}),
+      }));
+
+    for (const d of preview.displacements) {
+      if (!d.collision) continue;
+      overlays.predicted.push({
+        at: d.collision.at,
+        damage: d.collision.damage,
+        kind: 'hit',
+      });
+      // Whoever was standing where the shove lands takes the collateral, and they are
+      // usually the reason a player wanted to know in the first place.
+      if (d.collision.collateral) {
         overlays.predicted.push({
-          at: displacement.collision.at,
-          damage: displacement.collision.damage,
+          at: d.collision.at,
+          damage: d.collision.collateral.damage,
           kind: 'hit',
         });
       }

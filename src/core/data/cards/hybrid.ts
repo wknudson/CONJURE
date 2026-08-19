@@ -25,8 +25,8 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    * first and the flame second, so the Vaporize reaction fires off its own setup rather
    * than needing a second caster — which is the whole point of paying for a hybrid.
    */
-  spell_vaporize_blast: {
-    id: 'spell_vaporize_blast',
+  vaporize_blast: {
+    id: 'vaporize_blast',
     name: 'Vaporize Blast',
     cost: { pips: 2, marrow: 1 },
     school: 'frost',
@@ -54,8 +54,8 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    * than the Frost hybrid and shorter-ranged: this one is meant to be thrown into a
    * crowd you are already standing near.
    */
-  spell_superconduct_strike: {
-    id: 'spell_superconduct_strike',
+  superconduct_strike: {
+    id: 'superconduct_strike',
     name: 'Superconduct Strike',
     cost: { pips: 2, marrow: 1 },
     school: 'surge',

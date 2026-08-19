@@ -73,12 +73,12 @@ export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
   {
     baseCardId: 'flame_surge',
     catalystId: 'core_frost',
-    resultId: 'spell_vaporize_blast',
+    resultId: 'vaporize_blast',
   },
   {
     baseCardId: 'flame_surge',
     catalystId: 'core_surge',
-    resultId: 'spell_superconduct_strike',
+    resultId: 'superconduct_strike',
   },
 ];
 
