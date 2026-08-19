@@ -151,6 +151,10 @@ function blankCommander(
     revealsIntents: false,
     bonusObstacleHp: 0,
     bonusSacrificeMarrow: 0,
+    healOnSacrifice: 0,
+    bonusToxinStacks: 0,
+    boundFormIgnoresHazards: false,
+    boundFormGrounded: false,
   };
 }
 

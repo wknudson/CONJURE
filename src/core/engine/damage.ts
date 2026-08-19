@@ -309,6 +309,33 @@ export function grantArmor(ctx: Ctx, target: TargetRef, amount: number): void {
   emit(ctx, { t: 'armorGained', target, amount, total: entity.armor });
 }
 
+/**
+ * Puts health back on a Commander, and reports how much actually landed.
+ *
+ * The first thing in the game that heals. `healed` has been in the event union — and had
+ * an animation waiting for it — since long before anything emitted one, so this fills a
+ * seam rather than cutting a new one.
+ *
+ * Clamped at the ceiling and silent when nothing is owed: a Pact already full emits no
+ * event, because a floater reading "+0" is worse than no floater at all.
+ */
+export function healCommander(ctx: Ctx, side: Side, amount: number): number {
+  if (amount <= 0 || ctx.state.result) return 0;
+
+  const cmd = ctx.state.players[side];
+  const healed = Math.min(amount, cmd.maxHp - cmd.hp);
+  if (healed <= 0) return 0;
+
+  cmd.hp += healed;
+  emit(ctx, {
+    t: 'healed',
+    target: { kind: 'portrait', side },
+    amount: healed,
+    remainingHp: cmd.hp,
+  });
+  return healed;
+}
+
 export function drainCommander(ctx: Ctx, side: Side, amount: number, cause: DamageCause): void {
   dealDamage(ctx, {
     target: { kind: 'portrait', side },

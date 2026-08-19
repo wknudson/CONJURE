@@ -15,6 +15,7 @@ import type { Ctx } from '../engine/context.js';
 import { emit } from '../engine/context.js';
 import { dealDamage, grantArmor } from '../engine/damage.js';
 import { creditRefund } from '../engine/reactions.js';
+import { healCommander } from '../engine/damage.js';
 import { lowestHpEnemy, opposite, unitsOf } from '../engine/board.js';
 import { cellsOf } from '../util/grid.js';
 
@@ -24,6 +25,9 @@ export interface ResonanceDef {
   text: string;
   apply(ctx: Ctx, side: Side, column: number): void;
 }
+
+/** What Verdant Growth returns. Small on purpose — see the passive. */
+export const VERDANT_GROWTH_HEAL = 2;
 
 export const RESONANCE: Partial<Record<School, ResonanceDef>> = {
   pyre: {
@@ -76,6 +80,18 @@ export const RESONANCE: Partial<Record<School, ResonanceDef>> = {
           };
 
       creditRefund(ctx, side, { id: 'storm_tithe', name: 'Storm Tithe' }, at);
+    },
+  },
+
+  bloom: {
+    school: 'bloom',
+    name: 'Verdant Growth',
+    text: 'Your first Companion card each turn returns 2 HP to the Pact.',
+    apply(ctx, side) {
+      // The only sustain in the game, and deliberately small: two a turn will not outpace
+      // anything committed to killing you, but it does mean a long fight is not simply a
+      // ledger of everything you have already lost.
+      healCommander(ctx, side, VERDANT_GROWTH_HEAL);
     },
   },
 

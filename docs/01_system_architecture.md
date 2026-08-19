@@ -219,6 +219,23 @@ trait id ────────┘
 | `ignoreFog` | fog and steam no longer break this side's line of sight |
 | `immuneToBurn` | Burn stops ticking on this side |
 | `ignoreIceSlip` | ice underfoot costs this side nothing |
+| `immuneToToxin` | Toxin stops ticking on this side |
+| `revealIntents` | the opposition declares its card plays as well as its blows |
+| `bonusObstacleHp` | added to every wall this side raises from a card |
+| `bonusSacrificeMarrow` | added to what each of this side's sacrifices pays out |
+| `healOnSacrifice` | health returned to the Pact each time this side gives a body up |
+| `bonusToxinStacks` | extra stacks folded into every Toxin this side applies |
+| `boundFormIgnoresHazards` | the Bound Form crosses rubble freely and rides no current |
+| `boundFormGrounded` | the Bound Form cannot be shoved, pulled, or carried |
+
+The last four are worth a note. Two of them describe a *moment* rather than a state — a
+body being given up, a status being applied — and the obvious way to build those is an
+event listener. This codebase has none and does not want one: each is a number the engine
+reads **at the chokepoint the moment already passes through**, so a sacrifice is still one
+straight line of code and a trait is still a row in a data table.
+
+The two `boundForm*` flags are deliberately scoped to that one body. A Companion's own
+nature does not travel to the minions it fights beside.
 
 **There is no `damage` field, and that is the point.** The house rule — *"gear bends a
 rule, it does not raise a number"* — is enforced by the schema having nowhere to put one.

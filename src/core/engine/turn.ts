@@ -17,6 +17,7 @@ import type { Ctx } from './context.js';
 import { emit, newCause } from './context.js';
 import { unitAt } from './board.js';
 import { pushUnit } from './displacement.js';
+import { walksFreely } from './movement.js';
 import { tickSubjugation } from './subjugation.js';
 import { DRAW_PER_TURN, drawCards, endOfTurnCleanup, gainPips } from './deck.js';
 import { refreshUnits, startOfTurnStatuses } from './status.js';
@@ -124,6 +125,8 @@ function runCurrents(ctx: Ctx): void {
     // A Behemoth rides the tile under its anchor, so a 2x2 straddling two lanes is
     // carried once rather than twice.
     if (rider.anchor.x !== lane.at.x || rider.anchor.y !== lane.at.y) continue;
+    // Nothing here to grab: an ethereal Bound Form is not standing in the water.
+    if (walksFreely(ctx.state, rider)) continue;
 
     newCause(ctx);
     pushUnit(ctx, rider, lane.dir, 1);

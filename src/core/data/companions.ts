@@ -85,6 +85,44 @@ export const COMPANIONS: CompanionDef[] = [
     ],
     unitCardId: 'voltara_bound',
   },
+  {
+    id: 'mortis',
+    name: 'Mortis',
+    title: 'Carrion Stag',
+    school: 'dusk',
+    blurb:
+      'Attrition. Feed it your own bodies and take the difference — Grave Tithe drains the weakest thing standing every turn you cast.',
+    // Its own school has exactly two cards a deck can hold three of, so the six are those
+    // at their caps. A Dusk deck is short on options by design: it spends what it has.
+    deck: [
+      ...HERO_SPINE,
+      'soul_splinter_rune',
+      'soul_splinter_rune',
+      'soul_splinter_rune',
+      'ash_ghoul',
+      'ash_ghoul',
+      'ash_ghoul',
+    ],
+    unitCardId: 'mortis_bound',
+  },
+  {
+    id: 'sylva',
+    name: 'Sylva',
+    title: 'Thorn Warden',
+    school: 'bloom',
+    blurb:
+      'Patience. Poison, roots, and a body that grows where you plant it. Verdant Growth gives 2 HP back for the first card each turn.',
+    deck: [
+      ...HERO_SPINE,
+      'spore_cloud',
+      'spore_cloud',
+      'rot_root_snare',
+      'rot_root_snare',
+      'creeping_briar',
+      'creeping_briar',
+    ],
+    unitCardId: 'sylva_bound',
+  },
 ];
 
 export function companionById(id: string): CompanionDef | undefined {

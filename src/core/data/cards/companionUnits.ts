@@ -172,6 +172,60 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     },
   },
 
+  mortis_bound: {
+    id: 'mortis_bound',
+    name: 'Mortis',
+    cost: { pips: 0, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      // Slow and unbothered. A Dusk deck spends its own bodies rather than chasing, so the
+      // thing it casts from wants to stand somewhere useful and stay there.
+      atk: 2,
+      hp: PACT_HP,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'caster',
+      sacrificeValue: 0,
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  sylva_bound: {
+    id: 'sylva_bound',
+    name: 'Sylva',
+    cost: { pips: 0, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      // The longest reach of any Bound Form and the least willing to swing. Bloom wins by
+      // waiting, so its body wants to be far enough back to still be there when it does.
+      atk: 1,
+      hp: PACT_HP,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 3,
+      footprint: 1,
+      archetype: 'caster',
+      sacrificeValue: 0,
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
   boreas_bound: {
     id: 'boreas_bound',
     name: 'Boreas',

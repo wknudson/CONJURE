@@ -174,6 +174,16 @@ turn dumps several cards.
 | frost | **Rime Guard** | +2 Persistent Armor to your Hero |
 | surge | **Storm Tithe** | Pays 1 Pip back |
 | dusk | **Grave Tithe** | Drains 2 HP from the lowest-HP enemy |
+| bloom | **Verdant Growth** | Returns 2 HP to the Pact (`VERDANT_GROWTH_HEAL`) |
+
+Every school a Companion can belong to has one. A species whose school had no entry would
+promise a passive on the selection screen and deliver nothing in the fight, so a test holds
+the two lists together.
+
+> **Healing.** `healCommander` is the only thing in the game that puts health back, and
+> Verdant Growth is the first caller — `healed` sat in the event union with an animation
+> waiting for it long before anything emitted one. It clamps at the ceiling and stays
+> silent when nothing is owed, because a floater reading "+0" is worse than no floater.
 
 > The trigger is **source**, not school. A Surge card marked `source: 'hero'` does not fire
 > Storm Tithe; a Pyre Companion card in a Voltara deck would.

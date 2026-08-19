@@ -84,6 +84,10 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       revealsIntents: false,
       bonusObstacleHp: 0,
       bonusSacrificeMarrow: 0,
+      healOnSacrifice: 0,
+      bonusToxinStacks: 0,
+      boundFormIgnoresHazards: false,
+      boundFormGrounded: false,
     },
     nextId: id,
   };
@@ -178,6 +182,19 @@ export interface CombatBoons {
   bonusObstacleHp?: number;
   /** Added to the Marrow every sacrifice this side makes pays out. */
   bonusSacrificeMarrow?: number;
+  /** Health returned to the Pact each time this side gives a body up. */
+  healOnSacrifice?: number;
+  /** Extra stacks folded into every Toxin this side applies. */
+  bonusToxinStacks?: number;
+  /**
+   * The Bound Form walks over broken ground and is not caught by currents.
+   *
+   * Scoped to the Bound Form rather than the whole army because that is the body the trait
+   * belongs to — a Companion's own nature does not travel to the minions it fights beside.
+   */
+  boundFormIgnoresHazards?: boolean;
+  /** The Bound Form cannot be shoved, pulled, or carried by anything. */
+  boundFormGrounded?: boolean;
 }
 
 /**
@@ -280,6 +297,11 @@ export function createCombat(
   // hand-edited negative must not make the player's walls flimsier than the card says.
   player.commander.bonusObstacleHp += Math.max(0, carry?.boons?.bonusObstacleHp ?? 0);
   player.commander.bonusSacrificeMarrow += Math.max(0, carry?.boons?.bonusSacrificeMarrow ?? 0);
+  player.commander.healOnSacrifice += Math.max(0, carry?.boons?.healOnSacrifice ?? 0);
+  player.commander.bonusToxinStacks += Math.max(0, carry?.boons?.bonusToxinStacks ?? 0);
+
+  if (carry?.boons?.boundFormIgnoresHazards) player.commander.boundFormIgnoresHazards = true;
+  if (carry?.boons?.boundFormGrounded) player.commander.boundFormGrounded = true;
 
   const state: GameState = {
     rng,

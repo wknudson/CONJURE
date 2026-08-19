@@ -212,12 +212,16 @@ export function boonsOfRelics(equipped: RelicLoadout): CombatBoons {
     if (b.bonusSacrificeMarrow) {
       out.bonusSacrificeMarrow = (out.bonusSacrificeMarrow ?? 0) + b.bonusSacrificeMarrow;
     }
+    if (b.healOnSacrifice) out.healOnSacrifice = (out.healOnSacrifice ?? 0) + b.healOnSacrifice;
+    if (b.bonusToxinStacks) out.bonusToxinStacks = (out.bonusToxinStacks ?? 0) + b.bonusToxinStacks;
     if (b.maxPips) out.maxPips = Math.max(out.maxPips ?? 0, b.maxPips);
     if (b.ignoreFog) out.ignoreFog = true;
     if (b.immuneToBurn) out.immuneToBurn = true;
     if (b.immuneToToxin) out.immuneToToxin = true;
     if (b.ignoreIceSlip) out.ignoreIceSlip = true;
     if (b.revealIntents) out.revealIntents = true;
+    if (b.boundFormIgnoresHazards) out.boundFormIgnoresHazards = true;
+    if (b.boundFormGrounded) out.boundFormGrounded = true;
   }
 
   return out;

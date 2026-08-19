@@ -172,6 +172,24 @@ export const CHILL_TO_FREEZE = 3;
  * than a fourth stack, and nothing applying a status should have to know that threshold.
  * Shared by the card effect interpreter and by scenery that bursts.
  */
+/**
+ * Extra Toxin stacks the *acting* side folds into everything it poisons.
+ *
+ * Attributed by `activeSide` rather than by a caster the function is handed, because
+ * `applyStatusTo` is given the victim and nothing else — every caller from a card to a
+ * rune to an on-hit rider goes through it, and threading a source through all of them to
+ * serve one trait would be a wide change for a narrow rule.
+ *
+ * The approximation is visible in one place: a trap you laid that springs on the enemy's
+ * turn is poisoning on *their* clock, so it does not get the bonus. That reads as the
+ * roots being spent rather than as a bug, and it errs toward giving less than promised
+ * rather than more.
+ */
+function toxinBonus(ctx: Ctx, status: StatusKind): number {
+  if (status !== 'toxin') return 0;
+  return ctx.state.players[ctx.state.activeSide].bonusToxinStacks;
+}
+
 export function applyStatusTo(
   ctx: Ctx,
   unit: Unit,
@@ -183,7 +201,7 @@ export function applyStatusTo(
     return;
   }
 
-  unit.statuses[status] = (unit.statuses[status] ?? 0) + stacks;
+  unit.statuses[status] = (unit.statuses[status] ?? 0) + stacks + toxinBonus(ctx, status);
   emit(ctx, {
     t: 'statusApplied',
     unitId: unit.id,

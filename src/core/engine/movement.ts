@@ -75,7 +75,7 @@ export function legalMoves(state: GameState, unit: Unit): MoveOption[] {
 export function stepCost(state: GameState, unit: Unit, anchor: Coord): number {
   let worst = 1;
   for (const cell of cellsAt(anchor, unit.footprint)) {
-    worst = Math.max(worst, tileMoveCost(state, cell));
+    worst = Math.max(worst, tileMoveCost(state, cell, unit));
   }
   return worst;
 }
@@ -83,10 +83,19 @@ export function stepCost(state: GameState, unit: Unit, anchor: Coord): number {
 /** What crossing a single tile costs. Broken ground costs double; open ground is free. */
 export const RUBBLE_MOVE_COST = 2;
 
-export function tileMoveCost(state: GameState, at: Coord): number {
+export function tileMoveCost(state: GameState, at: Coord, mover?: Unit): number {
   const hazard = state.hazards[coordKey(at)];
-  if (hazard?.kind === 'rubble') return RUBBLE_MOVE_COST;
-  return 1;
+  if (hazard?.kind !== 'rubble') return 1;
+  // A Companion that does not quite touch the ground is not slowed by what is on it.
+  if (mover && walksFreely(state, mover)) return 1;
+  return RUBBLE_MOVE_COST;
+}
+
+/** Whether this body ignores what is underfoot. Only ever a Bound Form, and only some. */
+export function walksFreely(state: GameState, unit: Unit): boolean {
+  return (
+    unit.keywords.includes('BoundForm') && state.players[unit.side].boundFormIgnoresHazards
+  );
 }
 
 export function findMove(state: GameState, unit: Unit, to: Coord): MoveOption | undefined {

@@ -327,7 +327,7 @@ function showSafehouse(companionId: string): void {
               return levelCompanion(global, beast, instanceId === profile().activeCompanionId);
             },
             onRelease: (instanceId) => releaseCompanion(instanceId),
-            onTame: () => tameWild(),
+            onTame: (baseId) => tameWild(baseId),
             onChange: persist,
             // Back through the hub rather than to it, so the room is rebuilt around
             // whichever Companion the player walked out with.

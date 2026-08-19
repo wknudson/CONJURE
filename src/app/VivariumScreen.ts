@@ -17,7 +17,7 @@ import type { Screen } from './ScreenManager.js';
 import type { GlobalGameState } from '../core/overworld/state.js';
 import type { CompanionInstance } from '../core/overworld/vivarium.js';
 import { HP_ROLL_MAX, HP_ROLL_MIN, levelCost, levelRefusal } from '../core/overworld/vivarium.js';
-import { companionById } from '../core/data/companions.js';
+import { COMPANIONS, companionById } from '../core/data/companions.js';
 import { traitById } from '../core/data/companionTraits.js';
 import { schoolOf } from '../render/palette.js';
 import { Tooltip } from '../hud/Tooltip.js';
@@ -33,8 +33,8 @@ export interface VivariumOpts {
   onLevel: (instanceId: string) => boolean;
   /** Lets one go. Returns false when it is the last on the roster. */
   onRelease: (instanceId: string) => boolean;
-  /** Dev affordance: rolls a wild one onto the roster until the Overworld exists. */
-  onTame: () => CompanionInstance;
+  /** Dev affordance: rolls a wild one of the given bloodline onto the roster. */
+  onTame: (baseId: string) => CompanionInstance;
   onChange: () => void;
   onBack: () => void;
 }
@@ -88,7 +88,7 @@ export class VivariumScreen implements Screen {
             <span class="vivarium__shards"></span>
           </span>
         </div>
-        <button class="brass-btn vivarium__tame">Dev: Tame Wild Ignis</button>
+        <div class="vivarium__dev"></div>
         <button class="brass-btn vivarium__back">Back to Safehouse</button>
       </div>
 
@@ -99,15 +99,25 @@ export class VivariumScreen implements Screen {
     `;
 
     el.querySelector('.vivarium__back')!.addEventListener('click', () => this.opts.onBack());
-    el.querySelector('.vivarium__tame')!.addEventListener('click', () => {
-      const beast = this.opts.onTame();
-      // Look at what was just caught. A roll you have to go and find is a roll you did
-      // not feel yourself make.
-      this.viewing = beast.instanceId;
-      this.confirming = null;
-      this.opts.onChange();
-      this.render();
-    });
+    // Dev affordance: one button per bloodline, until the Overworld has somewhere to
+    // actually find one. A single Ignis button could not roll the other four species, so
+    // four of their variants were unreachable content the moment they were written.
+    const dev = el.querySelector('.vivarium__dev')!;
+    for (const species of COMPANIONS) {
+      const button = document.createElement('button');
+      button.className = 'brass-btn vivarium__tame';
+      button.textContent = `Dev: ${species.name}`;
+      button.addEventListener('click', () => {
+        const beast = this.opts.onTame(species.id);
+        // Look at what was just caught. A roll you have to go and find is a roll you did
+        // not feel yourself make.
+        this.viewing = beast.instanceId;
+        this.confirming = null;
+        this.opts.onChange();
+        this.render();
+      });
+      dev.appendChild(button);
+    }
 
     root.appendChild(el);
     this.el = el;

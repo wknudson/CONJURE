@@ -68,6 +68,14 @@ export interface CommanderState {
   bonusObstacleHp: number;
   /** Added to what each of this side's sacrifices pays out. */
   bonusSacrificeMarrow: number;
+  /** Health returned to the Pact each time this side gives a body up. */
+  healOnSacrifice: number;
+  /** Extra stacks folded into every Toxin this side applies. */
+  bonusToxinStacks: number;
+  /** This side's Bound Form crosses broken ground freely and rides no current. */
+  boundFormIgnoresHazards: boolean;
+  /** This side's Bound Form cannot be shoved, pulled, or carried. */
+  boundFormGrounded: boolean;
   /** Ice underfoot costs this side nothing. */
   ignoresIceSlip: boolean;
 }

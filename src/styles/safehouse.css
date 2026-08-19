@@ -1920,3 +1920,18 @@
   border-style: dashed;
   opacity: 0.85;
 }
+
+/* The Vivarium's dev bench: one button per bloodline, wrapping rather than stretching
+   the header when the roster of species grows again. */
+.vivarium__dev {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  max-width: 340px;
+}
+
+.vivarium__dev .vivarium__tame {
+  font-size: 11px;
+  padding: 6px 10px;
+}

@@ -35,8 +35,19 @@ export interface DisplacementResult {
  * Pushes a unit `distance` tiles along `dir`, resolving collisions.
  * Movement stops at the first obstruction; the unit stays on the last valid tile.
  */
+/** Whether this body refuses to be moved by anything but its own legs. */
+function isGrounded(ctx: Ctx, unit: Unit): boolean {
+  return unit.keywords.includes('BoundForm') && ctx.state.players[unit.side].boundFormGrounded;
+}
+
 export function pushUnit(ctx: Ctx, unit: Unit, dir: Coord, distance: number): DisplacementResult {
   const path: Coord[] = [{ ...unit.anchor }];
+
+  // Rooted where it stands. Checked at the one chokepoint every displacement goes
+  // through, so a shove, a pull, an Overload and a current are all refused by one line —
+  // and refused *silently*, with no collision: nothing hit anything, it simply did not
+  // move. A zero-length path is what a blocked displacement already reports.
+  if (isGrounded(ctx, unit)) return { path };
 
   for (let step = 0; step < distance; step++) {
     const nextAnchor = add(unit.anchor, dir);

@@ -14,7 +14,7 @@ import type { Ctx } from './context.js';
 import { applyStatusTo } from './status.js';
 import { emit } from './context.js';
 import { allEntities, entityAt, getEntity, lowestHpEnemy, refOf } from './board.js';
-import { dealDamage, grantArmor } from './damage.js';
+import { dealDamage, grantArmor, healCommander } from './damage.js';
 import { killEntity } from './death.js';
 import { setAnchor } from './subjugation.js';
 import { attachRune, detonateAllRunes } from './runes.js';
@@ -139,6 +139,9 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       }
 
       emit(ctx, { t: 'unitSacrificed', unitId: unit.id, marrowExtracted: tithe });
+      // An offering made by a card is still an offering, the same reason the Ledger's
+      // Marrow applies here.
+      healCommander(ctx, play.side, cmd.healOnSacrifice);
       killEntity(ctx, unit, 'spell');
       return;
     }

@@ -22,7 +22,7 @@ import { canAfford, resolvePlayedCard, spendResources } from './deck.js';
 import { executeEffect } from './effects.js';
 import { canAct, canAttack, canMove, findMove, setAnchor } from './movement.js';
 import { legalAttacks, legalCardTargets } from './targeting.js';
-import { dealDamage } from './damage.js';
+import { dealDamage, healCommander } from './damage.js';
 import { applyStatusTo } from './status.js';
 import { killEntity, checkLethal } from './death.js';
 import { getEntity, refOf } from './board.js';
@@ -390,6 +390,9 @@ function sacrifice(ctx: Ctx, unitId: string): void {
   cmd.marrow += extracted;
 
   emit(ctx, { t: 'unitSacrificed', unitId, marrowExtracted: extracted });
+  // The Pact takes something back from the offering, if this Companion is the sort that
+  // does. Zero for everyone else, and `healCommander` says nothing when nothing is owed.
+  healCommander(ctx, side, cmd.healOnSacrifice);
   emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
 
   killEntity(ctx, unit, 'spell');

@@ -109,7 +109,58 @@ const VOLTARA_TRAITS: Record<string, CompanionTrait> = {
   },
 };
 
+/**
+ * Mortis's bloodline.
+ *
+ * Both are about the body rather than the numbers, which is what the Dusk school wants: a
+ * deck that spends its own minions cares a great deal about what it gets back for them,
+ * and about whether the thing it casts from can be moved off the spot it chose.
+ */
+const MORTIS_TRAITS: Record<string, CompanionTrait> = {
+  soul_siphon: {
+    id: 'soul_siphon',
+    name: 'Soul Siphon',
+    text: 'Takes a little back from every offering. Each sacrifice returns 1 HP to the Pact.',
+    baseId: 'mortis',
+    boons: { healOnSacrifice: 1 },
+  },
+
+  ethereal_bound: {
+    id: 'ethereal_bound',
+    name: 'Ethereal-Bound',
+    text: 'Never quite touches the ground. Rubble does not slow it and currents cannot carry it.',
+    baseId: 'mortis',
+    boons: { boundFormIgnoresHazards: true },
+  },
+};
+
+/**
+ * Sylva's bloodline.
+ *
+ * One holds ground and one deepens the poison — the two halves of what a Bloom deck is
+ * trying to do, which is to still be standing when the rot finishes its work.
+ */
+const SYLVA_TRAITS: Record<string, CompanionTrait> = {
+  deep_roots: {
+    id: 'deep_roots',
+    name: 'Deep Roots',
+    text: 'Rooted where it stands. Nothing shoves, drags, or carries it anywhere.',
+    baseId: 'sylva',
+    boons: { boundFormGrounded: true },
+  },
+
+  toxic_bloom: {
+    id: 'toxic_bloom',
+    name: 'Toxic Bloom',
+    text: 'Everything you poison takes one stack more than it should.',
+    baseId: 'sylva',
+    boons: { bonusToxinStacks: 1 },
+  },
+};
+
 for (const [id, trait] of Object.entries(VOLTARA_TRAITS)) COMPANION_TRAITS[id] = trait;
+for (const [id, trait] of Object.entries(MORTIS_TRAITS)) COMPANION_TRAITS[id] = trait;
+for (const [id, trait] of Object.entries(SYLVA_TRAITS)) COMPANION_TRAITS[id] = trait;
 
 export function traitById(id: string): CompanionTrait | undefined {
   return COMPANION_TRAITS[id];

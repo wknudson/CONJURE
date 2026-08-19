@@ -66,6 +66,8 @@ export function carryFor(
   const maxPips = Math.max(gear.maxPips ?? 0, knack.maxPips ?? 0);
   const obstacleHp = (gear.bonusObstacleHp ?? 0) + (knack.bonusObstacleHp ?? 0);
   const sacrificeMarrow = (gear.bonusSacrificeMarrow ?? 0) + (knack.bonusSacrificeMarrow ?? 0);
+  const sacrificeHeal = (gear.healOnSacrifice ?? 0) + (knack.healOnSacrifice ?? 0);
+  const toxinStacks = (gear.bonusToxinStacks ?? 0) + (knack.bonusToxinStacks ?? 0);
 
   const boons: CombatBoons = {
     ...(armor ? { armor } : {}),
@@ -79,6 +81,12 @@ export function carryFor(
     ...(gear.revealIntents || knack.revealIntents ? { revealIntents: true } : {}),
     ...(obstacleHp ? { bonusObstacleHp: obstacleHp } : {}),
     ...(sacrificeMarrow ? { bonusSacrificeMarrow: sacrificeMarrow } : {}),
+    ...(sacrificeHeal ? { healOnSacrifice: sacrificeHeal } : {}),
+    ...(toxinStacks ? { bonusToxinStacks: toxinStacks } : {}),
+    ...(gear.boundFormIgnoresHazards || knack.boundFormIgnoresHazards
+      ? { boundFormIgnoresHazards: true }
+      : {}),
+    ...(gear.boundFormGrounded || knack.boundFormGrounded ? { boundFormGrounded: true } : {}),
   };
 
   return {
