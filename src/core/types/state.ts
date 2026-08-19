@@ -14,8 +14,17 @@ export interface CommanderState {
   heroColumn: number;
   /** Board column the Companion watches — the lane its Resonance affects. */
   companionColumn: number;
-  /** Resonance fires once per turn, on the first Companion card played. */
-  resonanceUsedThisTurn: boolean;
+  /**
+   * Companion cards played this turn that have fired the Resonance.
+   *
+   * A count rather than the old boolean, because the limit stopped being one: gear can
+   * buy a second firing, and "how many so far" is the only question that answers both.
+   */
+  resonancesThisTurn: number;
+  /** Resonance may fire twice a turn rather than once. */
+  doubleResonance: boolean;
+  /** Spliced cards cost this side 1 Pip less, never below one. */
+  discountHybrids: boolean;
   /** Pips refunded by elemental reactions this turn, capped so cascades cannot self-fund. */
   reactionPipsThisTurn: number;
   /**

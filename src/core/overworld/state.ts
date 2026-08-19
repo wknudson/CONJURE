@@ -30,7 +30,7 @@
 /**
  * Where on the Commander a relic sits.
  *
- * Four named places rather than four interchangeable holes. A slotted loadout asks a
+ * Named places rather than interchangeable holes. A slotted loadout asks a
  * better question than a flat list did: the flat version made every relic compete with
  * every other for the same four openings, so the answer was always "the four strongest"
  * and the decision was arithmetic. Anatomy means a pair of goggles competes with other
@@ -40,10 +40,16 @@
  * written to disk. `relics.ts` imports the type to tag each piece of gear, the same
  * direction `bounties.ts` already reads `CombatSpoils` from this file.
  */
-export type RelicSlot = 'optics' | 'vestment' | 'trinket' | 'will';
+export type RelicSlot = 'optics' | 'vestment' | 'trinket' | 'treads' | 'will';
 
 /** The order the loadout is drawn and iterated in. Head downward, then the intangible. */
-export const RELIC_SLOT_ORDER: readonly RelicSlot[] = ['optics', 'vestment', 'trinket', 'will'];
+export const RELIC_SLOT_ORDER: readonly RelicSlot[] = [
+  'optics',
+  'vestment',
+  'trinket',
+  'treads',
+  'will',
+];
 
 /**
  * What is worn, by slot.
@@ -55,7 +61,7 @@ export const RELIC_SLOT_ORDER: readonly RelicSlot[] = ['optics', 'vestment', 'tr
 export type RelicLoadout = Record<RelicSlot, string | null>;
 
 export function emptyLoadout(): RelicLoadout {
-  return { optics: null, vestment: null, trinket: null, will: null };
+  return { optics: null, vestment: null, trinket: null, treads: null, will: null };
 }
 
 /** The ids currently worn, in slot order, skipping bare slots. */

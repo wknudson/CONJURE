@@ -36,7 +36,7 @@ export function beginTurn(ctx: Ctx, side: Side): void {
   emit(ctx, { t: 'phaseChanged', phase: 'startOfTurn', side });
 
   refreshUnits(ctx, side);
-  ctx.state.players[side].resonanceUsedThisTurn = false;
+  ctx.state.players[side].resonancesThisTurn = 0;
   ctx.state.players[side].reactionPipsThisTurn = 0;
   // The game's only source of Pip income. If play ever shows the economy is too tight
   // even with Channel, reaction refunds and geodes in it, raising this 1 to a 2 is the

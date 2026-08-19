@@ -131,7 +131,7 @@ function blankCommander(
     name,
     companionSchool: 'pyre' as const,
     ...flankColumns(width),
-    resonanceUsedThisTurn: false,
+    resonancesThisTurn: 0,
     reactionPipsThisTurn: 0,
     hp,
     maxHp: hp,
@@ -155,6 +155,8 @@ function blankCommander(
     bonusToxinStacks: 0,
     boundFormIgnoresHazards: false,
     boundFormGrounded: false,
+    doubleResonance: false,
+    discountHybrids: false,
   };
 }
 

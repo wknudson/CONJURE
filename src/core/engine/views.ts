@@ -6,10 +6,11 @@
 import type { CardInstanceId, Side } from '../../contract/ids.js';
 import type { BoardView, CommanderView } from '../../contract/query.js';
 import type { CardSnapshot, ObstacleSnapshot, UnitSnapshot } from '../../contract/snapshots.js';
-import type { GameState } from '../types/state.js';
+import type { CommanderState, GameState } from '../types/state.js';
 import { territoryDepthFor } from '../types/state.js';
 import type { Obstacle, Unit } from '../types/units.js';
 import { CARDS } from '../data/cards/index.js';
+import { effectiveCost } from './deck.js';
 import { RUNES } from '../data/runes.js';
 import { resonanceFor } from '../data/resonance.js';
 import { allObstacles, allUnits } from './board.js';
@@ -51,6 +52,16 @@ export function toObstacleSnapshot(o: Obstacle): ObstacleSnapshot {
   };
 }
 
+/**
+ * How many times this side's Resonance may fire in a turn.
+ *
+ * One place, so the reducer and the HUD's "ready" lamp can never disagree about whether
+ * the passive is spent.
+ */
+export function resonanceLimit(c: CommanderState): number {
+  return c.doubleResonance ? 2 : 1;
+}
+
 export function toCardSnapshot(state: GameState, side: Side, id: CardInstanceId): CardSnapshot {
   const inst = state.players[side].cards[id];
   const def = inst ? CARDS[inst.defId] : undefined;
@@ -71,7 +82,9 @@ export function toCardSnapshot(state: GameState, side: Side, id: CardInstanceId)
     instanceId: inst.instanceId,
     defId: def.id,
     name: def.name,
-    cost: def.cost,
+    // The price this side actually pays, so a discounted hybrid reads on its own face
+    // rather than surprising the player at the till.
+    cost: effectiveCost(state, side, def),
     school: def.school,
     source: def.source,
     kind: def.kind,
@@ -102,7 +115,7 @@ function toCommanderView(state: GameState, side: Side): CommanderView {
     heroColumn: c.heroColumn,
     companionColumn: c.companionColumn,
     companionSchool: c.companionSchool,
-    resonanceUsed: c.resonanceUsedThisTurn,
+    resonanceUsed: c.resonancesThisTurn >= resonanceLimit(c),
     ...(resonance ? { resonanceName: resonance.name } : {}),
   };
 }

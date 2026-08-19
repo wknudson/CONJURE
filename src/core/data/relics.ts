@@ -45,7 +45,7 @@ export interface RelicDef {
   boons: CombatBoons;
 }
 
-/** Slots on the coat. Four, and the fourth is the interesting one. */
+/** Slots on the coat, head to boot and then the one that is not a place at all. */
 export const RELIC_SLOTS = RELIC_SLOT_ORDER.length;
 
 /** What each slot is called on the loadout screen. */
@@ -53,6 +53,7 @@ export const RELIC_SLOT_LABELS: Record<RelicSlot, string> = {
   optics: 'Optics',
   vestment: 'Vestment',
   trinket: 'Trinket',
+  treads: 'Treads',
   will: 'Will',
 };
 
@@ -61,6 +62,7 @@ export const RELIC_SLOT_BLURBS: Record<RelicSlot, string> = {
   optics: 'What you see through.',
   vestment: 'What you wear against the world.',
   trinket: 'What you carry in a pocket.',
+  treads: 'What you stand in.',
   will: 'What you are prepared to do.',
 };
 
@@ -89,6 +91,67 @@ export const RELICS: Record<string, RelicDef> = {
     text: 'Ground for reading warrants, not faces. The enemy declares every card it means to play, however good it is at hiding.',
     slot: 'optics',
     boons: { revealIntents: true },
+  },
+
+  /**
+   * The counter to a hand that is always one card too full.
+   *
+   * Seven is the limit that makes overdrawing a real cost — the eighth card burns and
+   * pays a Marrow. Nine turns a Retain-heavy deck from something that discards its plan
+   * into something that keeps it, which is a rule bent rather than a number raised.
+   */
+  relic_coin: {
+    id: 'relic_coin',
+    name: "The Gambler's Coin",
+    text: 'Worn smooth on one side. Hold 9 cards through end of turn instead of 7.',
+    slot: 'trinket',
+    boons: { bonusHandLimit: 2 },
+  },
+
+  /**
+   * Sylva's Deep Roots, for anyone.
+   *
+   * The same capability reached from the other direction — a relic and a trait asking for
+   * one rule is the system working rather than a duplication. A Sylva wearing these is not
+   * twice as rooted; the flag is a flag.
+   */
+  relic_boots: {
+    id: 'relic_boots',
+    name: 'Ironclad Boots',
+    text: 'Bolted through at the ankle. Nothing shoves, drags, or carries your Companion anywhere.',
+    slot: 'treads',
+    boons: { boundFormGrounded: true },
+  },
+
+  /**
+   * The passive, twice.
+   *
+   * Easily the largest thing in the loadout, and priced as such by taking the Will slot
+   * the Blood-Ink Ledger wants. Note what it does *not* change: Resonance still fires on
+   * a **Companion-source** card rather than a school-matched one, so this doubles whatever
+   * your Companion already does and does not widen what counts.
+   */
+  relic_gloves: {
+    id: 'relic_gloves',
+    name: 'Aether-Weave Gloves',
+    text: 'Stitched with something that remembers. Your Resonance fires on the first two Companion cards each turn.',
+    slot: 'will',
+    boons: { doubleResonance: true },
+  },
+
+  /**
+   * The reward for having used the bench.
+   *
+   * Only touches Pips. A hybrid's Marrow half is a strict requirement rather than a price
+   * — it asks you to have opened something up this turn, and gear does not do that for
+   * you. Floored at one Pip, because a free card is a loop rather than a discount.
+   */
+  relic_splicer_goggles: {
+    id: 'relic_splicer_goggles',
+    name: "Splicer's Goggles",
+    text: 'Ground to read a seam. Every spliced card costs 1 Pip less, never less than 1.',
+    slot: 'optics',
+    boons: { discountHybrids: true },
   },
 
   // --------------------------------------------------------------- vestment
@@ -222,6 +285,9 @@ export function boonsOfRelics(equipped: RelicLoadout): CombatBoons {
     if (b.revealIntents) out.revealIntents = true;
     if (b.boundFormIgnoresHazards) out.boundFormIgnoresHazards = true;
     if (b.boundFormGrounded) out.boundFormGrounded = true;
+    if (b.doubleResonance) out.doubleResonance = true;
+    if (b.discountHybrids) out.discountHybrids = true;
+    if (b.bonusHandLimit) out.bonusHandLimit = (out.bonusHandLimit ?? 0) + b.bonusHandLimit;
   }
 
   return out;

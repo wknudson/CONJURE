@@ -125,6 +125,17 @@ const MORTIS_TRAITS: Record<string, CompanionTrait> = {
     boons: { healOnSacrifice: 1 },
   },
 
+  grave_ward: {
+    id: 'grave_ward',
+    name: 'Grave-Ward',
+    text: 'Comes wrapped in something older than it is. Opens every contract wearing 2 Armor.',
+    baseId: 'mortis',
+    // `armor` rather than `startingArmor`: the latter is a *Companion progression* field
+    // that levelling writes, and a trait speaks in the engine's vocabulary. Both end up in
+    // the same sum inside `carryFor`, which is where the two are added together.
+    boons: { armor: 2 },
+  },
+
   ethereal_bound: {
     id: 'ethereal_bound',
     name: 'Ethereal-Bound',
@@ -147,6 +158,17 @@ const SYLVA_TRAITS: Record<string, CompanionTrait> = {
     text: 'Rooted where it stands. Nothing shoves, drags, or carries it anywhere.',
     baseId: 'sylva',
     boons: { boundFormGrounded: true },
+  },
+
+  iron_wood: {
+    id: 'iron_wood',
+    name: 'Iron-Wood',
+    text: 'Grows its walls dense. Every obstacle you raise stands 2 HP sturdier.',
+    baseId: 'sylva',
+    // The Alchemist's Mortar's own capability, reached from the other direction. A trait
+    // and a relic asking for the same rule is the system working: they stack, and neither
+    // needed the engine to learn a new word.
+    boons: { bonusObstacleHp: 2 },
   },
 
   toxic_bloom: {

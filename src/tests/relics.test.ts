@@ -7,6 +7,7 @@ import {
   relicsForSlot,
   slotOf,
 } from '../core/data/relics.js';
+import { BOON_KEYS } from './boons.js';
 import {
   RELIC_SLOT_ORDER,
   emptyLoadout,
@@ -60,24 +61,12 @@ describe('the house rule', () => {
   });
 
   it('describes each relic in the engine own vocabulary', () => {
+    // Reads the one shared list rather than keeping a second copy. It kept a copy once,
+    // and the copy drifted the first time the vocabulary grew — this test started
+    // rejecting a relic for naming a capability that had been legal for a sprint.
     for (const relic of allRelics()) {
       for (const key of Object.keys(relic.boons)) {
-        expect(
-          [
-            'armor',
-            'pips',
-            'extraOpeningCards',
-            'maxPips',
-            'ignoreFog',
-            'immuneToBurn',
-            'immuneToToxin',
-            'ignoreIceSlip',
-            'revealIntents',
-            'bonusObstacleHp',
-            'bonusSacrificeMarrow',
-          ],
-          `${relic.name} names ${key}`,
-        ).toContain(key);
+        expect(BOON_KEYS as string[], `${relic.name} names ${key}`).toContain(key);
       }
     }
   });
@@ -110,7 +99,10 @@ describe('folding gear into capabilities', () => {
 
 describe('wearing them', () => {
   it('holds one of each slot and no more', () => {
-    const g = geared('relic_coat', 'relic_battery', 'relic_goggles', 'relic_ledger');
+    // One per slot, whatever the slots currently are — naming four here is how this test
+    // broke when a fifth was added.
+    const oneEach = RELIC_SLOT_ORDER.map((slot) => relicsForSlot(slot)[0]!.id);
+    const g = geared(...oneEach);
     for (const id of g.overworld.relics) equipRelic(g, id, slotOf(id));
 
     expect(wornRelics(g.overworld.equippedRelics)).toHaveLength(RELIC_SLOTS);

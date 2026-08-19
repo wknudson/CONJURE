@@ -68,6 +68,7 @@ export function carryFor(
   const sacrificeMarrow = (gear.bonusSacrificeMarrow ?? 0) + (knack.bonusSacrificeMarrow ?? 0);
   const sacrificeHeal = (gear.healOnSacrifice ?? 0) + (knack.healOnSacrifice ?? 0);
   const toxinStacks = (gear.bonusToxinStacks ?? 0) + (knack.bonusToxinStacks ?? 0);
+  const handLimit = (gear.bonusHandLimit ?? 0) + (knack.bonusHandLimit ?? 0);
 
   const boons: CombatBoons = {
     ...(armor ? { armor } : {}),
@@ -87,6 +88,9 @@ export function carryFor(
       ? { boundFormIgnoresHazards: true }
       : {}),
     ...(gear.boundFormGrounded || knack.boundFormGrounded ? { boundFormGrounded: true } : {}),
+    ...(gear.doubleResonance || knack.doubleResonance ? { doubleResonance: true } : {}),
+    ...(gear.discountHybrids || knack.discountHybrids ? { discountHybrids: true } : {}),
+    ...(handLimit ? { bonusHandLimit: handLimit } : {}),
   };
 
   return {

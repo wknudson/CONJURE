@@ -726,6 +726,7 @@
 .relic-slot__domain--optics { background: linear-gradient(135deg, #7dd3fc, #0c4a6e); }
 .relic-slot__domain--vestment { background: linear-gradient(135deg, #d6c4a0, #4a3d28); }
 .relic-slot__domain--trinket { background: linear-gradient(135deg, #fde047, #854d0e); }
+.relic-slot__domain--treads { background: linear-gradient(135deg, #a8a29e, #292524); }
 .relic-slot__domain--will { background: linear-gradient(135deg, #f0abfc, #4a0d4a); }
 
 /* The slot's own name, above whatever is in it. Present whether worn or bare, because

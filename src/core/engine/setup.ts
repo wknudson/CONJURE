@@ -64,7 +64,6 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       companionSchool,
       heroColumn,
       companionColumn,
-      resonanceUsedThisTurn: false,
       reactionPipsThisTurn: 0,
       hp,
       maxHp: hp,
@@ -88,6 +87,9 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       bonusToxinStacks: 0,
       boundFormIgnoresHazards: false,
       boundFormGrounded: false,
+      resonancesThisTurn: 0,
+      doubleResonance: false,
+      discountHybrids: false,
     },
     nextId: id,
   };
@@ -195,6 +197,12 @@ export interface CombatBoons {
   boundFormIgnoresHazards?: boolean;
   /** The Bound Form cannot be shoved, pulled, or carried by anything. */
   boundFormGrounded?: boolean;
+  /** Raises how many cards this side may hold through end of turn. */
+  bonusHandLimit?: number;
+  /** Resonance fires on the first *two* Companion cards each turn rather than one. */
+  doubleResonance?: boolean;
+  /** Spliced cards cost 1 Pip less, never below one. Marrow is untouched. */
+  discountHybrids?: boolean;
 }
 
 /**
@@ -302,6 +310,12 @@ export function createCombat(
 
   if (carry?.boons?.boundFormIgnoresHazards) player.commander.boundFormIgnoresHazards = true;
   if (carry?.boons?.boundFormGrounded) player.commander.boundFormGrounded = true;
+  if (carry?.boons?.doubleResonance) player.commander.doubleResonance = true;
+  if (carry?.boons?.discountHybrids) player.commander.discountHybrids = true;
+
+  // Only ever upward, like the Pip ceiling: gear bends a rule in the player's favour or
+  // not at all, so a malformed carry cannot hand them a smaller hand than the rules give.
+  player.commander.handLimit += Math.max(0, carry?.boons?.bonusHandLimit ?? 0);
 
   const state: GameState = {
     rng,

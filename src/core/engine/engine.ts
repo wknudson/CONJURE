@@ -18,7 +18,7 @@ import type { Ctx } from './context.js';
 import { emit, makeCtx, newCause } from './context.js';
 import { deepClone } from '../util/clone.js';
 import { CARDS } from '../data/cards/index.js';
-import { canAfford, resolvePlayedCard, spendResources } from './deck.js';
+import { canAfford, effectiveCost, resolvePlayedCard, spendResources } from './deck.js';
 import { executeEffect } from './effects.js';
 import { canAct, canAttack, canMove, findMove, setAnchor } from './movement.js';
 import { legalAttacks, legalCardTargets } from './targeting.js';
@@ -26,7 +26,7 @@ import { dealDamage, healCommander } from './damage.js';
 import { applyStatusTo } from './status.js';
 import { killEntity, checkLethal } from './death.js';
 import { getEntity, refOf } from './board.js';
-import { toCardSnapshot } from './views.js';
+import { resonanceLimit, toCardSnapshot } from './views.js';
 import { endTurn } from './turn.js';
 import { cellsOf, footprintDistance } from '../util/grid.js';
 import { coordEq } from '../../contract/ids.js';
@@ -104,8 +104,9 @@ function playCard(ctx: Ctx, cardId: string, target: ChosenTarget): void {
   const def = inst ? CARDS[inst.defId] : undefined;
   if (!inst || !def) throw new IllegalCommandError(`unknown card ${cardId}`);
 
-  if (!canAfford(ctx.state, side, def.cost)) {
-    throw new IllegalCommandError(`cannot afford ${def.name} (${def.cost})`);
+  const price = effectiveCost(ctx.state, side, def);
+  if (!canAfford(ctx.state, side, price)) {
+    throw new IllegalCommandError(`cannot afford ${def.name} (${price})`);
   }
 
   // Validate the chosen target before spending anything. Without this a summon onto an
@@ -116,7 +117,7 @@ function playCard(ctx: Ctx, cardId: string, target: ChosenTarget): void {
   }
 
   const snapshot = toCardSnapshot(ctx.state, side, cardId);
-  spendResources(ctx, side, def.cost);
+  spendResources(ctx, side, price);
 
   emit(ctx, {
     t: 'cardPlayed',
@@ -146,11 +147,11 @@ function playCard(ctx: Ctx, cardId: string, target: ChosenTarget): void {
 /** Fires the Companion's school passive, once per turn. */
 function triggerResonance(ctx: Ctx, side: 'player' | 'enemy'): void {
   const cmd = ctx.state.players[side];
-  if (cmd.resonanceUsedThisTurn) return;
+  if (cmd.resonancesThisTurn >= resonanceLimit(cmd)) return;
   const def = resonanceFor(cmd.companionSchool);
   if (!def) return;
 
-  cmd.resonanceUsedThisTurn = true;
+  cmd.resonancesThisTurn += 1;
   newCause(ctx);
   emit(ctx, { t: 'resonanceTriggered', side, name: def.name, column: cmd.companionColumn });
   def.apply(ctx, side, cmd.companionColumn);

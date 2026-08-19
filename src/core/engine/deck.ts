@@ -13,7 +13,7 @@ import type { Ctx } from './context.js';
 import { emit } from './context.js';
 import type { GameState } from '../types/state.js';
 import { CARDS } from '../data/cards/index.js';
-import type { CardCost } from '../types/cards.js';
+import type { CardCost, CardDef } from '../types/cards.js';
 import { shuffle } from '../util/rng.js';
 import { toCardSnapshot } from './views.js';
 
@@ -99,6 +99,29 @@ export function costBreakdown(marrowOnHand: number, cost: CardCost): CardCost {
   return {
     marrow: cost.marrow + genericFromMarrow,
     pips: cost.pips - genericFromMarrow,
+  };
+}
+
+/** The floor a discount may never take a card below. Free hybrids would be a loop. */
+export const MIN_DISCOUNTED_PIPS = 1;
+
+/**
+ * What a card actually costs this side, after whatever their gear is doing.
+ *
+ * The single answer, used by the legality check, by the spend, and by the snapshot the
+ * player is looking at — so a card can never read one price and charge another. That is
+ * why `toCardSnapshot` already took a `side`: the cost on the face of a card has always
+ * been a fact about who is holding it, even while nothing changed it.
+ *
+ * Marrow is deliberately untouched. It is a strict requirement rather than a price — a
+ * card asking for it is asking you to have opened something up this turn, and no amount of
+ * gear substitutes for having done that.
+ */
+export function effectiveCost(state: GameState, side: Side, def: CardDef): CardCost {
+  if (!def.spliceOnly || !state.players[side].discountHybrids) return def.cost;
+  return {
+    pips: Math.max(MIN_DISCOUNTED_PIPS, def.cost.pips - 1),
+    marrow: def.cost.marrow,
   };
 }
 
