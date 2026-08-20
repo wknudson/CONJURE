@@ -34,6 +34,14 @@ export interface Bounty {
   spoils: CombatSpoils;
   /** One line of why anyone is paying, for the card. */
   flavour: string;
+  /**
+   * The development test contract, drawn with an AUDIT seal and paying absurdly.
+   *
+   * A flag rather than a fourth `BountyDifficulty`: it is not a tier, it is not balanced
+   * against the others, and giving it one would make every pay, title and core table grow
+   * a column for something none of them describe.
+   */
+  audit?: true;
 }
 
 export const DIFFICULTIES: readonly BountyDifficulty[] = ['novice', 'adept', 'master'];
@@ -116,7 +124,75 @@ const FLAVOUR: Record<BountyDifficulty, string> = {
  * fight bumps it — the seeded generator the rest of the project uses, for the same reason
  * it uses it everywhere else.
  */
+
+/**
+ * The Magistrate's Audit: a test contract, posted third.
+ *
+ * A development affordance, shipped deliberately and labelled as one. It exists so gear
+ * prices, hybrid pressings and Rank 2 Ascensions can be exercised in a minute instead of
+ * a dozen contracts — every one of those systems is a *sink*, and a sink is untestable
+ * without a source.
+ *
+ * Three decisions worth naming:
+ *
+ * - **It is a real fight, at the easiest tier.** The point is a fast loop, not a free
+ *   purse: an audit that paid on being clicked would test the shop and nothing about the
+ *   run resolving around it, and `resolveCombat` is the seam the spoils actually travel.
+ * - **It is poster #3, and the Master contract moves to #4.** Overwriting the third slot
+ *   would have taken the Apex Subjugation off the board with it — the only encounter that
+ *   calls `beginSubjugation`, and therefore the only route to a bound Companion. The test
+ *   slot is worth a poster; it is not worth the boss.
+ * - **It is not a difficulty.** `audit` is a flag rather than a fourth `BountyDifficulty`,
+ *   so the pay, title, core and spread tables keep exactly three tiers and no balance
+ *   table grows a column for a thing that is not balanced.
+ *
+ * Its id is fixed rather than seeded, so it survives a board reroll and can be recognised
+ * on sight in a save.
+ */
+export const AUDIT_BOUNTY_ID = 'audit_smuggled_vault';
+
+/** What the vault holds. Absurd on purpose: this is a bench supply, not a reward curve. */
+export const AUDIT_SPOILS = {
+  ducats: 5000,
+  marrowShards: 100,
+  reagents: { core_pyre: 12, core_surge: 12, core_frost: 12 },
+} as const;
+
+function auditBounty(): Bounty {
+  return {
+    id: AUDIT_BOUNTY_ID,
+    title: "Magistrate's Audit: The Smuggled Vault",
+    // The easiest opposition on the board. A test loop that takes ten minutes to close is
+    // not a test loop.
+    difficulty: 'novice',
+    enemySeed: 'novice_duelist',
+    audit: true,
+    spoils: {
+      ducats: AUDIT_SPOILS.ducats,
+      marrowShards: AUDIT_SPOILS.marrowShards,
+      reagents: { ...AUDIT_SPOILS.reagents },
+    },
+    flavour:
+      'Red wax, countersigned twice, and no clerk will admit to filing it. The vault was ' +
+      'seized months ago and nobody has counted what is in it.',
+  };
+}
+
+/**
+ * The board: three rolled contracts and the audit, in poster order.
+ *
+ * Deterministic in the seed, so the same character always sees the same board until a
+ * fight bumps it — the seeded generator the rest of the project uses, for the same reason
+ * it uses it everywhere else. The audit is spliced in at index 2 rather than appended, so
+ * it is poster #3 and the Master contract keeps its place on the board at #4.
+ */
 export function rollBounties(seed: number): Bounty[] {
+  const rolled = rollTiers(seed);
+  return [rolled[0]!, rolled[1]!, auditBounty(), rolled[2]!];
+}
+
+/** The three real contracts, one per tier. */
+function rollTiers(seed: number): Bounty[] {
   const rng = makeRng(seed);
 
   return DIFFICULTIES.map((difficulty) => {

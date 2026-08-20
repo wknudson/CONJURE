@@ -297,12 +297,18 @@ export class SafehouseScreen implements Screen {
 
     for (const bounty of this.opts.bounties) {
       const card = document.createElement('button');
-      card.className = `bounty-card brass-panel bounty-card--${bounty.difficulty}`;
+      // The audit gets its own face rather than borrowing a tier's: it is posted by the
+      // same office and paid from a different ledger, and a player should be able to tell
+      // at a glance which of the two they are taking.
+      card.className = `bounty-card brass-panel bounty-card--${bounty.difficulty}${
+        bounty.audit ? ' bounty-card--audit' : ''
+      }`;
       const encounter = encounterById(bounty.enemySeed);
 
       card.innerHTML = `
         <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
-        <div class="bounty-card__tier">${bounty.difficulty}</div>
+        ${bounty.audit ? '<span class="bounty-seal">Audit</span>' : ''}
+        <div class="bounty-card__tier">${bounty.audit ? 'audit' : bounty.difficulty}</div>
         <div class="bounty-card__title">${bounty.title}</div>
         <div class="bounty-card__where">${
           encounter ? `${encounter.name} · ${encounter.width}×${encounter.height}` : 'Location unknown'
@@ -313,6 +319,13 @@ export class SafehouseScreen implements Screen {
           ${
             bounty.spoils.marrowShards
               ? `<span class="bounty-card__coin bounty-card__coin--marrow">${bounty.spoils.marrowShards} shards</span>`
+              : ''
+          }
+          ${
+            bounty.spoils.reagents
+              ? `<span class="bounty-card__coin bounty-card__coin--reagent">${Object.values(
+                  bounty.spoils.reagents,
+                ).reduce((a, b) => a + b, 0)} cores</span>`
               : ''
           }
           ${critical ? '<span class="bounty-card__warn">at critical health</span>' : ''}

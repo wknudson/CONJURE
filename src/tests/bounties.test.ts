@@ -19,9 +19,21 @@ import { newRun, type GlobalGameState } from '../core/overworld/state.js';
 
 describe('the board', () => {
   it('posts one contract per tier, so the choice is always about risk', () => {
+    // Four posters: the three rolled tiers, and the audit spliced in at #3. The Master
+    // contract keeps its place on the board rather than being displaced by the test slot —
+    // it is the only route to the Apex Subjugation, and therefore to a bound Companion.
     const board = rollBounties(12345);
-    expect(board).toHaveLength(3);
-    expect(board.map((b) => b.difficulty)).toEqual([...DIFFICULTIES]);
+    expect(board).toHaveLength(4);
+
+    const rolled = board.filter((b) => !b.audit);
+    expect(rolled.map((b) => b.difficulty)).toEqual([...DIFFICULTIES]);
+  });
+
+  it('puts the audit third and nowhere else', () => {
+    const board = rollBounties(12345);
+    expect(board[2]!.audit, 'poster #3 is the audit').toBe(true);
+    expect(board.filter((b) => b.audit)).toHaveLength(1);
+    expect(board[3]!.difficulty, 'and the Master contract follows it').toBe('master');
   });
 
   it('is the same board every time it is asked, for the same seed', () => {
@@ -94,12 +106,14 @@ describe('the payout', () => {
   it('is not re-read off the board after the reroll', () => {
     // The bug this exists to prevent: `resolveCombat` bumps the seed, so a payout looked
     // up afterwards would settle a Master win against whatever the new board offered.
-    const taken = rollBounties(77)[2]!;
-    const g = accepted(77, 2);
+    // Index 3, the Master contract: the audit at index 2 pays a fixed sum by design, so it
+    // is the one poster that could not show the board moving.
+    const taken = rollBounties(77)[3]!;
+    const g = accepted(77, 3);
 
     resolveCombat(g, { pactHp: 9 }, 'victory');
 
-    const nowOnTheBoard = rollBounties(g.overworld.bountySeed)[2]!;
+    const nowOnTheBoard = rollBounties(g.overworld.bountySeed)[3]!;
     expect(nowOnTheBoard.spoils.ducats, 'the board did move').not.toBe(taken.spoils.ducats);
     expect(g.overworld.economy.ducats, 'but the purse followed the contract').toBe(
       taken.spoils.ducats,

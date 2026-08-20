@@ -42,6 +42,23 @@ export function schematicsFor(collection: Collection): CardDef[] {
     .sort((a, b) => tierOf(a) - tierOf(b) || a.name.localeCompare(b.name));
 }
 
+/**
+ * Everything the bench knows how to cut, owned or not.
+ *
+ * The counterpart to `schematicsFor`, which answers "what could I buy" and is what the
+ * Safehouse counts on its door. This answers "what is there", which is the question a
+ * workspace with a filter bar is for: sorting by unlock status means nothing on a list
+ * that has already removed everything unlocked, and a player scanning for a card wants to
+ * find it and see that they hold it rather than conclude the bench has never heard of it.
+ *
+ * Same `isObtainable` gate, so Rank 2 printings and engine furniture stay off the shelf.
+ */
+export function schematicCatalogue(): CardDef[] {
+  return Object.values(CARDS)
+    .filter((def) => isObtainable(def))
+    .sort((a, b) => tierOf(a) - tierOf(b) || a.name.localeCompare(b.name));
+}
+
 // ----------------------------------------------------------------- splicing
 
 /**

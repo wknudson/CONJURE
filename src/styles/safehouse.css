@@ -2172,3 +2172,176 @@
   color: var(--danger, #e5484d);
   min-height: 11px;
 }
+
+/* ============================================================================
+   The blueprint shelf: a filterable grid, not a column of rows.
+   ========================================================================== */
+
+.sch-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(176, 148, 106, 0.24);
+  background: rgba(0, 0, 0, 0.26);
+}
+
+.sch-filter {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.sch-filter__label {
+  font: 800 8px var(--font);
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.55);
+}
+
+.sch-filter__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.sch-pill {
+  padding: 4px 9px;
+  border-radius: 3px;
+  border: 1px solid rgba(176, 148, 106, 0.3);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-dim);
+  font: 700 10px var(--font);
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+
+.sch-pill:hover {
+  border-color: color-mix(in srgb, var(--pill, var(--brass)) 70%, transparent);
+  color: var(--text);
+}
+
+/* A school pill carries its own colour when chosen, so the grid and the filter agree. */
+.sch-pill.is-on {
+  border-color: var(--pill, var(--lamp));
+  background: color-mix(in srgb, var(--pill, var(--lamp)) 16%, transparent);
+  color: var(--text);
+}
+
+.sch-count {
+  font: 600 10px var(--font);
+  letter-spacing: 0.6px;
+  color: var(--text-dim);
+  margin: 0 2px 8px;
+}
+
+/* Auto-fill rather than a fixed column count: the shelf is read at whatever width the
+   window happens to be, and a grid that only works at one size is a list with extra steps. */
+.sch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.sch-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 7px 7px;
+  border-radius: 6px;
+  border: 1px solid rgba(176, 148, 106, 0.2);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+/* Held cards stay on the shelf, dimmed. Dropping them makes a player conclude the bench
+   has never heard of the card they are hunting for. */
+.sch-cell.is-owned {
+  opacity: 0.45;
+}
+
+.sch-cell__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.sch-cell__price {
+  font: 800 11px var(--font);
+  color: var(--lamp);
+}
+
+.sch-cell.is-owned .sch-cell__price {
+  color: var(--text-dim);
+}
+
+.sch-cell__cut {
+  padding: 4px 10px;
+  font-size: 10px;
+}
+
+.sch-cell__refusal {
+  font: 700 8px var(--font);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--danger, #e5484d);
+  min-height: 10px;
+  text-align: center;
+}
+
+/* ============================================================================
+   The Magistrate's Audit: a test contract, posted like a real one.
+
+   Deliberately the most conspicuous thing on the board. It pays absurdly, and a
+   player should never take it by mistake or wonder afterwards which one they took.
+   ========================================================================== */
+
+.bounty-card--audit {
+  border-color: rgba(190, 42, 48, 0.75);
+  background:
+    radial-gradient(ellipse at 82% 12%, rgba(190, 42, 48, 0.16), transparent 58%),
+    rgba(18, 10, 12, 0.9);
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.6),
+    inset 0 0 30px rgba(190, 42, 48, 0.08);
+}
+
+.bounty-card--audit .bounty-card__tier {
+  color: #f0857f;
+}
+
+/* A blob of red wax, pressed and slightly off-square — a seal applied by hand. */
+.bounty-seal {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50% 48% 52% 50%;
+  transform: rotate(-11deg);
+  background:
+    radial-gradient(circle at 36% 30%, #d8434a, #8e1c22 62%, #5e1216);
+  border: 1px solid rgba(255, 190, 190, 0.28);
+  box-shadow:
+    0 2px 7px rgba(0, 0, 0, 0.62),
+    inset 0 1px 3px rgba(255, 255, 255, 0.22),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.45);
+  font: 800 8px var(--font);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255, 226, 226, 0.92);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.bounty-card__coin--reagent {
+  color: #7dd3fc;
+}

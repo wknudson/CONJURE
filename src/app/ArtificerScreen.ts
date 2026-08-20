@@ -25,7 +25,7 @@ import type { CardDef } from '../core/types/cards.js';
 import type { Collection } from '../core/data/deckRules.js';
 import type { GlobalGameState } from '../core/overworld/state.js';
 import type { Reagent } from '../core/data/splicing.js';
-import { schematicsFor } from '../core/data/artificer.js';
+import { schematicCatalogue } from '../core/data/artificer.js';
 import { REAGENTS, recipeFor, spliceableBaseIds } from '../core/data/splicing.js';
 import { spliceRefusal, type SpliceResult } from '../core/overworld/splice.js';
 import {
@@ -39,6 +39,7 @@ import { ascendableFor } from '../core/data/collection.js';
 import { formatCost } from '../hud/cost.js';
 import { tierOf } from '../core/data/deckRules.js';
 import { schoolOf } from '../render/palette.js';
+import type { School } from '../contract/ids.js';
 import { cardFaceHtml, faceOfDef } from '../hud/cardFace.js';
 import { Tooltip } from '../hud/Tooltip.js';
 
@@ -81,10 +82,59 @@ const REFUSAL_COPY: Record<string, string> = {
   'no-reagent': 'You hold none of that core',
 };
 
+/**
+ * What the schematic grid is currently showing.
+ *
+ * Screen state rather than saved state: a filter is a way of looking at the shelf, not a
+ * fact about the character, so it resets with the screen and is written to nothing.
+ */
+interface SchematicFilters {
+  school: School | 'all';
+  /** Pips. `PIP_MAX` stands for "that many or more" — see `COST_PILLS`. */
+  cost: number | 'all';
+  source: 'all' | 'hero' | 'companion';
+  kind: 'all' | CardDef['kind'];
+  sort: 'name' | 'cost' | 'school' | 'unlock';
+}
+
+/** The top pill is a bucket, not a number: nothing is priced above it, and things may be. */
+const PIP_MAX = 5;
+const COST_PILLS = [0, 1, 2, 3, 4, PIP_MAX];
+
+/**
+ * Type names in the player's words rather than the schema's.
+ *
+ * `obstacle` is the field; "Construct" is what the game has always called the thing on the
+ * board, and the filter bar is read by somebody looking at their board.
+ */
+const KIND_PILLS: { key: 'all' | CardDef['kind']; label: string }[] = [
+  { key: 'all', label: 'All Types' },
+  { key: 'spell', label: 'Spells' },
+  { key: 'minion', label: 'Minions' },
+  { key: 'obstacle', label: 'Constructs' },
+  { key: 'rune', label: 'Runes' },
+];
+
+const SORT_PILLS: { key: SchematicFilters['sort']; label: string }[] = [
+  { key: 'unlock', label: 'Unforged first' },
+  { key: 'cost', label: 'Pip cost' },
+  { key: 'name', label: 'Name' },
+  { key: 'school', label: 'School' },
+];
+
 export class ArtificerScreen implements Screen {
   private el: HTMLElement | null = null;
   private tooltip: Tooltip | null = null;
   private bench: Bench = 'schematic';
+
+  /** How the blueprint shelf is being looked at. Screen state; saved nowhere. */
+  private filters: SchematicFilters = {
+    school: 'all',
+    cost: 'all',
+    source: 'all',
+    kind: 'all',
+    sort: 'unlock',
+  };
 
   /** The splicing bench's two slots. Held, displayed, and otherwise inert. */
   private slotA: string | null = null;
@@ -172,55 +222,198 @@ export class ArtificerScreen implements Screen {
    * Every card is assumed to have a Schematic for now. When Schematics become things a
    * player finds, this list narrows and nothing else on the screen changes.
    */
+  /**
+   * The blueprint shelf: every card the bench knows, as cards.
+   *
+   * A grid rather than a list of rows because the shelf is a *catalogue* — the question is
+   * "what is there and what do I want", which is answered by scanning many at once, and a
+   * column of full-width rows answers it four cards at a time.
+   *
+   * Owned cards stay on the shelf, marked and unbuyable. A shelf that silently drops what
+   * you already hold makes a player conclude the bench has never heard of the card they
+   * are looking for.
+   */
   private schematicBench(): HTMLElement {
     const host = document.createElement('div');
     host.className = 'forge-bench';
 
-    const available = schematicsFor(this.opts.collection());
-    if (available.length === 0) {
-      host.innerHTML = `<div class="forge-empty brass-panel">
-        You hold a copy of everything the bench knows how to cut. Try the Ascension Forge.
-      </div>`;
-      return host;
-    }
+    host.innerHTML = `
+      <div class="sch-filters"></div>
+      <div class="sch-count"></div>
+      <div class="sch-grid"></div>
+      <div class="forge-note">
+        One copy per Schematic. Further copies are what winning contracts is for.
+      </div>
+    `;
 
-    const list = document.createElement('div');
-    list.className = 'forge-list';
-    for (const def of available) list.appendChild(this.schematicRow(def));
-
-    const note = document.createElement('div');
-    note.className = 'forge-note';
-    note.textContent =
-      'One copy per Schematic. Further copies are what winning contracts is for.';
-
-    host.append(list, note);
+    this.paintFilters(host);
+    this.paintGrid(host);
     return host;
   }
 
-  private schematicRow(def: CardDef): HTMLElement {
-    const refusal = schematicRefusal(this.opts.global, this.opts.collection(), def.id);
-    const colors = schoolOf(def.school as never);
+  /** The filter header. Rebuilt whole on every change, so the marked pill is never stale. */
+  private paintFilters(host: HTMLElement): void {
+    const bar = host.querySelector<HTMLElement>('.sch-filters');
+    if (!bar) return;
 
-    const row = document.createElement('div');
-    row.className = 'schematic-row brass-panel';
-    row.style.setProperty('--school', colors.main);
-    row.dataset.tip = `${def.name}|${def.text}|${def.source === 'companion' ? 'Companion' : 'Hero'} · Tier ${tierOf(def)}`;
-    // The blueprint shows the card, not a description of it. A player choosing what to
-    // cut is choosing a card, and reading its keywords and stat line here is the whole
-    // decision — the row used to name it and paraphrase it and show neither.
-    row.innerHTML = `
+    const f = this.filters;
+    // Schools are read off the shelf rather than hard-coded, so a filter can never hide a
+    // card by omitting the school somebody printed it in.
+    const schools = [...new Set(schematicCatalogue().map((d) => d.school))].sort();
+
+    const group = (
+      label: string,
+      name: keyof SchematicFilters,
+      pills: { key: string | number; label: string; tint?: string }[],
+      active: string | number,
+    ): string => `
+      <div class="sch-filter">
+        <span class="sch-filter__label">${label}</span>
+        <div class="sch-filter__pills">
+          ${pills
+            .map(
+              (p) => `
+            <button class="sch-pill${p.key === active ? ' is-on' : ''}"
+                    data-filter="${name}" data-value="${p.key}"
+                    ${p.tint ? `style="--pill:${p.tint}"` : ''}>${p.label}</button>`,
+            )
+            .join('')}
+        </div>
+      </div>`;
+
+    bar.innerHTML = [
+      group(
+        'School',
+        'school',
+        [
+          { key: 'all', label: 'All' },
+          ...schools.map((s) => ({
+            key: s,
+            label: s[0]!.toUpperCase() + s.slice(1),
+            tint: schoolOf(s).main,
+          })),
+        ],
+        f.school,
+      ),
+      group(
+        'Pips',
+        'cost',
+        [
+          { key: 'all', label: 'Any' },
+          ...COST_PILLS.map((c) => ({ key: c, label: c === PIP_MAX ? `${c}+` : String(c) })),
+        ],
+        f.cost,
+      ),
+      group(
+        'Cast by',
+        'source',
+        [
+          { key: 'all', label: 'Either' },
+          { key: 'hero', label: 'Hero' },
+          { key: 'companion', label: 'Companion' },
+        ],
+        f.source,
+      ),
+      group(
+        'Type',
+        'kind',
+        KIND_PILLS.map((k) => ({ key: k.key, label: k.label })),
+        f.kind,
+      ),
+      group(
+        'Sort',
+        'sort',
+        SORT_PILLS.map((s) => ({ key: s.key, label: s.label })),
+        f.sort,
+      ),
+    ].join('');
+
+    for (const pill of bar.querySelectorAll<HTMLElement>('.sch-pill')) {
+      pill.addEventListener('click', () => {
+        const key = pill.dataset.filter as keyof SchematicFilters;
+        const raw = pill.dataset.value ?? 'all';
+        const value = key === 'cost' && raw !== 'all' ? Number(raw) : raw;
+        // Cast through unknown: the union is per-key and the handler is generic over all
+        // five. The pills are generated from the same unions above, so the values are
+        // sound even though this one assignment cannot prove it.
+        (this.filters[key] as unknown) = value;
+        this.render();
+      });
+    }
+  }
+
+  /** Applies the filters, then draws what survives. */
+  private paintGrid(host: HTMLElement): void {
+    const grid = host.querySelector<HTMLElement>('.sch-grid');
+    const count = host.querySelector<HTMLElement>('.sch-count');
+    if (!grid) return;
+
+    const collection = this.opts.collection();
+    const f = this.filters;
+
+    const shown = schematicCatalogue()
+      .filter((d) => f.school === 'all' || d.school === f.school)
+      .filter((d) => f.source === 'all' || d.source === f.source)
+      .filter((d) => f.kind === 'all' || d.kind === f.kind)
+      .filter((d) => {
+        if (f.cost === 'all') return true;
+        // The top pill is a bucket: everything at or above it lands there, so nothing
+        // priced beyond the last pill becomes unreachable by filtering.
+        return f.cost === PIP_MAX ? d.cost.pips >= PIP_MAX : d.cost.pips === f.cost;
+      })
+      .sort((a, b) => {
+        const ownedA = (collection.owned[a.id] ?? 0) > 0 ? 1 : 0;
+        const ownedB = (collection.owned[b.id] ?? 0) > 0 ? 1 : 0;
+        switch (f.sort) {
+          case 'cost':
+            return a.cost.pips - b.cost.pips || a.name.localeCompare(b.name);
+          case 'school':
+            return a.school.localeCompare(b.school) || a.name.localeCompare(b.name);
+          case 'unlock':
+            return ownedA - ownedB || a.name.localeCompare(b.name);
+          default:
+            return a.name.localeCompare(b.name);
+        }
+      });
+
+    if (count) {
+      const unforged = shown.filter((d) => (collection.owned[d.id] ?? 0) === 0).length;
+      count.textContent = shown.length
+        ? `${shown.length} schematic${shown.length === 1 ? '' : 's'} · ${unforged} unforged`
+        : '';
+    }
+
+    grid.innerHTML = '';
+    if (shown.length === 0) {
+      grid.innerHTML = `<div class="forge-empty brass-panel">
+        Nothing on the shelf matches that. Widen the filters.
+      </div>`;
+      return;
+    }
+
+    for (const def of shown) grid.appendChild(this.schematicCard(def, collection));
+  }
+
+  /** One blueprint: the card, its price, and the one button that cuts it. */
+  private schematicCard(def: CardDef, collection: Collection): HTMLElement {
+    const refusal = schematicRefusal(this.opts.global, collection, def.id);
+    const owned = (collection.owned[def.id] ?? 0) > 0;
+
+    const cell = document.createElement('div');
+    cell.className = `sch-cell${owned ? ' is-owned' : ''}`;
+    cell.innerHTML = `
       ${cardFaceHtml(faceOfDef(def), { extraClass: 'card--mini', showReach: true })}
-      <span class="schematic-row__price">
-        <span class="schematic-row__coin">${SCHEMATIC_COST_DUCATS} d</span>
-        <span class="schematic-row__refusal">${refusal === 'too-poor' ? 'Not enough Ducats' : ''}</span>
-      </span>
-      <button class="brass-btn schematic-row__cut">Forge</button>
+      <div class="sch-cell__foot">
+        <span class="sch-cell__price">${owned ? 'Held' : `${SCHEMATIC_COST_DUCATS} d`}</span>
+        <button class="brass-btn sch-cell__cut">${owned ? 'Held' : 'Forge'}</button>
+      </div>
+      <div class="sch-cell__refusal">${refusal === 'too-poor' ? 'Not enough Ducats' : ''}</div>
     `;
 
-    const btn = row.querySelector<HTMLButtonElement>('.schematic-row__cut')!;
+    const btn = cell.querySelector<HTMLButtonElement>('.sch-cell__cut')!;
     btn.disabled = refusal !== null;
     btn.addEventListener('click', () => this.cut(def.id));
-    return row;
+    return cell;
   }
 
   private cut(cardId: string): void {
