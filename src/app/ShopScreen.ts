@@ -15,6 +15,9 @@ import type { GlobalGameState } from '../core/overworld/state.js';
 import type { StockItem } from '../core/data/apothecary.js';
 import { addConsumable, INVENTORY_LIMIT } from '../core/overworld/state.js';
 import { APOTHECARY_STOCK, clinicPrice, effectOf } from '../core/data/apothecary.js';
+import { buyGear, gearForSlot, gearRefusal, gearRelic } from '../core/data/outfitter.js';
+import { RELIC_SLOT_ORDER } from '../core/overworld/state.js';
+import { RELIC_SLOT_BLURBS, RELIC_SLOT_LABELS } from '../core/data/relics.js';
 
 export interface ShopOpts {
   global: GlobalGameState;
@@ -65,12 +68,11 @@ export class ShopScreen implements Screen {
 
         <section class="shop__section shop__section--cosmetics">
           <div class="shop__section-title">Cosmetics &amp; Tailoring</div>
-          <div class="brass-panel shop__soon">
-            <div class="shop__soon-mark">Coming Soon</div>
-            <div class="shop__soon-copy">
-              The seamstress is out. Coats, sigil-work, and lamp-glass in a later shipment.
-            </div>
+          <div class="shop__section-note">
+            Five slots, one apiece. Gear here bends a rule — none of it will make anything
+            hit harder.
           </div>
+          <div class="shop-gear"></div>
         </section>
       </div>
     `;
@@ -89,7 +91,87 @@ export class ShopScreen implements Screen {
     this.renderStock();
     this.renderSatchel();
     this.renderClinic();
+    this.renderGear();
   }
+
+  /**
+   * The Tailoring counter.
+   *
+   * Grouped by slot rather than listed flat, for the same reason the footlocker is: the
+   * question a player is answering here is "what competes with what I am already wearing",
+   * and a flat shelf makes them work that out themselves.
+   *
+   * Gear already owned stays on the shelf, marked, rather than disappearing. A counter
+   * whose stock silently shrinks reads as a bug the first time somebody looks for the coat
+   * they bought last week.
+   */
+  private renderGear(): void {
+    const host = this.el?.querySelector('.shop-gear');
+    if (!host) return;
+    host.innerHTML = '';
+
+    const { overworld } = this.opts.global;
+
+    for (const slot of RELIC_SLOT_ORDER) {
+      const stock = gearForSlot(slot);
+      if (stock.length === 0) continue;
+
+      const group = document.createElement('div');
+      group.className = 'gear-group';
+      group.innerHTML = `
+        <div class="gear-group__head">
+          <span class="relic-slot__domain relic-slot__domain--${slot}"></span>
+          <span class="gear-group__label">${RELIC_SLOT_LABELS[slot]}</span>
+          <span class="gear-group__blurb">${RELIC_SLOT_BLURBS[slot]}</span>
+        </div>
+      `;
+
+      for (const item of stock) {
+        const relic = gearRelic(item);
+        if (!relic) continue;
+        const refusal = gearRefusal(overworld, item.relicId);
+        const owned = refusal === 'already-owned';
+
+        const row = document.createElement('div');
+        row.className = `gear-item brass-panel${owned ? ' is-owned' : ''}`;
+        row.innerHTML = `
+          <div class="gear-item__body">
+            <div class="gear-item__name">${relic.name}</div>
+            <div class="gear-item__rule">${relic.text}</div>
+            <div class="gear-item__pitch">${item.pitch}</div>
+          </div>
+          <div class="gear-item__buy">
+            <div class="gear-item__price">${item.price} <span>d</span></div>
+            <button class="brass-btn gear-item__take">${owned ? 'Owned' : 'Buy'}</button>
+            <div class="gear-item__refusal">${
+              refusal === 'too-poor'
+                ? `${item.price - overworld.economy.ducats} short`
+                : ''
+            }</div>
+          </div>
+        `;
+
+        const btn = row.querySelector<HTMLButtonElement>('.gear-item__take')!;
+        btn.disabled = refusal !== null;
+        btn.addEventListener('click', () => this.buyGear(item.relicId));
+        group.appendChild(row);
+      }
+      host.appendChild(group);
+    }
+  }
+
+  /**
+   * Takes payment and the gear together, or neither.
+   *
+   * `buyGear` owns both halves and asks its own refusal, so a stale render cannot charge
+   * the purse for something the footlocker already holds.
+   */
+  private buyGear(relicId: string): void {
+    if (!buyGear(this.opts.global.overworld, relicId)) return;
+    this.opts.onChange?.();
+    this.render();
+  }
+
 
   /**
    * A bed and a bill.

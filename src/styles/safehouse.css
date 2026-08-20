@@ -1958,3 +1958,217 @@
   font-size: 11px;
   padding: 6px 10px;
 }
+
+/* ============================================================================
+   Card faces in the Safehouse.
+
+   The forge shows the real card component now rather than a paraphrase of it, so
+   these are size and layout only — never colour or content, which belong to the
+   shared face in `cards.css` and must stay identical to the hand's.
+   ========================================================================== */
+
+/* Small enough that two fit side by side in a comparison, or three across a shelf. */
+.card--mini {
+  width: 118px;
+  height: 158px;
+  cursor: default;
+  font-size: 11px;
+}
+
+/* The ascension panes: a touch larger, since comparing them is the whole screen. */
+.card--compare {
+  width: 132px;
+  height: 178px;
+  cursor: default;
+  margin: 0 auto;
+}
+
+/* The modal printing, read rather than scanned. */
+.card--large {
+  width: 240px;
+  height: 324px;
+  cursor: default;
+  font-size: 14px;
+}
+
+/* Nothing in the Safehouse lifts on hover: these are exhibits, not a hand. */
+.card--mini:hover,
+.card--compare:hover,
+.card--large:hover {
+  transform: none;
+}
+
+/* A core is card-shaped but is not a card: no cost corner, so the name sits at the top. */
+.card--reagent .card__name {
+  margin-top: 2px;
+}
+
+.forge-print {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* The rank label doubles as the way into the full-size printing. */
+.forge-print__rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 3px 7px;
+  cursor: pointer;
+  font: 800 9px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+}
+
+.forge-print__rank:hover {
+  border-color: color-mix(in srgb, var(--brass) 55%, transparent);
+  color: var(--lamp);
+}
+
+.forge-print__zoom {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.forge-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 8, 12, 0.78);
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+
+.forge-modal__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.forge-modal__hint {
+  font: 600 10px var(--font);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.5);
+}
+
+/* The blueprint row is now a card plus a price, so it lays out as a row of both. */
+.schematic-row {
+  align-items: center;
+  gap: 14px;
+}
+
+.splicing-slot__well {
+  min-height: 170px;
+  padding: 6px;
+}
+
+.splicing-slot__empty,
+.splicing-output__none {
+  font: 600 12px var(--font);
+  color: var(--text-dim);
+}
+
+/* ============================================================================
+   The Tailoring counter: gear, grouped by the slot it competes for.
+   ========================================================================== */
+
+.shop__section-note {
+  font: 600 11px var(--font);
+  color: var(--text-dim);
+  margin: -4px 0 10px;
+  max-width: 46ch;
+  line-height: 1.5;
+}
+
+.shop-gear {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gear-group__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.gear-group__label {
+  font: 800 9px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--lamp);
+}
+
+.gear-group__blurb {
+  font: 600 10px var(--font);
+  color: var(--text-dim);
+}
+
+.gear-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 11px 13px;
+  margin-bottom: 7px;
+}
+
+/* Owned gear stays on the shelf, marked. A counter whose stock silently shrinks reads as
+   a bug the first time somebody looks for the coat they bought. */
+.gear-item.is-owned {
+  opacity: 0.55;
+}
+
+.gear-item__name {
+  font: 800 12px var(--font);
+  color: var(--text);
+}
+
+.gear-item__rule {
+  font: 600 11px var(--font);
+  color: rgba(226, 232, 240, 0.78);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+.gear-item__pitch {
+  font: italic 600 10px var(--font);
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+
+.gear-item__buy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  min-width: 96px;
+}
+
+.gear-item__price {
+  font: 800 13px var(--font);
+  color: var(--lamp);
+}
+
+.gear-item__price span {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.gear-item__refusal {
+  font: 700 9px var(--font);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--danger, #e5484d);
+  min-height: 11px;
+}

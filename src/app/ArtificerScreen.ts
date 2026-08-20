@@ -39,6 +39,7 @@ import { ascendableFor } from '../core/data/collection.js';
 import { formatCost } from '../hud/cost.js';
 import { tierOf } from '../core/data/deckRules.js';
 import { schoolOf } from '../render/palette.js';
+import { cardFaceHtml, faceOfDef } from '../hud/cardFace.js';
 import { Tooltip } from '../hud/Tooltip.js';
 
 export interface ArtificerOpts {
@@ -204,12 +205,11 @@ export class ArtificerScreen implements Screen {
     row.className = 'schematic-row brass-panel';
     row.style.setProperty('--school', colors.main);
     row.dataset.tip = `${def.name}|${def.text}|${def.source === 'companion' ? 'Companion' : 'Hero'} · Tier ${tierOf(def)}`;
+    // The blueprint shows the card, not a description of it. A player choosing what to
+    // cut is choosing a card, and reading its keywords and stat line here is the whole
+    // decision — the row used to name it and paraphrase it and show neither.
     row.innerHTML = `
-      <span class="schematic-row__cost">${formatCost(def.cost)}</span>
-      <span class="schematic-row__body">
-        <span class="schematic-row__name">${def.name}</span>
-        <span class="schematic-row__text">${def.text}</span>
-      </span>
+      ${cardFaceHtml(faceOfDef(def), { extraClass: 'card--mini', showReach: true })}
       <span class="schematic-row__price">
         <span class="schematic-row__coin">${SCHEMATIC_COST_DUCATS} d</span>
         <span class="schematic-row__refusal">${refusal === 'too-poor' ? 'Not enough Ducats' : ''}</span>
@@ -315,34 +315,58 @@ export class ArtificerScreen implements Screen {
     const btn = host.querySelector<HTMLButtonElement>('.forge-till__go')!;
     btn.disabled = refusal !== null || !after;
     btn.addEventListener('click', () => this.ascend(cardId));
+
+    for (const opener of host.querySelectorAll<HTMLElement>('[data-expand]')) {
+      opener.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const def = CARDS[opener.dataset.expand ?? ''];
+        if (def) this.expandCard(def);
+      });
+    }
     return host;
   }
 
-  /** One printing as a card face. Same markup both sides, so differences are the data. */
+  /**
+   * One printing, as the real card face.
+   *
+   * Both sides use the same renderer the hand uses, so the *only* thing that differs
+   * between Rank 1 and Rank 2 on screen is the data — which is the entire question the
+   * player is asking. This was a bespoke `forge-print` that showed a subset: no keywords,
+   * no type line, no source. A Rank 2 that only adds a keyword looked identical to its
+   * Rank 1, in the one screen built to compare them.
+   */
   private printing(def: CardDef, rank: string, side: string): string {
-    const colors = schoolOf(def.school as never);
-    const unit = def.unit;
     return `
-      <div class="forge-print forge-print--${side}" style="--school:${colors.main}">
-        <div class="forge-print__rank">${rank}</div>
-        <div class="forge-print__name">${def.name}</div>
-        <div class="forge-print__cost">${formatCost(def.cost)}</div>
-        <div class="forge-print__text">${def.text}</div>
-        ${
-          unit
-            ? `<div class="forge-print__stats">
-                 <span>ATK ${unit.atk}</span><span>HP ${unit.hp}</span><span>MOV ${unit.mov}</span>
-                 <span>RNG ${unit.rangeMin}-${unit.rangeMax}</span>
-               </div>`
-            : ''
-        }
-        ${
-          def.range !== undefined
-            ? `<div class="forge-print__reach">reach ${def.range}${def.minRange ? ` (min ${def.minRange})` : ''}</div>`
-            : ''
-        }
+      <div class="forge-print forge-print--${side}">
+        <button class="forge-print__rank" data-expand="${def.id}" title="Open full card">
+          ${rank} <span class="forge-print__zoom">⤢</span>
+        </button>
+        ${cardFaceHtml(faceOfDef(def), { extraClass: 'card--compare', showReach: true })}
       </div>
     `;
+  }
+
+  /**
+   * The full-size card, over everything.
+   *
+   * The compared faces are deliberately small so both fit side by side; this is the way
+   * back to reading one properly. Dismissed by clicking anywhere, because a modal in a
+   * shop that needs aiming to close is a modal that gets in the way.
+   */
+  private expandCard(def: CardDef): void {
+    this.el?.querySelector('.forge-modal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'forge-modal';
+    modal.innerHTML = `
+      <div class="forge-modal__inner">
+        ${cardFaceHtml(faceOfDef(def), { extraClass: 'card--large', showReach: true })}
+        <div class="forge-modal__hint">Click anywhere to close</div>
+      </div>
+    `;
+    modal.addEventListener('click', () => modal.remove());
+    this.el?.appendChild(modal);
+    this.tooltip?.attach(modal);
   }
 
   private ascend(cardId: string): void {
@@ -474,15 +498,25 @@ export class ArtificerScreen implements Screen {
     const base = this.slotA ? CARDS[this.slotA] : undefined;
     const reagent: Reagent | undefined = REAGENTS.find((r) => r.id === this.slotB);
 
+    // Slot A shows the card itself. A bench that names the card you loaded and hides its
+    // rules text is asking you to remember what you are pressing.
     const wellA = host.querySelector<HTMLElement>('.splicing-slot--base .splicing-slot__well')!;
     wellA.classList.toggle('is-loaded', Boolean(base));
-    wellA.textContent = base?.name ?? 'empty';
-    if (base) wellA.style.setProperty('--school', schoolOf(base.school as never).main);
+    wellA.innerHTML = base
+      ? cardFaceHtml(faceOfDef(base), { extraClass: 'card--mini', showReach: true })
+      : '<span class="splicing-slot__empty">empty</span>';
 
+    // Slot B is a reagent rather than a card, so it gets a card-shaped face without a
+    // cost: a core is not bought at a Pip price, and printing a `0` there would invent one.
     const wellB = host.querySelector<HTMLElement>('.splicing-slot--catalyst .splicing-slot__well')!;
     wellB.classList.toggle('is-loaded', Boolean(reagent));
-    wellB.textContent = reagent?.name ?? 'empty';
-    if (reagent) wellB.style.setProperty('--school', schoolOf(reagent.school).main);
+    wellB.innerHTML = reagent
+      ? `<div class="card card--reagent card--mini" style="--school:${schoolOf(reagent.school).main};--school-deep:${schoolOf(reagent.school).deep}">
+           <div class="card__name">${reagent.name}</div>
+           <div class="card__type"><span class="card__kind">CORE</span><span class="card__source">${reagent.school.toUpperCase()}</span></div>
+           <div class="card__body"><div class="card__text">${reagent.blurb ?? ''}</div></div>
+         </div>`
+      : '<span class="splicing-slot__empty">empty</span>';
 
     const recipe = base && reagent ? recipeFor(base.id, reagent.id) : undefined;
     const result = recipe ? CARDS[recipe.resultId] : undefined;
@@ -493,12 +527,13 @@ export class ArtificerScreen implements Screen {
 
     const plate = host.querySelector<HTMLElement>('.splicing-output__plate')!;
     plate.classList.toggle('is-ready', Boolean(result && refusal === null));
+    // The output is the pressing's whole face, before a Shard is spent. What comes out of
+    // the bench is the thing being bought, so it is shown the way it will be held.
     plate.innerHTML = result
-      ? `<span class="splicing-output__name">${result.name}</span>
-         <span class="splicing-output__text">${result.text}</span>`
+      ? cardFaceHtml(faceOfDef(result), { extraClass: 'card--mini', showReach: true })
       : base && reagent
-        ? 'Nothing comes of that pairing.'
-        : 'Load both slots';
+        ? '<span class="splicing-output__none">Nothing comes of that pairing.</span>'
+        : '<span class="splicing-output__none">Load both slots</span>';
 
     const btn = host.querySelector<HTMLButtonElement>('.splicing-output__go')!;
     btn.disabled = !result || refusal !== null;

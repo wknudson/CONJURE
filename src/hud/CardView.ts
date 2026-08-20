@@ -1,25 +1,20 @@
 /**
- * A single hand card, rendered as DOM so its rules text stays crisp when it scales up
- * on hover.
+ * A single hand card: the shared card face, plus the hand's own interactivity.
+ *
+ * The face itself lives in `cardFace.ts` and is shared with the Safehouse forges. It used
+ * to be built here, which meant the Artificer grew a second, smaller card of its own — two
+ * renderers for one object, and the forge is exactly where showing a player less about a
+ * card they are about to buy is worst.
  */
 
-import { formatCost } from './cost.js';
 import type { CardInstanceId } from '../contract/ids.js';
 import type { CardSnapshot } from '../contract/snapshots.js';
-import { schoolOf } from '../render/palette.js';
+import { cardFaceHtml, faceOfSnapshot } from './cardFace.js';
 
 export interface CardCallbacks {
   onClick(id: CardInstanceId): void;
   onHover(id: CardInstanceId | null): void;
 }
-
-/** What the card does with the board, in one word. */
-const KIND_LABEL: Record<CardSnapshot['kind'], string> = {
-  minion: 'MINION',
-  spell: 'SPELL',
-  rune: 'RUNE',
-  obstacle: 'OBSTACLE',
-};
 
 export class CardView {
   readonly el: HTMLElement;
@@ -28,55 +23,9 @@ export class CardView {
     readonly snapshot: CardSnapshot,
     private readonly cb: CardCallbacks,
   ) {
-    const colors = schoolOf(snapshot.school);
-    this.el = document.createElement('div');
-    this.el.className = `card card--${snapshot.kind} card--src-${snapshot.source}`;
-    if (snapshot.ephemeral) this.el.classList.add('card--ephemeral');
-    this.el.style.setProperty('--school', colors.main);
-    this.el.style.setProperty('--school-deep', colors.deep);
-
-    const stats = snapshot.stats
-      ? `<div class="card__stats">
-           <span title="Attack">${snapshot.stats.atk}</span>
-           <span title="Health">${snapshot.stats.hp}</span>
-           <span title="Movement">${snapshot.stats.mov}</span>
-         </div>`
-      : '';
-
-    // Each keyword carries its own tooltip: they are the densest jargon on screen.
-    const keywords = snapshot.keywords.length
-      ? `<div class="card__keywords">${snapshot.keywords
-          .map((k) => `<span data-tip="${k}">${k}</span>`)
-          .join(' · ')}</div>`
-      : '';
-
-    // The type line tells you at a glance what the card *is* — whether it puts a body on
-    // the board, attaches to something, or resolves and goes away — and who casts it.
-    // Reach is part of what the card *is* on a grid, so it sits on the type line rather
-    // than buried in the rules text. Only Companion cards have one: the Hero has no
-    // position to measure from.
-    const rangeChip =
-      snapshot.range === undefined
-        ? ''
-        : `<span class="card__range" data-tip="companionRange">RANGE ${snapshot.range}</span>`;
-
-    const typeLine = `
-      <div class="card__type">
-        <span class="card__kind">${KIND_LABEL[snapshot.kind]}</span>
-        ${rangeChip}
-        <span class="card__source">${snapshot.source === 'companion' ? 'COMPANION' : 'HERO'}</span>
-      </div>`;
-
-    this.el.innerHTML = `
-      <div class="card__cost">${formatCost(snapshot.cost)}</div>
-      <div class="card__name">${escapeHtml(snapshot.name)}</div>
-      ${typeLine}
-      <div class="card__body">
-        <div class="card__text">${escapeHtml(snapshot.text)}</div>
-        ${keywords}
-      </div>
-      ${stats}
-    `;
+    const host = document.createElement('div');
+    host.innerHTML = cardFaceHtml(faceOfSnapshot(snapshot));
+    this.el = host.firstElementChild as HTMLElement;
 
     this.el.addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -103,12 +52,4 @@ export class CardView {
     this.el.classList.add('is-leaving');
     window.setTimeout(() => this.el.remove(), 240);
   }
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }

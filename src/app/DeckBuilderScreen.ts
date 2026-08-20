@@ -32,10 +32,43 @@ import { equipRefusal, equipRelic, unequipRelic } from '../core/overworld/state.
 import {
   RELIC_SLOT_BLURBS,
   RELIC_SLOT_LABELS,
+  boonsOfRelics,
   relicById,
   relicsForSlot,
   slotOf,
 } from '../core/data/relics.js';
+import type { CombatBoons } from '../core/engine/setup.js';
+
+/**
+ * Every capability a loadout can grant, in the player's words.
+ *
+ * A list rather than a formatter over the raw keys: `bonusSacrificeMarrow` is a field
+ * name, and a sheet that prints field names is a debug view. Typed against `CombatBoons`,
+ * so a new capability that nobody labels fails the build rather than quietly going
+ * unreadable on the one screen built to read them.
+ */
+const BOON_LABELS: readonly { key: keyof CombatBoons; label: string }[] = [
+  { key: 'armor', label: 'Persistent Armor' },
+  { key: 'pips', label: 'Opening Pips' },
+  { key: 'maxPips', label: 'Pip ceiling' },
+  { key: 'extraOpeningCards', label: 'Opening cards' },
+  { key: 'bonusHandLimit', label: 'Hand limit' },
+  { key: 'bonusObstacleHp', label: 'Obstacle health' },
+  { key: 'bonusSacrificeMarrow', label: 'Marrow per offering' },
+  { key: 'healOnSacrifice', label: 'Health per offering' },
+  { key: 'bonusToxinStacks', label: 'Toxin per application' },
+  { key: 'collisionResist', label: 'Collision damage shrugged off' },
+  { key: 'ignoreFog', label: 'Sees through fog' },
+  { key: 'ignoreGuardians', label: 'Sees past Guardians' },
+  { key: 'ignoreIceSlip', label: 'Keeps its footing on ice' },
+  { key: 'immuneToBurn', label: 'Immune to Burn' },
+  { key: 'immuneToToxin', label: 'Immune to Toxin' },
+  { key: 'revealIntents', label: 'Reads enemy intent' },
+  { key: 'boundFormIgnoresHazards', label: 'Bound Form ignores hazards' },
+  { key: 'boundFormGrounded', label: 'Bound Form cannot be moved' },
+  { key: 'doubleResonance', label: 'Resonance fires twice' },
+  { key: 'discountHybrids', label: 'Spliced cards cost less' },
+];
 import { RELIC_SLOT_ORDER } from '../core/overworld/state.js';
 
 export interface DeckBuilderResult {
@@ -43,6 +76,11 @@ export interface DeckBuilderResult {
   cards: string[];
 }
 
+/**
+ * `loadout` is the Hero sheet. The key kept its old name deliberately: it is written into
+ * nothing persistent, but renaming it would churn every selector and stylesheet rule for
+ * a label the player never sees.
+ */
 type Tab = 'deck' | 'ledger' | 'loadout';
 
 /** Every way the loadout can say no, in the player's words. */
@@ -96,7 +134,7 @@ export class DeckBuilderScreen implements Screen {
       <div class="journal-tabs">
         <button class="journal-tab" data-tab="deck">The Deck</button>
         <button class="journal-tab" data-tab="ledger">The Threat Ledger</button>
-        <button class="journal-tab" data-tab="loadout">Commander Loadout</button>
+        <button class="journal-tab" data-tab="loadout">Hero</button>
       </div>
 
       <div class="builder__body">
@@ -116,11 +154,27 @@ export class DeckBuilderScreen implements Screen {
 
       <div class="loadout">
         <div class="loadout__head">
-          <span class="loadout__title">Commander Loadout</span>
+          <span class="loadout__title">The Commander</span>
           <span class="loadout__note">
-            Four slots. Gear here bends a rule — it will not make anything hit harder.
+            Five slots, one apiece. Gear here bends a rule — none of it will make anything
+            hit harder.
           </span>
         </div>
+
+        <div class="hero">
+          <div class="hero__doll">
+            <div class="hero__figure">
+              <span class="hero__figure-head"></span>
+              <span class="hero__figure-body"></span>
+              <span class="hero__figure-name">Commander</span>
+            </div>
+          </div>
+          <div class="hero__sheet">
+            <div class="hero__sheet-title">In effect</div>
+            <div class="hero__boons"></div>
+          </div>
+        </div>
+
         <div class="loadout__slots"></div>
         <div class="loadout__refusal"></div>
         <div class="loadout__shelf-title">In the footlocker</div>
@@ -164,6 +218,42 @@ export class DeckBuilderScreen implements Screen {
    * could be wearing is the information: three worn and one bare is a decision you have
    * not made yet, and a grid that collapsed to what is equipped would hide it.
    */
+  /**
+   * What the loadout is actually doing, totalled.
+   *
+   * The slots each say what one relic does; this says what the *set* does, which is not
+   * the same reading — three pieces that each add obstacle health add six, and nothing on
+   * the individual cells says so. Folded through `boonsOfRelics`, the same function the
+   * run uses to build a carry, so the sheet cannot claim a total the fight will not honour.
+   */
+  private renderBoons(): void {
+    const host = this.el?.querySelector('.hero__boons');
+    if (!host) return;
+
+    const boons = boonsOfRelics(this.global.overworld.equippedRelics);
+    const rows = BOON_LABELS.filter((b) => {
+      const v = boons[b.key];
+      return v !== undefined && v !== false && v !== 0;
+    });
+
+    if (rows.length === 0) {
+      host.innerHTML = '<div class="hero__boons-empty">Nothing worn. The rules apply as written.</div>';
+      return;
+    }
+
+    host.innerHTML = rows
+      .map((b) => {
+        const v = boons[b.key];
+        const amount = typeof v === 'number' ? `+${v}` : 'yes';
+        return `
+          <div class="hero__boon">
+            <span class="hero__boon-amount">${amount}</span>
+            <span class="hero__boon-label">${b.label}</span>
+          </div>`;
+      })
+      .join('');
+  }
+
   private renderLoadout(): void {
     const slots = this.el?.querySelector('.loadout__slots');
     const shelf = this.el?.querySelector('.loadout__shelf');
@@ -327,6 +417,7 @@ export class DeckBuilderScreen implements Screen {
 
     this.renderLedger();
     this.renderLoadout();
+    this.renderBoons();
     this.renderCollection();
     this.renderDeck();
     this.renderCurve();

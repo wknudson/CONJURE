@@ -208,13 +208,14 @@ export function newProfile(profileId: string, name = 'Commander'): Profile {
   // The coat, worn. A character who started with four bare slots would meet the loadout
   // screen as an empty grid and learn nothing from it.
   //
-  // The rest of the footlocker comes with it, and that is a **placeholder**: nothing in
-  // the game grants a relic. Bounty spoils pay coin, shards and cores; the Artificer
-  // sells cards. Until relics have a source of their own, handing them over at creation
-  // is the difference between gear that exists and gear that can be worn — six of the
-  // seven were unreachable content before this line. Whatever grants them later should
-  // take this list away.
-  overworld.relics = Object.keys(RELICS);
+  // The coat, and only the coat. The footlocker used to arrive full, as an explicit
+  // placeholder against relics being unreachable content — the comment here asked whoever
+  // gave them a source to take the line away, and the Tailoring counter is that source.
+  // Everything else is now bought.
+  //
+  // Existing saves are untouched: what a character already owns is read back off disk, so
+  // nobody loses gear they were handed under the old rule.
+  overworld.relics = ['relic_coat'];
   overworld.equippedRelics = { ...emptyLoadout(), vestment: 'relic_coat' };
 
   return {

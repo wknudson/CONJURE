@@ -811,3 +811,112 @@
 
 .relic-row .relic-slot__domain { margin-bottom: 0; flex: none; }
 .relic-row__body { flex: 1; }
+
+/* ============================================================================
+   The Hero sheet: a figure, and what the gear on it is doing.
+   ========================================================================== */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) 1fr;
+  gap: 18px;
+  margin: 14px 0 18px;
+  align-items: stretch;
+}
+
+.hero__doll {
+  display: grid;
+  place-items: center;
+  padding: 18px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(176, 148, 106, 0.28);
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(240, 178, 74, 0.09), transparent 62%),
+    rgba(0, 0, 0, 0.26);
+}
+
+/* A silhouette rather than art: the slots around it carry the meaning, and a detailed
+   figure would compete with them for the eye. */
+.hero__figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.hero__figure-head {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(214, 196, 160, 0.55);
+  background: rgba(214, 196, 160, 0.12);
+}
+
+.hero__figure-body {
+  width: 56px;
+  height: 66px;
+  border-radius: 26px 26px 8px 8px;
+  border: 2px solid rgba(214, 196, 160, 0.5);
+  background: linear-gradient(180deg, rgba(214, 196, 160, 0.14), rgba(214, 196, 160, 0.04));
+}
+
+.hero__figure-name {
+  margin-top: 4px;
+  font: 800 9px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.62);
+}
+
+.hero__sheet {
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(176, 148, 106, 0.24);
+  background: rgba(0, 0, 0, 0.22);
+  overflow: auto;
+}
+
+.hero__sheet-title {
+  font: 800 9px var(--font);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.6);
+  margin-bottom: 10px;
+}
+
+.hero__boons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.hero__boon {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: 4px;
+  border: 1px solid rgba(240, 178, 74, 0.28);
+  background: rgba(240, 178, 74, 0.07);
+}
+
+.hero__boon-amount {
+  font: 800 12px var(--font);
+  color: var(--lamp);
+}
+
+.hero__boon-label {
+  font: 600 11px var(--font);
+  color: var(--text);
+}
+
+.hero__boons-empty {
+  font: italic 600 11px var(--font);
+  color: var(--text-dim);
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+}
