@@ -79,6 +79,14 @@ export interface RosterView {
   status: 'reserve' | 'fielded' | 'fallen';
   /** Set while fielded, so clicking the board can find the tray entry. */
   unitId?: UnitId;
+  /**
+   * Where this body fell, while it is `fallen`.
+   *
+   * The Soul Pyre. Carried on the view because there is nothing at the coordinate to
+   * render from — a pyre is roster memory, not an entity — so without this the board has
+   * no way to know the ground is marked.
+   */
+  fellAt?: Coord;
 }
 
 export interface BoardView {

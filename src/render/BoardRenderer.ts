@@ -38,6 +38,14 @@ export interface Overlays {
   hover: Coord | null;
   /** The selected unit's tile. */
   selected: Coord | null;
+  /**
+   * Tiles where one of your Vanguard fell.
+   *
+   * Drawn from `BoardView.roster`, not from anything on the board: a Soul Pyre is roster
+   * memory rather than an entity, so there is nothing at the coordinate to render *from*.
+   * That is exactly why it has to travel as an overlay.
+   */
+  pyres: Coord[];
   /** Predicted damage badges, shown while previewing. */
   predicted: { at: Coord; damage?: number; kind: string }[];
   /**
@@ -140,6 +148,7 @@ export function emptyOverlays(): Overlays {
     fog: [],
     hover: null,
     selected: null,
+    pyres: [],
     predicted: [],
     ghosts: [],
     expanded: false,
@@ -365,6 +374,38 @@ export class BoardRenderer {
    * turns a large threatened area into visual noise, which is exactly the case where
    * the player most needs to read it.
    */
+  /**
+   * The spectral flame standing on a Soul Pyre.
+   *
+   * A tint alone reads as another kind of highlight, and the board already has four. The
+   * flame is what says *body* rather than *tile* — so it is drawn as a small upright
+   * shape rather than more ground colour, and it breathes on the shared pulse so a row of
+   * pyres moves together instead of shimmering independently.
+   */
+  private drawPyreFlame(at: Coord, pulse: number): void {
+    const { ctx, cam } = this;
+    const p = cam.tileCenter(at);
+    const h = cam.tileH * (0.62 + 0.10 * pulse);
+    const w = cam.tileH * 0.30;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.45 + 0.25 * pulse;
+
+    const flame = ctx.createLinearGradient(p.x, p.y - h, p.x, p.y);
+    flame.addColorStop(0, 'rgba(186, 230, 253, 0)');
+    flame.addColorStop(0.45, PALETTE.pyreEdge);
+    flame.addColorStop(1, 'rgba(56, 189, 248, 0.05)');
+
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y - h);
+    ctx.quadraticCurveTo(p.x + w, p.y - h * 0.42, p.x, p.y);
+    ctx.quadraticCurveTo(p.x - w, p.y - h * 0.42, p.x, p.y - h);
+    ctx.fillStyle = flame;
+    ctx.fill();
+    ctx.restore();
+  }
+
   private drawThreat(): void {
     const { ctx, cam, overlays } = this;
     const threatened = new Set(overlays.threat.map((t) => coordKey(t.at)));
@@ -743,6 +784,17 @@ export class BoardRenderer {
     }
 
     for (const c of overlays.fog) hatchTile(ctx, cam, c);
+
+    // Soul Pyres, under the offers and over the refusals: the ground remembers a body
+    // fell here whether or not you can do anything about it this turn. Drawn cool and
+    // slow — a marker, not a prompt — so a lit anchor still reads as the brighter thing.
+    for (const c of overlays.pyres) {
+      ctx.save();
+      ctx.globalAlpha = 0.30 + 0.22 * pulse;
+      fillTile(ctx, cam, c, PALETTE.pyreFill, PALETTE.pyreEdge);
+      ctx.restore();
+      this.drawPyreFlame(c, pulse);
+    }
 
     for (const c of overlays.highlight) {
       fillTile(ctx, cam, c, PALETTE.highlightFill, PALETTE.highlight);

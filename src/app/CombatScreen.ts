@@ -23,6 +23,8 @@ import { Sequencer } from '../anim/Sequencer.js';
 import { registerHandlers, type CombatView } from '../anim/handlers.js';
 import { Hud } from '../hud/Hud.js';
 import { DeployTray } from '../hud/DeployTray.js';
+import { Graveyard } from '../hud/Graveyard.js';
+import { ChannelPicker } from '../hud/ChannelPicker.js';
 import { AI_BEAT_MS, NORMAL_MOTION } from '../anim/Sequencer.js';
 import { HelpOverlay } from '../hud/HelpOverlay.js';
 import { Tutorial } from '../hud/Tutorial.js';
@@ -112,6 +114,10 @@ export class CombatScreen implements Screen {
   private tutorial: Tutorial | null = null;
   /** The deployment tray, alive only while the phase is. */
   private deploy: DeployTray | null = null;
+  /** The Fallen Vanguard drawer. Alive for the whole fight; hides itself when empty. */
+  private grave: Graveyard | null = null;
+  /** The "channel how much power" modal, for variable-cost cards. */
+  private channel: ChannelPicker | null = null;
   private onKeyDown = (ev: KeyboardEvent) => this.handleKeyDown(ev);
   private onKeyUp = (ev: KeyboardEvent) => this.handleKeyUp(ev);
 
@@ -202,6 +208,15 @@ export class CombatScreen implements Screen {
       },
       notice: (text) => this.hud?.flashNotice(text),
       warn: (text) => this.hud?.setTargetWarning(text),
+      askChannel: (card, affordable, then) => {
+        const snap = this.session.getHand().find((c) => c.instanceId === card);
+        if (!snap) {
+          then(null);
+          return;
+        }
+        this.channel?.ask(snap, affordable, (choice) => then(choice ? choice.x : null));
+      },
+      setAwaitingFallen: (spec) => this.grave?.setAwaiting(spec, this.session.getBoard()),
       setInspected: (unitId) => {
         this.hud?.showInspect(this.session.getBoard(), unitId);
         // Selection is the only thing that changes what Channel would apply to, so the
@@ -217,6 +232,12 @@ export class CombatScreen implements Screen {
       hud: this.hud,
       renderer: this.renderer,
     };
+    this.grave = new Graveyard(el, {
+      onPick: (rosterIndex) => this.targeting?.onFallenPick(rosterIndex),
+    });
+    this.grave.sync(this.session.getBoard());
+    this.channel = new ChannelPicker(el);
+
     this.sequencer = new Sequencer(view);
     // Label from the stored preference, not from the markup's default.
     this.hud.setSpeedLabel(this.speed);
@@ -312,6 +333,10 @@ export class CombatScreen implements Screen {
   }
 
   unmount(): void {
+    this.grave?.destroy();
+    this.grave = null;
+    this.channel?.close();
+    this.channel = null;
     this.renderer?.stop();
     this.hud?.destroy();
     // A screen torn down mid-drag would otherwise leave its window listeners behind.
@@ -777,6 +802,12 @@ export class CombatScreen implements Screen {
   }
 
   private handleKeyDown(ev: KeyboardEvent): void {
+    // The modal owns the keyboard while it is open, or Esc would cancel the targeting
+    // underneath it and leave the dialog floating over nothing.
+    if (this.channel?.open && this.channel.handleKey(ev.key)) {
+      ev.preventDefault();
+      return;
+    }
     if (ev.key === 'h' || ev.key === 'H') {
       this.help?.toggle();
       return;
@@ -875,6 +906,9 @@ export class CombatScreen implements Screen {
   }
 
   private lockInput(): void {
+    // A pending choice belongs to a turn the player still had. Taking input away closes
+    // it rather than leaving a dialog over a board that has moved on.
+    this.channel?.close();
     this.targeting?.setEnabled(false);
     this.hud?.setInteractive(false);
     this.deploy?.setInteractive(false);
@@ -915,6 +949,7 @@ export class CombatScreen implements Screen {
       this.session.getThreat().commanderThreatCount,
     );
     this.refreshLastStand(board);
+    this.grave?.sync(board);
     // Undo availability and the End Turn warning are both properties of the turn as it
     // now stands, so they are recomputed every time control comes back to the player.
     this.refreshTurnUi();

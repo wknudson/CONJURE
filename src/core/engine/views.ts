@@ -89,7 +89,10 @@ export function toCardSnapshot(state: GameState, side: Side, id: CardInstanceId)
     name: def.name,
     // The price this side actually pays, so a discounted hybrid reads on its own face
     // rather than surprising the player at the till.
+    // The printed price is zero for an X card and means nothing; `xCost` below is what
+    // the face should actually be showing.
     cost: effectiveCost(state, side, def),
+    ...(def.xCost ? { xCost: { max: def.xCost.max } } : {}),
     school: def.school,
     source: def.source,
     kind: def.kind,
@@ -182,6 +185,7 @@ export function toBoardView(state: GameState): BoardView {
       points: CARDS[r.defId] ? rosterPointsOf(CARDS[r.defId]!) : 0,
       status: r.status,
       ...(r.unitId ? { unitId: r.unitId } : {}),
+      ...(r.fellAt ? { fellAt: { ...r.fellAt } } : {}),
     })),
     player: toCommanderView(state, 'player'),
     enemy: toCommanderView(state, 'enemy'),

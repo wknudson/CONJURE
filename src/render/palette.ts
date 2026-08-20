@@ -30,6 +30,12 @@ export const PALETTE = {
   fog: 'rgba(6, 8, 12, 0.55)',
   ghost: 'rgba(255, 255, 255, 0.42)',
 
+  // Soul Pyres. Deliberately cold and off the highlight hue: the ground remembering a
+  // body is not the same kind of thing as a tile offering itself, and a pyre drawn in
+  // cyan would read as a fifth flavour of "click here".
+  pyreEdge: 'rgba(125, 211, 252, 0.75)',
+  pyreFill: 'rgba(56, 189, 248, 0.12)',
+
   danger: '#F87171',
   heal: '#6EE7B7',
   text: '#F1F5F9',

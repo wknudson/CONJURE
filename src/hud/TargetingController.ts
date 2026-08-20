@@ -20,7 +20,8 @@ import { describeShortfall } from './cost.js';
 
 type Mode =
   | { kind: 'idle' }
-  | { kind: 'targeting'; card: CardInstanceId; spec: TargetSpec }
+  /** `x` is present only for a variable-cost card, and only after the player named it. */
+  | { kind: 'targeting'; card: CardInstanceId; spec: TargetSpec; x?: number }
   | { kind: 'unit'; unit: UnitId };
 
 export interface TargetingCallbacks {
@@ -32,6 +33,13 @@ export interface TargetingCallbacks {
   /** A standing warning about what the hovered target would cost. Null clears it. */
   warn(text: string | null): void;
   setInspected(unitId: UnitId | null): void;
+  /**
+   * Asks the player to name an X, then calls back — or calls back with null if they
+   * backed out. Async because it is a modal: the card is not committed until it answers.
+   */
+  askChannel(card: CardInstanceId, affordable: number, then: (x: number | null) => void): void;
+  /** Tells the Graveyard a card is waiting on a fallen body, or that none is. */
+  setAwaitingFallen(spec: TargetSpec | null): void;
 }
 
 export class TargetingController {
@@ -57,6 +65,7 @@ export class TargetingController {
     this.mode = { kind: 'idle' };
     this.hoveredCard = null;
     this.cb.warn(null);
+    this.cb.setAwaitingFallen(null);
     this.cb.setSelectedCard(null);
     this.cb.setEnemyTargetable(false);
     this.cb.setInspected(null);
@@ -122,18 +131,76 @@ export class TargetingController {
       return;
     }
 
+    const card = this.rules.getHand().find((c) => c.instanceId === id);
+
+    // A variable cost is settled before a target is chosen, not after. The preview a
+    // player sees while aiming is the result of a specific X, so there has to *be* one —
+    // and asking afterwards would mean previewing a cost nobody had picked yet.
+    if (card?.xCost) {
+      this.cb.askChannel(id, this.affordableX(card.xCost.max), (x) => {
+        if (x === null) {
+          this.reset();
+          return;
+        }
+        this.beginTargeting(id, x);
+      });
+      return;
+    }
+
+    this.beginTargeting(id);
+  }
+
+  /**
+   * The most X this purse could pay right now.
+   *
+   * Marrow counts: X is a generic price, and the economy settles generic prices out of
+   * Marrow before it touches the Pip bank. A ceiling that ignored it would hide plays the
+   * engine would happily accept.
+   */
+  private affordableX(max: number): number {
+    const p = this.rules.getBoard().player;
+    return Math.max(1, Math.min(max, p.pips + p.marrow));
+  }
+
+  private beginTargeting(id: CardInstanceId, x?: number): void {
     const spec = this.rules.getLegalTargets(id);
 
     // Cards with no choice to make resolve on the second click.
     if (spec.kind === 'global' || spec.kind === 'none') {
-      this.cb.commit({ type: 'playCard', card: id, target: { kind: 'global' } });
+      this.cb.commit({
+        type: 'playCard',
+        card: id,
+        target: { kind: 'global' },
+        ...(x !== undefined ? { x } : {}),
+      });
       this.reset();
       return;
     }
 
-    this.mode = { kind: 'targeting', card: id, spec };
+    this.mode = { kind: 'targeting', card: id, spec, ...(x !== undefined ? { x } : {}) };
     this.cb.setSelectedCard(id);
+    this.cb.setAwaitingFallen(spec.kind === 'fallen' ? spec : null);
     this.refresh();
+  }
+
+  /**
+   * A body picked out of the Graveyard drawer rather than off the board.
+   *
+   * The only route for the two Rallies, which do not care where a body fell and so light
+   * no ground at all.
+   */
+  onFallenPick(rosterIndex: number): void {
+    if (!this.enabled) return;
+    if (this.mode.kind !== 'targeting' || this.mode.spec.kind !== 'fallen') return;
+    if (!this.mode.spec.entries.some((e) => e.rosterIndex === rosterIndex)) return;
+
+    this.cb.commit({
+      type: 'playCard',
+      card: this.mode.card,
+      target: { kind: 'fallen', rosterIndex },
+      ...(this.mode.x !== undefined ? { x: this.mode.x } : {}),
+    });
+    this.reset();
   }
 
   /** "You can't play that" is useless on its own — name the actual obstacle. */
@@ -202,6 +269,8 @@ export class TargetingController {
         this.cb.notice('Not a legal target');
         return;
       }
+      // The X the player already named, carried onto whichever target they then picked.
+      if (this.mode.x !== undefined && action.type === 'playCard') action.x = this.mode.x;
       this.cb.commit(action);
       this.reset();
       return;
@@ -309,6 +378,12 @@ export class TargetingController {
     overlays.intents = board.intents;
     overlays.showThreat = this.threatOn;
     if (this.threatOn) overlays.threat = this.rules.getThreat().tiles;
+    // Drawn in every mode, not only while a revival is selected. A pyre is a standing
+    // fact about the board — where your line broke — and hiding it until the moment it
+    // becomes actionable would make the Graveyard a surprise rather than a plan.
+    overlays.pyres = board.roster.flatMap((r) =>
+      r.status === 'fallen' && r.fellAt ? [r.fellAt] : [],
+    );
 
     if (this.mode.kind === 'targeting') {
       this.paintCardTargets(overlays, this.mode.spec);
@@ -455,6 +530,12 @@ export class TargetingController {
       case 'lines':
         overlays.highlight = dedupe(spec.origins.map((o) => o.from));
         break;
+      case 'fallen':
+        // Only the pyres this card can actually use. A Rally ignores where a body fell, so
+        // its entries carry no tile and it lights nothing — the Graveyard panel is where
+        // that one is picked from, and highlighting every pyre would promise otherwise.
+        overlays.highlight = spec.entries.flatMap((e) => (e.at ? [e.at] : []));
+        break;
       default:
         break;
     }
@@ -566,6 +647,13 @@ export class TargetingController {
 
       case 'global':
         return { type: 'playCard', card, target: { kind: 'global' } };
+
+      case 'fallen': {
+        const entry = spec.entries.find((e) => e.at && coordEq(e.at, tile));
+        return entry
+          ? { type: 'playCard', card, target: { kind: 'fallen', rosterIndex: entry.rosterIndex } }
+          : null;
+      }
 
       default:
         return null;

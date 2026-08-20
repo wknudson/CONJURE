@@ -1072,3 +1072,281 @@
     display: none;
   }
 }
+
+/* ---------------------------------------------------------------- the Graveyard
+
+   A tab on the left edge that appears only when somebody is dead, and opens itself when a
+   card is waiting on a body. Left, deliberately: the hand and the dial own the bottom and
+   the right, and a drawer that fought either would be covering the thing it is asking the
+   player to think about.
+*/
+
+.grave {
+  position: absolute;
+  left: 0;
+  top: 34%;
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+}
+
+.grave.is-empty {
+  display: none;
+}
+
+.grave__tab {
+  display: grid;
+  gap: 1px;
+  place-items: center;
+  padding: 10px 7px;
+  border: 1px solid var(--panel-edge);
+  border-left: none;
+  border-radius: 0 10px 10px 0;
+  background: var(--panel);
+  color: var(--text-dim);
+  font: inherit;
+  cursor: pointer;
+  transition: color 140ms ease, box-shadow 140ms ease;
+}
+
+.grave__tab:hover {
+  color: var(--text);
+}
+
+.grave__skull {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.grave__count {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* A card is waiting on a body. The tab pulses so the answer is findable from the hand. */
+.grave.is-awaiting .grave__tab {
+  color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgba(103, 232, 249, 0.35);
+}
+
+.grave__drawer {
+  width: 0;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-left: none;
+  border-radius: 0 12px 12px 0;
+  background: var(--panel);
+  transition: width 160ms ease, padding 160ms ease;
+}
+
+.grave.is-open .grave__drawer {
+  width: 232px;
+  padding: 12px 13px;
+  border-color: var(--panel-edge);
+}
+
+.grave__title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.grave__note {
+  margin: 3px 0 9px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.grave__list {
+  display: grid;
+  gap: 6px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.grave-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 9px;
+  border: 1px solid var(--panel-edge);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+/* Only rows this particular card will actually take are pickable. Aetheric Resurgence
+   drops any body whose pyre is occupied, and the row has to say so rather than throwing. */
+.grave-row.is-pickable {
+  cursor: pointer;
+  border-color: rgba(103, 232, 249, 0.45);
+  background: rgba(103, 232, 249, 0.08);
+}
+
+.grave-row.is-pickable:hover {
+  border-color: var(--accent);
+  background: rgba(103, 232, 249, 0.16);
+}
+
+.grave-row:disabled {
+  opacity: 0.5;
+}
+
+.grave-row__portrait {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(125, 211, 252, 0.14);
+  border: 1px solid rgba(125, 211, 252, 0.4);
+  color: #bae6fd;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.grave-row__body {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.grave-row__name {
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.grave-row__where {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- channelling X
+
+   The one modal in combat. It earns that by being the only decision that has to be made
+   *before* a target: the preview a player sees while aiming is the result of a specific X,
+   so there has to be one first.
+
+   The scrim is light. The board stays readable behind it because "how much is this body
+   worth to me" is a question about the board.
+*/
+
+.xcost {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 8, 12, 0.45);
+  backdrop-filter: blur(1.5px);
+}
+
+.xcost__sheet {
+  min-width: 300px;
+  padding: 20px 22px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--panel-edge);
+  background: var(--panel);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.6);
+  text-align: center;
+}
+
+.xcost__title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.xcost__card {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.xcost__pips {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0 10px;
+}
+
+/* One pip per point of X, because each one *is* a Pip — the same unit being spent. Five
+   discrete things to click read faster than a track to drag at this range. */
+.xcost__pip {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-edge);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 110ms ease, border-color 110ms ease, background 110ms ease;
+}
+
+.xcost__pip:not(:disabled):hover {
+  transform: translateY(-2px);
+  border-color: rgba(103, 232, 249, 0.5);
+}
+
+.xcost__pip.is-lit {
+  border-color: var(--accent);
+  background: rgba(103, 232, 249, 0.18);
+  color: var(--text);
+  box-shadow: 0 0 14px rgba(103, 232, 249, 0.25);
+}
+
+/* Beyond the purse — shown rather than hidden, so the same card looks the same from one
+   turn to the next and the player can see what a bigger bank would buy. */
+.xcost__pip.is-beyond {
+  opacity: 0.28;
+  cursor: not-allowed;
+}
+
+.xcost__read {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  min-height: 16px;
+}
+
+.xcost__actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.xcost__cancel,
+.xcost__confirm {
+  padding: 9px 18px;
+  border-radius: 9px;
+  border: 1px solid var(--panel-edge);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.xcost__confirm {
+  border-color: rgba(103, 232, 249, 0.5);
+  background: rgba(103, 232, 249, 0.16);
+  font-weight: 700;
+}
+
+.xcost__confirm:hover {
+  background: rgba(103, 232, 249, 0.26);
+}

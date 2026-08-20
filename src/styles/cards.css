@@ -225,3 +225,19 @@
     transform: translateY(-40px) scale(0.75);
   }
 }
+
+/* A variable price. The badge shows X rather than the printed zero, which would read as
+   "free" — the one thing an X card is not. */
+.card__cost--x {
+  color: var(--accent);
+  font-style: italic;
+}
+
+.card__xnote {
+  margin-top: 4px;
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.85;
+}

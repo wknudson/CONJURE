@@ -39,6 +39,8 @@ export interface CardFace {
   /** Cast reach. Only Companion cards have one — the Hero has no position to measure from. */
   range?: number;
   ephemeral?: boolean;
+  /** A variable price. The badge shows X rather than the printed zero. */
+  xCost?: { max: number };
 }
 
 /** What the card does with the board, in one word. */
@@ -76,6 +78,7 @@ export function faceOfDef(def: CardDef): CardFace {
         }
       : {}),
     ...(def.range !== undefined ? { range: def.range } : {}),
+    ...(def.xCost ? { xCost: { max: def.xCost.max } } : {}),
   };
 }
 
@@ -92,6 +95,7 @@ export function faceOfSnapshot(s: CardSnapshot): CardFace {
     ...(s.stats ? { stats: { ...s.stats, rangeMin: 1, rangeMax: 1 } } : {}),
     ...(s.range !== undefined ? { range: s.range } : {}),
     ...(s.ephemeral ? { ephemeral: true } : {}),
+    ...(s.xCost ? { xCost: { max: s.xCost.max } } : {}),
   };
 }
 
@@ -148,7 +152,9 @@ export function cardFaceHtml(
 
   return `
     <div class="${cls}" style="--school:${colors.main};--school-deep:${colors.deep}">
-      <div class="card__cost">${formatCost(face.cost)}</div>
+      <div class="card__cost${face.xCost ? ' card__cost--x' : ''}">${
+        face.xCost ? 'X' : formatCost(face.cost)
+      }</div>
       <div class="card__name">${escapeHtml(face.name)}</div>
       <div class="card__type">
         <span class="card__kind">${KIND_LABEL[face.kind]}</span>
@@ -157,6 +163,11 @@ export function cardFaceHtml(
       </div>
       <div class="card__body">
         <div class="card__text">${escapeHtml(face.text)}</div>
+        ${
+          face.xCost
+            ? `<div class="card__xnote" data-tip="Variable cost|You name X when you play it. Up to ${face.xCost.max}, and never zero.|Marrow can pay it, the same as any other Pip cost.">Costs X · up to ${face.xCost.max}</div>`
+            : ''
+        }
         ${keywords}
       </div>
       ${stats}

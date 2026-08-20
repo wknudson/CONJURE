@@ -83,4 +83,11 @@ export interface CardSnapshot {
   range?: number;
   /** Ephemeral overlay: sits outside the hand limit and cannot be discarded. */
   ephemeral?: boolean;
+  /**
+   * A variable price, and the most the player may declare.
+   *
+   * Carried on the face because the whole cost is a decision here: without it the card
+   * reads as free, which is the one thing X is not.
+   */
+  xCost?: { max: number };
 }
