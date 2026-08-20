@@ -278,7 +278,10 @@ export class Hud {
    * refuses for any reason cannot leave the label claiming otherwise.
    */
   setSpeedLabel(speed: 'normal' | 'fast'): void {
-    this.speedBtn.textContent = speed === 'fast' ? '⏩ Fast' : '⏵ Normal';
+    const label = this.speedBtn.querySelector('.speed__label');
+    // Written to the label span rather than the button, or the gauge beside it would be
+    // replaced by the text on the first click.
+    if (label) label.textContent = speed === 'fast' ? 'Fast' : 'Normal';
     this.speedBtn.classList.toggle('is-fast', speed === 'fast');
   }
 
@@ -710,7 +713,10 @@ const TEMPLATE = `
       </div>
       <div class="hand"></div>
       <div class="right-controls">
-        <button class="speed" data-tip="Playback speed|Normal gives the enemy's turn room to be read, one action at a time.|Fast plays it back at the old pace. Press F.">⏵ Normal</button>
+        <button class="speed" data-tip="Playback speed|Normal gives the enemy's turn room to be read: one action at a time, and the motion itself unhurried.|Fast lets it run at full speed. Press F.">
+          <span class="speed__gauge"><i class="speed__needle"></i></span>
+          <span class="speed__label">Normal</span>
+        </button>
         <button class="rotate rotate--ccw" data-tip="Rotate left|Turns the board a quarter-turn anticlockwise.|Press Q.">⟲</button>
         <button class="rotate rotate--cw" data-tip="Rotate right|Turns the board a quarter-turn clockwise.|Press E.">⟳</button>
         <button class="help" data-tip="Help|Opens the rules reference.|Press H at any time.">?</button>

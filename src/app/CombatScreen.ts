@@ -22,7 +22,7 @@ import { Fx } from '../render/Fx.js';
 import { Sequencer } from '../anim/Sequencer.js';
 import { registerHandlers, type CombatView } from '../anim/handlers.js';
 import { Hud } from '../hud/Hud.js';
-import { AI_BEAT_MS } from '../anim/Sequencer.js';
+import { AI_BEAT_MS, NORMAL_MOTION } from '../anim/Sequencer.js';
 import { HelpOverlay } from '../hud/HelpOverlay.js';
 import { Tutorial } from '../hud/Tutorial.js';
 import { readWeather } from '../hud/weather.js';
@@ -210,6 +210,10 @@ export class CombatScreen implements Screen {
     this.sequencer = new Sequencer(view);
     // Label from the stored preference, not from the markup's default.
     this.hud.setSpeedLabel(this.speed);
+    // And apply it now: without this the opening turn plays at the default motion
+    // whatever the player last chose, since `applyBeat` otherwise waits for the first
+    // enemy turn or a toggle.
+    this.applyBeat();
     registerHandlers(this.sequencer);
 
     // The sky is read from the encounter rather than from board state: it is fixed when
@@ -932,8 +936,17 @@ export class CombatScreen implements Screen {
    * waiting on itself.
    */
   private applyBeat(): void {
+    const normal = this.speed === 'normal';
     const enemyActing = this.session.activeSide === 'enemy';
-    this.sequencer?.setBeat(enemyActing && this.speed === 'normal' ? AI_BEAT_MS : 0);
+
+    // The beat is the enemy's alone: the player's own plays are already gated behind their
+    // own clicks, and pausing between the steps of something they just did would be the
+    // game waiting on itself.
+    this.sequencer?.setBeat(enemyActing && normal ? AI_BEAT_MS : 0);
+
+    // The stretch is not. A blow landing is worth watching whoever threw it, and having
+    // the player's own cascades snap while the enemy's glide would read as two games.
+    this.sequencer?.setMotion(normal ? NORMAL_MOTION : 1);
   }
 
   private syncRunesAndStatuses(board: ReturnType<CombatSession['getBoard']>): void {

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { AI_BEAT_MS, MAX_TOTAL_BEAT_MS, Sequencer } from '../anim/Sequencer.js';
+import {
+  AI_BEAT_MS,
+  MAX_TOTAL_BEAT_MS,
+  NORMAL_MOTION,
+  Sequencer,
+} from '../anim/Sequencer.js';
 import type { GameEvent } from '../contract/events.js';
 
 /**
@@ -160,6 +165,73 @@ describe('toggling mid-turn cannot break the queue', () => {
     while (seq.busy) await settle();
 
     expect(Date.now() - started).toBeLessThan(120);
+  });
+});
+
+describe('the motion stretch', () => {
+  /** A handler that reports the duration it was handed, so the scaling is observable. */
+  function timed() {
+    const durations: number[] = [];
+    const seq = new Sequencer<null>(null);
+    seq.on('unitMoved' as GameEvent['t'], (_e, ctx) => {
+      durations.push(ctx.t(100));
+    });
+    return { seq, durations };
+  }
+
+  it('leaves durations alone by default', async () => {
+    const { seq, durations } = timed();
+    seq.enqueue([ev('unitMoved', 1)]);
+    while (seq.busy) await settle();
+    expect(durations[0]).toBe(100);
+  });
+
+  it('stretches every duration once set', async () => {
+    // The gap made the turn readable; this is what makes it smooth. Every handler routes
+    // its durations through `t`, so one knob reaches all of them.
+    const { seq, durations } = timed();
+    seq.setMotion(1.5);
+    seq.enqueue([ev('unitMoved', 1)]);
+    while (seq.busy) await settle();
+    expect(durations[0]).toBe(150);
+  });
+
+  it('still collapses under a skip, however stretched', async () => {
+    const { seq, durations } = timed();
+    seq.setMotion(2);
+    seq.skip();
+    seq.enqueue([ev('unitMoved', 1)]);
+    while (seq.busy) await settle();
+    expect(durations[0]).toBe(0);
+  });
+
+  it('is shortened by fast-forward rather than fighting it', async () => {
+    const { seq, durations } = timed();
+    seq.setMotion(2);
+    seq.fastForward(true);
+    seq.enqueue([ev('unitMoved', 1)]);
+    while (seq.busy) await settle();
+    // 100 stretched to 200, then divided by the 5x hold.
+    expect(durations[0]).toBeCloseTo(40, 5);
+  });
+
+  it('refuses a zero or negative stretch rather than freezing the board', async () => {
+    // Asserted on the *effect*, not on it merely not throwing — which was true either way
+    // and left the clamp unverified. A motion of zero would collapse every duration to
+    // nothing and a negative one would hand handlers a negative tween.
+    for (const bad of [0, -3]) {
+      const { seq, durations } = timed();
+      seq.setMotion(bad);
+      seq.enqueue([ev('unitMoved', 1)]);
+      while (seq.busy) await settle();
+      expect(durations[0], `motion ${bad}`).toBeGreaterThan(0);
+    }
+  });
+
+  it('asks for a slower, smoother Normal than the first pass shipped', () => {
+    // Both halves of the note this answered: a longer gap *and* unhurried motion.
+    expect(AI_BEAT_MS).toBeGreaterThan(900);
+    expect(NORMAL_MOTION).toBeGreaterThan(1);
   });
 });
 

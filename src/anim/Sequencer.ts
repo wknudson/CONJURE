@@ -45,7 +45,20 @@ const MIN_BUDGET_SCALE = 0.25;
  * Held between **cause groups**, which is exactly where those seams are: every event from
  * one atomic resolution shares a `causeId`, so one group is one thing the enemy did.
  */
-export const AI_BEAT_MS = 900;
+export const AI_BEAT_MS = 1100;
+
+/**
+ * How much longer each animation runs at Normal.
+ *
+ * The gap alone made the turn *readable*; it did not make it **smooth**. Every animation
+ * still played at its original snap, so a paced turn read as a series of quick jerks with
+ * silence between them. Stretching the motion itself is what turns those into one
+ * continuous movement the eye can follow.
+ *
+ * Applied to durations rather than to the beat: they are different complaints. The beat
+ * is how long you get to look at the result, and this is how long the thing itself takes.
+ */
+export const NORMAL_MOTION = 1.35;
 
 /**
  * Total pausing one batch may spend before the beats stop.
@@ -67,6 +80,8 @@ export class Sequencer<T> {
   private drainStartedAt = 0;
   /** Pause held between cause groups. Zero for the player's own actions. */
   private beat = 0;
+  /** Duration multiplier. Above 1 stretches every animation; 1 is the original pace. */
+  private motion = 1;
   /** How much pausing this batch has already spent, against `MAX_TOTAL_BEAT_MS`. */
   private beatSpent = 0;
 
@@ -106,6 +121,22 @@ export class Sequencer<T> {
     this.beat = Math.max(0, ms);
   }
 
+  /**
+   * Stretches every animation by this much.
+   *
+   * Read through `t()`, which every handler already routes its durations through, so a
+   * change here reaches all of them without any handler knowing about it.
+   *
+   * The animation budget scales with it deliberately. That budget compresses a long batch
+   * so it cannot drag, and it is measured in wall-clock milliseconds — left fixed, asking
+   * for smoother motion would push every busy turn over the line and get it compressed
+   * straight back, which is exactly the jerkiness the stretch exists to remove. Scaling
+   * both keeps compression kicking in at the same *relative* point in a turn.
+   */
+  setMotion(scale: number): void {
+    this.motion = Math.max(0.1, scale);
+  }
+
   /** Abandons all pacing: handlers still run in order, but instantly. */
   skip(): void {
     this.speed = Infinity;
@@ -116,7 +147,7 @@ export class Sequencer<T> {
     return {
       view: this.view,
       t: (ms: number) =>
-        this.speed === Infinity ? 0 : (ms / this.speed) * this.budgetScale,
+        this.speed === Infinity ? 0 : ((ms * this.motion) / this.speed) * this.budgetScale,
     };
   }
 
@@ -130,14 +161,14 @@ export class Sequencer<T> {
    */
   private updateBudget(): void {
     const elapsed = performance.now() - this.drainStartedAt;
-    const remaining = TURN_ANIMATION_BUDGET_MS - elapsed;
+    const remaining = TURN_ANIMATION_BUDGET_MS * this.motion - elapsed;
 
     if (remaining <= 0) {
       this.budgetScale = MIN_BUDGET_SCALE;
       return;
     }
     // Rough forecast: assume each queued step costs about as much as an average one.
-    const projected = this.queue.length * TYPICAL_STEP_MS;
+    const projected = this.queue.length * TYPICAL_STEP_MS * this.motion;
     this.budgetScale = projected <= remaining
       ? 1
       : Math.max(MIN_BUDGET_SCALE, remaining / projected);
