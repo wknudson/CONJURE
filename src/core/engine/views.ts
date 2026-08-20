@@ -15,6 +15,7 @@ import { RUNES } from '../data/runes.js';
 import { resonanceFor } from '../data/resonance.js';
 import { allObstacles, allUnits } from './board.js';
 import { isSpent } from './movement.js';
+import { isClimaxed } from './growth.js';
 
 export function toSnapshot(unit: Unit): UnitSnapshot {
   return {
@@ -36,6 +37,9 @@ export function toSnapshot(unit: Unit): UnitSnapshot {
     keywords: [...unit.keywords],
     archetype: unit.archetype,
     escalation: unit.escalation,
+    ...(unit.aura
+      ? { aura: { ...unit.aura, climaxed: isClimaxed(unit) } }
+      : {}),
     exhausted: isSpent(unit),
   };
 }

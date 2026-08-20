@@ -65,7 +65,15 @@ export type Keyword =
   | 'Impact'
   | 'Counter'
   | 'Guardian'
-  | 'Escalate'
+  /**
+   * Grows at the start of its own turn, if it survived the round.
+   *
+   * **Enemy-side only.** The player's units grow through Auras now, which cap at three;
+   * this is the boss clock, and it is the one growth the game still wants unbounded-ish.
+   * A player-side card may still carry the keyword — the gate is on the side, not the data,
+   * so an enemy fielding the same body still gets its clock.
+   */
+  | 'Growth'
   | 'Retain'
   | 'PowerTier'
   /** Your Companion's body on the board. Its wounds are the Pact's wounds. */

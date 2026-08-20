@@ -20,10 +20,10 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     school: 'neutral',
     source: 'hero',
     kind: 'minion',
-    text: 'A conscript of the line. Escalate: +1 ATK / +1 HP.',
+    text: 'A conscript of the line. Steady, cheap, and yours from the first turn.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'vanguard_footman' },
-    keywords: ['Escalate'],
+    keywords: ['Growth'],
     setupOnly: true,
     unit: {
       atk: 2,
@@ -45,10 +45,10 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     school: 'arcane',
     source: 'hero',
     kind: 'minion',
-    text: 'Haste. Can move and attack the turn it is deployed. Escalate: +1 ATK.',
+    text: 'Haste. Can move and attack the turn it is deployed.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'scout_imp' },
-    keywords: ['Haste', 'Escalate'],
+    keywords: ['Haste', 'Growth'],
     unit: {
       atk: 2,
       hp: 2,
@@ -68,10 +68,10 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     school: 'arcane',
     source: 'hero',
     kind: 'minion',
-    text: 'Escalate: +1 ATK. Bled for +1 Marrow above the usual.',
+    text: 'Bled for +1 Marrow above the usual.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'marrow_wisp' },
-    keywords: ['Escalate'],
+    keywords: ['Growth'],
     unit: {
       // Bred to bleed. Every body pays the flat tithe rate; this one pays over it, which
       // is the whole of its identity now that being spent whole is no longer a thing.
@@ -97,7 +97,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     text: 'Counter: retaliates when hit in melee. Guardian: blocks line of sight behind it.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'grave_sentinel' },
-    keywords: ['Counter', 'Guardian', 'Escalate'],
+    keywords: ['Counter', 'Guardian', 'Growth'],
     unit: {
       atk: 2,
       hp: 6,
@@ -126,7 +126,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
         { op: 'cleaveFront', amount: 2, dtype: 'fire', width: 2 },
       ],
     },
-    keywords: ['Impact', 'PowerTier', 'Escalate'],
+    keywords: ['Impact', 'PowerTier', 'Growth'],
     unit: {
       atk: 4,
       hp: 12,

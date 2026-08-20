@@ -130,7 +130,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
       archetype: 'bruiser',
       // The whole point of the card, and the same number the Marrow Wisp pays — bought
       // here with immobility and a turn of waiting rather than with a Pip and mobility.
-      // Unreachable without the Escalate keyword; the stat block demands the field anyway.
+      // Unreachable without the Growth keyword; the stat block demands the field anyway.
       escalationBonus: { atk: 0, hp: 0 },
     },
   },

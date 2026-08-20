@@ -24,7 +24,7 @@ export const RANGED_CARDS: Record<string, CardDef> = {
     text: 'Fires any distance, but only along a straight line. Anything in the way stops the shot.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'longshot_stalker' },
-    keywords: ['Escalate'],
+    keywords: ['Growth'],
     unit: {
       atk: 3,
       hp: 3,
@@ -55,7 +55,7 @@ export const RANGED_CARDS: Record<string, CardDef> = {
     text: 'Shoots over anything, needing no line of sight. Cannot hit what is adjacent.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'cinder_lobber' },
-    keywords: ['Escalate'],
+    keywords: ['Growth'],
     unit: {
       atk: 2,
       hp: 5,
@@ -85,7 +85,7 @@ export const RANGED_CARDS: Record<string, CardDef> = {
     text: 'Hits hard at long range and never moves. Blocking its line, or shoving it, is the answer.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'arc_turret' },
-    keywords: ['Escalate'],
+    keywords: ['Growth'],
     unit: {
       atk: 5,
       hp: 6,

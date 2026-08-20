@@ -1,8 +1,10 @@
 /**
- * Status ticks and Escalation, resolved at the start of the active side's turn.
+ * Status ticks and growth, resolved at the start of the active side's turn.
  *
  * Module 1 pins the order exactly: Toxin -> Burn -> Freeze/Entangle check -> tile
- * hazards -> Escalation. Escalation fires even while a unit is Frozen or Stunned.
+ * hazards -> growth. The last step fires even while a unit is Frozen or Stunned, and it
+ * covers both clocks: the enemy's `Growth` keyword and the player's Elemental Auras. Both
+ * live in `growth.ts`.
  */
 
 import type { Side, StatusKind } from '../../contract/ids.js';
@@ -11,8 +13,8 @@ import { emit } from './context.js';
 import type { Unit } from '../types/units.js';
 import { unitsOf } from './board.js';
 import { dealDamage } from './damage.js';
-import { CARDS } from '../data/cards/index.js';
 import { tickHazards } from './reactions.js';
+import { growUnit, tickAura } from './growth.js';
 
 /** Damage per stack, per tick. */
 const TICK_DAMAGE: Partial<Record<StatusKind, { amount: number; dtype: 'true' | 'fire' }>> = {
@@ -53,11 +55,19 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
   // 4. Tile hazards age here, per Module 1's order.
   tickHazards(ctx);
 
-  // 5. Escalation — fires even on Frozen or Stunned units.
+  // 5. Growth and Auras — both fire even on Frozen or Stunned units. Being held down
+  //    does not stop something growing, and it certainly does not stop it bleeding.
   for (const id of ids) {
     const unit = ctx.state.units[id];
     if (!unit) continue;
-    escalate(ctx, unit);
+    // The enemy's clock first, then the player's Aura. They are mutually exclusive in
+    // practice — `growUnit` refuses anything not enemy-side — but the order is fixed so a
+    // future unit holding both resolves the same way every time.
+    growUnit(ctx, unit);
+    if (ctx.state.result) return;
+    const live = ctx.state.units[id];
+    if (live) tickAura(ctx, live);
+    if (ctx.state.result) return;
   }
 }
 
@@ -107,39 +117,6 @@ function decay(unit: Unit, status: StatusKind): void {
   const next = stacks - 1;
   if (next > 0) unit.statuses[status] = next;
   else delete unit.statuses[status];
-}
-
-/**
- * Escalation (Draft 7 §6.4): surviving friendly minions scale at the start of your turn
- * if they lived through the enemy round. Units never escalate on their deploy turn.
- * 1x1 units cap at +3 stacks; Behemoths are uncapped.
- */
-function escalate(ctx: Ctx, unit: Unit): void {
-  // A Bound Form is bound: its power is the Pact's, and the Pact does not grow. Its
-  // card carries no Escalate either, so this is the belt to that suspenders -- it holds
-  // even if some future effect grants Escalate to everything you control.
-  if (unit.keywords.includes('BoundForm')) return;
-  if (!unit.keywords.includes('Escalate')) return;
-  if (unit.freshlySummoned) {
-    // It has now survived a full round, so it escalates from next turn onward.
-    unit.freshlySummoned = false;
-    return;
-  }
-  if (unit.escalation >= unit.escalationCap) return;
-
-  const bonus = CARDS[unit.defId]?.unit?.escalationBonus ?? { atk: 1, hp: 0 };
-  unit.escalation += 1;
-  unit.atk += bonus.atk;
-  unit.maxHp += bonus.hp;
-  unit.hp += bonus.hp;
-
-  emit(ctx, {
-    t: 'escalated',
-    unitId: unit.id,
-    stacks: unit.escalation,
-    atk: unit.atk,
-    hp: unit.hp,
-  });
 }
 
 /** Clears per-turn action flags for the side about to act. */

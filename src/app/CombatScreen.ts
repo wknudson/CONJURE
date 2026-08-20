@@ -473,7 +473,7 @@ export class CombatScreen implements Screen {
        }
        ${unit.armor > 0 ? `<div class="tooltip__detail">${unit.armor} Armor absorbs damage first</div>` : ''}
        ${statuses ? `<div class="tooltip__detail">${escapeHtml(statuses)}</div>` : ''}
-       ${unit.escalation > 0 ? `<div class="tooltip__detail">Escalated ${unit.escalation}×</div>` : ''}`,
+       ${unit.escalation > 0 ? `<div class="tooltip__detail">Grown ${unit.escalation}×</div>` : ''}`,
       cx,
       cy,
     );

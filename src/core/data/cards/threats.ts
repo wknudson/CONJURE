@@ -26,7 +26,7 @@ export const THREAT_CARDS: Record<string, CardDef> = {
    * it back. And the lane it walks becomes expensive for *everyone*, which is as much a
    * problem for the army that fielded it as for the one facing it.
    *
-   * Uncapped Escalation, because `escalationCap` is Infinity for anything 2x2. Left alone
+   * Near-endless Growth, because `escalationCap` is 99 for anything 2x2. Left alone
    * it does not stop growing — the clock the player is actually playing against.
    */
   scrap_titan: {
@@ -39,7 +39,7 @@ export const THREAT_CARDS: Record<string, CardDef> = {
     text: 'A walking scrapyard. Grinds every tile it leaves into rubble, and never stops growing. It cannot cross its own wreckage.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 2 },
     effect: { op: 'summon', unitDef: 'scrap_titan' },
-    keywords: ['Escalate'],
+    keywords: ['Growth'],
     setupOnly: true,
     unit: {
       atk: 5,

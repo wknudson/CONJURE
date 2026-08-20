@@ -96,7 +96,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
    * it is blocking. At four Pips it is Tier 3 and capped at one copy, which is correct —
    * two of these on a narrow board would make a lane simply impassable.
    *
-   * No Escalate. It is already the largest body a Hero can field outside a Behemoth, and
+   * No Growth. It is already the largest body a Hero can field outside a Behemoth, and
    * something this hard to remove should not also grow while you fail to remove it.
    */
   slag_iron_golem: {
@@ -120,7 +120,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
       archetype: 'bruiser',
       // Worth something as an offering, but nowhere near four Pips back: a body this
       // expensive should be spent by fighting with it, not by cashing it in.
-      // Unreachable without the Escalate keyword; the stat block demands the field anyway.
+      // Unreachable without the Growth keyword; the stat block demands the field anyway.
       escalationBonus: { atk: 0, hp: 0 },
     },
   },

@@ -176,7 +176,7 @@ export function checkInvariants(state: GameState, where: string): string[] {
     );
     if (bound.length > 1) say(`${side} has ${bound.length} Bound Forms`);
     // The Alpha of a subjugation is the one Bound Form that *does* grow. `enrageBoss`
-    // writes its stacks directly, on the stated grounds that this is not the Escalate
+    // writes its stacks directly, on the stated grounds that this is not the Growth
     // keyword rewarding survival but the beast getting angrier at being caged — so the
     // rule below has to know the difference, or it calls a documented mechanic a bug.
     const alphaId = state.players.enemy.companionUnitId;

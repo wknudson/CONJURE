@@ -6,7 +6,7 @@ import type { BoardView } from '../contract/query.js';
  * The projected-damage readout.
  *
  * This exists to close a trust gap: the declared figure alone under-reports, because an
- * attacker that will Escalate before it swings hits for more than it promised. Being told
+ * attacker that will grow before it swings hits for more than it promised. Being told
  * 3 and taking 4 is the failure that makes a telegraph worth ignoring.
  */
 
@@ -47,7 +47,7 @@ function attacker(over: Record<string, unknown> = {}) {
     rangeMin: 1,
     rangeMax: 1,
     school: 'arcane',
-    keywords: ['Escalate'],
+    keywords: ['Growth'],
     archetype: 'skirmisher',
     escalation: 0,
     exhausted: false,
@@ -82,7 +82,7 @@ describe('projected damage', () => {
     expect(p.total).toBe(0);
   });
 
-  it('adds the growth an Escalate attacker gains before it swings', () => {
+  it('adds the growth a Growth attacker gains before it swings', () => {
     // The exact bug this was written for: declared 3, actual 4.
     const p = calculateProjectedDamage(
       board({
@@ -116,7 +116,7 @@ describe('projected damage', () => {
     expect(p.fromEscalation).toBe(1);
   });
 
-  it('does not add growth for a unit that cannot Escalate', () => {
+  it('does not add growth for a unit that cannot grow', () => {
     const p = calculateProjectedDamage(
       board({
         units: [attacker({ keywords: [] })],

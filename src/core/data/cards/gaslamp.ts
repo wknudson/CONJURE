@@ -70,7 +70,7 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     text: 'Lobber. Fires 2-4 tiles, arcing over cover, and cannot depress its aim onto anything adjacent. Leaves rubble when it breaks.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'scrap_metal_mortar' },
-    keywords: ['Escalate'],
+    keywords: ['Growth'],
     leavesRubble: true,
     unit: {
       atk: 2,

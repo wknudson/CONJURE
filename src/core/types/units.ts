@@ -84,8 +84,16 @@ export interface Unit {
   rune?: AttachedRune;
   /** Extra Marrow this body yields when tithed, above the flat rate. Usually 0. */
   titheBonus: number;
+  /** Stacks of enemy `Growth` taken. Player units grow through Auras instead. */
   escalation: number;
   escalationCap: number;
+  /**
+   * The Elemental Aura riding this unit, if any. One slot, like `rune`.
+   *
+   * `stacks` counts from 1 on the turn it is cast; at `AURA_MAX_STACKS` it has Climaxed
+   * and stops growing. See `src/core/data/auras.ts`.
+   */
+  aura?: { defId: string; stacks: number };
   /** Per-turn action flags. One move and one attack are available each turn. */
   movedThisTurn: boolean;
   attackedThisTurn: boolean;

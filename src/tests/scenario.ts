@@ -16,6 +16,7 @@ import { makeRng } from '../core/util/rng.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { HAND_LIMIT, PIP_CAP } from '../core/engine/deck.js';
 import { flankColumns } from '../core/engine/setup.js';
+import { growthCapFor } from '../core/engine/growth.js';
 
 export interface UnitSpec {
   def: string;
@@ -196,7 +197,7 @@ export function addUnit(state: GameState, spec: UnitSpec): Unit {
     statuses: {},
     titheBonus: spec.titheBonus ?? stats.titheBonus ?? 0,
     escalation: 0,
-    escalationCap: stats.footprint === 2 ? Infinity : 3,
+    escalationCap: growthCapFor(stats.footprint),
     movedThisTurn: false,
     attackedThisTurn: false,
     summonedThisTurn: false,

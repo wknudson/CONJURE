@@ -6,7 +6,7 @@
  * does. Each is bound to its Companion by CompanionDef.unitCardId.
  *
  * Every one carries BoundForm, which is what makes them the Pact's body: they keep no
- * health of their own, cannot be tithed or attached to, and never Escalate. The `hp`
+ * health of their own, cannot be tithed, enchanted or attached to, and never grow. The `hp`
  * below is therefore cosmetic — it never moves, because damage is redirected to the Pact
  * before it reaches the unit. It is set to the Pact's own total so that anything reading
  * a health fraction off the unit reads full, rather than reading a misleading sliver.

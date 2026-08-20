@@ -21,6 +21,7 @@ import { setAnchor } from './subjugation.js';
 import { attachRune, detonateAllRunes } from './runes.js';
 import { pushUnit } from './displacement.js';
 import { canAct } from './movement.js';
+import { attachAura, isClimaxed, removeAura } from './growth.js';
 import { spawnObstacle, summonUnit } from './spawn.js';
 import { CARDS } from '../data/cards/index.js';
 import { cellsOf, chebyshev, manhattan, toDirection } from '../util/grid.js';
@@ -194,6 +195,33 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       play.vacatedAt = { ...unit.anchor };
       emit(ctx, { t: 'unitConsumed', unitId: unit.id });
       killEntity(ctx, unit, 'spell');
+      return;
+    }
+
+    case 'attachAura': {
+      const ref = chosenRef(play);
+      if (!ref || ref.kind !== 'unit') return;
+      const unit = ctx.state.units[ref.id];
+      if (!unit) return;
+      // Belt to targeting's suspenders: the Bound Form is the Pact's body, and an Aura
+      // grows a unit. `attachAura` refuses it outright rather than trusting the filter.
+      if (unit.keywords.includes('BoundForm')) return;
+      attachAura(ctx, unit, node.aura);
+      return;
+    }
+
+    case 'detonateAura': {
+      const ref = chosenRef(play);
+      if (!ref || ref.kind !== 'unit') return;
+      const unit = ctx.state.units[ref.id];
+      if (!unit) return;
+      // Only a fully-grown Aura may be spent. Targeting already narrows to these, so this
+      // is the same rule asked twice rather than a second opinion about it.
+      if (!isClimaxed(unit)) return;
+
+      const spent = removeAura(unit);
+      if (spent) emit(ctx, { t: 'auraDetonated', unitId: unit.id, aura: spent });
+      // The burst is whatever ops follow this one in the card's `seq`. Nothing to do here.
       return;
     }
 

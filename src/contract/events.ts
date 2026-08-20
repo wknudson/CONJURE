@@ -118,6 +118,14 @@ export type GameEvent = EventBase &
         source: 'obstacle' | 'creature';
       }
     | { t: 'unitTithed'; unitId: UnitId; side: Side; marrow: number; damage: number }
+    /** An Elemental Aura took hold, at one stack. Replaces whatever was there. */
+    | { t: 'auraAttached'; unitId: UnitId; aura: string; name: string; stacks: number; atk: number; hp: number }
+    /** One turn of growth. Stacks 1 and 2 carry a stat change; 3 carries none. */
+    | { t: 'auraStacked'; unitId: UnitId; aura: string; stacks: number; atk: number; hp: number }
+    /** The cap. Growth stops here and the Climax trait comes on. */
+    | { t: 'auraClimaxed'; unitId: UnitId; aura: string; trait: string; atk: number; hp: number }
+    /** Spent. The Aura is gone and its stats with it; the burst is the card's own ops. */
+    | { t: 'auraDetonated'; unitId: UnitId; aura: string }
     /** A body spent whole to make something else. Pays no Marrow -- see `consumeTarget`. */
     | { t: 'unitConsumed'; unitId: UnitId }
     /** A unit spent its attack extracting Marrow instead of swinging. */

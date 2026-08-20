@@ -141,10 +141,10 @@ export const FROST_CARDS: Record<string, CardDef> = {
     school: 'frost',
     source: 'hero',
     kind: 'minion',
-    text: 'Guardian: blocks line of sight behind it. Escalate: +1 HP.',
+    text: 'Guardian: blocks line of sight behind it.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'rimeguard' },
-    keywords: ['Guardian', 'Escalate'],
+    keywords: ['Guardian', 'Growth'],
     unit: {
       atk: 1,
       hp: 7,

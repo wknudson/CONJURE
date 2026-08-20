@@ -167,7 +167,7 @@ describe('what cannot be done to it', () => {
 
   it('never escalates, even holding the keyword', () => {
     const { state, boundId } = withBound();
-    state.units[boundId]!.keywords = ['BoundForm', 'Escalate'];
+    state.units[boundId]!.keywords = ['BoundForm', 'Growth'];
     const atk = state.units[boundId]!.atk;
 
     let cur = state;

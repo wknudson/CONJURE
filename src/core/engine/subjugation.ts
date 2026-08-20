@@ -200,7 +200,7 @@ export function onAnchorDied(ctx: Ctx, unit: Unit): void {
  *
  * Deliberately not `escalateUnit`: that one refuses a Bound Form on the grounds that its
  * power belongs to a Pact which does not grow, and the Alpha's body is a Bound Form. This
- * growth is not the Escalate keyword rewarding survival, it is the beast getting angrier
+ * growth is not the Growth keyword rewarding survival, it is the beast getting angrier
  * because something tried to cage it, so it is written directly.
  */
 function enrageBoss(ctx: Ctx): void {

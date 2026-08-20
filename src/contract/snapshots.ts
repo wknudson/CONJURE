@@ -40,6 +40,8 @@ export interface UnitSnapshot {
   archetype: UnitArchetype;
   /** Times this unit has grown by surviving a round. Otherwise invisible to the player. */
   escalation: number;
+  /** The Elemental Aura riding this unit, if any, and how far it has grown. */
+  aura?: { defId: string; stacks: number; climaxed: boolean };
   /** Already moved or attacked this turn, so it cannot act again. */
   exhausted: boolean;
 }

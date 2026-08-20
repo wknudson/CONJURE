@@ -5,7 +5,7 @@
  * trust — the player is promised 3 and takes 4. Two reasons, and neither is a status tick:
  *
  *   1. **Escalation.** An intent records the attacker's ATK at the moment it was declared,
- *      but Escalate fires at the start of the enemy's turn, *before* the blow lands. A
+ *      but Growth fires at the start of the enemy's turn, *before* the blow lands. A
  *      unit that grows between the promise and the swing hits for more than it said.
  *   2. **Commander damage-over-time.** Burn and Toxin live on units in this engine, never
  *      on a Commander, so today this contributes nothing. It is computed anyway so that
@@ -22,6 +22,7 @@
  */
 
 import type { BoardView } from '../contract/query.js';
+import { growthCapFor } from '../core/engine/growth.js';
 
 export interface ProjectedDamage {
   /** Everything the Pact is expected to lose before the player acts again. */
@@ -57,12 +58,12 @@ export function calculateProjectedDamage(board: BoardView): ProjectedDamage {
     // Will this attacker be bigger by the time it swings?
     const unit = board.units.find((u) => u.id === intent.unitId);
     if (!unit) continue;
-    if (!unit.keywords.includes('Escalate')) continue;
+    if (!unit.keywords.includes('Growth')) continue;
 
-    // 1x1 units cap at +3; Behemoths are uncapped. A unit already at its ceiling has
-    // nothing more to gain, so its declared figure stands.
-    const cap = unit.footprint === 2 ? Infinity : 3;
-    if (unit.escalation >= cap) continue;
+    // A unit already at its ceiling has nothing more to gain, so its declared figure
+    // stands. The cap comes from the engine rather than being restated here — this file
+    // used to carry its own copy, including the `Infinity` that turned out to be a bug.
+    if (unit.escalation >= growthCapFor(unit.footprint)) continue;
 
     fromEscalation += ESCALATION_STEP;
   }

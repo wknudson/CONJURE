@@ -21,6 +21,7 @@ import {
   unitsOf,
 } from './board.js';
 import { canAttack, canAct } from './movement.js';
+import { isClimaxed } from './growth.js';
 import { hasLoS, hasLoSToPortrait } from './los.js';
 import { DIRS_8, cellsAt, cellsOf } from '../util/grid.js';
 import { inBounds, portraitRow, territoryRows, visionClamp } from '../types/state.js';
@@ -147,6 +148,7 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
       const barred =
         effectContainsOp(def.effect, 'consumeTarget') ||
         effectContainsOp(def.effect, 'tithe') ||
+        effectContainsOp(def.effect, 'attachAura') ||
         effectContainsOp(def.effect, 'attachRune');
       const out: ChosenTarget[] = [];
       for (const e of allEntities(state)) {
@@ -155,6 +157,12 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
         if (spec.side === 'ally' && e.side !== side) continue;
         if (spec.side === 'enemy' && e.side === side) continue;
         if (spec.requireUnexhausted && isUnitEntity && !canAct(e as Unit)) continue;
+        if (spec.requiresAura) {
+          if (!isUnitEntity) continue;
+          const u = e as Unit;
+          if (!u.aura) continue;
+          if (spec.requiresAura === 'climax' && !isClimaxed(u)) continue;
+        }
         if (barred && isUnitEntity && (e as Unit).keywords.includes('BoundForm')) continue;
         // The target itself never blocks the line to itself.
         if (!reaches(cellsOf(e), [e.id])) continue;

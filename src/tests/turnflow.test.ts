@@ -13,6 +13,7 @@ import { applyCommand } from '../core/engine/engine.js';
 import { IllegalCommandError } from '../core/types/commands.js';
 import { PIP_CAP } from '../core/engine/deck.js';
 import { canMove, legalMoves } from '../core/engine/movement.js';
+import { GROWTH_CAP, GROWTH_CAP_BEHEMOTH } from '../core/engine/growth.js';
 
 describe('resources', () => {
   it('caps the pip bank at 8 only during end-of-turn cleanup', () => {
@@ -223,36 +224,66 @@ describe('pacifist lockout', () => {
   });
 });
 
-describe('escalation', () => {
-  it('does not escalate a unit on the turn it was deployed', () => {
-    const state = scenario({ hand: ['scout_imp'], pips: 5 });
-    const played = run(state, play(handCard(state, 'player', 'scout_imp'), atTile(2, 4)));
-    const imp = findUnit(played.state, 'scout_imp', 'player');
-    expect(played.state.units[imp.id]!.escalation).toBe(0);
+describe('Growth is the enemy clock only', () => {
+  it('does not grow an enemy unit on the turn it arrived', () => {
+    const state = scenario({
+      playerHp: 500,
+      enemyHp: 500,
+      units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, fresh: true }],
+    });
+    const imp = findUnit(state, 'scout_imp', 'enemy');
+    expect(state.units[imp.id]!.escalation).toBe(0);
 
-    // One full round later it has survived the enemy phase and starts scaling.
-    const cycled = run(played.state, { type: 'endTurn' }, { type: 'endTurn' });
+    // One full round later it has survived a player phase and starts scaling.
+    const cycled = run(state, { type: 'endTurn' }, { type: 'endTurn' });
     expect(cycled.state.units[imp.id]!.escalation).toBe(0);
 
     const twice = run(cycled.state, { type: 'endTurn' }, { type: 'endTurn' });
     expect(twice.state.units[imp.id]!.escalation).toBe(1);
-    expect(twice.state.units[imp.id]!.atk).toBe(3);
   });
 
-  it('caps 1x1 escalation at +3 stacks', () => {
-    // High commander HP so the Pacifist Lockout, which fires after three idle rounds,
-    // does not end the game before escalation reaches its cap.
+  it('never grows a player unit, however long it stands', () => {
+    // The whole point of the split. A player body that kept the keyword would be growing
+    // on two clocks at once, and the uncapped one would win.
     const state = scenario({
       playerHp: 500,
       enemyHp: 500,
-      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 4 } }],
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 4 }, fresh: false }],
+    });
+    const imp = findUnit(state, 'scout_imp', 'player');
+    const atkBefore = state.units[imp.id]!.atk;
+
+    let cur = state;
+    for (let i = 0; i < 6; i++) {
+      cur = run(cur, { type: 'endTurn' }, { type: 'endTurn' }).state;
+    }
+
+    expect(cur.units[imp.id]!.escalation).toBe(0);
+    expect(cur.units[imp.id]!.atk).toBe(atkBefore);
+  });
+
+  it('caps a 1x1 enemy at +3 stacks', () => {
+    // High commander HP so the Pacifist Lockout, which fires after three idle rounds,
+    // does not end the game before growth reaches its cap.
+    const state = scenario({
+      playerHp: 500,
+      enemyHp: 500,
+      units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, fresh: false }],
     });
     let cur = state;
     for (let i = 0; i < 8; i++) {
       cur = run(cur, { type: 'endTurn' }, { type: 'endTurn' }).state;
     }
-    const imp = findUnit(cur, 'scout_imp', 'player');
-    expect(cur.units[imp.id]!.escalation).toBe(3);
+    const imp = findUnit(cur, 'scout_imp', 'enemy');
+    expect(cur.units[imp.id]!.escalation).toBe(GROWTH_CAP);
+  });
+
+  it('gives a Behemoth a finite ceiling that survives a save', () => {
+    // `Infinity` used to sit here and is not JSON: a saved fight came back with the
+    // ceiling replaced by `null`. The number matters less than its being writable.
+    expect(Number.isFinite(GROWTH_CAP_BEHEMOTH)).toBe(true);
+    expect(JSON.parse(JSON.stringify({ cap: GROWTH_CAP_BEHEMOTH })).cap).toBe(GROWTH_CAP_BEHEMOTH);
+    expect(GROWTH_CAP_BEHEMOTH).toBeGreaterThan(GROWTH_CAP);
   });
 });
 

@@ -133,8 +133,8 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
       // something — every body pays the same base, and a premium is what marks the
       // a rule — so this number alone decides whether a wall can be cashed in. One keeps
       // the option honest without making a 2-Pip body a Marrow engine.
-      // Unreachable while the card carries no Escalate keyword; the stat block requires
-      // the field regardless. Zeroed rather than guessed, so a future grant of Escalate
+      // Unreachable while the card carries no Growth keyword; the stat block requires
+      // the field regardless. Zeroed rather than guessed, so a future grant of Growth
       // has to state what this thing actually grows into.
       escalationBonus: { atk: 0, hp: 0 },
     },

@@ -79,7 +79,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
    * of the card. A Briar threatens exactly the tile it was planted beside and nothing
    * else for the rest of the fight, so the decision is made once, when it goes down.
    *
-   * Escalate is what makes that decision pay: it survives rounds precisely because
+   * An Aura is what makes that decision pay: it survives rounds precisely because
    * nothing has to walk past it, and by the cap it is a 4 ATK / 7 HP wall standing where
    * you chose to put it on turn one.
    */
@@ -90,10 +90,10 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
     school: 'bloom',
     source: 'hero',
     kind: 'minion',
-    text: 'Cannot move, ever. Escalate: +1 ATK / +1 HP each round it survives. Plant it where the fight is going to be.',
+    text: 'Cannot move, ever. Plant it where the fight is going to be.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'creeping_briar' },
-    keywords: ['Escalate'],
+    keywords: ['Growth'],
     unit: {
       atk: 1,
       hp: 4,

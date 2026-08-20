@@ -7,6 +7,7 @@ import type { Ctx } from './context.js';
 import { emit } from './context.js';
 import type { Obstacle, Unit } from '../types/units.js';
 import { CARDS } from '../data/cards/index.js';
+import { growthCapFor } from './growth.js';
 import { canPlace } from './board.js';
 import type { GameState } from '../types/state.js';
 import { territoryRows } from '../types/state.js';
@@ -53,8 +54,12 @@ export function summonUnit(
     statuses: {},
     titheBonus: stats.titheBonus ?? 0,
     escalation: 0,
-    // 1x1 units cap at +3 growth; Behemoths are uncapped (Module 2).
-    escalationCap: stats.footprint === 2 ? Infinity : 3,
+    // 1x1 units cap at +3 growth; Behemoths run far longer but are no longer *endless*.
+    // `Infinity` used to live here and it is not a serialisable number: it survives a
+    // structured clone but `JSON.stringify` turns it into `null`, so a saved fight came
+    // back with a Behemoth whose ceiling was gone. A large finite number says the same
+    // thing about the design and can actually be written down.
+    escalationCap: growthCapFor(stats.footprint),
     movedThisTurn: false,
     attackedThisTurn: false,
     summonedThisTurn: true,

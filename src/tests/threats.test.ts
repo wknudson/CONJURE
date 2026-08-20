@@ -8,6 +8,7 @@ import { feralAggressStep } from '../core/engine/feral.js';
 import { makeCtx } from '../core/engine/context.js';
 import { RUBBLE_MOVE_COST } from '../core/engine/movement.js';
 import { coordKey } from '../contract/ids.js';
+import { GROWTH_CAP_BEHEMOTH } from '../core/engine/growth.js';
 
 /**
  * The Bestiary.
@@ -60,11 +61,13 @@ describe('Scrap-Titan', () => {
     const stats = CARDS.scrap_titan!.unit!;
     expect(stats.footprint).toBe(2);
     expect(stats.hp).toBe(25);
-    expect(CARDS.scrap_titan!.keywords).toContain('Escalate');
+    expect(CARDS.scrap_titan!.keywords).toContain('Growth');
 
     const { state, beast } = titan();
-    // `escalationCap` is Infinity for anything 2x2 — the clock the player plays against.
-    expect(state.units[beast.id]!.escalationCap).toBe(Infinity);
+    // A Behemoth's ceiling is far out of reach but finite — the clock the player plays
+    // against. It was `Infinity`, which is not JSON and came back `null` from a save.
+    expect(state.units[beast.id]!.escalationCap).toBe(GROWTH_CAP_BEHEMOTH);
+    expect(Number.isFinite(state.units[beast.id]!.escalationCap)).toBe(true);
   });
 
   it('grinds the tiles it walks off into rubble', () => {

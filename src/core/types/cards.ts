@@ -55,6 +55,21 @@ export type EffectNode =
    */
   | { op: 'tithe'; damage: number; marrow: number }
   /**
+   * Hangs an Elemental Aura on an allied unit.
+   *
+   * Recasting replaces whatever the unit was wearing and resets it to one stack — the old
+   * Aura's stats are handed back first, so this is never a way to wear two at once.
+   */
+  | { op: 'attachAura'; aura: string }
+  /**
+   * Spends a Climaxed Aura.
+   *
+   * Removes the Aura and its stats, and nothing else: the burst is whatever ordinary ops
+   * follow it in the card's own `seq`, so a Detonation is balanced in the same vocabulary
+   * as every other spell.
+   */
+  | { op: 'detonateAura' }
+  /**
    * Marrow gained. A fixed number, or scaled off the blood a `tithe` just took.
    *
    * The dynamic form mirrors `grantArmor`'s, which already reads `titheDamage` — the
@@ -120,7 +135,17 @@ export type AreaSpec =
 export type TargetSpec =
   | { kind: 'none' }
   | { kind: 'emptyTile'; zone: 'ownTerritory' | 'any'; footprint: 1 | 2 }
-  | { kind: 'entity'; side: 'ally' | 'enemy' | 'any'; includeObstacles: boolean; requireUnexhausted?: boolean }
+  | {
+      kind: 'entity';
+      side: 'ally' | 'enemy' | 'any';
+      includeObstacles: boolean;
+      requireUnexhausted?: boolean;
+      /**
+       * Narrows to units carrying an Aura. `'climax'` demands a fully-grown one, which is
+       * what makes a Detonation card unplayable until the fuse has actually burned down.
+       */
+      requiresAura?: 'any' | 'climax';
+    }
   | { kind: 'adjacentEnemy' }
   | { kind: 'line'; length: number }
   | { kind: 'unitOrPortrait'; side: 'ally' }

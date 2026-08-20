@@ -1,7 +1,7 @@
 /**
  * Plain-language explanations for every term the game shows but never defines.
  *
- * A first-time player meets "Escalate", "Guardian", "Pips" and "Marrow" within seconds
+ * A first-time player meets "Growth", "Guardian", "Pips" and "Marrow" within seconds
  * of starting, and nothing on screen says what any of them mean. Everything here is
  * surfaced on hover.
  */
@@ -55,10 +55,11 @@ export const KEYWORDS: Record<string, GlossaryEntry> = {
     detail:
       'It keeps no health of its own and cannot be tithed or made to grow. Shoving it into a wall hurts you, not it — but your elemental spells are cast from where it stands.',
   },
-  Escalate: {
-    title: 'Escalate',
-    body: 'Grows stronger at the start of your turn, if it survived the enemy round.',
-    detail: 'Never on the turn it is deployed. Small units cap at +3; Behemoths never stop growing.',
+  Growth: {
+    title: 'Growth',
+    body: 'An enemy trait. It grows stronger at the start of its turn, if it survived your round.',
+    detail:
+      'Never on the turn it is deployed. Your own units grow through Elemental Auras instead, which stop at three stacks.',
   },
   Retain: {
     title: 'Retain',
@@ -139,7 +140,7 @@ export const TERMS: Record<string, GlossaryEntry> = {
   },
   freeze: {
     title: 'Frozen',
-    body: 'Cannot move or attack this turn. Still grows from Escalate.',
+    body: 'Cannot move or attack this turn. Still grows — being held down does not stop that.',
     detail: 'A physical blow — including a shove into a wall — Shatters it, stripping all Armor.',
   },
   entangle: { title: 'Entangled', body: 'Cannot move, but can still attack.' },
@@ -148,6 +149,16 @@ export const TERMS: Record<string, GlossaryEntry> = {
     title: 'Exhausted',
     body: 'Bled for Marrow. Cannot move, attack, or channel until your next turn.',
     detail: 'One tithe per body per turn — the Exhaustion is what enforces it.',
+  },
+  aura: {
+    title: 'Elemental Aura',
+    body: 'Cast on one of your units. It grows a stack at the start of each of your turns, and stops at three.',
+    detail:
+      'Stacks one and two pay stats. The third pays nothing and unlocks a Climax trait — powerful, and a liability. Spend it with a Detonation.',
+  },
+  climax: {
+    title: 'Climax',
+    body: 'An Aura at three stacks. It grows no further, and its Climax trait is now active.',
   },
   escalation: {
     title: 'Escalation stacks',

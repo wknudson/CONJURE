@@ -257,7 +257,9 @@ describe('Creeping Briar', () => {
     ).toThrow();
   });
 
-  it('still grows, which is what pays for standing still', () => {
+  it('no longer grows on its own — that is what an Aura is for now', () => {
+    // It used to pay for standing still with free Escalation. Growth is the enemy's clock
+    // now, so a Briar that wants to get bigger has to be enchanted like anything else.
     const state = scenario({ width: 6, height: 7 });
     const briar = addUnit(state, {
       def: 'creeping_briar',
@@ -267,11 +269,11 @@ describe('Creeping Briar', () => {
     });
     const atkBefore = state.units[briar.id]!.atk;
 
-    // Round trip: our turn ends, theirs ends, Escalation fires at the start of ours.
     let cur = run(state, { type: 'endTurn' }).state;
     const res = run(cur, { type: 'endTurn' });
 
-    expect(res.state.units[briar.id]!.atk).toBeGreaterThan(atkBefore);
+    expect(res.state.units[briar.id]!.atk).toBe(atkBefore);
+    expect(res.state.units[briar.id]!.escalation).toBe(0);
   });
 
   it('still attacks what walks into reach', () => {
