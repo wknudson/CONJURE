@@ -61,7 +61,13 @@ describe('encounter balance sanity', () => {
       // a parallel worker. The budget is for "did this hang", not "was this fast": every
       // action the AI gains -- channelling, another obstacle worth striking -- adds real
       // work to every turn of every game, and the assertions above are what matter.
-    }, 120_000);
+      //
+      // Which is why there is no number here. This carried a 120s override while the
+      // global deadline was 180s, so the file was held to a *stricter* budget than the
+      // config that exists to keep exactly this kind of test from failing on load -- and
+      // it duly failed at 142s in a full run and passed alone. Inheriting the global is
+      // the policy the comment above was already describing.
+    });
   }
 
   it('resolves in a reasonable number of turns', () => {
@@ -70,6 +76,7 @@ describe('encounter balance sanity', () => {
     // A demo duel should not drag on for dozens of rounds. The deeper lane arena adds
     // an approach phase, so this sits higher than it did on the old compact board.
     expect(avg).toBeLessThan(30);
-    // Same reasoning as above: the budget guards against a hang, not against slowness.
-  }, 120_000);
+    // Same reasoning as above: the budget guards against a hang, not against slowness,
+    // and the global deadline is where that guard lives.
+  });
 });
