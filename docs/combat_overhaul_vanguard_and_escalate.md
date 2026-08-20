@@ -168,8 +168,43 @@ limits are a card rule, and the Hellhound is not a card.
 > **This closes the gate docs/03 identified.** `03_rpg_sandbox.md:506` records that
 > "Companion unlocking is not gated. Every species is tameable; the roster filter is the
 > seam where a gate would go." That seam is now load-bearing: taming grants combat
-> capability, so the dev-button path in `VivariumScreen.ts:106-119` must be gated behind a
-> build flag before this ships.
+> capability, not just a portrait. The ungated dev path is replaced outright by §1.4.1.
+
+#### 1.4.1 The Dev Commission
+
+**Ruling: the "Dev: \<name\>" buttons in the Vivarium (`VivariumScreen.ts:106-119`) are
+deleted.** Not gated, not flagged — removed. They were an arbitrary control panel bolted to
+a diegetic screen, and once taming grants real combat capability they are a cheat button
+sitting in the middle of the fiction.
+
+They are replaced by a **Dev Commission**: when the game is served from `localhost`, the
+**third commission slot** on the Safehouse contract board is permanently replaced by a
+contract that reads as a contract. Accepting it runs the debug script — unlock every
+Companion, max resources, populate the Vanguard Roster — and the developer is dropped back
+at the Safehouse fully kitted.
+
+Why the board and not a menu:
+
+- **It keeps debug tools diegetic.** The Safehouse hands out work through the board. A
+  developer who wants a loaded save takes a job, exactly like a player who wants a fight
+  takes a job. Nothing about the screen has to apologise for being there.
+- **It reuses machinery that already exists and is already proven.** The board already
+  splices a synthetic contract into a fixed slot: `rollBounties` returns
+  `[rolled[0], rolled[1], auditBounty(), rolled[2]]`, seating the **Magistrate's Audit** at
+  poster #3 without disturbing the rolled contracts around it. The Dev Commission occupies
+  that same slot by the same method, so acceptance, refusal, and rendering all work
+  unchanged.
+- **It has exactly one gate, in one place.** `location.hostname === 'localhost'`, evaluated
+  in the overworld where the board is built. A shipped build has no slot to hide, no flag to
+  forget, and no button to accidentally leave enabled.
+
+> **This supersedes the Magistrate's Audit's tenancy of slot #3.** The two cannot both live
+> there. The Audit was itself a dev-test contract with inflated rewards, flagged in
+> `04_sandbox_audit_and_ideation.md` as player-reachable and wanting a gate — so the correct
+> resolution is that the Dev Commission **absorbs it**: the Audit's spoils become part of the
+> "max resources" step, and slot #3 holds one localhost-only contract instead of two
+> overlapping ones. That also fixes the older bug, since the Audit stops being reachable in
+> a shipped build.
 
 ### 1.5 Where the roster lives
 
@@ -290,20 +325,60 @@ interface EncounterDef {
 
 Absent that, generated from the seeded RNG within the player's starting zone:
 
-- count = `min(5, free tiles in zone)`
-- guaranteed to include **one horizontally adjacent pair**, so a footprint-2 Behemoth is
-  always deployable — a roster that spent 6 points on a body it cannot place is a
-  point-buy system betraying the player at the last possible moment
+- count = **at least the player's active Vanguard count** (§2.2.1)
+- guaranteed to include **one horizontally adjacent pair** whenever the roster contains a
+  Behemoth, so a footprint-2 body is always deployable — a roster that spent 6 points on a
+  body it cannot place is a point-buy system betraying the player at the last possible
+  moment
 - never on terrain, never on a tile a Geode will take
 
 Generation runs at a **fixed point in the setup order** — immediately after terrain
 (`setup.ts:381-397`), before `scatterGeodes` (`setup.ts:480`) — because the seeded stream is
 positional. Moving the call moves every geode in every replay.
 
-**Biome is the design lever.** A ruin gives four anchors in a broken line; a glacial field
-gives five spread wide; a narrow corridor gives three stacked in a column and no adjacent
-pair at all — which is that biome telling you, before you accept the contract, to leave the
-Behemoth at home.
+**Biome is the design lever — over shape, never over count.** A ruin gives its anchors in a
+broken line; a glacial field spreads them wide; a narrow corridor stacks them in a column.
+The biome decides what your formation has to look like. It never decides how much of your
+warband shows up.
+
+#### 2.2.1 The Anchor Guarantee — no benching, ever
+
+**Ruling: the player is never forced to leave a bought unit off the field.**
+
+Anchor generation reads the active roster's size and **guarantees**
+`anchors.length >= activeVanguardCount`. If the starting zone cannot offer that many valid
+tiles, the engine **carves them out** — clearing or relocating whatever is in the way, and
+widening the zone by a row if it must — until it can.
+
+This is not a nicety; it is what makes the point-buy honest. A player spends ten points at
+the Safehouse, before they know which arena the contract leads to. If a cramped biome could
+then refuse to seat the fourth unit, those points were spent on nothing, and the correct
+play would become *never fill your budget* — buy three units so no map can strand one. A
+point-buy that punishes spending its own budget is not a build system.
+
+So the guarantee runs one way and one way only. The biome may make deployment
+**awkward** — anchors in a line, split around a wall, backed into a corner, far from where
+you want to be turn one — and that awkwardness is the whole intended difficulty of the
+pillar. It may not make deployment **impossible**.
+
+Three consequences worth stating, because each is a place the guarantee could be quietly
+violated:
+
+- **Carving outranks terrain.** If authored terrain fills the starting zone, terrain gives
+  way. `setup.ts:131-133` already hard-errors when authored terrain sits in a territory row,
+  so the invariant this leans on exists — it just has to survive anchor generation too.
+- **Behemoths need two cells, not two anchors.** The adjacent-pair guarantee applies only
+  when the roster actually contains a footprint-2 unit; the second cell must merely be free
+  (§2.3).
+- **`validateEncounter` gains an assertion** that the widest supported roster is seatable on
+  the smallest supported arena (4×4, territory depth 1). This is the check that catches a
+  future biome breaking the guarantee at authoring time rather than at the deployment
+  screen.
+
+> **Consequence for authored anchors.** `EncounterDef.anchorTiles` is checked against the
+> same guarantee at load. A hand-authored arena that lists fewer anchors than a full roster
+> needs is an authoring error, not a difficulty setting — the generator tops it up and a
+> test says so.
 
 ### 2.3 The deployment phase
 
@@ -655,11 +730,25 @@ interface AuraDef {
   id: AuraDefId;
   name: string;
   school: School;
-  perStack: { atk?: number; maxHp?: number; mov?: number; onHit?: OnHitRider };
+  /** Applied once per stack gained, permanently. */
+  perStack: { atk?: number; maxHp?: number; mov?: number; armor?: number; onHit?: OnHitRider };
+  /** Charged every turn while the aura lives, at the start of the owner's turn. */
+  upkeep?: { selfDamage?: number; marrow?: number };
   climaxTrait: ClimaxTraitId;
   text: string;
 }
 ```
+
+Two fields, because the Director's finalised schools need two genuinely different things.
+`perStack` is a **one-off permanent grant** — Surge's +1 MOV is paid once and kept. `upkeep`
+is a **recurring toll** — Dusk's aura bleeds its host for 1 True damage every turn and hands
+back 1 Marrow, forever, which is a fundamentally different clock and would be a lie to model
+as a stat bonus.
+
+> **Dusk's upkeep is the only aura that can kill its own host**, and deliberately so: 1 True
+> damage per turn ignores armour entirely, so a Marrow Siphon left running on a 4-HP body is
+> a four-turn fuse. It is also the only Marrow source in the game that costs neither an
+> action nor a card — you pay in a slow, unstoppable wound.
 
 ```ts
 interface Unit {
@@ -680,18 +769,25 @@ Stacking runs in the **exact slot `escalate()` occupies today** — step 5 of
 round. The `freshlySummoned` gate is reused verbatim: an aura cast this turn does not stack
 this turn.
 
-| School | Per stack | Climax trait |
-|---|---|---|
-| **pyre** | **+1 ATK** | `overload` |
-| **bloom** | **+2 Max HP** | `heavyFootprint` |
-| frost **[proposal]** | +1 Max HP, +1 armour | `rimeShell` |
-| surge **[proposal]** | `onHit: charged 1` | `chainArc` |
-| bulwark **[proposal]** | +2 Max HP | `immovable` |
-| dusk **[proposal]** | +1 ATK | `soulLeech` |
-| arcane **[proposal]** | +1 MOV | `blink` |
+| School | Aura | Stacks 1 & 2 | Climax trait |
+|---|---|---|---|
+| **pyre** | *Ember Coat* | **+1 ATK** per stack | `conflagration` **[proposal]** |
+| **bloom** | *Verdant Swell* | **+2 Max HP** per stack | `overgrowth` **[proposal]** |
+| **surge** | **Static Charge** | **+1 MOV** per stack | **`overload`** |
+| **bulwark** | **Petrifying Mantle** | **+1 Persistent Armor** per stack | **`heavyFootprint`** |
+| **dusk** | **Marrow Siphon** | Host takes **1 True damage** at turn start and generates **1 Marrow** | **`hollow`** |
+| frost **[proposal]** | *Rime Shell* | +1 Max HP, +1 armour per stack | `rimeShell` |
+| arcane **[proposal]** | *Written Path* | +1 MOV per stack | `blink` |
 
 Stats apply incrementally as `escalationBonus` does now, so a snapshot is always the truth.
 Events: `auraAttached`, `auraStacked`.
+
+> **`overload` and `heavyFootprint` moved.** An earlier draft of this document parked those
+> two names on pyre and bloom. The Director's ruling assigns **Overload to Surge** and
+> **Heavy Footprint to Bulwark**, which is the better fit in both cases — Overload is a
+> *movement* trait and Surge is now the movement school, and Heavy Footprint is a *mass*
+> trait on the school built out of armour. Pyre and bloom therefore need new Climax traits,
+> and the two below are proposals awaiting a ruling.
 
 ### 5.5 Stack 3 — Climax, the hard cap
 
@@ -702,15 +798,44 @@ Climax traits are a small enumerated union of ids interpreted at named engine se
 data-not-closures rule holds, so the AI can read that a unit is climaxed and what that
 implies without executing anything:
 
-| Trait | Effect | Why it is dangerous |
-|---|---|---|
-| `heavyFootprint` | The unit leaves `rubble` in its wake (`trail: 'rubble'`) | Rubble is **permanent** and costs 2 MOV to cross. Your own board slowly becomes ground your own units struggle through. |
-| `overload` | When the host is hit, everything in `adjacent8` gains `charged` | Charges your own units as readily as theirs, priming Overload and Superconduct on both sides. |
-| `rimeShell` | Host gains armour each turn, but its MOV drops to 0 | A wall that cannot be repositioned. |
-| `soulLeech` | Host drains 1 HP from the nearest enemy each turn, and 1 from the Pact if none is in reach | It has to feed on something. |
+| Trait | School | Effect | Why it is dangerous |
+|---|---|---|---|
+| **`overload`** | surge | **Ignores unit-collision when moving**, and deals **1 unblockable damage** to every enemy passed through | The host can no longer be *walled*. It also can no longer be positioned safely: a unit that ignores collision will happily end its move somewhere nothing can screen it, and the damage is dealt whether you wanted the engagement or not. |
+| **`heavyFootprint`** | bulwark | **Immune to Shove and Pull**, and **instantly shatters destructible obstacles** by moving into them | Immunity to displacement cuts both ways — your own repositioning tools stop working on it, so a Petrifying Mantle host is where it is until it walks. And it demolishes your own cover as readily as theirs. |
+| **`hollow`** | dusk | Grants **Frail-Strike**: enemies it damages take **+1 damage from all subsequent attacks that turn** | It is still bleeding 1 True damage a turn from its own upkeep. Hollow is the aura at its most valuable and its host at its most nearly dead. |
+| `conflagration` **[proposal]** | pyre | Host's attacks apply `burn 1`, and it takes 1 fire damage each turn | It is burning too. |
+| `rimeShell` **[proposal]** | frost | Host gains armour each turn, but its MOV drops to 0 | A wall that cannot be repositioned. |
 
 The Rule of 3 is therefore not merely a ceiling — it is a **timer**. The aura stops paying
 and starts costing, and the answer to that is to cash it in.
+
+#### Where the three finalised traits touch the engine
+
+Each is an id interpreted at a named seam. None of them is a closure, and all three are
+readable by the AI as flags:
+
+- **`overload`** is the heaviest lift: it needs the movement layer to path *through*
+  occupied cells and to enumerate what it crossed. The pathing already computes a route —
+  the new work is (a) treating occupied tiles as passable for this unit, (b) collecting the
+  units on that route, and (c) dealing 1 damage to each enemy among them. "Unblockable"
+  means `dtype: 'true'` — the one damage type that ignores armour entirely
+  (`02_combat_lexicon.md` §7). The destination tile is still subject to ordinary occupancy;
+  passing through is not the same as standing in.
+- **`heavyFootprint`** hooks two existing systems rather than adding any. Displacement
+  immunity is a check in `displaceArea` / the push path, which already has to decide
+  whether a unit moves. Shattering is the collision rule pointed the other way: today a
+  shoved unit that hits an obstacle deals `COLLISION_BLOCKER_DAMAGE`; here, a deliberate
+  move into a destructible obstacle destroys it outright and the unit completes the step.
+- **`hollow`** reuses **`brittle`**, which already exists and already means precisely this:
+  `damage.ts:198` adds `BRITTLE_BONUS` to every hit on a brittle target. Frail-Strike is
+  therefore `applyStatus brittle` on damage, cleared at end of turn — **not a new status.**
+
+> **One caveat on reusing `brittle`.** The code exempts `true` damage from the bonus
+> (`damage.ts:198`, `req.dtype !== 'true'`) while the Lexicon and glossary both say "every
+> hit" — a behaviour drift already logged in `04_sandbox_audit_and_ideation.md`. Frail-Strike
+> inherits that exemption, which means Hollow does not amplify the very True damage its own
+> school deals. That is worth a ruling, but it is a pre-existing question about `brittle`
+> rather than a new one about Hollow.
 
 ### 5.6 Detonation — the cash-in
 
@@ -764,8 +889,11 @@ Everything the five pillars break or orphan, with one ruling each.
 | 6.17 | **`escalationBonus` fields** | Stripped from the 16 converted minions; retained on `Growth` defs. `Unit.escalation` / `escalationCap` stay (the enemy uses them); cap `Infinity` → 99. |
 | 6.18 | **Session, undo, replay** | Unmodified. `deployUnit`, `finishDeployment` and `bloodTithe` are ordinary commands through the one reducer, so replay-from-seed works by construction, and the roster living in `GameState` means undo un-kills a pyre for free. |
 | 6.19 | **`03_rpg_sandbox.md` dead fields** | `CompanionProgress.startingArmor` and `.bonusPips` are still granted by nothing. Unrelated to this overhaul, but the roster work touches the same profile shape — worth clearing in the same pass. |
-| 6.20 | **The dev tame buttons** (`VivariumScreen.ts:106-119`) | Must be gated behind a build flag before this ships. They now grant combat capability, not just a portrait (§1.4). |
-| 6.21 | **Doc 02 and 03** | Both need a pass after each phase lands. The Lexicon's §5 Escalation section and §6 deck rules become wrong the moment pillars 5 and 1 ship. |
+| 6.20 | **The dev tame buttons** (`VivariumScreen.ts:106-119`) | **Deleted**, and replaced by the localhost **Dev Commission** in slot #3 of the contract board (§1.4.1). |
+| 6.21 | **The Magistrate's Audit** (`AUDIT_BOUNTY_ID`, poster #3) | **Absorbed into the Dev Commission** (§1.4.1). Its spoils become the commission's "max resources" step, and it stops being reachable in a shipped build — which closes the gap `04_sandbox_audit_and_ideation.md` flagged. |
+| 6.22 | **The movement layer** | Newly load-bearing. `overload` needs pathing through occupied cells and a list of who was crossed; `heavyFootprint` needs displacement immunity and obstacle-shattering on a deliberate move (§5.5). Both are Climax-only, so the ordinary move path is untouched — but this is the first time a unit's *trait* changes how movement resolves. |
+| 6.23 | **`brittle`'s `true`-damage exemption** (`damage.ts:198`) | Pre-existing drift, now inherited by Frail-Strike (§5.5). Needs a ruling as part of Phase 2, since Hollow is the first trait whose value depends on the answer. |
+| 6.24 | **Doc 02 and 03** | Both need a pass after each phase lands. The Lexicon's §5 Escalation section and §6 deck rules become wrong the moment pillars 5 and 1 ship. |
 
 ---
 
@@ -786,10 +914,18 @@ tithed instead of sacrificed. Ships alone as a playable balance change.
 
 ### Phase 2 — Auras and the `Growth` split
 
-Aura data, the unit slot, the attach/stack/climax/detonate ops and their events; strip
-`Escalate` from player minions; introduce `Growth` for threats; cap 99.
+Aura data (including the `upkeep` field Marrow Siphon needs), the unit slot, the
+attach/stack/climax/detonate ops and their events; strip `Escalate` from player minions;
+introduce `Growth` for threats; cap 99.
 
 Independent of phases 3 and 4 — auras attach perfectly well to deck-summoned minions.
+
+**The two engine lifts land here**, not with the aura scaffolding: `overload`'s
+move-through-units pathing and `heavyFootprint`'s displacement immunity and obstacle
+shattering (§5.5). Both are worth splitting into their own step after the stacking machinery
+is green, because a Climax trait that miscomputes a route is much harder to debug than one
+that miscounts a stack. `hollow` needs no new code beyond applying `brittle`, but it does
+need the `true`-damage ruling in 6.23.
 
 **Sequencing note:** put the aura and Detonation cards into companion decks in the slots the
 minions will vacate in Phase 3, so the deck lists are edited once rather than twice.
@@ -800,14 +936,22 @@ Removing minions from decks without a deployment path is an unplayable interim, 
 1 and 2 land together, sequenced internally:
 
 - **3a — data, all inert.** `rosterPoints` on every eligible def, `data/roster.ts`, the
-  unlock tables, the profile fields, the roster builder UI. Nothing reads it yet.
-- **3b — engine.** `roster` on `CommanderState`, `anchors` on `GameState`, the
-  `'deployment'` phase, `deployUnit` / `finishDeployment`, removal of the free footman, the
-  `minion_in_deck` deck rule, the starter and species deck rebuilds, the PreCombat step.
+  unlock tables, the profile fields, the roster builder UI, and the **Dev Commission**
+  (§1.4.1) — which wants to land early in this phase, since every later step is easier to
+  test from a fully-unlocked profile.
+- **3b — engine.** `roster` on `CommanderState`, `anchors` on `GameState` with the **Anchor
+  Guarantee** (§2.2.1), the `'deployment'` phase, `deployUnit` / `finishDeployment`, removal
+  of the free footman, the `minion_in_deck` deck rule, the starter and species deck rebuilds,
+  the PreCombat step.
 
 **The empty-roster path is what keeps this safe.** Through all of 3a and into 3b, a fight
 with `roster: []` behaves exactly as it does today, so every existing test and every legacy
 encounter stays green until the content is deliberately switched over.
+
+**The guarantee needs its own test before the phase closes**: a property test that seats a
+full-budget roster, Behemoth included, on every shipped encounter *and* on the minimum
+supported 4×4 arena. The guarantee is the kind of invariant that holds on every map anyone
+tried by hand and fails on the first one nobody did.
 
 ### Phase 4 — Revival
 
@@ -818,21 +962,11 @@ dungeon-persistent Graveyard in the overworld carry.
 
 ---
 
-## 8. Open Questions for the Game Director
+## 8. What is still open
 
-Everything above is a ruling. These are the genuine judgment calls left:
+Nothing structural. Five of the seven schools now have finalised auras and Climax traits
+(§5.4, §5.5); the remaining two — **pyre** and **bloom** — need Climax traits only, since
+their per-stack growth was fixed by the original directive. Both are marked **[proposal]**
+in place. Frost and arcane remain proposals end to end.
 
-1. **Anchor counts per biome.** §2.2 proposes `min(5, free)` with a guaranteed adjacent
-   pair. Should a cramped biome be allowed to offer *fewer anchors than the roster has
-   units*, forcing a deploy-time cut? That is a strong, hostile design lever, and it should
-   be a deliberate choice rather than a side effect of a small arena.
-2. **The five unspecified aura schools.** §5.4 fixes pyre (+1 ATK) and bloom (+2 Max HP) per
-   the directive; the other five are proposals.
-3. **The Climax trait roster.** Four are sketched in §5.5. `heavyFootprint` and `overload`
-   are named in the directive; the rest need a pass, and the set should probably be small —
-   one genuinely dangerous trait per school beats seven mild ones.
-4. **Scripted enemy revival.** §2.4 rules out enemy rosters, but a boss script could still
-   raise its own dead as an authored encounter effect. Worth it, or does that muddy the
-   player's exclusive claim on the mechanic?
-5. **Whether the roster resets between dungeons or between *contracts*.** §4.5 says
-   dungeons. If a contract chain is long, that may be too punishing — or exactly the point.
+Everything else in this document is a ruling.
