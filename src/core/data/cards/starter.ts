@@ -205,7 +205,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     id: 'dark_tithe',
     name: 'Dark Tithe',
     cost: { pips: 0, marrow: 0 },
-    school: 'dusk',
+    school: 'neutral',
     source: 'hero',
     kind: 'spell',
     text: 'Bleed an un-exhausted friendly minion for 4: extracts 3 Marrow and grants Persistent Armor equal to the health taken.',
@@ -227,7 +227,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     id: 'shield_bash',
     name: 'Shield Bash',
     cost: { pips: 1, marrow: 0 },
-    school: 'bulwark',
+    school: 'neutral',
     source: 'hero',
     kind: 'spell',
     text: 'Deals 2 damage to an enemy and shoves it 1 tile away. Triggers standard Collision Damage (3 / 2).',
@@ -258,7 +258,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     id: 'stone_barricade',
     name: 'Stone Barricade',
     cost: { pips: 1, marrow: 0 },
-    school: 'bulwark',
+    school: 'neutral',
     source: 'hero',
     kind: 'obstacle',
     text: 'Spawns a destructible 6 HP pillar on an empty tile. Blocks line of sight.',
@@ -311,18 +311,26 @@ export const STARTER_CARDS: Record<string, CardDef> = {
  * again every fight. What replaced them is the Aura line: something to *do* with the board
  * the roster gives you for free.
  */
+/**
+ * The Hero Deck a new player starts with.
+ *
+ * Nine cards of utility and nothing elemental, because the elements are not the Hero's to
+ * bring any more — the equipped Companion fuses eight fixed spells in at the bell. What is
+ * left here is the half a player actually *builds*: a shove, a wall, a ward, a bleed, and
+ * the arcane tools that work whatever colour of magic is standing next to them.
+ *
+ * Nine rather than the full fifteen deliberately. A deck at its ceiling on day one has
+ * nowhere to grow, and the six empty slots are the first thing the Field Journal asks the
+ * player a question about.
+ */
 export const STARTER_DECK: string[] = [
-  'ember_coat',
-  'ember_coat',
-  'cataclysm',
-  'cinder_rune',
-  'cinder_rune',
-  'soul_splinter_rune',
-  'flame_surge',
-  'flame_surge',
-  'cataclysmic_core',
-  'dark_tithe',
+  'shield_bash',
   'shield_bash',
   'stone_barricade',
+  'dark_tithe',
   'aegis_ward',
+  'grapple_line',
+  'grapple_line',
+  'aether_beam',
+  'cull_the_weak',
 ];

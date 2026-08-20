@@ -377,6 +377,8 @@ function showBuilder(companionId: string, onDone: () => void): void {
       companionId,
       deckFor(companionId),
       profile().roster,
+      // The rolls belong to the beast standing beside the player, not to the species.
+      activeCompanion().spellModifiers,
       profile().collection,
       profile().bestiary,
       profile().state,

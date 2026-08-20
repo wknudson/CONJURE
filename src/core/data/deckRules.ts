@@ -10,8 +10,26 @@ import type { CardDef } from '../types/cards.js';
 import { cardCostTotal } from '../types/cards.js';
 import { CARDS } from './cards/index.js';
 
-export const MIN_DECK = 12;
-export const MAX_DECK = 30;
+/**
+ * The Hero Deck: small, and yours.
+ *
+ * It was 12-30 when the deck was the whole spellbook. It is 5-15 now because it is only
+ * *half* of one — the equipped Companion fuses eight fixed elemental spells in at the
+ * bell (`GRIMOIRE_SIZE`), so a 15-card Hero Deck is really a 23-card deck by the time it
+ * is shuffled. A small hand-built half beside a fixed elemental half is the whole point:
+ * what you choose is the utility, and what you *catch* is the magic.
+ */
+export const MIN_DECK = 5;
+export const MAX_DECK = 15;
+
+/**
+ * Schools a Hero Deck may hold.
+ *
+ * The elemental colour comes from the Companion now. A Hero Deck holding Pyre cards would
+ * be competing with the Grimoire for the same job — and would let a player carry a second
+ * school their Companion cannot support with a Resonance.
+ */
+export const HERO_SCHOOLS: readonly string[] = ['neutral', 'arcane'];
 /** Module 2: no more than two Behemoths in a deck, at any size. */
 export const MAX_BEHEMOTHS = 2;
 
@@ -42,8 +60,12 @@ export function tierOf(def: CardDef): CardTier {
  * Small on purpose. Adapting to a narrow ruin or an open field should mean bringing the
  * two or three answers that shape needs, not rebuilding into a different deck once the
  * terrain is known — which would make the deck you built beforehand irrelevant.
+ *
+ * Cut from five to two when the Hero Deck shrank to 5-15. Five swaps against a thirty-card
+ * deck was an adjustment; against a five-card one it was a rebuild, and the guard below
+ * would have started failing rather than the design quietly going wrong.
  */
-export const MAX_SWAPS = 5;
+export const MAX_SWAPS = 2;
 
 /**
  * How many cards differ between a deck and the one it started as.
@@ -81,7 +103,9 @@ export interface DeckProblem {
     | 'not_owned'
     | 'unknown_card'
     /** A body in a spell deck. Minions are a Vanguard Roster now, not cards. */
-    | 'minion_in_deck';
+    | 'minion_in_deck'
+    /** An elemental card in the Hero half. That colour is the Companion's to bring. */
+    | 'off_school';
   message: string;
   cardId?: string;
 }
@@ -133,14 +157,25 @@ export function validateDeck(deck: string[], collection?: Collection): DeckProbl
       });
       continue;
     }
-    // A body in a spell deck. Minions are bought once into a Vanguard Roster now and
-    // deployed before turn one, so a deck holding one is a deck built against the old
-    // rules — most likely a save from before the overhaul.
+    // A body in a spell deck. Asked *before* the school rule, because a minion is very
+    // nearly always elemental too and "this belongs in your Vanguard" is the useful half
+    // of that answer — being told a Grave Sentinel is the wrong colour would send the
+    // player looking for a neutral one.
     if (def.kind === 'minion') {
       problems.push({
         code: 'minion_in_deck',
         cardId,
         message: `${def.name} belongs in your Vanguard Roster, not your deck.`,
+      });
+      continue;
+    }
+    // An elemental card in the Hero half. Checked before the copy limits so a deck full
+    // of Pyre is told the one thing that matters rather than a list of tier violations.
+    if (!HERO_SCHOOLS.includes(def.school)) {
+      problems.push({
+        code: 'off_school',
+        cardId,
+        message: `${def.name} is ${def.school} — your Companion brings the elements.`,
       });
       continue;
     }

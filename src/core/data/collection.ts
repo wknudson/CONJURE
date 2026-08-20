@@ -54,10 +54,15 @@ export const SOULBOUND: readonly string[] = [
 export function startingCollection(): Collection {
   const owned: Record<string, number> = {};
 
-  for (const companion of COMPANIONS) {
-    for (const id of companion.deck) {
-      owned[id] = (owned[id] ?? 0) + 1;
-    }
+  // The Hero Deck once, not once per Companion.
+  //
+  // Every species hands over the same one now — the elemental half moved into the
+  // Grimoire, which is innate and never enters the collection at all. Pooling seven
+  // identical lists granted seven copies of every staple and blew straight past the Tier
+  // caps, which is the bug this loop had the moment the decks converged.
+  const heroDeck = COMPANIONS[0]?.deck ?? [];
+  for (const id of heroDeck) {
+    owned[id] = (owned[id] ?? 0) + 1;
   }
 
   // Round the soulbound staples up to their full copy allowance, so a fresh player can

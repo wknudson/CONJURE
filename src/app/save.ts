@@ -25,9 +25,11 @@ import type { Collection } from '../core/data/deckRules.js';
 import { reconcileCollection, startingCollection } from '../core/data/collection.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { RELICS, slotOf } from '../core/data/relics.js';
-import { validateDeck } from '../core/data/deckRules.js';
+import { HERO_SCHOOLS, validateDeck } from '../core/data/deckRules.js';
+import type { CardModifier } from '../core/types/cards.js';
+import { rollSpellModifiers } from '../core/overworld/vivarium.js';
 import { DEFAULT_ROSTER, ROSTER_BUDGET, validateRoster } from '../core/data/roster.js';
-import { COMPANIONS, DEFAULT_COMPANION } from '../core/data/companions.js';
+import { COMPANIONS, DEFAULT_COMPANION, companionById } from '../core/data/companions.js';
 import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
 import type {
   ActiveEncounterState,
@@ -427,11 +429,23 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
     // the illegal cards are no longer cards — there is nothing to remove them *to*. What
     // is left may well be under the minimum, and that is flagged in the ordinary way:
     // topping it up is a real choice, and the builder is where it should be made.
-    const cards = renamed.filter((id) => CARDS[id]?.kind !== 'minion');
-    const bodies = renamed.length - cards.length;
+    const cards = renamed.filter(
+      (id) => CARDS[id]?.kind !== 'minion' && HERO_SCHOOLS.includes(CARDS[id]?.school ?? ''),
+    );
+    const bodies = renamed.filter((id) => CARDS[id]?.kind === 'minion').length;
+    const elemental = renamed.length - cards.length - bodies;
+
     if (bodies > 0) {
       notes.push(
         `${bodies} minion(s) left your ${companion.name} deck — they are Vanguard Roster kit now.`,
+      );
+    }
+    // Stripped rather than flagged, for the same reason the bodies were: "your deck is
+    // illegal" is not actionable when the illegal cards can never be legal again. The
+    // elements belong to the Companion now, and it brings its own eight.
+    if (elemental > 0) {
+      notes.push(
+        `${elemental} elemental card(s) left your ${companion.name} deck — ${companion.name} fuses its own eight in now.`,
       );
     }
 
@@ -735,6 +749,62 @@ function isConsumable(value: unknown): value is Consumable {
  * Species that no longer exist are dropped, and a trait that no longer exists is replaced
  * with one the species can actually have, so the Vivarium never prints a blank knack.
  */
+/**
+ * A beast's Grimoire rolls, cleaned on the way in.
+ *
+ * A save written before the Fused Grimoire has none, and gets none — **not** a fresh roll.
+ * Re-rolling on load would make every reload a new beast, which is precisely the thing
+ * `baseHpRoll` is stored rather than derived to avoid. An older beast is simply a plain
+ * one, and the player can catch a better.
+ *
+ * Keys that are not in this species' Grimoire are dropped: a modifier on a spell the beast
+ * does not carry is unreachable, and keeping it would let a hand-edited save smuggle a roll
+ * onto a card the fusion never deals.
+ */
+/** A stable seed from a beast's own id, so a migrated roll never changes. */
+function hashId(id: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+function readSpellModifiers(
+  raw: unknown,
+  baseId: string,
+  instanceId: string,
+): Record<string, CardModifier> {
+  // A beast caught before the Fused Grimoire has no rolls stored. It gets some — but
+  // seeded off its own `instanceId`, so the answer is identical on every load. A fresh
+  // `Math.random()` here would make every reload a different animal, which is exactly what
+  // storing `baseHpRoll` rather than deriving it exists to prevent.
+  if (!raw || typeof raw !== 'object') {
+    const grimoire = companionById(baseId)?.innateGrimoire ?? [];
+    if (grimoire.length === 0) return {};
+    return rollSpellModifiers(makeRng(hashId(instanceId)), grimoire);
+  }
+  const grimoire = new Set(companionById(baseId)?.innateGrimoire ?? []);
+  const out: Record<string, CardModifier> = {};
+
+  for (const [defId, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!grimoire.has(defId) || !value || typeof value !== 'object') continue;
+    const v = value as Partial<CardModifier>;
+    const mod: CardModifier = {};
+    // Clamped to what the table can actually roll, so a hand-edited -9 is a -1.
+    if (typeof v.pipCostDelta === 'number' && Number.isFinite(v.pipCostDelta)) {
+      mod.pipCostDelta = Math.max(-1, Math.min(1, Math.round(v.pipCostDelta)));
+    }
+    if (typeof v.bonusDamage === 'number' && Number.isFinite(v.bonusDamage)) {
+      mod.bonusDamage = Math.max(0, Math.min(1, Math.round(v.bonusDamage)));
+    }
+    if (v.grantRetain === true) mod.grantRetain = true;
+    if (Object.keys(mod).length > 0) out[defId] = mod;
+  }
+  return out;
+}
+
 function readRoster(raw: unknown, base: CompanionInstance[]): CompanionInstance[] {
   if (!raw || typeof raw !== 'object') return base;
   const known = new Set(COMPANIONS.map((c) => c.id));
@@ -763,6 +833,11 @@ function readRoster(raw: unknown, base: CompanionInstance[]): CompanionInstance[
       startingArmor: Math.max(0, Math.round(numberOr(saved.startingArmor, 0))),
       bonusPips: Math.max(0, Math.round(numberOr(saved.bonusPips, 0))),
       traitId,
+      spellModifiers: readSpellModifiers(
+        saved.spellModifiers,
+        baseId,
+        typeof saved.instanceId === 'string' && saved.instanceId ? saved.instanceId : fallbackId,
+      ),
     };
   };
 

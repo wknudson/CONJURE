@@ -7,7 +7,7 @@ import type { GameState, StepResult, CommanderState } from '../types/state.js';
 import { territoryDepthFor, startingZone } from '../types/state.js';
 import { canPlace } from './board.js';
 import type { Ctx } from './context.js';
-import type { CardInstance } from '../types/cards.js';
+import type { CardInstance, CardModifier } from '../types/cards.js';
 import type { EncounterDef } from '../data/encounters/registry.js';
 import { getEncounterScript } from '../data/encounters/registry.js';
 import type { RngState } from '../util/rng.js';
@@ -40,6 +40,21 @@ interface CommanderOpts {
   companionSchool: School;
   hp: number;
   deckDefs: string[];
+  /**
+   * What each Grimoire spell rolled on the beast that brought it, keyed by def id.
+   *
+   * Applied per *instance* as the draw pile is built, which is what lets the same spell be
+   * cheap in one fight and ordinary in the next without anything global changing.
+   */
+  spellModifiers?: Record<string, CardModifier>;
+  /**
+   * Where the Companion's half of the deck starts in `deckDefs`.
+   *
+   * Everything from here on is Grimoire and may carry a modifier; everything before it is
+   * the Hero Deck and never does. An index rather than two lists, because the shuffle
+   * wants one pile and splitting it here would only mean joining it two lines later.
+   */
+  grimoireFrom?: number;
   prefix: string;
   width: number;
 }
@@ -51,12 +66,16 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
   const deck: CardInstanceId[] = [];
   let id = startId;
 
-  for (const defId of deckDefs) {
+  const from = o.grimoireFrom ?? deckDefs.length;
+  deckDefs.forEach((defId, index) => {
     id += 1;
     const instanceId = `${prefix}${id}`;
-    cards[instanceId] = { instanceId, defId };
+    // Only the Companion's half can have rolled anything. A Hero Deck card with a modifier
+    // would mean a roll the player never caught.
+    const mods = index >= from ? o.spellModifiers?.[defId] : undefined;
+    cards[instanceId] = { instanceId, defId, ...(mods ? { mods: { ...mods } } : {}) };
     deck.push(instanceId);
-  }
+  });
 
   const { heroColumn, companionColumn } = flankColumns(width);
 
@@ -240,6 +259,14 @@ export interface CombatBoons {
  */
 export interface CombatCarry {
   /**
+   * What the active Companion's Grimoire rolled.
+   *
+   * Travels on the carry rather than being looked up, because the engine has never heard
+   * of a `CompanionInstance` — the overworld resolves the beast to its numbers, exactly as
+   * it already does for relics and knacks.
+   */
+  spellModifiers?: Record<string, CardModifier>;
+  /**
    * Pact health at the opening bell. Absent means full, as a standalone fight always is.
    *
    * The ceiling is untouched by this, so a wounded character fights at 12/40 rather than
@@ -369,13 +396,25 @@ export function createCombat(
   const companion =
     companionById(companionId ?? '') ?? companionById(encounter.companionId ?? '') ?? DEFAULT_COMPANION;
 
+  /**
+   * The Fused Grimoire: the Hero half the player built, then the eight the Companion always
+   * brings.
+   *
+   * Concatenated rather than interleaved, and shuffled immediately afterwards, so the join
+   * is invisible by the time anything is drawn. The order matters only for `grimoireFrom`,
+   * which is how the instance builder knows which half may carry a roll.
+   */
+  const heroDeck = deck && deck.length > 0 ? deck : companion.deck;
+  const grimoire = companion.innateGrimoire;
+
   const player = buildCommander({
     name: encounter.playerName,
     companionName: companion.name,
     companionSchool: companion.school,
     hp: encounter.playerHp,
-    // A custom deck from the builder overrides the companion's default list.
-    deckDefs: deck && deck.length > 0 ? deck : companion.deck,
+    deckDefs: [...heroDeck, ...grimoire],
+    grimoireFrom: heroDeck.length,
+    ...(carry?.spellModifiers ? { spellModifiers: carry.spellModifiers } : {}),
     prefix: 'pc',
     width: encounter.width,
   });

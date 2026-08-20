@@ -13,10 +13,16 @@ import { defineConfig } from 'vitest/config';
  * raising individual budgets, the deadline is generous and global — these tests exist to
  * catch a hang or a divergence, never to measure a machine — and the worker count is
  * capped so the heavy files are not all racing each other at once.
+ *
+ * Raised to 240s for the Fused Grimoire. Every deck is permanently larger now — a Hero
+ * half plus eight innate spells — and the AI's cost scales with the options it has to
+ * weigh, so the heaviest playout file moved from comfortably inside 180s to just outside
+ * it under load. The playout counts came down at the same time; this is the global half
+ * of that fix, and the global one is the budget this comment says to move.
  */
 export default defineConfig({
   test: {
-    testTimeout: 180_000,
+    testTimeout: 240_000,
     hookTimeout: 60_000,
     minWorkers: 1,
     maxWorkers: 2,

@@ -98,8 +98,15 @@ export function carryFor(
     ...(gear.ignoreGuardians || knack.ignoreGuardians ? { ignoreGuardians: true } : {}),
   };
 
+  // The rolls this particular beast is carrying. Resolved here for the same reason the
+  // knack is: `createCombat` is handed "this copy of Flame Surge costs one less" and has
+  // never heard of a CompanionInstance.
+  const spellModifiers =
+    companion && 'spellModifiers' in companion ? companion.spellModifiers : undefined;
+
   return {
     startingHp: overworld.pact.currentHp,
+    ...(spellModifiers && Object.keys(spellModifiers).length > 0 ? { spellModifiers } : {}),
     // The character's gauge, not the encounter's. `syncPactCeiling` has already folded
     // the active Companion's bonus into it, so this is one number rather than a sum done
     // differently at each end.

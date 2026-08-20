@@ -13,6 +13,7 @@ import type { Ctx } from './context.js';
 import { emit } from './context.js';
 import type { GameState } from '../types/state.js';
 import { CARDS } from '../data/cards/index.js';
+import type { CardModifier } from '../types/cards.js';
 import type { CardCost, CardDef } from '../types/cards.js';
 import { shuffle } from '../util/rng.js';
 import { toCardSnapshot } from './views.js';
@@ -123,13 +124,24 @@ export function effectiveCost(
   def: CardDef,
   /** The declared X, for a variable-cost card. Ignored by every other card. */
   x?: number,
+  /** What this particular copy rolled, if it came out of a Grimoire. */
+  mods?: CardModifier,
 ): CardCost {
   // X *is* the price. The printed `cost.pips` is neither a floor under it nor added to
   // it — a card that charged both would be asking twice for the same thing.
   if (def.xCost) return { pips: Math.max(0, x ?? 0), marrow: def.cost.marrow };
-  if (!def.spliceOnly || !state.players[side].discountHybrids) return def.cost;
+
+  const rolled = mods?.pipCostDelta ?? 0;
+  // A roll can take a card to free but never below it, and never touches Marrow — the
+  // same rule the hybrid discount keeps, and for the same reason: Marrow is a strict
+  // requirement rather than a price, so discounting it would be discounting a demand.
+  const base = Math.max(0, def.cost.pips + rolled);
+
+  if (!def.spliceOnly || !state.players[side].discountHybrids) {
+    return rolled === 0 ? def.cost : { pips: base, marrow: def.cost.marrow };
+  }
   return {
-    pips: Math.max(MIN_DISCOUNTED_PIPS, def.cost.pips - 1),
+    pips: Math.max(MIN_DISCOUNTED_PIPS, base - 1),
     marrow: def.cost.marrow,
   };
 }
@@ -180,7 +192,9 @@ export function endOfTurnCleanup(ctx: Ctx, side: Side): void {
     // Ephemeral overlay cards can never be discarded.
     if (inst.ephemeral) continue;
     const def = CARDS[inst.defId];
-    if (def?.keywords.includes('Retain')) continue;
+    // Rolled Retain counts the same as printed Retain. Asked of the instance as well as
+    // the definition, because the whole point of a roll is that this *copy* is different.
+    if (def?.keywords.includes('Retain') || inst.mods?.grantRetain) continue;
     discardCard(ctx, side, id);
   }
 

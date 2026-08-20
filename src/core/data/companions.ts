@@ -17,21 +17,29 @@ export interface CompanionDef {
   school: School;
   /** One line, shown on the selection screen. */
   blurb: string;
-  /** The 15-card deck this companion brings. */
+  /**
+   * The Hero Deck a new character is handed alongside this Companion.
+   *
+   * Identical across every species now, and deliberately so: the Hero half is utility, and
+   * utility has no colour. What makes a Boreas fight differently from an Ignis is the
+   * Grimoire below, not this.
+   */
   deck: string[];
+  /**
+   * The eight spells this species always brings, fused into the deck at the bell.
+   *
+   * Fixed by species, so catching a second Boreas never means catching different *cards* —
+   * what differs between two beasts of the same bloodline is what those eight spells
+   * **rolled** (`CompanionInstance.spellModifiers`). That split is the whole point of the
+   * change: the deck is knowable, the beast is not.
+   *
+   * Exactly `GRIMOIRE_SIZE`, checked by a test rather than by the type, so a species that
+   * shipped with seven is caught at the door instead of dealing a short deck.
+   */
+  innateGrimoire: string[];
   /** The setup-only stat block placed on the board as its Bound Form. */
   unitCardId: string;
 }
-
-/**
- * The shared spine of every companion deck: the cards that belong to no school.
- *
- * Narrower than it was. It used to be the starter deck minus its Pyre half, which meant it
- * also carried the starter's five minions — and those are a Vanguard Roster now. What is
- * left is genuinely universal: a bleed, a shove, a wall and a ward, four cards any school
- * is glad of. Everything with a colour is dealt below, per Companion.
- */
-const HERO_SPINE: string[] = ['dark_tithe', 'shield_bash', 'stone_barricade', 'aegis_ward'];
 
 export const COMPANIONS: CompanionDef[] = [
   {
@@ -43,6 +51,16 @@ export const COMPANIONS: CompanionDef[] = [
       'Runes and cascades. Brand your enemies, then set the whole board off at once. Ember Watch ignites anything standing in its lane.',
     // The Draft 7 deck exactly as specced.
     deck: [...STARTER_DECK],
+    innateGrimoire: [
+      'flame_surge',
+      'flame_surge',
+      'cinder_rune',
+      'cinder_rune',
+      'ember_coat',
+      'ember_coat',
+      'cataclysm',
+      'cataclysmic_core',
+    ],
     unitCardId: 'ignis_bound',
   },
   {
@@ -52,8 +70,8 @@ export const COMPANIONS: CompanionDef[] = [
     school: 'frost',
     blurb:
       'Control. Chill an enemy three times and it freezes solid — then break it. Rime Guard armours your Hero each turn.',
-    deck: [
-      ...HERO_SPINE,
+    deck: [...STARTER_DECK],
+    innateGrimoire: [
       'glacial_spike',
       'glacial_spike',
       'frost_nova',
@@ -75,8 +93,8 @@ export const COMPANIONS: CompanionDef[] = [
     // Three Static Arcs, because charging is the whole plan and one copy would make the
     // plan a coincidence. Arc Lash and the Hound are Hero cards and would be legal in any
     // deck; they are here because this is the deck that wants them.
-    deck: [
-      ...HERO_SPINE,
+    deck: [...STARTER_DECK],
+    innateGrimoire: [
       'static_arc',
       'static_arc',
       'static_arc',
@@ -97,16 +115,16 @@ export const COMPANIONS: CompanionDef[] = [
       'Attrition. Feed it your own bodies and take the difference — Grave Tithe drains the weakest thing standing every turn you cast.',
     // Its own school has exactly two cards a deck can hold three of, so the six are those
     // at their caps. A Dusk deck is short on options by design: it spends what it has.
-    deck: [
-      ...HERO_SPINE,
+    deck: [...STARTER_DECK],
+    innateGrimoire: [
       'soul_splinter_rune',
       'soul_splinter_rune',
       'soul_splinter_rune',
       'marrow_siphon',
       'marrow_siphon',
       'marrow_siphon',
-      'marrow_burst',
       'harvest_the_weak',
+      'marrow_burst',
     ],
     unitCardId: 'mortis_bound',
   },
@@ -117,8 +135,8 @@ export const COMPANIONS: CompanionDef[] = [
     school: 'bloom',
     blurb:
       'Patience. Poison, roots, and a body that grows where you plant it. Verdant Growth gives 2 HP back for the first card each turn.',
-    deck: [
-      ...HERO_SPINE,
+    deck: [...STARTER_DECK],
+    innateGrimoire: [
       'spore_cloud',
       'spore_cloud',
       'rot_root_snare',
@@ -137,8 +155,8 @@ export const COMPANIONS: CompanionDef[] = [
     school: 'bulwark',
     blurb:
       'Ground. Walls, shoves, and a body that will not be moved. Shield Oath armours everything standing in its lane.',
-    deck: [
-      ...HERO_SPINE,
+    deck: [...STARTER_DECK],
+    innateGrimoire: [
       'seismic_slam',
       'seismic_slam',
       'petrifying_mantle',
@@ -157,16 +175,16 @@ export const COMPANIONS: CompanionDef[] = [
     school: 'arcane',
     blurb:
       'Cards. Beams, hooks, and a hand that keeps refilling. Marginalia draws you one more every turn you cast.',
-    deck: [
-      ...HERO_SPINE,
+    deck: [...STARTER_DECK],
+    innateGrimoire: [
       'aether_beam',
       'aether_beam',
-      'grapple_line',
-      'grapple_line',
-      'grapple_line',
-      'cull_the_weak',
       'volatile_cask',
       'alchemists_barricade',
+      'aetheric_resurgence',
+      'anchor_rally',
+      'grapple_line',
+      'cull_the_weak',
     ],
     unitCardId: 'lexis_bound',
   },

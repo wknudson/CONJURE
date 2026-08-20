@@ -73,6 +73,7 @@ const BOON_LABELS: readonly { key: keyof CombatBoons; label: string }[] = [
   { key: 'discountHybrids', label: 'Spliced cards cost less' },
 ];
 import { RELIC_SLOT_ORDER } from '../core/overworld/state.js';
+import type { CardModifier } from '../core/types/cards.js';
 import {
   DEFAULT_ROSTER,
   ROSTER_BUDGET,
@@ -159,6 +160,14 @@ export class DeckBuilderScreen implements Screen {
     private readonly companionId: string,
     startingDeck: string[],
     startingRoster: string[],
+    /**
+     * What the *equipped beast's* Grimoire rolled.
+     *
+     * Passed in rather than looked up, because the screen is handed a species id and the
+     * rolls belong to one animal of that species — two Ignis on the roster have different
+     * ones, and only the caller knows which is standing beside the player.
+     */
+    private readonly spellModifiers: Record<string, CardModifier>,
     private readonly collection: Collection,
     private readonly bestiary: Bestiary,
     private readonly global: GlobalGameState,
@@ -197,13 +206,24 @@ export class DeckBuilderScreen implements Screen {
       <div class="builder__body">
         <div class="builder__pane builder__pane--deck">
           <div class="builder__pane-title">
-            <span class="builder__pane-name">The Decklist</span>
+            <span class="builder__pane-name">The Hero Deck</span>
             <span class="builder__count"></span>
           </div>
-          <div class="builder__pane-note">Twelve to thirty. Click a card to strike it out.</div>
+          <div class="builder__pane-note">
+            Five to fifteen, neutral and arcane only. Click a card to strike it out.
+          </div>
           <div class="builder__curve"></div>
           <div class="builder__deck"></div>
           <div class="builder__problems"></div>
+
+          <div class="grimoire">
+            <div class="grimoire__head">
+              <span class="grimoire__title">The Pact Grimoire</span>
+              <span class="grimoire__count"></span>
+            </div>
+            <div class="grimoire__note"></div>
+            <div class="grimoire__list"></div>
+          </div>
         </div>
 
         <div class="builder__pane builder__pane--case">
@@ -512,6 +532,7 @@ export class DeckBuilderScreen implements Screen {
     this.renderDeck();
     this.renderCurve();
     this.renderStatus();
+    this.renderGrimoire();
   }
 
   /**
@@ -683,13 +704,98 @@ export class DeckBuilderScreen implements Screen {
       .join('');
   }
 
+  /**
+   * The Pact Grimoire: the eight your Companion fuses in, and what they rolled.
+   *
+   * Beside the Hero Deck rather than inside it, because it is not editable and showing it
+   * as a list you can click would be promising otherwise. What it *is* for is the second
+   * half of the same question — a player deciding whether nine utility cards is enough
+   * needs to see the eight that arrive with them.
+   *
+   * The rolls are the reason this panel exists at all. Two Boreas bring the same eight
+   * spells; what makes one worth keeping is the green -1 on a Glacial Spike, and there is
+   * nowhere else in the game that fact is visible.
+   */
+  private renderGrimoire(): void {
+    const el = this.el;
+    if (!el) return;
+
+    const companion = companionById(this.companionId);
+    const grimoire = companion?.innateGrimoire ?? [];
+    const mods = this.spellModifiers;
+
+    const count = el.querySelector<HTMLElement>('.grimoire__count');
+    if (count) count.textContent = `${grimoire.length} fixed`;
+
+    const note = el.querySelector<HTMLElement>('.grimoire__note');
+    if (note) {
+      // Distinct *spells*, not copies. The list below is grouped, so counting cards here
+      // would promise five highlighted rows and show three.
+      const rolled = new Set(grimoire.filter((id) => mods[id])).size;
+      note.textContent = rolled
+        ? `${companion?.name ?? 'Your Companion'} fuses these in at the bell. ${rolled} of them rolled well.`
+        : `${companion?.name ?? 'Your Companion'} fuses these in at the bell. This one rolled nothing — catch another.`;
+    }
+
+    const list = el.querySelector<HTMLElement>('.grimoire__list');
+    if (!list) return;
+    list.replaceChildren();
+
+    // Grouped, because a Grimoire holding three Soul Splinters should read as "three of
+    // this" rather than as three rows a player has to notice are identical.
+    const seen = new Map<string, number>();
+    for (const id of grimoire) seen.set(id, (seen.get(id) ?? 0) + 1);
+
+    for (const [defId, copies] of seen) {
+      const def = CARDS[defId];
+      if (!def) continue;
+      list.appendChild(this.grimoireRow(def, copies, mods[defId]));
+    }
+  }
+
+  /** One Grimoire spell, with whatever it rolled worn on its face. */
+  private grimoireRow(def: CardDef, copies: number, mod?: CardModifier): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'grimoire-row';
+    row.classList.toggle('is-rolled', mod !== undefined);
+
+    const badges: string[] = [];
+    if (mod?.pipCostDelta) {
+      const sign = mod.pipCostDelta > 0 ? '+' : '';
+      badges.push(
+        `<span class="grimoire-mod grimoire-mod--cost" data-tip="Cost roll|This copy costs ${Math.abs(mod.pipCostDelta)} Pip less than the printed card.">${sign}${mod.pipCostDelta} PIP</span>`,
+      );
+    }
+    if (mod?.bonusDamage) {
+      badges.push(
+        `<span class="grimoire-mod grimoire-mod--dmg" data-tip="Damage roll|Every hit this card makes lands for ${mod.bonusDamage} more.">+${mod.bonusDamage} DMG</span>`,
+      );
+    }
+    if (mod?.grantRetain) {
+      badges.push(
+        `<span class="grimoire-mod grimoire-mod--retain" data-tip="Retain roll|This copy stays in your hand at end of turn instead of being discarded.">RETAIN</span>`,
+      );
+    }
+
+    const cost = def.xCost ? 'X' : formatCost(def.cost);
+    row.innerHTML = `
+      <span class="grimoire-row__cost">${cost}</span>
+      <span class="grimoire-row__body">
+        <span class="grimoire-row__name">${escapeHtml(def.name)}${copies > 1 ? ` <em>${copies}×</em>` : ''}</span>
+        <span class="grimoire-row__school">${escapeHtml(def.school)}</span>
+      </span>
+      <span class="grimoire-row__mods">${badges.join('')}</span>
+    `;
+    return row;
+  }
+
   private renderStatus(): void {
     const countEl = this.el?.querySelector('.builder__count');
     const problemsEl = this.el?.querySelector('.builder__problems');
     const confirm = this.el?.querySelector<HTMLButtonElement>('.builder__confirm');
     if (!countEl || !problemsEl || !confirm) return;
 
-    countEl.textContent = `${this.deck.length} / ${MIN_DECK}–${MAX_DECK}`;
+    countEl.textContent = `${this.deck.length} / ${MAX_DECK}`;
     countEl.classList.toggle('is-bad', this.deck.length < MIN_DECK || this.deck.length > MAX_DECK);
 
     const problems = validateDeck(this.deck, this.collection);

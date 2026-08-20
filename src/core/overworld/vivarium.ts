@@ -19,6 +19,8 @@ import type { GlobalGameState, OverworldState } from './state.js';
 import type { RngState } from '../util/rng.js';
 import { nextInt } from '../util/rng.js';
 import { traitsFor } from '../data/companionTraits.js';
+import { companionById } from '../data/companions.js';
+import type { CardModifier } from '../types/cards.js';
 
 /**
  * What levelling has bought a Companion so far.
@@ -54,6 +56,17 @@ export interface CompanionInstance extends CompanionProgress {
   baseId: string;
   baseHpRoll: number;
   traitId: string;
+  /**
+   * What this beast's eight Grimoire spells rolled, keyed by card def id.
+   *
+   * The reason two Boreas are worth comparing. Keyed by def rather than by slot because a
+   * Grimoire may hold the same spell twice and a roll belongs to the *spell*, not to the
+   * position — a Boreas whose Glacial Spike came out cheap has both copies cheap, which is
+   * the version a player can actually reason about.
+   *
+   * Sparse: most spells roll nothing at all, and an absent key means an ordinary card.
+   */
+  spellModifiers: Record<string, CardModifier>;
 }
 
 export function newCompanion(): CompanionProgress {
@@ -72,6 +85,56 @@ export const HP_ROLL_MAX = 44;
  * species and a counter rather than a random string, so a save is readable by a human and
  * two rolls in the same millisecond cannot collide.
  */
+/** Chance any one Grimoire spell rolls anything at all. */
+export const MODIFIER_CHANCE = 0.25;
+
+/**
+ * The table a Grimoire spell rolls on.
+ *
+ * Weighted by how much each is worth rather than uniformly: a Pip off is the roll players
+ * will chase, so it is the rarest, and Retain is the quiet one that makes a situational
+ * card worth drafting. Every entry is a *delta*, so the table needs to know nothing about
+ * the cards it is rolled against.
+ */
+const MODIFIER_TABLE: { weight: number; mod: CardModifier }[] = [
+  { weight: 2, mod: { pipCostDelta: -1 } },
+  { weight: 4, mod: { bonusDamage: 1 } },
+  { weight: 3, mod: { grantRetain: true } },
+];
+
+const MODIFIER_WEIGHT = MODIFIER_TABLE.reduce((n, e) => n + e.weight, 0);
+
+/**
+ * Rolls one beast's Grimoire.
+ *
+ * Walks the eight in a fixed order and gives each a chance to roll, so the same seed
+ * always produces the same beast — the same discipline the constitution and knack rolls
+ * already keep. A spell that appears twice is rolled once and shares the result, because
+ * the key is the spell.
+ */
+export function rollSpellModifiers(rng: RngState, grimoire: string[]): Record<string, CardModifier> {
+  const out: Record<string, CardModifier> = {};
+
+  for (const defId of grimoire) {
+    // Already rolled — a duplicate copy shares whatever the first one got.
+    if (out[defId]) continue;
+    // `nextInt` over a hundred rather than a float, so the stream stays integer-only and
+    // a replay cannot drift on floating-point rounding.
+    if (nextInt(rng, 100) >= MODIFIER_CHANCE * 100) continue;
+
+    let pick = nextInt(rng, MODIFIER_WEIGHT);
+    for (const entry of MODIFIER_TABLE) {
+      pick -= entry.weight;
+      if (pick < 0) {
+        out[defId] = { ...entry.mod };
+        break;
+      }
+    }
+  }
+
+  return out;
+}
+
 export function tameCompanion(
   rng: RngState,
   baseId: string,
@@ -86,6 +149,9 @@ export function tameCompanion(
     baseId,
     baseHpRoll: HP_ROLL_MIN + nextInt(rng, HP_ROLL_MAX - HP_ROLL_MIN + 1),
     traitId,
+    // Rolled last, so adding it did not move the constitution or the knack in any existing
+    // seed. Every prior taming still produces the beast it always did.
+    spellModifiers: rollSpellModifiers(rng, companionById(baseId)?.innateGrimoire ?? []),
   };
 }
 

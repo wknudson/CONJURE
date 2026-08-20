@@ -30,7 +30,9 @@ import { makeRng } from '../core/util/rng.js';
  * fail on `minion_in_deck` before any of the rules under test were reached.
  */
 function fillerDeck(size: number): string[] {
-  const staples = ['cinder_rune', 'brittle_touch', 'shield_bash', 'aegis_ward', 'stone_barricade'];
+  // All Tier 1, so five staples at three copies apiece exactly reach the 15-card ceiling.
+  // A Tier 2 card here caps the filler at 14 and the boundary test cannot be written.
+  const staples = ['grapple_line', 'cull_the_weak', 'shield_bash', 'aegis_ward', 'stone_barricade'];
   const out: string[] = [];
   let i = 0;
   while (out.length < size) {
@@ -68,24 +70,24 @@ describe('copy limits by tier', () => {
   });
 
   it('caps Tier 1 staples at three and Tier 2 at two', () => {
-    expect(tierOf(CARDS.cinder_rune!)).toBe(1);
-    expect(tierOf(CARDS.flame_surge!)).toBe(2);
+    expect(tierOf(CARDS.grapple_line!)).toBe(1);
+    expect(tierOf(CARDS.aether_beam!)).toBe(2);
 
-    const tooMany = [...fillerDeck(MIN_DECK), 'flame_surge', 'flame_surge', 'flame_surge'];
+    const tooMany = [...fillerDeck(MIN_DECK), 'aether_beam', 'aether_beam', 'aether_beam'];
     const problems = validateDeck(tooMany);
-    expect(problems.some((p) => p.code === 'over_copy_limit' && p.cardId === 'flame_surge')).toBe(true);
+    expect(problems.some((p) => p.code === 'over_copy_limit' && p.cardId === 'aether_beam')).toBe(true);
   });
 
   it('counts ranks of the same card against one shared cap', () => {
     // Ascension will print rank-2 variants; they must not double the allowance.
-    expect(baseIdOf('cinder_rune_r2')).toBe('cinder_rune');
-    expect(baseIdOf('cinder_rune')).toBe('cinder_rune');
+    expect(baseIdOf('grapple_line_r2')).toBe('grapple_line');
+    expect(baseIdOf('grapple_line')).toBe('grapple_line');
   });
 
   it('reports how many more copies a deck can take', () => {
-    const deck = ['cinder_rune', 'cinder_rune'];
-    expect(remainingCopies(deck, 'cinder_rune')).toBe(1);
-    expect(remainingCopies([...deck, 'cinder_rune'], 'cinder_rune')).toBe(0);
+    const deck = ['grapple_line', 'grapple_line'];
+    expect(remainingCopies(deck, 'grapple_line')).toBe(1);
+    expect(remainingCopies([...deck, 'grapple_line'], 'grapple_line')).toBe(0);
   });
 });
 
@@ -115,7 +117,7 @@ describe('bodies are not cards any more', () => {
 
 describe('ownership', () => {
   it('refuses cards the player does not own', () => {
-    const collection = { owned: { cinder_rune: 1 } };
+    const collection = { owned: { grapple_line: 1 } };
     const deck = [...fillerDeck(MIN_DECK)];
     const problems = validateDeck(deck, collection);
     expect(problems.some((p) => p.code === 'not_owned')).toBe(true);

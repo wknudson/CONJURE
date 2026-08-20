@@ -246,7 +246,7 @@ function playCard(ctx: Ctx, cardId: string, target: ChosenTarget, x?: number): v
     }
   }
 
-  const price = effectiveCost(ctx.state, side, def, x);
+  const price = effectiveCost(ctx.state, side, def, x, inst.mods);
   if (!canAfford(ctx.state, side, price)) {
     throw new IllegalCommandError(`cannot afford ${def.name} (${price})`);
   }
@@ -275,6 +275,9 @@ function playCard(ctx: Ctx, cardId: string, target: ChosenTarget, x?: number): v
   const play: CardPlayContext = {
     side,
     chosen: target,
+    // Carried into resolution so a rolled `bonusDamage` reaches every number this card
+    // deals, without any op having to know where the roll came from.
+    ...(inst.mods ? { mods: { ...inst.mods } } : {}),
     ...(casterAnchor ? { casterAnchor } : {}),
     // Carried into resolution so an op can scale off what was actually paid, rather than
     // off what the card is allowed to charge.

@@ -426,11 +426,37 @@ export interface Rank2Overrides {
   vector?: 'omni' | 'linear';
 }
 
+/**
+ * What a Grimoire spell rolled on the beast that carries it.
+ *
+ * The randomness moved. Catching a Companion never decided *which* cards you got — the
+ * eight are fixed by species — so what makes one Boreas worth keeping over another is what
+ * its eight spells rolled. Every field is a delta rather than an absolute, so a modifier
+ * can be read without knowing the card it sits on.
+ */
+export interface CardModifier {
+  /** Cheaper (negative) or dearer. Never takes a card below zero. */
+  pipCostDelta?: number;
+  /** Added to every damage number the card deals. */
+  bonusDamage?: number;
+  /** Grants Retain: it stays in hand at end of turn. */
+  grantRetain?: boolean;
+}
+
 export interface CardInstance {
   instanceId: CardInstanceId;
   defId: CardDefId;
   /** Sits outside the hand limit and cannot be discarded. */
   ephemeral?: boolean;
+  /**
+   * What this particular copy rolled, if it came out of a Companion's Grimoire.
+   *
+   * On the **instance** rather than the definition, which is the whole reason this works:
+   * the same `flame_surge` def can be dealt cheap from one beast and ordinary from another
+   * in the same fight, and nothing global has to change for it. Absent on every Hero Deck
+   * card — those are the half that does not roll.
+   */
+  mods?: CardModifier;
 }
 
 /** A resolved target selection passed into effect execution. */
@@ -463,6 +489,13 @@ export interface CardPlayContext {
   titheDamage?: number;
   /** The X actually paid, for a variable-cost card. Absent on every other card. */
   x?: number;
+  /**
+   * What the copy being played rolled, if it came out of a Grimoire.
+   *
+   * Read by the ops that deal numbers, so a rolled `bonusDamage` reaches every hit the
+   * card makes without any op needing to know a Companion exists.
+   */
+  mods?: CardModifier;
   summonedUnitId?: UnitId;
   /**
    * The obstacle this card just raised, for the ops that come after it.

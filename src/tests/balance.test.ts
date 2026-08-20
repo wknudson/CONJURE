@@ -44,7 +44,13 @@ function playOut(encounterId: string, seed: number): Outcome {
 describe('encounter balance sanity', () => {
   for (const encounter of ENCOUNTERS) {
     it(`${encounter.name}: every game reaches a decision`, () => {
-      const outcomes = Array.from({ length: 12 }, (_, i) => playOut(encounter.id, i + 1));
+      // Eight, down from twelve. The Fused Grimoire made every deck permanently larger —
+      // a 15-card Hero half plus eight innate spells — and the AI's cost is per *option*
+      // per turn, so the same twelve playouts now take half again as long. Games are still
+      // 7 to 19 turns; nothing got longer, the search got wider. Eight still catches the
+      // two structural failures this guards: a game that never ends, and a side that
+      // cannot threaten at all.
+      const outcomes = Array.from({ length: 8 }, (_, i) => playOut(encounter.id, i + 1));
 
       for (const o of outcomes) {
         expect(o.result, `stalled after ${o.turns} turns`).not.toBe('stalled');

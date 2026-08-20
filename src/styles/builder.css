@@ -1337,3 +1337,139 @@
   font-size: 16px;
   color: var(--text-dim);
 }
+
+/* ---------------------------------------------------------------- the Pact Grimoire
+
+   The half of the deck the player does not build. It sits under the Hero Deck rather than
+   beside it because it answers the same question one beat later: this is what arrives with
+   the nine you chose.
+
+   Not clickable, and visibly so — no hover, no cursor change. A panel that looked editable
+   would be promising something the fusion cannot give.
+*/
+
+.grimoire {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-edge);
+}
+
+.grimoire__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.grimoire__title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.grimoire__count {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.grimoire__note {
+  margin: 4px 0 10px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.grimoire__list {
+  display: grid;
+  gap: 5px;
+}
+
+.grimoire-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-edge);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* A spell that rolled. Ringed rather than merely badged, so a good beast is legible at a
+   glance from across the panel — which is the whole reason a player opens it. */
+.grimoire-row.is-rolled {
+  border-color: rgba(74, 222, 128, 0.45);
+  background: rgba(74, 222, 128, 0.07);
+}
+
+.grimoire-row__cost {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.grimoire-row__body {
+  display: grid;
+  gap: 1px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.grimoire-row__name {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.grimoire-row__name em {
+  font-style: normal;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.grimoire-row__school {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.grimoire-row__mods {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 5px;
+}
+
+.grimoire-mod {
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* Cheaper is green because cheaper is the roll players chase. */
+.grimoire-mod--cost {
+  background: rgba(74, 222, 128, 0.18);
+  border: 1px solid rgba(74, 222, 128, 0.5);
+  color: #86efac;
+}
+
+.grimoire-mod--dmg {
+  background: rgba(248, 113, 113, 0.16);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #fca5a5;
+}
+
+.grimoire-mod--retain {
+  background: rgba(103, 232, 249, 0.16);
+  border: 1px solid rgba(103, 232, 249, 0.45);
+  color: #a5f3fc;
+}

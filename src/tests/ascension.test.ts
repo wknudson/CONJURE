@@ -176,6 +176,16 @@ describe('the account-wide mark', () => {
 
 describe('a Rank 2 card in a fight', () => {
   /** Every card the player's deck and opening hand resolve to. */
+  /**
+   * What the Hero half of the fused deck was dealt as.
+   *
+   * The Companion fuses eight of its own spells in at the bell, so the pile is no longer
+   * only what was passed in. Filtered to the base id under test rather than asserting over
+   * everything, or every assertion here would be about the Grimoire instead.
+   */
+  const heroPrintings = (deck: string[], base: string) =>
+    printings(deck).filter((id) => baseIdOf(id) === base);
+
   const printings = (deck: string[]) => {
     const { state } = createCombat(NOVICE_DUELIST, 7, undefined, deck);
     const player = state.players.player;
@@ -188,8 +198,11 @@ describe('a Rank 2 card in a fight', () => {
   it('is dealt as an ordinary card, with no resolver told about Ascension', () => {
     // This is the payoff of merging at load: the engine has no branch for Ascension and
     // needs none. A Rank 2 id is just an id it looks up like any other.
-    const deck = Array.from({ length: 12 }, () => ascendedId('shield_bash'));
-    expect(printings(deck).every((id) => id === ascendedId('shield_bash'))).toBe(true);
+    const deck = Array.from({ length: 8 }, () => ascendedId('shield_bash'));
+    const dealt = heroPrintings(deck, 'shield_bash');
+
+    expect(dealt).toHaveLength(8);
+    expect(dealt.every((id) => id === ascendedId('shield_bash'))).toBe(true);
   });
 
   it('arrives at the printed strength, not the base one', () => {
@@ -198,20 +211,30 @@ describe('a Rank 2 card in a fight', () => {
     // Guard against this test passing on a card whose ascension changed nothing.
     expect(up.text).not.toBe(base.text);
 
-    const deck = Array.from({ length: 12 }, () => ascendedId('shield_bash'));
+    const deck = Array.from({ length: 8 }, () => ascendedId('shield_bash'));
     const { state } = createCombat(NOVICE_DUELIST, 7, undefined, deck);
-    const first = state.players.player.hand[0]!;
+    // The opening hand is drawn from a fused, shuffled pile, so it may hold Grimoire
+    // spells too. Find a copy of the card under test rather than trusting the first slot.
+    const player = state.players.player;
+    const mine = [...player.hand, ...player.deck]
+      .map((id) => player.cards[id]!)
+      .find((c) => baseIdOf(c.defId) === 'shield_bash')!;
 
-    expect(CARDS[state.players.player.cards[first]!.defId]!.text).toBe(up.text);
+    expect(CARDS[mine.defId]!.text).toBe(up.text);
   });
 
   it('is what a deck of base ids becomes once the card is raised', () => {
     // The whole chain in one assertion: saved deck of base ids, account-wide mark, and
     // the fight that receives the upgraded printing without anything having migrated.
     const collection = withAscended(['shield_bash']);
-    const saved = Array.from({ length: 12 }, () => 'shield_bash');
+    const saved = Array.from({ length: 8 }, () => 'shield_bash');
 
-    expect(printings(printedDeck(collection, saved)).every((id) => id === ascendedId('shield_bash'))).toBe(true);
-    expect(printings(saved).every((id) => id === 'shield_bash'), 'and not before').toBe(true);
+    const raised = heroPrintings(printedDeck(collection, saved), 'shield_bash');
+    expect(raised).toHaveLength(8);
+    expect(raised.every((id) => id === ascendedId('shield_bash'))).toBe(true);
+    expect(
+      heroPrintings(saved, 'shield_bash').every((id) => id === 'shield_bash'),
+      'and not before',
+    ).toBe(true);
   });
 });

@@ -118,8 +118,12 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
     }
 
     case 'damage': {
+      // A rolled bonus is added per *hit*, not split across an area. That is deliberate and
+      // it is what makes the roll worth chasing on a Cataclysm — but it is also why the
+      // table weights `bonusDamage` as the common roll rather than the rare one.
+      const amount = Math.max(0, node.amount + (play.mods?.bonusDamage ?? 0));
       for (const ref of resolveArea(ctx, node.area, play)) {
-        dealDamage(ctx, { target: ref, amount: node.amount, dtype: node.dtype, cause: 'spell' });
+        dealDamage(ctx, { target: ref, amount, dtype: node.dtype, cause: 'spell' });
         if (ctx.state.result) return;
       }
       return;

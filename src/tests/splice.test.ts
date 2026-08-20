@@ -143,14 +143,14 @@ describe('the copy that comes out of a deck', () => {
     const g = bench();
     const deck = [
       BASE, BASE,
-      'cinder_rune', 'cinder_rune', 'cinder_rune',
-      'brittle_touch', 'brittle_touch', 'brittle_touch',
+      'grapple_line', 'grapple_line', 'grapple_line',
+      'aether_beam', 'aether_beam',
       'shield_bash', 'shield_bash', 'shield_bash',
       'aegis_ward',
     ];
     const collection: Collection = {
       owned: {
-        [BASE]: 2, cinder_rune: 3, brittle_touch: 3, shield_bash: 3, aegis_ward: 3,
+        [BASE]: 2, grapple_line: 3, aether_beam: 3, shield_bash: 3, aegis_ward: 3,
       },
     };
     const decks: Record<string, DeckList> = { ignis: { cards: [...deck] } };
@@ -163,10 +163,14 @@ describe('the copy that comes out of a deck', () => {
     expect(codes).not.toContain('not_owned');
     expect(codes).not.toContain('over_copy_limit');
 
-    // It *is* one card short now, and that is correct rather than a bug: the player spent
-    // a card out of a full deck. The builder says so in as many words, which is the whole
-    // reason the deck is flagged rather than silently topped up with something.
-    expect(codes, 'and says exactly what is wrong').toEqual(['too_small']);
+    // The bench's own bases are elemental — Flame Surge is Pyre — and a Hero Deck may
+    // only hold neutral and arcane now. So this deck is flagged `off_school`, which is a
+    // fact about the Fused Grimoire rather than about the splice: what this test is
+    // guarding is the two codes above, and they stay clear.
+    //
+    // It is also the visible edge of a real gap: splicing produces elemental hybrids that
+    // no Hero Deck can carry. Worth a ruling, and not one this test should make.
+    expect(codes, 'and says exactly what is wrong').toEqual(['off_school']);
   });
 });
 

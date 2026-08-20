@@ -91,7 +91,7 @@ export function toCardSnapshot(state: GameState, side: Side, id: CardInstanceId)
     // rather than surprising the player at the till.
     // The printed price is zero for an X card and means nothing; `xCost` below is what
     // the face should actually be showing.
-    cost: effectiveCost(state, side, def),
+    cost: effectiveCost(state, side, def, undefined, inst.mods),
     ...(def.xCost ? { xCost: { max: def.xCost.max } } : {}),
     school: def.school,
     source: def.source,

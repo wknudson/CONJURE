@@ -370,18 +370,61 @@ describe('one character on disk', () => {
     writeSave(file);
     const raw = JSON.parse(localStorage.getItem('conjure.save')!);
     raw.profiles['slot-1'].collection = { owned: { spark_wisp: 2 }, ascended: ['spark_wisp'] };
-    // A spell, so the rename is observable in the deck too. The Wisp is a body now and a
-    // body is stripped from any deck on load, which the next test covers on its own.
+    // Every id the rename table knows about is now un-deckable — the Wisp is a body and
+    // both hybrids are elemental — so the deck half is observed through the *note* rather
+    // than through what survives. An id that failed to rename would be an unknown card and
+    // would be dropped silently; being counted as elemental proves it was recognised.
     raw.profiles['slot-1'].decks.ignis = {
       companionId: 'ignis',
-      cards: ['spell_vaporize_blast'],
+      cards: ['spell_vaporize_blast', 'shield_bash'],
     };
     localStorage.setItem('conjure.save', JSON.stringify(raw));
 
-    const p = loadSave().save.profiles['slot-1']!;
+    const loaded = loadSave();
+    const p = loaded.save.profiles['slot-1']!;
     expect(p.collection.owned.marrow_wisp).toBeGreaterThan(0);
     expect(p.collection.owned.spark_wisp).toBeUndefined();
-    expect(p.decks.ignis!.cards).toEqual(['vaporize_blast']);
+
+    expect(p.decks.ignis!.cards, 'the Hero-legal card is kept').toEqual(['shield_bash']);
+    expect(
+      loaded.notes.join(' '),
+      'and the renamed hybrid was recognised, then stripped as elemental',
+    ).toMatch(/1 elemental card/);
+  });
+
+  it('takes the elements out of a deck saved before the Fused Grimoire', () => {
+    // The Companion brings its own eight now, so a Hero Deck full of Pyre is not a deck
+    // the player can fix — those cards can never be legal in it again.
+    const file = fileWith('slot-1');
+    writeSave(file);
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    raw.profiles['slot-1'].decks.ignis = {
+      companionId: 'ignis',
+      cards: ['flame_surge', 'cinder_rune', 'shield_bash', 'aegis_ward'],
+    };
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const loaded = loadSave();
+    const p = loaded.save.profiles['slot-1']!;
+
+    expect(p.decks.ignis!.cards).toEqual(['shield_bash', 'aegis_ward']);
+    expect(p.decks.ignis!.invalid, 'and it is now too short, so it is flagged').toBe(true);
+    expect(loaded.notes.join(' ')).toMatch(/fuses its own eight/);
+  });
+
+  it('gives a beast caught before the Grimoire the same roll on every load', () => {
+    // Not a fresh roll: re-rolling at load would make every reload a different animal,
+    // which is the exact thing storing `baseHpRoll` rather than deriving it prevents.
+    const file = fileWith('slot-1');
+    writeSave(file);
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    delete raw.profiles['slot-1'].companions[0].spellModifiers;
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const first = loadSave().save.profiles['slot-1']!.companions[0]!;
+    const second = loadSave().save.profiles['slot-1']!.companions[0]!;
+
+    expect(first.spellModifiers).toEqual(second.spellModifiers);
   });
 
   it('takes the bodies out of a deck saved before the Vanguard overhaul', () => {
