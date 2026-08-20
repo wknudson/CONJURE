@@ -17,6 +17,7 @@ import { CARDS } from '../core/data/cards/index.js';
 import { HAND_LIMIT, PIP_CAP } from '../core/engine/deck.js';
 import { flankColumns } from '../core/engine/setup.js';
 import { growthCapFor } from '../core/engine/growth.js';
+import type { RosterEntry } from '../core/types/state.js';
 
 export interface UnitSpec {
   def: string;
@@ -60,6 +61,7 @@ export function scenario(opts: {
     height,
     units: {},
     obstacles: {},
+    anchors: [],
     hazards: {},
     intents: [],
     declaredPlan: [],
@@ -132,6 +134,9 @@ function blankCommander(
     name,
     companionSchool: 'pyre' as const,
     ...flankColumns(width),
+    // Empty by default: a test board is a fight that brought no Vanguard, which is exactly
+    // the legacy path — no anchors, no deployment phase, turn one straight away.
+    roster: [] as RosterEntry[],
     resonancesThisTurn: 0,
     reactionPipsThisTurn: 0,
     hp,

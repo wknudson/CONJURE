@@ -24,7 +24,7 @@ import { canAttack, canAct } from './movement.js';
 import { isClimaxed } from './growth.js';
 import { hasLoS, hasLoSToPortrait } from './los.js';
 import { DIRS_8, cellsAt, cellsOf } from '../util/grid.js';
-import { inBounds, portraitRow, territoryRows, visionClamp } from '../types/state.js';
+import { inBounds, portraitRow, startingZone, visionClamp } from '../types/state.js';
 
 /**
  * Where a card is cast from.
@@ -371,7 +371,7 @@ export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): 
   if (unit.rangeMax <= 2 && unit.attackProfile === undefined) {
     // Melee (Draft 7 §5.2): reaching the enemy's front or back row is the whole
     // requirement — standing in their territory is what puts the portrait in reach.
-    const homeRows = territoryRows(state, targetSide);
+    const homeRows = startingZone(state, targetSide);
     return cells.some((c) => homeRows.includes(c.y));
   }
 

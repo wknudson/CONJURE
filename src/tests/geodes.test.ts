@@ -4,7 +4,7 @@ import { applyCommand } from '../core/engine/engine.js';
 import { createCombat } from '../core/engine/setup.js';
 import { CombatSession } from '../core/session.js';
 import { NOVICE_DUELIST, IGNIS_TRIAL } from '../core/data/encounters/index.js';
-import { territoryRows } from '../core/types/state.js';
+import { startingZone } from '../core/types/state.js';
 import { spawnObstacle } from '../core/engine/spawn.js';
 import { makeCtx } from '../core/engine/context.js';
 import { CARDS } from '../core/data/cards/index.js';
@@ -32,8 +32,8 @@ describe('scattering', () => {
     for (const seed of [1, 2, 3, 7, 19]) {
       const { state } = createCombat(NOVICE_DUELIST, seed);
       const home = new Set([
-        ...territoryRows(state, 'player'),
-        ...territoryRows(state, 'enemy'),
+        ...startingZone(state, 'player'),
+        ...startingZone(state, 'enemy'),
       ]);
       for (const o of Object.values(state.obstacles)) {
         if (o.defId !== 'marrow_geode') continue;

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MAX_BEHEMOTHS,
   MAX_DECK,
   MAX_SWAPS,
   MIN_DECK,
@@ -24,9 +23,14 @@ import { CARDS } from '../core/data/cards/index.js';
 import { COMPANIONS } from '../core/data/companions.js';
 import { makeRng } from '../core/util/rng.js';
 
-/** A legal filler deck of N copies drawn from cheap Tier 1 staples. */
+/**
+ * A legal filler deck of N copies drawn from cheap Tier 1 staples.
+ *
+ * Spells only. Minions are a Vanguard Roster now, so a filler deck built from bodies would
+ * fail on `minion_in_deck` before any of the rules under test were reached.
+ */
 function fillerDeck(size: number): string[] {
-  const staples = ['scout_imp', 'marrow_wisp', 'shield_bash', 'aegis_ward', 'stone_barricade'];
+  const staples = ['cinder_rune', 'brittle_touch', 'shield_bash', 'aegis_ward', 'stone_barricade'];
   const out: string[] = [];
   let i = 0;
   while (out.length < size) {
@@ -46,7 +50,7 @@ describe('deck size', () => {
   });
 
   it('rejects a deck above the maximum', () => {
-    const deck = Array.from({ length: MAX_DECK + 1 }, () => 'scout_imp');
+    const deck = Array.from({ length: MAX_DECK + 1 }, () => 'shield_bash');
     expect(validateDeck(deck).map((p) => p.code)).toContain('too_large');
   });
 
@@ -64,42 +68,54 @@ describe('copy limits by tier', () => {
   });
 
   it('caps Tier 1 staples at three and Tier 2 at two', () => {
-    expect(tierOf(CARDS.scout_imp!)).toBe(1);
-    expect(tierOf(CARDS.grave_sentinel!)).toBe(2);
+    expect(tierOf(CARDS.cinder_rune!)).toBe(1);
+    expect(tierOf(CARDS.flame_surge!)).toBe(2);
 
-    const tooMany = [...fillerDeck(MIN_DECK), 'grave_sentinel', 'grave_sentinel', 'grave_sentinel'];
+    const tooMany = [...fillerDeck(MIN_DECK), 'flame_surge', 'flame_surge', 'flame_surge'];
     const problems = validateDeck(tooMany);
-    expect(problems.some((p) => p.code === 'over_copy_limit' && p.cardId === 'grave_sentinel')).toBe(true);
+    expect(problems.some((p) => p.code === 'over_copy_limit' && p.cardId === 'flame_surge')).toBe(true);
   });
 
   it('counts ranks of the same card against one shared cap', () => {
     // Ascension will print rank-2 variants; they must not double the allowance.
-    expect(baseIdOf('scout_imp_r2')).toBe('scout_imp');
-    expect(baseIdOf('scout_imp')).toBe('scout_imp');
+    expect(baseIdOf('cinder_rune_r2')).toBe('cinder_rune');
+    expect(baseIdOf('cinder_rune')).toBe('cinder_rune');
   });
 
   it('reports how many more copies a deck can take', () => {
-    const deck = ['scout_imp', 'scout_imp'];
-    expect(remainingCopies(deck, 'scout_imp')).toBe(1);
-    expect(remainingCopies([...deck, 'scout_imp'], 'scout_imp')).toBe(0);
+    const deck = ['cinder_rune', 'cinder_rune'];
+    expect(remainingCopies(deck, 'cinder_rune')).toBe(1);
+    expect(remainingCopies([...deck, 'cinder_rune'], 'cinder_rune')).toBe(0);
   });
 });
 
-describe('behemoth limit', () => {
-  it('allows two and refuses three', () => {
-    const two = [...fillerDeck(MIN_DECK), 'magma_brute', 'magma_brute'];
-    // Two Behemoths breaks the Tier 3 single-copy rule, but not the Behemoth rule.
-    expect(validateDeck(two).some((p) => p.code === 'too_many_behemoths')).toBe(false);
+describe('bodies are not cards any more', () => {
+  it('refuses any minion in a deck, by name', () => {
+    const deck = [...fillerDeck(MIN_DECK), 'grave_sentinel'];
+    const problems = validateDeck(deck);
+    const minion = problems.find((p) => p.code === 'minion_in_deck');
 
-    const three = [...fillerDeck(MIN_DECK), 'magma_brute', 'magma_brute', 'magma_brute'];
-    expect(validateDeck(three).some((p) => p.code === 'too_many_behemoths')).toBe(true);
-    expect(MAX_BEHEMOTHS).toBe(2);
+    expect(minion, 'a body in a spell deck must be named as such').toBeDefined();
+    expect(minion!.cardId).toBe('grave_sentinel');
+    expect(minion!.message).toMatch(/Vanguard Roster/);
+  });
+
+  it('refuses a Behemoth for the same reason, not the old Behemoth rule', () => {
+    // `MAX_BEHEMOTHS` governed bodies in decks, and there are none. The roster owns that
+    // limit now; the deck simply refuses the body outright.
+    const problems = validateDeck([...fillerDeck(MIN_DECK), 'magma_brute']);
+    expect(problems.some((p) => p.code === 'minion_in_deck')).toBe(true);
+    expect(problems.some((p) => p.code === 'too_many_behemoths')).toBe(false);
+  });
+
+  it('leaves a deck of pure spells alone', () => {
+    expect(validateDeck(fillerDeck(MIN_DECK))).toEqual([]);
   });
 });
 
 describe('ownership', () => {
   it('refuses cards the player does not own', () => {
-    const collection = { owned: { scout_imp: 1 } };
+    const collection = { owned: { cinder_rune: 1 } };
     const deck = [...fillerDeck(MIN_DECK)];
     const problems = validateDeck(deck, collection);
     expect(problems.some((p) => p.code === 'not_owned')).toBe(true);

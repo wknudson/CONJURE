@@ -23,16 +23,15 @@ export interface CompanionDef {
   unitCardId: string;
 }
 
-/** Hero cards from the Draft 7 starter deck — the shared spine of every companion deck. */
-const HERO_SPINE = STARTER_DECK.filter(
-  (id) =>
-    ![
-      'cinder_rune',
-      'soul_splinter_rune',
-      'flame_surge',
-      'cataclysmic_core',
-    ].includes(id),
-);
+/**
+ * The shared spine of every companion deck: the cards that belong to no school.
+ *
+ * Narrower than it was. It used to be the starter deck minus its Pyre half, which meant it
+ * also carried the starter's five minions — and those are a Vanguard Roster now. What is
+ * left is genuinely universal: a bleed, a shove, a wall and a ward, four cards any school
+ * is glad of. Everything with a colour is dealt below, per Companion.
+ */
+const HERO_SPINE: string[] = ['dark_tithe', 'shield_bash', 'stone_barricade', 'aegis_ward'];
 
 export const COMPANIONS: CompanionDef[] = [
   {
@@ -58,6 +57,8 @@ export const COMPANIONS: CompanionDef[] = [
       'glacial_spike',
       'glacial_spike',
       'frost_nova',
+      'frost_nova',
+      'brittle_touch',
       'brittle_touch',
       'flash_freeze',
       'ice_barricade',
@@ -81,7 +82,9 @@ export const COMPANIONS: CompanionDef[] = [
       'static_arc',
       'arc_lash',
       'arc_lash',
-      'voltaic_hound',
+      'static_charge',
+      'static_charge',
+      'marrow_burst',
     ],
     unitCardId: 'voltara_bound',
   },
@@ -99,9 +102,11 @@ export const COMPANIONS: CompanionDef[] = [
       'soul_splinter_rune',
       'soul_splinter_rune',
       'soul_splinter_rune',
-      'ash_ghoul',
-      'ash_ghoul',
-      'ash_ghoul',
+      'marrow_siphon',
+      'marrow_siphon',
+      'marrow_siphon',
+      'marrow_burst',
+      'harvest_the_weak',
     ],
     unitCardId: 'mortis_bound',
   },
@@ -118,8 +123,10 @@ export const COMPANIONS: CompanionDef[] = [
       'spore_cloud',
       'rot_root_snare',
       'rot_root_snare',
-      'creeping_briar',
-      'creeping_briar',
+      'rot_root_snare',
+      'verdant_swell',
+      'verdant_swell',
+      'verdant_collapse',
     ],
     unitCardId: 'sylva_bound',
   },
@@ -132,14 +139,14 @@ export const COMPANIONS: CompanionDef[] = [
       'Ground. Walls, shoves, and a body that will not be moved. Shield Oath armours everything standing in its lane.',
     deck: [
       ...HERO_SPINE,
-      'concussive_blow',
-      'concussive_blow',
       'seismic_slam',
       'seismic_slam',
-      'slag_iron_golem',
-      // A second wall. Bulwark is the only school whose Companion cards are mostly other
-      // people's problems, so its own deck wants one more thing to hide behind.
-      'stone_barricade',
+      'petrifying_mantle',
+      'petrifying_mantle',
+      'smoke_bomb',
+      'smoke_bomb',
+      'pressure_valve_release',
+      'cataclysm',
     ],
     unitCardId: 'ferrum_bound',
   },
@@ -156,8 +163,10 @@ export const COMPANIONS: CompanionDef[] = [
       'aether_beam',
       'grapple_line',
       'grapple_line',
-      'scrap_phalanx',
+      'grapple_line',
       'cull_the_weak',
+      'volatile_cask',
+      'alchemists_barricade',
     ],
     unitCardId: 'lexis_bound',
   },

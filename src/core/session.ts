@@ -52,8 +52,16 @@ export class CombatSession implements RulesQuery {
     companionId?: string,
     deck?: string[],
     carry?: CombatCarry,
+    /**
+     * The player's Vanguard, as def ids.
+     *
+     * Omitting it opens the fight on turn one exactly as before. Passing one puts the
+     * session into the deployment phase, which means the caller **must** have a UI able to
+     * issue `finishDeployment` — there is no other way out of it.
+     */
+    roster?: string[],
   ) {
-    const { state, events } = createCombat(encounter, seed, companionId, deck, carry);
+    const { state, events } = createCombat(encounter, seed, companionId, deck, carry, roster);
     this.state = state;
     this.openingEvents = events;
     this.ai = ai;

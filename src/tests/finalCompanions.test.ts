@@ -11,6 +11,7 @@ import { applyStatusTo } from '../core/engine/status.js';
 import { pushUnit } from '../core/engine/displacement.js';
 import { hasLoS } from '../core/engine/los.js';
 import { detonate } from '../core/engine/runes.js';
+import { isRosterEligible } from '../core/data/roster.js';
 
 /**
  * Content Sprint 2: the last two schools get a Companion, and three dormant mechanics
@@ -381,9 +382,12 @@ describe('the new cards as data', () => {
   });
 
   it('offers the three playable ones and hides the scenery', () => {
-    for (const id of ['concussive_blow', 'aether_beam', 'smoke_bomb']) {
+    for (const id of ['aether_beam', 'smoke_bomb']) {
       expect(isObtainable(CARDS[id]!), id).toBe(true);
     }
+    // Concussive Blow is a body, and bodies are roster kit rather than collection cards.
+    expect(isObtainable(CARDS.concussive_blow!)).toBe(false);
+    expect(isRosterEligible(CARDS.concussive_blow!)).toBe(true);
     // The bank is a product of the Bomb, never a card in its own right.
     expect(isObtainable(CARDS.smoke_bank!), 'smoke_bank leaked into the loot pool').toBe(false);
     for (const id of ['ferrum_bound', 'lexis_bound']) {

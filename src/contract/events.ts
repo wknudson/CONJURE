@@ -23,7 +23,17 @@ import type {
 } from './ids.js';
 import type { CardSnapshot, ObstacleSnapshot, RuneSnapshot, UnitSnapshot } from './snapshots.js';
 
-export type Phase = 'startOfTurn' | 'action' | 'resolution' | 'endOfTurn' | 'over';
+/**
+ * `deployment` runs once, before turn one, and only when the player brought a Vanguard.
+ * A fight with an empty roster never enters it and begins exactly as it always did.
+ */
+export type Phase =
+  | 'deployment'
+  | 'startOfTurn'
+  | 'action'
+  | 'resolution'
+  | 'endOfTurn'
+  | 'over';
 
 /** Fields present on every event. */
 export interface EventBase {
@@ -126,6 +136,13 @@ export type GameEvent = EventBase &
     | { t: 'auraClimaxed'; unitId: UnitId; aura: string; trait: string; atk: number; hp: number }
     /** Spent. The Aura is gone and its stats with it; the burst is the card's own ops. */
     | { t: 'auraDetonated'; unitId: UnitId; aura: string }
+    /** The Vanguard may take the field. Carries the ground it may stand on. */
+    | { t: 'deploymentBegan'; anchors: Coord[] }
+    /** One body placed, or picked back up. Free and re-doable until the line is set. */
+    | { t: 'unitDeployed'; unitId: UnitId; defId: string; at: Coord }
+    | { t: 'unitRecalled'; defId: string; at: Coord }
+    /** The line is set. Turn one begins. */
+    | { t: 'deploymentEnded'; fielded: number }
     /** A body spent whole to make something else. Pays no Marrow -- see `consumeTarget`. */
     | { t: 'unitConsumed'; unitId: UnitId }
     /** A unit spent its attack extracting Marrow instead of swinging. */

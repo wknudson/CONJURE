@@ -21,6 +21,7 @@ import { GASLAMP_CARDS } from './gaslamp.js';
 import { WILDLIFE_CARDS } from './wildlife.js';
 import { THREAT_CARDS } from './threats.js';
 import { HYBRID_CARDS } from './hybrid.js';
+import { AURA_CARDS } from './auras.js';
 
 const RANK1: Record<string, CardDef> = {
   ...STARTER_CARDS,
@@ -37,6 +38,7 @@ const RANK1: Record<string, CardDef> = {
   ...WILDLIFE_CARDS,
   ...THREAT_CARDS,
   ...HYBRID_CARDS,
+  ...AURA_CARDS,
 };
 
 /**

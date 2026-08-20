@@ -370,13 +370,39 @@ describe('one character on disk', () => {
     writeSave(file);
     const raw = JSON.parse(localStorage.getItem('conjure.save')!);
     raw.profiles['slot-1'].collection = { owned: { spark_wisp: 2 }, ascended: ['spark_wisp'] };
-    raw.profiles['slot-1'].decks.ignis = { companionId: 'ignis', cards: ['spark_wisp'] };
+    // A spell, so the rename is observable in the deck too. The Wisp is a body now and a
+    // body is stripped from any deck on load, which the next test covers on its own.
+    raw.profiles['slot-1'].decks.ignis = {
+      companionId: 'ignis',
+      cards: ['spell_vaporize_blast'],
+    };
     localStorage.setItem('conjure.save', JSON.stringify(raw));
 
     const p = loadSave().save.profiles['slot-1']!;
     expect(p.collection.owned.marrow_wisp).toBeGreaterThan(0);
     expect(p.collection.owned.spark_wisp).toBeUndefined();
-    expect(p.decks.ignis!.cards).toEqual(['marrow_wisp']);
+    expect(p.decks.ignis!.cards).toEqual(['vaporize_blast']);
+  });
+
+  it('takes the bodies out of a deck saved before the Vanguard overhaul', () => {
+    // Stripped rather than flagged: "your deck is illegal" is not actionable when the
+    // illegal cards are no longer cards at all. What is left is short, and *that* is
+    // flagged in the ordinary way for the player to top up.
+    const file = fileWith('slot-1');
+    writeSave(file);
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    raw.profiles['slot-1'].decks.ignis = {
+      companionId: 'ignis',
+      cards: ['scout_imp', 'marrow_wisp', 'grave_sentinel', 'shield_bash', 'aegis_ward'],
+    };
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const loaded = loadSave();
+    const p = loaded.save.profiles['slot-1']!;
+
+    expect(p.decks.ignis!.cards).toEqual(['shield_bash', 'aegis_ward']);
+    expect(p.decks.ignis!.invalid, 'and it is short, so it is flagged').toBe(true);
+    expect(loaded.notes.join(' ')).toMatch(/Vanguard Roster/);
   });
 
   it('restamps the poster metadata on every write', () => {

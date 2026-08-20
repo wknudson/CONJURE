@@ -10,7 +10,7 @@ import { CARDS } from '../data/cards/index.js';
 import { growthCapFor } from './growth.js';
 import { canPlace } from './board.js';
 import type { GameState } from '../types/state.js';
-import { territoryRows } from '../types/state.js';
+import { startingZone } from '../types/state.js';
 import { toSnapshot } from './views.js';
 
 export function nextId(ctx: Ctx, prefix: string): UnitId {
@@ -102,7 +102,7 @@ export function placeOpeningUnit(
 /** Falls back to a nearby tile in the same territory if the preferred one is taken. */
 export function firstFreeNear(state: GameState, at: Coord, side: Side): Coord | undefined {
   if (canPlace(state, at, 1)) return at;
-  const rows = territoryRows(state, side);
+  const rows = startingZone(state, side);
   for (const y of rows) {
     for (let x = 0; x < state.width; x++) {
       const c = { x, y };

@@ -18,6 +18,7 @@ import { tierOf, TIER_COPY_LIMIT } from '../core/data/deckRules.js';
 import { ARCANE_BASELINE, isObtainable, SOULBOUND, startingCollection } from '../core/data/collection.js';
 import { COLLISION_TARGET_DAMAGE } from '../core/engine/displacement.js';
 import { formatCost } from '../hud/cost.js';
+import { isRosterEligible } from '../core/data/roster.js';
 
 /**
  * The Arcane set.
@@ -61,10 +62,21 @@ describe('the set as a whole', () => {
     expect(tierOf(CARDS.alchemists_barricade!)).toBe(2);
   });
 
-  it('can actually be obtained', () => {
+  it('can actually be obtained — except the body, which is roster kit now', () => {
     // Neither setupOnly nor spliceOnly, so reward rolls and the Schematic shelf both
     // offer them. A new card that failed this would be unreachable content.
-    for (const id of ids) expect(isObtainable(CARDS[id]!), id).toBe(true);
+    for (const id of ids) {
+      const def = CARDS[id]!;
+      if (def.kind === 'minion') {
+        // Minions left the collection with the overhaul: they are unlocked into a Vanguard
+        // Roster, not owned as copies, so offering one on the shelf would sell something
+        // no deck can hold.
+        expect(isObtainable(def), id).toBe(false);
+        expect(isRosterEligible(def), id).toBe(true);
+        continue;
+      }
+      expect(isObtainable(def), id).toBe(true);
+    }
   });
 
   it('states no reach a Hero card cannot enforce', () => {

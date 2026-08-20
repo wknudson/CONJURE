@@ -403,7 +403,21 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
     const saved = data.decks?.[companion.id];
     if (!saved || !Array.isArray(saved.cards)) continue;
 
-    const cards = saved.cards.filter((c): c is string => typeof c === 'string').map(rename);
+    const renamed = saved.cards.filter((c): c is string => typeof c === 'string').map(rename);
+
+    // The Vanguard overhaul took bodies out of decks entirely. Stripped rather than
+    // flagged, because "your deck is illegal" is not something the player can act on when
+    // the illegal cards are no longer cards — there is nothing to remove them *to*. What
+    // is left may well be under the minimum, and that is flagged in the ordinary way:
+    // topping it up is a real choice, and the builder is where it should be made.
+    const cards = renamed.filter((id) => CARDS[id]?.kind !== 'minion');
+    const bodies = renamed.length - cards.length;
+    if (bodies > 0) {
+      notes.push(
+        `${bodies} minion(s) left your ${companion.name} deck — they are Vanguard Roster kit now.`,
+      );
+    }
+
     const problems = validateDeck(cards, collection);
     decks[companion.id] = {
       companionId: companion.id,

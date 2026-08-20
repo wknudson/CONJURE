@@ -198,6 +198,11 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       return;
     }
 
+    case 'heal': {
+      healCommander(ctx, play.side, node.amount);
+      return;
+    }
+
     case 'attachAura': {
       const ref = chosenRef(play);
       if (!ref || ref.kind !== 'unit') return;

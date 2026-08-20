@@ -136,11 +136,11 @@ describe('the blueprint shelf', () => {
   it('is a superset of what the player could buy right now', () => {
     // `schematicsFor` still answers "what could I cut"; the catalogue answers "what is
     // there". The Safehouse door counts the first and the shelf shows the second.
-    const owned = { owned: { scout_imp: 1 } };
+    const owned = { owned: { shield_bash: 1 } };
     const buyable = schematicsFor(owned).map((d) => d.id);
     const shelf = new Set(schematicCatalogue().map((d) => d.id));
     for (const id of buyable) expect(shelf.has(id), id).toBe(true);
-    expect(buyable).not.toContain('scout_imp');
-    expect(shelf.has('scout_imp'), 'the shelf still shows what you hold').toBe(true);
+    expect(buyable).not.toContain('shield_bash');
+    expect(shelf.has('shield_bash'), 'the shelf still shows what you hold').toBe(true);
   });
 });

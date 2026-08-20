@@ -29,12 +29,21 @@ export const ARCANE_BASELINE: readonly string[] = [
   'alchemists_barricade',
 ];
 
-/** Cards the player can never lose. Enough on their own to build a legal deck. */
+/**
+ * Cards the player can never lose. Enough on their own to build a legal deck.
+ *
+ * Half of this list used to be bodies, and bodies are a Vanguard Roster now — which broke
+ * the promise in the sentence above twice over. A deck cannot hold them, so the eight no
+ * longer built anything; and because `reconcileCollection` tops this list up on every
+ * load, it is also the only thing that hands an existing save a card the game did not
+ * ship with. The four minions are replaced by the Aura line, which is both what the
+ * starter deck now needs and what an old save would otherwise never be granted.
+ */
 export const SOULBOUND: readonly string[] = [
-  'vanguard_footman',
-  'scout_imp',
-  'marrow_wisp',
-  'grave_sentinel',
+  'ember_coat',
+  'cataclysm',
+  'marrow_siphon',
+  'marrow_burst',
   'dark_tithe',
   'shield_bash',
   'stone_barricade',
@@ -144,6 +153,10 @@ export function isObtainable(def: CardDef): boolean {
   // Hybrids are the splicing bench's product, and free access to a sink's output is the
   // sink not existing.
   if (def.spliceOnly) return false;
+  // Minions are no longer cards you own copies of. They are fielded from the Vanguard
+  // Roster, which is a point-buy over what you have *unlocked* — so a minion in a reward
+  // roll or on the Artificer's shelf would be selling something the deck cannot hold.
+  if (def.kind === 'minion') return false;
   return !def.setupOnly && def.id !== 'rite_of_subjugation';
 }
 

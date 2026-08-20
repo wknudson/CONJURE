@@ -25,6 +25,7 @@ import type { EffectNode } from '../core/types/cards.js';
 import { REACTIONS, findReaction } from '../core/data/reactions.js';
 import { ENCOUNTERS } from '../core/data/encounters/index.js';
 import { CHILL_TO_FREEZE, applyStatusTo } from '../core/engine/status.js';
+import { isRosterEligible } from '../core/data/roster.js';
 
 /**
  * The Surge and Bloom wave.
@@ -45,9 +46,17 @@ describe('the new cards, as data', () => {
     expect(tierOf(CARDS.creeping_briar!)).toBe(1);
   });
 
-  it('can all be obtained', () => {
+  it('can all be reached, as cards or as roster kit', () => {
     for (const id of Object.keys(NEW_CARDS)) {
-      expect(isObtainable(CARDS[id]!), id).toBe(true);
+      const def = CARDS[id]!;
+      // A body is reached through the Vanguard Roster now, not the collection, so
+      // `isObtainable` is false for one by design. Roster eligibility is the equivalent
+      // question, and it is the one that keeps new content from being unreachable.
+      if (def.kind === 'minion') {
+        expect(isRosterEligible(def), id).toBe(true);
+        continue;
+      }
+      expect(isObtainable(def), id).toBe(true);
     }
   });
 

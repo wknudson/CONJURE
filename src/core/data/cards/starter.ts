@@ -24,7 +24,6 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'vanguard_footman' },
     keywords: ['Growth'],
-    setupOnly: true,
     unit: {
       atk: 2,
       hp: 4,
@@ -304,12 +303,18 @@ export const STARTER_CARDS: Record<string, CardDef> = {
  * The 15-card starter deck as a list of card ids. Duplicates are intentional and match
  * Draft 7's table: 2x Grave Sentinel, 2x Cinder Rune, 2x Flame Surge.
  */
+/**
+ * The deck a new player starts with.
+ *
+ * Five bodies used to sit at the top of this list. They are a Vanguard Roster now — bought
+ * once before the dungeon and deployed onto Anchor Tiles, rather than drawn and paid for
+ * again every fight. What replaced them is the Aura line: something to *do* with the board
+ * the roster gives you for free.
+ */
 export const STARTER_DECK: string[] = [
-  'scout_imp',
-  'marrow_wisp',
-  'grave_sentinel',
-  'grave_sentinel',
-  'magma_brute',
+  'ember_coat',
+  'ember_coat',
+  'cataclysm',
   'cinder_rune',
   'cinder_rune',
   'soul_splinter_rune',

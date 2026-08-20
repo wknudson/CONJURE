@@ -10,7 +10,7 @@ import { cellsAt, cellsOf } from '../util/grid.js';
 import type { Entity, Obstacle, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import type { GameState } from '../types/state.js';
-import { inBounds, territoryRows } from '../types/state.js';
+import { inBounds, startingZone } from '../types/state.js';
 
 export function allUnits(state: GameState): Unit[] {
   return Object.values(state.units);
@@ -94,7 +94,7 @@ export function isCover(e: Entity | undefined): boolean {
 
 /** Empty tiles in a side's own territory where a footprint fits — the summon zone. */
 export function summonSpots(state: GameState, side: Side, footprint: 1 | 2): Coord[] {
-  const rows = territoryRows(state, side);
+  const rows = startingZone(state, side);
   const spots: Coord[] = [];
   for (let y = 0; y < state.height; y++) {
     if (!rows.includes(y)) continue;

@@ -4,6 +4,7 @@ import { createCombat, MIN_ARENA } from '../core/engine/setup.js';
 import { CombatSession } from '../core/session.js';
 import { checkInvariants } from './replay.js';
 import { territoryDepthFor } from '../core/types/state.js';
+import { summonSpots } from '../core/engine/board.js';
 
 /**
  * Arenas the shipped encounters do not cover.
@@ -73,22 +74,19 @@ describe('small and irregular arenas', () => {
     expect(depth * 2).toBeLessThan(4);
   });
 
-  it('deploys only one row deep on a short board', () => {
+  it('keeps the summon zone one row deep on a short board', () => {
     const session = new CombatSession(arena(6, 5), 3);
     const board = session.getBoard();
     expect(board.territoryDepth).toBe(1);
 
-    // Summon spots exist, and none of them stray out of the single home row.
-    let checked = 0;
-    for (const card of session.getHand()) {
-      const spec = session.getLegalTargets(card.instanceId);
-      if (spec.kind !== 'tiles') continue;
-      for (const at of spec.tiles) {
-        expect(at.y, `${card.name} deployable outside the one-row territory`).toBe(4);
-        checked++;
-      }
+    // Asked of the zone directly rather than through a card in hand. It used to be read
+    // off whichever minion the opening draw happened to contain, and minions are a
+    // Vanguard Roster now — so the old test could only have gone quiet, never red.
+    const spots = summonSpots(session.debugState, 'player', 1);
+    expect(spots.length, 'the home row must offer somewhere to stand').toBeGreaterThan(0);
+    for (const at of spots) {
+      expect(at.y, 'a summon spot strayed out of the one-row zone').toBe(4);
     }
-    expect(checked, 'no summon target found to check').toBeGreaterThan(0);
   });
 });
 

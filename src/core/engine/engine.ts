@@ -27,13 +27,122 @@ import { applyStatusTo } from './status.js';
 import { checkLethal } from './death.js';
 import { getEntity, refOf } from './board.js';
 import { resonanceLimit, toCardSnapshot } from './views.js';
-import { endTurn } from './turn.js';
+import { beginTurn, endTurn } from './turn.js';
+import { placeOpeningUnit } from './spawn.js';
+import { canPlace } from './board.js';
 import { cellsOf, footprintDistance } from '../util/grid.js';
 import { coordEq } from '../../contract/ids.js';
 import { spawnHazard } from './reactions.js';
 import { resonanceFor } from '../data/resonance.js';
 import { declareIntents } from './intents.js';
 import { isSealed } from './subjugation.js';
+
+/** The only commands the deployment phase entertains. */
+const DEPLOYMENT_COMMANDS: Command['type'][] = ['deployUnit', 'recallUnit', 'finishDeployment'];
+
+/**
+ * Why this body may not stand there, or null if it may.
+ *
+ * The shape `channelRefusal` and `bloodTitheRefusal` established: the reducer throws
+ * whatever this returns and the UI asks the same question to decide whether the tile
+ * should light up, so the two can never disagree.
+ *
+ * Note there is no budget check. The roster was validated when it was *bought*, before the
+ * dungeon; by the time a fight starts the points are long spent, and re-litigating them
+ * here would let a legal warband be refused at the door.
+ */
+export function deployRefusal(state: GameState, defId: string, at: Coord): string | null {
+  if (state.phase !== 'deployment') return 'not deploying';
+
+  const entry = state.players.player.roster.find(
+    (r) => r.defId === defId && r.status === 'reserve',
+  );
+  if (!entry) return `no ${defId} waiting in reserve`;
+
+  if (!state.anchors.some((a) => a.x === at.x && a.y === at.y)) {
+    return 'that tile is not an Anchor';
+  }
+
+  const def = CARDS[defId];
+  const footprint = def?.unit?.footprint ?? 1;
+  // A Behemoth anchors on the Anchor Tile; its second cell need only be free. Demanding
+  // two anchors would make the guaranteed adjacent pair the only legal 2x2 placement on
+  // every map in the game.
+  if (!canPlace(state, at, footprint)) return 'there is no room there';
+
+  return null;
+}
+
+/**
+ * Places one rostered body on an Anchor Tile.
+ *
+ * Enters through `placeOpeningUnit`, which is what lets it act on turn one: a deployed
+ * Vanguard is not summoned, it was always there. Summoning sickness would make the whole
+ * phase a turn of doing nothing.
+ */
+function deployUnit(ctx: Ctx, defId: string, at: Coord): void {
+  const refusal = deployRefusal(ctx.state, defId, at);
+  if (refusal) throw new IllegalCommandError(refusal);
+
+  const id = placeOpeningUnit(ctx, defId, 'player', at);
+  if (!id) throw new IllegalCommandError('there is no room there');
+
+  const entry = ctx.state.players.player.roster.find(
+    (r) => r.defId === defId && r.status === 'reserve',
+  )!;
+  entry.status = 'fielded';
+  entry.unitId = id;
+
+  newCause(ctx);
+  emit(ctx, { t: 'unitDeployed', unitId: id, defId, at: { ...at } });
+}
+
+/**
+ * Picks a deployed body back up.
+ *
+ * Deployment is a sketch until it is signed off, so this is a plain undo rather than a
+ * cost: the unit is removed outright and its roster entry goes back to reserve. Nothing
+ * about the body persists, so a recalled unit redeployed elsewhere is identical to one
+ * placed there first time.
+ */
+function recallUnit(ctx: Ctx, unitId: string): void {
+  if (ctx.state.phase !== 'deployment') {
+    throw new IllegalCommandError('the line is already set');
+  }
+  const entry = ctx.state.players.player.roster.find(
+    (r) => r.unitId === unitId && r.status === 'fielded',
+  );
+  if (!entry) throw new IllegalCommandError(`no deployed unit ${unitId}`);
+
+  const unit = ctx.state.units[unitId];
+  const at = unit ? { ...unit.anchor } : { x: 0, y: 0 };
+  // Removed directly rather than through `killEntity`: nothing died, and a death would fire
+  // runes, pay bounties and trip the lethal check for a body that was never in the fight.
+  delete ctx.state.units[unitId];
+
+  entry.status = 'reserve';
+  delete entry.unitId;
+
+  newCause(ctx);
+  emit(ctx, { t: 'unitRecalled', defId: entry.defId, at });
+}
+
+/**
+ * Sets the line, and starts the fight.
+ *
+ * Legal with bodies still in reserve — a player who would rather hold something back is
+ * making a decision, not a mistake, and the engine does not have an opinion about it.
+ */
+function finishDeployment(ctx: Ctx): void {
+  if (ctx.state.phase !== 'deployment') {
+    throw new IllegalCommandError('the line is already set');
+  }
+  const fielded = ctx.state.players.player.roster.filter((r) => r.status === 'fielded').length;
+
+  newCause(ctx);
+  emit(ctx, { t: 'deploymentEnded', fielded });
+  beginTurn(ctx, 'player');
+}
 
 export function applyCommand(prev: GameState, command: Command): StepResult {
   const state = deepClone(prev);
@@ -42,7 +151,17 @@ export function applyCommand(prev: GameState, command: Command): StepResult {
   if (state.result) {
     throw new IllegalCommandError('combat is already over');
   }
-  if (state.phase !== 'action' && command.type !== 'endTurn' && command.type !== 'declareIntents') {
+  // Deployment accepts its own three commands and nothing else: the board is being built,
+  // not played. Everything the ordinary turn allows is refused until the line is set.
+  if (state.phase === 'deployment') {
+    if (!DEPLOYMENT_COMMANDS.includes(command.type)) {
+      throw new IllegalCommandError(`cannot ${command.type} during deployment`);
+    }
+  } else if (
+    state.phase !== 'action' &&
+    command.type !== 'endTurn' &&
+    command.type !== 'declareIntents'
+  ) {
     throw new IllegalCommandError(`cannot act during phase "${state.phase}"`);
   }
 
@@ -79,6 +198,15 @@ export function runCommand(ctx: Ctx, command: Command): void {
       break;
     case 'bloodTithe':
       bloodTithe(ctx, command.unit);
+      break;
+    case 'deployUnit':
+      deployUnit(ctx, command.defId, command.at);
+      break;
+    case 'recallUnit':
+      recallUnit(ctx, command.unit);
+      break;
+    case 'finishDeployment':
+      finishDeployment(ctx);
       break;
     case 'channel':
       channel(ctx, command.unit);

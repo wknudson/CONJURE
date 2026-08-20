@@ -76,10 +76,19 @@ describe('the Artificer bench', () => {
   });
 
   it('offers a card the moment the last copy is gone', () => {
-    const withIt = schematicsFor(owning(['scout_imp'])).map((d) => d.id);
+    const withIt = schematicsFor(owning(['shield_bash'])).map((d) => d.id);
     const without = schematicsFor(owning([])).map((d) => d.id);
-    expect(withIt).not.toContain('scout_imp');
-    expect(without).toContain('scout_imp');
+    expect(withIt).not.toContain('shield_bash');
+    expect(without).toContain('shield_bash');
+  });
+
+  it('never offers a body, however few the player owns', () => {
+    // Minions are unlocked into a Vanguard Roster, not bought as copies. A body on the
+    // shelf would be selling something no deck is allowed to hold.
+    const shelf = schematicsFor(owning([])).map((d) => d.id);
+    for (const id of ['scout_imp', 'grave_sentinel', 'magma_brute']) {
+      expect(shelf, id).not.toContain(id);
+    }
   });
 
   it('names catalysts only for schools the reaction engine knows', () => {

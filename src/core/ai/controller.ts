@@ -356,6 +356,12 @@ function tieBreakKey(command: Command, state: GameState): { x: number; y: number
       return { x: 0, y: 0, tag: 'declare' };
     case 'endTurn':
       return { x: 0, y: 0, tag: 'end' };
+    default:
+      // The deployment commands. The enemy is authored content — it has no roster, no
+      // Anchor Tiles and no deployment phase — so these never reach the AI's tiebreaker.
+      // A stable key rather than a throw, because a sort comparator is the worst possible
+      // place to discover a new command type.
+      return { x: 0, y: 0, tag: command.type };
   }
 }
 

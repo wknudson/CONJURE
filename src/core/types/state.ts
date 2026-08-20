@@ -5,6 +5,16 @@ import type { RngState } from '../util/rng.js';
 import type { CardInstance } from './cards.js';
 import type { Obstacle, Unit } from './units.js';
 
+/** Where one rostered body is: waiting, standing, or dead. */
+export interface RosterEntry {
+  defId: string;
+  status: 'reserve' | 'fielded' | 'fallen';
+  /** Set while `fielded`, so the tray and the board agree on which unit is which. */
+  unitId?: UnitId;
+  /** Where it died. The Soul Pyre, for Phase 4. */
+  fellAt?: Coord;
+}
+
 export interface CommanderState {
   name: string;
   companionName?: string;
@@ -45,6 +55,17 @@ export interface CommanderState {
   pips: number;
   /** Ephemeral. Zeroed at end of turn. */
   marrow: number;
+  /**
+   * The Vanguard: every body this side brought, and where each one currently stands.
+   *
+   * Deliberately triple-duty. It is the deployment tray while the phase runs, the record
+   * of who is on the board once it ends, and — from Phase 4 — the graveyard and Soul Pyre
+   * registry. Three readers over one array cannot disagree about whether a unit is alive.
+   *
+   * Empty for the enemy, and empty for any fight that did not bring a roster, which is
+   * what keeps every legacy encounter and every existing test behaving as before.
+   */
+  roster: RosterEntry[];
   deck: CardInstanceId[];
   hand: CardInstanceId[];
   discard: CardInstanceId[];
@@ -227,6 +248,16 @@ export interface GameState {
   height: number;
   units: Record<UnitId, Unit>;
   obstacles: Record<UnitId, Obstacle>;
+  /**
+   * The player's Anchor Tiles: the only ground a Vanguard may deploy onto.
+   *
+   * Plain coordinates rather than entities or hazards, which is what lets them coexist
+   * with rubble, a current, cover or a geode without a single interaction rule — an anchor
+   * is not a thing on the tile, it is a fact about the tile. Written once at setup and
+   * never mutated, so the two Rallies in Phase 4 can read them on turn nine as reliably as
+   * the deployment phase read them on turn zero.
+   */
+  anchors: Coord[];
   /** Tile hazards: fog, fire patches and the like, keyed by "x,y". */
   hazards: Record<string, Hazard>;
   /** What the enemy has committed to doing next turn, shown to the player. */
@@ -278,11 +309,16 @@ export function territoryDepthFor(height: number): number {
 }
 
 /**
- * Rows belonging to a side: the bottom `depth` for the player, the top `depth` for
- * the enemy. This is the single source of truth for deployment zones, melee portrait
- * reach, threat display, and board tinting — do not inline the row arithmetic.
+ * The rows a side starts behind: the bottom `depth` for the player, the top `depth` for
+ * the enemy.
+ *
+ * Was `territoryRows`, and it has lost the job it was named for. Deployment is no longer
+ * "anywhere in your half" — it is onto Anchor Tiles, which the biome places. What is left
+ * is everything else the rows were quietly the source of truth for: melee portrait reach,
+ * sudden-death re-placement, where a spell-driven summon may land, and which ground the
+ * scenery must keep off. Do not inline the row arithmetic.
  */
-export function territoryRows(state: GameState, side: Side): number[] {
+export function startingZone(state: GameState, side: Side): number[] {
   const depth = territoryDepthFor(state.height);
   const rows: number[] = [];
   for (let i = 0; i < depth; i++) {

@@ -143,14 +143,14 @@ describe('the copy that comes out of a deck', () => {
     const g = bench();
     const deck = [
       BASE, BASE,
-      'scout_imp', 'scout_imp', 'scout_imp',
-      'marrow_wisp', 'marrow_wisp', 'marrow_wisp',
+      'cinder_rune', 'cinder_rune', 'cinder_rune',
+      'brittle_touch', 'brittle_touch', 'brittle_touch',
       'shield_bash', 'shield_bash', 'shield_bash',
       'aegis_ward',
     ];
     const collection: Collection = {
       owned: {
-        [BASE]: 2, scout_imp: 3, marrow_wisp: 3, shield_bash: 3, aegis_ward: 3,
+        [BASE]: 2, cinder_rune: 3, brittle_touch: 3, shield_bash: 3, aegis_ward: 3,
       },
     };
     const decks: Record<string, DeckList> = { ignis: { cards: [...deck] } };

@@ -19,6 +19,7 @@ import { legalAttacks } from '../core/engine/targeting.js';
 import { legalMoves, canAct } from '../core/engine/movement.js';
 import { COLLISION_TARGET_DAMAGE } from '../core/engine/displacement.js';
 import { TITHE_MARROW } from '../core/engine/effects.js';
+import { isRosterEligible } from '../core/data/roster.js';
 
 /**
  * Advanced grid cards.
@@ -45,8 +46,18 @@ describe('the set as data', () => {
     expect(TIER_COPY_LIMIT[tierOf(CARDS.ash_ghoul!)]).toBe(3);
   });
 
-  it('can all be obtained', () => {
-    for (const id of NEW) expect(isObtainable(CARDS[id]!), id).toBe(true);
+  it('can all be reached, as cards or as roster kit', () => {
+    for (const id of NEW) {
+      const def = CARDS[id]!;
+      // A body is reached through the Vanguard Roster now, not the collection, so
+      // `isObtainable` is false for one by design. Roster eligibility is the equivalent
+      // question, and it is the one that keeps new content from being unreachable.
+      if (def.kind === 'minion') {
+        expect(isRosterEligible(def), id).toBe(true);
+        continue;
+      }
+      expect(isObtainable(def), id).toBe(true);
+    }
   });
 
   it('claims reach only where the engine reads it', () => {

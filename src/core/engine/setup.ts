@@ -4,13 +4,16 @@
 
 import type { CardInstanceId, Coord, School, Side } from '../../contract/ids.js';
 import type { GameState, StepResult, CommanderState } from '../types/state.js';
-import { territoryDepthFor, territoryRows } from '../types/state.js';
+import { territoryDepthFor, startingZone } from '../types/state.js';
 import { canPlace } from './board.js';
 import type { Ctx } from './context.js';
 import type { CardInstance } from '../types/cards.js';
 import type { EncounterDef } from '../data/encounters/registry.js';
 import { getEncounterScript } from '../data/encounters/registry.js';
+import type { RngState } from '../util/rng.js';
 import { makeRng, nextInt, shuffle } from '../util/rng.js';
+import { cellsOf } from '../util/grid.js';
+import { CARDS } from '../data/cards/index.js';
 import { makeCtx, emit } from './context.js';
 import { DEFAULT_COMPANION, companionById } from '../data/companions.js';
 import { HAND_LIMIT, OPENING_HAND, PIP_CAP, drawCards } from './deck.js';
@@ -65,6 +68,7 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       heroColumn,
       companionColumn,
       reactionPipsThisTurn: 0,
+      roster: [],
       hp,
       maxHp: hp,
       armor: 0,
@@ -253,12 +257,108 @@ export interface CombatCarry {
   boons?: CombatBoons;
 }
 
+/**
+ * The fewest Anchor Tiles any arena offers, however small the warband.
+ *
+ * A floor rather than a fixed count: deployment is a decision about shape, and three lit
+ * tiles for three units is not a decision at all.
+ */
+export const MIN_ANCHORS = 5;
+
+/**
+ * Where the Vanguard may stand.
+ *
+ * **The Anchor Guarantee: the player is never forced to bench a bought unit.** The count is
+ * always at least the roster size, and always at least `MIN_ANCHORS`. This is what makes
+ * the point-buy honest — if a cramped biome could refuse to seat the fourth body, the
+ * correct play would become "never fill your budget", and a point-buy that punishes
+ * spending its own budget is not a build system.
+ *
+ * The biome still shapes the formation, and that is the whole intended difficulty: anchors
+ * in a line, split around a wall, or backed into a corner. It simply may not shrink the
+ * warband.
+ *
+ * Runs at a fixed point in the setup order, before the geodes, because the seeded stream is
+ * positional — moving this call moves every geode in every replay.
+ */
+function placeAnchors(state: GameState, rng: RngState, want: number): Coord[] {
+  const need = Math.max(want, MIN_ANCHORS);
+  const rows = startingZone(state, 'player');
+
+  // Free ground in the starting zone first: no terrain, no body, nothing standing.
+  const open: Coord[] = [];
+  for (const y of rows) {
+    for (let x = 0; x < state.width; x++) {
+      const at = { x, y };
+      if (occupiedTile(state, at)) continue;
+      open.push(at);
+    }
+  }
+
+  // Widen a row at a time if the zone alone cannot seat the warband. The guarantee outranks
+  // the tidiness of keeping every anchor behind the line.
+  let extra = rows.length;
+  while (open.length < need && extra < state.height) {
+    const y = state.height - 1 - extra;
+    if (y < 0) break;
+    for (let x = 0; x < state.width; x++) {
+      const at = { x, y };
+      if (occupiedTile(state, at)) continue;
+      open.push(at);
+    }
+    extra += 1;
+  }
+
+  if (open.length <= need) return open;
+
+  // More ground than we need: take a seeded sample, but seat an adjacent pair first so a
+  // 2x2 Behemoth is always placeable. A roster that spent six points on a body it cannot
+  // put down is a point-buy betraying the player at the last possible moment.
+  const chosen: Coord[] = [];
+  const pair = adjacentPair(open);
+  if (pair) chosen.push(...pair);
+
+  const rest = open.filter((c) => !chosen.some((k) => k.x === c.x && k.y === c.y));
+  while (chosen.length < need && rest.length > 0) {
+    chosen.push(rest.splice(nextInt(rng, rest.length), 1)[0]!);
+  }
+  return chosen;
+}
+
+/** Two horizontally adjacent free tiles on one row, if the ground offers any. */
+function adjacentPair(open: Coord[]): [Coord, Coord] | undefined {
+  for (const a of open) {
+    const b = open.find((c) => c.y === a.y && c.x === a.x + 1);
+    if (b) return [a, b];
+  }
+  return undefined;
+}
+
+/** Anything standing on or filling a tile: a unit, or solid terrain. */
+function occupiedTile(state: GameState, at: Coord): boolean {
+  for (const u of Object.values(state.units)) {
+    if (cellsOf(u).some((c) => c.x === at.x && c.y === at.y)) return true;
+  }
+  for (const o of Object.values(state.obstacles)) {
+    if (o.anchor.x === at.x && o.anchor.y === at.y) return true;
+  }
+  return false;
+}
+
 export function createCombat(
   encounter: EncounterDef,
   seed: number,
   companionId?: string,
   deck?: string[],
   carry?: CombatCarry,
+  /**
+   * The player's Vanguard, as def ids.
+   *
+   * Optional, and omitting it is what keeps every legacy encounter and every existing test
+   * behaving exactly as before: no roster means no Anchor Tiles, no deployment phase, and
+   * a fight that opens on turn one the way it always has.
+   */
+  roster?: string[],
 ): StepResult {
   validateEncounter(encounter);
 
@@ -348,6 +448,7 @@ export function createCombat(
     height: encounter.height,
     units: {},
     obstacles: {},
+    anchors: [],
     hazards: {},
     intents: [],
     declaredPlan: [],
@@ -460,7 +561,22 @@ export function createCombat(
 
   getEncounterScript(encounter.id)?.setup?.(ctx);
 
-  // Player turn 1: grants the first pip and draws.
+  // The Vanguard, and the ground it may stand on. Anchors are laid even for a fight with
+  // no roster, so the two Rallies in Phase 4 always have somewhere to put a body back.
+  const warband = (roster ?? []).filter((id) => CARDS[id]);
+  state.anchors = placeAnchors(state, rng, warband.length);
+  state.players.player.roster = warband.map((defId) => ({ defId, status: 'reserve' as const }));
+
+  if (warband.length > 0) {
+    // Deployment happens before anything else, so the board the player builds is the board
+    // they take their first turn from. `finishDeployment` is what calls `beginTurn`.
+    state.phase = 'deployment';
+    emit(ctx, { t: 'phaseChanged', phase: 'deployment', side: 'player' });
+    emit(ctx, { t: 'deploymentBegan', anchors: state.anchors.map((c) => ({ ...c })) });
+    return { state, events: ctx.events };
+  }
+
+  // No Vanguard: the fight opens exactly as it always did.
   beginTurn(ctx, 'player');
 
   return { state, events: ctx.events };
@@ -484,7 +600,7 @@ function scatterGeodes(ctx: Ctx, encounter: EncounterDef): void {
   const state = ctx.state;
   const off = new Set<number>();
   for (const side of ['player', 'enemy'] as const) {
-    for (const y of territoryRows(state, side)) off.add(y);
+    for (const y of startingZone(state, side)) off.add(y);
   }
 
   const open: Coord[] = [];

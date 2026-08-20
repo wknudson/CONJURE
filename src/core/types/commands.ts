@@ -13,6 +13,17 @@ export type Command =
    * spend is its turn and its health, not the unit itself.
    */
   | { type: 'bloodTithe'; unit: UnitId }
+  /**
+   * Puts one rostered body on an Anchor Tile, before turn one.
+   *
+   * Free and reversible: nothing is spent, so there is nothing to refund, and a player
+   * rearranging their line has no reason to be charged for changing their mind.
+   */
+  | { type: 'deployUnit'; defId: string; at: Coord }
+  /** Picks a deployed body back up, returning it to the tray. */
+  | { type: 'recallUnit'; unit: UnitId }
+  /** Sets the line. Ends the deployment phase and begins turn one. */
+  | { type: 'finishDeployment' }
   /** Spend a unit's attack to extract Marrow instead of swinging. */
   | { type: 'channel'; unit: UnitId }
   /**

@@ -73,7 +73,15 @@ export function baseIdOf(cardId: string): string {
 
 export interface DeckProblem {
   /** Machine-readable so the UI can highlight the offending card. */
-  code: 'too_small' | 'too_large' | 'over_copy_limit' | 'too_many_behemoths' | 'not_owned' | 'unknown_card';
+  code:
+    | 'too_small'
+    | 'too_large'
+    | 'over_copy_limit'
+    | 'too_many_behemoths'
+    | 'not_owned'
+    | 'unknown_card'
+    /** A body in a spell deck. Minions are a Vanguard Roster now, not cards. */
+    | 'minion_in_deck';
   message: string;
   cardId?: string;
 }
@@ -122,6 +130,17 @@ export function validateDeck(deck: string[], collection?: Collection): DeckProbl
         code: 'unknown_card',
         cardId,
         message: `"${cardId}" is no longer a card in this version.`,
+      });
+      continue;
+    }
+    // A body in a spell deck. Minions are bought once into a Vanguard Roster now and
+    // deployed before turn one, so a deck holding one is a deck built against the old
+    // rules — most likely a save from before the overhaul.
+    if (def.kind === 'minion') {
+      problems.push({
+        code: 'minion_in_deck',
+        cardId,
+        message: `${def.name} belongs in your Vanguard Roster, not your deck.`,
       });
       continue;
     }

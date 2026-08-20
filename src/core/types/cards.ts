@@ -70,6 +70,13 @@ export type EffectNode =
    */
   | { op: 'detonateAura' }
   /**
+   * Puts health back on the caster's Pact.
+   *
+   * Routes through `healCommander`, the one thing in the game that heals, so the ceiling
+   * clamp and the silence-when-nothing-is-owed both come for free.
+   */
+  | { op: 'heal'; amount: number }
+  /**
    * Marrow gained. A fixed number, or scaled off the blood a `tithe` just took.
    *
    * The dynamic form mirrors `grantArmor`'s, which already reads `titheDamage` — the
