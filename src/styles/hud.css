@@ -710,3 +710,109 @@
     animation: none;
   }
 }
+
+/* ============================================================================
+   Corner rails: the Pact and the dial, out of the arena.
+
+   Both used to live in a 400px stack centred above the hand — which is the one
+   strip of screen the board is guaranteed to occupy at every size from 4x4 to
+   12x12. They are anchored to the bottom corners now, flanking the hand, so the
+   centre belongs entirely to the grid.
+   ========================================================================== */
+
+.hand-row {
+  align-items: flex-end;
+}
+
+/* Anchored to the bar rather than laid out in it.
+
+   As flex children they competed with the hand for width, and on a 1280 viewport the row
+   overflowed both ends — the Pact ran to x=-150 and the dial to x=1430, which is worse
+   than the overlap they were moved to fix. Taken out of the flow they cannot squeeze the
+   hand or be squeezed by it, and the corner they sit in is the corner they stay in at
+   every width. The bar itself already sits entirely below the board. */
+.bottom-bar {
+  position: relative;
+}
+
+.corner {
+  position: absolute;
+  bottom: 52px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.corner--left {
+  left: 20px;
+  width: 210px;
+  align-items: stretch;
+}
+
+.corner--right {
+  right: 20px;
+  width: 150px;
+  align-items: flex-end;
+}
+
+/* The stack that used to hold both. Kept as a no-op guard: any stylesheet or markup
+   still reaching for it must not re-centre anything over the board. */
+.center-stack {
+  display: none;
+}
+
+.corner .pact {
+  margin-bottom: 0;
+}
+
+.corner .resonance {
+  text-align: left;
+  margin-top: 2px;
+}
+
+.corner--right .dial {
+  align-items: flex-end;
+}
+
+/* Below this the corners would start squeezing the hand, so they fold under it and the
+   centre stays clear either way. */
+@media (max-width: 1100px) {
+  .corner--left { width: 168px; }
+  .corner--right { width: 120px; }
+}
+
+/* Narrow enough that a single row of eight sockets reaches the hand: the dial folds into
+   a tighter block rather than sitting over the rightmost card. Eight in a row needs about
+   150px and the gutter beside the hand is closer to 90 — so it wraps to two rows of four
+   and shrinks the sockets, which fits with room to spare and stays readable. */
+@media (max-width: 1000px) {
+  .corner { bottom: 4px; }
+  .corner--left { width: 150px; }
+  .corner--right { width: 74px; }
+
+  .corner--right .dial__pips {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    width: 66px;
+    gap: 4px;
+  }
+
+  .corner--right .socket {
+    width: 13px;
+    height: 13px;
+    border-width: 1.5px;
+  }
+}
+
+/* ------------------------------------------------------- the speed toggle */
+
+.speed {
+  min-width: 92px;
+}
+
+.speed.is-fast {
+  border-color: var(--lamp);
+  color: var(--lamp);
+  box-shadow: 0 0 10px rgba(240, 178, 74, 0.25);
+}

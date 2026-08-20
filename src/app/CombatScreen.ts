@@ -22,6 +22,7 @@ import { Fx } from '../render/Fx.js';
 import { Sequencer } from '../anim/Sequencer.js';
 import { registerHandlers, type CombatView } from '../anim/handlers.js';
 import { Hud } from '../hud/Hud.js';
+import { AI_BEAT_MS } from '../anim/Sequencer.js';
 import { HelpOverlay } from '../hud/HelpOverlay.js';
 import { Tutorial } from '../hud/Tutorial.js';
 import { readWeather } from '../hud/weather.js';
@@ -60,6 +61,25 @@ function escapeHtml(s: string): string {
 import { TargetingController } from '../hud/TargetingController.js';
 import { Sfx } from '../sound/Sfx.js';
 
+/**
+ * Where the playback preference lives.
+ *
+ * Its own key rather than the save file: this is how somebody likes to *watch* the game,
+ * not a fact about their character, and putting it in the save would mean a version bump
+ * and a migration for a setting no rule reads. It is also why a missing or corrupt value
+ * simply falls back to Normal rather than being repaired.
+ */
+const SPEED_KEY = 'conjure.speed';
+
+function readSpeed(): 'normal' | 'fast' {
+  try {
+    return localStorage.getItem(SPEED_KEY) === 'fast' ? 'fast' : 'normal';
+  } catch {
+    // Private browsing, or storage disabled. The preference is not worth a crash.
+    return 'normal';
+  }
+}
+
 export class CombatScreen implements Screen {
   private session: CombatSession;
   private cam: IsoCamera;
@@ -72,6 +92,8 @@ export class CombatScreen implements Screen {
   private hud: Hud | null = null;
   private targeting: TargetingController | null = null;
   private sequencer: Sequencer<CombatView> | null = null;
+  /** How the player wants the enemy's turn played back. Read from storage on mount. */
+  private speed: 'normal' | 'fast' = readSpeed();
   private fx: Fx | null = null;
 
   private onResize = () => {
@@ -149,6 +171,7 @@ export class CombatScreen implements Screen {
       onCardClick: (id) => this.targeting?.onCardClick(id),
       onCardHover: (id) => this.targeting?.onCardHover(id),
       onEndTurn: () => this.requestEndTurn(),
+      onToggleSpeed: () => this.toggleSpeed(),
       onUndo: () => this.undo(),
       onToggleMute: () => this.sfx.toggleMute(),
       onToggleThreat: () => this.targeting?.toggleThreat() ?? false,
@@ -185,6 +208,8 @@ export class CombatScreen implements Screen {
       renderer: this.renderer,
     };
     this.sequencer = new Sequencer(view);
+    // Label from the stored preference, not from the markup's default.
+    this.hud.setSpeedLabel(this.speed);
     registerHandlers(this.sequencer);
 
     // The sky is read from the encounter rather than from board state: it is fixed when
@@ -652,6 +677,10 @@ export class CombatScreen implements Screen {
       void this.rotate(1);
       return;
     }
+    if (ev.key === 'f' || ev.key === 'F') {
+      this.hud?.setSpeedLabel(this.toggleSpeed());
+      return;
+    }
     if (ev.key === 't' || ev.key === 'T') {
       this.hud?.setThreatActive(this.targeting?.toggleThreat() ?? false);
       return;
@@ -858,6 +887,8 @@ export class CombatScreen implements Screen {
       this.hud?.setInteractive(false);
       this.targeting?.setEnabled(false);
       // Let the "enemy turn" banner land before the AI starts acting.
+      // Set before the batch is queued: the drain starts synchronously inside `enqueue`.
+      this.applyBeat();
       window.setTimeout(() => {
         const events = this.session.runAiTurn();
         if (events.length > 0) this.sequencer?.enqueue(events);
@@ -867,6 +898,42 @@ export class CombatScreen implements Screen {
     }
 
     this.unlockInput();
+  }
+
+  /**
+   * Flips Normal and Fast, and returns what it now is.
+   *
+   * Only the *beat* changes. The animations themselves keep their designed durations in
+   * both modes: Fast is the original pace, which was never too quick to see — what was
+   * missing was the gap between one enemy action and the next.
+   *
+   * Safe to hit mid-turn. `setBeat` writes a number the drain loop reads fresh before each
+   * pause, so a flip changes the next gap and leaves everything already queued exactly
+   * where it was.
+   */
+  private toggleSpeed(): 'normal' | 'fast' {
+    this.speed = this.speed === 'fast' ? 'normal' : 'fast';
+    try {
+      localStorage.setItem(SPEED_KEY, this.speed);
+    } catch {
+      // Not worth a crash; the session keeps the setting either way.
+    }
+    // Re-apply against the side currently acting, so a flip during the enemy's turn takes
+    // effect on their next action rather than at the start of the following turn.
+    this.applyBeat();
+    return this.speed;
+  }
+
+  /**
+   * Sets the pause between actions for whoever is acting.
+   *
+   * Only the enemy is paced. The player's own plays are already gated behind their own
+   * clicks — pausing between the steps of something they just did would be the game
+   * waiting on itself.
+   */
+  private applyBeat(): void {
+    const enemyActing = this.session.activeSide === 'enemy';
+    this.sequencer?.setBeat(enemyActing && this.speed === 'normal' ? AI_BEAT_MS : 0);
   }
 
   private syncRunesAndStatuses(board: ReturnType<CombatSession['getBoard']>): void {

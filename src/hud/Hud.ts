@@ -23,6 +23,8 @@ export interface HudCallbacks {
   onChannel(): void;
   onHelp(): void;
   onRotate(steps: number): void;
+  /** Returns the speed after the flip, so the button labels itself from the truth. */
+  onToggleSpeed(): 'normal' | 'fast';
   onLastStand(active: boolean): void;
 }
 
@@ -58,6 +60,7 @@ export class Hud {
   private heroArmorEl!: HTMLElement;
   private enemyArmorEl!: HTMLElement;
   private muteBtn!: HTMLButtonElement;
+  private speedBtn!: HTMLButtonElement;
   private resonanceEl!: HTMLElement;
   private threatBtn!: HTMLButtonElement;
   private undoBtn!: HTMLButtonElement;
@@ -115,6 +118,7 @@ export class Hud {
     this.heroArmorEl = q('.pact__armor');
     this.enemyArmorEl = q('.enemy-bar__armor');
     this.muteBtn = q<HTMLButtonElement>('.mute');
+    this.speedBtn = q<HTMLButtonElement>('.speed');
     this.resonanceEl = q('.resonance');
     this.threatBtn = q<HTMLButtonElement>('.threat-toggle');
     this.helpBtn = q<HTMLButtonElement>('.help');
@@ -134,6 +138,7 @@ export class Hud {
     this.channelBtn.addEventListener('click', () => this.cb.onChannel());
     this.threatBtn.addEventListener('click', () => this.setThreatActive(this.cb.onToggleThreat()));
     this.helpBtn.addEventListener('click', () => this.cb.onHelp());
+    this.speedBtn.addEventListener('click', () => this.setSpeedLabel(this.cb.onToggleSpeed()));
     q('.rotate--ccw').addEventListener('click', () => this.cb.onRotate(-1));
     q('.rotate--cw').addEventListener('click', () => this.cb.onRotate(1));
 
@@ -264,6 +269,17 @@ export class Hud {
     this.lastStand = on;
     this.root.classList.toggle('is-last-stand', on);
     this.cb.onLastStand(on);
+  }
+
+  /**
+   * Labels the speed button from whatever the screen says the speed now is.
+   *
+   * Told rather than asked: the button never holds the setting, so a click that the screen
+   * refuses for any reason cannot leave the label claiming otherwise.
+   */
+  setSpeedLabel(speed: 'normal' | 'fast'): void {
+    this.speedBtn.textContent = speed === 'fast' ? '⏩ Fast' : '⏵ Normal';
+    this.speedBtn.classList.toggle('is-fast', speed === 'fast');
   }
 
   setThreatActive(on: boolean): void {
@@ -661,25 +677,29 @@ const TEMPLATE = `
   <div class="inspect"></div>
 
   <div class="bottom-bar">
-    <div class="center-stack">
-      <div class="pact" data-tip="pact">
-        <div class="pact__track">
-          <div class="pact__fill"></div>
-          <div class="pact__ticks"></div>
-        </div>
-        <div class="pact__row">
-          <span class="pact__text">PACT  40 / 40</span>
-          <span class="pact__armor is-hidden" data-tip="armor"></span>
-        </div>
-      </div>
-      <div class="dial">
-        <div class="dial__pips" data-tip="pips"></div>
-        <div class="dial__marrow is-empty" data-tip="marrow"></div>
-      </div>
-      <div class="resonance" data-tip="resonance"></div>
-    </div>
-
     <div class="hand-row">
+      <div class="corner corner--left">
+        <!--
+          The Pact, in the corner rather than over the board.
+
+          It used to sit in a 400px stack centred above the hand, which put it across the
+          middle of the arena — the one strip of screen the board is guaranteed to occupy
+          at every size from 4x4 to 12x12. Health and resources belong at the edges the eye
+          returns to, not on the tiles it is reading.
+        -->
+        <div class="pact" data-tip="pact">
+          <div class="pact__track">
+            <div class="pact__fill"></div>
+            <div class="pact__ticks"></div>
+          </div>
+          <div class="pact__row">
+            <span class="pact__text">PACT  40 / 40</span>
+            <span class="pact__armor is-hidden" data-tip="armor"></span>
+          </div>
+        </div>
+        <div class="resonance" data-tip="resonance"></div>
+      </div>
+
       <div class="left-controls">
         <button class="end-turn">End Turn</button>
         <button class="undo" data-tip="Undo move|Steps back to before your last move.|Movement only — attacks and card plays are final. Press Z.">↶ Undo</button>
@@ -690,10 +710,19 @@ const TEMPLATE = `
       </div>
       <div class="hand"></div>
       <div class="right-controls">
+        <button class="speed" data-tip="Playback speed|Normal gives the enemy's turn room to be read, one action at a time.|Fast plays it back at the old pace. Press F.">⏵ Normal</button>
         <button class="rotate rotate--ccw" data-tip="Rotate left|Turns the board a quarter-turn anticlockwise.|Press Q.">⟲</button>
         <button class="rotate rotate--cw" data-tip="Rotate right|Turns the board a quarter-turn clockwise.|Press E.">⟳</button>
         <button class="help" data-tip="Help|Opens the rules reference.|Press H at any time.">?</button>
         <button class="mute" title="Toggle sound">🔊</button>
+      </div>
+
+      <!-- The resource dial, mirroring the Pact in the opposite corner. -->
+      <div class="corner corner--right">
+        <div class="dial">
+          <div class="dial__pips" data-tip="pips"></div>
+          <div class="dial__marrow is-empty" data-tip="marrow"></div>
+        </div>
       </div>
     </div>
   </div>

@@ -35,6 +35,28 @@ const TYPICAL_STEP_MS = 260;
 /** Never compress past this, or a busy turn becomes an unreadable blur. */
 const MIN_BUDGET_SCALE = 0.25;
 
+/**
+ * The pause held between two of the enemy's actions, at Normal speed.
+ *
+ * The animations were never the problem: each one is paced fine on its own. What was
+ * missing is the *gap* — the enemy's whole turn arrives as one batch of events, so a move,
+ * a cast and a strike ran together with nothing between them to say where one ended.
+ *
+ * Held between **cause groups**, which is exactly where those seams are: every event from
+ * one atomic resolution shares a `causeId`, so one group is one thing the enemy did.
+ */
+export const AI_BEAT_MS = 900;
+
+/**
+ * Total pausing one batch may spend before the beats stop.
+ *
+ * A safety valve, not a pacing decision. A pathological turn — twenty actions in a
+ * cascade-heavy board — would otherwise hold the player for twenty seconds, and the point
+ * of the beat is to make a turn readable rather than to make it long. Ordinary turns never
+ * approach this.
+ */
+export const MAX_TOTAL_BEAT_MS = 9_000;
+
 export class Sequencer<T> {
   private queue: GameEvent[] = [];
   private handlers = new Map<GameEvent['t'], AnyHandler<T>>();
@@ -43,6 +65,10 @@ export class Sequencer<T> {
   /** Extra compression applied when a batch is too long to play at full pace. */
   private budgetScale = 1;
   private drainStartedAt = 0;
+  /** Pause held between cause groups. Zero for the player's own actions. */
+  private beat = 0;
+  /** How much pausing this batch has already spent, against `MAX_TOTAL_BEAT_MS`. */
+  private beatSpent = 0;
 
   onIdle?: () => void;
   onEvent?: (event: GameEvent) => void;
@@ -65,6 +91,19 @@ export class Sequencer<T> {
   /** Hold to accelerate; used while watching the AI take its turn. */
   fastForward(on: boolean): void {
     this.speed = on ? 5 : 1;
+  }
+
+  /**
+   * Sets the pause held between the enemy's discrete actions.
+   *
+   * Read fresh on every iteration of the drain loop rather than captured when the batch
+   * started, so flipping the speed toggle mid-turn changes the *next* gap and touches
+   * nothing already queued. The queue is never re-ordered, re-entered or dropped by this —
+   * it only ever changes how long the loop waits between two groups it was already going
+   * to play in that order.
+   */
+  setBeat(ms: number): void {
+    this.beat = Math.max(0, ms);
   }
 
   /** Abandons all pacing: handlers still run in order, but instantly. */
@@ -123,13 +162,38 @@ export class Sequencer<T> {
             if (handler) await (handler as (e: GameEvent, c: FxContext<T>) => Promise<void> | void)(event, ctx);
           }),
         );
+
+        await this.holdBeat();
       }
     } finally {
       this.speed = 1;
       this.budgetScale = 1;
+      this.beatSpent = 0;
       this.draining = false;
       this.onIdle?.();
     }
+  }
+
+  /**
+   * The gap between two of the enemy's actions.
+   *
+   * Divided by `speed`, so holding fast-forward shortens it and a skip erases it — a
+   * player who has asked to get on with it must not be held by a pause meant to slow them
+   * down. Deliberately *not* multiplied by `budgetScale`: that compresses animations on a
+   * busy turn, and the beat is the reading pace the player chose rather than time the
+   * batch is overspending.
+   *
+   * Nothing left in the queue is touched. The wait sits between two groups that were
+   * already going to play in that order, so a toggle mid-drain cannot disturb it.
+   */
+  private async holdBeat(): Promise<void> {
+    if (this.beat <= 0 || this.speed === Infinity) return;
+    if (this.queue.length === 0) return;
+    if (this.beatSpent >= MAX_TOTAL_BEAT_MS) return;
+
+    const wait = this.beat / this.speed;
+    this.beatSpent += wait;
+    await new Promise<void>((resolve) => setTimeout(resolve, wait));
   }
 
   /**
