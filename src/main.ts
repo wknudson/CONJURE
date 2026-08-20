@@ -43,7 +43,7 @@ import {
 } from './app/save.js';
 import { forfeitIfAbandoned, isDown, rescuePlayer } from './core/overworld/state.js';
 import { encounterForBounty, rollBounties, type Bounty } from './core/data/bounties.js';
-import { carryFor, resolveCombat, type CombatOutcome } from './core/overworld/run.js';
+import { carryFor, openContract, resolveCombat, type CombatOutcome } from './core/overworld/run.js';
 import { companionById, DEFAULT_COMPANION } from './core/data/companions.js';
 import { grantCard, printedDeck, rollRewards } from './core/data/collection.js';
 import { ascendCard, forgeSchematic } from './core/overworld/forge.js';
@@ -297,12 +297,13 @@ function showSafehouse(companionId: string): void {
               profile().collection = next;
               return true;
             },
-            // The one purchase that also *removes* a card, so it is handed the decks as
-            // well: a copy spent out from under a deck that was running three would leave
-            // the player with an illegal list and no idea why.
+            // It no longer removes anything. The bench used to eat the base card, which
+            // is why it was handed the decks — a copy spent out from under a deck running
+            // three left the player with an illegal list. An unlock cannot be spent, so
+            // there is nothing to spend and no deck to repair.
             onSplice: (baseCardId, catalystId) => {
               const p = profile();
-              const done = spliceCard(global, p.collection, p.decks, baseCardId, catalystId);
+              const done = spliceCard(global, p.collection, baseCardId, catalystId);
               if (!done) return null;
               p.collection = done.collection;
               return done;
@@ -476,8 +477,16 @@ function startCombat(
   // The payout is cached here too, not looked up when the fight ends: the board rerolls
   // after every contract, so a win settled against the *new* board would pay for a job
   // nobody accepted.
+  // The contract opens *first*, and takes the stake if this is a duel — a buy-in charged
+  // when the fight ends would be a bet the player could simply walk away from.
+  //
+  // Before `global.combat` is set, not after: `contractRefusal` refuses while a fight is
+  // open, so setting the handle first makes it refuse the very fight it is opening.
+  if (!openContract(global, bounty)) {
+    // Nothing to undo: the refusal is checked before anything is spent or opened.
+    return;
+  }
   global.combat = { encounterId: encounter.id, seed };
-  global.overworld.activeEncounter = { bountyId: bounty.id, spoils: bounty.spoils };
   persist();
 
   screens.go(

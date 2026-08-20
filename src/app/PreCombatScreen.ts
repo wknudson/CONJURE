@@ -201,8 +201,8 @@ export class PreCombatScreen implements Screen {
     const host = this.el?.querySelector('.builder__collection');
     if (!host) return;
 
-    const owned = Object.keys(this.opts.collection.owned)
-      .filter((id) => (this.opts.collection.owned[id] ?? 0) > 0 && CARDS[id])
+    const owned = [...this.opts.collection.unlocked]
+      .filter((id) => CARDS[id])
       .map((id) => CARDS[id]!)
       .sort((a, b) => cardCostTotal(a.cost) - cardCostTotal(b.cost) || a.name.localeCompare(b.name));
 

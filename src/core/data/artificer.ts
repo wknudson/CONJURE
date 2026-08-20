@@ -38,7 +38,7 @@ import { tierOf } from './deckRules.js';
  */
 export function schematicsFor(collection: Collection): CardDef[] {
   return Object.values(CARDS)
-    .filter((def) => isObtainable(def) && (collection.owned[def.id] ?? 0) === 0)
+    .filter((def) => isObtainable(def) && !collection.unlocked.includes(def.id))
     .sort((a, b) => tierOf(a) - tierOf(b) || a.name.localeCompare(b.name));
 }
 

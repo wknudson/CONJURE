@@ -48,9 +48,9 @@ describe('the roster', () => {
   });
 
   it('brings a legal deck, like everyone else', () => {
-    const owned = startingCollection().owned;
+    const { unlocked } = startingCollection();
     for (const companion of COMPANIONS) {
-      expect(validateDeck(companion.deck, { owned }), companion.name).toEqual([]);
+      expect(validateDeck(companion.deck, { unlocked }), companion.name).toEqual([]);
     }
   });
 

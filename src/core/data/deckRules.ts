@@ -100,7 +100,7 @@ export interface DeckProblem {
     | 'too_large'
     | 'over_copy_limit'
     | 'too_many_behemoths'
-    | 'not_owned'
+    | 'not_unlocked'
     | 'unknown_card'
     /** A body in a spell deck. Minions are a Vanguard Roster now, not cards. */
     | 'minion_in_deck'
@@ -111,8 +111,18 @@ export interface DeckProblem {
 }
 
 export interface Collection {
-  /** Copies owned, by card id. */
-  owned: Record<string, number>;
+  /**
+   * Every card this character has unlocked, by def id.
+   *
+   * A **set**, not a tally. Cards used to be physical copies you could run out of, which
+   * meant the deck builder was arguing with the collection about the same number twice —
+   * a Tier limit *and* an inventory count, both capping the same thing.
+   *
+   * Unlocking is permanent and one-way. Nothing in the game removes an entry: not a loss,
+   * not a splice, not a wager. What a card costs is paid once, at the Forge, and what
+   * bottlenecks a deck afterwards is the Tier limit alone.
+   */
+  unlocked: string[];
   /**
    * Base ids the player has Ascended, account-wide.
    *
@@ -196,12 +206,14 @@ export function validateDeck(deck: string[], collection?: Collection): DeckProbl
       });
     }
     if (collection) {
-      const owned = collection.owned[base] ?? 0;
-      if (count > owned) {
+      // Unlocked or not — never "how many". The Tier limit above is the only thing that
+      // caps copies now, which is what stops the builder arguing with the collection about
+      // the same number twice.
+      if (!collection.unlocked.includes(base)) {
         problems.push({
-          code: 'not_owned',
+          code: 'not_unlocked',
           cardId: base,
-          message: `${count}× ${def.name} but you own ${owned}.`,
+          message: `${def.name} is not forged yet.`,
         });
       }
     }
@@ -232,7 +244,9 @@ export function remainingCopies(
   const base = baseIdOf(cardId);
   const inDeck = deck.filter((c) => baseIdOf(c) === base).length;
   const byTier = TIER_COPY_LIMIT[tierOf(def)] - inDeck;
-  const byOwnership = collection ? (collection.owned[base] ?? 0) - inDeck : Infinity;
+  // Locked cards offer nothing; unlocked ones are limited by the Tier alone. A count
+  // here would be the copy model surviving inside a boolean question.
+  const byOwnership = !collection || collection.unlocked.includes(base) ? Infinity : 0;
   const byBehemoth =
     def.unit?.footprint === 2
       ? MAX_BEHEMOTHS - deck.filter((c) => CARDS[c]?.unit?.footprint === 2).length

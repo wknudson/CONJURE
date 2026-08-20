@@ -321,8 +321,8 @@ export class ArtificerScreen implements Screen {
       .filter((d) => f.kind === 'all' || d.kind === f.kind)
       .filter((d) => matchesPips(d.cost.pips, f.cost))
       .sort((a, b) => {
-        const ownedA = (collection.owned[a.id] ?? 0) > 0 ? 1 : 0;
-        const ownedB = (collection.owned[b.id] ?? 0) > 0 ? 1 : 0;
+        const ownedA = collection.unlocked.includes(a.id) ? 1 : 0;
+        const ownedB = collection.unlocked.includes(b.id) ? 1 : 0;
         switch (f.sort) {
           case 'cost':
             return a.cost.pips - b.cost.pips || a.name.localeCompare(b.name);
@@ -336,7 +336,7 @@ export class ArtificerScreen implements Screen {
       });
 
     if (count) {
-      const unforged = shown.filter((d) => (collection.owned[d.id] ?? 0) === 0).length;
+      const unforged = shown.filter((d) => !collection.unlocked.includes(d.id)).length;
       count.textContent = shown.length
         ? `${shown.length} schematic${shown.length === 1 ? '' : 's'} · ${unforged} unforged`
         : '';
@@ -356,7 +356,7 @@ export class ArtificerScreen implements Screen {
   /** One blueprint: the card, its price, and the one button that cuts it. */
   private schematicCard(def: CardDef, collection: Collection): HTMLElement {
     const refusal = schematicRefusal(this.opts.global, collection, def.id);
-    const owned = (collection.owned[def.id] ?? 0) > 0;
+    const owned = collection.unlocked.includes(def.id);
 
     const cell = document.createElement('div');
     cell.className = `sch-cell${owned ? ' is-owned' : ''}`;
@@ -601,7 +601,7 @@ export class ArtificerScreen implements Screen {
     const tray = host.querySelector('[data-tray="a"]')!;
     const collection = this.opts.collection();
     const owned = spliceableBaseIds()
-      .filter((id) => (collection.owned[id] ?? 0) > 0 && CARDS[id])
+      .filter((id) => collection.unlocked.includes(id) && CARDS[id])
       .map((id) => CARDS[id]!);
 
     if (owned.length === 0) {
@@ -614,7 +614,7 @@ export class ArtificerScreen implements Screen {
       const chip = document.createElement('button');
       chip.className = 'splicing-chip';
       chip.style.setProperty('--school', schoolOf(def.school as never).main);
-      chip.textContent = `${def.name} ×${collection.owned[def.id] ?? 0}`;
+      chip.textContent = def.name;
       chip.classList.toggle('is-loaded', this.slotA === def.id);
       chip.addEventListener('click', () => {
         this.slotA = this.slotA === def.id ? null : def.id;

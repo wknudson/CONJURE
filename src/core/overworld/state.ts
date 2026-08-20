@@ -121,6 +121,15 @@ export interface CombatSpoils {
 export interface ActiveEncounterState {
   bountyId: string;
   spoils: CombatSpoils;
+  /**
+   * The stake already paid to take this contract, if it was a duel.
+   *
+   * Cached here for the same reason the spoils are: the board rerolls after every fight,
+   * so a payout settled against the *new* board would be paying out a bet nobody placed.
+   * Also what makes the buy-in survive a reload — the Ducats are gone from the purse the
+   * moment the contract opens, and this is the only record of why.
+   */
+  wager?: number;
 }
 
 export interface OverworldState {

@@ -22,7 +22,7 @@
 import type { Collection } from '../data/deckRules.js';
 import type { GlobalGameState } from './state.js';
 import { CARDS, ascendedId } from '../data/cards/index.js';
-import { grantCard, isAscended, ownedCount } from '../data/collection.js';
+import { grantCard, isAscended, isUnlocked } from '../data/collection.js';
 
 /** Flat, whatever the card. Ascension is a sink, not a market. */
 export const ASCENSION_COST_SHARDS = 3;
@@ -55,7 +55,7 @@ export function ascensionRefusal(
   // been committed to, or a card could be upgraded between the contract and the board.
   if (state.combat !== null || state.overworld.activeEncounter !== null) return 'in-combat';
   if (!CARDS[ascendedId(cardId)]) return 'no-rank-2';
-  if (ownedCount(collection, cardId) <= 0) return 'not-owned';
+  if (!isUnlocked(collection, cardId)) return 'not-owned';
   if (isAscended(collection, cardId)) return 'already-ascended';
   if (state.overworld.economy.marrowShards < ASCENSION_COST_SHARDS) return 'too-poor';
   return null;
@@ -83,7 +83,7 @@ export function ascendCard(
 
 // ------------------------------------------------------------- schematics
 
-export type SchematicRefusal = 'in-combat' | 'already-owned' | 'unknown-card' | 'too-poor' | null;
+export type SchematicRefusal = 'in-combat' | 'already-forged' | 'unknown-card' | 'too-poor' | null;
 
 export function schematicRefusal(
   state: GlobalGameState,
@@ -92,9 +92,10 @@ export function schematicRefusal(
 ): SchematicRefusal {
   if (state.combat !== null || state.overworld.activeEncounter !== null) return 'in-combat';
   if (!CARDS[cardId]) return 'unknown-card';
-  // One copy from the bench, ever. Further copies are what winning is for, which is what
-  // stops a rich player buying a legal deck outright.
-  if (ownedCount(collection, cardId) > 0) return 'already-owned';
+  // Forged once, and that is the whole of it. There is no second copy to buy: an unlock
+  // is permanent and how many go in a deck is the Tier limit's business, so paying twice
+  // would buy exactly nothing.
+  if (isUnlocked(collection, cardId)) return 'already-forged';
   if (state.overworld.economy.ducats < SCHEMATIC_COST_DUCATS) return 'too-poor';
   return null;
 }

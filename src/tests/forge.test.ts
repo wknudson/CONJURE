@@ -10,7 +10,7 @@ import {
 } from '../core/overworld/forge.js';
 import { newRun, type GlobalGameState } from '../core/overworld/state.js';
 import { ascendedId } from '../core/data/cards/index.js';
-import { isAscended, ownedCount, printedDeck } from '../core/data/collection.js';
+import { isAscended, isUnlocked, printedDeck } from '../core/data/collection.js';
 import type { Collection } from '../core/data/deckRules.js';
 
 /**
@@ -28,7 +28,7 @@ const rich = (): GlobalGameState => {
 };
 
 const holding = (ids: string[]): Collection => ({
-  owned: Object.fromEntries(ids.map((id) => [id, 1])),
+  unlocked: [...ids],
 });
 
 describe('ascension', () => {
@@ -62,10 +62,10 @@ describe('ascension', () => {
 
   it('leaves everything else in the collection alone', () => {
     const g = rich();
-    const before: Collection = { owned: { shield_bash: 3, scout_imp: 2 }, ascended: ['scout_imp'] };
+    const before: Collection = { unlocked: ['shield_bash', 'scout_imp'], ascended: ['scout_imp'] };
     const after = ascendCard(g, before, 'shield_bash')!;
 
-    expect(after.owned, 'copies are not spent by ascending').toEqual(before.owned);
+    expect(after.unlocked, 'unlocks are not spent by ascending').toEqual(before.unlocked);
     expect(after.ascended, 'and an earlier ascension survives').toContain('scout_imp');
   });
 
@@ -119,16 +119,16 @@ describe('schematic forging', () => {
 
     const after = forgeSchematic(g, holding([]), 'scout_imp')!;
 
-    expect(ownedCount(after, 'scout_imp')).toBe(1);
+    expect(isUnlocked(after, 'scout_imp')).toBe(true);
     expect(g.overworld.economy.ducats).toBe(before - SCHEMATIC_COST_DUCATS);
   });
 
-  it('refuses a second copy, so a purse cannot buy a deck', () => {
+  it('refuses a second forging, because there is no second copy to buy', () => {
     const g = rich();
     const owned = forgeSchematic(g, holding([]), 'scout_imp')!;
     const ducats = g.overworld.economy.ducats;
 
-    expect(schematicRefusal(g, owned, 'scout_imp')).toBe('already-owned');
+    expect(schematicRefusal(g, owned, 'scout_imp')).toBe('already-forged');
     expect(forgeSchematic(g, owned, 'scout_imp')).toBeNull();
     expect(g.overworld.economy.ducats, 'and charged nothing for the refusal').toBe(ducats);
   });
@@ -150,7 +150,7 @@ describe('schematic forging', () => {
 
   it('keeps Ascensions when it grants a card', () => {
     const g = rich();
-    const before: Collection = { owned: { shield_bash: 1 }, ascended: ['shield_bash'] };
+    const before: Collection = { unlocked: ['shield_bash'], ascended: ['shield_bash'] };
     const after = forgeSchematic(g, before, 'scout_imp')!;
     expect(after.ascended).toEqual(['shield_bash']);
   });

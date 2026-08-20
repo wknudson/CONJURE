@@ -549,8 +549,8 @@ export class DeckBuilderScreen implements Screen {
     if (!host) return;
 
     const f = this.filters;
-    const owned = Object.keys(this.collection.owned)
-      .filter((id) => (this.collection.owned[id] ?? 0) > 0 && CARDS[id])
+    const owned = [...this.collection.unlocked]
+      .filter((id) => CARDS[id])
       .map((id) => CARDS[id]!)
       .filter((d) => f.school === 'all' || d.school === f.school)
       .filter((d) => f.kind === 'all' || d.kind === f.kind)
@@ -602,8 +602,8 @@ export class DeckBuilderScreen implements Screen {
     // empty shelf and a card can never be hidden by an omitted school.
     const schools = [
       ...new Set(
-        Object.keys(this.collection.owned)
-          .filter((id) => (this.collection.owned[id] ?? 0) > 0 && CARDS[id])
+        [...this.collection.unlocked]
+          .filter((id) => CARDS[id])
           .map((id) => CARDS[id]!.school),
       ),
     ].sort();

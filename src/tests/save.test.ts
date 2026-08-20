@@ -113,13 +113,13 @@ describe('the wall', () => {
     const reopened = loadSave().save;
     reopened.activeProfileId = 'slot-1';
     reopened.profiles['slot-1']!.state.overworld.economy.ducats = 7;
-    reopened.profiles['slot-1']!.collection = { owned: { scout_imp: 99 } };
+    reopened.profiles['slot-1']!.collection = { unlocked: ['scout_imp'] };
     writeSave(reopened);
 
     const { save } = loadSave();
     expect(save.profiles['slot-2']!.state.overworld.economy.ducats).toBe(500);
     expect(save.profiles['slot-3']!.state.overworld.economy.ducats).toBe(500);
-    expect(save.profiles['slot-2']!.collection.owned.scout_imp).not.toBe(99);
+    expect(save.profiles['slot-2']!.collection.unlocked).not.toContain('a_card_from_a_past_patch');
   });
 
   it('drops a pointer at a slot with nobody on it', () => {
@@ -179,7 +179,7 @@ describe('the upgrade from one character to three', () => {
       'conjure.save',
       JSON.stringify({
         version: 6,
-        collection: { owned: { scout_imp: 3, shield_bash: 3 }, ascended: ['shield_bash'] },
+        collection: { unlocked: ['scout_imp', 'shield_bash'], ascended: ['shield_bash'] },
         decks: {},
         activeCompanionId: 'boreas',
         companions: { boreas: { level: 3, bonusMaxHp: 4, startingArmor: 0, bonusPips: 0 } },
@@ -369,7 +369,7 @@ describe('one character on disk', () => {
     const file = fileWith('slot-1');
     writeSave(file);
     const raw = JSON.parse(localStorage.getItem('conjure.save')!);
-    raw.profiles['slot-1'].collection = { owned: { spark_wisp: 2 }, ascended: ['spark_wisp'] };
+    raw.profiles['slot-1'].collection = { unlocked: ['spark_wisp'], ascended: ['spark_wisp'] };
     // Every id the rename table knows about is now un-deckable — the Wisp is a body and
     // both hybrids are elemental — so the deck half is observed through the *note* rather
     // than through what survives. An id that failed to rename would be an unknown card and
@@ -382,8 +382,8 @@ describe('one character on disk', () => {
 
     const loaded = loadSave();
     const p = loaded.save.profiles['slot-1']!;
-    expect(p.collection.owned.marrow_wisp).toBeGreaterThan(0);
-    expect(p.collection.owned.spark_wisp).toBeUndefined();
+    expect(p.collection.unlocked).toContain('marrow_wisp');
+    expect(p.collection.unlocked).not.toContain('spark_wisp');
 
     expect(p.decks.ignis!.cards, 'the Hero-legal card is kept').toEqual(['shield_bash']);
     expect(

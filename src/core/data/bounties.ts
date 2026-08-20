@@ -32,6 +32,18 @@ export interface Bounty {
    */
   enemySeed: string;
   spoils: CombatSpoils;
+  /**
+   * Ducats staked to take the contract, doubled back on a win.
+   *
+   * A Wandering Duelist wants a bet, not a job — so a wagered contract charges the buy-in
+   * the moment it is accepted and pays `wager * 2` if you walk away from it. Losing costs
+   * exactly the buy-in, which was already gone.
+   *
+   * **Never cards.** The progression model is RPG rather than roguelike: what a loss costs
+   * is money and time, never possessions, and a contract that could take a card off the
+   * player would be the only thing in the game that does.
+   */
+  wager?: number;
   /** One line of why anyone is paying, for the card. */
   flavour: string;
   /**
@@ -186,6 +198,30 @@ function auditBounty(): Bounty {
  * it uses it everywhere else. The audit is spliced in at index 2 rather than appended, so
  * it is poster #3 and the Master contract keeps its place on the board at #4.
  */
+/**
+ * What a Wandering Duelist puts up, by tier.
+ *
+ * Scaled off the tier's own pay rather than invented, so a duel is always roughly "the
+ * job again, doubled or nothing" — and so retuning the pay table retunes the duels with
+ * it instead of leaving them behind.
+ */
+export const TIER_WAGER: Record<BountyDifficulty, number> = {
+  novice: 40,
+  adept: 90,
+  master: 180,
+};
+
+/** What a won wager pays back, including the stake. */
+export const WAGER_MULTIPLIER = 2;
+
+/**
+ * Which contracts are duels.
+ *
+ * Only the fights that are actually a person across a board: a duelist bets, a ruin does
+ * not. Checked by encounter rather than by tier so a new duelling encounter inherits it.
+ */
+export const DUEL_ENCOUNTERS: readonly string[] = ['novice_duelist'];
+
 export function rollBounties(seed: number): Bounty[] {
   const rolled = rollTiers(seed);
   return [rolled[0]!, rolled[1]!, auditBounty(), rolled[2]!];
@@ -218,6 +254,8 @@ function rollTiers(seed: number): Bounty[] {
           ? { reagents: { [REAGENTS[nextInt(rng, REAGENTS.length)]!.id]: TIER_CORES[difficulty] } }
           : {}),
       },
+      // A duel is a bet. Everything else is a job.
+      ...(DUEL_ENCOUNTERS.includes(enemySeed) ? { wager: TIER_WAGER[difficulty] } : {}),
       flavour: FLAVOUR[difficulty],
     };
   });

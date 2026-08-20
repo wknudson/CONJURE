@@ -13,6 +13,8 @@ import type { Bestiary, BuffId, GlobalGameState, OverworldState } from './state.
 import { INVENTORY_LIMIT } from './state.js';
 import { nextBountySeed } from '../data/bounties.js';
 import type { CompanionInstance, CompanionProgress } from './vivarium.js';
+import type { Bounty } from '../data/bounties.js';
+import { WAGER_MULTIPLIER } from '../data/bounties.js';
 import { boonsOfRelics } from '../data/relics.js';
 import { traitById } from '../data/companionTraits.js';
 import { tameCompanion } from './vivarium.js';
@@ -45,6 +47,38 @@ export const BUFF_EFFECTS: Record<BuffId, CombatBoons> = {
  * The two add rather than override. A levelled Companion and an Ironbrew are separate
  * purchases, and a player who made both should get both.
  */
+/** Why this contract may not be taken, or null if it may. */
+export type ContractRefusal = 'in-combat' | 'cannot-cover-wager' | null;
+
+export function contractRefusal(state: GlobalGameState, bounty: Bounty): ContractRefusal {
+  if (state.combat !== null || state.overworld.activeEncounter !== null) return 'in-combat';
+  // A duel you cannot cover is a duel you cannot take. Checked rather than clamped: a
+  // half-stake bet would pay half odds and nobody asked for that.
+  if ((bounty.wager ?? 0) > state.overworld.economy.ducats) return 'cannot-cover-wager';
+  return null;
+}
+
+/**
+ * Opens a contract, taking the stake if it is a duel.
+ *
+ * The buy-in is paid **now**, not when the fight resolves. That is what makes losing cost
+ * something without anything having to be taken away afterwards — and it is what makes a
+ * player who closes the tab mid-duel have genuinely paid, exactly as `forfeitIfAbandoned`
+ * already assumes for the contract itself.
+ */
+export function openContract(state: GlobalGameState, bounty: Bounty): boolean {
+  if (contractRefusal(state, bounty) !== null) return false;
+
+  const wager = bounty.wager ?? 0;
+  state.overworld.economy.ducats -= wager;
+  state.overworld.activeEncounter = {
+    bountyId: bounty.id,
+    spoils: bounty.spoils,
+    ...(wager > 0 ? { wager } : {}),
+  };
+  return true;
+}
+
 export function carryFor(
   overworld: OverworldState,
   companion?: CompanionInstance | CompanionProgress,
@@ -187,6 +221,9 @@ export function resolveCombat(
   // Read the contract before closing it: the payout was fixed when the bounty was
   // accepted, and clearing first would settle every win at nothing.
   const spoils = overworld.activeEncounter?.spoils ?? {};
+  // The stake, read from the open contract for the same reason: it was paid when the
+  // contract opened, and the board it came from is long gone.
+  const wager = overworld.activeEncounter?.wager ?? 0;
 
   overworld.pact.currentHp = Math.max(0, Math.min(overworld.pact.maxHp, outcome.pactHp));
 
@@ -198,6 +235,9 @@ export function resolveCombat(
 
   // 'bound' is a win: the companion was subjugated rather than the enemy killed.
   if (result === 'victory' || result === 'bound') {
+    // The stake back, and the same again. Paid from the open contract rather than the
+    // bounty board, which has already rerolled by now.
+    if (wager > 0) overworld.economy.ducats += wager * WAGER_MULTIPLIER;
     overworld.economy.ducats += spoils.ducats ?? 0;
     overworld.economy.marrowShards += spoils.marrowShards ?? 0;
     for (const [id, count] of Object.entries(spoils.reagents ?? {})) {

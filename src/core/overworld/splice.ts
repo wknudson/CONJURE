@@ -16,7 +16,7 @@
 import type { Collection } from '../data/deckRules.js';
 import type { GlobalGameState } from './state.js';
 import { CARDS } from '../data/cards/index.js';
-import { ownedCount } from '../data/collection.js';
+import { isUnlocked } from '../data/collection.js';
 import { recipeFor } from '../data/splicing.js';
 
 /** The shape this needs from a saved deck, so core never imports the app's save types. */
@@ -44,7 +44,7 @@ export function spliceRefusal(
   // card nobody printed should refuse at the counter, not produce an unplayable card.
   if (!recipe || !CARDS[recipe.resultId]) return 'no-recipe';
 
-  if (ownedCount(collection, baseCardId) <= 0) return 'not-owned';
+  if (!isUnlocked(collection, baseCardId)) return 'not-owned';
   if ((state.overworld.economy.reagents[catalystId] ?? 0) <= 0) return 'no-reagent';
   return null;
 }
@@ -70,7 +70,6 @@ export interface SpliceResult {
 export function spliceCard(
   state: GlobalGameState,
   collection: Collection,
-  decks: Record<string, DeckList>,
   baseCardId: string,
   catalystId: string,
 ): SpliceResult | null {
@@ -81,43 +80,16 @@ export function spliceCard(
   reagents[catalystId] = (reagents[catalystId] ?? 0) - 1;
   if (reagents[catalystId] <= 0) delete reagents[catalystId];
 
-  const owned = { ...collection.owned };
-  const remaining = (owned[baseCardId] ?? 0) - 1;
-  // Deleting at zero rather than leaving a `0` behind: `reconcileCollection` drops
-  // zero-count keys anyway, and a bag that says "you have none of this" is noise.
-  if (remaining > 0) owned[baseCardId] = remaining;
-  else delete owned[baseCardId];
+  // The base card is **not** consumed any more. An unlock cannot be spent — that is what
+  // makes it an unlock — so the bench charges the Core alone and hands back a second card
+  // the player now knows. A recipe that ate the base would be the one place in the game
+  // where knowing something could be taken away from you.
+  const unlocked = collection.unlocked.includes(recipe.resultId)
+    ? collection.unlocked
+    : [...collection.unlocked, recipe.resultId].sort();
 
-  owned[recipe.resultId] = (owned[recipe.resultId] ?? 0) + 1;
-
-  const trimmed = trimDecks(decks, baseCardId, remaining);
-  return { collection: { ...collection, owned }, resultId: recipe.resultId, trimmed };
+  // Nothing to trim: no deck can be holding a card the player just lost, because nobody
+  // lost one.
+  return { collection: { ...collection, unlocked }, resultId: recipe.resultId, trimmed: 0 };
 }
 
-/**
- * Takes copies out of saved decks until none holds more than the player still owns.
- *
- * The last copy first, so a deck loses the card it was least deliberate about keeping —
- * and only as many as it has to, so a deck running one of three is untouched when the
- * other two are spent.
- */
-function trimDecks(
-  decks: Record<string, DeckList>,
-  cardId: string,
-  remaining: number,
-): number {
-  let trimmed = 0;
-
-  for (const deck of Object.values(decks)) {
-    let held = deck.cards.filter((c) => c === cardId).length;
-    while (held > remaining) {
-      const at = deck.cards.lastIndexOf(cardId);
-      if (at < 0) break;
-      deck.cards.splice(at, 1);
-      held -= 1;
-      trimmed += 1;
-    }
-  }
-
-  return trimmed;
-}

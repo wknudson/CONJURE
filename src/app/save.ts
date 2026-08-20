@@ -52,7 +52,7 @@ import { makeRng } from '../core/util/rng.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 /** Posters on the wall. Three, and the wall is the reason it is three. */
 export const PROFILE_SLOTS = 3;
@@ -395,21 +395,36 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
   // Renames are applied before reconciliation, which is the whole point: reconciliation
   // is what would otherwise throw the old id away as an unknown card.
   let collection = base.collection;
-  if (data.collection && typeof data.collection.owned === 'object') {
-    const owned: Record<string, number> = {};
-    for (const [id, count] of Object.entries(data.collection.owned)) {
-      const to = rename(id);
-      // Summed rather than assigned: a save could in principle hold both ids at once,
-      // and the player should end up with the cards from both.
-      owned[to] = (owned[to] ?? 0) + count;
+  const legacyOwned = (data.collection as { owned?: unknown } | undefined)?.owned;
+  const savedUnlocked = (data.collection as { unlocked?: unknown } | undefined)?.unlocked;
+
+  if (Array.isArray(savedUnlocked) || (legacyOwned && typeof legacyOwned === 'object')) {
+    const unlocked = new Set<string>();
+
+    // v13 onward: a set of ids.
+    if (Array.isArray(savedUnlocked)) {
+      for (const id of savedUnlocked) {
+        if (typeof id === 'string') unlocked.add(rename(id));
+      }
+    }
+
+    // Before v13 the collection was a tally of physical copies. Every card the player
+    // held any number of becomes an unlock — the counts are simply dropped, because there
+    // is nothing left in the game that reads one. A player who owned three of a staple
+    // and one of a finisher now owns both outright, which is strictly more than they had.
+    if (legacyOwned && typeof legacyOwned === 'object') {
+      for (const [id, count] of Object.entries(legacyOwned as Record<string, unknown>)) {
+        if (typeof count === 'number' && count > 0) unlocked.add(rename(id));
+      }
     }
     // Ascensions are keyed by base card id, so they go through the same rename map as
     // everything else that names a card.
-    const ascended = Array.isArray(data.collection.ascended)
-      ? data.collection.ascended.filter((c): c is string => typeof c === 'string').map(rename)
+    const savedAscended = (data.collection as { ascended?: unknown } | undefined)?.ascended;
+    const ascended = Array.isArray(savedAscended)
+      ? savedAscended.filter((c): c is string => typeof c === 'string').map(rename)
       : [];
 
-    const reconciled = reconcileCollection({ owned, ascended });
+    const reconciled = reconcileCollection({ unlocked: [...unlocked], ascended });
     collection = reconciled.collection;
     if (reconciled.dropped.length > 0) {
       notes.push(`${reconciled.dropped.length} card(s) no longer exist and were removed.`);

@@ -52,7 +52,7 @@ export const SOULBOUND: readonly string[] = [
 
 /** A new player's collection: every companion's starting deck, pooled. */
 export function startingCollection(): Collection {
-  const owned: Record<string, number> = {};
+  const unlocked = new Set<string>();
 
   // The Hero Deck once, not once per Companion.
   //
@@ -61,38 +61,38 @@ export function startingCollection(): Collection {
   // identical lists granted seven copies of every staple and blew straight past the Tier
   // caps, which is the bug this loop had the moment the decks converged.
   const heroDeck = COMPANIONS[0]?.deck ?? [];
-  for (const id of heroDeck) {
-    owned[id] = (owned[id] ?? 0) + 1;
-  }
+  for (const id of heroDeck) unlocked.add(id);
 
-  // Round the soulbound staples up to their full copy allowance, so a fresh player can
-  // always assemble a legal 12-card deck no matter which companion they pick.
-  for (const id of SOULBOUND) {
-    owned[id] = Math.max(owned[id] ?? 0, 3);
-  }
+  // The soulbound staples, so a fresh player can always assemble a legal deck whichever
+  // Companion they pick. No count any more: an unlock is an unlock, and how many copies
+  // may go in a deck is the Tier limit's business rather than the collection's.
+  for (const id of SOULBOUND) unlocked.add(id);
 
   // A marksman and a mortar to start with. Both reward reading the ground rather than
   // out-statting it, which is the lesson the pre-combat arena preview is asking players
   // to learn — and neither is in a companion deck, so they would otherwise be invisible
   // until a reward roll happened to offer one.
-  for (const id of ['longshot_stalker', 'cinder_lobber']) {
-    owned[id] = Math.max(owned[id] ?? 0, 1);
-  }
+  for (const id of ['longshot_stalker', 'cinder_lobber']) unlocked.add(id);
 
   // The Hero's own arcane baseline. Two copies rather than the full Tier allowance: enough
   // to build around, not so many that the deck builds itself. These are the Hero's half of
   // the pairing — a wall, a construct, a hook, and a finisher, none of which belong to a
   // Companion — so without seeding them a new character would meet their own school only
   // when a reward roll happened to offer it.
-  for (const id of ARCANE_BASELINE) {
-    owned[id] = Math.max(owned[id] ?? 0, 2);
-  }
+  for (const id of ARCANE_BASELINE) unlocked.add(id);
 
-  return { owned };
+  return { unlocked: [...unlocked].sort() };
 }
 
-export function ownedCount(collection: Collection, cardId: string): number {
-  return collection.owned[cardId] ?? 0;
+/**
+ * Whether this character may put the card in a deck at all.
+ *
+ * Replaced `ownedCount`, which every caller but two was already reducing to `> 0`. The
+ * two that were not — the deck's ownership cap and the Artificer's "×3" chip — were the
+ * two places the copy model was actually visible, and both are gone with it.
+ */
+export function isUnlocked(collection: Collection, cardId: string): boolean {
+  return collection.unlocked.includes(cardId);
 }
 
 /** Whether this base card has been Ascended, account-wide. */
@@ -127,18 +127,20 @@ export function printedDeck(collection: Collection, deck: string[]): string[] {
  */
 export function ascendableFor(collection: Collection): string[] {
   return ascendableIds().filter(
-    (id) => ownedCount(collection, id) > 0 && !isAscended(collection, id),
+    (id) => isUnlocked(collection, id) && !isAscended(collection, id),
   );
 }
 
+/**
+ * Unlocks a card. Idempotent — granting one twice is granting it once.
+ *
+ * Spreads the whole collection rather than rebuilding it field by field, which is how
+ * claiming a reward card once silently erased every Ascension the player had paid for.
+ */
 export function grantCard(collection: Collection, cardId: string): Collection {
   if (!CARDS[cardId]) return collection;
-  // Spread the whole collection, not just `owned`. Rebuilding it field by field is how
-  // claiming a reward card silently erased every Ascension the player had paid for.
-  return {
-    ...collection,
-    owned: { ...collection.owned, [cardId]: (collection.owned[cardId] ?? 0) + 1 },
-  };
+  if (collection.unlocked.includes(cardId)) return collection;
+  return { ...collection, unlocked: [...collection.unlocked, cardId].sort() };
 }
 
 /**
@@ -195,20 +197,18 @@ export function reconcileCollection(collection: Collection): {
   collection: Collection;
   dropped: string[];
 } {
-  const owned: Record<string, number> = {};
+  const unlocked = new Set<string>();
   const dropped: string[] = [];
 
-  for (const [id, count] of Object.entries(collection.owned)) {
+  for (const id of collection.unlocked) {
     if (!CARDS[id]) {
       dropped.push(id);
       continue;
     }
-    if (count > 0) owned[id] = count;
+    unlocked.add(id);
   }
 
-  for (const id of SOULBOUND) {
-    owned[id] = Math.max(owned[id] ?? 0, 3);
-  }
+  for (const id of SOULBOUND) unlocked.add(id);
 
   // An Ascension of a card that no longer has a Rank 2 printing is dropped rather than
   // carried: it would sit in the save forever, unreadable, and `printedId` would keep
@@ -217,7 +217,7 @@ export function reconcileCollection(collection: Collection): {
   const ascended = [...new Set(collection.ascended ?? [])].filter((id) => upgradeable.has(id)).sort();
 
   return {
-    collection: { owned, ...(ascended.length > 0 ? { ascended } : {}) },
+    collection: { unlocked: [...unlocked].sort(), ...(ascended.length > 0 ? { ascended } : {}) },
     dropped,
   };
 }

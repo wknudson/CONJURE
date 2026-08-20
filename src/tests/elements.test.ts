@@ -318,11 +318,11 @@ describe('Voltara', () => {
   it('brings a legal deck', () => {
     // Every companion deck is offered as-is to a new player, so an illegal one would be
     // a character that cannot take a contract.
-    const owned = startingCollection().owned;
+    const { unlocked } = startingCollection();
     for (const companion of COMPANIONS) {
       // `validateDeck` returns the problems, so an empty array is the whole assertion —
       // and a failure prints what was actually wrong rather than a bare count.
-      expect(validateDeck(companion.deck, { owned }), companion.name).toEqual([]);
+      expect(validateDeck(companion.deck, { unlocked }), companion.name).toEqual([]);
     }
   });
 

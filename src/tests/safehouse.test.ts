@@ -55,13 +55,13 @@ describe('the Apothecary shelf', () => {
 
 describe('the Artificer bench', () => {
   const owning = (ids: string[]): Collection => ({
-    owned: Object.fromEntries(ids.map((id) => [id, 1])),
+    unlocked: [...ids],
   });
 
   it('offers a Schematic for nothing the player already owns', () => {
     const collection = startingCollection();
     const offered = schematicsFor(collection).map((d) => d.id);
-    for (const id of Object.keys(collection.owned)) {
+    for (const id of collection.unlocked) {
       expect(offered, id).not.toContain(id);
     }
   });

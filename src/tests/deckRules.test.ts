@@ -115,15 +115,31 @@ describe('bodies are not cards any more', () => {
   });
 });
 
-describe('ownership', () => {
-  it('refuses cards the player does not own', () => {
-    const collection = { owned: { grapple_line: 1 } };
+describe('unlocks', () => {
+  it('refuses a card that has not been forged', () => {
+    const collection = { unlocked: ['grapple_line'] };
     const deck = [...fillerDeck(MIN_DECK)];
     const problems = validateDeck(deck, collection);
-    expect(problems.some((p) => p.code === 'not_owned')).toBe(true);
+    expect(problems.some((p) => p.code === 'not_unlocked')).toBe(true);
   });
 
-  it('ignores ownership when no collection is supplied', () => {
+  it('allows the full Tier allowance of an unlocked card, from one unlock', () => {
+    // The whole change. One unlock is unlimited access, bottlenecked by Tier alone —
+    // there is no second copy to go and find.
+    const collection = { unlocked: ['grapple_line', 'shield_bash', 'aegis_ward'] };
+    const three = ['grapple_line', 'grapple_line', 'grapple_line', 'shield_bash', 'aegis_ward'];
+
+    expect(tierOf(CARDS.grapple_line!)).toBe(1);
+    expect(validateDeck(three, collection)).toEqual([]);
+  });
+
+  it('still refuses a fourth copy of a Tier 1 card', () => {
+    const collection = { unlocked: ['grapple_line', 'shield_bash'] };
+    const four = ['grapple_line', 'grapple_line', 'grapple_line', 'grapple_line', 'shield_bash'];
+    expect(validateDeck(four, collection).map((p) => p.code)).toContain('over_copy_limit');
+  });
+
+  it('ignores unlocks when no collection is supplied', () => {
     expect(isLegalDeck(fillerDeck(MIN_DECK))).toBe(true);
   });
 
@@ -138,30 +154,35 @@ describe('ownership', () => {
 
 describe('collection', () => {
   it('never lets a soulbound staple be lost', () => {
-    // Even a save that zeroes them out must come back able to build a deck.
-    const stripped = { owned: { scout_imp: 0 } };
-    const { collection } = reconcileCollection(stripped);
+    // Even a save stripped bare must come back able to build a deck.
+    const { collection } = reconcileCollection({ unlocked: [] });
     for (const id of SOULBOUND) {
-      expect(collection.owned[id] ?? 0, id).toBeGreaterThan(0);
+      expect(collection.unlocked, id).toContain(id);
     }
   });
 
   it('drops cards that no longer exist and reports them', () => {
-    // flame_surge is not soulbound, so its count passes through untouched — unlike a
-    // staple, which would be floored back up to its full allowance.
-    const stale = { owned: { flame_surge: 2, a_card_from_a_past_patch: 3 } };
+    const stale = { unlocked: ['flame_surge', 'a_card_from_a_past_patch'] };
     const { collection, dropped } = reconcileCollection(stale);
     expect(dropped).toContain('a_card_from_a_past_patch');
-    expect(collection.owned.a_card_from_a_past_patch).toBeUndefined();
-    expect(collection.owned.flame_surge).toBe(2);
+    expect(collection.unlocked).not.toContain('a_card_from_a_past_patch');
+    expect(collection.unlocked, 'and keeps the one that still exists').toContain('flame_surge');
   });
 
   it('grants a card without mutating the original collection', () => {
     const before = startingCollection();
-    const beforeCount = before.owned.flame_surge ?? 0;
     const after = grantCard(before, 'flame_surge');
-    expect(after.owned.flame_surge).toBe(beforeCount + 1);
-    expect(before.owned.flame_surge ?? 0).toBe(beforeCount);
+    expect(after.unlocked).toContain('flame_surge');
+    expect(before.unlocked, 'the original is untouched').not.toContain('flame_surge');
+  });
+
+  it('is idempotent — granting twice is granting once', () => {
+    // There is no second copy to hand over, so a duplicate grant must be a no-op rather
+    // than a silently growing list.
+    const once = grantCard(startingCollection(), 'flame_surge');
+    const twice = grantCard(once, 'flame_surge');
+    expect(twice.unlocked.filter((id) => id === 'flame_surge')).toHaveLength(1);
+    expect(twice).toBe(once);
   });
 
   it('ignores a grant of a card that does not exist', () => {

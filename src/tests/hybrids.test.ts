@@ -19,11 +19,11 @@ import { newRun, type GlobalGameState } from '../core/overworld/state.js';
 
 const HYBRIDS = Object.keys(HYBRID_CARDS);
 
-const bench = (owned: Record<string, number>, reagents: Record<string, number>) => {
+const bench = (unlocked: string[], reagents: Record<string, number>) => {
   const overworld = newRun(1);
   overworld.economy.reagents = { ...reagents };
   const global: GlobalGameState = { overworld, combat: null };
-  return { global, collection: { owned: { ...owned } } };
+  return { global, collection: { unlocked: [...unlocked] } };
 };
 
 describe('the book', () => {
@@ -97,16 +97,15 @@ describe('the hybrids as cards', () => {
 
 describe('pressing them', () => {
   const press = (base: string, core: string) => {
-    const { global, collection } = bench({ [base]: 1 }, { [core]: 1 });
-    const decks: Record<string, { cards: string[] }> = { ignis: { cards: [] } };
-    return { global, result: spliceCard(global, collection, decks, base, core) };
+    const { global, collection } = bench([base], { [core]: 1 });
+    return { global, result: spliceCard(global, collection, base, core) };
   };
 
   it('turns a Glacial Spike and a Pyre Core into Cryo-Combustion', () => {
     const { global, result } = press('glacial_spike', 'core_pyre');
     expect(result?.resultId).toBe('cryo_combustion');
-    expect(result?.collection.owned.cryo_combustion).toBe(1);
-    expect(result?.collection.owned.glacial_spike, 'the base is consumed').toBeUndefined();
+    expect(result?.collection.unlocked).toContain('cryo_combustion');
+    expect(result?.collection.unlocked, 'and the base is kept').toContain('glacial_spike');
     expect(global.overworld.economy.reagents.core_pyre, 'and so is the core').toBeUndefined();
   });
 
@@ -119,16 +118,15 @@ describe('pressing them', () => {
   });
 
   it('refuses a pairing the book has never heard of', () => {
-    const { global, collection } = bench({ glacial_spike: 1 }, { core_frost: 1 });
+    const { global, collection } = bench(['glacial_spike'], { core_frost: 1 });
     expect(spliceRefusal(global, collection, 'glacial_spike', 'core_frost')).toBe('no-recipe');
     expect(recipeFor('glacial_spike', 'core_frost')).toBeUndefined();
   });
 
   it('charges nothing for a refusal', () => {
-    const { global, collection } = bench({ glacial_spike: 1 }, {});
-    const decks = {};
-    expect(spliceCard(global, collection, decks, 'glacial_spike', 'core_pyre')).toBeNull();
-    expect(collection.owned.glacial_spike, 'still owned').toBe(1);
+    const { global, collection } = bench(['glacial_spike'], {});
+    expect(spliceCard(global, collection, 'glacial_spike', 'core_pyre')).toBeNull();
+    expect(collection.unlocked, 'still unlocked').toContain('glacial_spike');
   });
 });
 

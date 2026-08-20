@@ -115,7 +115,7 @@ describe('the account-wide mark', () => {
     const owned = startingCollection();
     const offered = ascendableFor(owned);
     expect(offered.length).toBeGreaterThan(0);
-    for (const id of offered) expect(owned.owned[id]).toBeGreaterThan(0);
+    for (const id of offered) expect(owned.unlocked).toContain(id);
 
     const after = withAscended([offered[0]!]);
     expect(ascendableFor(after), 'a raised card leaves the bench').not.toContain(offered[0]);
@@ -156,7 +156,7 @@ describe('the account-wide mark', () => {
 
   it('is dropped on load if the card no longer has a Rank 2', () => {
     const { collection } = reconcileCollection({
-      owned: { shield_bash: 3 },
+      unlocked: ['shield_bash'],
       ascended: ['shield_bash', 'a_card_with_no_rank_two'],
     });
     expect(collection.ascended).toEqual(['shield_bash']);
