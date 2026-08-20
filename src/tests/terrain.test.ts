@@ -105,8 +105,9 @@ describe('per-encounter arenas', () => {
 
       // Terrain must never strand a side with nowhere to summon on turn one.
       expect(session.getPlayableCards().length).toBeGreaterThan(0);
-      // And both opening Vanguards must have made it onto the field.
-      expect(board.units.filter((u) => u.defId === 'vanguard_footman')).toHaveLength(2);
+      // The enemy's opening body must have made it onto the field. The player has none:
+      // their line comes from the Vanguard Roster, and this session brought no roster.
+      expect(board.units.filter((u) => u.defId === 'vanguard_footman')).toHaveLength(1);
     }
   });
 

@@ -19,6 +19,7 @@ import { dealDamage } from './damage.js';
 import { cellsAt, add } from '../util/grid.js';
 import { inBounds } from '../types/state.js';
 import type { GameState } from '../types/state.js';
+import { climaxTraitOf } from './growth.js';
 
 export const COLLISION_TARGET_DAMAGE = 3;
 export const COLLISION_BLOCKER_DAMAGE = 2;
@@ -54,6 +55,13 @@ export interface DisplacementResult {
  */
 /** Whether this body refuses to be moved by anything but its own legs. */
 function isGrounded(ctx: Ctx, unit: Unit): boolean {
+  // Heavy Footprint. Nothing moves it that it did not decide to move for — a shove, a
+  // pull, an Overload, a current. Checked here rather than in each of them because this is
+  // the one chokepoint every displacement in the game passes through.
+  //
+  // It cuts both ways, deliberately: your own repositioning tools stop working on it too,
+  // so a Petrifying Mantle host is where it is until it walks.
+  if (climaxTraitOf(unit) === 'heavyFootprint') return true;
   return unit.keywords.includes('BoundForm') && ctx.state.players[unit.side].boundFormGrounded;
 }
 

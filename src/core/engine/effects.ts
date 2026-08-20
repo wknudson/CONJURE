@@ -9,7 +9,7 @@
 import { drawCards } from './deck.js';
 import type { Coord, Side, TargetRef, UnitId } from '../../contract/ids.js';
 import { coordEq } from '../../contract/ids.js';
-import type { AreaSpec, CardPlayContext, EffectNode } from '../types/cards.js';
+import type { AreaSpec, CardPlayContext, EffectNode, ReviveHp } from '../types/cards.js';
 import type { Unit } from '../types/units.js';
 import type { Ctx } from './context.js';
 import { applyStatusTo } from './status.js';
@@ -21,6 +21,7 @@ import { setAnchor } from './subjugation.js';
 import { attachRune, detonateAllRunes } from './runes.js';
 import { pushUnit } from './displacement.js';
 import { canAct } from './movement.js';
+import { reviveSpot } from './targeting.js';
 import { attachAura, isClimaxed, removeAura } from './growth.js';
 import { spawnObstacle, summonUnit } from './spawn.js';
 import { CARDS } from '../data/cards/index.js';
@@ -84,6 +85,23 @@ export function applyTithe(ctx: Ctx, unit: Unit, damage: number, marrow: number)
   if (live) applyStatusTo(ctx, live, 'exhaust', 1, side);
 
   return outcome.hpLoss;
+}
+
+/**
+ * How much health a raised body comes back with, clamped to at least one.
+ *
+ * `perPipPercent` reads the X actually paid rather than the card's ceiling, which is the
+ * whole shape of Aetheric Resurgence: five Pips is a whole body, one Pip is a warm corpse,
+ * and the decision is what the rest of the turn is worth.
+ */
+function reviveHealth(maxHp: number, hp: ReviveHp, x: number): number {
+  const raw =
+    hp.mode === 'fixed'
+      ? hp.amount
+      : hp.mode === 'percent'
+        ? Math.round((maxHp * hp.percent) / 100)
+        : Math.round((maxHp * hp.percent * x) / 100);
+  return Math.max(1, Math.min(maxHp, raw));
 }
 
 export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext): void {
@@ -200,6 +218,58 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
 
     case 'heal': {
       healCommander(ctx, play.side, node.amount);
+      return;
+    }
+
+    case 'revive': {
+      if (play.chosen.kind !== 'fallen') return;
+      const roster = ctx.state.players[play.side].roster;
+      const entry = roster[play.chosen.rosterIndex];
+      if (!entry || entry.status !== 'fallen') return;
+
+      const at = reviveSpot(ctx.state, play.side, entry, node.site);
+      // Nothing to stand on. Targeting already refused this, so reaching it means the
+      // board moved between selection and resolution — rare, but a card that fizzled
+      // loudly is better than one that raised a body into a wall.
+      if (!at) return;
+
+      // Built fresh from the definition rather than restored: a new instance carries no
+      // runes, no statuses, no Aura and no growth. "Stripped of everything" is implemented
+      // as *copying nothing*, which is one rule instead of five.
+      const id = summonUnit(ctx, entry.defId, play.side, at);
+      if (!id) return;
+      const unit = ctx.state.units[id];
+      if (!unit) return;
+
+      // It stood in this fight already. Waking it with summoning sickness would make every
+      // revival cost a turn on top of its price.
+      unit.summonedThisTurn = false;
+      unit.freshlySummoned = false;
+
+      unit.hp = reviveHealth(unit.maxHp, node.hp, play.x ?? 0);
+
+      if (node.riders?.armorFromMissingHp) {
+        // Blood & Bone: it comes back at a sliver and wears everything it lost. A body at
+        // 1 of 6 stands up with 5 Persistent Armor — briefly the toughest thing you own,
+        // and one true-damage tick from gone.
+        const missing = Math.max(0, unit.maxHp - unit.hp);
+        if (missing > 0) grantArmor(ctx, { kind: 'unit', id }, missing);
+      }
+      if (node.riders?.fleet) {
+        applyStatusTo(ctx, unit, 'fleet', node.riders.fleet, play.side);
+      }
+
+      entry.status = 'fielded';
+      entry.unitId = id;
+      delete entry.fellAt;
+
+      emit(ctx, {
+        t: 'unitRevived',
+        defId: entry.defId,
+        unitId: id,
+        at: { ...at },
+        hp: unit.hp,
+      });
       return;
     }
 

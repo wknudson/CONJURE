@@ -3,7 +3,11 @@ import type { ChosenTarget } from './cards.js';
 
 /** External intents. The engine's only entry point is applyCommand(state, command). */
 export type Command =
-  | { type: 'playCard'; card: CardInstanceId; target: ChosenTarget }
+  /**
+   * `x` is the declared price of a variable-cost card, and is required by one — see
+   * `CardDef.xCost`. Ignored entirely by every other card.
+   */
+  | { type: 'playCard'; card: CardInstanceId; target: ChosenTarget; x?: number }
   | { type: 'moveUnit'; unit: UnitId; to: Coord }
   | { type: 'attack'; attacker: UnitId; target: TargetRef }
   /**

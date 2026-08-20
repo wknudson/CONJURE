@@ -40,6 +40,13 @@ export type StatusKind =
    * one of them.
    */
   | 'exhaust'
+  /**
+   * Quickened. +1 MOV per stack, for this turn only.
+   *
+   * A status rather than a stat edit because it has to come off again, and the status tick
+   * is the one place in the engine that reliably takes things away.
+   */
+  | 'fleet'
   /** Frost: the target takes +2 from every hit until it wears off. */
   | 'brittle'
   /**

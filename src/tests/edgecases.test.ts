@@ -319,25 +319,35 @@ describe('resonance', () => {
 });
 
 describe('opening setup', () => {
-  it('gives both sides a free Vanguard and a playable first turn', () => {
+  it('gives the enemy a free body and the player none', () => {
+    // The player's half of the freebie is gone: the Vanguard Roster is the answer to
+    // "turn one should be a real turn", and handing them a fifth body on top would pay
+    // out points they never spent. The enemy is authored content and keeps its line.
     const session = new CombatSession(NOVICE_DUELIST, 5);
     const board = session.getBoard();
 
     const vanguards = board.units.filter((u) => u.defId === 'vanguard_footman');
-    expect(vanguards).toHaveLength(2);
-    expect(vanguards.some((u) => u.side === 'player')).toBe(true);
-    expect(vanguards.some((u) => u.side === 'enemy')).toBe(true);
+    expect(vanguards).toHaveLength(1);
+    expect(vanguards[0]!.side).toBe('enemy');
 
-    // Turn one must offer something to actually do.
+    // Turn one must still offer something to actually do.
     expect(session.getPlayableCards().length).toBeGreaterThan(0);
     expect(board.player.pips).toBeGreaterThanOrEqual(3);
   });
 
-  it('lets the opening Vanguard act immediately', () => {
-    const session = new CombatSession(NOVICE_DUELIST, 5);
-    const vanguard = session.getBoard().units.find(
+  it('lets a deployed Vanguard act immediately', () => {
+    // The roster path, which is what replaced the freebie. A body placed before the bell
+    // is not summoned — it was always there — so it may move on turn one.
+    const session = new CombatSession(
+      NOVICE_DUELIST, 5, undefined, undefined, undefined, undefined, ['vanguard_footman'],
+    );
+    const at = session.getBoard().anchors[0]!;
+    session.dispatch({ type: 'deployUnit', defId: 'vanguard_footman', at });
+    session.dispatch({ type: 'finishDeployment' });
+
+    const body = session.getBoard().units.find(
       (u) => u.defId === 'vanguard_footman' && u.side === 'player',
     )!;
-    expect(session.getLegalMoves(vanguard.id).length).toBeGreaterThan(0);
+    expect(session.getLegalMoves(body.id).length).toBeGreaterThan(0);
   });
 });

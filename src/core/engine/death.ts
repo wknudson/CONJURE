@@ -6,7 +6,7 @@ import type { Coord, DamageCause, UnitId } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
 import { onAnchorDied } from './subjugation.js';
 import { emit, newCause } from './context.js';
-import type { Entity } from '../types/units.js';
+import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import { getEntity, unitAt } from './board.js';
 import { evaluateRuneOnDeath } from './runes.js';
@@ -22,6 +22,34 @@ import { DIRS_8 } from '../util/grid.js';
  * Removes an entity from the board. `devoured` routes to the fizzle path: a devoured
  * host's rune is discarded without detonating, per Draft 7 §4.2.
  */
+/**
+ * Marks a fallen Vanguard body in the roster it came from.
+ *
+ * A Soul Pyre is **memory, not matter**. Nothing is spawned: the tile is not blocked, the
+ * pyre cannot be attacked or dispelled, it never expires, and it coexists with any hazard
+ * or occupant. All it is is a coordinate the roster remembers, which is what the three
+ * revival spells read.
+ *
+ * That choice has one visible consequence worth naming: an enemy standing where your body
+ * fell denies Aetheric Resurgence *only while it stands there*, and it costs them a body's
+ * positioning to do it. A physical pyre would have needed rules for all of that.
+ *
+ * Only rostered bodies leave one. A spell-summoned revenant, an enemy, a Feral and the
+ * Bound Form are all absent from the roster and so pass through here untouched.
+ */
+function lightPyre(ctx: Ctx, unit: Unit, at: Coord): void {
+  const entry = ctx.state.players[unit.side].roster.find(
+    (r) => r.unitId === unit.id && r.status === 'fielded',
+  );
+  if (!entry) return;
+
+  entry.status = 'fallen';
+  entry.fellAt = { ...at };
+  delete entry.unitId;
+
+  emit(ctx, { t: 'pyreLit', defId: entry.defId, unitId: unit.id, at: { ...at } });
+}
+
 export function killEntity(
   ctx: Ctx,
   entity: Entity,
@@ -55,6 +83,7 @@ export function killEntity(
     // into a wall, burned by a hazard or cut down — the Ledger counts them all the same,
     // because the player killed it either way.
     if (live.side === 'enemy') ctx.state.defeated.push(live.defId);
+    lightPyre(ctx, live, at);
     payBounty(ctx, live.defId, at);
   } else {
     delete ctx.state.obstacles[live.id];

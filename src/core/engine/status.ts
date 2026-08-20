@@ -47,6 +47,9 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
     // Exhaustion is spent by the turn it cost. It lands during your turn and clears at the
     // start of your next one, so a tithed body is idle for exactly one enemy round.
     decay(unit, 'exhaust');
+    // Fleetness is spent by the turn that granted it: a Rally's +1 MOV is a head start,
+    // not a permanent upgrade.
+    decay(unit, 'fleet');
     decay(unit, 'chill');
     decay(unit, 'brittle');
     decay(unit, 'charged');

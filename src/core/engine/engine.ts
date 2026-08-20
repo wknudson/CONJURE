@@ -13,6 +13,7 @@ import type { Command } from '../types/commands.js';
 import { IllegalCommandError } from '../types/commands.js';
 import type { GameState, StepResult } from '../types/state.js';
 import type { Unit } from '../types/units.js';
+import { isUnit } from '../types/units.js';
 import type { CardDef, CardPlayContext, ChosenTarget } from '../types/cards.js';
 import type { Ctx } from './context.js';
 import { emit, makeCtx, newCause } from './context.js';
@@ -20,17 +21,17 @@ import { deepClone } from '../util/clone.js';
 import { CARDS } from '../data/cards/index.js';
 import { canAfford, effectiveCost, resolvePlayedCard, spendResources } from './deck.js';
 import { applyTithe, executeEffect, TITHE_DAMAGE, TITHE_MARROW } from './effects.js';
-import { canAct, canAttack, canMove, findMove, setAnchor } from './movement.js';
+import { canAct, canAttack, canMove, findMove, licenseFor, setAnchor } from './movement.js';
 import { legalAttacks, legalCardTargets } from './targeting.js';
 import { dealDamage } from './damage.js';
 import { applyStatusTo } from './status.js';
-import { checkLethal } from './death.js';
-import { getEntity, refOf } from './board.js';
+import { checkLethal, killEntity } from './death.js';
+import { entityAt, getEntity, refOf } from './board.js';
 import { resonanceLimit, toCardSnapshot } from './views.js';
 import { beginTurn, endTurn } from './turn.js';
 import { placeOpeningUnit } from './spawn.js';
 import { canPlace } from './board.js';
-import { cellsOf, footprintDistance } from '../util/grid.js';
+import { cellsAt, cellsOf, footprintDistance } from '../util/grid.js';
 import { coordEq } from '../../contract/ids.js';
 import { spawnHazard } from './reactions.js';
 import { resonanceFor } from '../data/resonance.js';
@@ -185,7 +186,7 @@ export function applyCommand(prev: GameState, command: Command): StepResult {
 export function runCommand(ctx: Ctx, command: Command): void {
   switch (command.type) {
     case 'playCard':
-      playCard(ctx, command.card, command.target);
+      playCard(ctx, command.card, command.target, command.x);
       break;
     case 'moveUnit':
       moveUnit(ctx, command.unit, command.to);
@@ -222,7 +223,7 @@ export function runCommand(ctx: Ctx, command: Command): void {
 
 // ------------------------------------------------------------------------ commands
 
-function playCard(ctx: Ctx, cardId: string, target: ChosenTarget): void {
+function playCard(ctx: Ctx, cardId: string, target: ChosenTarget, x?: number): void {
   const side = ctx.state.activeSide;
   const cmd = ctx.state.players[side];
 
@@ -233,7 +234,19 @@ function playCard(ctx: Ctx, cardId: string, target: ChosenTarget): void {
   const def = inst ? CARDS[inst.defId] : undefined;
   if (!inst || !def) throw new IllegalCommandError(`unknown card ${cardId}`);
 
-  const price = effectiveCost(ctx.state, side, def);
+  // A variable price is declared, not inferred. Refused rather than clamped: a player who
+  // asked for six and silently got five would be told nothing, and the difference is a
+  // whole body's worth of health.
+  if (def.xCost) {
+    if (x === undefined) throw new IllegalCommandError(`${def.name} needs an X`);
+    if (!Number.isInteger(x)) throw new IllegalCommandError('X must be a whole number');
+    if (x < 1) throw new IllegalCommandError('X must be at least 1');
+    if (x > def.xCost.max) {
+      throw new IllegalCommandError(`X may be at most ${def.xCost.max}`);
+    }
+  }
+
+  const price = effectiveCost(ctx.state, side, def, x);
   if (!canAfford(ctx.state, side, price)) {
     throw new IllegalCommandError(`cannot afford ${def.name} (${price})`);
   }
@@ -263,6 +276,9 @@ function playCard(ctx: Ctx, cardId: string, target: ChosenTarget): void {
     side,
     chosen: target,
     ...(casterAnchor ? { casterAnchor } : {}),
+    // Carried into resolution so an op can scale off what was actually paid, rather than
+    // off what the card is allowed to charge.
+    ...(def.xCost ? { x: x ?? 0 } : {}),
   };
 
   newCause(ctx);
@@ -302,6 +318,8 @@ function sameTarget(a: ChosenTarget, b: ChosenTarget): boolean {
         a.dir.x === b.dir.x &&
         a.dir.y === b.dir.y
       );
+    case 'fallen':
+      return b.kind === 'fallen' && a.rosterIndex === b.rosterIndex;
     case 'entity':
       if (b.kind !== 'entity' || a.ref.kind !== b.ref.kind) return false;
       return a.ref.kind === 'portrait'
@@ -347,12 +365,83 @@ function moveUnit(ctx: Ctx, unitId: string, to: { x: number; y: number }): void 
   // is no way to know which ones they were.
   const leaving = unit.trail ? cellsOf(unit) : [];
 
+  // What the route ran into, gathered while everything is still standing where it was.
+  const crossed = crossedEntities(ctx.state, unit, option.path);
+
+  // Heavy Footprint shatters what it walked into, and it has to happen *before* the body
+  // arrives: the destination may be the tile the obstacle was standing on, and moving onto
+  // a live obstacle would put two things on one square.
+  for (const obstacleId of crossed.obstacles) {
+    const obstacle = ctx.state.obstacles[obstacleId];
+    if (obstacle) killEntity(ctx, obstacle, 'impact');
+  }
+
+  // A rune on a shattered wall can kill the thing that broke it. Nothing below is safe to
+  // run for a body that is no longer on the board.
+  if (!ctx.state.units[unitId] || ctx.state.result) return;
+
   setAnchor(ctx.state, unitId, to);
   unit.movedThisTurn = true;
 
   emit(ctx, { t: 'unitMoved', unitId, path: option.path.map((c) => ({ ...c })) });
 
-  if (unit.trail) layTrail(ctx, unit, leaving);
+  // Overload bills whatever it walked through, after it has arrived — the damage is the
+  // wake of the charge, not a series of small collisions along the way. `true` damage
+  // because the trait promises unblockable, and armour is exactly what that means.
+  for (const victimId of crossed.units) {
+    if (ctx.state.result) break;
+    if (!ctx.state.units[victimId]) continue;
+    dealDamage(ctx, {
+      target: { kind: 'unit', id: victimId },
+      amount: OVERLOAD_PHASE_DAMAGE,
+      dtype: 'true',
+      cause: 'impact',
+    });
+  }
+
+  if (ctx.state.units[unitId] && unit.trail) layTrail(ctx, unit, leaving);
+}
+
+/** What an Overload charge deals to each body it passes straight through. */
+export const OVERLOAD_PHASE_DAMAGE = 1;
+
+/**
+ * Everything the route ran over, by id.
+ *
+ * Gathered from the path rather than from the destination, because the whole point of both
+ * traits is what happens *on the way*. The starting cells are excluded: a body does not
+ * charge through the ground it was already standing on.
+ *
+ * Returns ids rather than entities: the obstacles are about to be destroyed and the units
+ * about to be damaged, and either can remove something the other still holds a reference
+ * to. Ids are re-read against live state at the moment they are used.
+ */
+function crossedEntities(
+  state: GameState,
+  unit: Unit,
+  path: Coord[],
+): { units: string[]; obstacles: string[] } {
+  const license = licenseFor(unit);
+  const units = new Set<string>();
+  const obstacles = new Set<string>();
+  if (!license.throughUnits && !license.throughObstacles) return { units: [], obstacles: [] };
+
+  const startCells = new Set(cellsAt(path[0]!, unit.footprint).map((c) => `${c.x},${c.y}`));
+
+  for (const step of path.slice(1)) {
+    for (const cell of cellsAt(step, unit.footprint)) {
+      if (startCells.has(`${cell.x},${cell.y}`)) continue;
+      const occ = entityAt(state, cell);
+      if (!occ || occ.id === unit.id) continue;
+      if (isUnit(occ)) {
+        // Only enemies. Walking through your own line is a manoeuvre, not an attack.
+        if (license.throughUnits && occ.side !== unit.side) units.add(occ.id);
+      } else if (license.throughObstacles && occ.destructible) {
+        obstacles.add(occ.id);
+      }
+    }
+  }
+  return { units: [...units], obstacles: [...obstacles] };
 }
 
 /**

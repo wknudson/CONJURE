@@ -19,6 +19,25 @@ import type { HazardKind } from './state.js';
  * engine/effects.ts. Keeping cards as data (rather than closures) means the AI can read
  * a card's shape to enumerate targets, and new cards need no engine changes.
  */
+/**
+ * Where a revival puts the body.
+ *
+ * `pyre` is the exact tile it died on and is refused if anything stands there — the
+ * counterplay an enemy buys by holding the ground. The two Rally sites ignore where it
+ * fell, which is what lets them raise a body that died in a *previous* fight of the same
+ * dungeon.
+ */
+export type ReviveSite = 'pyre' | 'anchor' | 'startingZone';
+
+/** How much health a raised body comes back with. */
+export type ReviveHp =
+  /** A share of its ceiling per Pip of X actually paid. */
+  | { mode: 'perPipPercent'; percent: number }
+  /** A flat share of its ceiling. */
+  | { mode: 'percent'; percent: number }
+  /** An exact number, however large the body. */
+  | { mode: 'fixed'; amount: number };
+
 export type EffectNode =
   | { op: 'seq'; effects: EffectNode[] }
   | { op: 'damage'; amount: number; dtype: DamageType; area: AreaSpec }
@@ -76,6 +95,19 @@ export type EffectNode =
    * clamp and the silence-when-nothing-is-owed both come for free.
    */
   | { op: 'heal'; amount: number }
+  /**
+   * Stands a fallen Vanguard body back up.
+   *
+   * The raised unit is built **fresh from its definition** — a new instance with no runes,
+   * no statuses, no Aura and no growth. That is what "stripped of everything" means here,
+   * and implementing it as *not copying anything* is one rule rather than five.
+   */
+  | {
+      op: 'revive';
+      site: ReviveSite;
+      hp: ReviveHp;
+      riders?: { fleet?: number; armorFromMissingHp?: true };
+    }
   /**
    * Marrow gained. A fixed number, or scaled off the blood a `tithe` just took.
    *
@@ -156,7 +188,15 @@ export type TargetSpec =
   | { kind: 'adjacentEnemy' }
   | { kind: 'line'; length: number }
   | { kind: 'unitOrPortrait'; side: 'ally' }
-  | { kind: 'global' };
+  | { kind: 'global' }
+  /**
+   * Pick from your own Graveyard.
+   *
+   * `site` decides where the raised body lands, and therefore which entries are offerable:
+   * a pyre-sited card cannot raise a body whose tile is now occupied, while the two Rally
+   * sites do not care where it fell.
+   */
+  | { kind: 'fallen'; site: ReviveSite };
 
 /**
  * How a unit's attacks travel, beyond how far.
@@ -288,6 +328,18 @@ export interface CardDef {
    * shelf hand one over would give away for free the thing the Forge exists to charge
    * for — which is exactly how Rank 2 printings leaked before `isObtainable` caught them.
    */
+  /**
+   * A variable price, paid in Pips at cast time.
+   *
+   * The card's own `cost.pips` is **ignored** when this is set: X *is* the price. A
+   * declared X of zero is illegal — a free revival would make every death a 20%-health
+   * inconvenience rather than a loss — and `max` is the ceiling the player may declare.
+   *
+   * Marrow is untouched by X, the same way it is untouched by a discount: it is a strict
+   * requirement rather than a price, and scaling it would let a card demand more of the
+   * one resource nobody can bank.
+   */
+  xCost?: { max: number };
   spliceOnly?: true;
   /** Paid to whoever breaks this obstacle. Present only on obstacle cards. */
   onDestroyReward?: { marrow: number };
@@ -387,6 +439,13 @@ export type ChosenTarget =
   | { kind: 'entity'; ref: TargetRef }
   | { kind: 'line'; from: Coord; dir: Coord }
   | { kind: 'global' }
+  /**
+   * A body in the Graveyard, by its index in the caster's roster.
+   *
+   * An index rather than a def id because a warband may hold two of the same body, and
+   * "raise a Grave Sentinel" would be ambiguous about which pyre it meant.
+   */
+  | { kind: 'fallen'; rosterIndex: number }
   | { kind: 'none' };
 
 export interface CardPlayContext {
@@ -402,6 +461,8 @@ export interface CardPlayContext {
    * special case: the cap is the tithe's damage and the floor is what the body had.
    */
   titheDamage?: number;
+  /** The X actually paid, for a variable-cost card. Absent on every other card. */
+  x?: number;
   summonedUnitId?: UnitId;
   /**
    * The obstacle this card just raised, for the ops that come after it.

@@ -117,7 +117,16 @@ export const MIN_DISCOUNTED_PIPS = 1;
  * card asking for it is asking you to have opened something up this turn, and no amount of
  * gear substitutes for having done that.
  */
-export function effectiveCost(state: GameState, side: Side, def: CardDef): CardCost {
+export function effectiveCost(
+  state: GameState,
+  side: Side,
+  def: CardDef,
+  /** The declared X, for a variable-cost card. Ignored by every other card. */
+  x?: number,
+): CardCost {
+  // X *is* the price. The printed `cost.pips` is neither a floor under it nor added to
+  // it — a card that charged both would be asking twice for the same thing.
+  if (def.xCost) return { pips: Math.max(0, x ?? 0), marrow: def.cost.marrow };
   if (!def.spliceOnly || !state.players[side].discountHybrids) return def.cost;
   return {
     pips: Math.max(MIN_DISCOUNTED_PIPS, def.cost.pips - 1),

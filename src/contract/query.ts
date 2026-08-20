@@ -14,7 +14,7 @@ import type { Phase } from './events.js';
 
 /** A player intent. Same shape the engine consumes. */
 export type Action =
-  | { type: 'playCard'; card: CardInstanceId; target?: TargetSelection }
+  | { type: 'playCard'; card: CardInstanceId; target?: TargetSelection; x?: number }
   | { type: 'moveUnit'; unit: UnitId; to: Coord }
   | { type: 'attack'; attacker: UnitId; target: TargetRef }
   | { type: 'bloodTithe'; unit: UnitId }
@@ -29,6 +29,7 @@ export type Action =
 
 export type TargetSelection =
   | { kind: 'tile'; at: Coord }
+  | { kind: 'fallen'; rosterIndex: number }
   | { kind: 'entity'; ref: TargetRef }
   | { kind: 'line'; from: Coord; dir: Coord }
   | { kind: 'global' };
@@ -38,6 +39,14 @@ export type TargetSpec =
   | { kind: 'none' }
   | { kind: 'tiles'; tiles: Coord[] }
   | { kind: 'entities'; refs: TargetRef[] }
+  /**
+   * Pick from your own Graveyard.
+   *
+   * Carries the tile each body fell on where there is one, so a picker can point at the
+   * ground as well as name the body. `at` is absent for a corpse carried in from an
+   * earlier fight, which the two Rallies can still raise and Resurgence cannot.
+   */
+  | { kind: 'fallen'; entries: { rosterIndex: number; defId: string; name: string; at?: Coord }[] }
   | { kind: 'lines'; origins: { from: Coord; dir: Coord; covers: Coord[] }[] }
   | { kind: 'global' };
 

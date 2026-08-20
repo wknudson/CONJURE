@@ -1,5 +1,5 @@
 /**
- * Aura and Detonation spells — the cards that drive the Rule of 3.
+ * Aura, Detonation and Revival spells — the cards the overhaul added.
  *
  * Phase 2 built the machinery (`attachAura`, `detonateAura`, the stacking hook) and
  * deliberately shipped no cards for it. These are those cards, and they arrive now because
@@ -95,6 +95,88 @@ export const AURA_CARDS: Record<string, CardDef> = {
     text: 'Opens an ally to the dark. Each turn it bleeds 1 and yields 1 Marrow. It does not stop.',
     target: ALLY_UNIT,
     effect: { op: 'attachAura', aura: 'aura_marrow_siphon' },
+    keywords: [],
+  },
+
+  // ------------------------------------------------------------------ revival
+
+  /**
+   * The first variable-cost card in the game.
+   *
+   * X is the whole decision: five Pips is a whole body back on the exact tile it died on,
+   * one Pip is a warm corpse holding a lane. Sited on the pyre, so it is the only revival
+   * an enemy can deny — and denying it costs them a body standing on the spot.
+   *
+   * Same-fight only, by construction rather than by rule: a pyre is a coordinate on *this*
+   * board, and a body carried into the next fight has no `fellAt` there to aim at.
+   */
+  aetheric_resurgence: {
+    id: 'aetheric_resurgence',
+    name: 'Aetheric Resurgence',
+    cost: { pips: 0, marrow: 0 },
+    xCost: { max: 5 },
+    school: 'arcane',
+    source: 'hero',
+    kind: 'spell',
+    text: 'X Pips, up to 5. Raises a fallen Vanguard on the exact tile it fell, at 20% of its health per Pip spent. Nothing may be standing there.',
+    target: { kind: 'fallen', site: 'pyre' },
+    effect: {
+      op: 'revive',
+      site: 'pyre',
+      hp: { mode: 'perPipPercent', percent: 20 },
+    },
+    keywords: [],
+  },
+
+  /**
+   * The safe raising. Half a body, well behind the line, and quick enough to get somewhere
+   * the turn it stands up.
+   *
+   * Sited on an Anchor Tile rather than the pyre, which is what lets it raise a body that
+   * fell in an *earlier* fight of the same dungeon — the anchors exist in every fight, the
+   * pyre only in the one where it was lit.
+   */
+  anchor_rally: {
+    id: 'anchor_rally',
+    name: 'The Anchor Rally',
+    cost: { pips: 3, marrow: 0 },
+    school: 'arcane',
+    source: 'hero',
+    kind: 'spell',
+    text: 'Raises a fallen Vanguard on an Anchor Tile at half health, quickened: +1 MOV this turn.',
+    target: { kind: 'fallen', site: 'anchor' },
+    effect: {
+      op: 'revive',
+      site: 'anchor',
+      hp: { mode: 'percent', percent: 50 },
+      riders: { fleet: 1 },
+    },
+    keywords: [],
+  },
+
+  /**
+   * Free in Pips, and paid for in blood you had to open something up for this turn.
+   *
+   * The payoff loop Blood Magic was built toward: tithe a healthy body for the Marrow,
+   * spend it raising a fallen one as a wall. It stands up at 1 health wearing everything
+   * it lost, which makes it briefly the toughest thing you own and one true-damage tick
+   * from gone.
+   */
+  blood_and_bone_rally: {
+    id: 'blood_and_bone_rally',
+    name: 'The Blood & Bone Rally',
+    cost: { pips: 0, marrow: 3 },
+    school: 'dusk',
+    source: 'hero',
+    kind: 'spell',
+    text: 'Costs 3 Marrow, which no bank of Pips will cover. Raises a fallen Vanguard in your starting zone at 1 health, wearing Persistent Armor equal to everything it lost.',
+    target: { kind: 'fallen', site: 'startingZone' },
+    effect: {
+      op: 'revive',
+      site: 'startingZone',
+      hp: { mode: 'fixed', amount: 1 },
+      riders: { armorFromMissingHp: true },
+    },
     keywords: [],
   },
 

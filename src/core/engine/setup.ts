@@ -502,13 +502,17 @@ export function createCombat(
     placeOpeningUnit(ctx, defId, 'enemy', { x, y });
   }
 
-  // Free Vanguard for both sides, centred on each front line, so turn one is a real
-  // tactical turn instead of a setup turn. The two rows below are distinct for every
-  // arena validateEncounter accepts (height >= 4), so the pair can never collide.
+  // A free body for the **enemy** only, centred on its front line, so an authored board
+  // is never empty of melee.
+  //
+  // The player's half of this is gone. It existed so turn one was a real tactical turn
+  // rather than a setup turn, and the Vanguard Roster is now that answer — a warband the
+  // player bought and placed themselves. Handing them a fifth body on top would be paying
+  // out points they never spent, and would quietly make every roster one unit better than
+  // it was priced to be.
   const vanguard = encounter.vanguard === undefined ? 'vanguard_footman' : encounter.vanguard;
   if (vanguard) {
     const mid = Math.floor(encounter.width / 2);
-    placeOpeningUnit(ctx, vanguard, 'player', { x: mid, y: encounter.height - 2 });
     placeOpeningUnit(ctx, vanguard, 'enemy', { x: mid, y: 1 });
   }
 

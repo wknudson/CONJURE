@@ -143,6 +143,10 @@ export type GameEvent = EventBase &
     | { t: 'unitRecalled'; defId: string; at: Coord }
     /** The line is set. Turn one begins. */
     | { t: 'deploymentEnded'; fielded: number }
+    /** A rostered body fell. The tile is remembered, not occupied — see `lightPyre`. */
+    | { t: 'pyreLit'; defId: string; unitId: UnitId; at: Coord }
+    /** A fallen body stood back up, at a new instance. */
+    | { t: 'unitRevived'; defId: string; unitId: UnitId; at: Coord; hp: number }
     /** A body spent whole to make something else. Pays no Marrow -- see `consumeTarget`. */
     | { t: 'unitConsumed'; unitId: UnitId }
     /** A unit spent its attack extracting Marrow instead of swinging. */

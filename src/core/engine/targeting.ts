@@ -4,13 +4,14 @@
  */
 
 import type { Coord, Side, TargetRef, UnitId } from '../../contract/ids.js';
-import type { CardDef, ChosenTarget, EffectNode } from '../types/cards.js';
+import type { CardDef, ChosenTarget, EffectNode, ReviveSite } from '../types/cards.js';
 import { effectContainsOp } from '../types/cards.js';
-import type { GameState } from '../types/state.js';
+import type { GameState, RosterEntry } from '../types/state.js';
 import type { Unit } from '../types/units.js';
 import { CARDS } from '../data/cards/index.js';
 import {
   allEntities,
+  canPlace,
   emptyTiles,
   entityAt,
   getEntity,
@@ -97,6 +98,46 @@ function effectSelfTargets(node: EffectNode): boolean {
 }
 
 /** Every legal way to play this card right now. Empty means it is unplayable. */
+/**
+ * Where a raised body would stand, or undefined if it could not.
+ *
+ * One function, shared by the targeting that offers the card and by the op that resolves
+ * it, so a pyre the UI lights is a pyre the revival can actually use. Splitting these was
+ * the obvious shortcut and would have let a card be offered and then fizzle.
+ */
+export function reviveSpot(
+  state: GameState,
+  side: Side,
+  entry: RosterEntry,
+  site: ReviveSite,
+): Coord | undefined {
+  const footprint = CARDS[entry.defId]?.unit?.footprint ?? 1;
+
+  if (site === 'pyre') {
+    // The exact tile it died on, and nowhere else. An enemy standing there denies the
+    // raising for exactly as long as it stands there, which is the counterplay it bought.
+    if (!entry.fellAt) return undefined;
+    return canPlace(state, entry.fellAt, footprint) ? { ...entry.fellAt } : undefined;
+  }
+
+  if (site === 'anchor') {
+    for (const a of state.anchors) {
+      if (canPlace(state, a, footprint)) return { ...a };
+    }
+    return undefined;
+  }
+
+  // The starting zone: anywhere behind your own line. The widest of the three, which is
+  // what makes Blood & Bone the one that always has somewhere to put a body.
+  for (const y of startingZone(state, side)) {
+    for (let x = 0; x < state.width; x++) {
+      const at = { x, y };
+      if (canPlace(state, at, footprint)) return at;
+    }
+  }
+  return undefined;
+}
+
 export function legalCardTargets(state: GameState, side: Side, defId: string): ChosenTarget[] {
   const def = CARDS[defId];
   if (!def) return [];
@@ -112,6 +153,20 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
   switch (def.target.kind) {
     case 'none':
       return [{ kind: 'none' }];
+
+    case 'fallen': {
+      // Only bodies that could actually be raised are offered. A card whose site is
+      // blocked has no legal target at all, which is what stops it burning its cost — the
+      // same rule the global cards keep two cases below.
+      const site = def.target.site;
+      const out: ChosenTarget[] = [];
+      state.players[side].roster.forEach((entry, rosterIndex) => {
+        if (entry.status !== 'fallen') return;
+        if (reviveSpot(state, side, entry, site) === undefined) return;
+        out.push({ kind: 'fallen', rosterIndex });
+      });
+      return out;
+    }
 
     case 'global':
       // A board-wide detonation with nothing to detonate would silently burn its whole

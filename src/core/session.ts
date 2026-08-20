@@ -111,6 +111,24 @@ export class CombatSession implements RulesQuery {
       case 'global':
         return { kind: 'global' };
 
+      case 'fallen':
+        return {
+          kind: 'fallen',
+          entries: chosen.flatMap((c) => {
+            if (c.kind !== 'fallen') return [];
+            const entry = cmd.roster[c.rosterIndex];
+            if (!entry) return [];
+            return [
+              {
+                rosterIndex: c.rosterIndex,
+                defId: entry.defId,
+                name: CARDS[entry.defId]?.name ?? entry.defId,
+                ...(entry.fellAt ? { at: { ...entry.fellAt } } : {}),
+              },
+            ];
+          }),
+        };
+
       case 'emptyTile':
         return {
           kind: 'tiles',
@@ -526,7 +544,12 @@ export class CombatSession implements RulesQuery {
 function toCommand(action: Action): Command {
   switch (action.type) {
     case 'playCard':
-      return { type: 'playCard', card: action.card, target: toChosen(action.target) };
+      return {
+        type: 'playCard',
+        card: action.card,
+        target: toChosen(action.target),
+        ...(action.x !== undefined ? { x: action.x } : {}),
+      };
     case 'moveUnit':
       return { type: 'moveUnit', unit: action.unit, to: action.to };
     case 'attack':
@@ -555,6 +578,8 @@ function toChosen(sel: TargetSelection | undefined): ChosenTarget {
       return { kind: 'entity', ref: sel.ref };
     case 'line':
       return { kind: 'line', from: sel.from, dir: sel.dir };
+    case 'fallen':
+      return { kind: 'fallen', rosterIndex: sel.rosterIndex };
     case 'global':
       return { kind: 'global' };
   }
