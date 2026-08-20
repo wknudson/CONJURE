@@ -27,6 +27,7 @@ import { CombatScreen } from './app/CombatScreen.js';
 import { ResultsScreen } from './app/ResultsScreen.js';
 import { VictoryScreen } from './app/VictoryScreen.js';
 import { DeckBuilderScreen } from './app/DeckBuilderScreen.js';
+import type { DeckBuilderResult } from './app/DeckBuilderScreen.js';
 import { PreCombatScreen } from './app/PreCombatScreen.js';
 import { SafehouseScreen } from './app/SafehouseScreen.js';
 import { ShopScreen } from './app/ShopScreen.js';
@@ -375,15 +376,19 @@ function showBuilder(companionId: string, onDone: () => void): void {
     new DeckBuilderScreen(
       companionId,
       deckFor(companionId),
+      profile().roster,
       profile().collection,
       profile().bestiary,
       profile().state,
       persist,
-      (result) => {
+      (result: DeckBuilderResult) => {
         profile().decks[result.companionId] = {
           companionId: result.companionId,
           cards: result.cards,
         };
+        // One warband per character, not per Companion — so this is written beside the
+        // decks rather than into the one that was open.
+        profile().roster = result.roster;
         persist();
         onDone();
       },
@@ -482,6 +487,7 @@ function startCombat(
       printedDeck(profile().collection, deck),
       profileByName(saveFile.difficulty) ?? NOVICE_AI,
       carry,
+      profile().roster,
     ),
   );
 }

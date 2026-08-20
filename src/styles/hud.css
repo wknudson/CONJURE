@@ -902,3 +902,173 @@
   transform: translateX(-50%) rotate(46deg);
   box-shadow: 0 0 4px rgba(252, 211, 77, 0.8);
 }
+
+/* ---------------------------------------------------------------- deployment
+
+   The tray that turns a bought Vanguard into a line on the board.
+
+   It takes the bottom of the screen where the hand normally sits, because it is the same
+   question in the same place: what do I put down, and where. The HUD is hidden outright
+   while this is up — during deployment there is no hand, no Pip and no turn to end, so
+   leaving those controls visible would show the player four things that all refuse them.
+*/
+
+.screen--combat.is-deploying .hud .hand-row,
+.screen--combat.is-deploying .hud .bottom-bar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.deploy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px 18px;
+  pointer-events: none;
+}
+
+.deploy.is-locked {
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+
+.deploy__bar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: 1100px;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+
+.deploy__brief {
+  flex: 0 0 auto;
+  min-width: 190px;
+}
+
+.deploy__title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.deploy__hint {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-dim);
+}
+
+/* The bodies still in reserve. Scrolls rather than wraps: the bar must not grow taller
+   than the board it is asking the player to read. */
+.deploy__tray {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+}
+
+.deploy__empty {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-dim);
+  align-self: center;
+}
+
+.deploy-chip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px 9px 9px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-edge);
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.deploy-chip:hover {
+  border-color: rgba(103, 232, 249, 0.5);
+  background: rgba(103, 232, 249, 0.08);
+}
+
+/* Held. Lifted and ringed, so the board's lit tiles read as "this one goes there". */
+.deploy-chip.is-selected {
+  border-color: var(--accent);
+  background: rgba(103, 232, 249, 0.16);
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 1px var(--accent), 0 8px 18px rgba(103, 232, 249, 0.22);
+}
+
+/* The point-buy cost, carried onto the chip so the warband stays legible as a budget
+   after it has stopped being an editable list. */
+.deploy-chip__points {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(253, 224, 71, 0.14);
+  border: 1px solid rgba(253, 224, 71, 0.4);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.deploy-chip__name {
+  white-space: nowrap;
+}
+
+.deploy__engage {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 2px;
+  padding: 11px 22px;
+  border-radius: 11px;
+  border: 1px solid rgba(74, 222, 128, 0.55);
+  background: linear-gradient(180deg, rgba(74, 222, 128, 0.22), rgba(74, 222, 128, 0.1));
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.deploy__engage:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(74, 222, 128, 0.22);
+}
+
+.deploy__engage-label {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.deploy__engage-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+@media (max-width: 900px) {
+  .deploy__brief {
+    display: none;
+  }
+}

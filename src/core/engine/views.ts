@@ -13,6 +13,7 @@ import { CARDS } from '../data/cards/index.js';
 import { effectiveCost } from './deck.js';
 import { RUNES } from '../data/runes.js';
 import { resonanceFor } from '../data/resonance.js';
+import { rosterPointsOf } from '../data/roster.js';
 import { allObstacles, allUnits } from './board.js';
 import { isSpent } from './movement.js';
 import { isClimaxed } from './growth.js';
@@ -174,6 +175,14 @@ export function toBoardView(state: GameState): BoardView {
     escalation: units
       .filter((u) => u.escalation > 0)
       .map((u) => ({ unitId: u.id, stacks: u.escalation })),
+    anchors: state.anchors.map((c) => ({ ...c })),
+    roster: state.players.player.roster.map((r) => ({
+      defId: r.defId,
+      name: CARDS[r.defId]?.name ?? r.defId,
+      points: CARDS[r.defId] ? rosterPointsOf(CARDS[r.defId]!) : 0,
+      status: r.status,
+      ...(r.unitId ? { unitId: r.unitId } : {}),
+    })),
     player: toCommanderView(state, 'player'),
     enemy: toCommanderView(state, 'enemy'),
     encounterName: state.encounter.name,

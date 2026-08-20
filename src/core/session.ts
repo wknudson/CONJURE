@@ -23,7 +23,7 @@ import type { GameState } from './types/state.js';
 import type { Command } from './types/commands.js';
 import type { ChosenTarget } from './types/cards.js';
 import type { EncounterDef } from './data/encounters/registry.js';
-import { applyCommand, channelRefusal } from './engine/engine.js';
+import { applyCommand, channelRefusal, deployRefusal } from './engine/engine.js';
 import { deepClone } from './util/clone.js';
 import { createCombat, type CombatCarry } from './engine/setup.js';
 import { toBoardView, toCardSnapshot } from './engine/views.js';
@@ -379,6 +379,30 @@ export class CombatSession implements RulesQuery {
   // ----------------------------------------------------------------- mutation
 
   /** Commits a player action and returns the events to animate. */
+  /**
+   * Why this body may not stand on that tile, or null if it may.
+   *
+   * The engine's own predicate, forwarded rather than reimplemented: the reducer throws
+   * exactly this string, so the tile the UI lights and the tile the command accepts can
+   * never disagree.
+   */
+  deployRefusal(defId: string, at: Coord): string | null {
+    return deployRefusal(this.state, defId, at);
+  }
+
+  /**
+   * Whether the tray's held body could take this tile.
+   *
+   * `null` asks the weaker question — "is this an Anchor anything could stand on" — which
+   * is what lights the ground before the player has picked anyone up.
+   */
+  canDeploy(defId: string | null, at: Coord): boolean {
+    if (defId) return deployRefusal(this.state, defId, at) === null;
+    return this.state.players.player.roster.some(
+      (r) => r.status === 'reserve' && deployRefusal(this.state, r.defId, at) === null,
+    );
+  }
+
   dispatch(action: Action): GameEvent[] {
     const res = applyCommand(this.state, toCommand(action));
     this.state = res.state;
@@ -511,6 +535,12 @@ function toCommand(action: Action): Command {
       return { type: 'bloodTithe', unit: action.unit };
     case 'channel':
       return { type: 'channel', unit: action.unit };
+    case 'deployUnit':
+      return { type: 'deployUnit', defId: action.defId, at: action.at };
+    case 'recallUnit':
+      return { type: 'recallUnit', unit: action.unit };
+    case 'finishDeployment':
+      return { type: 'finishDeployment' };
     case 'endTurn':
       return { type: 'endTurn' };
   }

@@ -73,10 +73,30 @@ const BOON_LABELS: readonly { key: keyof CombatBoons; label: string }[] = [
   { key: 'discountHybrids', label: 'Spliced cards cost less' },
 ];
 import { RELIC_SLOT_ORDER } from '../core/overworld/state.js';
+import {
+  DEFAULT_ROSTER,
+  ROSTER_BUDGET,
+  rosterCost,
+  rosterPointsOf,
+  rosterPool,
+  validateRoster,
+} from '../core/data/roster.js';
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 export interface DeckBuilderResult {
   companionId: string;
   cards: string[];
+  /**
+   * The Vanguard, as def ids.
+   *
+   * Rides back with the deck because the two are saved together and the screen edits both.
+   * A character owns one warband across every Companion, so unlike `cards` this is not
+   * keyed by `companionId`.
+   */
+  roster: string[];
 }
 
 /**
@@ -110,7 +130,7 @@ const VARIANT_PILLS: { key: 'all' | CardDef['kind']; label: string }[] = [
   { key: 'rune', label: 'Rune' },
 ];
 
-type Tab = 'deck' | 'ledger' | 'loadout';
+type Tab = 'deck' | 'ledger' | 'loadout' | 'vanguard';
 
 /** Every way the loadout can say no, in the player's words. */
 const EQUIP_REFUSAL: Record<string, string> = {
@@ -127,6 +147,8 @@ const EQUIP_REFUSAL: Record<string, string> = {
 export class DeckBuilderScreen implements Screen {
   private el: HTMLElement | null = null;
   private deck: string[];
+  /** The warband being assembled. Committed with the deck, on Save. */
+  private roster: string[];
   private tooltip: Tooltip | null = null;
   private tab: Tab = 'deck';
 
@@ -136,6 +158,7 @@ export class DeckBuilderScreen implements Screen {
   constructor(
     private readonly companionId: string,
     startingDeck: string[],
+    startingRoster: string[],
     private readonly collection: Collection,
     private readonly bestiary: Bestiary,
     private readonly global: GlobalGameState,
@@ -144,6 +167,7 @@ export class DeckBuilderScreen implements Screen {
     private readonly onCancel: () => void,
   ) {
     this.deck = [...startingDeck];
+    this.roster = [...startingRoster];
   }
 
   mount(root: HTMLElement): void {
@@ -167,6 +191,7 @@ export class DeckBuilderScreen implements Screen {
         <button class="journal-tab" data-tab="deck">The Deck</button>
         <button class="journal-tab" data-tab="ledger">The Threat Ledger</button>
         <button class="journal-tab" data-tab="loadout">Hero</button>
+        <button class="journal-tab" data-tab="vanguard">The Vanguard</button>
       </div>
 
       <div class="builder__body">
@@ -220,6 +245,25 @@ export class DeckBuilderScreen implements Screen {
         <div class="loadout__shelf"></div>
       </div>
 
+      <div class="vanguard">
+        <div class="vanguard__head">
+          <span class="vanguard__title">Vanguard Assembly</span>
+          <span class="vanguard__note">
+            Bought once, before the contract. These bodies cost no Pips in the fight —
+            you deploy them onto Anchor Tiles before the first turn.
+          </span>
+          <div class="vanguard__budget">
+            <span class="vanguard__budget-count"></span>
+            <span class="vanguard__budget-bar"><i></i></span>
+          </div>
+        </div>
+        <div class="vanguard__warband-title">The warband</div>
+        <div class="vanguard__warband"></div>
+        <div class="vanguard__problems"></div>
+        <div class="vanguard__pool-title">The muster roll</div>
+        <div class="vanguard__pool"></div>
+      </div>
+
       <div class="threat-ledger">
         <div class="threat-ledger__head">
           <span class="threat-ledger__title">The Threat Ledger</span>
@@ -232,7 +276,10 @@ export class DeckBuilderScreen implements Screen {
     el.querySelector('.builder__cancel')!.addEventListener('click', () => this.onCancel());
     el.querySelector('.builder__confirm')!.addEventListener('click', () => this.confirm());
     el.querySelector('.builder__reset')!.addEventListener('click', () => {
-      this.deck = [...(companion?.deck ?? [])];
+      // Resets whichever list the player is actually looking at. A Reset on the Vanguard
+      // tab that silently rebuilt the deck would be the worst kind of surprise.
+      if (this.tab === 'vanguard') this.roster = [...DEFAULT_ROSTER];
+      else this.deck = [...(companion?.deck ?? [])];
       this.render();
     });
 
@@ -452,7 +499,10 @@ export class DeckBuilderScreen implements Screen {
       }
       el.classList.toggle('is-ledger', this.tab === 'ledger');
       el.classList.toggle('is-loadout', this.tab === 'loadout');
+      el.classList.toggle('is-vanguard', this.tab === 'vanguard');
     }
+
+    this.renderVanguard();
 
     this.renderLedger();
     this.renderLoadout();
@@ -668,9 +718,129 @@ export class DeckBuilderScreen implements Screen {
     this.render();
   }
 
+  // ------------------------------------------------------------------ the Vanguard
+
+  /**
+   * Vanguard Assembly: the point-buy, as two lists and a budget.
+   *
+   * The warband on top and the muster roll beneath, rather than a single toggling grid,
+   * because the two answer different questions — "what am I taking" and "what could I
+   * take" — and a player mid-decision wants both on screen at once.
+   *
+   * Every rule shown here comes from `validateRoster`. The screen never decides for itself
+   * what is legal, so the button it greys out and the roster the engine accepts cannot
+   * drift apart.
+   */
+  private renderVanguard(): void {
+    const el = this.el;
+    if (!el) return;
+
+    const spent = rosterCost(this.roster);
+    const problems = validateRoster(this.roster);
+
+    const count = el.querySelector<HTMLElement>('.vanguard__budget-count');
+    if (count) count.textContent = `Budget ${spent} / ${ROSTER_BUDGET}`;
+
+    const bar = el.querySelector<HTMLElement>('.vanguard__budget-bar i');
+    if (bar) {
+      bar.style.width = `${Math.min(100, (spent / ROSTER_BUDGET) * 100)}%`;
+      bar.classList.toggle('is-full', spent >= ROSTER_BUDGET);
+    }
+
+    // --- the warband
+    const warband = el.querySelector<HTMLElement>('.vanguard__warband');
+    if (warband) {
+      warband.replaceChildren();
+      if (this.roster.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'vanguard__empty';
+        empty.textContent =
+          'No bodies. A fight with an empty Vanguard skips deployment entirely.';
+        warband.appendChild(empty);
+      }
+      this.roster.forEach((defId, index) => {
+        const def = CARDS[defId];
+        if (!def) return;
+        warband.appendChild(
+          this.vanguardChip(def, 'remove', () => {
+            this.roster.splice(index, 1);
+            this.render();
+          }),
+        );
+      });
+    }
+
+    // --- what is wrong with it, in the engine's own words
+    const problemsEl = el.querySelector<HTMLElement>('.vanguard__problems');
+    if (problemsEl) {
+      problemsEl.replaceChildren();
+      for (const p of problems) {
+        const line = document.createElement('div');
+        line.className = 'vanguard__problem';
+        line.textContent = p.message;
+        problemsEl.appendChild(line);
+      }
+    }
+
+    // --- the muster roll
+    const pool = el.querySelector<HTMLElement>('.vanguard__pool');
+    if (!pool) return;
+    pool.replaceChildren();
+    for (const def of rosterPool()) {
+      // Asked of the *candidate* roster rather than computed here: "would adding this be
+      // legal" is one question with one answer, and it lives in `validateRoster`.
+      const refusal = validateRoster([...this.roster, def.id])[0];
+      pool.appendChild(
+        this.vanguardChip(def, 'add', () => {
+          this.roster.push(def.id);
+          this.render();
+        }, refusal?.message),
+      );
+    }
+  }
+
+  /** One body, in either list. `mode` decides whether clicking adds it or takes it away. */
+  private vanguardChip(
+    def: CardDef,
+    mode: 'add' | 'remove',
+    onClick: () => void,
+    refusal?: string,
+  ): HTMLElement {
+    const unit = def.unit;
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = `vanguard-chip vanguard-chip--${mode}`;
+    if (refusal) {
+      chip.disabled = true;
+      chip.classList.add('is-refused');
+      chip.setAttribute('data-tip', `${def.name}|${refusal}`);
+    } else {
+      chip.addEventListener('click', onClick);
+    }
+
+    const reach = (unit?.rangeMax ?? 1) > 1 ? `Range ${unit?.rangeMax}` : 'Melee';
+    const size = unit?.footprint === 2 ? ' · Behemoth' : '';
+    chip.innerHTML = `
+      <span class="vanguard-chip__points">${rosterPointsOf(def)}</span>
+      <span class="vanguard-chip__body">
+        <span class="vanguard-chip__name">${escapeHtml(def.name)}</span>
+        <span class="vanguard-chip__stats">${unit?.atk ?? 0} ATK · ${unit?.hp ?? 0} HP · ${reach}${size}</span>
+      </span>
+      <span class="vanguard-chip__mark">${mode === 'add' ? '+' : '−'}</span>
+    `;
+    return chip;
+  }
+
   private confirm(): void {
     if (validateDeck(this.deck, this.collection).length > 0) return;
-    this.onDone({ companionId: this.companionId, cards: [...this.deck] });
+    // An illegal warband is refused for the same reason an illegal deck is: it would be
+    // written to the save and then rejected at the door.
+    if (validateRoster(this.roster).length > 0) return;
+    this.onDone({
+      companionId: this.companionId,
+      cards: [...this.deck],
+      roster: [...this.roster],
+    });
   }
 
   unmount(): void {

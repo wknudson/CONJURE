@@ -26,6 +26,7 @@ import { reconcileCollection, startingCollection } from '../core/data/collection
 import { CARDS } from '../core/data/cards/index.js';
 import { RELICS, slotOf } from '../core/data/relics.js';
 import { validateDeck } from '../core/data/deckRules.js';
+import { DEFAULT_ROSTER, ROSTER_BUDGET, validateRoster } from '../core/data/roster.js';
 import { COMPANIONS, DEFAULT_COMPANION } from '../core/data/companions.js';
 import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
 import type {
@@ -49,7 +50,7 @@ import { makeRng } from '../core/util/rng.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
 /** Posters on the wall. Three, and the wall is the reason it is three. */
 export const PROFILE_SLOTS = 3;
@@ -125,6 +126,19 @@ export interface Profile {
   collection: Collection;
   /** One deck per companion, keyed by companion id. */
   decks: Record<string, SavedDeck>;
+  /**
+   * The Vanguard: the bodies this character takes into a fight, as def ids (v12).
+   *
+   * **Not to be confused with `companions` below**, which the prose elsewhere also calls a
+   * roster — that one is tamed beasts, this one is the warband. One list per character
+   * rather than per Companion, because a Vanguard is bought out of a budget the character
+   * owns, and re-buying it every time you swapped beasts would make the point-buy a chore
+   * rather than a build.
+   *
+   * Empty is legal and means "no Vanguard": the fight then opens on turn one with no
+   * deployment phase at all, which is exactly the pre-overhaul behaviour.
+   */
+  roster: string[];
   /**
    * The **instance** currently standing beside the player, by `instanceId` (v9).
    *
@@ -225,6 +239,9 @@ export function newProfile(profileId: string, name = 'Commander'): Profile {
     state: { overworld, combat: null },
     collection: startingCollection(),
     decks,
+    // A warband that spends the ten exactly, so a new player meets the deployment phase
+    // with a real line to place rather than an empty tray and a rule to go and read.
+    roster: [...DEFAULT_ROSTER],
     activeCompanionId: companions[0]!.instanceId,
     companions,
     record: { wins: 0, losses: 0, bound: 0 },
@@ -431,6 +448,31 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
     }
   }
 
+  // --- the Vanguard (v12) ---
+  //
+  // A save written before the overhaul has no roster at all, and gets the default one:
+  // arriving at the deployment phase with an empty tray would read as a bug rather than a
+  // choice. A roster that has since become illegal — a body renamed out of the game, or a
+  // budget that moved under it — is repaired down to what still fits rather than rejected,
+  // because there is no screen a player could be sent to in order to fix a save that will
+  // not load.
+  const savedRoster = Array.isArray(data.roster)
+    ? data.roster.filter((id): id is string => typeof id === 'string').map(rename)
+    : undefined;
+  let roster = savedRoster ?? [...DEFAULT_ROSTER];
+  if (validateRoster(roster).length > 0) {
+    const repaired: string[] = [];
+    for (const id of roster) {
+      if (validateRoster([...repaired, id]).length === 0) repaired.push(id);
+    }
+    if (repaired.length !== roster.length) {
+      notes.push(
+        `Your Vanguard no longer fit its ${ROSTER_BUDGET}-point budget and was trimmed.`,
+      );
+    }
+    roster = repaired;
+  }
+
   const companions = readRoster(data.companions, base.companions);
 
   // v5 and earlier called this `lastCompanionId`; v8 and earlier held a *species* id.
@@ -487,6 +529,7 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
     state: { overworld, combat: null },
     collection,
     decks,
+    roster,
     activeCompanionId,
     companions,
     record,

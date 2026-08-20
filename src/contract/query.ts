@@ -19,6 +19,12 @@ export type Action =
   | { type: 'attack'; attacker: UnitId; target: TargetRef }
   | { type: 'bloodTithe'; unit: UnitId }
   | { type: 'channel'; unit: UnitId }
+  /** Deployment only: put a rostered body on an Anchor Tile. */
+  | { type: 'deployUnit'; defId: string; at: Coord }
+  /** Deployment only: pick a placed body back up. */
+  | { type: 'recallUnit'; unit: UnitId }
+  /** Deployment only: set the line and begin turn one. */
+  | { type: 'finishDeployment' }
   | { type: 'endTurn' };
 
 export type TargetSelection =
@@ -55,6 +61,17 @@ export interface ActionPreview {
 }
 
 /** A flattened, render-ready view of the board. Read only while the sequencer is idle. */
+/** One rostered body, as the deploy tray needs to draw it. */
+export interface RosterView {
+  defId: string;
+  name: string;
+  /** Point-buy cost, so the tray can show what each body was worth. */
+  points: number;
+  status: 'reserve' | 'fielded' | 'fallen';
+  /** Set while fielded, so clicking the board can find the tray entry. */
+  unitId?: UnitId;
+}
+
 export interface BoardView {
   width: number;
   height: number;
@@ -81,6 +98,15 @@ export interface BoardView {
   runes: { hostId: UnitId; at: Coord; rune: RuneSnapshot }[];
   statuses: { unitId: UnitId; kind: string; stacks: number }[];
   escalation: { unitId: UnitId; stacks: number }[];
+  /**
+   * The player's Anchor Tiles — the only ground a Vanguard may deploy onto.
+   *
+   * Carried on the view rather than recomputed, for the same reason `territoryDepth` is:
+   * the renderer cannot import the engine, so the ground travels with the picture.
+   */
+  anchors: Coord[];
+  /** The Vanguard tray: every body brought, and where each one currently is. */
+  roster: RosterView[];
   player: CommanderView;
   enemy: CommanderView;
   encounterName: string;

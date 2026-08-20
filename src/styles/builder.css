@@ -1148,3 +1148,192 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------------------------------------------------------- the Vanguard
+
+   Point-buy, as two lists and a budget. Hidden like the other tabs rather than unmounted,
+   so switching away and back does not lose the player's place.
+*/
+
+.vanguard { display: none; }
+.screen--builder.is-vanguard .builder__body { display: none; }
+.screen--builder.is-vanguard .threat-ledger { display: none; }
+.screen--builder.is-vanguard .loadout { display: none; }
+.screen--builder.is-vanguard .vanguard { display: block; }
+
+.vanguard {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px 26px;
+}
+
+.vanguard__head {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.vanguard__title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vanguard__note {
+  max-width: 62ch;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+/* The budget reads as a bar as well as a number: "8 / 10" is a fact, but a bar two thirds
+   full is the thing the player is actually deciding against. */
+.vanguard__budget {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.vanguard__budget-count {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+  min-width: 120px;
+}
+
+.vanguard__budget-bar {
+  flex: 1 1 auto;
+  max-width: 320px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--panel-edge);
+  overflow: hidden;
+}
+
+.vanguard__budget-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(253, 224, 71, 0.55), rgba(253, 224, 71, 0.85));
+  transition: width 160ms ease;
+}
+
+.vanguard__budget-bar i.is-full {
+  background: linear-gradient(90deg, rgba(74, 222, 128, 0.55), rgba(74, 222, 128, 0.9));
+}
+
+.vanguard__warband-title,
+.vanguard__pool-title {
+  margin: 16px 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.vanguard__warband,
+.vanguard__pool {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.vanguard__empty {
+  grid-column: 1 / -1;
+  padding: 14px;
+  border: 1px dashed var(--panel-edge);
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+.vanguard__problems {
+  margin-top: 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.vanguard__problem {
+  font-size: 12.5px;
+  color: var(--danger);
+}
+
+.vanguard-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-edge);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+
+.vanguard-chip:not(:disabled):hover {
+  transform: translateY(-1px);
+  border-color: rgba(103, 232, 249, 0.5);
+  background: rgba(103, 232, 249, 0.07);
+}
+
+/* Refused rather than hidden: a body you cannot afford is still information — it tells you
+   what the remaining points are not enough for. */
+.vanguard-chip.is-refused {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.vanguard-chip--remove {
+  border-color: rgba(248, 113, 113, 0.28);
+  background: rgba(248, 113, 113, 0.06);
+}
+
+.vanguard-chip--remove:not(:disabled):hover {
+  border-color: rgba(248, 113, 113, 0.6);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.vanguard-chip__points {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(253, 224, 71, 0.14);
+  border: 1px solid rgba(253, 224, 71, 0.4);
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.vanguard-chip__body {
+  display: grid;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.vanguard-chip__name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.vanguard-chip__stats {
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.vanguard-chip__mark {
+  flex: 0 0 auto;
+  font-size: 16px;
+  color: var(--text-dim);
+}

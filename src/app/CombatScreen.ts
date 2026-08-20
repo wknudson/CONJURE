@@ -22,6 +22,7 @@ import { Fx } from '../render/Fx.js';
 import { Sequencer } from '../anim/Sequencer.js';
 import { registerHandlers, type CombatView } from '../anim/handlers.js';
 import { Hud } from '../hud/Hud.js';
+import { DeployTray } from '../hud/DeployTray.js';
 import { AI_BEAT_MS, NORMAL_MOTION } from '../anim/Sequencer.js';
 import { HelpOverlay } from '../hud/HelpOverlay.js';
 import { Tutorial } from '../hud/Tutorial.js';
@@ -109,6 +110,8 @@ export class CombatScreen implements Screen {
   private turnStamp = 0;
   private warnedTooSmall = false;
   private tutorial: Tutorial | null = null;
+  /** The deployment tray, alive only while the phase is. */
+  private deploy: DeployTray | null = null;
   private onKeyDown = (ev: KeyboardEvent) => this.handleKeyDown(ev);
   private onKeyUp = (ev: KeyboardEvent) => this.handleKeyUp(ev);
 
@@ -143,8 +146,15 @@ export class CombatScreen implements Screen {
     deck?: string[],
     ai?: AiProfile,
     carry?: CombatCarry,
+    /**
+     * The player's Vanguard, as def ids.
+     *
+     * An empty or omitted roster opens the fight on turn one with no deployment phase —
+     * the pre-overhaul path, and the one every legacy test still takes.
+     */
+    roster?: string[],
   ) {
-    this.session = new CombatSession(encounter, seed, ai, companionId, deck, carry);
+    this.session = new CombatSession(encounter, seed, ai, companionId, deck, carry, roster);
     this.cam = new IsoCamera(encounter.width, encounter.height);
   }
 
@@ -288,6 +298,11 @@ export class CombatScreen implements Screen {
     // something you needed before you decided to.
     this.refreshLastStand(board);
     this.hud.setInteractive(false);
+
+    // A Vanguard came along, so the line is set before anything else happens. With no
+    // roster the phase never starts and this is skipped entirely — the pre-overhaul path.
+    if (board.phase === 'deployment') this.enterDeployment();
+
     this.sequencer.enqueue(this.session.openingEvents);
   }
 
@@ -487,6 +502,15 @@ export class CombatScreen implements Screen {
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;
 
+    // Deployment owns the board while it runs: no card is selectable, no unit may move,
+    // and neither commander is a legal target — so it is asked *before* the commander
+    // hit-test, which otherwise swallows any anchor tile drawn under a portrait. On a
+    // small viewport that is most of the back row.
+    if (this.deploying) {
+      this.handleDeploymentClick(this.cam.screenToTile(x, y) ?? null);
+      return;
+    }
+
     // Commanders stand beside the grid, so test them before falling through to tiles.
     const commander = this.renderer.commanderAt(x, y);
     if (commander) {
@@ -532,6 +556,105 @@ export class CombatScreen implements Screen {
    * unspent, so the button says so and asks twice. Re-evaluated after every action, since
    * spending the last one should quietly return it to normal.
    */
+  // ------------------------------------------------------------------ deployment
+
+  /** Whether the fight is still being set up rather than played. */
+  private get deploying(): boolean {
+    return this.session.getBoard().phase === 'deployment';
+  }
+
+  /**
+   * Raises the tray and puts the screen into placement mode.
+   *
+   * The HUD is hidden rather than disabled: during deployment there is no hand, no Pip to
+   * spend and no turn to end, so leaving it up would be showing the player four controls
+   * that all refuse them.
+   */
+  private enterDeployment(): void {
+    if (!this.el || this.deploy) return;
+    this.el.classList.add('is-deploying');
+
+    this.deploy = new DeployTray(this.el, {
+      onSelect: () => this.paintAnchors(),
+      onEngage: () => this.commit({ type: 'finishDeployment' }),
+    });
+    this.deploy.sync(this.session.getBoard());
+    this.paintAnchors();
+  }
+
+  /** Drops the tray once the line is set. Idempotent, so a double-finish is harmless. */
+  private exitDeployment(): void {
+    if (!this.deploy) return;
+    this.deploy.destroy();
+    this.deploy = null;
+    this.el?.classList.remove('is-deploying');
+    this.setOverlays(emptyOverlays());
+  }
+
+  /**
+   * Lights the ground a body may stand on.
+   *
+   * Every anchor is shown from the moment the tray comes up, not only once something is
+   * held: the shape of the ground is the decision the phase is asking about, and hiding it
+   * until after the player commits to a body asks them to choose blind. Holding a body
+   * narrows the lit set to what that body could actually take.
+   */
+  private paintAnchors(): void {
+    const board = this.session.getBoard();
+    const held = this.deploy?.selectedDefId ?? null;
+    const free = board.anchors.filter((a) => this.session.canDeploy(held, a));
+
+    this.setOverlays({
+      ...emptyOverlays(),
+      highlight: held ? free : board.anchors,
+      selected: null,
+    });
+  }
+
+  /**
+   * A click on the board while the line is being set.
+   *
+   * Two gestures, told apart by what is under the cursor: an empty anchor takes the held
+   * body, and a body already down is picked back up. Returns whether the click was
+   * consumed, so the ordinary targeting path is never reached during deployment.
+   */
+  private handleDeploymentClick(tile: Coord | null): boolean {
+    if (!this.deploying) return false;
+    if (!tile) {
+      this.deploy?.clearSelection();
+      this.paintAnchors();
+      return true;
+    }
+
+    const board = this.session.getBoard();
+
+    // A body of ours standing here: take it back. Asked before placement, so clicking a
+    // filled anchor recalls rather than failing to deploy onto it.
+    const standing = board.units.find(
+      (u) => u.side === 'player' && u.anchor.x === tile.x && u.anchor.y === tile.y,
+    );
+    const entry = standing && board.roster.find((r) => r.unitId === standing.id);
+    if (entry) {
+      this.commit({ type: 'recallUnit', unit: standing!.id });
+      return true;
+    }
+
+    const held = this.deploy?.selectedDefId ?? null;
+    if (!held) {
+      this.hud?.flashNotice('Pick a body from the tray first');
+      return true;
+    }
+
+    const refusal = this.session.deployRefusal(held, tile);
+    if (refusal) {
+      this.hud?.flashNotice(refusal);
+      return true;
+    }
+
+    this.commit({ type: 'deployUnit', defId: held, at: tile });
+    return true;
+  }
+
   private refreshTurnUi(): void {
     const potential = this.session.getUnspentPotential();
     const wasted = potential.readyUnits + potential.playableCards;
@@ -754,10 +877,23 @@ export class CombatScreen implements Screen {
   private lockInput(): void {
     this.targeting?.setEnabled(false);
     this.hud?.setInteractive(false);
+    this.deploy?.setInteractive(false);
     this.setOverlays(emptyOverlays());
   }
 
   private unlockInput(): void {
+    // Still setting up: refresh the tray and the lit ground, and leave the turn UI alone —
+    // there is no hand to sync and no End Turn to warn about yet.
+    if (this.deploying) {
+      this.deploy?.sync(this.session.getBoard());
+      this.deploy?.setInteractive(true);
+      this.paintAnchors();
+      this.syncCommanders(this.session.getBoard());
+      return;
+    }
+    // The line has just been set: drop the tray before the ordinary turn UI comes up.
+    if (this.deploy) this.exitDeployment();
+
     if (this.session.activeSide === 'player' && this.session.getBoard().phase === 'action') {
       // A fresh turn carries no history: the moves that could be taken back belong to a
       // turn that has already been handed over.
