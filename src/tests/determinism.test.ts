@@ -88,9 +88,9 @@ function playRandomGame(
         const victim = pick(mine);
         if (victim) {
           try {
-            take({ type: 'sacrifice', unit: victim.id }, 'after sacrifice');
+            take({ type: 'bloodTithe', unit: victim.id }, 'after tithe');
           } catch {
-            /* not every unit may be sacrificed; the legality check is the engine's job */
+            /* not every unit may be tithed; the legality check is the engine's job */
           }
         }
       }

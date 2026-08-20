@@ -342,9 +342,9 @@ function tieBreakKey(command: Command, state: GameState): { x: number; y: number
       const at = command.target.kind === 'tile' ? command.target.at : undefined;
       return { x: at?.x ?? 0, y: at?.y ?? 0, tag: `play:${command.card}` };
     }
-    case 'sacrifice': {
+    case 'bloodTithe': {
       const u = state.units[command.unit];
-      return { x: u?.anchor.x ?? 0, y: u?.anchor.y ?? 0, tag: `sac:${command.unit}` };
+      return { x: u?.anchor.x ?? 0, y: u?.anchor.y ?? 0, tag: `tithe:${command.unit}` };
     }
     case 'channel': {
       const u = state.units[command.unit];

@@ -53,7 +53,7 @@ export const KEYWORDS: Record<string, GlossaryEntry> = {
     title: 'Bound Form',
     body: 'Your Companion, made flesh. Every wound it takes is dealt straight to your Pact.',
     detail:
-      'It keeps no health of its own and cannot be sacrificed or made to grow. Shoving it into a wall hurts you, not it — but your elemental spells are cast from where it stands.',
+      'It keeps no health of its own and cannot be tithed or made to grow. Shoving it into a wall hurts you, not it — but your elemental spells are cast from where it stands.',
   },
   Escalate: {
     title: 'Escalate',
@@ -68,11 +68,6 @@ export const KEYWORDS: Record<string, GlossaryEntry> = {
     title: 'Power Tier',
     body: 'A high-cost finisher. Bank Pips across several turns to afford it.',
   },
-  Sacrifice: {
-    title: 'Sacrifice',
-    body: 'Can be spent to extract Marrow instead of attacking.',
-    detail: 'Sacrificing is an action: it has to happen before the unit attacks.',
-  },
 };
 
 export const TERMS: Record<string, GlossaryEntry> = {
@@ -83,7 +78,7 @@ export const TERMS: Record<string, GlossaryEntry> = {
   },
   marrow: {
     title: 'Marrow — volatile magic',
-    body: 'Volatile, unrefined energy extracted during a turn by sacrifice, devouring, or elemental reactions.',
+    body: 'Volatile, unrefined energy torn from your own units during a turn, or from devouring and elemental reactions.',
     detail:
       'Marrow is consumed before Pips when casting, and all unspent Marrow is lost at the end of the turn. Use it or lose it.',
   },
@@ -149,6 +144,11 @@ export const TERMS: Record<string, GlossaryEntry> = {
   },
   entangle: { title: 'Entangled', body: 'Cannot move, but can still attack.' },
   stun: { title: 'Stunned', body: 'Cannot move or attack this turn.' },
+  exhaust: {
+    title: 'Exhausted',
+    body: 'Bled for Marrow. Cannot move, attack, or channel until your next turn.',
+    detail: 'One tithe per body per turn — the Exhaustion is what enforces it.',
+  },
   escalation: {
     title: 'Escalation stacks',
     body: 'How many times this unit has grown by surviving a full round.',

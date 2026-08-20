@@ -51,7 +51,7 @@ export function summonUnit(
     archetype: stats.archetype,
     keywords: [...def.keywords],
     statuses: {},
-    sacrificeValue: stats.sacrificeValue,
+    titheBonus: stats.titheBonus ?? 0,
     escalation: 0,
     // 1x1 units cap at +3 growth; Behemoths are uncapped (Module 2).
     escalationCap: stats.footprint === 2 ? Infinity : 3,

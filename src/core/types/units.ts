@@ -82,8 +82,8 @@ export interface Unit {
   keywords: Keyword[];
   statuses: Partial<Record<StatusKind, number>>;
   rune?: AttachedRune;
-  /** Marrow granted when this unit is sacrificed. */
-  sacrificeValue: number;
+  /** Extra Marrow this body yields when tithed, above the flat rate. Usually 0. */
+  titheBonus: number;
   escalation: number;
   escalationCap: number;
   /** Per-turn action flags. One move and one attack are available each turn. */

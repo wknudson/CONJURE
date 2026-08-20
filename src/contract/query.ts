@@ -17,7 +17,7 @@ export type Action =
   | { type: 'playCard'; card: CardInstanceId; target?: TargetSelection }
   | { type: 'moveUnit'; unit: UnitId; to: Coord }
   | { type: 'attack'; attacker: UnitId; target: TargetRef }
-  | { type: 'sacrifice'; unit: UnitId }
+  | { type: 'bloodTithe'; unit: UnitId }
   | { type: 'channel'; unit: UnitId }
   | { type: 'endTurn' };
 

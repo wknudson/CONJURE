@@ -117,7 +117,9 @@ export type GameEvent = EventBase &
         name: string;
         source: 'obstacle' | 'creature';
       }
-    | { t: 'unitSacrificed'; unitId: UnitId; marrowExtracted: number }
+    | { t: 'unitTithed'; unitId: UnitId; side: Side; marrow: number; damage: number }
+    /** A body spent whole to make something else. Pays no Marrow -- see `consumeTarget`. */
+    | { t: 'unitConsumed'; unitId: UnitId }
     /** A unit spent its attack extracting Marrow instead of swinging. */
     | { t: 'unitChannelled'; unitId: UnitId; side: Side; marrow: number }
     | { t: 'unitDied'; unitId: UnitId; at: Coord; footprint: 1 | 2; cause: DamageCause }

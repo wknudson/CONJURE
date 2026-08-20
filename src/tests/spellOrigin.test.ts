@@ -56,7 +56,7 @@ function board(foeAt: { x: number; y: number }): { state: GameState; foeId: stri
     def: 'ignis_bound',
     side: 'player',
     at: { x: 2, y: 6 },
-    sacrificeValue: 0,
+    titheBonus: 0,
   });
   state.players.player.companionUnitId = body.id;
   state.players.player.companionUnitDefId = 'ignis_bound';

@@ -6,6 +6,7 @@ import { ADEPT_AI, NOVICE_AI } from '../core/ai/controller.js';
 import { createCombat } from '../core/engine/setup.js';
 import { carryFor } from '../core/overworld/run.js';
 import { RELICS, slotOf } from '../core/data/relics.js';
+import { TITHE_MARROW } from '../core/engine/effects.js';
 import {
   emptyLoadout,
   equipRelic,
@@ -110,7 +111,7 @@ describe('Alchemist’s Mortar', () => {
   const raising = (card: string, bonus: number) => {
     const state = scenario({ width: 6, height: 7, hand: [card], pips: 8, marrow: 4 });
     state.players.player.bonusObstacleHp = bonus;
-    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, sacrificeValue: 0 });
+    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     return state;
   };
 
@@ -157,30 +158,30 @@ describe('Alchemist’s Mortar', () => {
 });
 
 describe('Blood-Ink Ledger', () => {
-  it('pays extra on the sacrifice command', () => {
+  it('pays extra on the tithe command', () => {
     const state = scenario({ width: 6, height: 7 });
-    state.players.player.bonusSacrificeMarrow = 1;
+    state.players.player.bonusTitheMarrow = 1;
     const victim = addUnit(state, {
       def: 'marrow_wisp',
       side: 'player',
       at: { x: 2, y: 4 },
       fresh: false,
     });
-    const worth = state.units[victim.id]!.sacrificeValue;
+    const worth = state.units[victim.id]!.titheBonus;
 
-    const res = run(state, { type: 'sacrifice', unit: victim.id });
+    const res = run(state, { type: 'bloodTithe', unit: victim.id });
 
-    expect(res.state.players.player.marrow).toBe(worth + 1);
+    expect(res.state.players.player.marrow).toBe(TITHE_MARROW + worth + 1);
     // The event has to agree with the purse, or the floater says a different number.
-    expect(eventsOf(res.events, 'unitSacrificed')[0]!.marrowExtracted).toBe(worth + 1);
+    expect(eventsOf(res.events, 'unitTithed')[0]!.marrow).toBe(TITHE_MARROW + worth + 1);
   });
 
-  it('pays on a sacrifice made by a card, not only by the command', () => {
-    // Dark Tithe sacrifices through the `sacrificeTarget` op, which pays nothing of its
-    // own. The Ledger is a rule about sacrificing, so it has to apply here too — a relic
+  it('pays on a tithe made by a card, not only by the command', () => {
+    // Dark Tithe bleeds through the `tithe` op, which routes into the same `applyTithe` as
+    // the command. The Ledger is a rule about tithing, so it applies to both — a relic
     // that skipped this would be worthless to the deck most likely to want it.
     const state = scenario({ width: 6, height: 7, hand: ['dark_tithe'], pips: 4 });
-    state.players.player.bonusSacrificeMarrow = 1;
+    state.players.player.bonusTitheMarrow = 1;
     const victim = addUnit(state, {
       def: 'marrow_wisp',
       side: 'player',
@@ -191,8 +192,8 @@ describe('Blood-Ink Ledger', () => {
     const card = handCard(state, 'player', 'dark_tithe');
     const res = run(state, play(card, { kind: 'entity', ref: { kind: 'unit', id: victim.id } }));
 
-    // Dark Tithe's own 2, plus the Ledger's 1.
-    expect(res.state.players.player.marrow).toBe(3);
+    // Dark Tithe's own 3, plus the Wisp's 1 premium, plus the Ledger's 1.
+    expect(res.state.players.player.marrow).toBe(5);
   });
 
   it('gives nothing without the relic', () => {
@@ -203,10 +204,10 @@ describe('Blood-Ink Ledger', () => {
       at: { x: 2, y: 4 },
       fresh: false,
     });
-    const worth = state.units[victim.id]!.sacrificeValue;
+    const worth = state.units[victim.id]!.titheBonus;
 
-    const res = run(state, { type: 'sacrifice', unit: victim.id });
-    expect(res.state.players.player.marrow).toBe(worth);
+    const res = run(state, { type: 'bloodTithe', unit: victim.id });
+    expect(res.state.players.player.marrow).toBe(TITHE_MARROW + worth);
   });
 });
 
@@ -220,7 +221,7 @@ describe('the four together', () => {
     expect(carry.boons?.revealIntents).toBe(true);
     expect(carry.boons?.immuneToToxin).toBe(true);
     expect(carry.boons?.bonusObstacleHp).toBe(2);
-    expect(carry.boons?.bonusSacrificeMarrow).toBe(1);
+    expect(carry.boons?.bonusTitheMarrow).toBe(1);
   });
 
   it('reaches the board as capabilities the engine can act on', () => {
@@ -234,7 +235,7 @@ describe('the four together', () => {
     expect(me.revealsIntents).toBe(true);
     expect(me.immuneToToxin).toBe(true);
     expect(me.bonusObstacleHp).toBe(2);
-    expect(me.bonusSacrificeMarrow).toBe(1);
+    expect(me.bonusTitheMarrow).toBe(1);
   });
 
   it('still names no relic to the engine', () => {
@@ -247,9 +248,9 @@ describe('the four together', () => {
 
   it('never lets a malformed carry make things worse', () => {
     const { state } = createCombat(NOVICE_DUELIST, 7, undefined, undefined, {
-      boons: { bonusObstacleHp: -5, bonusSacrificeMarrow: -3 },
+      boons: { bonusObstacleHp: -5, bonusTitheMarrow: -3 },
     });
     expect(state.players.player.bonusObstacleHp).toBe(0);
-    expect(state.players.player.bonusSacrificeMarrow).toBe(0);
+    expect(state.players.player.bonusTitheMarrow).toBe(0);
   });
 });

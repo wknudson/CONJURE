@@ -10,6 +10,7 @@ import { drawCards } from './deck.js';
 import type { Coord, Side, TargetRef, UnitId } from '../../contract/ids.js';
 import { coordEq } from '../../contract/ids.js';
 import type { AreaSpec, CardPlayContext, EffectNode } from '../types/cards.js';
+import type { Unit } from '../types/units.js';
 import type { Ctx } from './context.js';
 import { applyStatusTo } from './status.js';
 import { emit } from './context.js';
@@ -19,10 +20,70 @@ import { killEntity } from './death.js';
 import { setAnchor } from './subjugation.js';
 import { attachRune, detonateAllRunes } from './runes.js';
 import { pushUnit } from './displacement.js';
+import { canAct } from './movement.js';
 import { spawnObstacle, summonUnit } from './spawn.js';
 import { CARDS } from '../data/cards/index.js';
 import { cellsOf, chebyshev, manhattan, toDirection } from '../util/grid.js';
 import { inBounds } from '../types/state.js';
+
+/** Health taken by one tithe, and the Marrow it pays before the wound lands. */
+export const TITHE_DAMAGE = 3;
+export const TITHE_MARROW = 2;
+
+/**
+ * Blood Magic: open a body for Marrow.
+ *
+ * The one definition of what a tithe *is*. The `bloodTithe` command and the `tithe` card
+ * op both come through here, so a card cannot invent a tithe that skips the Exhaustion or
+ * pays on a different curve — the only thing a card gets to choose is the two numbers.
+ *
+ * Order is the rule, not an implementation detail:
+ *
+ * 1. **Marrow is credited first.** A tithe that kills still pays. You took the blood; the
+ *    body failing afterwards does not un-take it, and the alternative — a lethal tithe
+ *    that silently pays nothing — would make every Blood Magic play a health check first.
+ * 2. **Then the wound**, as `true` damage. Armour must not make a body un-bleedable, or a
+ *    plated Bulwark line would be a warband locked out of its own economy.
+ * 3. **Then Exhaustion**, on whatever survived. This is also what caps a unit at one tithe
+ *    per turn: `canAct` reads the status, so the second attempt is refused by the same
+ *    rule that stops it moving.
+ *
+ * Returns the health actually lost, which is what downstream ops in the same `seq` scale
+ * off.
+ */
+export function applyTithe(ctx: Ctx, unit: Unit, damage: number, marrow: number): number {
+  // The Bound Form keeps no health of its own — every wound is the Pact's. Tithing it
+  // would be paying yourself out of your own life total, at no cost to the board.
+  if (unit.keywords.includes('BoundForm')) return 0;
+
+  const side = unit.side;
+  const cmd = ctx.state.players[side];
+
+  // What the card or command offers, what this particular body is worth on top of it, and
+  // what this commander has arranged to skim.
+  const extracted = marrow + (unit.titheBonus ?? 0) + cmd.bonusTitheMarrow;
+  cmd.marrow += extracted;
+
+  // Announced before the wound so the payout reads first: the Marrow is why the player
+  // did this, and the damage is the price. `damageDealt` reports what actually landed.
+  emit(ctx, { t: 'unitTithed', unitId: unit.id, side, marrow: extracted, damage });
+  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
+  healCommander(ctx, side, cmd.healOnTithe);
+
+  const outcome = dealDamage(ctx, {
+    target: { kind: 'unit', id: unit.id },
+    amount: damage,
+    dtype: 'true',
+    cause: 'spell',
+  });
+
+  // Only what survived can be exhausted. A corpse needs no status, and `killEntity` has
+  // already removed it.
+  const live = ctx.state.units[unit.id];
+  if (live) applyStatusTo(ctx, live, 'exhaust', 1, side);
+
+  return outcome.hpLoss;
+}
 
 export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext): void {
   // A boss Damage Gate can cancel the remainder of a chain mid-resolution.
@@ -100,8 +161,8 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
         if (node.amount > 0) grantArmor(ctx, dest, node.amount);
         return;
       }
-      // Dark Tithe: the sacrificed minion's HP becomes Hero armor, not the corpse's.
-      const amount = play.sacrificedHp ?? 0;
+      // Dark Tithe: the blood taken from the minion becomes Hero armor.
+      const amount = play.titheDamage ?? 0;
       if (amount > 0) grantArmor(ctx, { kind: 'portrait', side: play.side }, amount);
       return;
     }
@@ -118,32 +179,38 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       return;
     }
 
-    case 'sacrificeTarget': {
+    case 'consumeTarget': {
+      // Spend a body whole. This pays no Marrow and never did: its one caller converts a
+      // minion into a different minion standing on the same tile, which is why it survived
+      // the Blood Magic overhaul while sacrifice-for-Marrow did not.
       const ref = chosenRef(play);
       if (!ref || ref.kind !== 'unit') return;
       const unit = ctx.state.units[ref.id];
       if (!unit) return;
-      play.sacrificedHp = unit.hp;
-      // Remembered before the body is removed: whatever comes next may want this ground.
+      // The Bound Form is the Pact. It is not spare material.
+      if (unit.keywords.includes('BoundForm')) return;
+
+      // Remembered before the body is removed: whatever comes next wants this ground.
       play.vacatedAt = { ...unit.anchor };
-
-      // An offering made by a card is still an offering. `sacrificeTarget` pays nothing
-      // of its own — Dark Tithe's Marrow comes from its own `extractMarrow` — but the
-      // Ledger is a rule about *sacrificing*, not about one command, so it applies here
-      // too. Skipping this would make the relic silently worthless to the deck most
-      // likely to want it.
-      const cmd = ctx.state.players[play.side];
-      const tithe = cmd.bonusSacrificeMarrow;
-      if (tithe > 0) {
-        cmd.marrow += tithe;
-        emit(ctx, { t: 'resourcesChanged', side: play.side, pips: cmd.pips, marrow: cmd.marrow });
-      }
-
-      emit(ctx, { t: 'unitSacrificed', unitId: unit.id, marrowExtracted: tithe });
-      // An offering made by a card is still an offering, the same reason the Ledger's
-      // Marrow applies here.
-      healCommander(ctx, play.side, cmd.healOnSacrifice);
+      emit(ctx, { t: 'unitConsumed', unitId: unit.id });
       killEntity(ctx, unit, 'spell');
+      return;
+    }
+
+    case 'tithe': {
+      const ref = chosenRef(play);
+      if (!ref || ref.kind !== 'unit') return;
+      const unit = ctx.state.units[ref.id];
+      if (!unit) return;
+      // Already bled this turn. Targeting refuses this for every shipped card, so this is
+      // the belt to that suspenders — and the rule it enforces is the same one `canAct`
+      // states, rather than a second opinion about it.
+      if (!canAct(unit)) return;
+
+      // The tile is remembered even though the body usually survives: a lethal tithe
+      // leaves ground, and an op after it in the same `seq` may want to stand there.
+      play.vacatedAt = { ...unit.anchor };
+      play.titheDamage = applyTithe(ctx, unit, node.damage, node.marrow);
       return;
     }
 
@@ -154,7 +221,7 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       const amount =
         typeof node.amount === 'number'
           ? node.amount
-          : Math.min(node.amount.max, play.sacrificedHp ?? 0);
+          : Math.min(node.amount.max, play.titheDamage ?? 0);
       if (amount <= 0) return;
       cmd.marrow += amount;
       emit(ctx, {

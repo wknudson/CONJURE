@@ -10,7 +10,7 @@ import type { GameState } from '../types/state.js';
 import type { Command } from '../types/commands.js';
 import { CARDS } from '../data/cards/index.js';
 import { affordable, canAfford } from '../engine/deck.js';
-import { legalCardTargets, legalAttacks, sacrificeCandidates } from '../engine/targeting.js';
+import { legalCardTargets, legalAttacks, titheCandidates } from '../engine/targeting.js';
 import { legalMoves, canMove, canAttack } from '../engine/movement.js';
 import { unitsOf } from '../engine/board.js';
 import { CHANNEL_MARROW } from '../engine/engine.js';
@@ -84,7 +84,7 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
     }
   }
 
-  // 4. Sacrifices — only worth enumerating when there is something to spend marrow on.
+  // 4. Tithes — only worth enumerating when there is something to spend marrow on.
   //
   // Two questions, asked in one sweep: is anything out of reach at all, and would one
   // more Marrow specifically bring something into reach. The second cannot be derived
@@ -100,8 +100,8 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
     if (affordable(cmd.pips, cmd.marrow + CHANNEL_MARROW, def.cost)) marrowWouldUnlock = true;
   }
   if (hasExpensiveCard) {
-    for (const unit of sacrificeCandidates(state, side)) {
-      out.push({ type: 'sacrifice', unit: unit.id });
+    for (const unit of titheCandidates(state, side)) {
+      out.push({ type: 'bloodTithe', unit: unit.id });
     }
   }
 

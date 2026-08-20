@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addUnit, eventsOf, run, scenario } from './scenario.js';
 import { applyCommand } from '../core/engine/engine.js';
-import { legalAttacks, sacrificeCandidates } from '../core/engine/targeting.js';
+import { legalAttacks, titheCandidates } from '../core/engine/targeting.js';
 import { enumerateActions } from '../core/ai/enumerate.js';
 import { threatMap } from '../core/engine/threat.js';
 import { CombatSession } from '../core/session.js';
@@ -84,7 +84,7 @@ describe('nobody commands it', () => {
 
   it('cannot be sacrificed by the side it sits with', () => {
     const { state } = standoff();
-    expect(sacrificeCandidates(state, 'enemy').some((u) => u.defId === 'ridge_wolf')).toBe(false);
+    expect(titheCandidates(state, 'enemy').some((u) => u.defId === 'ridge_wolf')).toBe(false);
   });
 
   it('counts as a danger to both sides on the threat map', () => {

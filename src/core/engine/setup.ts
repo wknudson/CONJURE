@@ -82,8 +82,8 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       ignoresIceSlip: false,
       revealsIntents: false,
       bonusObstacleHp: 0,
-      bonusSacrificeMarrow: 0,
-      healOnSacrifice: 0,
+      bonusTitheMarrow: 0,
+      healOnTithe: 0,
       bonusToxinStacks: 0,
       boundFormIgnoresHazards: false,
       boundFormGrounded: false,
@@ -184,10 +184,10 @@ export interface CombatBoons {
   revealIntents?: boolean;
   /** Added to the health of every obstacle this side raises from a card. */
   bonusObstacleHp?: number;
-  /** Added to the Marrow every sacrifice this side makes pays out. */
-  bonusSacrificeMarrow?: number;
+  /** Added to the Marrow every tithe this side makes pays out. */
+  bonusTitheMarrow?: number;
   /** Health returned to the Pact each time this side gives a body up. */
-  healOnSacrifice?: number;
+  healOnTithe?: number;
   /** Extra stacks folded into every Toxin this side applies. */
   bonusToxinStacks?: number;
   /**
@@ -324,8 +324,8 @@ export function createCombat(
   // Additive, and floored at zero for the same reason the ceiling only moves up: a
   // hand-edited negative must not make the player's walls flimsier than the card says.
   player.commander.bonusObstacleHp += Math.max(0, carry?.boons?.bonusObstacleHp ?? 0);
-  player.commander.bonusSacrificeMarrow += Math.max(0, carry?.boons?.bonusSacrificeMarrow ?? 0);
-  player.commander.healOnSacrifice += Math.max(0, carry?.boons?.healOnSacrifice ?? 0);
+  player.commander.bonusTitheMarrow += Math.max(0, carry?.boons?.bonusTitheMarrow ?? 0);
+  player.commander.healOnTithe += Math.max(0, carry?.boons?.healOnTithe ?? 0);
   player.commander.bonusToxinStacks += Math.max(0, carry?.boons?.bonusToxinStacks ?? 0);
   player.commander.collisionResist += Math.max(0, carry?.boons?.collisionResist ?? 0);
 

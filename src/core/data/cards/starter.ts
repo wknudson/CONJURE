@@ -33,7 +33,6 @@ export const STARTER_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'bruiser',
-      sacrificeValue: 1,
       escalationBonus: { atk: 1, hp: 1 },
     },
   },
@@ -58,7 +57,6 @@ export const STARTER_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'skirmisher',
-      sacrificeValue: 1,
       escalationBonus: { atk: 1, hp: 0 },
     },
   },
@@ -70,11 +68,14 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     school: 'arcane',
     source: 'hero',
     kind: 'minion',
-    text: 'Escalate: +1 ATK. Sacrifice: extracts +2 Marrow.',
+    text: 'Escalate: +1 ATK. Bled for +1 Marrow above the usual.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'marrow_wisp' },
-    keywords: ['Escalate', 'Sacrifice'],
+    keywords: ['Escalate'],
     unit: {
+      // Bred to bleed. Every body pays the flat tithe rate; this one pays over it, which
+      // is the whole of its identity now that being spent whole is no longer a thing.
+      titheBonus: 1,
       atk: 1,
       hp: 3,
       mov: 2,
@@ -82,7 +83,6 @@ export const STARTER_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'caster',
-      sacrificeValue: 2,
       escalationBonus: { atk: 1, hp: 0 },
     },
   },
@@ -106,7 +106,6 @@ export const STARTER_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'bruiser',
-      sacrificeValue: 2,
       escalationBonus: { atk: 1, hp: 1 },
     },
   },
@@ -136,7 +135,6 @@ export const STARTER_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 2,
       archetype: 'behemoth',
-      sacrificeValue: 3,
       // Behemoth escalation is uncapped per Module 2; the cap is applied in status.ts.
       escalationBonus: { atk: 1, hp: 1 },
     },
@@ -166,7 +164,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     school: 'dusk',
     source: 'companion',
     kind: 'rune',
-    text: 'Attach to a friendly unit. When it dies or is sacrificed, deals 5 damage to the lowest-HP enemy.',
+    text: 'Attach to a friendly unit. When it dies — including bled dry by a tithe — deals 5 damage to the lowest-HP enemy.',
     target: { kind: 'entity', side: 'ally', includeObstacles: false },
     effect: { op: 'attachRune', rune: 'soul_splinter_rune' },
     keywords: [],
@@ -211,14 +209,16 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     school: 'dusk',
     source: 'hero',
     kind: 'spell',
-    text: 'Sacrifice an un-exhausted friendly minion. Grants its current HP as Persistent Armor and extracts +2 Marrow.',
+    text: 'Bleed an un-exhausted friendly minion for 4: extracts 3 Marrow and grants Persistent Armor equal to the health taken.',
     target: { kind: 'entity', side: 'ally', includeObstacles: false, requireUnexhausted: true },
+    // Above the free command's rate on both axes — 4 damage for 3 Marrow against the
+    // command's 3 for 2 — because this costs a card as well as the blood. The armour is
+    // what it always was, only now measured by the wound rather than by the whole body.
     effect: {
       op: 'seq',
       effects: [
-        { op: 'sacrificeTarget' },
-        { op: 'grantArmor', amount: { from: 'sacrificedHp' } },
-        { op: 'extractMarrow', amount: 2 },
+        { op: 'tithe', damage: 4, marrow: 3 },
+        { op: 'grantArmor', amount: { from: 'titheDamage' } },
       ],
     },
     keywords: [],

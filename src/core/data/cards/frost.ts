@@ -153,7 +153,6 @@ export const FROST_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'bruiser',
-      sacrificeValue: 1,
       escalationBonus: { atk: 0, hp: 1 },
     },
   },

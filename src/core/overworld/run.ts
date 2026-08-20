@@ -67,8 +67,8 @@ export function carryFor(
     (brew?.extraOpeningCards ?? 0) + (gear.extraOpeningCards ?? 0) + (knack.extraOpeningCards ?? 0);
   const maxPips = Math.max(gear.maxPips ?? 0, knack.maxPips ?? 0);
   const obstacleHp = (gear.bonusObstacleHp ?? 0) + (knack.bonusObstacleHp ?? 0);
-  const sacrificeMarrow = (gear.bonusSacrificeMarrow ?? 0) + (knack.bonusSacrificeMarrow ?? 0);
-  const sacrificeHeal = (gear.healOnSacrifice ?? 0) + (knack.healOnSacrifice ?? 0);
+  const titheMarrow = (gear.bonusTitheMarrow ?? 0) + (knack.bonusTitheMarrow ?? 0);
+  const titheHeal = (gear.healOnTithe ?? 0) + (knack.healOnTithe ?? 0);
   const toxinStacks = (gear.bonusToxinStacks ?? 0) + (knack.bonusToxinStacks ?? 0);
   const handLimit = (gear.bonusHandLimit ?? 0) + (knack.bonusHandLimit ?? 0);
   const braced = (gear.collisionResist ?? 0) + (knack.collisionResist ?? 0);
@@ -84,8 +84,8 @@ export function carryFor(
     ...(gear.ignoreIceSlip || knack.ignoreIceSlip ? { ignoreIceSlip: true } : {}),
     ...(gear.revealIntents || knack.revealIntents ? { revealIntents: true } : {}),
     ...(obstacleHp ? { bonusObstacleHp: obstacleHp } : {}),
-    ...(sacrificeMarrow ? { bonusSacrificeMarrow: sacrificeMarrow } : {}),
-    ...(sacrificeHeal ? { healOnSacrifice: sacrificeHeal } : {}),
+    ...(titheMarrow ? { bonusTitheMarrow: titheMarrow } : {}),
+    ...(titheHeal ? { healOnTithe: titheHeal } : {}),
     ...(toxinStacks ? { bonusToxinStacks: toxinStacks } : {}),
     ...(gear.boundFormIgnoresHazards || knack.boundFormIgnoresHazards
       ? { boundFormIgnoresHazards: true }

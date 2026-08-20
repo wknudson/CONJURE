@@ -174,13 +174,13 @@ describe('combat resolution edges', () => {
     expect(res.state.result).toBeUndefined();
   });
 
-  it('lets the last unit be sacrificed without breaking the turn', () => {
+  it('lets the last unit be bled to death without breaking the turn', () => {
     const state = scenario({
       units: [{ def: 'marrow_wisp', side: 'player', at: { x: 2, y: 4 } }],
     });
     const wisp = findUnit(state, 'marrow_wisp', 'player');
 
-    const res = run(state, { type: 'sacrifice', unit: wisp.id }, { type: 'endTurn' });
+    const res = run(state, { type: 'bloodTithe', unit: wisp.id }, { type: 'endTurn' });
 
     expect(res.state.units[wisp.id]).toBeUndefined();
     expect(res.state.result).toBeUndefined();

@@ -103,7 +103,7 @@ describe('Verdant Growth', () => {
       def: 'sylva_bound',
       side: 'player',
       at: { x: 2, y: 5 },
-      sacrificeValue: 0,
+      titheBonus: 0,
     });
     state.players.player.companionUnitId = body.id;
     state.players.player.companionUnitDefId = 'sylva_bound';
@@ -161,7 +161,7 @@ describe('Soul Siphon', () => {
     const state = scenario({ width: 6, height: 8, hand, pips: 8 });
     state.players.player.maxHp = 40;
     state.players.player.hp = 20;
-    state.players.player.healOnSacrifice = 1;
+    state.players.player.healOnTithe = 1;
     const victim = addUnit(state, {
       def: 'marrow_wisp',
       side: 'player',
@@ -173,25 +173,26 @@ describe('Soul Siphon', () => {
 
   it('reaches the engine as a capability, not a listener', () => {
     const { carry } = withKnack('mortis', 'soul_siphon');
-    expect(carry.boons?.healOnSacrifice).toBe(1);
+    expect(carry.boons?.healOnTithe).toBe(1);
     expect(JSON.stringify(carry), 'the engine never hears the name').not.toContain('soul_siphon');
 
     const { state } = createCombat(NOVICE_DUELIST, 7, 'mortis', undefined, carry);
-    expect(state.players.player.healOnSacrifice).toBe(1);
-    expect(state.players.enemy.healOnSacrifice, 'and the enemy gets nothing').toBe(0);
+    expect(state.players.player.healOnTithe).toBe(1);
+    expect(state.players.enemy.healOnTithe, 'and the enemy gets nothing').toBe(0);
   });
 
-  it('takes something back from a sacrifice made by hand', () => {
+  it('takes something back from a tithe made by hand', () => {
     const { state, victim } = siphoning();
-    const res = run(state, { type: 'sacrifice', unit: victim.id });
+    const res = run(state, { type: 'bloodTithe', unit: victim.id });
 
     expect(res.state.players.player.hp).toBe(21);
     expect(eventsOf(res.events, 'healed').length).toBe(1);
   });
 
-  it('takes it back from a sacrifice made by a card too', () => {
-    // Dark Tithe offers through `sacrificeTarget`. A trait about *sacrificing* has to
-    // apply there as well, or it is worthless to the deck most likely to want it.
+  it('takes it back from a tithe made by a card too', () => {
+    // Dark Tithe bleeds through the `tithe` op, which routes into the same `applyTithe` as
+    // the command. A trait about tithing has to apply there as well, or it is worthless to
+    // the deck most likely to want it.
     const { state, victim } = siphoning(['dark_tithe']);
     const card = handCard(state, 'player', 'dark_tithe');
 
@@ -211,7 +212,7 @@ describe('Soul Siphon', () => {
       fresh: false,
     });
 
-    const res = run(state, { type: 'sacrifice', unit: victim.id });
+    const res = run(state, { type: 'bloodTithe', unit: victim.id });
 
     expect(res.state.players.player.hp).toBe(20);
     expect(eventsOf(res.events, 'healed')).toEqual([]);
@@ -222,7 +223,7 @@ describe('Toxic Bloom', () => {
   const poisoning = (bonus: number) => {
     const state = scenario({ width: 6, height: 8, hand: ['spore_cloud'], pips: 8 });
     state.players.player.bonusToxinStacks = bonus;
-    addUnit(state, { def: 'sylva_bound', side: 'player', at: { x: 2, y: 5 }, sacrificeValue: 0 });
+    addUnit(state, { def: 'sylva_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 12 });
     return { state, foe };
   };
@@ -283,7 +284,7 @@ describe('Ethereal-Bound', () => {
       def: 'mortis_bound',
       side: 'player',
       at: { x: 2, y: 5 },
-      sacrificeValue: 0,
+      titheBonus: 0,
       fresh: false,
     });
     state.players.player.companionUnitId = body.id;
@@ -332,7 +333,7 @@ describe('Deep Roots', () => {
       def: 'sylva_bound',
       side: 'player',
       at: { x: 2, y: 5 },
-      sacrificeValue: 0,
+      titheBonus: 0,
       fresh: false,
     });
     return { state, body };

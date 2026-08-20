@@ -80,7 +80,6 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
       rangeMax: 4,
       footprint: 1,
       archetype: 'sniper',
-      sacrificeValue: 2,
       escalationBonus: { atk: 1, hp: 0 },
       attackProfile: 'arcing',
     },
@@ -140,25 +139,29 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     school: 'dusk',
     source: 'hero',
     kind: 'spell',
-    text: 'Sacrifice a friendly minion. Extract Marrow equal to its remaining health, up to 4, and draw a card.',
-    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    text: 'Bleed an un-exhausted friendly minion for 4. Extract Marrow equal to the health actually taken, up to 4, and draw a card.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false, requireUnexhausted: true },
+    // The card's identity survives the overhaul untouched, because `titheDamage` records
+    // the *landed* wound: bleeding a 2-HP body still yields 2, and a fat one still caps at
+    // the tithe. The tithe itself pays no Marrow — all of it comes from the scaling op, so
+    // the cap stays the only number that matters.
     effect: {
       op: 'seq',
       effects: [
-        { op: 'sacrificeTarget' },
-        { op: 'extractMarrow', amount: { from: 'sacrificedHp', max: 4 } },
+        { op: 'tithe', damage: 4, marrow: 0 },
+        { op: 'extractMarrow', amount: { from: 'titheDamage', max: 4 } },
         { op: 'drawCards', amount: 1 },
       ],
     },
     keywords: [],
     // The cap is the card, so the cap is what moves. Still free, still paid for in bodies.
     rank2: {
-      text: 'Sacrifice a friendly minion. Extract Marrow equal to its remaining health, up to 6, and draw two cards.',
+      text: 'Bleed an un-exhausted friendly minion for 6. Extract Marrow equal to the health actually taken, up to 6, and draw two cards.',
       effect: {
         op: 'seq',
         effects: [
-          { op: 'sacrificeTarget' },
-          { op: 'extractMarrow', amount: { from: 'sacrificedHp', max: 6 } },
+          { op: 'tithe', damage: 6, marrow: 0 },
+          { op: 'extractMarrow', amount: { from: 'titheDamage', max: 6 } },
           { op: 'drawCards', amount: 2 },
         ],
       },

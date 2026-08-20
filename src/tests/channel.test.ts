@@ -83,7 +83,7 @@ describe('channelling', () => {
       def: 'ignis_bound',
       side: 'player',
       at: { x: 2, y: 4 },
-      sacrificeValue: 0,
+      titheBonus: 0,
     });
 
     expect(() => applyCommand(state, { type: 'channel', unit: body.id })).toThrow(

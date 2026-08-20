@@ -175,10 +175,18 @@ export function checkInvariants(state: GameState, where: string): string[] {
       (u) => u.side === side && u.keywords.includes('BoundForm'),
     );
     if (bound.length > 1) say(`${side} has ${bound.length} Bound Forms`);
+    // The Alpha of a subjugation is the one Bound Form that *does* grow. `enrageBoss`
+    // writes its stacks directly, on the stated grounds that this is not the Escalate
+    // keyword rewarding survival but the beast getting angrier at being caged — so the
+    // rule below has to know the difference, or it calls a documented mechanic a bug.
+    const alphaId = state.players.enemy.companionUnitId;
     for (const u of bound) {
       if (u.hp !== u.maxHp) say(`Bound Form ${u.id} lost HP of its own (${u.hp}/${u.maxHp})`);
-      if (u.escalation !== 0) say(`Bound Form ${u.id} escalated to ${u.escalation}`);
-      if (u.sacrificeValue !== 0) say(`Bound Form ${u.id} is worth ${u.sacrificeValue} marrow`);
+      const mayEnrage = u.id === alphaId && state.encounter.subjugation.sealed;
+      if (u.escalation !== 0 && !mayEnrage) {
+        say(`Bound Form ${u.id} escalated to ${u.escalation}`);
+      }
+      if (u.titheBonus !== 0) say(`Bound Form ${u.id} is worth ${u.titheBonus} bonus marrow`);
     }
   }
 

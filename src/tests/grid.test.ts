@@ -18,6 +18,7 @@ import { hasLoS } from '../core/engine/los.js';
 import { legalAttacks } from '../core/engine/targeting.js';
 import { legalMoves, canAct } from '../core/engine/movement.js';
 import { COLLISION_TARGET_DAMAGE } from '../core/engine/displacement.js';
+import { TITHE_MARROW } from '../core/engine/effects.js';
 
 /**
  * Advanced grid cards.
@@ -168,7 +169,7 @@ describe('Clockwork Bombardier', () => {
     charged.players.player.pips = 8;
     charged.players.player.cards.torch = { instanceId: 'torch', defId: 'flame_surge' };
     charged.players.player.hand.push('torch');
-    addUnit(charged, { def: 'ignis_bound', side: 'player', at: { x: 4, y: 3 }, sacrificeValue: 0 });
+    addUnit(charged, { def: 'ignis_bound', side: 'player', at: { x: 4, y: 3 }, titheBonus: 0 });
 
     const res = run(
       charged,
@@ -204,7 +205,7 @@ describe('Seismic Slam', () => {
   /** Four bodies ringing (2,3), one of them backed against the top wall. */
   const ringed = () => {
     const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], pips: 6 });
-    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, sacrificeValue: 0 });
+    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 9 });
     const east = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 3 }, hp: 9 });
     const corner = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 9 });
@@ -227,7 +228,7 @@ describe('Seismic Slam', () => {
   it('deals no damage of its own', () => {
     // Everything it produces comes from what the bodies hit on the way out.
     const state = scenario({ width: 8, height: 8, hand: ['seismic_slam'], pips: 6 });
-    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 4, y: 5 }, sacrificeValue: 0 });
+    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 4, y: 5 }, titheBonus: 0 });
     const lone = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 4, y: 3 }, hp: 9 });
     const card = handCard(state, 'player', 'seismic_slam');
 
@@ -242,7 +243,7 @@ describe('Seismic Slam', () => {
     // your own line it shoves your own line, collisions and all. That is the card's
     // restraint, and the reason it is aimed at a tile rather than at an enemy.
     const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], pips: 6 });
-    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 4, y: 5 }, sacrificeValue: 0 });
+    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 4, y: 5 }, titheBonus: 0 });
     const friend = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 5 }, hp: 9 });
     const card = handCard(state, 'player', 'seismic_slam');
 
@@ -255,7 +256,7 @@ describe('Seismic Slam', () => {
     // A unit already against the board edge has nowhere to go, so the shove becomes a
     // collision — which is the card's entire reason to exist.
     const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], pips: 6 });
-    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, sacrificeValue: 0 });
+    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     const pinned = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 0 }, hp: 9 });
     const card = handCard(state, 'player', 'seismic_slam');
 
@@ -356,29 +357,33 @@ describe('Ash-Ghoul', () => {
     expect(legalMoves(state, state.units[ghoul.id]!)).toEqual([]);
   });
 
-  it('cannot be cashed in on the turn it lands', () => {
+  it('cannot be bled on the turn it lands', () => {
     // Dormant is the real price. `canAct` refuses anything summoned this turn without
-    // Haste, and the sacrifice command asks `canAct` — so one Pip buys two Marrow *next*
-    // turn, if the thing is still standing.
+    // Haste, and the tithe asks `canAct` — so one Pip buys the Marrow *next* turn, if the
+    // thing is still standing.
     const { state, ghoul } = planted(true);
     expect(canAct(state.units[ghoul.id]!)).toBe(false);
-    expect(() => run(state, { type: 'sacrifice', unit: ghoul.id })).toThrow();
+    expect(() => run(state, { type: 'bloodTithe', unit: ghoul.id })).toThrow();
   });
 
   it('pays out once it has stood a turn', () => {
     const { state, ghoul } = planted(false);
     const before = state.players.player.marrow;
 
-    const res = run(state, { type: 'sacrifice', unit: ghoul.id });
+    const res = run(state, { type: 'bloodTithe', unit: ghoul.id });
 
-    expect(res.state.players.player.marrow).toBe(before + 2);
-    expect(eventsOf(res.events, 'unitSacrificed')[0]!.marrowExtracted).toBe(2);
+    // The flat rate plus this body's premium. A Ghoul has 2 health and a tithe takes 3,
+    // so it does not survive being bled — and is paid for anyway, which is the rule.
+    expect(res.state.players.player.marrow).toBe(before + TITHE_MARROW + 1);
+    expect(eventsOf(res.events, 'unitTithed')[0]!.marrow).toBe(TITHE_MARROW + 1);
+    expect(res.state.units[ghoul.id], 'bled dry').toBeUndefined();
   });
 
   it('is worth the same as a Wisp, bought differently', () => {
-    // The Wisp pays two for a Pip and can walk. This pays two for a Pip and cannot move
-    // or act for a turn — the same fuel, priced in tempo instead of mobility.
-    expect(CARDS.ash_ghoul!.unit!.sacrificeValue).toBe(CARDS.marrow_wisp!.unit!.sacrificeValue);
+    // The Wisp pays its premium for a Pip and can walk. This pays the same premium for a
+    // Pip and cannot move or act for a turn — the same fuel, priced in tempo instead of
+    // mobility.
+    expect(CARDS.ash_ghoul!.unit!.titheBonus).toBe(CARDS.marrow_wisp!.unit!.titheBonus);
     expect(CARDS.ash_ghoul!.unit!.mov).toBe(0);
     expect(CARDS.marrow_wisp!.unit!.mov).toBeGreaterThan(0);
   });

@@ -35,7 +35,7 @@ function withBound(opts: { at?: Coord; extra?: Parameters<typeof scenario>[0] } 
     side: 'player',
     at: opts.at ?? { x: 2, y: 6 },
     keywords: ['BoundForm'],
-    sacrificeValue: 0,
+    titheBonus: 0,
   });
   return { state, boundId: bound.id };
 }
@@ -113,25 +113,24 @@ describe('damage lands on the Pact, not the body', () => {
 });
 
 describe('what cannot be done to it', () => {
-  it('refuses to sacrifice it', () => {
+  it('refuses to tithe it', () => {
+    // It keeps no health of its own, so the wound would land on the Pact: tithing the
+    // Bound Form would be paying yourself out of your own life total.
     const { state, boundId } = withBound();
-    expect(() => applyCommand(state, { type: 'sacrifice', unit: boundId })).toThrow(
+    expect(() => applyCommand(state, { type: 'bloodTithe', unit: boundId })).toThrow(
       IllegalCommandError,
     );
   });
 
-  it('refuses to sacrifice anything worth no marrow', () => {
-    // Pre-existing hole: this command never checked, so a worthless offering was legal.
-    const state = scenario({ width: 6, height: 8 });
-    const pawn = addUnit(state, {
-      def: 'vanguard_footman',
-      side: 'player',
-      at: { x: 1, y: 6 },
-      sacrificeValue: 0,
-    });
-    expect(() => applyCommand(state, { type: 'sacrifice', unit: pawn.id })).toThrow(
-      IllegalCommandError,
-    );
+  it('leaves the Pact untouched when the tithe is refused', () => {
+    // The refusal has to happen before anything is credited. A throw that still moved the
+    // Marrow would make the illegal command worth issuing.
+    const { state, boundId } = withBound();
+    const marrowBefore = state.players.player.marrow;
+    const hpBefore = state.players.player.hp;
+    expect(() => applyCommand(state, { type: 'bloodTithe', unit: boundId })).toThrow();
+    expect(state.players.player.marrow).toBe(marrowBefore);
+    expect(state.players.player.hp).toBe(hpBefore);
   });
 
   it('hides it from Dark Tithe', () => {

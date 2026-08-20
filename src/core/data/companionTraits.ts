@@ -120,9 +120,9 @@ const MORTIS_TRAITS: Record<string, CompanionTrait> = {
   soul_siphon: {
     id: 'soul_siphon',
     name: 'Soul Siphon',
-    text: 'Takes a little back from every offering. Each sacrifice returns 1 HP to the Pact.',
+    text: 'Takes a little back from every offering. Each tithe returns 1 HP to the Pact.',
     baseId: 'mortis',
-    boons: { healOnSacrifice: 1 },
+    boons: { healOnTithe: 1 },
   },
 
   grave_ward: {

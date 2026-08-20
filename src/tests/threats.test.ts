@@ -36,10 +36,10 @@ describe('the roster as data', () => {
     for (const id of THREATS) expect(roster, id).toContain(id);
   });
 
-  it('is worth nothing as an offering', () => {
-    // They are never yours to sacrifice, and a non-zero value would be a number nothing
-    // in the game can read.
-    for (const id of THREATS) expect(CARDS[id]!.unit!.sacrificeValue, id).toBe(0);
+  it('bleeds at no premium', () => {
+    // They are never yours to tithe, so a bonus on one would be a number nothing in the
+    // game can read.
+    for (const id of THREATS) expect(CARDS[id]!.unit!.titheBonus ?? 0, id).toBe(0);
   });
 });
 

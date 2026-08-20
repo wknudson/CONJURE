@@ -225,9 +225,9 @@ export const RELICS: Record<string, RelicDef> = {
   relic_ledger: {
     id: 'relic_ledger',
     name: 'Blood-Ink Ledger',
-    text: 'Every name in it is one you wrote. Each sacrifice extracts 1 more Marrow.',
+    text: 'Every name in it is one you wrote. Each tithe extracts 1 more Marrow.',
     slot: 'will',
-    boons: { bonusSacrificeMarrow: 1 },
+    boons: { bonusTitheMarrow: 1 },
   },
 };
 
@@ -272,10 +272,10 @@ export function boonsOfRelics(equipped: RelicLoadout): CombatBoons {
       out.extraOpeningCards = (out.extraOpeningCards ?? 0) + b.extraOpeningCards;
     }
     if (b.bonusObstacleHp) out.bonusObstacleHp = (out.bonusObstacleHp ?? 0) + b.bonusObstacleHp;
-    if (b.bonusSacrificeMarrow) {
-      out.bonusSacrificeMarrow = (out.bonusSacrificeMarrow ?? 0) + b.bonusSacrificeMarrow;
+    if (b.bonusTitheMarrow) {
+      out.bonusTitheMarrow = (out.bonusTitheMarrow ?? 0) + b.bonusTitheMarrow;
     }
-    if (b.healOnSacrifice) out.healOnSacrifice = (out.healOnSacrifice ?? 0) + b.healOnSacrifice;
+    if (b.healOnTithe) out.healOnTithe = (out.healOnTithe ?? 0) + b.healOnTithe;
     if (b.bonusToxinStacks) out.bonusToxinStacks = (out.bonusToxinStacks ?? 0) + b.bonusToxinStacks;
     if (b.maxPips) out.maxPips = Math.max(out.maxPips ?? 0, b.maxPips);
     if (b.ignoreFog) out.ignoreFog = true;

@@ -100,7 +100,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    * body*, standing on the same ground and able to act at once — the tempo card the Dusk
    * school never had.
    *
-   * Two engine seams meet here. `sacrificeTarget` remembers the tile it emptied, and
+   * Two engine seams meet here. `consumeTarget` remembers the tile it emptied, and
    * `summon` falls back to it, because a card aimed at an ally carries no tile of its own.
    * And the Haste is baked into the revenant's own stat block rather than granted at
    * summon time: nothing in the engine can add a keyword to a body mid-play, and inventing
@@ -116,12 +116,12 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
-    text: 'Sacrifice an un-exhausted friendly minion. A Galvanic Revenant stands up on the same tile, ready to move and strike this turn.',
+    text: 'Consume an un-exhausted friendly minion. A Galvanic Revenant stands up on the same tile, ready to move and strike this turn.',
     target: { kind: 'entity', side: 'ally', includeObstacles: false, requireUnexhausted: true },
     effect: {
       op: 'seq',
       effects: [
-        { op: 'sacrificeTarget' },
+        { op: 'consumeTarget' },
         { op: 'summon', unitDef: 'galvanic_revenant' },
       ],
     },

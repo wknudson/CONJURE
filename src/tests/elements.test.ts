@@ -73,7 +73,7 @@ describe('Static Arc', () => {
   /** Two enemies orthogonally beside (2,2), and one on the diagonal that must be spared. */
   const cluster = () => {
     const state = scenario({ width: 6, height: 7, hand: ['static_arc'], pips: 6 });
-    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, sacrificeValue: 0 });
+    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, titheBonus: 0 });
     const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 9 });
     const east = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 9 });
     const corner = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 1 }, hp: 9 });
@@ -117,7 +117,7 @@ describe('the handoff Surge exists for', () => {
   /** One charged enemy, and a hand holding whichever card is about to read the charge. */
   const charged = (hand: string[], armor = 0) => {
     const state = scenario({ width: 6, height: 7, hand, pips: 8, marrow: 4 });
-    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, sacrificeValue: 0 });
+    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, titheBonus: 0 });
     const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 12, armor });
     foe.statuses.charged = 1;
     const bystander = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 9 });
@@ -170,7 +170,7 @@ describe('the handoff Surge exists for', () => {
 describe('Spore Cloud', () => {
   const dosed = (hand: string[] = ['spore_cloud'], armor = 8) => {
     const state = scenario({ width: 6, height: 7, hand, pips: 8 });
-    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, sacrificeValue: 0 });
+    addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, titheBonus: 0 });
     const foe = addUnit(state, {
       def: 'grave_sentinel',
       side: 'enemy',
@@ -356,7 +356,7 @@ describe('Storm Tithe', () => {
       def: 'voltara_bound',
       side: 'player',
       at: { x: 2, y: 4 },
-      sacrificeValue: 0,
+      titheBonus: 0,
     });
     state.players.player.companionUnitId = body.id;
     state.players.player.companionUnitDefId = 'voltara_bound';

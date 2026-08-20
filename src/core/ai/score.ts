@@ -249,8 +249,8 @@ export function scoreAction(
       if (victim.rune) utility += weights.runeHolderKill;
       if (victim.keywords.includes('Guardian')) utility += weights.guardianKill;
     } else {
-      // Losing our own units is a cost, not a benefit — unless we sacrificed on purpose.
-      const deliberate = command.type === 'sacrifice' || command.type === 'playCard';
+      // Losing our own units is a cost, not a benefit — unless we bled it on purpose.
+      const deliberate = command.type === 'bloodTithe' || command.type === 'playCard';
       utility -= deliberate ? weights.kill * 0.4 : weights.friendlyCollateral;
     }
   }

@@ -140,11 +140,13 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
 
     case 'entity': {
       const spec = def.target;
-      // Two things can never be done to a Bound Form, and offering them would waste the
-      // card: it cannot be sacrificed, and a rune attached to it could never detonate,
-      // because its damage is redirected to the Pact before runes are ever evaluated.
+      // Three things can never be done to a Bound Form, and offering them would waste the
+      // card: it cannot be spent whole, it cannot be tithed — it keeps no health of its
+      // own, so the wound would land on the Pact — and a rune attached to it could never
+      // detonate, because its damage is redirected before runes are ever evaluated.
       const barred =
-        effectContainsOp(def.effect, 'sacrificeTarget') ||
+        effectContainsOp(def.effect, 'consumeTarget') ||
+        effectContainsOp(def.effect, 'tithe') ||
         effectContainsOp(def.effect, 'attachRune');
       const out: ChosenTarget[] = [];
       for (const e of allEntities(state)) {
@@ -389,11 +391,18 @@ export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): 
   return cells.some((c) => hasLoSToPortrait(state, c, targetSide, [unit.id], unit.side));
 }
 
-/** Units the given side may sacrifice for Marrow right now. */
-export function sacrificeCandidates(state: GameState, side: Side): Unit[] {
+/**
+ * Units the given side may tithe for Marrow right now.
+ *
+ * `canAct` carries the Exhaustion rule, so a body already bled this turn drops out here
+ * without this needing to know why. The Bound Form is excluded by keyword rather than by
+ * worth: every body pays the same base rate now, so there is no longer a "worth nothing"
+ * class to filter on.
+ */
+export function titheCandidates(state: GameState, side: Side): Unit[] {
   return unitsOf(state, side).filter(
-    // Nothing offers up a wolf that does not belong to it in the first place.
-    (u) => canAct(u) && u.sacrificeValue > 0 && !u.keywords.includes('Feral'),
+    // Nothing bleeds a wolf that does not belong to it in the first place.
+    (u) => canAct(u) && !u.keywords.includes('BoundForm') && !u.keywords.includes('Feral'),
   );
 }
 

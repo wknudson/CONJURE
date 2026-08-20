@@ -30,6 +30,16 @@ export type StatusKind =
   | 'freeze'
   | 'entangle'
   | 'stun'
+  /**
+   * Bled for Marrow. It gave up its turn along with the blood: it cannot move, strike or
+   * channel until the start of its owner's next turn, when the tick clears it.
+   *
+   * Deliberately **not** `stun`. Stun is what an enemy does to you, and it is reserved for
+   * control effects; Exhaustion is what you do to your own body, and the two want to be
+   * told apart — by a reader, by the threat model, and by any future effect that cleanses
+   * one of them.
+   */
+  | 'exhaust'
   /** Frost: the target takes +2 from every hit until it wears off. */
   | 'brittle'
   /**
@@ -58,7 +68,6 @@ export type Keyword =
   | 'Escalate'
   | 'Retain'
   | 'PowerTier'
-  | 'Sacrifice'
   /** Your Companion's body on the board. Its wounds are the Pact's wounds. */
   | 'BoundForm'
   /** Wild. Belongs to no one, fights everyone, and everyone may fight it. */

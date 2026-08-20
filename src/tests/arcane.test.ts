@@ -196,9 +196,9 @@ describe('Scrap Phalanx', () => {
   });
 
   it('is a wall, not a Marrow battery', () => {
-    // `sacrificeValue > 0` is the only gate the sacrifice command applies — the keyword
-    // is glossary text. A cheap 6 HP body worth several Marrow would be an engine.
-    expect(CARDS.scrap_phalanx!.unit!.sacrificeValue).toBeLessThanOrEqual(1);
+    // Every body now pays the same flat tithe, so the question is only whether this one
+    // pays a premium on top. A cheap 6 HP body bleeding above the rate would be an engine.
+    expect(CARDS.scrap_phalanx!.unit!.titheBonus ?? 0).toBe(0);
   });
 });
 

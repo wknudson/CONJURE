@@ -79,10 +79,10 @@ export interface CommanderState {
   revealsIntents: boolean;
   /** Added to the health of obstacles this side raises from a card. */
   bonusObstacleHp: number;
-  /** Added to what each of this side's sacrifices pays out. */
-  bonusSacrificeMarrow: number;
+  /** Added to what each of this side's tithes pays out. */
+  bonusTitheMarrow: number;
   /** Health returned to the Pact each time this side gives a body up. */
-  healOnSacrifice: number;
+  healOnTithe: number;
   /** Extra stacks folded into every Toxin this side applies. */
   bonusToxinStacks: number;
   /** This side's Bound Form crosses broken ground freely and rides no current. */

@@ -129,11 +129,10 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'bruiser',
-      // Worth something as an offering, but not much: `sacrificeValue > 0` is the only
-      // gate the sacrifice command applies — the Sacrifice keyword is glossary text, not
+      // Bleeds at the flat rate and no more. There is no longer a gate on being worth
+      // something — every body pays the same base, and a premium is what marks the
       // a rule — so this number alone decides whether a wall can be cashed in. One keeps
       // the option honest without making a 2-Pip body a Marrow engine.
-      sacrificeValue: 1,
       // Unreachable while the card carries no Escalate keyword; the stat block requires
       // the field regardless. Zeroed rather than guessed, so a future grant of Escalate
       // has to state what this thing actually grows into.

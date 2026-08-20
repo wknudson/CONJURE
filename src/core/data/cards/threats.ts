@@ -49,7 +49,6 @@ export const THREAT_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 2,
       archetype: 'behemoth',
-      sacrificeValue: 0,
       // Behemoth escalation is uncapped; the cap is applied in status.ts by footprint.
       escalationBonus: { atk: 1, hp: 2 },
       trail: 'rubble',
@@ -86,7 +85,6 @@ export const THREAT_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'skirmisher',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
       hunts: 'weakest',
     },
@@ -123,7 +121,6 @@ export const THREAT_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'bruiser',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
       onHit: { status: 'toxin', stacks: 1 },
     },

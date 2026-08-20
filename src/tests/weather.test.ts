@@ -68,7 +68,7 @@ describe('dense fog', () => {
       def: 'boreas_bound',
       side: 'player',
       at: { x: 3, y: 7 },
-      sacrificeValue: 0,
+      titheBonus: 0,
     });
     state.players.player.companionUnitId = body.id;
     state.players.player.companionUnitDefId = 'boreas_bound';

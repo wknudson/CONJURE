@@ -80,6 +80,6 @@ export const RUNES: Record<string, RuneDef> = {
     damage: 5,
     dtype: 'spell',
     blast: { shape: 'lowestHpEnemy' },
-    text: 'When the host dies or is sacrificed, deals 5 damage to the lowest-HP enemy.',
+    text: 'When the host dies, deals 5 damage to the lowest-HP enemy.',
   },
 };

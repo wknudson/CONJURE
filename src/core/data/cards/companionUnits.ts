@@ -6,7 +6,7 @@
  * does. Each is bound to its Companion by CompanionDef.unitCardId.
  *
  * Every one carries BoundForm, which is what makes them the Pact's body: they keep no
- * health of their own, cannot be sacrificed or attached to, and never Escalate. The `hp`
+ * health of their own, cannot be tithed or attached to, and never Escalate. The `hp`
  * below is therefore cosmetic — it never moves, because damage is redirected to the Pact
  * before it reaches the unit. It is set to the Pact's own total so that anything reading
  * a health fraction off the unit reads full, rather than reading a misleading sliver.
@@ -45,7 +45,6 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'bruiser',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
@@ -77,7 +76,6 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       rangeMax: 2,
       footprint: 1,
       archetype: 'skirmisher',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
@@ -109,7 +107,6 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       rangeMax: 2,
       footprint: 1,
       archetype: 'bruiser',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
@@ -139,7 +136,6 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 2,
       archetype: 'behemoth',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
@@ -167,7 +163,6 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       rangeMax: 2,
       footprint: 1,
       archetype: 'skirmisher',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
@@ -194,7 +189,6 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'caster',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
@@ -221,7 +215,6 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       rangeMax: 3,
       footprint: 1,
       archetype: 'caster',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
@@ -254,7 +247,6 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'bruiser',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
@@ -287,7 +279,6 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       rangeMax: 2,
       footprint: 1,
       archetype: 'caster',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
@@ -314,7 +305,6 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       rangeMax: 3,
       footprint: 1,
       archetype: 'caster',
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },
   },

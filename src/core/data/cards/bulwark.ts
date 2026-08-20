@@ -54,7 +54,6 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'bruiser',
-      sacrificeValue: 1,
       escalationBonus: { atk: 1, hp: 1 },
       onHit: { status: 'stun', stacks: 1 },
     },
@@ -121,7 +120,6 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
       archetype: 'bruiser',
       // Worth something as an offering, but nowhere near four Pips back: a body this
       // expensive should be spent by fighting with it, not by cashing it in.
-      sacrificeValue: 1,
       // Unreachable without the Escalate keyword; the stat block demands the field anyway.
       escalationBonus: { atk: 0, hp: 0 },
     },

@@ -28,7 +28,7 @@ export interface UnitSpec {
   keywords?: string[];
   rangeMax?: number;
   fresh?: boolean;
-  sacrificeValue?: number;
+  titheBonus?: number;
 }
 
 /** Builds a bare 5x5 board in the action phase, with no cards drawn. */
@@ -150,8 +150,8 @@ function blankCommander(
     ignoresIceSlip: false,
     revealsIntents: false,
     bonusObstacleHp: 0,
-    bonusSacrificeMarrow: 0,
-    healOnSacrifice: 0,
+    bonusTitheMarrow: 0,
+    healOnTithe: 0,
     bonusToxinStacks: 0,
     boundFormIgnoresHazards: false,
     boundFormGrounded: false,
@@ -194,7 +194,7 @@ export function addUnit(state: GameState, spec: UnitSpec): Unit {
     archetype: stats.archetype,
     keywords: (spec.keywords as Unit['keywords']) ?? [...def.keywords],
     statuses: {},
-    sacrificeValue: spec.sacrificeValue ?? stats.sacrificeValue,
+    titheBonus: spec.titheBonus ?? stats.titheBonus ?? 0,
     escalation: 0,
     escalationCap: stats.footprint === 2 ? Infinity : 3,
     movedThisTurn: false,

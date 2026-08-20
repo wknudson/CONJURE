@@ -39,7 +39,7 @@ describe('persistent armor', () => {
     expect(res.state.players.player.armor).toBe(4);
   });
 
-  it('converts a sacrificed minion HP into Hero armor via Dark Tithe', () => {
+  it('converts blood taken from a minion into Hero armor via Dark Tithe', () => {
     const state = scenario({
       units: [{ def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 6 }],
       hand: ['dark_tithe'],
@@ -48,9 +48,33 @@ describe('persistent armor', () => {
 
     const res = run(state, play(handCard(state, 'player', 'dark_tithe'), atUnit(sentinel.id)));
 
-    expect(res.state.units[sentinel.id]).toBeUndefined();
-    expect(res.state.players.player.armor).toBe(6);
-    expect(res.state.players.player.marrow).toBe(2);
+    // The body survives now — that is the whole shape of the overhaul. It is wounded for
+    // 4 of its 6, Exhausted, and still standing where it was.
+    const body = res.state.units[sentinel.id]!;
+    expect(body.hp).toBe(2);
+    expect(body.statuses.exhaust).toBe(1);
+
+    // Armour is measured by the wound rather than by the whole body.
+    expect(res.state.players.player.armor).toBe(4);
+    expect(res.state.players.player.marrow).toBe(3);
+  });
+
+  it('grants armor only for the blood a small body could actually give', () => {
+    // The scaling reads *landed* damage, so a body with less health than the tithe asks
+    // for cannot pay armour it never had. Without that the card would be worth more when
+    // aimed at something nearly dead.
+    const state = scenario({
+      units: [{ def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 2 }],
+      hand: ['dark_tithe'],
+    });
+    const sentinel = findUnit(state, 'grave_sentinel', 'player');
+
+    const res = run(state, play(handCard(state, 'player', 'dark_tithe'), atUnit(sentinel.id)));
+
+    expect(res.state.units[sentinel.id], 'a 2 HP body does not survive a 4 damage tithe').toBeUndefined();
+    expect(res.state.players.player.armor).toBe(2);
+    // Paid in full regardless: the Marrow is credited before the wound lands.
+    expect(res.state.players.player.marrow).toBe(3);
   });
 });
 

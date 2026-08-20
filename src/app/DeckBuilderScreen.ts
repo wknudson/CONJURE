@@ -45,7 +45,7 @@ import { filterBarHtml, matchesPips, pipPills, wireFilterBar } from '../hud/filt
 /**
  * Every capability a loadout can grant, in the player's words.
  *
- * A list rather than a formatter over the raw keys: `bonusSacrificeMarrow` is a field
+ * A list rather than a formatter over the raw keys: `bonusTitheMarrow` is a field
  * name, and a sheet that prints field names is a debug view. Typed against `CombatBoons`,
  * so a new capability that nobody labels fails the build rather than quietly going
  * unreadable on the one screen built to read them.
@@ -57,8 +57,8 @@ const BOON_LABELS: readonly { key: keyof CombatBoons; label: string }[] = [
   { key: 'extraOpeningCards', label: 'Opening cards' },
   { key: 'bonusHandLimit', label: 'Hand limit' },
   { key: 'bonusObstacleHp', label: 'Obstacle health' },
-  { key: 'bonusSacrificeMarrow', label: 'Marrow per offering' },
-  { key: 'healOnSacrifice', label: 'Health per offering' },
+  { key: 'bonusTitheMarrow', label: 'Marrow per offering' },
+  { key: 'healOnTithe', label: 'Health per offering' },
   { key: 'bonusToxinStacks', label: 'Toxin per application' },
   { key: 'collisionResist', label: 'Collision damage shrugged off' },
   { key: 'ignoreFog', label: 'Sees through fog' },

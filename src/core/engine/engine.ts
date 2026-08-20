@@ -19,12 +19,12 @@ import { emit, makeCtx, newCause } from './context.js';
 import { deepClone } from '../util/clone.js';
 import { CARDS } from '../data/cards/index.js';
 import { canAfford, effectiveCost, resolvePlayedCard, spendResources } from './deck.js';
-import { executeEffect } from './effects.js';
+import { applyTithe, executeEffect, TITHE_DAMAGE, TITHE_MARROW } from './effects.js';
 import { canAct, canAttack, canMove, findMove, setAnchor } from './movement.js';
 import { legalAttacks, legalCardTargets } from './targeting.js';
-import { dealDamage, healCommander } from './damage.js';
+import { dealDamage } from './damage.js';
 import { applyStatusTo } from './status.js';
-import { killEntity, checkLethal } from './death.js';
+import { checkLethal } from './death.js';
 import { getEntity, refOf } from './board.js';
 import { resonanceLimit, toCardSnapshot } from './views.js';
 import { endTurn } from './turn.js';
@@ -77,8 +77,8 @@ export function runCommand(ctx: Ctx, command: Command): void {
     case 'attackTile':
       attackTile(ctx, command.attacker, command.at);
       break;
-    case 'sacrifice':
-      sacrifice(ctx, command.unit);
+    case 'bloodTithe':
+      bloodTithe(ctx, command.unit);
       break;
     case 'channel':
       channel(ctx, command.unit);
@@ -364,7 +364,7 @@ export const CHANNEL_MARROW = 1;
  * affordable used to be a turn spent passing; now every idle body is worth something,
  * and the choice between striking and channelling is a real one on the margin.
  *
- * Unlike Sacrifice this asks nothing of the unit but its turn — it survives, so there is
+ * Unlike a tithe this asks nothing of the unit but its turn — it takes no blood, so there is
  * no offering to be worth anything. The Bound Form is still excluded: extracting Marrow for
  * free with the one unit that cannot be traded away is a turn with no downside at all.
  */
@@ -403,34 +403,51 @@ function channel(ctx: Ctx, unitId: string): void {
   emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
 }
 
-function sacrifice(ctx: Ctx, unitId: string): void {
-  const unit = ctx.state.units[unitId];
-  if (!unit) throw new IllegalCommandError(`no unit ${unitId}`);
-  if (unit.side !== ctx.state.activeSide) throw new IllegalCommandError('not your unit');
-  // "Sacrifice un-exhausted minion" (Draft 7): the offering has to come before the blow.
-  if (unit.attackedThisTurn) throw new IllegalCommandError('unit has already attacked');
-  if (!canAct(unit)) throw new IllegalCommandError('unit cannot act');
-  // Some things are not yours to offer. The Bound Form is the Pact itself, and a unit
-  // worth no Marrow was never a valid offering -- this command checked neither before,
-  // so it would happily consume a unit for nothing.
-  if (unit.keywords.includes('BoundForm')) {
-    throw new IllegalCommandError('the Bound Form cannot be sacrificed');
-  }
-  if (unit.sacrificeValue <= 0) throw new IllegalCommandError('unit is worth no marrow');
+/**
+ * Why this unit may not be tithed, or null if it may.
+ *
+ * The shape `channelRefusal` established, and for the same reason: the reducer throws
+ * whatever this returns and the UI asks the same question to decide whether to offer the
+ * button, so the two can never disagree about what is legal.
+ *
+ * Note what is deliberately *absent*. "Would die" is not a refusal — a lethal tithe is a
+ * legal play and occasionally the right one, so that warning belongs on the button rather
+ * than in the rule. Nor is "worth no Marrow": every body now bleeds at the same base rate,
+ * and the old `sacrificeValue > 0` gate has no successor.
+ */
+export function bloodTitheRefusal(state: GameState, unitId: string): string | null {
+  const unit = state.units[unitId];
+  if (!unit) return `no unit ${unitId}`;
+  if (unit.side !== state.activeSide) return 'not your unit';
+  // The Bound Form keeps no health of its own, so every wound it takes is the Pact's.
+  // Tithing it would pay you out of your own life total at no cost to the board.
+  if (unit.keywords.includes('BoundForm')) return 'the Bound Form cannot be tithed';
+  // One tithe per body per turn. Asked before the general `canAct` — which also refuses an
+  // exhausted unit — so the player is told which rule stopped them rather than the generic
+  // one that happens to cover it.
+  if (unit.statuses.exhaust) return 'unit is already exhausted';
+  if (!canAct(unit)) return 'unit cannot act';
+  return null;
+}
 
-  const side = ctx.state.activeSide;
-  const cmd = ctx.state.players[side];
-  // What the body is worth, plus what this commander is willing to take for it.
-  const extracted = unit.sacrificeValue + cmd.bonusSacrificeMarrow;
-  cmd.marrow += extracted;
+/**
+ * Blood Magic: open one of your own bodies for Marrow.
+ *
+ * Unlike the sacrifice it replaces, the unit stays on the board. What it costs is the
+ * body's turn and 3 of its health, not the body — which is what makes it a decision every
+ * turn rather than a one-time liquidation.
+ *
+ * Note it does *not* set `attackedThisTurn`. Exhaustion is the spend, and it is strictly
+ * broader: an exhausted unit cannot move either, where a spent attack would still let it
+ * walk away. Marking both would be one rule wearing two hats.
+ */
+function bloodTithe(ctx: Ctx, unitId: string): void {
+  const refusal = bloodTitheRefusal(ctx.state, unitId);
+  if (refusal) throw new IllegalCommandError(refusal);
+  const unit = ctx.state.units[unitId]!;
 
-  emit(ctx, { t: 'unitSacrificed', unitId, marrowExtracted: extracted });
-  // The Pact takes something back from the offering, if this Companion is the sort that
-  // does. Zero for everyone else, and `healCommander` says nothing when nothing is owed.
-  healCommander(ctx, side, cmd.healOnSacrifice);
-  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
-
-  killEntity(ctx, unit, 'spell');
+  newCause(ctx);
+  applyTithe(ctx, unit, TITHE_DAMAGE, TITHE_MARROW);
 }
 
 export { refOf };

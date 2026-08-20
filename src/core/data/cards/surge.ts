@@ -81,7 +81,6 @@ export const SURGE_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'skirmisher',
-      sacrificeValue: 1,
       // Unreachable without the Escalate keyword; the stat block demands the field anyway.
       escalationBonus: { atk: 0, hp: 0 },
     },
@@ -123,7 +122,6 @@ export const SURGE_CARDS: Record<string, CardDef> = {
       rangeMax: 4,
       footprint: 1,
       archetype: 'sniper',
-      sacrificeValue: 1,
       attackProfile: 'arcing',
       onHit: { status: 'charged', stacks: 1 },
       // Unreachable without the Escalate keyword; the stat block demands the field anyway.

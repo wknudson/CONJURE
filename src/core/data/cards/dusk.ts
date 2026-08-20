@@ -87,9 +87,8 @@ export const DUSK_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'skirmisher',
-      // Worth nothing as an offering. Sacrificing the thing you just made by sacrificing
+      // Bleeds at no premium. Bleeding the thing you just made by consuming
       // something else is a loop, and a cheap one.
-      sacrificeValue: 0,
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
@@ -102,7 +101,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
    * the fight being there.
    *
    * Dormant is the real price, and it is a stricter one than it looks. `canAct` refuses
-   * anything summoned this turn without Haste, and the sacrifice command asks `canAct` —
+   * anything summoned this turn without Haste, and the tithe asks `canAct` —
    * so a Ghoul **cannot be cashed in on the turn it lands**. One Pip does not buy two
    * Marrow now; it buys two Marrow next turn, if the thing is still standing. A board that
    * can reach it has a turn in which to answer.
@@ -114,11 +113,14 @@ export const DUSK_CARDS: Record<string, CardDef> = {
     school: 'dusk',
     source: 'hero',
     kind: 'minion',
-    text: 'Dormant: cannot act the turn it is summoned, and so cannot be sacrificed until the next one. Cannot move, ever. Sacrifice: extracts +2 Marrow.',
+    text: 'Dormant: cannot act the turn it is summoned, and so cannot be tithed until the next one. Cannot move, ever. Bled for +1 Marrow above the usual.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'ash_ghoul' },
-    keywords: ['Dormant', 'Sacrifice'],
+    keywords: ['Dormant'],
     unit: {
+      // The whole point of the card, and the same premium the Marrow Wisp charges — bought
+      // here with immobility and a turn of waiting rather than with a Pip and mobility.
+      titheBonus: 1,
       atk: 2,
       hp: 2,
       mov: 0,
@@ -128,7 +130,6 @@ export const DUSK_CARDS: Record<string, CardDef> = {
       archetype: 'bruiser',
       // The whole point of the card, and the same number the Marrow Wisp pays — bought
       // here with immobility and a turn of waiting rather than with a Pip and mobility.
-      sacrificeValue: 2,
       // Unreachable without the Escalate keyword; the stat block demands the field anyway.
       escalationBonus: { atk: 0, hp: 0 },
     },

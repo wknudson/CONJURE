@@ -116,6 +116,10 @@ export function canAct(unit: Unit): boolean {
   // until the tether resolves. Gating here covers moving, striking and channelling in
   // one place, since all three already ask this question.
   if (unit.statuses.anchor) return false;
+  // Bled this turn. Gating here rather than in each command is the same argument the
+  // tether makes one line above: moving, striking and channelling all ask this question
+  // already, so one answer covers the three rules Exhaustion is defined by.
+  if (unit.statuses.exhaust) return false;
   // Dormant and Impact units cannot act on the turn they were deployed. Haste can.
   if (unit.summonedThisTurn && !unit.keywords.includes('Haste')) return false;
   return true;

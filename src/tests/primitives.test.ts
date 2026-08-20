@@ -199,14 +199,16 @@ describe('drawCards', () => {
   });
 });
 
-describe('extractMarrow scaled off a sacrifice', () => {
+describe('extractMarrow scaled off a tithe', () => {
   const harvest = (max: number) =>
     probe(
       {
         op: 'seq',
         effects: [
-          { op: 'sacrificeTarget' },
-          { op: 'extractMarrow', amount: { from: 'sacrificedHp', max } },
+          // A tithe big enough to take whatever the body has, so the cap and the body's
+          // health are the only two numbers that can decide the payout.
+          { op: 'tithe', damage: 99, marrow: 0 },
+          { op: 'extractMarrow', amount: { from: 'titheDamage', max } },
         ],
       },
       { target: { kind: 'entity', side: 'ally', includeObstacles: false } },

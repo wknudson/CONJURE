@@ -42,6 +42,9 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
     decay(unit, 'freeze');
     decay(unit, 'entangle');
     decay(unit, 'stun');
+    // Exhaustion is spent by the turn it cost. It lands during your turn and clears at the
+    // start of your next one, so a tithed body is idle for exactly one enemy round.
+    decay(unit, 'exhaust');
     decay(unit, 'chill');
     decay(unit, 'brittle');
     decay(unit, 'charged');

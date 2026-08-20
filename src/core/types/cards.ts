@@ -34,16 +34,33 @@ export type EffectNode =
   | { op: 'spawnConstruct'; obstacleDef: CardDefId; hp: number }
   | { op: 'attachRune'; rune: RuneDefId }
   | { op: 'push'; distance: number }
-  | { op: 'grantArmor'; amount: number | { from: 'sacrificedHp' } }
+  | { op: 'grantArmor'; amount: number | { from: 'titheDamage' } }
   | { op: 'applyStatus'; status: StatusKind; stacks: number; area: AreaSpec }
-  | { op: 'sacrificeTarget' }
   /**
-   * Marrow gained. A fixed number, or scaled off the unit this card just sacrificed.
+   * Spend an allied body whole, to make room or to make something else of it.
    *
-   * The dynamic form mirrors `grantArmor`'s, which already reads `sacrificedHp` — the
+   * This is **not** part of the Marrow economy and never was: it pays nothing out, and the
+   * one card using it converts a minion into a different minion on the same tile. Blood
+   * Magic replaced *sacrifice-for-Marrow*, which is `tithe` below; kill-and-replace is a
+   * separate idea that happened to share the old name.
+   */
+  | { op: 'consumeTarget' }
+  /**
+   * Blood Magic, as a card.
+   *
+   * Wounds an allied unit for Marrow and Exhausts it, exactly as the `bloodTithe` command
+   * does — both route through one `applyTithe`, so a card can never quietly invent a
+   * cheaper or crueller tithe than the rule. Cards pay above the command's rate because
+   * they cost a card as well as the blood.
+   */
+  | { op: 'tithe'; damage: number; marrow: number }
+  /**
+   * Marrow gained. A fixed number, or scaled off the blood a `tithe` just took.
+   *
+   * The dynamic form mirrors `grantArmor`'s, which already reads `titheDamage` — the
    * same fact, wanted by two different cards for two different purposes.
    */
-  | { op: 'extractMarrow'; amount: number | { from: 'sacrificedHp'; max: number } }
+  | { op: 'extractMarrow'; amount: number | { from: 'titheDamage'; max: number } }
   /** Cards drawn, obeying the hand limit and the overdraw burn like any other draw. */
   | { op: 'drawCards'; amount: number }
   /** Shoves everything in the area directly away from the point of origin. */
@@ -146,7 +163,14 @@ export interface UnitStatBlock {
   rangeMax: number;
   footprint: 1 | 2;
   archetype: UnitArchetype;
-  sacrificeValue: number;
+  /**
+   * Extra Marrow this body yields when tithed, on top of the flat rate.
+   *
+   * Optional, and absent almost everywhere: a tithe pays the same base from any body, so
+   * the field marks the handful bred to bleed rather than restating a zero on every stat
+   * block. It is no longer a gate — nothing refuses a tithe for being worth nothing.
+   */
+  titheBonus?: number;
   escalationBonus: { atk: number; hp: number };
   attackProfile?: AttackProfile;
   /** A status its ordinary attacks leave on whatever survives them. */
@@ -337,7 +361,15 @@ export interface CardPlayContext {
   side: Side;
   casterAnchor?: Coord;
   chosen: ChosenTarget;
-  sacrificedHp?: number;
+  /**
+   * Health a `tithe` in this same play actually took off a body.
+   *
+   * The *landed* wound, not the amount asked for, so a card scaling off it cannot be paid
+   * for damage a 2-HP body was never able to absorb. This is what lets Harvest the Weak
+   * keep its old identity -- "Marrow equal to its remaining health, up to 4" -- with no
+   * special case: the cap is the tithe's damage and the floor is what the body had.
+   */
+  titheDamage?: number;
   summonedUnitId?: UnitId;
   /**
    * The obstacle this card just raised, for the ops that come after it.
@@ -350,7 +382,7 @@ export interface CardPlayContext {
    */
   spawnedObstacleId?: UnitId;
   /**
-   * The tile a `sacrificeTarget` just emptied.
+   * The tile a `consumeTarget` or a lethal `tithe` just emptied.
    *
    * The third of these handoffs, and the same shape as the other two. A card that offers
    * up a body and then puts something in its place has to name that place, and the body

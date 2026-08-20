@@ -271,16 +271,23 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
 
   // ---------------------------------------------------------------- removal
 
-  seq.on('unitSacrificed', (e, { view }) => {
+  seq.on('unitTithed', (e, { view }) => {
     const v = view.views.get(e.unitId);
     if (!v) return;
     // Two beats, stacked: what was done to the unit, and what it paid out. The second is
-    // the reason the player did it, so it should not be left to the dial to report.
-    view.fx.label(roundOf(v.pos), 'SACRIFICE', 'sacrifice');
-    if (e.marrowExtracted > 0) {
-      view.fx.label(roundOf(v.pos), `+${e.marrowExtracted} MARROW`, 'marrow', -20);
+    // the reason the player did it, so it should not be left to the dial to report. The
+    // wound itself arrives separately, as the ordinary damage floater.
+    view.fx.label(roundOf(v.pos), 'TITHE', 'sacrifice');
+    if (e.marrow > 0) {
+      view.fx.label(roundOf(v.pos), `+${e.marrow} MARROW`, 'marrow', -20);
       view.sfx.play('rasp');
     }
+  });
+
+  seq.on('unitConsumed', (e, { view }) => {
+    // A body spent whole. No payout to report — whatever it became is its own event.
+    const v = view.views.get(e.unitId);
+    if (v) view.fx.label(roundOf(v.pos), 'CONSUMED', 'sacrifice');
   });
 
   seq.on('unitChannelled', async (e, { view, t }) => {

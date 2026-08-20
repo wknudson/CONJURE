@@ -499,8 +499,8 @@ function toCommand(action: Action): Command {
       return { type: 'moveUnit', unit: action.unit, to: action.to };
     case 'attack':
       return { type: 'attack', attacker: action.attacker, target: action.target };
-    case 'sacrifice':
-      return { type: 'sacrifice', unit: action.unit };
+    case 'bloodTithe':
+      return { type: 'bloodTithe', unit: action.unit };
     case 'channel':
       return { type: 'channel', unit: action.unit };
     case 'endTurn':

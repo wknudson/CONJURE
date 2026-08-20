@@ -94,7 +94,7 @@ describe('what stops it', () => {
       def: 'ignis_bound',
       side: 'player',
       at: { x: 2, y: 7 },
-      sacrificeValue: 0,
+      titheBonus: 0,
     });
     state.players.player.companionUnitId = body.id;
     current(state, { x: 2, y: 7 }, { x: 0, y: 1 });

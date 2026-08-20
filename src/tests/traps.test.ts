@@ -280,7 +280,7 @@ describe('Soul Splinter Rune', () => {
     expect(rune.dtype, 'the one delta from the brief').toBe('spell');
   });
 
-  it('fires when its host is sacrificed, not only when it is killed', () => {
+  it('fires when its host is bled to death, not only when an enemy kills it', () => {
     const state = scenario({ width: 6, height: 8 });
     const host = addUnit(state, {
       def: 'marrow_wisp',
@@ -291,7 +291,9 @@ describe('Soul Splinter Rune', () => {
     });
     const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 9 });
 
-    const res = run(state, { type: 'sacrifice', unit: host.id });
+    // A Marrow Wisp has exactly 3 health, and a tithe takes exactly 3. The rune's
+    // trigger is `death`, so what matters is that a self-inflicted death is still a death.
+    const res = run(state, { type: 'bloodTithe', unit: host.id });
 
     expect(eventsOf(res.events, 'runeDetonated').length).toBe(1);
     expect(damageTo(res.events, victim.id)).toBe(5);

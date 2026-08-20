@@ -150,7 +150,7 @@ describe('Ironclad Boots', () => {
       def: 'sylva_bound',
       side: 'player',
       at: { x: 2, y: 5 },
-      sacrificeValue: 0,
+      titheBonus: 0,
       fresh: false,
     });
     const ctx = makeCtx(state);
@@ -179,7 +179,7 @@ describe('Aether-Weave Gloves', () => {
       def: 'sylva_bound',
       side: 'player',
       at: { x: 2, y: 5 },
-      sacrificeValue: 0,
+      titheBonus: 0,
     });
     state.players.player.companionUnitId = body.id;
     state.players.player.companionUnitDefId = 'sylva_bound';
@@ -236,7 +236,7 @@ describe("Splicer's Goggles", () => {
   const goggled = (on: boolean) => {
     const state = scenario({ width: 6, height: 8, hand: ['galvanic_spores'], pips: 8, marrow: 4 });
     state.players.player.discountHybrids = on;
-    addUnit(state, { def: 'sylva_bound', side: 'player', at: { x: 2, y: 5 }, sacrificeValue: 0 });
+    addUnit(state, { def: 'sylva_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 9 });
     return state;
   };
@@ -347,8 +347,8 @@ describe('the seam that keeps losing capabilities', () => {
     expect(me.ignoresFog && me.immuneToBurn && me.immuneToToxin).toBe(true);
     expect(me.revealsIntents && me.doubleResonance && me.discountHybrids).toBe(true);
     expect(me.boundFormIgnoresHazards && me.boundFormGrounded).toBe(true);
-    expect(me.bonusObstacleHp && me.bonusSacrificeMarrow).toBeGreaterThan(0);
-    expect(me.healOnSacrifice && me.bonusToxinStacks).toBeGreaterThan(0);
+    expect(me.bonusObstacleHp && me.bonusTitheMarrow).toBeGreaterThan(0);
+    expect(me.healOnTithe && me.bonusToxinStacks).toBeGreaterThan(0);
   });
 
   it('still hands the engine no relic or trait id', () => {
