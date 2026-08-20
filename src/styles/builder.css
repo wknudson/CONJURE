@@ -920,3 +920,231 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================================
+   The Field Journal, as a physical object.
+
+   Left: the decklist, written out. Right: the case, laid open. The proportions
+   are the brief's — the list is a column you read down, the case is a surface you
+   scan across, and they want very different amounts of room.
+   ========================================================================== */
+
+.screen--builder {
+  /* Tooled leather with a lamp over the desk. */
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(240, 178, 74, 0.07), transparent 55%),
+    linear-gradient(180deg, #17120e 0%, #120e0b 100%);
+}
+
+.builder__body {
+  grid-template-columns: minmax(270px, 28%) 1fr;
+}
+
+/* Both panels are pages: aged paper, tooled edge, brass at the corners. */
+.builder__pane {
+  position: relative;
+  border: 1px solid rgba(176, 148, 106, 0.36);
+  border-radius: 3px;
+  padding: 16px 16px 14px;
+  background:
+    linear-gradient(180deg, rgba(52, 42, 32, 0.55), rgba(28, 22, 17, 0.72));
+  box-shadow:
+    inset 0 0 40px rgba(0, 0, 0, 0.45),
+    0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* A rule ruled down the inner edge, the way a ledger is ruled. */
+.builder__pane::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(176, 148, 106, 0.16);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.builder__pane-title {
+  align-items: baseline;
+  gap: 10px;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(176, 148, 106, 0.28);
+}
+
+/* Headers are set, not typed: the journal is written in a hand, and the filter
+   labels below it are the same hand in a smaller size. */
+.builder__pane-name {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: none;
+  color: #e8dcc4;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.builder__pane-note {
+  font: italic 600 10px var(--font);
+  color: rgba(214, 196, 160, 0.5);
+  margin: 6px 0 10px;
+}
+
+.builder__count {
+  font: 800 11px var(--font);
+  letter-spacing: 1px;
+  color: var(--lamp);
+}
+
+.builder__collection-count {
+  font: 600 10px var(--font);
+  letter-spacing: 0.8px;
+  color: rgba(214, 196, 160, 0.55);
+}
+
+/* ------------------------------------------------------------------ the case */
+
+.builder__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 9px 11px;
+  margin-bottom: 11px;
+  border-radius: 3px;
+  border: 1px solid rgba(176, 148, 106, 0.26);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.filterbar__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterbar__label {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 11px;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: 0.5px;
+  color: rgba(214, 196, 160, 0.62);
+}
+
+.filterbar__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.filterbar__pill {
+  padding: 3px 9px;
+  border-radius: 2px;
+  border: 1px solid rgba(176, 148, 106, 0.3);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-dim);
+  font: 700 10px var(--font);
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+
+.filterbar__pill:hover {
+  border-color: color-mix(in srgb, var(--pill, var(--brass)) 70%, transparent);
+  color: var(--text);
+}
+
+.filterbar__pill.is-on {
+  border-color: var(--pill, var(--lamp));
+  background: color-mix(in srgb, var(--pill, var(--lamp)) 16%, transparent);
+  color: #f2e8d5;
+}
+
+.builder__collection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: 10px;
+  align-items: start;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+
+.collcell {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: transform 130ms cubic-bezier(0.22, 1, 0.36, 1), filter 130ms ease;
+}
+
+.collcell:hover:not(:disabled) {
+  transform: translateY(-3px);
+  filter: brightness(1.12);
+}
+
+/* Maxed-out cards stay in the case, marked. Hiding them makes a player think they
+   lost the card rather than that they are already holding all of it. */
+.collcell.is-full {
+  cursor: default;
+  filter: grayscale(0.55) brightness(0.62);
+}
+
+/* Copies in the deck, over the corner of the card. */
+.collcell__tally {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  border: 1px solid rgba(176, 148, 106, 0.5);
+  background: rgba(10, 8, 6, 0.9);
+  font: 800 10px var(--font);
+  color: rgba(214, 196, 160, 0.75);
+  pointer-events: none;
+}
+
+.collcell.is-in-deck .collcell__tally {
+  border-color: var(--lamp);
+  color: var(--lamp);
+}
+
+.builder__empty {
+  grid-column: 1 / -1;
+  padding: 22px 8px;
+  text-align: center;
+  font: italic 600 11px var(--font);
+  color: var(--text-dim);
+}
+
+/* ------------------------------------------------------------- the decklist */
+
+.builder__deck {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* A struck line in a ledger rather than a button: the quantity leads, because a
+   decklist is read as counts. */
+.builder__pane--deck .deckrow {
+  border-radius: 2px;
+  border-color: transparent;
+  border-left: 3px solid var(--school, var(--brass));
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.builder__pane--deck .deckrow:hover:not(:disabled) {
+  background: rgba(240, 178, 74, 0.08);
+}
+
+.builder__pane--deck .deckrow__n {
+  font: 800 11px var(--font);
+  color: var(--lamp);
+}
+
+@media (max-width: 1000px) {
+  .builder__body {
+    grid-template-columns: 1fr;
+  }
+}

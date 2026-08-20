@@ -2188,26 +2188,26 @@
   background: rgba(0, 0, 0, 0.26);
 }
 
-.sch-filter {
+.filterbar__group {
   display: flex;
   align-items: center;
   gap: 9px;
 }
 
-.sch-filter__label {
+.filterbar__label {
   font: 800 8px var(--font);
   letter-spacing: 1.8px;
   text-transform: uppercase;
   color: rgba(214, 196, 160, 0.55);
 }
 
-.sch-filter__pills {
+.filterbar__pills {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
 
-.sch-pill {
+.filterbar__pill {
   padding: 4px 9px;
   border-radius: 3px;
   border: 1px solid rgba(176, 148, 106, 0.3);
@@ -2219,13 +2219,13 @@
   transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
 }
 
-.sch-pill:hover {
+.filterbar__pill:hover {
   border-color: color-mix(in srgb, var(--pill, var(--brass)) 70%, transparent);
   color: var(--text);
 }
 
 /* A school pill carries its own colour when chosen, so the grid and the filter agree. */
-.sch-pill.is-on {
+.filterbar__pill.is-on {
   border-color: var(--pill, var(--lamp));
   background: color-mix(in srgb, var(--pill, var(--lamp)) 16%, transparent);
   color: var(--text);

@@ -38,6 +38,9 @@ import {
   slotOf,
 } from '../core/data/relics.js';
 import type { CombatBoons } from '../core/engine/setup.js';
+import type { School } from '../contract/ids.js';
+import { cardFaceHtml, faceOfDef } from '../hud/cardFace.js';
+import { filterBarHtml, matchesPips, pipPills, wireFilterBar } from '../hud/filterBar.js';
 
 /**
  * Every capability a loadout can grant, in the player's words.
@@ -81,6 +84,32 @@ export interface DeckBuilderResult {
  * nothing persistent, but renaming it would churn every selector and stylesheet rule for
  * a label the player never sees.
  */
+/**
+ * How the collection is being looked at.
+ *
+ * Screen state, saved nowhere: a filter is a way of looking at the shelf rather than a
+ * fact about the character.
+ *
+ * There is deliberately no `skill` type. The engine's `kind` union is minion, spell, rune
+ * and obstacle — a fifth pill matching nothing would be a filter that always returns an
+ * empty shelf, which reads as a broken collection rather than as a category the game does
+ * not have. "Construct" is the label for `obstacle`, because that is what the game has
+ * always called the thing standing on the board.
+ */
+interface CollectionFilters {
+  school: School | 'all';
+  cost: string;
+  kind: 'all' | CardDef['kind'];
+}
+
+const VARIANT_PILLS: { key: 'all' | CardDef['kind']; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'spell', label: 'Spell' },
+  { key: 'minion', label: 'Minion' },
+  { key: 'obstacle', label: 'Construct' },
+  { key: 'rune', label: 'Rune' },
+];
+
 type Tab = 'deck' | 'ledger' | 'loadout';
 
 /** Every way the loadout can say no, in the player's words. */
@@ -100,6 +129,9 @@ export class DeckBuilderScreen implements Screen {
   private deck: string[];
   private tooltip: Tooltip | null = null;
   private tab: Tab = 'deck';
+
+  /** How the case is being looked at. Screen state; written to nothing. */
+  private filters: CollectionFilters = { school: 'all', cost: 'all', kind: 'all' };
 
   constructor(
     private readonly companionId: string,
@@ -138,17 +170,24 @@ export class DeckBuilderScreen implements Screen {
       </div>
 
       <div class="builder__body">
-        <div class="builder__pane">
-          <div class="builder__pane-title">Your collection</div>
-          <div class="builder__collection"></div>
-        </div>
         <div class="builder__pane builder__pane--deck">
           <div class="builder__pane-title">
-            Deck <span class="builder__count"></span>
+            <span class="builder__pane-name">The Decklist</span>
+            <span class="builder__count"></span>
           </div>
+          <div class="builder__pane-note">Twelve to thirty. Click a card to strike it out.</div>
           <div class="builder__curve"></div>
           <div class="builder__deck"></div>
           <div class="builder__problems"></div>
+        </div>
+
+        <div class="builder__pane builder__pane--case">
+          <div class="builder__pane-title">
+            <span class="builder__pane-name">The Case</span>
+            <span class="builder__collection-count"></span>
+          </div>
+          <div class="builder__filters filterbar"></div>
+          <div class="builder__collection"></div>
         </div>
       </div>
 
@@ -418,27 +457,113 @@ export class DeckBuilderScreen implements Screen {
     this.renderLedger();
     this.renderLoadout();
     this.renderBoons();
+    this.renderFilters();
     this.renderCollection();
     this.renderDeck();
     this.renderCurve();
     this.renderStatus();
   }
 
+  /**
+   * The collection, as a grid of cards.
+   *
+   * Every card the player owns, whatever the filters, is still *owned* — a filter narrows
+   * what is shown and never what is held. A card already at its copy limit stays on the
+   * shelf, marked and unclickable, because a shelf that hides what you have maxed out
+   * makes a player think they lost it.
+   */
   private renderCollection(): void {
     const host = this.el?.querySelector('.builder__collection');
+    const count = this.el?.querySelector('.builder__collection-count');
     if (!host) return;
 
+    const f = this.filters;
     const owned = Object.keys(this.collection.owned)
       .filter((id) => (this.collection.owned[id] ?? 0) > 0 && CARDS[id])
       .map((id) => CARDS[id]!)
-      .sort((a, b) => cardCostTotal(a.cost) - cardCostTotal(b.cost) || a.name.localeCompare(b.name));
+      .filter((d) => f.school === 'all' || d.school === f.school)
+      .filter((d) => f.kind === 'all' || d.kind === f.kind)
+      .filter((d) => matchesPips(d.cost.pips, f.cost))
+      .sort(
+        (a, b) => cardCostTotal(a.cost) - cardCostTotal(b.cost) || a.name.localeCompare(b.name),
+      );
+
+    if (count) {
+      count.textContent = owned.length
+        ? `${owned.length} card${owned.length === 1 ? '' : 's'}`
+        : '';
+    }
 
     host.innerHTML = '';
+    if (owned.length === 0) {
+      host.innerHTML = '<div class="builder__empty">Nothing in the case matches that.</div>';
+      return;
+    }
+
     for (const def of owned) {
       const inDeck = this.deck.filter((c) => baseIdOf(c) === def.id).length;
-      const canAdd = remainingCopies(this.deck, def.id, this.collection) > 0;
-      host.appendChild(this.cardRow(def, inDeck, canAdd, () => this.add(def.id)));
+      const room = remainingCopies(this.deck, def.id, this.collection);
+      host.appendChild(this.collectionCell(def, inDeck, room > 0));
     }
+  }
+
+  /** One card in the case: the face, how many are in the deck, and the copy ceiling. */
+  private collectionCell(def: CardDef, inDeck: number, canAdd: boolean): HTMLElement {
+    const tier = tierOf(def);
+    const cell = document.createElement('button');
+    cell.className = `collcell${canAdd ? '' : ' is-full'}${inDeck > 0 ? ' is-in-deck' : ''}`;
+    cell.disabled = !canAdd;
+    cell.dataset.tip = `${def.name}|${def.text}|Tier ${tier} · max ${TIER_COPY_LIMIT[tier]} per deck`;
+    cell.innerHTML = `
+      ${cardFaceHtml(faceOfDef(def), { extraClass: 'card--mini', showReach: true })}
+      <span class="collcell__tally">${inDeck}/${TIER_COPY_LIMIT[tier]}</span>
+    `;
+    cell.addEventListener('click', () => this.add(def.id));
+    return cell;
+  }
+
+  /** The filter header over the case. Rebuilt whole, so a marked pill is never stale. */
+  private renderFilters(): void {
+    const bar = this.el?.querySelector<HTMLElement>('.builder__filters');
+    if (!bar) return;
+
+    // Schools are read off what the player actually owns, so a pill can never point at an
+    // empty shelf and a card can never be hidden by an omitted school.
+    const schools = [
+      ...new Set(
+        Object.keys(this.collection.owned)
+          .filter((id) => (this.collection.owned[id] ?? 0) > 0 && CARDS[id])
+          .map((id) => CARDS[id]!.school),
+      ),
+    ].sort();
+
+    bar.innerHTML = filterBarHtml([
+      {
+        name: 'school',
+        label: 'Element',
+        active: String(this.filters.school),
+        pills: [
+          { key: 'all', label: 'All' },
+          ...schools.map((s) => ({
+            key: s,
+            label: s[0]!.toUpperCase() + s.slice(1),
+            tint: schoolOf(s).main,
+          })),
+        ],
+      },
+      { name: 'cost', label: 'Pips', active: this.filters.cost, pills: pipPills() },
+      {
+        name: 'kind',
+        label: 'Variant',
+        active: this.filters.kind,
+        pills: VARIANT_PILLS.map((v) => ({ key: v.key, label: v.label })),
+      },
+    ]);
+
+    wireFilterBar(bar, (name, value) => {
+      (this.filters[name as keyof CollectionFilters] as unknown) = value;
+      this.render();
+    });
   }
 
   private renderDeck(): void {

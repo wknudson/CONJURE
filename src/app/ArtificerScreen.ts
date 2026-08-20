@@ -41,6 +41,7 @@ import { tierOf } from '../core/data/deckRules.js';
 import { schoolOf } from '../render/palette.js';
 import type { School } from '../contract/ids.js';
 import { cardFaceHtml, faceOfDef } from '../hud/cardFace.js';
+import { filterBarHtml, matchesPips, pipPills, wireFilterBar } from '../hud/filterBar.js';
 import { Tooltip } from '../hud/Tooltip.js';
 
 export interface ArtificerOpts {
@@ -90,16 +91,12 @@ const REFUSAL_COPY: Record<string, string> = {
  */
 interface SchematicFilters {
   school: School | 'all';
-  /** Pips. `PIP_MAX` stands for "that many or more" — see `COST_PILLS`. */
-  cost: number | 'all';
+  /** The chosen Pip pill, as its key. Compared through `matchesPips`. */
+  cost: string;
   source: 'all' | 'hero' | 'companion';
   kind: 'all' | CardDef['kind'];
   sort: 'name' | 'cost' | 'school' | 'unlock';
 }
-
-/** The top pill is a bucket, not a number: nothing is priced above it, and things may be. */
-const PIP_MAX = 5;
-const COST_PILLS = [0, 1, 2, 3, 4, PIP_MAX];
 
 /**
  * Type names in the player's words rather than the schema's.
@@ -261,31 +258,12 @@ export class ArtificerScreen implements Screen {
     // card by omitting the school somebody printed it in.
     const schools = [...new Set(schematicCatalogue().map((d) => d.school))].sort();
 
-    const group = (
-      label: string,
-      name: keyof SchematicFilters,
-      pills: { key: string | number; label: string; tint?: string }[],
-      active: string | number,
-    ): string => `
-      <div class="sch-filter">
-        <span class="sch-filter__label">${label}</span>
-        <div class="sch-filter__pills">
-          ${pills
-            .map(
-              (p) => `
-            <button class="sch-pill${p.key === active ? ' is-on' : ''}"
-                    data-filter="${name}" data-value="${p.key}"
-                    ${p.tint ? `style="--pill:${p.tint}"` : ''}>${p.label}</button>`,
-            )
-            .join('')}
-        </div>
-      </div>`;
-
-    bar.innerHTML = [
-      group(
-        'School',
-        'school',
-        [
+    bar.innerHTML = filterBarHtml([
+      {
+        name: 'school',
+        label: 'School',
+        active: String(f.school),
+        pills: [
           { key: 'all', label: 'All' },
           ...schools.map((s) => ({
             key: s,
@@ -293,53 +271,39 @@ export class ArtificerScreen implements Screen {
             tint: schoolOf(s).main,
           })),
         ],
-        f.school,
-      ),
-      group(
-        'Pips',
-        'cost',
-        [
-          { key: 'all', label: 'Any' },
-          ...COST_PILLS.map((c) => ({ key: c, label: c === PIP_MAX ? `${c}+` : String(c) })),
-        ],
-        f.cost,
-      ),
-      group(
-        'Cast by',
-        'source',
-        [
+      },
+      { name: 'cost', label: 'Pips', active: String(f.cost), pills: pipPills() },
+      {
+        name: 'source',
+        label: 'Cast by',
+        active: f.source,
+        pills: [
           { key: 'all', label: 'Either' },
           { key: 'hero', label: 'Hero' },
           { key: 'companion', label: 'Companion' },
         ],
-        f.source,
-      ),
-      group(
-        'Type',
-        'kind',
-        KIND_PILLS.map((k) => ({ key: k.key, label: k.label })),
-        f.kind,
-      ),
-      group(
-        'Sort',
-        'sort',
-        SORT_PILLS.map((s) => ({ key: s.key, label: s.label })),
-        f.sort,
-      ),
-    ].join('');
+      },
+      {
+        name: 'kind',
+        label: 'Type',
+        active: f.kind,
+        pills: KIND_PILLS.map((k) => ({ key: k.key, label: k.label })),
+      },
+      {
+        name: 'sort',
+        label: 'Sort',
+        active: f.sort,
+        pills: SORT_PILLS.map((s) => ({ key: s.key, label: s.label })),
+      },
+    ]);
 
-    for (const pill of bar.querySelectorAll<HTMLElement>('.sch-pill')) {
-      pill.addEventListener('click', () => {
-        const key = pill.dataset.filter as keyof SchematicFilters;
-        const raw = pill.dataset.value ?? 'all';
-        const value = key === 'cost' && raw !== 'all' ? Number(raw) : raw;
-        // Cast through unknown: the union is per-key and the handler is generic over all
-        // five. The pills are generated from the same unions above, so the values are
-        // sound even though this one assignment cannot prove it.
-        (this.filters[key] as unknown) = value;
-        this.render();
-      });
-    }
+    wireFilterBar(bar, (name, value) => {
+      // Cast through unknown: the union is per-key and the handler is generic over all
+      // five. The pills are generated from the same unions above, so the values are sound
+      // even though this one assignment cannot prove it.
+      (this.filters[name as keyof SchematicFilters] as unknown) = value;
+      this.render();
+    });
   }
 
   /** Applies the filters, then draws what survives. */
@@ -355,12 +319,7 @@ export class ArtificerScreen implements Screen {
       .filter((d) => f.school === 'all' || d.school === f.school)
       .filter((d) => f.source === 'all' || d.source === f.source)
       .filter((d) => f.kind === 'all' || d.kind === f.kind)
-      .filter((d) => {
-        if (f.cost === 'all') return true;
-        // The top pill is a bucket: everything at or above it lands there, so nothing
-        // priced beyond the last pill becomes unreachable by filtering.
-        return f.cost === PIP_MAX ? d.cost.pips >= PIP_MAX : d.cost.pips === f.cost;
-      })
+      .filter((d) => matchesPips(d.cost.pips, f.cost))
       .sort((a, b) => {
         const ownedA = (collection.owned[a.id] ?? 0) > 0 ? 1 : 0;
         const ownedB = (collection.owned[b.id] ?? 0) > 0 ? 1 : 0;
