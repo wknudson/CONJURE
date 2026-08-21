@@ -18,7 +18,7 @@ import './styles/hud.css';
 import './styles/cards.css';
 import './styles/screens.css';
 import './styles/onboarding.css';
-import './styles/enrolment.css';
+import './styles/creation.css';
 import './styles/builder.css';
 import './styles/safehouse.css';
 
@@ -33,12 +33,12 @@ import { PreCombatScreen } from './app/PreCombatScreen.js';
 import { SafehouseScreen } from './app/SafehouseScreen.js';
 import { ShopScreen } from './app/ShopScreen.js';
 import { ArtificerScreen } from './app/ArtificerScreen.js';
-import { EnrolmentScreen } from './app/EnrolmentScreen.js';
+import { CharacterCreationScreen } from './app/CharacterCreationScreen.js';
 import {
   deleteProfile,
   grantRosterUnlocks,
+  initializeNewProfile,
   loadSave,
-  newProfile,
   writeSave,
   type Profile,
   type SaveFile,
@@ -235,9 +235,9 @@ function openProfile(slot: SlotId): void {
  */
 function draftProfile(slot: SlotId): void {
   screens.go(
-    new EnrolmentScreen({
-      onEnrol: (school) => {
-        saveFile.profiles[slot] = newProfile(slot, undefined, school);
+    new CharacterCreationScreen({
+      onCreate: (look) => {
+        saveFile.profiles[slot] = initializeNewProfile(slot, look);
         openProfile(slot);
       },
       onCancel: showTitle,

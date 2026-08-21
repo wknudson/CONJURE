@@ -23,6 +23,8 @@
 
 import type { Collection } from '../core/data/deckRules.js';
 import type { School } from '../contract/ids.js';
+import type { CharacterLook } from '../core/data/characterLook.js';
+import { defaultLook, normalizeLook } from '../core/data/characterLook.js';
 import { reconcileCollection, startingCollection } from '../core/data/collection.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { RELICS, slotOf } from '../core/data/relics.js';
@@ -76,7 +78,7 @@ import { socketRefusal } from '../core/data/grimoire.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 
 /**
  * The first version whose health numbers are written at the stretched scale.
@@ -214,6 +216,19 @@ export interface Profile {
    */
   rosterUnlocks: string[];
   /**
+   * Who the player said they were, at the desk (v18).
+   *
+   * Five fields and deliberately **no gear**: optics, vestment, trinket, treads and will
+   * are earned, and putting them in the creator would spend the reward before the first
+   * contract. What is stored is what a sprite can actually show — a name, a bearing, a
+   * silhouette — plus the one irreversible choice, the bloodline vowed to.
+   *
+   * `starterCompanion` is a `CompanionDef.id` rather than a school, because it is the
+   * narrower fact: the school is derivable from the beast and the beast is not derivable
+   * from the school once a second bloodline speaks one.
+   */
+  characterLook: CharacterLook;
+  /**
    * The **instance** currently standing beside the player, by `instanceId` (v9).
    *
    * A roster entry, not a species. Everything that needs the species — the deck, the
@@ -284,6 +299,17 @@ export interface SaveFile {
  * tray can never open empty, and the result is deduplicated and sorted so two saves that
  * unlocked the same bodies in a different order compare equal.
  */
+/**
+ * The school a founding bloodline speaks.
+ *
+ * A `CharacterLook` names the *beast*, which is the narrower fact; everything that wants a
+ * school -- the opening warband, the stage tint -- derives it here rather than storing a
+ * second copy that could disagree with the first.
+ */
+function schoolOfSpecies(baseId: string): School {
+  return companionById(baseId)?.grimoire.schools[0] ?? DEFAULT_SCHOOL;
+}
+
 function unlockFloor(granted: readonly string[]): string[] {
   // `UNIVERSAL_ROSTER` only. `DEFAULT_ROSTER` used to be in here as well, and it was the
   // right call while every character started as an Ignis: it made the opening warband
@@ -335,10 +361,32 @@ export function newProfile(
   name = 'Commander',
   school: School = DEFAULT_SCHOOL,
 ): Profile {
-  // A discipline nothing speaks would produce an undefined Companion, so an unknown one
-  // falls back rather than throwing: a save file is data, and hand-edited data should
-  // land the player in the game rather than in a stack trace.
-  const baseId = speciesForSchool(school) ?? DEFAULT_COMPANION.id;
+  return initializeNewProfile(profileId, {
+    ...defaultLook(),
+    nickname: name,
+    // A discipline nothing speaks falls back rather than throwing: a save file is data,
+    // and hand-edited data should land the player in the game rather than in a stack trace.
+    starterCompanion: speciesForSchool(school) ?? DEFAULT_COMPANION.id,
+  });
+}
+
+/**
+ * Drafts a fresh commission from what the player built at the desk.
+ *
+ * The single writer of a new `Profile`, and everything it decides follows from the look:
+ * the bloodline tamed, the eight spells that beast drafts, the bodies the Vanguard may
+ * field, and therefore the elemental half of the opening fifteen. Everything else about a
+ * new character is identical whichever they picked, which is what keeps the Vow a *colour*
+ * rather than a difficulty setting.
+ *
+ * `newProfile` above is the thin legacy door onto this, kept because two dozen tests and
+ * the old title flow call it with a slot and a school.
+ */
+export function initializeNewProfile(profileId: string, rawLook: CharacterLook): Profile {
+  // Normalised on the way in, not trusted. This is the boundary between a screen the
+  // player was typing into and a schema everything downstream reads.
+  const characterLook = normalizeLook(rawLook);
+  const baseId = characterLook.starterCompanion;
   const decks: Record<string, SavedDeck> = {};
   for (const companion of COMPANIONS) {
     decks[companion.id] = { companionId: companion.id, cards: [...companion.deck] };
@@ -355,22 +403,22 @@ export function newProfile(
   // these are the ones you learn the bench with rather than the only ones you will ever
   // hold.
   overworld.economy.reagents = { core_frost: 2, core_surge: 2 };
-  // The coat, worn. A character who started with four bare slots would meet the loadout
-  // screen as an empty grid and learn nothing from it.
+  // The coat is **owned and not worn**, and the distinction is the point.
   //
-  // The coat, and only the coat. The footlocker used to arrive full, as an explicit
-  // placeholder against relics being unreachable content — the comment here asked whoever
-  // gave them a source to take the line away, and the Tailoring counter is that source.
-  // Everything else is now bought.
+  // Every slot starts bare -- optics, vestment, trinket, treads, will -- because gear is
+  // what a Commander earns and the creator deliberately has nothing to say about it. The
+  // coat still arrives in the footlocker, so the loadout screen is not an empty grid with
+  // nothing to teach; the player equips it themselves, which is a better first lesson than
+  // finding it already on.
   //
-  // Existing saves are untouched: what a character already owns is read back off disk, so
-  // nobody loses gear they were handed under the old rule.
+  // Existing saves are untouched: what a character already owns and wears is read back off
+  // disk, so nobody is undressed by an upgrade.
   overworld.relics = ['relic_coat'];
-  overworld.equippedRelics = { ...emptyLoadout(), vestment: 'relic_coat' };
+  overworld.equippedRelics = emptyLoadout();
 
   return {
     profileId,
-    name,
+    name: characterLook.nickname,
     level: 1,
     state: { overworld, combat: null },
     collection: startingCollection(),
@@ -378,11 +426,12 @@ export function newProfile(
     // A warband of their own colour, spending as much of the ten as their school's shelf
     // allows -- so a new player meets the deployment phase with a real line to place, and
     // that line looks like the discipline they picked.
-    roster: startingRosterFor(school),
+    roster: startingRosterFor(schoolOfSpecies(baseId)),
     // The floor, plus the bloodline they start beside. Written at creation rather than
     // left empty, so the very first Vanguard screen already reflects the one school this
     // character has.
     rosterUnlocks: unlockFloor(grantsFor(baseId)),
+    characterLook,
     // Everything they can field, on the books at level 1. Seeded at creation rather than
     // on first deployment so the Assembly screen can show a level beside a body the player
     // has not taken into a fight yet -- an unlocked body with no record would read as a
@@ -780,6 +829,24 @@ function migrateProfile(
     notes.push('Companions draft their own spells now. The ones you already have keep theirs.');
   }
 
+  // --- the look (v18) ---
+  //
+  // Synthesised for anything older, from the two facts an old save already holds: the name
+  // on the commission, and the beast currently standing beside them. A returning player
+  // therefore keeps their name and their bloodline and is handed the default silhouette,
+  // which is the honest answer -- nobody ever asked them what their hair looked like.
+  const characterLook = normalizeLook({
+    ...(data.characterLook && typeof data.characterLook === 'object' ? data.characterLook : {}),
+    ...(data.characterLook
+      ? {}
+      : {
+          nickname: typeof data.name === 'string' ? data.name : base.name,
+          starterCompanion:
+            companions.find((c) => c.instanceId === activeCompanionId)?.baseId ??
+            DEFAULT_COMPANION.id,
+        }),
+  });
+
   const profile: Profile = {
     profileId: slot,
     name: typeof data.name === 'string' && data.name.trim() ? data.name.trim().slice(0, 24) : base.name,
@@ -789,6 +856,7 @@ function migrateProfile(
     decks,
     roster,
     rosterUnlocks: unlocks,
+    characterLook,
     vanguardProgress,
     activeCompanionId,
     companions,

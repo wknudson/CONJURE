@@ -1,0 +1,342 @@
+/*
+ * Character creation, over the diorama.
+ *
+ * The stage is a full-bleed canvas and the UI floats on it, which is the whole HD-2D
+ * framing: the player is looking at a place with a figure standing in it, and the controls
+ * are a clipboard held up in front of that. So everything here is either transparent or
+ * deliberately papery, and nothing is allowed to become a full-screen panel that hides the
+ * thing it is editing.
+ *
+ * The one hard rule: the Commander's sprite stands slightly left of centre, so the panel
+ * lives on the right and the lower third stays clear.
+ */
+
+.screen--creation {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.creation__stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/*
+ * A soft wash under the copy only. The diorama already vignettes itself; this exists so
+ * body text over a bright tile stays legible without dimming the stage.
+ */
+.creation__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(8, 10, 15, 0.72) 0%, rgba(8, 10, 15, 0) 38%),
+    linear-gradient(to left, rgba(8, 10, 15, 0.66) 0%, rgba(8, 10, 15, 0) 46%);
+}
+
+.creation__ui {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: clamp(0.5rem, 2vh, 1.25rem);
+  height: 100%;
+  padding: clamp(0.9rem, 3.5vh, 2.2rem) clamp(1rem, 4vw, 3rem);
+  box-sizing: border-box;
+}
+
+/* ------------------------------------------------------------------ the header */
+
+.creation__head {
+  max-width: 44rem;
+}
+
+.creation__steps {
+  display: flex;
+  gap: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.creation__step {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint, #8d846f);
+  transition: color 160ms ease;
+}
+
+.creation__step.is-on {
+  color: var(--brass-bright, #c8a558);
+}
+
+.creation__title {
+  margin: 0;
+  font-family: var(--font-display, serif);
+  font-size: clamp(1.5rem, 3.6vw, 2.4rem);
+  letter-spacing: 0.05em;
+  color: var(--ink-strong, #efe6d2);
+  text-shadow: 0 2px 1.4rem rgba(0, 0, 0, 0.75);
+}
+
+.creation__lede {
+  margin: 0.35rem 0 0;
+  max-width: 38rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--ink-dim, #b9ae95);
+  text-shadow: 0 1px 0.9rem rgba(0, 0, 0, 0.85);
+}
+
+/* ------------------------------------------------------------------ step one */
+
+.creation__panel {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-height: 0;
+}
+
+.creation__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: min(24rem, 100%);
+  padding: clamp(0.9rem, 2vw, 1.4rem);
+  background: rgba(14, 17, 24, 0.82);
+  border: 1px solid var(--brass-edge, #6b5a3c);
+  backdrop-filter: blur(6px);
+}
+
+.creation__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.creation__label {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint, #8d846f);
+}
+
+.creation__input {
+  padding: 0.5rem 0.65rem;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--ink-strong, #efe6d2);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--brass-edge, #6b5a3c);
+}
+
+.creation__input:focus-visible {
+  outline: none;
+  border-color: var(--brass-bright, #c8a558);
+}
+
+.creation__toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+.creation__opt,
+.creation__arrow {
+  padding: 0.4rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--ink-dim, #b9ae95);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--brass-edge, #6b5a3c);
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+.creation__opt.is-on {
+  color: var(--ink-strong, #efe6d2);
+  border-color: var(--brass-bright, #c8a558);
+}
+
+.creation__opt:hover,
+.creation__arrow:hover {
+  color: var(--ink-strong, #efe6d2);
+  border-color: var(--brass-bright, #c8a558);
+}
+
+.creation__cyclers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.creation__cycler {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.creation__cycle {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr 2.2rem;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.creation__value {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--ink-strong, #efe6d2);
+}
+
+.creation__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.3rem;
+}
+
+/* ------------------------------------------------------------------ step two */
+
+.creation__vow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 100%;
+  align-self: flex-end;
+}
+
+/*
+ * Six cards in one scrolling row. A row rather than a grid because the camera is panning
+ * behind them and a tall grid would cover the stage the pan exists to show.
+ */
+.creation__grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(13rem, 1fr);
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+}
+
+.vow-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.7rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  background: rgba(14, 17, 24, 0.86);
+  border: 1px solid var(--brass-edge, #6b5a3c);
+  transition:
+    transform 130ms ease,
+    border-color 130ms ease,
+    box-shadow 130ms ease;
+}
+
+.vow-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--brass-bright, #c8a558);
+}
+
+.vow-card.is-vowed {
+  border-color: var(--brass-bright, #c8a558);
+  box-shadow:
+    0 0 0 1px var(--brass-bright, #c8a558),
+    0 0 1.6rem rgba(200, 165, 88, 0.3);
+}
+
+.vow-card__crest {
+  height: 0.24rem;
+  border-radius: 2px;
+  background: var(--crest, #8a7a55);
+}
+
+.vow-card__crest[data-school='pyre'] {
+  --crest: #d9643a;
+}
+.vow-card__crest[data-school='frost'] {
+  --crest: #6fb6d8;
+}
+.vow-card__crest[data-school='surge'] {
+  --crest: #d9c04a;
+}
+.vow-card__crest[data-school='bulwark'] {
+  --crest: #9a9086;
+}
+.vow-card__crest[data-school='dusk'] {
+  --crest: #9a6fc4;
+}
+.vow-card__crest[data-school='bloom'] {
+  --crest: #79b45c;
+}
+
+.vow-card__school {
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brass-bright, #c8a558);
+}
+
+.vow-card__name {
+  font-family: var(--font-display, serif);
+  font-size: 1.05rem;
+  color: var(--ink-strong, #efe6d2);
+}
+
+.vow-card__blurb {
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--ink-dim, #b9ae95);
+  flex: 1;
+}
+
+.vow-card__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.7rem;
+  font-size: 0.7rem;
+  color: var(--ink, #d6cbb2);
+  font-variant-numeric: tabular-nums;
+}
+
+.vow-card__line {
+  font-size: 0.66rem;
+  line-height: 1.3;
+  color: var(--ink-faint, #8d846f);
+  border-top: 1px solid var(--brass-edge, #6b5a3c);
+  padding-top: 0.3rem;
+}
+
+.creation__sign[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Narrow screens: the panel gives up its corner and takes the full width. */
+@media (max-width: 44rem) {
+  .creation__form {
+    width: 100%;
+  }
+  .creation__scrim {
+    background: linear-gradient(to bottom, rgba(8, 10, 15, 0.7) 0%, rgba(8, 10, 15, 0.35) 50%, rgba(8, 10, 15, 0.8) 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vow-card,
+  .creation__opt,
+  .creation__arrow,
+  .creation__step {
+    transition: none;
+  }
+  .vow-card:hover {
+    transform: none;
+  }
+}
