@@ -62,6 +62,8 @@ function isGrounded(ctx: Ctx, unit: Unit): boolean {
   // It cuts both ways, deliberately: your own repositioning tools stop working on it too,
   // so a Petrifying Mantle host is where it is until it walks.
   if (climaxTraitOf(unit) === 'heavyFootprint') return true;
+  // Heavy Tread: the same rule, bought army-wide rather than grown one aura at a time.
+  if (ctx.state.players[unit.side].alliesGrounded) return true;
   return unit.keywords.includes('BoundForm') && ctx.state.players[unit.side].boundFormGrounded;
 }
 

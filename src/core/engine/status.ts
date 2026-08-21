@@ -7,7 +7,9 @@
  * live in `growth.ts`.
  */
 
-import type { Side, StatusKind } from '../../contract/ids.js';
+import type { Side, StatusKind, UnitId } from '../../contract/ids.js';
+import { coordKey } from '../../contract/ids.js';
+import { cellsOf } from '../util/grid.js';
 import type { Ctx } from './context.js';
 import { emit } from './context.js';
 import type { Unit } from '../types/units.js';
@@ -37,6 +39,14 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
       if (ctx.state.result) return;
     }
   }
+
+  // 2b. Boiling Point: steam somebody else raised is not merely opaque, it is hot.
+  //
+  // Here rather than in `tickHazards` because this is a damage tick and belongs with the
+  // other two, and because `tickHazards` only ever looks at hazards the *active* side
+  // owns — the exact opposite of the set that should be scalding anybody.
+  scaldInSteam(ctx, ids);
+  if (ctx.state.result) return;
 
   // 3. Freeze / Entangle decay: these gate actions rather than dealing damage.
   for (const id of ids) {
@@ -115,6 +125,35 @@ function tickStatus(ctx: Ctx, unit: Unit, status: 'toxin' | 'burn'): void {
   }
 }
 
+/**
+ * Enemy steam burns whoever begins their turn standing in it.
+ *
+ * "Ending their turn inside" and "beginning their next turn inside" are the same tile in
+ * every case that matters, and the start of turn is where every other tick already lives.
+ */
+function scaldInSteam(ctx: Ctx, ids: UnitId[]): void {
+  for (const id of ids) {
+    const unit = ctx.state.units[id];
+    if (!unit) continue;
+    for (const c of cellsOf(unit)) {
+      const hazard = ctx.state.hazards[coordKey(c)];
+      if (hazard?.kind !== 'steam_fog') continue;
+      // Your own fog does not cook you, and a hazard nobody's side raised collects nothing.
+      if (hazard.owner === unit.side) continue;
+      const amount = ctx.state.players[hazard.owner].steamBurns;
+      if (amount <= 0) continue;
+      dealDamage(ctx, {
+        target: { kind: 'unit', id: unit.id },
+        amount,
+        dtype: 'true',
+        cause: 'status',
+      });
+      break;
+    }
+    if (ctx.state.result) return;
+  }
+}
+
 function decay(unit: Unit, status: StatusKind): void {
   const stacks = unit.statuses[status] ?? 0;
   if (stacks <= 0) return;
@@ -128,7 +167,7 @@ function decay(unit: Unit, status: StatusKind): void {
  * Chill stacking (Module 1): the third stack does not tick — it freezes the unit solid.
  * Called wherever Chill is applied, so no card has to remember the threshold.
  */
-export function applyChill(ctx: Ctx, unit: Unit, stacks: number): void {
+export function applyChill(ctx: Ctx, unit: Unit, stacks: number, source?: Side): void {
   const total = (unit.statuses.chill ?? 0) + stacks;
 
   if (total < CHILL_TO_FREEZE) {
@@ -142,7 +181,13 @@ export function applyChill(ctx: Ctx, unit: Unit, stacks: number): void {
   if (surplus > 0) unit.statuses.chill = surplus;
   else delete unit.statuses.chill;
 
-  unit.statuses.freeze = Math.max(unit.statuses.freeze ?? 0, 1);
+  // Dense Ice. Resolved here at the moment the ice forms, for the reason `applyStatusTo`
+  // documents at length: the decay loop reads a plain number off the unit and has no idea
+  // whose cold it was, and by the time it runs the only side available is the wrong one.
+  // A second stack is literally a second decay tick, which is what "lasts one more turn"
+  // means in a game whose statuses count down once per owner turn.
+  const depth = 1 + (source ? ctx.state.players[source].bonusFreezeStacks : 0);
+  unit.statuses.freeze = Math.max(unit.statuses.freeze ?? 0, depth);
   emit(ctx, { t: 'statusApplied', unitId: unit.id, status: 'freeze', stacks: unit.statuses.freeze });
 }
 
@@ -193,7 +238,7 @@ export function applyStatusTo(
   source?: Side,
 ): void {
   if (status === 'chill') {
-    applyChill(ctx, unit, stacks);
+    applyChill(ctx, unit, stacks, source);
     return;
   }
 

@@ -166,6 +166,16 @@ function blankCommander(
     doubleResonance: false,
     collisionResist: 0,
     ignoresGuardians: false,
+    fogConceals: false,
+    steamBurns: 0,
+    arcPierces: false,
+    armorOnArcCollateral: 0,
+    alliesGrounded: false,
+    wildfireSeedsToxin: 0,
+    chillConducts: false,
+    bonusFreezeStacks: 0,
+    immuneToShatterSplash: false,
+    bonusShoveDistance: 0,
     discountHybrids: false,
   };
 }

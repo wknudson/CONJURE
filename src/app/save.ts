@@ -58,7 +58,7 @@ import {
   type CompanionInstance,
 } from '../core/overworld/vivarium.js';
 import { APOTHECARY_STOCK } from '../core/data/apothecary.js';
-import { traitById, traitsFor } from '../core/data/companionTraits.js';
+import { traitsFor } from '../core/data/companionTraits.js';
 import { makeRng } from '../core/util/rng.js';
 import { socketRefusal } from '../core/data/grimoire.js';
 
@@ -1007,9 +1007,15 @@ function readRoster(
       // A card that has since left the game would deal a hole in the deck.
       .filter((id) => CARDS[id]);
 
+    // Membership in the *rollable* pool, not `trait.baseId === baseId`.
+    //
+    // A hybrid rolls its two parents' knacks alongside its own, so a Chimera legitimately
+    // wearing Ash-Walker files that trait under `ignis`. The stricter reading rejected it
+    // on load and quietly reset the beast to `pool[0]` — the player's Companion changing
+    // knack because they closed the game.
     const pool = traitsFor(baseId);
     const traitId =
-      typeof saved.traitId === 'string' && traitById(saved.traitId)?.baseId === baseId
+      typeof saved.traitId === 'string' && pool.some((t) => t.id === saved.traitId)
         ? saved.traitId
         : (pool[0]?.id ?? '');
 

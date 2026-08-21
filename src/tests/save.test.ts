@@ -13,6 +13,7 @@ import {
   type SaveFile,
 } from '../app/save.js';
 import { COMPANIONS } from '../core/data/companions.js';
+import { traitsFor } from '../core/data/companionTraits.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import {
   INVENTORY_LIMIT,
@@ -321,6 +322,41 @@ describe('one character on disk', () => {
     expect(Number.isInteger(over.economy.marrowShards)).toBe(true);
     expect(over.inventory.length, 'capped at the satchel limit').toBe(INVENTORY_LIMIT);
     expect(over.activeBuff, 'an unreadable brew becomes none').toBeNull();
+  });
+
+  it('keeps a hybrid wearing a knack it inherited from a parent', () => {
+    // A Chimera of the Caldera legitimately rolls Rimed Lungs, which is filed under
+    // `boreas`. Validating the saved trait by `trait.baseId === baseId` rejected exactly
+    // that and quietly reset the beast to the first knack in its pool — a player's
+    // Companion changing what it was good at because they closed the game.
+    //
+    // Deliberately *not* an `ignis` knack: those sort to the front of a Chimera's pool, so
+    // the reset fallback lands on one and the assertion cannot tell the two apart.
+    const file = fileWith('slot-1');
+    file.profiles['slot-1']!.companions[0] = {
+      ...file.profiles['slot-1']!.companions[0]!,
+      baseId: 'chimera',
+      traitId: 'rimed_lungs',
+    };
+    writeSave(file);
+
+    const back = loadSave().save.profiles['slot-1']!.companions[0]!;
+    expect(back.traitId).toBe('rimed_lungs');
+  });
+
+  it('still refuses a knack no bloodline of that beast can roll', () => {
+    const file = fileWith('slot-1');
+    file.profiles['slot-1']!.companions[0] = {
+      ...file.profiles['slot-1']!.companions[0]!,
+      baseId: 'chimera',
+      // Sylva is not a parent of a Chimera, and `hollow_ice` is pending and unrollable.
+      traitId: 'toxic_bloom',
+    };
+    writeSave(file);
+
+    const back = loadSave().save.profiles['slot-1']!.companions[0]!;
+    expect(back.traitId).not.toBe('toxic_bloom');
+    expect(traitsFor('chimera').some((t) => t.id === back.traitId)).toBe(true);
   });
 
   it('keeps no deck of its own — the master deck is the only one', () => {

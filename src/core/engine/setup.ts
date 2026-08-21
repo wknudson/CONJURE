@@ -117,6 +117,16 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       discountHybrids: false,
       collisionResist: 0,
       ignoresGuardians: false,
+      fogConceals: false,
+      steamBurns: 0,
+      arcPierces: false,
+      armorOnArcCollateral: 0,
+      alliesGrounded: false,
+      wildfireSeedsToxin: 0,
+      chillConducts: false,
+      bonusFreezeStacks: 0,
+      immuneToShatterSplash: false,
+      bonusShoveDistance: 0,
     },
     nextId: id,
   };
@@ -248,6 +258,50 @@ export interface CombatBoons {
    * and makes this the answer to a screen.
    */
   ignoreGuardians?: boolean;
+
+  // ------------------------------------------------------- the hybrid knacks
+  //
+  // Ten capabilities the hybrid bloodlines asked for. Each is one read at one existing
+  // chokepoint, in the engine's own words, exactly as every boon above it: the reducer
+  // still has never heard of a Storm-Mantis.
+
+  /**
+   * A unit of this side standing in steam is not a legal target for a ranged attack.
+   *
+   * The exact inverse of the rule `occluderCells` documents — fog blocks shooting
+   * *through* the cloud while leaving whoever is inside it shootable. Goggles still win:
+   * a viewer with `ignoresFog` reads the tile as empty air and picks the body out of it,
+   * which keeps the two rules an answer to each other rather than a stack.
+   */
+  fogConceals?: boolean;
+  /**
+   * Damage steam raised by this side deals to enemies standing in it at their turn start.
+   *
+   * Attributed to the hazard's owner, not to whoever's turn it is, for the same reason
+   * `toxinBonus` is: the fog you paid for should collect on the enemy's clock.
+   */
+  steamBurns?: number;
+  /** Arc's collateral is dealt as `true` damage, so plate does not soak the jump. */
+  arcPierces?: boolean;
+  /** Armor granted to one of this side's units each time Arc collateral strikes it. */
+  armorOnArcCollateral?: number;
+  /**
+   * Nothing this side owns can be shoved, pulled, or carried.
+   *
+   * The army-wide reading of `boundFormGrounded`, checked at the same chokepoint. It cuts
+   * both ways there too: your own repositioning tools stop working on your own line.
+   */
+  alliesGrounded?: boolean;
+  /** Toxin stacks Wildfire leaves on whatever survives the blast. */
+  wildfireSeedsToxin?: number;
+  /** Chill satisfies a reaction that asks for Charged, and is spent in its place. */
+  chillConducts?: boolean;
+  /** Extra Freeze stacks this side's Chill converts into — one stack is one more turn. */
+  bonusFreezeStacks?: number;
+  /** Shatter's shrapnel does not touch this side. */
+  immuneToShatterSplash?: boolean;
+  /** Tiles added to every shove this side's *cards* deal out. Currents are not yours. */
+  bonusShoveDistance?: number;
 }
 
 /**
@@ -530,6 +584,20 @@ export function createCombat(
   if (carry?.boons?.doubleResonance) player.commander.doubleResonance = true;
   if (carry?.boons?.discountHybrids) player.commander.discountHybrids = true;
   if (carry?.boons?.ignoreGuardians) player.commander.ignoresGuardians = true;
+
+  // The hybrid knacks, applied on the same two rules as everything above: a flag is
+  // raised or left alone, and a number is added and floored at zero.
+  if (carry?.boons?.fogConceals) player.commander.fogConceals = true;
+  if (carry?.boons?.arcPierces) player.commander.arcPierces = true;
+  if (carry?.boons?.alliesGrounded) player.commander.alliesGrounded = true;
+  if (carry?.boons?.chillConducts) player.commander.chillConducts = true;
+  if (carry?.boons?.immuneToShatterSplash) player.commander.immuneToShatterSplash = true;
+
+  player.commander.steamBurns += Math.max(0, carry?.boons?.steamBurns ?? 0);
+  player.commander.armorOnArcCollateral += Math.max(0, carry?.boons?.armorOnArcCollateral ?? 0);
+  player.commander.wildfireSeedsToxin += Math.max(0, carry?.boons?.wildfireSeedsToxin ?? 0);
+  player.commander.bonusFreezeStacks += Math.max(0, carry?.boons?.bonusFreezeStacks ?? 0);
+  player.commander.bonusShoveDistance += Math.max(0, carry?.boons?.bonusShoveDistance ?? 0);
 
   // Only ever upward, like the Pip ceiling: gear bends a rule in the player's favour or
   // not at all, so a malformed carry cannot hand them a smaller hand than the rules give.

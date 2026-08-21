@@ -174,7 +174,10 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       const victim = ctx.state.units[ref.id];
       if (!victim) return;
       const dir = pushDirection(ctx, play, victim.anchor);
-      pushUnit(ctx, victim, dir, node.distance);
+      // Magnetic Repulsion. Applied to a *card's* shove and not inside `pushUnit`, because
+      // the other things that travel through there are not yours to lengthen: a current at
+      // the round boundary is the board moving a body, not you moving it.
+      pushUnit(ctx, victim, dir, node.distance + ctx.state.players[play.side].bonusShoveDistance);
       return;
     }
 
@@ -496,7 +499,10 @@ function displaceArea(
     if (away.x === 0 && away.y === 0) continue;
 
     const dir = sense === 'away' ? away : { x: -away.x, y: -away.y };
-    pushUnit(ctx, unit, dir, distance);
+    // Magnetic Repulsion, for the blast-shaped shoves. Only pushes: a *pull* that got
+    // longer would drag bodies past the caster, which is a different card.
+    const reach = sense === 'away' ? ctx.state.players[play.side].bonusShoveDistance : 0;
+    pushUnit(ctx, unit, dir, distance + reach);
   }
 }
 

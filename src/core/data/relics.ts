@@ -290,6 +290,24 @@ export function boonsOfRelics(equipped: RelicLoadout): CombatBoons {
     if (b.ignoreGuardians) out.ignoreGuardians = true;
     if (b.collisionResist) out.collisionResist = (out.collisionResist ?? 0) + b.collisionResist;
     if (b.bonusHandLimit) out.bonusHandLimit = (out.bonusHandLimit ?? 0) + b.bonusHandLimit;
+    if (b.fogConceals) out.fogConceals = true;
+    if (b.arcPierces) out.arcPierces = true;
+    if (b.alliesGrounded) out.alliesGrounded = true;
+    if (b.chillConducts) out.chillConducts = true;
+    if (b.immuneToShatterSplash) out.immuneToShatterSplash = true;
+    if (b.steamBurns) out.steamBurns = (out.steamBurns ?? 0) + b.steamBurns;
+    if (b.armorOnArcCollateral) {
+      out.armorOnArcCollateral = (out.armorOnArcCollateral ?? 0) + b.armorOnArcCollateral;
+    }
+    if (b.wildfireSeedsToxin) {
+      out.wildfireSeedsToxin = (out.wildfireSeedsToxin ?? 0) + b.wildfireSeedsToxin;
+    }
+    if (b.bonusFreezeStacks) {
+      out.bonusFreezeStacks = (out.bonusFreezeStacks ?? 0) + b.bonusFreezeStacks;
+    }
+    if (b.bonusShoveDistance) {
+      out.bonusShoveDistance = (out.bonusShoveDistance ?? 0) + b.bonusShoveDistance;
+    }
   }
 
   return out;

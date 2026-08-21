@@ -10,8 +10,12 @@
  * ignores fog" and has never heard of a Searing Gaze — which is what lets a trait be
  * added as a row here rather than as a branch in the resolver.
  *
- * Also the same house rule: a trait bends what is *possible*. None of them moves a
- * damage number, and the schema has nowhere to put one that did.
+ * Also the same house rule, stated precisely now that a pool has tested it: a trait may
+ * grant a **new capability**, numbers and all — steam that scalds, plate that charges off
+ * an arc, a Freeze that lasts a turn longer. What it may not do is **scale a number some
+ * card already prints**. `ember_spores` and `frost_reaper` below are exactly that, which
+ * is why they are the two knacks marked pending for a reason that is not a missing
+ * mechanic.
  */
 
 import type { CombatBoons } from '../engine/setup.js';
@@ -23,6 +27,15 @@ export interface CompanionTrait {
   /** Which species can roll this. A trait belongs to a bloodline, not to the pool. */
   baseId: string;
   boons: CombatBoons;
+  /**
+   * What the engine would need before this could be rolled, if it needs anything.
+   *
+   * Present means **declared, not built**: the design is recorded, `boons` is empty, and
+   * `traitsFor` will not offer it. A knack that a player could roll and that then did
+   * nothing is worse than one that does not exist, because the second is a gap and the
+   * first is a bug they will spend a run trying to reproduce.
+   */
+  pending?: string;
 }
 
 export const COMPANION_TRAITS: Record<string, CompanionTrait> = {
@@ -279,18 +292,244 @@ const LEXIS_TRAITS: Record<string, CompanionTrait> = {
   },
 };
 
+/**
+ * The hybrid bloodlines' knacks — two apiece, and the first pool in the game with a
+ * **declared but unbuilt** half.
+ *
+ * Eleven of the twenty are wired to real capabilities and roll like every knack above.
+ * The other nine name mechanics the engine does not have — Echo, Pierce, Frail, Hollow,
+ * Devour, damage reflection — and carry `pending` saying exactly which. They are here
+ * rather than deleted because the design is the useful artefact: a trait that says what
+ * it needs is a work item, and a trait quietly dropped is a conversation somebody has to
+ * have twice.
+ *
+ * `traitsFor` filters them out, so nothing rollable is ever a no-op. A hybrid still has
+ * plenty to roll: see `TRAIT_LINEAGE` below.
+ */
+const HYBRID_TRAITS: Record<string, CompanionTrait> = {
+  fog_stalker: {
+    id: 'fog_stalker',
+    name: 'Fog-Stalker',
+    text: 'Learns the cloud from the inside. Your units standing in Steam Fog cannot be picked out by ranged attacks.',
+    baseId: 'chimera',
+    boons: { fogConceals: true },
+  },
+  boiling_point: {
+    id: 'boiling_point',
+    name: 'Boiling Point',
+    text: 'Your steam stays at the boil. Enemies beginning a turn inside it take 10 damage through armor.',
+    baseId: 'chimera',
+    boons: { steamBurns: 10 },
+  },
+  arc_welder: {
+    id: 'arc_welder',
+    name: 'Arc-Welder',
+    text: 'Earths through plate rather than around it. Arc collateral ignores Armor entirely.',
+    baseId: 'wasp',
+    boons: { arcPierces: true },
+  },
+  static_burn: {
+    id: 'static_burn',
+    name: 'Static Burn',
+    text: 'Enemies afflicted with Burn suffer -1 MOV.',
+    baseId: 'wasp',
+    boons: {},
+    pending:
+      'Movement has no per-side hook: `movementRange` reads a unit and nothing else, so a MOV penalty owed to the *opposing* commander cannot be seen from there.',
+  },
+  heavy_tread: {
+    id: 'heavy_tread',
+    name: 'Heavy Tread',
+    text: 'The whole line digs in. Nothing shoves, drags, or carries any unit of yours anywhere.',
+    baseId: 'tortoise',
+    boons: { alliesGrounded: true },
+  },
+  magma_plating: {
+    id: 'magma_plating',
+    name: 'Magma Plating',
+    text: 'Cooled crust over every joint. Your units take 20 less damage from every collision.',
+    baseId: 'tortoise',
+    boons: { collisionResist: 20 },
+  },
+  toxic_smoke: {
+    id: 'toxic_smoke',
+    name: 'Toxic Smoke',
+    text: 'The blast blows the spores onto whatever is left. Enemies surviving a Wildfire take Toxin (1).',
+    baseId: 'treant',
+    boons: { wildfireSeedsToxin: 1 },
+  },
+  ember_spores: {
+    id: 'ember_spores',
+    name: 'Ember Spores',
+    text: 'Toxin ticks deal an additional 10 fire damage.',
+    baseId: 'treant',
+    boons: {},
+    pending:
+      'Scales an existing damage number, which is the one thing this schema deliberately has nowhere to put. See the note at the top of this file.',
+  },
+  conductive_ice: {
+    id: 'conductive_ice',
+    name: 'Conductive Ice',
+    text: 'Rime carries a charge. Chill satisfies any Surge reaction that asks for Charged, and is spent in its place.',
+    baseId: 'mantis',
+    boons: { chillConducts: true },
+  },
+  lightning_rod: {
+    id: 'lightning_rod',
+    name: 'Lightning Rod',
+    text: 'Allied Guardians reflect 10 shock damage when struck by a ranged attack.',
+    baseId: 'mantis',
+    boons: {},
+    pending:
+      'Reflection does not exist. Nothing in the damage pipeline sends anything back the way it came, and the attacker is not carried to where a defence could read it.',
+  },
+  dense_ice: {
+    id: 'dense_ice',
+    name: 'Dense Ice',
+    text: 'Freezes to the bone. Every Freeze you cause lasts one turn longer.',
+    baseId: 'juggernaut',
+    boons: { bonusFreezeStacks: 1 },
+  },
+  shrapnel_guard: {
+    id: 'shrapnel_guard',
+    name: 'Shrapnel Guard',
+    text: 'Knows which way the ice goes. Your units take nothing from Shatter splash.',
+    baseId: 'juggernaut',
+    boons: { immuneToShatterSplash: true },
+  },
+  frost_reaper: {
+    id: 'frost_reaper',
+    name: 'Frost-Reaper',
+    text: 'Dusk spells deal +20 bonus damage to Chilled targets.',
+    baseId: 'gargoyle',
+    boons: {},
+    pending:
+      'Scales an existing damage number, and additionally by school and by target status. See the note at the top of this file.',
+  },
+  hollow_ice: {
+    id: 'hollow_ice',
+    name: 'Hollow Ice',
+    text: 'Units carrying Hollow raise an Ice Barricade on their tile when they die.',
+    baseId: 'gargoyle',
+    boons: {},
+    pending:
+      'No `hollow` status exists. `data/auras.ts` names Hollow as an unbuilt Dusk Climax trait, and nothing applies or reads it.',
+  },
+  magnetic_repulsion: {
+    id: 'magnetic_repulsion',
+    name: 'Magnetic Repulsion',
+    text: 'Everything you push, you push harder. Your cards shove one tile further.',
+    baseId: 'dynamo',
+    boons: { bonusShoveDistance: 1 },
+  },
+  shock_absorber: {
+    id: 'shock_absorber',
+    name: 'Shock Absorber',
+    text: 'Takes the jolt as plate. Your units gain 10 Armor when Arc collateral strikes them.',
+    baseId: 'dynamo',
+    boons: { armorOnArcCollateral: 10 },
+  },
+  echo_chamber: {
+    id: 'echo_chamber',
+    name: 'Echo Chamber',
+    text: 'Echoes persist for one additional round before expiring.',
+    baseId: 'geist',
+    boons: {},
+    pending:
+      'Echo does not exist. There is no such resource anywhere in `src/core`, so there is nothing to extend the life of.',
+  },
+  death_rattle: {
+    id: 'death_rattle',
+    name: 'Death Rattle',
+    text: 'Overloaded units apply Frail to their killer as they go.',
+    baseId: 'geist',
+    boons: {},
+    pending:
+      'Neither half exists: `frail` is not a StatusKind, and Overload is a reaction rather than a status a body can be killed while carrying.',
+  },
+  ossify: {
+    id: 'ossify',
+    name: 'Ossify',
+    text: 'Persistent Armor on your units cannot be bypassed by Pierce.',
+    baseId: 'sovereign',
+    boons: {},
+    pending:
+      'Pierce does not exist as a keyword. Armor is bypassed by the `true` damage type, which is a property of the blow and has no per-side exemption to grant.',
+  },
+  grave_robber: {
+    id: 'grave_robber',
+    name: 'Grave-Robber',
+    text: 'Devoured allied units return to your hand instead of the discard pile.',
+    baseId: 'sovereign',
+    boons: {},
+    pending:
+      'Devour does not exist. Nothing consumes an allied body for stats, so there is no trigger to redirect the card away from the discard pile.',
+  },
+};
+
+/**
+ * The parent species a hybrid inherits rollable knacks from.
+ *
+ * Two reasons, and the first is structural: a bloodline with fewer than two rollable
+ * traits makes taming one a formality, and three of these hybrids have *zero* wired
+ * traits of their own because all four of their briefed knacks need engine work first.
+ * Inheritance means no hybrid is ever short, whatever is or is not built yet.
+ *
+ * The second is that it is simply true. A Chimera of the Caldera is half Ignis, and there
+ * is no reading of that under which it cannot have been born with Ash-Walker.
+ *
+ * Keyed by the hybrid's own `baseId` rather than derived from its schools, because the
+ * mapping from a school to the species that speaks it is a fact about the roster and not
+ * about the taming roll — and `data/companions.ts` is not something this file should have
+ * to import to answer a question about traits.
+ */
+export const TRAIT_LINEAGE: Record<string, readonly string[]> = {
+  chimera: ['ignis', 'boreas'],
+  wasp: ['ignis', 'voltara'],
+  tortoise: ['ignis', 'ferrum'],
+  treant: ['ignis', 'sylva'],
+  mantis: ['boreas', 'voltara'],
+  juggernaut: ['boreas', 'ferrum'],
+  gargoyle: ['boreas', 'mortis'],
+  dynamo: ['voltara', 'ferrum'],
+  geist: ['voltara', 'mortis'],
+  sovereign: ['ferrum', 'mortis'],
+};
+
 for (const [id, trait] of Object.entries(VOLTARA_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(MORTIS_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(SYLVA_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(FERRUM_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(LEXIS_TRAITS)) COMPANION_TRAITS[id] = trait;
+for (const [id, trait] of Object.entries(HYBRID_TRAITS)) COMPANION_TRAITS[id] = trait;
 
 export function traitById(id: string): CompanionTrait | undefined {
   return COMPANION_TRAITS[id];
 }
 
-/** The traits a given species can roll. Empty for a species nobody wrote traits for. */
+/**
+ * The traits a given species can roll. Empty for a species nobody wrote traits for.
+ *
+ * Two rules on top of the obvious one. A `pending` trait is **never** offered — see the
+ * field's own note — and a hybrid rolls its parents' pools alongside its own, which is
+ * both true to what a hybrid is and the thing that keeps every bloodline's roll worth
+ * making while half the hybrid knacks are still engine work.
+ */
 export function traitsFor(baseId: string): CompanionTrait[] {
+  const pools = [baseId, ...(TRAIT_LINEAGE[baseId] ?? [])];
+  return Object.values(COMPANION_TRAITS)
+    .filter((t) => !t.pending && pools.includes(t.baseId))
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * Everything written for a bloodline, pending knacks included.
+ *
+ * For the Field Journal and for tests: "what did we design for a Chimera" and "what can a
+ * Chimera roll today" are different questions, and only the second one should be able to
+ * hand a player a trait.
+ */
+export function declaredTraitsFor(baseId: string): CompanionTrait[] {
   return Object.values(COMPANION_TRAITS)
     .filter((t) => t.baseId === baseId)
     .sort((a, b) => a.id.localeCompare(b.id));

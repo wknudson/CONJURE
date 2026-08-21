@@ -46,6 +46,26 @@ export interface CommanderState {
   collisionResist: number;
   /** This side sees past Guardians. A wall is still a wall. */
   ignoresGuardians: boolean;
+  /** Steam hides this side's bodies from ranged attacks rather than merely screening them. */
+  fogConceals: boolean;
+  /** Damage steam raised by this side deals to enemies standing in it at their turn start. */
+  steamBurns: number;
+  /** Arc's collateral from this side is dealt through armor. */
+  arcPierces: boolean;
+  /** Armor one of this side's units gains when Arc collateral strikes it. */
+  armorOnArcCollateral: number;
+  /** Nothing this side owns can be shoved, pulled, or carried — its own tools included. */
+  alliesGrounded: boolean;
+  /** Toxin stacks this side's Wildfire leaves on whatever survives the blast. */
+  wildfireSeedsToxin: number;
+  /** Chill satisfies a reaction asking for Charged, and is spent in its place. */
+  chillConducts: boolean;
+  /** Extra Freeze stacks this side's Chill converts into. */
+  bonusFreezeStacks: number;
+  /** Shatter's shrapnel does not touch this side. */
+  immuneToShatterSplash: boolean;
+  /** Tiles added to every shove this side's cards deal out. */
+  bonusShoveDistance: number;
   /** Spliced cards cost this side 1 Pip less, never below one. */
   discountHybrids: boolean;
   /** Pips refunded by elemental reactions this turn, capped so cascades cannot self-fund. */

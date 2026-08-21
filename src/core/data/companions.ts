@@ -10,7 +10,7 @@
 import type { School } from '../../contract/ids.js';
 import { STARTER_DECK } from './cards/index.js';
 import type { GrimoireSource } from './grimoire.js';
-import { MONO_HYBRID_CHANCE } from './grimoire.js';
+import { HYBRID_HYBRID_CHANCE, MONO_HYBRID_CHANCE } from './grimoire.js';
 
 /**
  * Cards a Companion fuses into the deck at the opening bell. Exactly eight, always.
@@ -219,6 +219,241 @@ export const COMPANIONS: CompanionDef[] = [
       'cull_the_weak',
     ],
     unitCardId: 'lexis_bound',
+  },
+  // ---------------------------------------------------------------- hybrids
+  //
+  // Ten bloodlines that draw on two schools at once. The draft has supported a two-school
+  // pool since it was written and had no content for it: every species shipped so far is
+  // mono-element, so the hybrid branch was a mechanism nobody could reach.
+  //
+  // These are what it was for. A Chimera draws its pure spells from Pyre *and* Frost, and
+  // rolls a fusion into any given slot at `HYBRID_HYBRID_CHANCE` -- roughly a third of its
+  // book -- where a mono-element beast rolls one at a twentieth. Two Chimeras are two very
+  // different decks, and neither is a deck a mono bloodline would realistically deal.
+  //
+  // One thing these do *not* change, and it is worth knowing before reading a caught
+  // beast's book: `hybridPool` reaches a fusion when the bloodline supplies **at least
+  // one** of the two schools that press it. That rule was written for mono-element beasts,
+  // where it is the only reading that works, and it is unchanged here -- so a Frost/Dusk
+  // Grave-Gargoyle can legitimately deal itself a Pyre/Frost Vaporize Blast. A hybrid's
+  // identity is currently expressed by *how often* it draws fusions, not by *which*.
+  // Tightening that to the beast's own pair is a live design question, not an oversight.
+  //
+  // **`school` is the Resonance, and a hybrid has to pick one.** Resonance is keyed by
+  // school and a Companion carries a single one, so each of these names the parent whose
+  // passive it inherits -- the Chimera burns like an Ignis, the Mantis rimes like a
+  // Boreas. Their own bespoke Resonances are designed and *not* built; see the note above
+  // `RESONANCE` in `data/resonance.ts` for what each would need.
+
+  {
+    id: 'chimera',
+    name: 'Chimera of the Caldera',
+    title: 'Caldera Chimera',
+    school: 'pyre',
+    blurb:
+      'Boil them. Fire into a Chilled body flash-boils it, and the steam it leaves blinds whatever is left standing behind.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['pyre', 'frost'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'flame_surge',
+      'flame_surge',
+      'glacial_spike',
+      'glacial_spike',
+      'brittle_touch',
+      'frost_nova',
+      'ember_coat',
+      'cataclysm',
+    ],
+    unitCardId: 'chimera_bound',
+  },
+  {
+    id: 'wasp',
+    name: 'Cinder-Wasp Swarm',
+    title: 'Ember Swarm',
+    school: 'surge',
+    blurb:
+      'Charge, then light it. A Charged body takes fire badly, and the arc goes looking for the next one.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['pyre', 'surge'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'static_arc',
+      'static_arc',
+      'arc_lash',
+      'flame_surge',
+      'flame_surge',
+      'cinder_rune',
+      'ember_coat',
+      'static_charge',
+    ],
+    unitCardId: 'wasp_bound',
+  },
+  {
+    id: 'tortoise',
+    name: 'Obsidian Tortoise',
+    title: 'Caldera Bulwark',
+    school: 'bulwark',
+    blurb:
+      'Ground held and ground denied. Shove them off the tile they wanted and leave something burning on it.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['pyre', 'bulwark'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'seismic_slam',
+      'seismic_slam',
+      'petrifying_mantle',
+      'petrifying_mantle',
+      'flame_surge',
+      'cinder_rune',
+      'ember_coat',
+      'smoke_bomb',
+    ],
+    unitCardId: 'tortoise_bound',
+  },
+  {
+    id: 'treant',
+    name: 'Crimson Treant',
+    title: 'Ashwood Warden',
+    school: 'bloom',
+    blurb:
+      'Poison first, fire second. Wildfire burns off every stack at once and everything nearby is standing in it.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['pyre', 'bloom'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'spore_cloud',
+      'spore_cloud',
+      'rot_root_snare',
+      'rot_root_snare',
+      'flame_surge',
+      'cinder_rune',
+      'verdant_swell',
+      'ember_coat',
+    ],
+    unitCardId: 'treant_bound',
+  },
+  {
+    id: 'mantis',
+    name: 'Storm-Mantis',
+    title: 'Rime Conductor',
+    school: 'frost',
+    blurb:
+      'Cold conducts. Shock through a Chilled body Superconducts, and what it earths into comes out Brittle.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['frost', 'surge'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'glacial_spike',
+      'glacial_spike',
+      'static_arc',
+      'static_arc',
+      'arc_lash',
+      'frost_nova',
+      'brittle_touch',
+      'static_charge',
+    ],
+    unitCardId: 'mantis_bound',
+  },
+  {
+    id: 'juggernaut',
+    name: 'Glacial Juggernaut',
+    title: 'Icebreaker',
+    school: 'bulwark',
+    blurb:
+      'Freeze it, then break it. A physical blow on frozen flesh Shatters, and the shrapnel does not care who is nearby.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['frost', 'bulwark'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'glacial_spike',
+      'flash_freeze',
+      'frost_nova',
+      'seismic_slam',
+      'seismic_slam',
+      'petrifying_mantle',
+      'ice_barricade',
+      'brittle_touch',
+    ],
+    unitCardId: 'juggernaut_bound',
+  },
+  {
+    id: 'gargoyle',
+    name: 'Grave-Gargoyle',
+    title: 'Black Ice',
+    school: 'dusk',
+    blurb:
+      'Cold is patient and so is the debt. Chill them still, then take what is left in Marrow.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['frost', 'dusk'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'glacial_spike',
+      'frost_nova',
+      'brittle_touch',
+      'soul_splinter_rune',
+      'soul_splinter_rune',
+      'marrow_siphon',
+      'marrow_burst',
+      'flash_freeze',
+    ],
+    unitCardId: 'gargoyle_bound',
+  },
+  {
+    id: 'dynamo',
+    name: 'Kinetic Dynamo',
+    title: 'Momentum Engine',
+    school: 'surge',
+    blurb:
+      'Charge is only useful if something moves. Shock them, shove them, and let the wall finish it.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['surge', 'bulwark'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'static_arc',
+      'arc_lash',
+      'seismic_slam',
+      'seismic_slam',
+      'petrifying_mantle',
+      'static_charge',
+      'smoke_bomb',
+      'arc_lash',
+    ],
+    unitCardId: 'dynamo_bound',
+  },
+  {
+    id: 'geist',
+    name: 'Volatile Geist',
+    title: 'Aether Siphon',
+    school: 'dusk',
+    blurb:
+      'Everything is a battery, including your own line. Charge a body, spend it, and take the difference.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['surge', 'dusk'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'static_arc',
+      'arc_lash',
+      'marrow_siphon',
+      'marrow_siphon',
+      'soul_splinter_rune',
+      'harvest_the_weak',
+      'marrow_burst',
+      'static_charge',
+    ],
+    unitCardId: 'geist_bound',
+  },
+  {
+    id: 'sovereign',
+    name: 'Bone Bastion Sovereign',
+    title: 'Marrow Bastion',
+    school: 'bulwark',
+    blurb:
+      'The line holds because of what is buried under it. Feed it your own and it stands taller.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['bulwark', 'dusk'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'petrifying_mantle',
+      'petrifying_mantle',
+      'seismic_slam',
+      'marrow_siphon',
+      'soul_splinter_rune',
+      'harvest_the_weak',
+      'smoke_bomb',
+      'marrow_burst',
+    ],
+    unitCardId: 'sovereign_bound',
   },
 ];
 

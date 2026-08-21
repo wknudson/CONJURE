@@ -112,6 +112,29 @@ export function hasLoS(
   ignoreIds: UnitId[] = [],
   viewer?: Side,
 ): boolean {
+  // Fog-Stalker, and the one rule that looks at the *destination* rather than the path.
+  //
+  // `occluderCells` documents the default explicitly: a body standing in steam is still a
+  // legal target. This side is the exception — it melts into the cloud instead of merely
+  // hiding behind it. Goggles beat it, so `ignoresFog` and this remain an answer to each
+  // other rather than stacking into "nobody can shoot anybody".
+  //
+  // Ordered cheapest-first on purpose. `hasLoS` is one of the hottest functions in the
+  // game — the Adept's threat map calls it hundreds of times per turn — so the first
+  // question has to be two boolean reads and no allocation. Only a fight where somebody
+  // actually brought the knack pays for a `coordKey`, and only a shot *into* a fogged
+  // tile pays for the entity scan.
+  if (state.players.player.fogConceals || state.players.enemy.fogConceals) {
+    if (viewer === undefined || !state.players[viewer].ignoresFog) {
+      if (state.hazards[coordKey(to)]?.kind === 'steam_fog') {
+        const hidden = allEntities(state).find(
+          (e) => isUnit(e) && cellsOf(e).some((c) => c.x === to.x && c.y === to.y),
+        );
+        if (hidden && state.players[(hidden as { side: Side }).side].fogConceals) return false;
+      }
+    }
+  }
+
   const blockers = occluderCells(state, ignoreIds, viewer);
   return supercoverLine(from, to).every((c) => !blockers.has(coordKey(c)));
 }

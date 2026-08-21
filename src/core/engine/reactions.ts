@@ -6,7 +6,7 @@
  * shrapnel, a toxin bloom — can only resolve once we know the hit actually drew blood.
  */
 
-import type { Coord, DamageType, Side, UnitId } from '../../contract/ids.js';
+import type { Coord, DamageType, Side, StatusKind, UnitId } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
 import { emit, newCause } from './context.js';
 import type { Entity, Unit } from '../types/units.js';
@@ -40,13 +40,29 @@ export function prepareReaction(
   if (!isUnit(entity)) return { bonus: 0, pending: undefined };
   if (ctx.state.encounter.chainCancelled) return { bonus: 0, pending: undefined };
 
-  const def = findReaction(dtype, entity.statuses, ctx.state.encounter.weather?.kind);
+  // Conductive Ice: rime carries a charge, so Chill answers a reaction that asked for
+  // Charged. A substitute rather than a second status — the table is matched against a
+  // *view* of the body and the body itself is never written, so nothing downstream can
+  // find a `charged` stack that was never really there.
+  const substituted =
+    ctx.state.players[ctx.state.activeSide].chillConducts &&
+    !entity.statuses.charged &&
+    (entity.statuses.chill ?? 0) > 0;
+  const reads = substituted
+    ? { ...entity.statuses, charged: entity.statuses.chill }
+    : entity.statuses;
+
+  const def = findReaction(dtype, reads, ctx.state.encounter.weather?.kind);
   if (!def) return { bonus: 0, pending: undefined };
 
   // A weather-gated reaction has no status to read or spend: `consumed` is what Wildfire
   // scales its blast by, and for Arc there is nothing on the body to have consumed.
-  const consumed = def.requires ? entity.statuses[def.requires] ?? 0 : 0;
-  if (def.consumes && def.requires) delete entity.statuses[def.requires];
+  // What a substituted reaction spends is the cold it actually ran through, not the
+  // charge it borrowed the name of.
+  const spends: StatusKind | undefined =
+    substituted && def.requires === 'charged' ? 'chill' : def.requires;
+  const consumed = spends ? entity.statuses[spends] ?? 0 : 0;
+  if (def.consumes && spends) delete entity.statuses[spends];
 
   return {
     bonus: def.bonusDamage ?? 0,
@@ -106,6 +122,9 @@ export function resolveReaction(
       for (const c of adjacentTiles(ctx, at)) {
         const victim = entityAt(ctx.state, c);
         if (!victim || (host && victim.id === host.id)) continue;
+        // Shrapnel Guard. Scoped to the splash and not to the strip: this is plate against
+        // flying ice, and it has nothing to say about the armor Shatter takes off its host.
+        if (isUnit(victim) && ctx.state.players[victim.side].immuneToShatterSplash) continue;
         dealDamage(ctx, {
           target: isUnit(victim)
             ? { kind: 'unit', id: victim.id }
@@ -179,6 +198,13 @@ export function resolveReaction(
           chainDepth,
         });
         if (ctx.state.result) return;
+
+        // Toxic Smoke: the blast burns the spores off and blows them onto whatever is
+        // still standing. Re-read, because the blast may have just killed it.
+        const seeds = ctx.state.players[ctx.state.activeSide].wildfireSeedsToxin;
+        if (seeds > 0 && isUnit(victim) && ctx.state.units[victim.id]) {
+          applyStatusTo(ctx, ctx.state.units[victim.id]!, 'toxin', seeds, ctx.state.activeSide);
+        }
       }
       break;
     }
@@ -200,6 +226,11 @@ export function resolveReaction(
         struck.push(victim.id);
       }
 
+      // Arc-Welder: the jump is dealt through plate. Read off the side that let the
+      // charge go, not off whoever it earths into — this is a property of the storm the
+      // caster is standing in, and it applies to their own line the same way the arc does.
+      const pierces = ctx.state.players[ctx.state.activeSide].arcPierces;
+
       for (const id of struck) {
         if (ctx.state.encounter.chainCancelled || ctx.state.result) return;
         // Re-read: an earlier arc in this same loop may already have killed it.
@@ -207,9 +238,24 @@ export function resolveReaction(
         dealDamage(ctx, {
           target: { kind: 'unit', id },
           amount: def.outcome.damage,
-          dtype: def.outcome.dtype,
+          dtype: pierces ? 'true' : def.outcome.dtype,
           cause: 'reaction',
           chainDepth,
+        });
+
+        // Shock Absorber: the collateral charges the plate instead of cracking it. Read
+        // off the *struck* side, which is what makes it a defence rather than a rider on
+        // the caster's arc, and applied only to a body that survived to wear it.
+        const survivor = ctx.state.units[id];
+        if (!survivor) continue;
+        const plate = ctx.state.players[survivor.side].armorOnArcCollateral;
+        if (plate <= 0) continue;
+        survivor.armor += plate;
+        emit(ctx, {
+          t: 'armorGained',
+          target: { kind: 'unit', id },
+          amount: plate,
+          total: survivor.armor,
         });
       }
       break;

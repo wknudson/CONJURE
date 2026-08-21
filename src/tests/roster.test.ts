@@ -52,12 +52,23 @@ describe('rolling a wild one', () => {
     );
   });
 
-  it('only ever rolls a knack its bloodline has', () => {
+  it('only ever rolls a knack its bloodline can reach', () => {
+    // Membership in the pool, not `trait.baseId === species.id`.
+    //
+    // A hybrid bloodline rolls its two parents' knacks alongside its own — a Chimera of
+    // the Caldera legitimately catches Rimed Lungs, which is filed under `boreas`. The
+    // stricter reading was true for as long as every Companion was mono-element and stops
+    // being the rule the moment one is not. What must still hold is that nothing is rolled
+    // from *outside* the pool, and that nothing rolled is a pending knack.
     for (let seed = 1; seed < 120; seed++) {
       for (const species of COMPANIONS) {
         const beast = tameCompanion(makeRng(seed), species.id, seed);
         if (beast.traitId === '') continue;
-        expect(COMPANION_TRAITS[beast.traitId]!.baseId, species.id).toBe(species.id);
+        const pool = traitsFor(species.id);
+        expect(pool.some((t) => t.id === beast.traitId), `${species.id}: ${beast.traitId}`).toBe(
+          true,
+        );
+        expect(COMPANION_TRAITS[beast.traitId]!.pending, beast.traitId).toBeUndefined();
       }
     }
   });

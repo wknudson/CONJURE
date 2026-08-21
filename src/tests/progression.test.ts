@@ -31,7 +31,12 @@ import {
   xpForNextLevel,
 } from '../core/data/roster.js';
 import { COMPANIONS } from '../core/data/companions.js';
-import { hybridPool, purePool, MONO_HYBRID_CHANCE } from '../core/data/grimoire.js';
+import {
+  HYBRID_HYBRID_CHANCE,
+  MONO_HYBRID_CHANCE,
+  hybridPool,
+  purePool,
+} from '../core/data/grimoire.js';
 import { makeRng } from '../core/util/rng.js';
 import { CombatSession } from '../core/session.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
@@ -296,9 +301,23 @@ describe('the wild variance roll', () => {
 
 describe('the grimoire pool', () => {
   it('keeps a mono-element bloodline rare on fusions', () => {
-    for (const c of COMPANIONS) {
+    // Scoped by `hybridChance` rather than by a list of names, so the day somebody adds an
+    // eleventh two-school bloodline this keeps testing the rule instead of failing. It
+    // still bites on the thing it was written for: a mono beast whose pool quietly grew a
+    // second school, or whose fusion odds were nudged, lands here.
+    const mono = COMPANIONS.filter((c) => c.grimoire.hybridChance === MONO_HYBRID_CHANCE);
+    expect(mono.length, 'the mono bloodlines').toBe(COMPANIONS.length - 10);
+    for (const c of mono) {
       expect(c.grimoire.schools, `${c.name}`).toHaveLength(1);
-      expect(c.grimoire.hybridChance, `${c.name}`).toBe(MONO_HYBRID_CHANCE);
+    }
+  });
+
+  it('gives a two-school bloodline both its schools and a far better fusion rate', () => {
+    const hybrid = COMPANIONS.filter((c) => c.grimoire.hybridChance !== MONO_HYBRID_CHANCE);
+    expect(hybrid.length, 'the hybrid bloodlines').toBe(10);
+    for (const c of hybrid) {
+      expect(c.grimoire.schools, `${c.name}`).toHaveLength(2);
+      expect(c.grimoire.hybridChance, `${c.name}`).toBe(HYBRID_HYBRID_CHANCE);
     }
   });
 

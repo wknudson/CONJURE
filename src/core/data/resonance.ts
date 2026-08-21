@@ -30,6 +30,44 @@ export interface ResonanceDef {
 /** What Verdant Growth returns. Small on purpose — see the passive. */
 export const VERDANT_GROWTH_HEAL = 20;
 
+/**
+ * The ten hybrid bloodlines' own Resonances: designed, and **not built**.
+ *
+ * `data/companions.ts` ships ten two-school Companions and every one of them borrows a
+ * parent's passive, because this table is keyed by `School` and each of them is two.
+ * That is the smaller of the two obstacles. The real one is the trigger.
+ *
+ * Every passive here fires in one place — `engine.ts` asks `resonanceFor` on the first
+ * Companion card of the turn, hands it a side and a column, and that is the whole
+ * contract. All ten of the designed hybrid Resonances are instead **event-triggered**:
+ *
+ *  - Thermal Shock (Chimera)     — when a Steam Fog hazard is spawned, heal the Pact 20.
+ *  - Plasma Conduit (Wasp)       — when a Plasma Burst triggers, generate 1 Echo.
+ *  - Eruption (Tortoise)         — when a shove lands, leave a burning tile behind it.
+ *  - Ash Fertilizer (Treant)     — when Wildfire goes off, Leech (1) to allies in the blast.
+ *  - Flash Freeze (Mantis)       — when Superconduct chains, Chill (1) to the collateral.
+ *  - Icebreaker (Juggernaut)     — when Shatter triggers, Fortify the nearest ally 30 Armor.
+ *  - Winter's Grasp (Gargoyle)   — when a Soul Rune detonates, bank a Pip.
+ *  - Momentum Transfer (Dynamo)  — when a Kinetic Arc triggers, Haste the lowest-HP ally.
+ *  - Aether Siphon (Geist)       — when an Overloaded unit is tithed, draw 1 and make 1 Echo.
+ *  - Marrow Shield (Sovereign)   — when a Devour triggers, Fortify the Pact 20 Armor.
+ *
+ * Three things stand between that list and this table, in order of size:
+ *
+ *  1. **Nothing subscribes to anything.** Firing "when a hazard spawns" needs a hook at
+ *     `spawnHazard`, "when a shove lands" one at `pushUnit`, and so on. The shape that
+ *     fits this codebase is the boon shape — a capability read at the chokepoint the
+ *     moment already passes through — not a listener registry.
+ *  2. **Four of them name resources or mechanics that do not exist**: Echo (twice),
+ *     Leech, Haste, and Devour. Plasma Burst, Kinetic Arc, Black Ice and Soul Runes are
+ *     likewise not reactions this engine has; the real table is in `data/reactions.ts`.
+ *  3. **`RESONANCE` is keyed by school.** Ten more entries need a key that is not a
+ *     `School` — a Companion-level override, most likely, resolved in `resonanceFor`
+ *     before it falls back to the school.
+ *
+ * Recorded here rather than in a tracker because this is the file somebody will be
+ * looking at when they go to build one.
+ */
 export const RESONANCE: Partial<Record<School, ResonanceDef>> = {
   pyre: {
     school: 'pyre',

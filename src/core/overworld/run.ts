@@ -124,6 +124,11 @@ export function carryFor(
   const toxinStacks = (gear.bonusToxinStacks ?? 0) + (knack.bonusToxinStacks ?? 0);
   const handLimit = (gear.bonusHandLimit ?? 0) + (knack.bonusHandLimit ?? 0);
   const braced = (gear.collisionResist ?? 0) + (knack.collisionResist ?? 0);
+  const steam = (gear.steamBurns ?? 0) + (knack.steamBurns ?? 0);
+  const arcPlate = (gear.armorOnArcCollateral ?? 0) + (knack.armorOnArcCollateral ?? 0);
+  const wildfireToxin = (gear.wildfireSeedsToxin ?? 0) + (knack.wildfireSeedsToxin ?? 0);
+  const freezeStacks = (gear.bonusFreezeStacks ?? 0) + (knack.bonusFreezeStacks ?? 0);
+  const shoveTiles = (gear.bonusShoveDistance ?? 0) + (knack.bonusShoveDistance ?? 0);
 
   const boons: CombatBoons = {
     ...(armor ? { armor } : {}),
@@ -148,6 +153,18 @@ export function carryFor(
     ...(handLimit ? { bonusHandLimit: handLimit } : {}),
     ...(braced ? { collisionResist: braced } : {}),
     ...(gear.ignoreGuardians || knack.ignoreGuardians ? { ignoreGuardians: true } : {}),
+    ...(gear.fogConceals || knack.fogConceals ? { fogConceals: true } : {}),
+    ...(gear.arcPierces || knack.arcPierces ? { arcPierces: true } : {}),
+    ...(gear.alliesGrounded || knack.alliesGrounded ? { alliesGrounded: true } : {}),
+    ...(gear.chillConducts || knack.chillConducts ? { chillConducts: true } : {}),
+    ...(gear.immuneToShatterSplash || knack.immuneToShatterSplash
+      ? { immuneToShatterSplash: true }
+      : {}),
+    ...(steam ? { steamBurns: steam } : {}),
+    ...(arcPlate ? { armorOnArcCollateral: arcPlate } : {}),
+    ...(wildfireToxin ? { wildfireSeedsToxin: wildfireToxin } : {}),
+    ...(freezeStacks ? { bonusFreezeStacks: freezeStacks } : {}),
+    ...(shoveTiles ? { bonusShoveDistance: shoveTiles } : {}),
   };
 
   // The rolls this particular beast is carrying. Resolved here for the same reason the
