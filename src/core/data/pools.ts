@@ -28,6 +28,7 @@ import { CARDS } from './cards/index.js';
 import { isDraftable, isHybrid } from './grimoire.js';
 import { DEFAULT_ROSTER, UNIVERSAL_ROSTER, isRosterEligible } from './roster.js';
 import { COMPANIONS, companionById } from './companions.js';
+import { traitsFor } from './companionTraits.js';
 
 /**
  * The six elemental schools, in the order the game presents them.
@@ -90,6 +91,68 @@ export function catalogGaps(): CatalogGap[] {
       short: Math.max(0, CATALOG_TARGET.min - spells),
     };
   }).sort((a, b) => b.short - a.short || a.school.localeCompare(b.school));
+}
+
+// ------------------------------------------------------- the three species registries
+
+/**
+ * What each bloodline can roll, keyed by species — the three pools the Variance Engine
+ * draws on, in the shape the design asks for them.
+ *
+ * **Derived at load, never authored.** That is the whole modularity claim, and it is
+ * stronger than a hand-kept table would be: a new Bulwark spell joins Ferrum's pool *and*
+ * the Tortoise's, the Juggernaut's, the Dynamo's and the Sovereign's by being written with
+ * `school: 'bulwark'`, with no registry edit anywhere. A literal per-species array would
+ * need five, and would be wrong the first time somebody forgot one.
+ *
+ * Keyed by species rather than by school because that is the question every caller
+ * actually has — "what can *this beast* roll" — and because a hybrid speaks two schools,
+ * so school-keyed tables push that join onto every reader.
+ *
+ * The values are card and trait **ids**, not defs, so these read as data and can be logged,
+ * diffed and stamped into a save without dragging the whole card database along.
+ */
+export const MINIONS_BY_SPECIES: Readonly<Record<string, readonly string[]>> = byCompanion(
+  (baseId) => unique(schoolsOf(baseId).flatMap((s) => minionPool(s).map((c) => c.id))),
+);
+
+export const SPELL_POOLS_BY_SPECIES: Readonly<Record<string, readonly string[]>> = byCompanion(
+  (baseId) => unique(schoolsOf(baseId).flatMap((s) => spellPool(s).map((c) => c.id))),
+);
+
+/**
+ * The knacks a bloodline can roll — its own, plus its parents' if it is a hybrid.
+ *
+ * Reads `traitsFor`, which is the taming roll's own source, so this registry and the roll
+ * cannot disagree about what a Chimera might come out wearing. Pending knacks are absent
+ * from both: a trait a player could roll and that then did nothing is worse than one that
+ * does not exist yet.
+ */
+export const TRAITS_BY_SPECIES: Readonly<Record<string, readonly string[]>> = byCompanion(
+  (baseId) => traitsFor(baseId).map((t) => t.id),
+);
+
+/** Builds one of the registries above, over every species the game knows. */
+function byCompanion(of: (baseId: string) => string[]): Record<string, readonly string[]> {
+  const out: Record<string, readonly string[]> = {};
+  for (const c of COMPANIONS) out[c.id] = of(c.id);
+  return out;
+}
+
+function unique(ids: string[]): string[] {
+  return [...new Set(ids)].sort();
+}
+
+/**
+ * What claiming one beast permanently grants the Vanguard.
+ *
+ * The rule a claim stamps, separated from the stamping so the two can be tested apart and
+ * so nothing has to guess at it: `save.ts` calls this once when a beast is taken and
+ * writes the answer down. **Permanent** is the operative word, and it is why the answer is
+ * stored rather than recomputed — see `Profile.rosterUnlocks`.
+ */
+export function grantsFor(baseId: string): readonly string[] {
+  return MINIONS_BY_SPECIES[baseId] ?? [];
 }
 
 // ------------------------------------------------------------------ roster unlocks

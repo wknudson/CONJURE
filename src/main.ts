@@ -26,7 +26,6 @@ import { TitleScreen } from './app/TitleScreen.js';
 import { CombatScreen } from './app/CombatScreen.js';
 import { ResultsScreen } from './app/ResultsScreen.js';
 import { VictoryScreen } from './app/VictoryScreen.js';
-import { rosterUnlocksFor } from './core/data/pools.js';
 import { DeckBuilderScreen } from './app/DeckBuilderScreen.js';
 import type { DeckBuilderResult } from './app/DeckBuilderScreen.js';
 import { PreCombatScreen } from './app/PreCombatScreen.js';
@@ -35,6 +34,7 @@ import { ShopScreen } from './app/ShopScreen.js';
 import { ArtificerScreen } from './app/ArtificerScreen.js';
 import {
   deleteProfile,
+  grantRosterUnlocks,
   loadSave,
   newProfile,
   writeSave,
@@ -110,6 +110,7 @@ function activeCompanion(): CompanionInstance {
 
   if (p.companions.length === 0) {
     p.companions.push(tameCompanion(makeRng(p.state.overworld.bountySeed), DEFAULT_COMPANION.id, 1));
+    grantRosterUnlocks(p, DEFAULT_COMPANION.id);
   }
   p.activeCompanionId = p.companions[0]!.instanceId;
   return p.companions[0]!;
@@ -137,6 +138,9 @@ function tameWild(baseId: string = DEFAULT_COMPANION.id): CompanionInstance {
     sequence,
   );
   p.companions.push(beast);
+  // Permanent, and written down rather than inferred. Releasing this animal later keeps
+  // the bodies it brought -- see `Profile.rosterUnlocks`.
+  grantRosterUnlocks(p, baseId);
   return beast;
 }
 
@@ -403,9 +407,9 @@ function showBuilder(companionId: string, onDone: () => void): void {
       activeCompanion().spellModifiers,
       activeCompanion().overrides,
       profile().collection,
-      // The Vanguard's gate, resolved from what this character has actually caught. A
-      // fresh character still sees the universal bodies, so the tray is never empty.
-      rosterUnlocksFor(profile().companions.map((c) => c.baseId)),
+      // The Vanguard's gate, read off the character's own ledger of grants. Deliberately
+      // not recomputed from the current roster: a released beast keeps its bodies.
+      profile().rosterUnlocks,
       profile().bestiary,
       profile().state,
       persist,
@@ -566,6 +570,10 @@ function finishCombat(
     ...(played.subjugationPrize ? { prize: played.subjugationPrize } : {}),
     roster: p.companions,
   });
+
+  // A trial that ended in a binding is the other way a bloodline is claimed, and it pays
+  // the same permanent unlock a wild taming does.
+  if (tamed) grantRosterUnlocks(p, tamed.baseId);
 
   if (result === 'victory') p.record.wins += 1;
   else if (result === 'bound') p.record.bound += 1;

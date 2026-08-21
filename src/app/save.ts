@@ -39,7 +39,7 @@ import {
 } from '../core/data/roster.js';
 import { STAT_SCALE } from '../core/scale.js';
 import { COMPANIONS, DEFAULT_COMPANION, companionById } from '../core/data/companions.js';
-import { rosterUnlocksFor } from '../core/data/pools.js';
+import { grantsFor, rosterUnlocksFor } from '../core/data/pools.js';
 import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
 import type {
   ActiveEncounterState,
@@ -65,7 +65,7 @@ import { socketRefusal } from '../core/data/grimoire.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 
 /**
  * The first version whose health numbers are written at the stretched scale.
@@ -188,6 +188,21 @@ export interface Profile {
    */
   vanguardProgress: Record<string, VanguardProgress>;
   /**
+   * Every body this character has permanently earned the right to field (v17).
+   *
+   * **Stored rather than derived, and the difference is a bug this fixes.** The gate began
+   * life as `rosterUnlocksFor(companions.map(c => c.baseId))`, computed fresh each time —
+   * which reads well until you notice the Vivarium has a Release button. Letting a Ferrum
+   * go took the Bulwark bodies back with it, and because `loadProfile` repairs a roster
+   * against the gate, the next load then silently deleted the Stone-Heart Golem out of the
+   * player's saved warband. A claim is supposed to be permanent; a derived answer cannot be.
+   *
+   * So this is a ledger of grants, and the only thing that ever writes it is
+   * `grantRosterUnlocks`. `pools.grantsFor` remains the *rule* for what one claim is worth,
+   * which keeps "what does taming a Boreas give me" answerable without a save in hand.
+   */
+  rosterUnlocks: string[];
+  /**
    * The **instance** currently standing beside the player, by `instanceId` (v9).
    *
    * A roster entry, not a species. Everything that needs the species — the deck, the
@@ -251,6 +266,37 @@ export interface SaveFile {
  * and an empty purse. Nothing is handed over: the first contract is what pays for the
  * first tonic, which is what makes the first contract mean something.
  */
+/**
+ * Folds a set of grants into a legal, stable unlock list.
+ *
+ * Two jobs, and both are about the answer being boring: the floor is always present so a
+ * tray can never open empty, and the result is deduplicated and sorted so two saves that
+ * unlocked the same bodies in a different order compare equal.
+ */
+function unlockFloor(granted: readonly string[]): string[] {
+  return [...new Set([...UNIVERSAL_ROSTER, ...DEFAULT_ROSTER, ...granted])].sort();
+}
+
+/**
+ * Stamps one bloodline's bodies into a character, permanently.
+ *
+ * The single writer of `Profile.rosterUnlocks`, called wherever a beast actually becomes
+ * the player's — a wild taming, or a subjugation claimed off a trial. Nothing removes from
+ * this list: releasing the animal keeps the bodies, which is what "permanently unlocks"
+ * has to mean if the Vivarium is going to have a Release button at all.
+ *
+ * Returns whether anything was new, so a caller can tell the player about a reward that
+ * actually landed rather than announcing one they already had.
+ */
+export function grantRosterUnlocks(profile: Profile, baseId: string): string[] {
+  const before = new Set(profile.rosterUnlocks);
+  const gained = grantsFor(baseId).filter((id) => !before.has(id));
+  if (gained.length > 0) {
+    profile.rosterUnlocks = unlockFloor([...profile.rosterUnlocks, ...gained]);
+  }
+  return gained;
+}
+
 export function newProfile(profileId: string, name = 'Commander'): Profile {
   const decks: Record<string, SavedDeck> = {};
   for (const companion of COMPANIONS) {
@@ -290,6 +336,10 @@ export function newProfile(profileId: string, name = 'Commander'): Profile {
     // A warband that spends the ten exactly, so a new player meets the deployment phase
     // with a real line to place rather than an empty tray and a rule to go and read.
     roster: [...DEFAULT_ROSTER],
+    // The floor, plus whatever the beast they start beside is worth. Written at creation
+    // rather than left empty, so the very first Vanguard screen already reflects the one
+    // bloodline this character has.
+    rosterUnlocks: unlockFloor(grantsFor(DEFAULT_COMPANION.id)),
     // Everything they can field, on the books at level 1. Seeded at creation rather than
     // on first deployment so the Assembly screen can show a level beside a body the player
     // has not taken into a fight yet -- an unlocked body with no record would read as a
@@ -577,17 +627,32 @@ function migrateProfile(
   const savedRoster = Array.isArray(data.roster)
     ? data.roster.filter((id): id is string => typeof id === 'string').map(rename)
     : undefined;
-  let roster = savedRoster ?? [...DEFAULT_ROSTER];
-  // Repaired against the *same* gate the builder enforces, which is what stops a save
-  // hand-edited to hold a Stone-Heart Golem from fielding one without the Bulwark
-  // bloodline behind it. Read before the companions are, so it uses the raw list rather
-  // than waiting on a migration this function has not run yet.
+  // Read before the companions are migrated, so it uses the raw list rather than waiting
+  // on work this function has not done yet.
   const tamed = Array.isArray(data.companions)
     ? data.companions
         .map((c) => (c && typeof c === 'object' ? (c as { baseId?: unknown }).baseId : undefined))
         .filter((b): b is string => typeof b === 'string')
     : [];
-  const unlocks = rosterUnlocksFor(tamed);
+  // --- Vanguard unlocks (v17) ---
+  //
+  // Read what is stored, then backfill from what this character evidently owns: the
+  // bloodlines currently on the roster, *and* every body already in their warband. The
+  // second half is what makes the migration safe rather than merely correct — a character
+  // who tamed a Ferrum, built a Golem into their Vanguard and then released the beast has
+  // a warband the derived rule would refuse, and trimming it on load would be taking away
+  // something they earned before the rule existed.
+  const stored = Array.isArray(data.rosterUnlocks)
+    ? data.rosterUnlocks.filter((id): id is string => typeof id === 'string').map(rename)
+    : [];
+  const unlocks = unlockFloor([
+    ...stored,
+    ...rosterUnlocksFor(tamed),
+    ...(savedRoster ?? []),
+  ]);
+  let roster = savedRoster ?? [...DEFAULT_ROSTER];
+  // Repaired against the *same* gate the builder enforces, which is what stops a save
+  // hand-edited to hold a Stone-Heart Golem from fielding one with no claim behind it.
   if (validateRoster(roster, unlocks).length > 0) {
     const repaired: string[] = [];
     for (const id of roster) {
@@ -680,6 +745,7 @@ function migrateProfile(
     collection,
     decks,
     roster,
+    rosterUnlocks: unlocks,
     vanguardProgress,
     activeCompanionId,
     companions,

@@ -127,9 +127,23 @@ export function hybridPool(source: GrimoireSource): CardDef[] {
  */
 function neutralPool(): CardDef[] {
   return Object.values(CARDS)
-    .filter((c) => isDraftable(c) && !isHybrid(c) && c.school === 'neutral')
+    .filter((c) => isDraftable(c) && !isHybrid(c) && FALLBACK_SCHOOLS.includes(c.school))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
+
+/**
+ * The colourless shelves a thin bloodline tops up from.
+ *
+ * Arcane joined neutral here because both are the same *kind* of card — utility nobody's
+ * school owns — and excluding one of them was an accident of the fallback being written
+ * before the Arcane set existed. It widens the safety net rather than changing any draw
+ * that happens today: the fallback fires only when a bloodline's own shelves are
+ * exhausted, and since the catalog expansion no species reaches that point.
+ *
+ * Deliberately **not** hybrids, which have their own step in the chain, and deliberately
+ * not another school's cards, which would make a Boreas that ran short into a Sylva.
+ */
+const FALLBACK_SCHOOLS: readonly School[] = ['neutral', 'arcane'];
 
 /**
  * Draws one Grimoire.
