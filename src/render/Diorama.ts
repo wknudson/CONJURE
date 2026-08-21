@@ -64,6 +64,50 @@ const TILT = 0.66;
 /** Height of the camera above the ground, in tiles. Lower is a more dramatic rake. */
 const EYE = 6.5;
 
+/**
+ * The band of the frame that stays sharp, as fractions of its height.
+ *
+ * These used to be 0.34 and 0.62 — a sharp band across the *middle* of the picture, which
+ * is where a tilt-shift band belongs in the abstract and is nowhere near where anything in
+ * this scene actually stands. Measured: the Commander spans 0.684 to 0.809 and the beast
+ * lands at 0.879, so **every actor was inside the blur**. The subject of the shot was the
+ * one thing out of focus, which is precisely backwards, and it was quietly erasing the
+ * finest marks on the sprite — the 2px brass collar measured zero pixels on screen against
+ * 48 in an unblurred probe.
+ *
+ * Exported so a test can assert the actors project into the band rather than beside it.
+ */
+export const FOCUS_NEAR = 0.6;
+export const FOCUS_FAR = 0.93;
+
+/**
+ * The projection, as a free function.
+ *
+ * Pulled out of the class so it can be reasoned about — and tested — without a canvas: the
+ * question "does the Commander stand in the sharp band" is pure arithmetic, and it should
+ * not require a DOM to ask.
+ */
+export function projectTile(
+  tx: number,
+  ty: number,
+  cam: DioramaCamera,
+  w: number,
+  h: number,
+): { x: number; y: number; scale: number } {
+  const dx = tx - cam.x;
+  // Depth away from the camera, kept clear of the eye plane so nothing divides by zero as
+  // the field passes behind the viewer.
+  const dz = Math.max(0.35, ty - cam.y + EYE);
+  const f = EYE / dz;
+
+  const unit = h / 9;
+  return {
+    x: w / 2 + dx * unit * f,
+    y: h * (0.5 + TILT * 0.5) - (EYE - dz) * unit * f * TILT - unit * f * TILT * 0.5,
+    scale: f,
+  };
+}
+
 export class Diorama {
   private readonly ctx: CanvasRenderingContext2D;
   /** The blurred copy tilt-shift composites from. Sized with the canvas. */
@@ -112,18 +156,7 @@ export class Diorama {
     y: number;
     scale: number;
   } {
-    const dx = tx - cam.x;
-    // Depth away from the camera, kept clear of the eye plane so nothing divides by zero
-    // as the field passes behind the viewer.
-    const dz = Math.max(0.35, ty - cam.y + EYE);
-    const f = EYE / dz;
-
-    const unit = h / 9;
-    return {
-      x: w / 2 + dx * unit * f,
-      y: h * (0.5 + TILT * 0.5) - (EYE - dz) * unit * f * TILT - unit * f * TILT * 0.5,
-      scale: f,
-    };
+    return projectTile(tx, ty, cam, w, h);
   }
 
   render(scene: DioramaScene): void {
@@ -143,8 +176,8 @@ export class Diorama {
 
     const ramp = ctx.createLinearGradient(0, 0, 0, h);
     ramp.addColorStop(0, 'rgba(0,0,0,1)');
-    ramp.addColorStop(0.34, 'rgba(0,0,0,0)');
-    ramp.addColorStop(0.62, 'rgba(0,0,0,0)');
+    ramp.addColorStop(FOCUS_NEAR, 'rgba(0,0,0,0)');
+    ramp.addColorStop(FOCUS_FAR, 'rgba(0,0,0,0)');
     ramp.addColorStop(1, 'rgba(0,0,0,1)');
 
     // Masked composite: paint the blurred copy, then punch the sharp band out of it with

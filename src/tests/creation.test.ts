@@ -27,7 +27,20 @@ import {
   writeSave,
   type SaveFile,
 } from '../app/save.js';
-import { RAMP, drawCommander, drawCompanion } from '../render/sprites.js';
+import {
+  RAMP,
+  SCHOOL_COLOR,
+  drawCompanion,
+  paintCommander,
+} from '../render/sprites.js';
+import { PALETTE } from '../render/palette.js';
+import { FOCUS_FAR, FOCUS_NEAR, projectTile } from '../render/Diorama.js';
+import {
+  BEAST_AT,
+  HERO_AT,
+  SHOT_IDENTITY,
+  SHOT_VOW,
+} from '../app/CharacterCreationScreen.js';
 
 /**
  * Character creation: the desk, and what walks away from it.
@@ -336,7 +349,7 @@ function recordingContext(): { ctx: CanvasRenderingContext2D; log: string[] } {
 
 function transcript(look: CharacterLook): string {
   const { ctx, log } = recordingContext();
-  drawCommander(ctx, 80, look);
+  paintCommander(ctx, 80, look);
   return log.join('|');
 }
 
@@ -351,7 +364,7 @@ function transcript(look: CharacterLook): string {
  */
 function shapeOf(look: CharacterLook): string {
   const { ctx, log } = recordingContext();
-  drawCommander(ctx, 80, look);
+  paintCommander(ctx, 80, look);
   return log
     .filter((line) => !/^(fillStyle|strokeStyle|lineWidth|alpha|shadow\w+)=/.test(line))
     .join('|');
@@ -398,6 +411,43 @@ describe('the sprite on the stage', () => {
   it('draws something for a look that has been tampered with', () => {
     const wild = { ...defaultLook(), hairPreset: 900, facePreset: -7 } as CharacterLook;
     expect(transcript(wild).length, 'no crash, and not an empty canvas').toBeGreaterThan(50);
+  });
+
+  it('keeps the Commander off the colour of the ground', () => {
+    // The legs were `#2A2F3A` — byte-identical to `PALETTE.tileA`, the floor they stand on.
+    // At diorama distance the figure would have ended at the coat hem with two boots
+    // floating under it. A sprite has to be pickable out of its own background first.
+    const ground = [PALETTE.tileA, PALETTE.tileB, PALETTE.bg].map((c) => c.toLowerCase());
+    for (const [name, hex] of Object.entries(RAMP)) {
+      expect(ground, `${name} is the ground`).not.toContain(hex.toLowerCase());
+    }
+  });
+
+  it('has a body: arms, hands, legs and boots', () => {
+    // What the reference silhouettes have that this sprite did not. It was a trapezoid with
+    // a head on it; arms are what make a shape a person, and they are two rects and two
+    // squares. Measured on a real canvas at 90 units: 104px of leg, 314px of boot, 72px of
+    // hand — all of it absent before.
+    const t = transcript(defaultLook());
+    expect(t, 'trousers').toContain(`fillStyle=${RAMP.trouser}`);
+    expect(t, 'and their shadow side').toContain(`fillStyle=${RAMP.trouserDark}`);
+    expect(t, 'boots').toContain(`fillStyle=${RAMP.boot}`);
+    // Four limb rects plus two boots plus two hands. `fillRect` count is the cheap proxy,
+    // and it is the one that goes to zero if somebody deletes the arms.
+    expect((t.match(/fillRect\(/g) ?? []).length, 'limbs drawn').toBeGreaterThanOrEqual(8);
+  });
+
+  it('wears the Magistracy until a discipline is vowed to, then wears that', () => {
+    // The cloak is the largest colour region on the figure — 502px against a 48x104 body —
+    // so this is the most visible thing the Vow changes.
+    const plain = transcript(defaultLook());
+    expect(plain, 'indigo by default').toContain(`fillStyle=${RAMP.cloak}`);
+
+    const { ctx, log } = recordingContext();
+    paintCommander(ctx, 80, defaultLook(), SCHOOL_COLOR.frost!);
+    const vowed = log.join('|');
+    expect(vowed, 'and the school once there is one').toContain(`fillStyle=${SCHOOL_COLOR.frost}`);
+    expect(vowed, 'the Magistracy indigo is gone').not.toContain(`fillStyle=${RAMP.cloak}`);
   });
 
   it('never erases, in any style', () => {
@@ -454,17 +504,22 @@ describe('the sprite on the stage', () => {
   });
 
   it('highlights the brass rather than filling it flat', () => {
+    // Both marks are `fillRect` now, not a triangle and a stroke. At 44 art-pixels the whole
+    // chest is four pixels tall, and the old three-pixel triangle anti-aliased into mud —
+    // measured at literally zero pixels within tolerance of the brass colour on a real
+    // canvas. Anything meant to read at this resolution is axis-aligned and >= 2px thick.
     const t = transcript(defaultLook());
     expect(t, 'the metal').toContain(`fillStyle=${RAMP.brass}`);
-    expect(t, 'and the catch of light along its top edge').toContain(
-      `strokeStyle=${RAMP.brassLit}`,
-    );
+    expect(t, 'and the catch of light along its top row').toContain(`fillStyle=${RAMP.brassLit}`);
   });
 
   it('catches a rim light down the lit side', () => {
     const t = transcript(defaultLook());
-    expect(t, 'the key light').toContain(`strokeStyle=${RAMP.rim}`);
-    expect(t, 'as light, not as an outline').toContain('alpha=0.55');
+    expect(t, 'the key light').toContain(`fillStyle=${RAMP.rim}`);
+    // Near-opaque, not 0.55. A translucent 1px stroke measured 28 pixels on the whole figure
+    // — in the transcript and not on the screen. Still under 1, so it reads as light rather
+    // than as a drawn outline.
+    expect(t, 'as light, not as an outline').toContain('alpha=0.85');
   });
 
   it('lights the beast’s eye rather than dotting it', () => {
@@ -483,5 +538,39 @@ describe('the sprite on the stage', () => {
       return log.join('|');
     });
     expect(new Set(drawn).size, 'six distinct beasts').toBe(PLAYABLE_SCHOOLS.length);
+  });
+});
+
+describe('the shot', () => {
+  const W = 1280;
+  const H = 720;
+
+  it('keeps every actor inside the sharp band', () => {
+    // The bug this exists for. The tilt-shift band was 0.34–0.62 — across the middle of the
+    // frame, which is where such a band belongs in the abstract and is nowhere near where
+    // anything in this scene stands. The Commander spans 0.68 to 0.81 and the beast lands
+    // at 0.88, so every actor sat inside the blur: the subject of the shot was the one
+    // thing out of focus, and it was erasing the finest marks on the sprite. The 2px brass
+    // collar measured **zero** pixels on the live canvas against 48 in an unblurred probe.
+    for (const [name, at, cam] of [
+      ['Commander, step I', HERO_AT, SHOT_IDENTITY],
+      ['Commander, step II', HERO_AT, SHOT_VOW],
+      ['the beast', BEAST_AT, SHOT_VOW],
+    ] as const) {
+      const feet = projectTile(at.x, at.y, cam, W, H).y / H;
+      // The head is up to a figure-height above the feet; both ends have to be sharp.
+      const head = (projectTile(at.x, at.y, cam, W, H).y - (H / 9) * 1.15) / H;
+
+      expect(feet, `${name}: feet below the band`).toBeLessThanOrEqual(FOCUS_FAR);
+      expect(head, `${name}: head above the band`).toBeGreaterThanOrEqual(FOCUS_NEAR);
+    }
+  });
+
+  it('still blurs something at both edges', () => {
+    // A band covering the whole frame is not tilt-shift, it is a plain picture. There has to
+    // be falloff at the top (the far ground and sky) and at the bottom (the nearest edge).
+    expect(FOCUS_NEAR, 'sky and far ground blur').toBeGreaterThan(0.05);
+    expect(FOCUS_FAR, 'the front edge blurs').toBeLessThan(0.99);
+    expect(FOCUS_FAR - FOCUS_NEAR, 'and the band is a band').toBeLessThan(0.7);
   });
 });

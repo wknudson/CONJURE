@@ -251,6 +251,14 @@ than merely squashed.
 
 A vignette closes the frame last, over everything.
 
+**The band has to be where the actors are.** It was first written as 0.34–0.62 — across the
+middle of the frame, which is where a tilt-shift band belongs in the abstract and is nowhere
+near where anything in this scene stands. The Commander spans **0.68 to 0.81** and the beast
+lands at **0.88**, so every actor sat inside the blur: the subject of the shot was the one
+thing out of focus, and it was erasing the sprite's finest marks — the brass collar measured
+zero pixels on the live canvas against 48 in an unblurred probe. `FOCUS_NEAR`/`FOCUS_FAR` are
+0.6/0.93 now, and a test projects the actors and asserts they land inside.
+
 ### The camera
 
 Two framings — `SHOT_IDENTITY` and `SHOT_VOW` ([:65-66](../src/app/CharacterCreationScreen.ts#L65)) —
@@ -300,6 +308,45 @@ coat topped out around 148 with no mid-tone break in the garment at all.
 The ramp is exported as `RAMP` ([sprites.ts:26](../src/render/sprites.ts#L26)) so the
 ordering rule — ink under shadow under lit, rim brightest — is tested against the real
 values rather than against a copy pasted into an assertion.
+
+### They are pixel sprites, not vector art
+
+The largest single change, and it is not about the drawing. The figure is painted into a
+**34×44 buffer and blitted up with `imageSmoothingEnabled = false`**
+([sprites.ts:128](../src/render/sprites.ts#L128)). Smooth anti-aliased curves at final size
+read as vector illustration however well they are lit, and no amount of extra shape detail
+fixes that; quantisation is most of the HD-2D look. Most of the body is axis-aligned
+`fillRect` on integer coordinates, which is the pixel-art idiom and the reason a 2px forearm
+stays a crisp 2px forearm.
+
+Buffers are cached on the look, since they are identical every frame until the player clicks
+something.
+
+### The figure has a body
+
+Proportions were rebuilt against the reference: roughly **one head to five**, where the
+sprite had been nearer one to three and a half. A stubby figure reads as a mascot no matter
+what is drawn on it. The landmarks live in one table (`Y`) so they can be argued about.
+
+It also has arms, hands, legs and boots, which it previously did not — it was a trapezoid
+with a head on it, and arms are what make a silhouette a person. And a **cloak** behind the
+body in a contrasting hue, which every figure in the reference has: it is the largest colour
+region on the sprite, and it takes the vowed school's colour, so the Vow visibly changes what
+the Commander is wearing.
+
+Measured on a real canvas at 90 units: a 48×104 body, 502px of cloak, 314px of boot, 104px
+of leg, 72px of hand — all of the latter absent before.
+
+### One lesson, learned three times
+
+At 44 art-pixels a mark is **axis-aligned and near-opaque, or it does not exist**. Three
+separate marks had to relearn this:
+
+| mark | as first written | measured | fixed to |
+|---|---|---|---|
+| brass collar | 3px triangle | **0 px** | 2px `fillRect` bar → 48 px |
+| rim light | 1px stroke @ 55% alpha | **28 px** on a 48×104 body | 1px `fillRect` @ 85% → 613 px |
+| `shorn` hair | `destination-out` erase | 782 px *hole* | tighter cap → 0 |
 
 ### Why the sprites are canvas shapes
 
@@ -397,7 +444,7 @@ drift, and the drift is invisible because both look correct in isolation.
 
 ## 8. What is tested, and one thing that nearly was not
 
-[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 35 tests, all 25 deliberate
+[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 40 tests, all 31 deliberate
 mutations of these rules confirmed to fail the suite.
 
 Coverage: look normalisation (trim, cap, blank, wrap, string-form indices, total nonsense);

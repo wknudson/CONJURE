@@ -58,12 +58,12 @@ const DISCIPLINE: Record<string, string> = {
 };
 
 /** Where the Commander stands, and where the beast lands beside them. */
-const HERO_AT = { x: -0.6, y: 0.4 };
-const BEAST_AT = { x: 1.4, y: 0.9 };
+export const HERO_AT = { x: -0.6, y: 0.4 };
+export const BEAST_AT = { x: 1.4, y: 0.9 };
 
 /** The two camera framings. Step two pulls back and to the right to make room. */
-const SHOT_IDENTITY = { x: -0.6, y: 0.2 };
-const SHOT_VOW = { x: 0.5, y: -0.4 };
+export const SHOT_IDENTITY = { x: -0.6, y: 0.2 };
+export const SHOT_VOW = { x: 0.5, y: -0.4 };
 
 export class CharacterCreationScreen implements Screen {
   private el: HTMLElement | null = null;
@@ -149,7 +149,10 @@ export class CharacterCreationScreen implements Screen {
       {
         x: HERO_AT.x,
         y: HERO_AT.y,
-        draw: (ctx, scale) => drawCommander(ctx, scale, this.look),
+        // The cloak takes the vowed school's colour, so the Vow visibly changes what the
+        // Commander is wearing rather than only what is written down about them.
+        draw: (ctx, scale) =>
+          drawCommander(ctx, scale, this.look, this.vowed ? SCHOOL_COLOR[schoolOf(this.vowed)] : null),
       },
     ];
     if (this.vowed) {
