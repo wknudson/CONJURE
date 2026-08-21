@@ -37,7 +37,15 @@ export type TargetSelection =
 /** What kind of selection a card needs, so the UI knows how to highlight. */
 export type TargetSpec =
   | { kind: 'none' }
-  | { kind: 'tiles'; tiles: Coord[] }
+  /**
+   * Empty ground this card may be aimed at.
+   *
+   * `footprint` is the size of what lands there, and it travels with the spec because the
+   * *shape* of a cast is part of aiming it: a Behemoth placed on a 2x2 covers three tiles
+   * the player never clicked, and a highlight that lit only the anchor was quietly lying
+   * about where the body would go.
+   */
+  | { kind: 'tiles'; tiles: Coord[]; footprint: 1 | 2 }
   | { kind: 'entities'; refs: TargetRef[] }
   /**
    * Pick from your own Graveyard.
@@ -53,7 +61,21 @@ export type TargetSpec =
 export interface ActionPreview {
   legal: boolean;
   reason?: string;
-  tileEffects: { at: Coord; damage?: number; kind: 'hit' | 'aoe' | 'summon' | 'buff' }[];
+  /**
+   * Every tile the cast would touch, and what it would do there.
+   *
+   * `status` and `hazard` were the missing kinds, and their absence was visible: a card
+   * that only applies a status — a Chill cross, an Entangle, a smoke cloud — produced no
+   * tile effects at all, so its area of effect could not be previewed. It was invisible
+   * until it resolved.
+   */
+  tileEffects: {
+    at: Coord;
+    damage?: number;
+    kind: 'hit' | 'aoe' | 'summon' | 'buff' | 'status' | 'hazard';
+    /** Which status, for the ones that leave one. Drives the flash colour. */
+    status?: string;
+  }[];
   displacements: {
     unitId: UnitId;
     path: Coord[];
@@ -74,6 +96,14 @@ export interface ActionPreview {
 export interface RosterView {
   defId: string;
   name: string;
+  /**
+   * How much ground this body stands on.
+   *
+   * On the view because the deployment overlay needs it: a Behemoth put on an Anchor Tile
+   * covers three tiles nobody clicked, and lighting the anchor alone was the same quiet
+   * lie a footprint-blind card highlight tells.
+   */
+  footprint: 1 | 2;
   /** Point-buy cost, so the tray can show what each body was worth. */
   points: number;
   status: 'reserve' | 'fielded' | 'fallen';
@@ -172,6 +202,14 @@ export interface RulesQuery {
   castInfo(card: CardInstanceId): CastInfo | undefined;
   getLegalMoves(unit: UnitId): Coord[];
   getLegalAttacks(unit: UnitId): TargetRef[];
+  /**
+   * Every tile this body could strike from where it stands, occupied or not.
+   *
+   * Deliberately not `getLegalAttacks`, which answers a different question: that one lists
+   * *targets*, and a player choosing where to stand needs the **shape of the reach** — the
+   * ring they can count tiles against — whether or not anything is standing in it today.
+   */
+  getStrikeReach(unit: UnitId): Coord[];
   /** Tiles the given origin cannot see, for shadow-cone fog rendering. */
   getOccludedTiles(from: Coord): Coord[];
   /** Tiles enemies could strike next turn, with incoming damage per tile. */

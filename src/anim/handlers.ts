@@ -15,7 +15,7 @@ import type { Fx } from '../render/Fx.js';
 import type { Sfx } from '../sound/Sfx.js';
 import type { Hud } from '../hud/Hud.js';
 import type { BoardRenderer } from '../render/BoardRenderer.js';
-import { schoolOf } from '../render/palette.js';
+import { schoolOf, statusColor } from '../render/palette.js';
 
 export interface CombatView {
   views: EntityViewMap;
@@ -246,6 +246,12 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     const existing = v.statuses.find((s) => s.kind === e.status);
     if (existing) existing.stacks = e.stacks;
     else v.statuses.push({ kind: e.status, stacks: e.stacks });
+
+    // A status changes nothing a player can see — same body, same tile, same health — so
+    // without this the only confirmation it landed was reading the log. Synchronous and
+    // un-awaited: it is feedback about something that already happened, and making the
+    // sequencer wait on it would put a beat between the cast and its own result.
+    v.flash = { color: statusColor(e.status), life: 1 };
   });
 
   seq.on('statusTicked', (e, { view }) => {

@@ -18,6 +18,17 @@ export interface EntityView {
   elev: number;
   /** 0..1 squash applied on impact. */
   squash: number;
+  /**
+   * A short colour wash over the body, for something that landed without hurting it.
+   *
+   * Damage already announces itself: a number floats off and the piece flinches. A
+   * *status* changed nothing a player can see — the body is the same size, standing in the
+   * same place, at the same health — so the only confirmation was reading the log. This is
+   * the confirmation, in the colour of the thing that landed.
+   *
+   * `life` runs 1 to 0 and the renderer decays it, so nothing has to be cleaned up.
+   */
+  flash: { color: string; life: number } | null;
   alpha: number;
   hp: number;
   maxHp: number;
@@ -42,6 +53,22 @@ export class EntityViewMap {
     return [...this.views.values()].filter((v) => !v.dead);
   }
 
+  /**
+   * Ages every status wash by one frame.
+   *
+   * Lives here rather than in the renderer's frame loop because the flash is *view state*
+   * and this is what owns view state — and because a fade buried in `requestAnimationFrame`
+   * is a fade no test can reach. Nothing has to be cleaned up: a wash that reaches zero is
+   * dropped.
+   */
+  ageFlashes(dt: number, durationMs: number): void {
+    for (const v of this.views.values()) {
+      if (!v.flash) continue;
+      v.flash.life -= dt / durationMs;
+      if (v.flash.life <= 0) v.flash = null;
+    }
+  }
+
   addUnit(s: UnitSnapshot): EntityView {
     const view: EntityView = {
       id: s.id,
@@ -50,6 +77,7 @@ export class EntityViewMap {
       pos: { ...s.anchor },
       elev: 0,
       squash: 0,
+      flash: null,
       alpha: 1,
       hp: s.hp,
       maxHp: s.maxHp,
@@ -73,6 +101,7 @@ export class EntityViewMap {
       pos: { ...o.anchor },
       elev: 0,
       squash: 0,
+      flash: null,
       alpha: 1,
       hp: o.hp,
       maxHp: o.maxHp,

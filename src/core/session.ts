@@ -7,6 +7,8 @@
  */
 
 import type { CardInstanceId, Coord, TargetRef, UnitId } from '../contract/ids.js';
+import { coordKey } from '../contract/ids.js';
+import { cellsOf } from './util/grid.js';
 import type { GameEvent } from '../contract/events.js';
 import type {
   Action,
@@ -139,6 +141,7 @@ export class CombatSession implements RulesQuery {
         return {
           kind: 'tiles',
           tiles: chosen.flatMap((c) => (c.kind === 'tile' ? [c.at] : [])),
+          footprint: def.target.footprint,
         };
 
       case 'line':
@@ -195,6 +198,46 @@ export class CombatSession implements RulesQuery {
     if (!unit || unit.side !== 'player') return [];
     if (this.state.activeSide !== 'player') return [];
     return legalAttacks(this.state, unit);
+  }
+
+  /**
+   * The ring this body threatens, whether or not anything is standing in it.
+   *
+   * Geometry only: it asks how far the unit reaches and which tiles are on the board, and
+   * nothing about what occupies them. That is the point — `getLegalAttacks` already
+   * answers "what may I hit", and a player counting tiles before committing a move is
+   * asking the other question.
+   *
+   * `lineOnly` bodies get their rank, file and diagonals rather than a square, because a
+   * marksman confined to a firing line and a marksman with a square of reach are two very
+   * different pieces and the overlay is where that has to be legible.
+   */
+  getStrikeReach(unitId: UnitId): Coord[] {
+    const unit = this.state.units[unitId];
+    if (!unit) return [];
+
+    const out: Coord[] = [];
+    const seen = new Set<string>();
+    for (const origin of cellsOf(unit)) {
+      for (let y = 0; y < this.state.height; y++) {
+        for (let x = 0; x < this.state.width; x++) {
+          const at = { x, y };
+          const dx = x - origin.x;
+          const dy = y - origin.y;
+          const dist = Math.max(Math.abs(dx), Math.abs(dy));
+          if (dist < unit.rangeMin || dist > unit.rangeMax) continue;
+          if (unit.attackProfile === 'lineOnly' && dx !== 0 && dy !== 0 && Math.abs(dx) !== Math.abs(dy)) {
+            continue;
+          }
+          const key = coordKey(at);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          out.push(at);
+        }
+      }
+    }
+    // Its own body is not a tile it strikes.
+    return out.filter((c) => !cellsOf(unit).some((k) => k.x === c.x && k.y === c.y));
   }
 
   getOccludedTiles(from: Coord): Coord[] {
@@ -349,6 +392,17 @@ export class CombatSession implements RulesQuery {
           break;
         case 'unitSummoned':
           preview.tileEffects.push({ at: e.unit.anchor, kind: 'summon' });
+          break;
+        case 'statusApplied': {
+          // Read off the *pre-cast* board, because the preview runs on a clone and the
+          // tile is what the overlay needs. A body that the same cast then displaced is
+          // still previewed where it was standing when the status landed on it.
+          const u = before.units[e.unitId];
+          if (u) preview.tileEffects.push({ at: u.anchor, kind: 'status', status: e.status });
+          break;
+        }
+        case 'hazardSpawned':
+          preview.tileEffects.push({ at: e.at, kind: 'hazard' });
           break;
         case 'armorGained':
           if (e.target.kind === 'unit') {

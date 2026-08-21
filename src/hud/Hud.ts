@@ -37,6 +37,30 @@ const SOLO_NOTICE_MS = 2200;
 /** Dwell when more notices are waiting, so a queue never feels sluggish. */
 const QUEUED_NOTICE_MS = 900;
 
+/**
+ * How a body's attacks travel, in one word.
+ *
+ * Named rather than inferred from the numbers on the panel beside it. "RNG 2-4" and
+ * "arcing" are different facts and a player reading the first has no way to reach the
+ * second: a mortar that lobs over a wall and a marksman confined to a firing line can
+ * print the identical range, and the difference decides where you stand.
+ */
+export function attackProfileOf(unit: {
+  rangeMax: number;
+  attackProfile?: string;
+}): 'melee' | 'ranged' | 'arcing' | 'linear' {
+  if (unit.attackProfile === 'arcing') return 'arcing';
+  if (unit.attackProfile === 'lineOnly') return 'linear';
+  return unit.rangeMax > 1 ? 'ranged' : 'melee';
+}
+
+const PROFILE_TIP: Record<ReturnType<typeof attackProfileOf>, string> = {
+  melee: 'Melee|Strikes what it is standing beside, and nothing further.',
+  ranged: 'Ranged|Free aim inside its reach, but it needs a clear line to what it shoots.',
+  arcing: 'Arcing|Lobs over walls, bodies and its own front line — it needs no line of sight at all. It cannot depress its aim onto anything adjacent.',
+  linear: 'Linear|Fires only down a straight rank, file or diagonal. Anything standing on the line stops the shot.',
+};
+
 export class Hud {
   private root: HTMLElement;
   private handEl!: HTMLElement;
@@ -390,8 +414,11 @@ export class Hud {
         <span data-tip="Movement|Tiles it can cross in one move, diagonals included.">${unit.mov} MOV</span>
         ${unit.armor > 0 ? `<span data-tip="armor">${unit.armor} ARM</span>` : ''}
         <span data-tip="Range|How far it can strike. Melee must be adjacent.">${
-          unit.rangeMax > 1 ? `RNG ${unit.rangeMin}–${unit.rangeMax}` : 'MELEE'
+          unit.rangeMax > 1 ? `RNG ${unit.rangeMin}–${unit.rangeMax}` : 'RNG 1'
         }</span>
+        <span class="inspect__profile" data-tip="${PROFILE_TIP[attackProfileOf(unit)]}">${attackProfileOf(
+          unit,
+        ).toUpperCase()}</span>
       </div>
       ${
         unit.keywords.length

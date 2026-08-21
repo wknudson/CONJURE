@@ -49,6 +49,25 @@ export interface Overlays {
   /** Predicted damage badges, shown while previewing. */
   predicted: { at: Coord; damage?: number; kind: string }[];
   /**
+   * Every tile the cast under the cursor would actually touch.
+   *
+   * The shape of the thing, drawn whether or not anything is standing in it. `highlight`
+   * says where you may *aim*; this says where it *lands*, and the two are the same tile
+   * only for a single-target spell. A cone, a cross, a 2x2 body, a beam down a rank —
+   * each of those covers ground the player never clicked, and until this existed the only
+   * way to see it was to hold Shift and read damage badges, which showed nothing at all
+   * for a card that deals no damage.
+   */
+  impact: Coord[];
+  /**
+   * The ring the selected body threatens, occupied or not.
+   *
+   * Distinct from `attack`, which is the list of things it may hit right now. A player
+   * deciding where to move is asking the other question — *how far does this thing
+   * reach* — and needs tiles to count rather than targets to click.
+   */
+  reach: Coord[];
+  /**
    * Trajectory ghosts: a translucent copy per displaced unit, sliding to where it lands.
    *
    * A list rather than one, because an area shove moves everything in the wedge and a
@@ -150,6 +169,8 @@ export function emptyOverlays(): Overlays {
     selected: null,
     pyres: [],
     predicted: [],
+    impact: [],
+    reach: [],
     ghosts: [],
     expanded: false,
     threat: [],
@@ -163,6 +184,14 @@ export function emptyOverlays(): Overlays {
     badges: [],
   };
 }
+
+/**
+ * How long a status wash takes to fade, in milliseconds.
+ *
+ * Long enough to catch out of the corner of an eye, short enough that a cast poisoning
+ * five bodies does not leave the board lit up.
+ */
+export const FLASH_MS = 340;
 
 export class BoardRenderer {
   private raf: number | null = null;
@@ -199,6 +228,7 @@ export class BoardRenderer {
       this.lastTime = now;
       this.clock += dt;
       this.fx.update(dt);
+      this.views.ageFlashes(dt, FLASH_MS);
       this.draw();
       this.raf = requestAnimationFrame(loop);
     };
@@ -796,11 +826,30 @@ export class BoardRenderer {
       this.drawPyreFlame(c, pulse);
     }
 
+    // The reach ring, under the offers: it is the *shape* of what this body threatens, and
+    // a player counting tiles wants it behind the brighter answer to "what may I hit".
+    // Faint on purpose — it is a ruler, not a prompt.
+    for (const c of overlays.reach) {
+      fillTile(ctx, cam, c, PALETTE.reachFill, PALETTE.reachEdge);
+    }
+
     for (const c of overlays.highlight) {
       fillTile(ctx, cam, c, PALETTE.highlightFill, PALETTE.highlight);
     }
     for (const c of overlays.attack) {
       fillTile(ctx, cam, c, PALETTE.attackFill, PALETTE.attackEdge);
+    }
+
+    // Where the cast actually lands, over the tiles you may aim at. Pulsed, because it is
+    // the one overlay that answers a question about *this moment* — move the cursor and it
+    // is a different shape — and a still fill reads as scenery.
+    if (overlays.impact.length) {
+      ctx.save();
+      ctx.globalAlpha = 0.55 + 0.30 * pulse;
+      for (const c of overlays.impact) {
+        fillTile(ctx, cam, c, PALETTE.impactFill, PALETTE.impactEdge);
+      }
+      ctx.restore();
     }
 
     // The tile the spell is thrown from, in the Pact's colour so it reads as "this is
@@ -922,6 +971,28 @@ export class BoardRenderer {
       });
 
       if (scaled) ctx.restore();
+
+      // The status wash, over the body it just landed on. Additive, so it reads as light
+      // falling on the piece rather than as the piece having been repainted -- a body that
+      // changed colour would look like a different unit for as long as the flash lasted.
+      if (view.flash && view.flash.life > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = view.flash.life * 0.55;
+        ctx.beginPath();
+        ctx.ellipse(
+          centre.x,
+          centre.y - 18 * cam.zoom,
+          26 * cam.zoom * footprint,
+          30 * cam.zoom * footprint,
+          0,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fillStyle = view.flash.color;
+        ctx.fill();
+        ctx.restore();
+      }
     } else if (view.obstacle?.cover) {
       // Cover is knee-high: it must read as something you walk through, not around.
       drawCover(ctx, cam, centre);

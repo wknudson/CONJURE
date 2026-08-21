@@ -30,6 +30,7 @@ import { HelpOverlay } from '../hud/HelpOverlay.js';
 import { Tutorial } from '../hud/Tutorial.js';
 import { readWeather } from '../hud/weather.js';
 import { cellsAt } from '../core/util/grid.js';
+import { coordEq } from '../contract/ids.js';
 import type { CommanderModel } from '../render/BoardRenderer.js';
 import type { Coord } from '../contract/ids.js';
 import type { GameState } from '../core/types/state.js';
@@ -81,6 +82,12 @@ function readSpeed(): 'normal' | 'fast' {
     // Private browsing, or storage disabled. The preference is not worth a crash.
     return 'normal';
   }
+}
+
+/** Coordinate equality that also accepts "both nowhere", for hover tracking. */
+function coordEqOrBothNull(a: Coord | null, b: Coord | null): boolean {
+  if (a === null || b === null) return a === b;
+  return coordEq(a, b);
 }
 
 export class CombatScreen implements Screen {
@@ -432,6 +439,18 @@ export class CombatScreen implements Screen {
     const overCommander = this.renderer.commanderAt(x, y);
     this.canvas.style.cursor = overCommander?.targetable ? 'pointer' : 'crosshair';
     const tile = overCommander ? null : this.cam.screenToTile(x, y);
+
+    // Deployment owns the board while it runs, and the targeting controller is asleep —
+    // so the hover has to be tracked here or a held Behemoth would never learn where the
+    // cursor is.
+    if (this.deploying) {
+      const moved = !coordEqOrBothNull(this.deployHover, tile);
+      this.deployHover = tile;
+      if (moved) this.paintAnchors();
+      this.showBoardTip(overCommander, tile, ev.clientX, ev.clientY);
+      return;
+    }
+
     this.targeting?.onTileHover(tile);
     this.showBoardTip(overCommander, tile, ev.clientX, ev.clientY);
   }
@@ -584,6 +603,9 @@ export class CombatScreen implements Screen {
   // ------------------------------------------------------------------ deployment
 
   /** Whether the fight is still being set up rather than played. */
+  /** The tile under the cursor while the line is being set. Null off the board. */
+  private deployHover: Coord | null = null;
+
   private get deploying(): boolean {
     return this.session.getBoard().phase === 'deployment';
   }
@@ -629,9 +651,24 @@ export class CombatScreen implements Screen {
     const held = this.deploy?.selectedDefId ?? null;
     const free = board.anchors.filter((a) => this.session.canDeploy(held, a));
 
+    // The ground a *Behemoth* would actually take, under the cursor.
+    //
+    // An Anchor Tile is one tile and a 2x2 body is four, so lighting the anchor alone told
+    // a player they were placing something the size of a Footman. The impact zone is the
+    // honest answer, and it is the same overlay a card's area of effect uses — placing a
+    // body and casting a spell are the same question about where a thing lands.
+    const size = held
+      ? (board.roster.find((r) => r.defId === held && r.status === 'reserve')?.footprint ?? 1)
+      : 1;
+    const over =
+      this.deployHover && size === 2 && free.some((a) => coordEq(a, this.deployHover!))
+        ? cellsAt(this.deployHover, 2)
+        : [];
+
     this.setOverlays({
       ...emptyOverlays(),
       highlight: held ? free : board.anchors,
+      impact: over,
       selected: null,
     });
   }

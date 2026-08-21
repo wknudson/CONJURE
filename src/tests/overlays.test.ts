@@ -71,6 +71,7 @@ function harness(opts: {
   targets?: TargetSpec;
   hand?: CardSnapshot[];
   occluded?: { x: number; y: number }[];
+  reach?: { x: number; y: number }[];
 }) {
   let painted: Overlays = emptyOverlays();
 
@@ -83,6 +84,9 @@ function harness(opts: {
     getLegalMoves: () => opts.moves ?? [],
     getLegalAttacks: () =>
       (opts.attacks ?? []).map((_, i) => ({ kind: 'unit', id: `t${i}` }) as const),
+    // The reach ring is geometry the engine owns, so the double simply reports what a
+    // test asked for and nothing here recomputes it.
+    getStrikeReach: () => opts.reach ?? [],
     getOccludedTiles: () => opts.occluded ?? [],
     getThreat: () => ({ tiles: [], commanderThreatCount: 0 }),
     getReadyUnits: () => [],

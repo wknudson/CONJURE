@@ -392,6 +392,8 @@ export class TargetingController {
       this.paintDimmed(overlays, this.mode.card);
       this.paintCardTrajectory(overlays, this.mode.card);
       this.previewInto(overlays, this.mode.card, this.mode.spec);
+      // Last, because it reads what the preview found.
+      this.paintImpact(overlays, this.mode.spec);
     } else if (this.mode.kind === 'unit') {
       this.paintUnitOptions(overlays, this.mode.unit);
     } else if (this.hoveredCard) {
@@ -401,6 +403,11 @@ export class TargetingController {
       this.paintCastOrigin(overlays, this.hoveredCard);
       this.paintDimmed(overlays, this.hoveredCard);
       this.paintCardTrajectory(overlays, this.hoveredCard);
+      // Projected before the card is even committed to. Merely holding a card over the
+      // board should answer "what would this do to that", and answering it only after a
+      // click makes the click the question rather than the decision.
+      this.previewInto(overlays, this.hoveredCard, spec);
+      this.paintImpact(overlays, spec);
     }
 
     this.cb.setOverlays(overlays);
@@ -518,6 +525,53 @@ export class TargetingController {
     }
   }
 
+  /**
+   * The footprint of the cast under the cursor — its *shape*, not its damage.
+   *
+   * Three sources, because a cast's reach is described three different ways depending on
+   * what kind of card it is, and none of them can be derived from the others:
+   *
+   *  - A **line** carries its own `covers`, straight from the engine's own geometry. That
+   *    is what makes a `linear` card light the whole rank rather than the tile clicked,
+   *    and it costs nothing: the spec already knew.
+   *  - A **footprint-2** placement covers three tiles nobody clicked. Expanded here, from
+   *    the size the spec now travels with.
+   *  - Everything else is asked of the **preview**, which resolves the real cast on a
+   *    clone and reports every tile it touched. Not an estimate — the actual answer, shown
+   *    early.
+   *
+   * Deliberately separate from `predicted`. That one is the *numbers*, and it is filtered
+   * down to damage unless Shift is held; this is the *area*, and hiding the area behind a
+   * modifier key was the bug — a Frost Nova applies Chill to five tiles and dealt no
+   * badge to any of them.
+   */
+  private paintImpact(overlays: Overlays, spec: TargetSpec): void {
+    if (!this.hover) return;
+    const hover = this.hover;
+
+    // A beam, a lance, a cone thrown down a rank: the whole line, not the near end.
+    if (spec.kind === 'lines') {
+      const aimed = spec.origins.find((o) => coordEq(o.from, hover));
+      if (aimed) {
+        overlays.impact = dedupe(aimed.covers);
+        return;
+      }
+    }
+
+    // Ground the cast is aimed at, and the size of what lands on it.
+    if (spec.kind === 'tiles' && spec.footprint === 2) {
+      const legal = spec.tiles.some((c) => coordEq(c, hover));
+      if (legal) overlays.impact = cellsAt(hover, 2);
+      // Falls through: the preview may add the blast around the body as well.
+    }
+
+    // And whatever the cast actually does, wherever it does it.
+    const fromPreview = overlays.predicted.map((p) => p.at);
+    if (fromPreview.length > 0) {
+      overlays.impact = dedupe([...overlays.impact, ...fromPreview]);
+    }
+  }
+
   private paintCardTargets(overlays: Overlays, spec: TargetSpec): void {
     switch (spec.kind) {
       case 'tiles':
@@ -551,6 +605,10 @@ export class TargetingController {
     const attacks = this.rules.getLegalAttacks(unitId);
     overlays.attack = attacks.flatMap((ref) => this.refCells(ref));
     this.cb.setEnemyTargetable(attacks.some((r) => r.kind === 'portrait'));
+
+    // The ring, before the targets: a player counting tiles wants the shape underneath,
+    // and the legal targets drawn on top of it.
+    overlays.reach = this.rules.getStrikeReach(unitId);
 
     // After `attack` is filled: the trajectory is only drawn to a tile this body may
     // actually strike, and that list is what says so.

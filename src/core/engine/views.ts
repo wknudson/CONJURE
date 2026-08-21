@@ -183,6 +183,7 @@ export function toBoardView(state: GameState): BoardView {
       defId: r.defId,
       name: CARDS[r.defId]?.name ?? r.defId,
       points: CARDS[r.defId] ? rosterPointsOf(CARDS[r.defId]!) : 0,
+      footprint: CARDS[r.defId]?.unit?.footprint ?? 1,
       status: r.status,
       ...(r.unitId ? { unitId: r.unitId } : {}),
       ...(r.fellAt ? { fellAt: { ...r.fellAt } } : {}),
