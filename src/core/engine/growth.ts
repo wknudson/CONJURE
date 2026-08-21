@@ -44,6 +44,59 @@ export function growthCapFor(footprint: 1 | 2): number {
  * and fires even on Frozen or Stunned units — being held down does not stop something
  * growing.
  */
+/**
+ * Ceiling on self-plating, and it is the Aura cap wearing a different hat.
+ *
+ * Player-side `Escalate` was removed on purpose: unbounded growth on a body that never
+ * leaves the board is the exact thing Auras replaced, and they stop at three stacks. A
+ * Guardian that welds plate onto itself is the Bulwark school's version of the same idea
+ * and it gets the same bound, so one left alone in a corner becomes hard rather than
+ * unkillable.
+ */
+export const PLATE_CAP = 3;
+
+/**
+ * Armor a body adds to itself at the start of its owner's turn.
+ *
+ * In the same slot as `growUnit` and `tickAura`, because it is the third member of that
+ * family -- a thing a persistent body does on its own clock -- and because putting it
+ * anywhere else would mean a fourth place that has to agree about what "start of turn"
+ * means.
+ */
+/**
+ * Def ids that plate themselves, resolved once at module load.
+ *
+ * The caller checks this before calling, and the reason is the same one guarding the
+ * hazard and construct passes: this question is asked of every unit on every turn of every
+ * simulated branch the Adept explores, and a `Set.has` on a one-element set is a great deal
+ * cheaper than a lookup into the whole card database followed by three optional chains.
+ */
+export const PLATERS: ReadonlySet<string> = new Set(
+  Object.values(CARDS)
+    .filter((c) => (c.unit?.platesEachTurn ?? 0) > 0)
+    .map((c) => c.id),
+);
+
+export function plateUnit(ctx: Ctx, unit: Unit): void {
+  const per = CARDS[unit.defId]?.unit?.platesEachTurn ?? 0;
+  if (per <= 0) return;
+  // The same grace `growUnit` gives: a body plates from the turn *after* it arrives, so
+  // summoning one does not hand the player armour it has not stood a round for.
+  if (unit.freshlySummoned) return;
+
+  const ceiling = per * PLATE_CAP;
+  if (unit.armor >= ceiling) return;
+
+  const amount = Math.min(per, ceiling - unit.armor);
+  unit.armor += amount;
+  emit(ctx, {
+    t: 'armorGained',
+    target: { kind: 'unit', id: unit.id },
+    amount,
+    total: unit.armor,
+  });
+}
+
 export function growUnit(ctx: Ctx, unit: Unit): void {
   // A Bound Form is bound: its power is the Pact's, and the Pact does not grow. Belt to
   // the suspenders of its card carrying no keyword, so a future effect that granted Growth

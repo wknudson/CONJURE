@@ -87,18 +87,21 @@ describe('the sliding scale', () => {
 });
 
 describe('the Grimoire, as data', () => {
-  it('names, for the record, which bloodlines cannot fill a book on their own', () => {
-    // Not a failure -- a **content gap**, pinned so it is visible rather than discovered.
-    // Bulwark has two spells to its name and Surge three, so neither can reach eight even
-    // taking every copy the Tier limits allow, and both top up from the colourless pool.
-    // The day either school has eight spells' worth of its own, this list shrinks and the
-    // fallback stops firing on its own. Nothing to remove; something to notice.
+  it('no longer has a bloodline that cannot fill a book on its own', () => {
+    // This test used to name Voltara and Ferrum, because Surge had three spells to its
+    // name and Bulwark two -- neither could reach eight even taking every copy the Tier
+    // limits allow, so both quietly topped up from the colourless pool. The catalog
+    // expansion closed it: Surge and Bulwark now carry enough of their own.
+    //
+    // Kept, inverted, as the thing that stops it reopening. The neutral fallback in
+    // `draftGrimoire` is still there and still correct -- it is the answer for whatever
+    // thin school gets added next -- but nothing shipped today needs it.
     const thin = COMPANIONS.filter((c) => {
       const capacity = purePool(c.grimoire).reduce((n, def) => n + TIER_COPY_LIMIT[tierOf(def)], 0);
       return capacity < GRIMOIRE_SIZE;
     }).map((c) => c.id);
 
-    expect(thin).toEqual(['voltara', 'ferrum']);
+    expect(thin, 'a school has gone thin again').toEqual([]);
   });
 
   it('lets the rest fill a book out of their own school alone', () => {

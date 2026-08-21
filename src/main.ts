@@ -26,6 +26,7 @@ import { TitleScreen } from './app/TitleScreen.js';
 import { CombatScreen } from './app/CombatScreen.js';
 import { ResultsScreen } from './app/ResultsScreen.js';
 import { VictoryScreen } from './app/VictoryScreen.js';
+import { rosterUnlocksFor } from './core/data/pools.js';
 import { DeckBuilderScreen } from './app/DeckBuilderScreen.js';
 import type { DeckBuilderResult } from './app/DeckBuilderScreen.js';
 import { PreCombatScreen } from './app/PreCombatScreen.js';
@@ -402,6 +403,9 @@ function showBuilder(companionId: string, onDone: () => void): void {
       activeCompanion().spellModifiers,
       activeCompanion().overrides,
       profile().collection,
+      // The Vanguard's gate, resolved from what this character has actually caught. A
+      // fresh character still sees the universal bodies, so the tray is never empty.
+      rosterUnlocksFor(profile().companions.map((c) => c.baseId)),
       profile().bestiary,
       profile().state,
       persist,

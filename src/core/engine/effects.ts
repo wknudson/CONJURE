@@ -9,7 +9,13 @@
 import { drawCards } from './deck.js';
 import type { Coord, Side, TargetRef, UnitId } from '../../contract/ids.js';
 import { coordEq } from '../../contract/ids.js';
-import type { AreaSpec, CardPlayContext, EffectNode, ReviveHp } from '../types/cards.js';
+import type {
+  AreaSpec,
+  CardPlayContext,
+  EffectNode,
+  PlayCondition,
+  ReviveHp,
+} from '../types/cards.js';
 import type { Unit } from '../types/units.js';
 import type { Ctx } from './context.js';
 import { applyStatusTo } from './status.js';
@@ -21,6 +27,7 @@ import { killEntity } from './death.js';
 import { setAnchor } from './subjugation.js';
 import { attachRune, detonateAllRunes } from './runes.js';
 import { pushUnit } from './displacement.js';
+import { spawnHazard } from './reactions.js';
 import { canAct } from './movement.js';
 import { reviveSpot } from './targeting.js';
 import { attachAura, isClimaxed, removeAura } from './growth.js';
@@ -168,6 +175,44 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       return;
     }
 
+    case 'ifMet': {
+      const branch = conditionHolds(ctx, node.cond, play) ? node.then : node.otherwise;
+      if (branch) executeEffect(ctx, branch, play);
+      return;
+    }
+
+    case 'gainPips': {
+      if (node.amount <= 0) return;
+      const cmd = ctx.state.players[play.side];
+      const before = cmd.pips;
+      // Clamped at the ceiling on the way in rather than at cleanup, so the card cannot
+      // advertise three Pips and hand over four that the end of turn then takes back.
+      cmd.pips = Math.min(cmd.pipCap, cmd.pips + node.amount);
+      if (cmd.pips > before) {
+        emit(ctx, { t: 'pipGained', side: play.side, amount: cmd.pips - before, total: cmd.pips });
+      }
+      return;
+    }
+
+    case 'clearStatus': {
+      for (const ref of resolveArea(ctx, node.area, play)) {
+        if (ref.kind !== 'unit') continue;
+        const unit = ctx.state.units[ref.id];
+        if (!unit || !unit.statuses[node.status]) continue;
+        delete unit.statuses[node.status];
+        emit(ctx, { t: 'statusApplied', unitId: unit.id, status: node.status, stacks: 0 });
+      }
+      return;
+    }
+
+    case 'spawnHazard': {
+      for (const cell of areaCells(ctx, node.area, play)) {
+        if (!inBounds(ctx.state, cell)) continue;
+        spawnHazard(ctx, cell, node.kind, node.turns);
+      }
+      return;
+    }
+
     case 'push': {
       const ref = chosenRef(play);
       if (!ref || ref.kind !== 'unit') return;
@@ -177,7 +222,16 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       // Magnetic Repulsion. Applied to a *card's* shove and not inside `pushUnit`, because
       // the other things that travel through there are not yours to lengthen: a current at
       // the round boundary is the board moving a body, not you moving it.
-      pushUnit(ctx, victim, dir, node.distance + ctx.state.players[play.side].bonusShoveDistance);
+      const shoved = pushUnit(
+        ctx,
+        victim,
+        dir,
+        node.distance + ctx.state.players[play.side].bonusShoveDistance,
+      );
+      // Recorded, never acted on here. A later `ifMet` or `shovePath` in the same card is
+      // what reads these, and a card with neither is completely unaffected by these lines.
+      if (shoved.collision) play.collided = true;
+      recordShove(play, shoved.path);
       return;
     }
 
@@ -502,8 +556,126 @@ function displaceArea(
     // Magnetic Repulsion, for the blast-shaped shoves. Only pushes: a *pull* that got
     // longer would drag bodies past the caster, which is a different card.
     const reach = sense === 'away' ? ctx.state.players[play.side].bonusShoveDistance : 0;
-    pushUnit(ctx, unit, dir, distance + reach);
+    const moved = pushUnit(ctx, unit, dir, distance + reach);
+    // Any one of them hitting something is enough. An area shove that slams a single body
+    // into a wall is the same fact a `collided` condition wants to hear about.
+    if (moved.collision) play.collided = true;
+    recordShove(play, moved.path);
   }
+}
+
+/**
+ * Whether a card's condition is met, right now, on this board.
+ *
+ * Read at the moment the `ifMet` node executes rather than when the card was played, which
+ * is what lets a `seq` set a condition up and then test it -- Avalanche Slam shoves first
+ * and asks about the collision second, and both halves are the same card.
+ */
+/**
+ * Adds a shove's route to the trail this card has laid so far.
+ *
+ * Accumulating rather than replacing, so an area shove that moves four bodies leaves one
+ * trail covering all four routes. Duplicates are dropped because a hazard op would
+ * otherwise raise the same tile twice and emit two events for one patch of ground.
+ */
+function recordShove(play: CardPlayContext, path: Coord[]): void {
+  if (path.length === 0) return;
+  const trail = (play.shovePath ??= []);
+  for (const c of path) {
+    if (!trail.some((k) => coordEq(k, c))) trail.push({ ...c });
+  }
+}
+
+function conditionHolds(ctx: Ctx, cond: PlayCondition, play: CardPlayContext): boolean {
+  switch (cond.kind) {
+    case 'targetStatus': {
+      const need = cond.stacks ?? 1;
+      const carries = (ref: TargetRef): boolean => {
+        if (ref.kind !== 'unit') return false;
+        const unit = ctx.state.units[ref.id];
+        return !!unit && (unit.statuses[cond.status] ?? 0) >= need;
+      };
+      if (cond.area) return resolveArea(ctx, cond.area, play).some(carries);
+      const ref = chosenRef(play);
+      return !!ref && carries(ref);
+    }
+    case 'pipsAtLeast':
+      // After the cost, because the cost is already paid by the time an effect runs. That
+      // is the reading a player can check: the number on their own bank as the card lands.
+      return ctx.state.players[play.side].pips >= cond.pips;
+    case 'collided':
+      return play.collided === true;
+  }
+}
+
+/**
+ * The bare tiles an area covers, for the ops that change *ground* rather than hit bodies.
+ *
+ * `resolveArea` answers "which entities", which is the right question for damage and for
+ * statuses and the wrong one for terrain: a hazard goes on an empty tile as readily as an
+ * occupied one, and asking through the entity list would lay fire only where somebody
+ * already happened to be standing.
+ */
+function areaCells(ctx: Ctx, area: AreaSpec, play: CardPlayContext): Coord[] {
+  const origin = originOf(ctx, play);
+  if (!origin) return [];
+  switch (area.shape) {
+    case 'target':
+      return [origin];
+    case 'square':
+      return squareCells(origin, area.size);
+    case 'shovePath':
+      return play.shovePath ?? [];
+    case 'adjacent8':
+      return squareCells(origin, 3);
+    case 'adjacentCross':
+      return [
+        { x: origin.x + 1, y: origin.y },
+        { x: origin.x - 1, y: origin.y },
+        { x: origin.x, y: origin.y + 1 },
+        { x: origin.x, y: origin.y - 1 },
+      ];
+    case 'line': {
+      if (play.chosen.kind !== 'line') return [];
+      const out: Coord[] = [];
+      let cur = { ...play.chosen.from };
+      for (let i = 0; i < area.length; i++) {
+        out.push({ ...cur });
+        cur = { x: cur.x + play.chosen.dir.x, y: cur.y + play.chosen.dir.y };
+      }
+      return out;
+    }
+    // The rest describe *bodies* rather than ground -- "everything on the board", "the
+    // weakest enemy" -- and have no honest tile reading. Listed rather than defaulted so a
+    // new shape cannot silently inherit an empty answer.
+    case 'plus':
+    case 'cone':
+    case 'all':
+    case 'lowestHpEnemy':
+      return [];
+  }
+}
+
+/**
+ * The tiles a `square` covers, by the two conventions the shape documents.
+ *
+ * Out-of-bounds cells are kept rather than filtered: `resolveArea` matches entities
+ * against this list and nothing can be standing off the board, so trimming here would be
+ * work with no observable result.
+ */
+function squareCells(origin: Coord, size: number): Coord[] {
+  if (size < 1) return [];
+  const out: Coord[] = [];
+  // Even sizes anchor at the target and grow down-right, the way a Behemoth's footprint
+  // does. Odd sizes centre on it, because a 3x3 with a corner anchor is a shape no player
+  // would predict from the card art.
+  const start = size % 2 === 0 ? 0 : -Math.floor(size / 2);
+  for (let dy = start; dy < start + size; dy++) {
+    for (let dx = start; dx < start + size; dx++) {
+      out.push({ x: origin.x + dx, y: origin.y + dy });
+    }
+  }
+  return out;
 }
 
 function resolveArea(ctx: Ctx, area: AreaSpec, play: CardPlayContext): TargetRef[] {
@@ -571,6 +743,27 @@ function resolveArea(ctx: Ctx, area: AreaSpec, play: CardPlayContext): TargetRef
         refs.push(refOf(e));
       }
       return refs;
+    }
+
+    // A trail is ground rather than bodies, so as an entity area it reports whoever is
+    // standing on it -- which is the honest reading, and is what lets one card both scorch
+    // the route and hit whatever wandered onto it.
+    case 'shovePath': {
+      const trail = play.shovePath ?? [];
+      if (trail.length === 0) return [];
+      return allEntities(ctx.state)
+        .filter((e) => cellsOf(e).some((c) => trail.some((k) => coordEq(k, c))))
+        .map(refOf);
+    }
+
+    case 'square': {
+      const origin = originOf(ctx, play);
+      if (!origin) return [];
+      const cells = squareCells(origin, area.size);
+      if (cells.length === 0) return [];
+      return allEntities(ctx.state)
+        .filter((e) => cellsOf(e).some((c) => cells.some((k) => coordEq(k, c))))
+        .map(refOf);
     }
 
     case 'adjacentCross': {

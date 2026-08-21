@@ -82,6 +82,7 @@ import {
   rosterPointsOf,
   rosterPool,
   validateRoster,
+  type RosterProblem,
 } from '../core/data/roster.js';
 
 function escapeHtml(s: string): string {
@@ -154,6 +155,11 @@ const EQUIP_REFUSAL: Record<string, string> = {
   'unknown-slot': 'Nowhere to put that',
 };
 
+/** Which body a roster problem is about, or the empty string for a whole-warband one. */
+function problemSubject(problem: RosterProblem): string {
+  return 'defId' in problem ? problem.defId : '';
+}
+
 export class DeckBuilderScreen implements Screen {
   private el: HTMLElement | null = null;
   private deck: string[];
@@ -185,6 +191,14 @@ export class DeckBuilderScreen implements Screen {
     /** What the beast already has socketed. Edited here and handed back on save. */
     startingOverrides: Record<number, string>,
     private readonly collection: Collection,
+    /**
+     * Bodies this character has actually earned the right to field.
+     *
+     * Passed in rather than derived here, because "which bloodlines have been tamed" is a
+     * fact about the Profile and this screen has never been handed one. `rosterUnlocksFor`
+     * is where the rule lives; this is the answer it produced.
+     */
+    private readonly rosterUnlocks: string[],
     private readonly bestiary: Bestiary,
     private readonly global: GlobalGameState,
     private readonly onLoadoutChange: () => void,
@@ -989,7 +1003,7 @@ export class DeckBuilderScreen implements Screen {
     if (!el) return;
 
     const spent = rosterCost(this.roster);
-    const problems = validateRoster(this.roster);
+    const problems = validateRoster(this.roster, this.rosterUnlocks);
 
     const count = el.querySelector<HTMLElement>('.vanguard__budget-count');
     if (count) count.textContent = `Budget ${spent} / ${ROSTER_BUDGET}`;
@@ -1039,10 +1053,21 @@ export class DeckBuilderScreen implements Screen {
     const pool = el.querySelector<HTMLElement>('.vanguard__pool');
     if (!pool) return;
     pool.replaceChildren();
+    // What is already wrong with the warband as it stands, so a chip can tell the
+    // difference between "adding this breaks something" and "something was already broken".
+    //
+    // The distinction only started to matter when per-body problems existed: budget and
+    // Behemoth limits are facts about the whole roster, so the first problem was always
+    // the right one to show. `not_unlocked` is a fact about *one body*, and without the
+    // diff every chip in the tray reported the same unrelated body's lockout.
+    const already = validateRoster(this.roster, this.rosterUnlocks);
+    const isNew = (p: RosterProblem): boolean =>
+      !already.some((q) => q.code === p.code && problemSubject(q) === problemSubject(p));
+
     for (const def of rosterPool()) {
       // Asked of the *candidate* roster rather than computed here: "would adding this be
       // legal" is one question with one answer, and it lives in `validateRoster`.
-      const refusal = validateRoster([...this.roster, def.id])[0];
+      const refusal = validateRoster([...this.roster, def.id], this.rosterUnlocks).find(isNew);
       pool.appendChild(
         this.vanguardChip(def, 'add', () => {
           this.roster.push(def.id);
@@ -1088,7 +1113,7 @@ export class DeckBuilderScreen implements Screen {
     if (validateDeck(this.deck, this.collection).length > 0) return;
     // An illegal warband is refused for the same reason an illegal deck is: it would be
     // written to the save and then rejected at the door.
-    if (validateRoster(this.roster).length > 0) return;
+    if (validateRoster(this.roster, this.rosterUnlocks).length > 0) return;
     this.onDone({
       companionId: this.companionId,
       overrides: { ...this.overrides },

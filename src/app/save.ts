@@ -39,6 +39,7 @@ import {
 } from '../core/data/roster.js';
 import { STAT_SCALE } from '../core/scale.js';
 import { COMPANIONS, DEFAULT_COMPANION, companionById } from '../core/data/companions.js';
+import { rosterUnlocksFor } from '../core/data/pools.js';
 import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
 import type {
   ActiveEncounterState,
@@ -577,14 +578,25 @@ function migrateProfile(
     ? data.roster.filter((id): id is string => typeof id === 'string').map(rename)
     : undefined;
   let roster = savedRoster ?? [...DEFAULT_ROSTER];
-  if (validateRoster(roster).length > 0) {
+  // Repaired against the *same* gate the builder enforces, which is what stops a save
+  // hand-edited to hold a Stone-Heart Golem from fielding one without the Bulwark
+  // bloodline behind it. Read before the companions are, so it uses the raw list rather
+  // than waiting on a migration this function has not run yet.
+  const tamed = Array.isArray(data.companions)
+    ? data.companions
+        .map((c) => (c && typeof c === 'object' ? (c as { baseId?: unknown }).baseId : undefined))
+        .filter((b): b is string => typeof b === 'string')
+    : [];
+  const unlocks = rosterUnlocksFor(tamed);
+  if (validateRoster(roster, unlocks).length > 0) {
     const repaired: string[] = [];
     for (const id of roster) {
-      if (validateRoster([...repaired, id]).length === 0) repaired.push(id);
+      if (validateRoster([...repaired, id], unlocks).length === 0) repaired.push(id);
     }
     if (repaired.length !== roster.length) {
       notes.push(
-        `Your Vanguard no longer fit its ${ROSTER_BUDGET}-point budget and was trimmed.`,
+        `Your Vanguard held bodies it can no longer field, or overran its ${ROSTER_BUDGET}-point 
+         budget, and was trimmed to what fits.`.replace(/\s+/g, ' '),
       );
     }
     roster = repaired;

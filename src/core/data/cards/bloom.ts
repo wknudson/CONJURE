@@ -105,4 +105,97 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
       escalationBonus: { atk: 10, hp: 10 },
     },
   },
+
+  // ------------------------------------------------------------ the expansion shelf
+
+  /**
+   * Four tiles of poison, and the first card to use a `square`.
+   *
+   * A 2x2 anchored at the chosen tile -- the same block a Behemoth stands on, and the same
+   * zone the targeting overlay already paints when a footprint-2 card is held. That is
+   * deliberate: the player has been reading that shape since deployment, so the cloud
+   * lands where they expect it to.
+   *
+   * Two stacks matter more than the tiles do. Wildfire consumes every stack for 20 fire
+   * damage each, so a cloud laid before a fire spell is 40 a body rather than 20.
+   */
+  noxious_cloud: {
+    id: 'noxious_cloud',
+    name: 'Noxious Cloud',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Poisons a 2x2 block of tiles (Toxin 2).',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 2 },
+    effect: { op: 'applyStatus', status: 'toxin', stacks: 2, area: { shape: 'square', size: 2 } },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * A body that poisons what it bites.
+   *
+   * `onHit` is the existing rider for exactly this, applied *after* the damage so the blow
+   * resolves against the board it was swung at. Every bite is another stack, so a Wolf
+   * left in contact is a Wildfire getting larger.
+   *
+   * The brief's Leech has no equivalent -- nothing in the engine drains health to its
+   * attacker -- and its Escalate is the growth Auras replaced. What is here is the half
+   * that was buildable, and it is the half that makes the Wolf a Bloom card.
+   */
+  briar_wolf: {
+    id: 'briar_wolf',
+    name: 'Briar Wolf',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Everything it bites is left poisoned (Toxin 1).',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'briar_wolf' },
+    keywords: [],
+    unit: {
+      atk: 20,
+      hp: 50,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+      onHit: { status: 'toxin', stacks: 1 },
+    },
+  },
+
+  /**
+   * Held down, and softened while held.
+   *
+   * Entangle stops it moving and Brittle makes the next thing that reaches it hurt more,
+   * which is the brief's "the next physical strike deals +2" said in the engine's own
+   * word. Brittle is not limited to one strike or to physical damage -- it is +2 from
+   * every hit until it decays -- so this is a touch more generous than the brief and a
+   * good deal easier to read at the table.
+   */
+  root_snare: {
+    id: 'root_snare',
+    name: 'Root Snare',
+    cost: { pips: 1, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Roots the target in place and leaves it Brittle — every hit against it lands harder until it wears off.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'applyStatus', status: 'entangle', stacks: 1, area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'brittle', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
 };

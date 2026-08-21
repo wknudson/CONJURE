@@ -81,7 +81,7 @@ export function isDraftable(def: CardDef): boolean {
 }
 
 /** Whether this card is a fusion of two schools — the rare roll. */
-function isHybrid(def: CardDef): boolean {
+export function isHybrid(def: CardDef): boolean {
   return def.spliceOnly === true;
 }
 

@@ -124,4 +124,103 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
+
+  // ------------------------------------------------------------ the expansion shelf
+
+  /**
+   * Both halves of what Bulwark does, on one Pip.
+   *
+   * Plate on a body of your choosing and a shove on everything around it -- the school's
+   * two verbs, and the reason the card is a Pip rather than two: neither half is large,
+   * and the value is entirely in aiming them at the same tile.
+   */
+  tectonic_plate: {
+    id: 'tectonic_plate',
+    name: 'Tectonic Plate',
+    cost: { pips: 1, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Gives an ally 30 Armor and shoves everything beside it 1 tile away.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'grantArmor', amount: 30 },
+        { op: 'shoveArea', distance: 1, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+  },
+
+  /**
+   * A body that gets harder for standing still, and the one place player-side growth came
+   * back.
+   *
+   * Not Escalate. Escalate was removed from the player's side on purpose -- unbounded
+   * growth on a persistent body is exactly what Auras replaced, and those cap at three
+   * stacks. This plates at ten a turn and stops at `PLATE_CAP` times that, so a Guardian
+   * left alone in a corner becomes genuinely hard and never becomes unkillable. It also
+   * takes a turn to start, like everything else that grows.
+   *
+   * Guardian is what makes the plate matter: a body nobody can shoot past is a body worth
+   * armouring.
+   */
+  stone_heart_golem: {
+    id: 'stone_heart_golem',
+    name: 'Stone-Heart Golem',
+    cost: { pips: 3, marrow: 0 },
+    school: 'bulwark',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Guardian. At the start of each of your turns it welds on 10 more Armor, up to 30.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'stone_heart_golem' },
+    keywords: ['Guardian'],
+    unit: {
+      atk: 30,
+      hp: 80,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+      platesEachTurn: 10,
+    },
+  },
+
+  /**
+   * A shove that cares whether it landed.
+   *
+   * The collision damage is the engine's own and happens either way; what this adds is a
+   * card noticing. `play.collided` is written by the shove and read by the `ifMet`, which
+   * is the same one-op-tells-another pattern `titheDamage` established -- and it means the
+   * Frailty is earned by aiming at a wall rather than granted for casting.
+   */
+  avalanche_slam: {
+    id: 'avalanche_slam',
+    name: 'Avalanche Slam',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Shoves the target 2 tiles. If it slams into something, it is left Brittle.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'push', distance: 2 },
+        {
+          op: 'ifMet',
+          cond: { kind: 'collided' },
+          then: { op: 'applyStatus', status: 'brittle', stacks: 1, area: { shape: 'target' } },
+        },
+      ],
+    },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+  },
 };

@@ -107,6 +107,16 @@ export function ascendEffect(node: EffectNode): EffectNode {
         ? { ...node, hp: { ...node.hp, amount: ascendValue(node.hp.amount) } }
         : node;
 
+    // --- both branches, and neither the condition. A Rank 2 asks the same question and
+    //     hits harder whichever way the answer goes; raising the *threshold* a condition
+    //     tests would make an ascended card fire less often, which is not an uplift.
+    case 'ifMet':
+      return {
+        ...node,
+        then: ascendEffect(node.then),
+        ...(node.otherwise ? { otherwise: ascendEffect(node.otherwise) } : {}),
+      };
+
     // --- everything else, deliberately untouched. Listed rather than defaulted, so a new
     //     op cannot join the game and silently inherit an answer nobody chose for it.
     case 'summon':
@@ -123,6 +133,15 @@ export function ascendEffect(node: EffectNode): EffectNode {
     case 'shoveArea':
     case 'pullArea':
     case 'anchorTether':
+    // Pips are a *counted* quantity and the Stat Stretch left every one of them alone.
+    // Ascension follows the same line: a Rank 2 hits ten percent harder, it does not
+    // quietly rewrite the economy.
+    case 'gainPips':
+    // Terrain has no number to raise. `turns` is a clock, not a magnitude.
+    case 'spawnHazard':
+    // Stacks are counted, and a Rank 2 that stripped *more* Burn would be strictly worse
+    // at the only thing this op is ever used for.
+    case 'clearStatus':
       return node;
   }
 }

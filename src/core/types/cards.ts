@@ -137,7 +137,74 @@ export type EffectNode =
    * longer a button you press once the beast is weak enough — it is three rounds of
    * holding on, and the win is decided by whether the anchor is still standing.
    */
-  | { op: 'anchorTether' };
+  | { op: 'anchorTether' }
+  /**
+   * Runs `then` only if the board agrees, and `otherwise` when it does not.
+   *
+   * The first branching op in the game, and the one primitive most of the new catalog
+   * needed: "deal damage, and if it was already Chilled, do this as well" was previously
+   * unrepresentable, so a card wanting it had to be split into two cards or flattened into
+   * an unconditional one.
+   *
+   * Deliberately a **condition, not a predicate function**. Cards stay data — a closure
+   * here would put game logic in the registry and take it out of the reducer, which is the
+   * one rule this file exists to hold.
+   */
+  | { op: 'ifMet'; cond: PlayCondition; then: EffectNode; otherwise?: EffectNode }
+  /**
+   * Pips paid straight into the bank, clamped at the ceiling like every other credit.
+   *
+   * Distinct from a reaction refund: this is a card buying tempo outright, so it does not
+   * touch `reactionPipsThisTurn` and is not bounded by the two-per-turn cascade budget.
+   */
+  | { op: 'gainPips'; amount: number }
+  /**
+   * Lays terrain on the tiles an area covers.
+   *
+   * The counterpart to `spawnConstruct`: that one raises something with health that can be
+   * broken, this one changes the ground. A hazard has no health, blocks nothing, and is
+   * removed by its own clock.
+   */
+  | { op: 'spawnHazard'; kind: HazardKind; turns: number; area: AreaSpec }
+  /**
+   * Strips a status off whatever the area covers.
+   *
+   * The first cleanse in the game, and it exists because the reaction table has been
+   * spending statuses since Module 1 while no *card* could. A card that consumes its own
+   * setup -- Plasma Arc eats two Burn to pay for its blast -- needs the same verb the
+   * engine already uses internally.
+   *
+   * Removes the stacks outright rather than decrementing: a partial cleanse would be a
+   * different and much fiddlier card than anything has asked for.
+   */
+  | { op: 'clearStatus'; status: StatusKind; area: AreaSpec };
+
+/**
+ * Something a card can ask about before it commits.
+ *
+ * Three kinds, each answering a question a card in the catalog actually asks. All three
+ * are facts the reducer can read off the state it already has — nothing here needs
+ * history, and nothing needs the card to have been played differently.
+ */
+export type PlayCondition =
+  /**
+   * Something is carrying at least `stacks` of this status.
+   *
+   * The chosen target by default. With an `area`, **anything the area covers** — which is
+   * what a card aimed down a line needs, since a line target names a direction rather than
+   * a body and so has no single "the target" to ask about.
+   */
+  | { kind: 'targetStatus'; status: StatusKind; stacks?: number; area?: AreaSpec }
+  /** The caster is holding at least this many Pips, *after* the card's own cost. */
+  | { kind: 'pipsAtLeast'; pips: number }
+  /**
+   * A shove earlier in this same card was stopped by something solid.
+   *
+   * Reads `play.collided`, written by the shove ops for exactly this. A body that hit a
+   * wall took collision damage the engine already resolved; this is how a card gets to
+   * *also* care that it happened.
+   */
+  | { kind: 'collided' };
 
 /**
  * Whether an effect tree contains a given primitive anywhere, including inside `seq`.
@@ -167,6 +234,29 @@ export type AreaSpec =
   | { shape: 'cone'; depth: number }
   /** The four orthogonal neighbours, and not the diagonals. */
   | { shape: 'adjacentCross' }
+  /**
+   * A solid block of tiles, `size` on a side.
+   *
+   * Two conventions in one shape, because the two sizes are asked for by different kinds
+   * of card and each wants the anchor a player would expect:
+   *
+   * | | |
+   * |---|---|
+   * | `2` | the 2x2 block whose **top-left corner** is the target, exactly the footprint a Behemoth occupies and the zone the targeting overlay already paints |
+   * | odd | **centred** on the target, so a 3 covers the target and its eight neighbours |
+   *
+   * Anything else is a footprint no card has asked for and the resolver returns nothing
+   * rather than guessing at an anchor.
+   */
+  | { shape: 'square'; size: number }
+  /**
+   * Every tile a shove earlier in this same card dragged a body across.
+   *
+   * Reads `play.shovePath`, written by the shove ops for exactly this. Empty when nothing
+   * has been shoved yet, which makes the ordering inside a `seq` load-bearing and visible:
+   * a trail laid before the push covers nothing.
+   */
+  | { shape: 'shovePath' }
   | { shape: 'all' }
   | { shape: 'lowestHpEnemy' };
 
@@ -184,6 +274,15 @@ export type TargetSpec =
        * what makes a Detonation card unplayable until the fuse has actually burned down.
        */
       requiresAura?: 'any' | 'climax';
+      /**
+       * Narrows to units already carrying this status.
+       *
+       * The sibling of `requiresAura`, and it does the same job: a card whose entire point
+       * is cashing in a setup should be *unplayable* until the setup exists, rather than
+       * playable and wasted. Aetheric Overload asks for a Charged body and offers nothing
+       * else to click.
+       */
+      requiresStatus?: StatusKind;
     }
   | { kind: 'adjacentEnemy' }
   | { kind: 'line'; length: number }
@@ -257,6 +356,50 @@ export interface UnitStatBlock {
    */
   trail?: HazardKind;
   /**
+   * Damage this body's ordinary attacks deal, when it is not `physical`.
+   *
+   * Absent almost everywhere, because physical is what a body swinging at another body
+   * does and restating it on every stat block would be noise. Present on the handful whose
+   * strikes are something else — and it is load-bearing rather than flavour, because the
+   * damage type is what the whole reaction table matches on: a Wraith striking with `true`
+   * bypasses plate and, deliberately, no longer Shatters ice.
+   */
+  attackDtype?: DamageType;
+  /**
+   * Extra damage this body's attacks deal to a target already carrying one of these.
+   *
+   * A hunter, in one field. Checked against the target at the moment of the swing, so it
+   * cannot be set up and cashed in by the same blow — the same ordering `applyOnHit`
+   * documents and for the same reason.
+   */
+  bonusVs?: { statuses: readonly StatusKind[]; amount: number };
+  /**
+   * What this body leaves on its neighbours when it dies.
+   *
+   * Fires wherever the death happened and whatever caused it, in the same slot an
+   * obstacle's burst does. Enemies of the dead body only: a Deathburst is the corpse
+   * lashing out, not a bomb.
+   */
+  deathburst?: { status: StatusKind; stacks: number };
+  /**
+   * Armor this body welds onto itself at the start of each of its owner's turns.
+   *
+   * **Bounded**, and that bound is the point. Player-side `Escalate` was removed on
+   * purpose — unbounded growth on a persistent body is the thing Auras replaced, and they
+   * cap at three stacks. This caps at `PLATE_CAP` for the same reason, so a Guardian left
+   * alone in a corner becomes hard rather than unkillable.
+   */
+  platesEachTurn?: number;
+  /**
+   * Pips this body pays its owner at the two moments worth paying for.
+   *
+   * Paid through `creditRefund`, which is the one thing in the game that hands a Pip over
+   * as a reward rather than as income — the same payment a reaction makes, announced the
+   * same way on screen. It does **not** spend the reaction budget: that counter exists so
+   * a cascade cannot fund itself, and a body striking once a turn is not a cascade.
+   */
+  refunds?: { onAttack?: number; onDeath?: number };
+  /**
    * What a Feral creature goes after, when it has a choice.
    *
    * `nearest` is the default and the rule every beast followed before this: hunt whatever
@@ -314,6 +457,17 @@ export interface CardDef {
   obstacleCover?: true;
   /** Present for obstacle cards. */
   obstacleHp?: number;
+  /**
+   * What this obstacle does to the row it stands in, every turn it is still standing.
+   *
+   * An obstacle that *acts* rather than merely occupying, which nothing here did before:
+   * a wall was a wall, and the only thing one could do was break. Scoped to a row because
+   * that is the shape the board already speaks — the Companion's column, an enemy's lane —
+   * and because a radius would make a construct an area-denial tool with no clean read.
+   *
+   * Enemies of whoever raised it, and only them.
+   */
+  obstacleTurnStart?: { status: StatusKind; stacks: number };
   /**
    * A stat block the engine places directly — the free Vanguard, the Companions' bodies.
    * It is never drawn, owned, offered as a reward, or put in a deck. Marking the card is
@@ -483,6 +637,22 @@ export interface CardPlayContext {
    * unwired cask.
    */
   spawnedObstacleId?: UnitId;
+  /**
+   * Whether a shove earlier in this same play was stopped by something solid.
+   *
+   * Written by the shove ops and read by the `collided` condition. On the context for the
+   * same reason `titheDamage` is: it is a fact one op produced that a later op in the same
+   * `seq` wants, and threading it here keeps both ops ignorant of each other.
+   */
+  collided?: boolean;
+  /**
+   * Tiles a shove earlier in this same play dragged a body across, in order.
+   *
+   * Written by the shove ops and read by the `shovePath` area. Accumulates across several
+   * shoves in one card rather than being replaced, so an area shove that moves four bodies
+   * lays one trail covering all four routes.
+   */
+  shovePath?: Coord[];
   /**
    * The tile a `consumeTarget` or a lethal `tithe` just emptied.
    *

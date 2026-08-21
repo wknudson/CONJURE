@@ -134,4 +134,133 @@ export const DUSK_CARDS: Record<string, CardDef> = {
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
+
+  // ------------------------------------------------------------ the expansion shelf
+
+  /**
+   * A body spent, and the drain aimed by the board rather than by the caster.
+   *
+   * "Sacrifice an ally to drain an enemy" wants two targets and the game gives a card one.
+   * `lowestHpEnemy` is the resolution, and it is the better card: the siphon finishes
+   * whatever is already dying, so the decision is *when* to spend the body rather than
+   * which corpse to point it at.
+   *
+   * `consumeTarget` and not `tithe` -- deliberately. Blood Magic replaced sacrifice-for-
+   * Marrow; this pays no Marrow at all and spends the body whole, which is the other,
+   * older idea that happened to share the name.
+   */
+  shadow_siphon: {
+    id: 'shadow_siphon',
+    name: 'Shadow Siphon',
+    cost: { pips: 1, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Spends an allied unit whole. The weakest enemy loses 30 health through any armor, and your Pact recovers 30.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'consumeTarget' },
+        { op: 'damage', amount: 30, dtype: 'true', area: { shape: 'lowestHpEnemy' } },
+        { op: 'heal', amount: 30 },
+      ],
+    },
+    keywords: [],
+    range: 4,
+  },
+
+  /**
+   * A wall that pays for its own death.
+   *
+   * Zero attack is not a drawback here, it is the entire design: the Husk exists to be
+   * shot, and Guardian is what makes the enemy shoot it. Two Pips come back when it falls,
+   * so a body that traded itself for two enemy turns of shooting has also funded the
+   * answer.
+   *
+   * **Hollow pays Pips, because Echo does not exist.** The brief's "+2 Echoes when killed"
+   * has no resource behind it anywhere in the engine; `creditRefund` is the real payment
+   * of that shape, and it is the same one a landed reaction makes.
+   */
+  hollowed_husk: {
+    id: 'hollowed_husk',
+    name: 'Hollowed Husk',
+    cost: { pips: 1, marrow: 0 },
+    school: 'dusk',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Guardian. It cannot strike. When it dies, you are paid 2 Pips.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'hollowed_husk' },
+    keywords: ['Guardian'],
+    unit: {
+      atk: 0,
+      hp: 40,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+      refunds: { onDeath: 2 },
+    },
+  },
+
+  /**
+   * One body traded for a better one, on the tile it was standing on.
+   *
+   * The Aetheric Defibrillator's shape, at a school price rather than a splicing one: the
+   * Defibrillator is a hybrid and demands an *un-exhausted* body, which makes it a tempo
+   * card. This one takes anything, which makes it a way to cash in something already
+   * spent.
+   */
+  grave_call: {
+    id: 'grave_call',
+    name: 'Grave Call',
+    cost: { pips: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Spends an allied unit whole. A Hollow Wraith stands up on the same tile, striking through any armor.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [{ op: 'consumeTarget' }, { op: 'summon', unitDef: 'hollow_wraith' }],
+    },
+    keywords: [],
+    range: 4,
+  },
+
+  /**
+   * What Grave Call raises.
+   *
+   * **Pierce is `attackDtype: 'true'`,** and that is not only an upside. Armor stops being
+   * a problem and so does the whole physical half of the reaction table: a Wraith cannot
+   * Shatter a Frozen body, because Shatter is what a *physical* blow does to ice. Trading
+   * a reaction for plate-ignoring is the actual decision the card poses.
+   */
+  hollow_wraith: {
+    id: 'hollow_wraith',
+    name: 'Hollow Wraith',
+    cost: { pips: 0, marrow: 0 },
+    school: 'dusk',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Its strikes pass through armor entirely — and, being no longer physical, they no longer Shatter ice.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'hollow_wraith' },
+    keywords: [],
+    setupOnly: true,
+    unit: {
+      atk: 40,
+      hp: 40,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+      attackDtype: 'true',
+    },
+  },
 };

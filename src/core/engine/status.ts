@@ -16,8 +16,21 @@ import type { Unit } from '../types/units.js';
 import { unitsOf } from './board.js';
 import { dealDamage } from './damage.js';
 import { tickHazards } from './reactions.js';
-import { growUnit, tickAura } from './growth.js';
+import { CARDS } from '../data/cards/index.js';
+import { PLATERS, growUnit, plateUnit, tickAura } from './growth.js';
 import { STAT_SCALE } from '../scale.js';
+
+/**
+ * Whether a record holds nothing, without building an array to find out.
+ *
+ * `Object.keys(x).length === 0` is the idiomatic spelling and allocates a throwaway array
+ * every call. This runs per turn per side inside the AI's lookahead, where that adds up
+ * to real planning time.
+ */
+function isEmpty(record: Record<string, unknown>): boolean {
+  for (const _ in record) return false;
+  return true;
+}
 
 /** Damage per stack, per tick. */
 const TICK_DAMAGE: Partial<Record<StatusKind, { amount: number; dtype: 'true' | 'fire' }>> = {
@@ -40,13 +53,30 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
     }
   }
 
+  // 2b/2c. Ground and constructs, both guarded on the board being empty of them.
+  //
+  // The guards are not micro-optimisation, they are the difference between a feature and
+  // a tax. Both of these run inside *every simulated turn* of the Adept's lookahead, and
+  // measured without the guards they cost about a fifth of its planning time -- for two
+  // rules that do nothing at all on the great majority of boards, which carry no hazards
+  // and no standing constructs. `isEmpty` allocates nothing; `Object.keys(...).length`
+  // would have built a throwaway array per turn per side and defeated the point.
+
   // 2b. Boiling Point: steam somebody else raised is not merely opaque, it is hot.
   //
   // Here rather than in `tickHazards` because this is a damage tick and belongs with the
   // other two, and because `tickHazards` only ever looks at hazards the *active* side
   // owns — the exact opposite of the set that should be scalding anybody.
-  scaldInSteam(ctx, ids);
-  if (ctx.state.result) return;
+  if (!isEmpty(ctx.state.hazards)) {
+    scaldInSteam(ctx, ids);
+    if (ctx.state.result) return;
+  }
+
+  // 2c. Constructs that do something other than stand there.
+  if (!isEmpty(ctx.state.obstacles)) {
+    obstacleUpkeep(ctx, side);
+    if (ctx.state.result) return;
+  }
 
   // 3. Freeze / Entangle decay: these gate actions rather than dealing damage.
   for (const id of ids) {
@@ -79,6 +109,8 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
     // future unit holding both resolves the same way every time.
     growUnit(ctx, unit);
     if (ctx.state.result) return;
+    const plating = ctx.state.units[id];
+    if (plating && PLATERS.has(plating.defId)) plateUnit(ctx, plating);
     const live = ctx.state.units[id];
     if (live) tickAura(ctx, live);
     if (ctx.state.result) return;
@@ -137,7 +169,17 @@ function scaldInSteam(ctx: Ctx, ids: UnitId[]): void {
     if (!unit) continue;
     for (const c of cellsOf(unit)) {
       const hazard = ctx.state.hazards[coordKey(c)];
-      if (hazard?.kind !== 'steam_fog') continue;
+      if (!hazard) continue;
+
+      // Ground still alight. Unlike steam this does **not** check whose fire it was: a
+      // burning tile is burning, and a Tortoise that shoved somebody onto one and then
+      // walked into it themselves has made an ordinary mistake.
+      if (hazard.kind === 'burning') {
+        applyStatusTo(ctx, unit, 'burn', 1, hazard.owner);
+        break;
+      }
+
+      if (hazard.kind !== 'steam_fog') continue;
       // Your own fog does not cook you, and a hazard nobody's side raised collects nothing.
       if (hazard.owner === unit.side) continue;
       const amount = ctx.state.players[hazard.owner].steamBurns;
@@ -151,6 +193,34 @@ function scaldInSteam(ctx: Ctx, ids: UnitId[]): void {
       break;
     }
     if (ctx.state.result) return;
+  }
+}
+
+/**
+ * What the standing constructs do to the side whose turn is beginning.
+ *
+ * Runs on the *victim's* turn rather than the owner's, which is the reading that makes a
+ * Pyre Pillar a threat you have to answer: it costs you something at the moment you were
+ * about to act, and walking out of its row before then is the answer.
+ *
+ * Rows, because that is a shape the board already speaks -- the Companion's column, an
+ * enemy's lane -- and because a radius would make every construct an area-denial tool
+ * with no clean read from across the table.
+ */
+function obstacleUpkeep(ctx: Ctx, side: Side): void {
+  for (const obstacle of Object.values(ctx.state.obstacles)) {
+    const spec = CARDS[obstacle.defId]?.obstacleTurnStart;
+    if (!spec) continue;
+    // Whoever raised it is not who it burns. An obstacle with no side belongs to the
+    // board and does nothing to anybody.
+    if (obstacle.side === undefined || obstacle.side === side) continue;
+
+    const rows = new Set(cellsOf(obstacle).map((c) => c.y));
+    for (const unit of unitsOf(ctx.state, side)) {
+      if (!cellsOf(unit).some((c) => rows.has(c.y))) continue;
+      applyStatusTo(ctx, unit, spec.status, spec.stacks, obstacle.side);
+      if (ctx.state.result) return;
+    }
   }
 }
 

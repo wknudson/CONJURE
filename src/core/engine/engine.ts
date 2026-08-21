@@ -33,7 +33,7 @@ import { placeOpeningUnit } from './spawn.js';
 import { canPlace } from './board.js';
 import { cellsAt, cellsOf, footprintDistance } from '../util/grid.js';
 import { coordEq } from '../../contract/ids.js';
-import { spawnHazard } from './reactions.js';
+import { creditRefund, spawnHazard } from './reactions.js';
 import { resonanceFor } from '../data/resonance.js';
 import { declareIntents } from './intents.js';
 import { isSealed } from './subjugation.js';
@@ -499,16 +499,40 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
     ? footprintDistance(attacker, getEntity(ctx.state, target.id) ?? attacker) <= 1
     : false;
 
+  const stats = CARDS[attacker.defId]?.unit;
+
+  // The hunter's bonus, read off the target *before* the swing lands. Same ordering
+  // `applyOnHit` documents: a body that both hunts Chilled targets and chills on hit must
+  // not be able to set up and cash in with one blow.
+  let bonus = 0;
+  if (stats?.bonusVs && target.kind === 'unit') {
+    const prey = ctx.state.units[target.id];
+    if (prey && stats.bonusVs.statuses.some((s) => (prey.statuses[s] ?? 0) > 0)) {
+      bonus = stats.bonusVs.amount;
+    }
+  }
+
   newCause(ctx);
   const landed = dealDamage(ctx, {
     target,
-    amount: attacker.atk,
-    dtype: 'physical',
+    amount: attacker.atk + bonus,
+    // Physical unless the body says otherwise, and the exception is load-bearing rather
+    // than decorative: the damage type is what the reaction table matches on, so a Wraith
+    // striking `true` bypasses plate and stops Shattering ice in the same stroke.
+    dtype: stats?.attackDtype ?? 'physical',
     cause: 'attack',
     ...(isMelee ? { sourceUnitId: attackerId } : {}),
   });
 
   applyOnHit(ctx, attackerId, target, landed.hpLoss);
+
+  // What the body earns its owner for swinging. Paid whether or not the blow drew blood:
+  // this is a generator striking, not a reaction landing, and a Storm Wisp held off by
+  // plate has still discharged.
+  const perStrike = stats?.refunds?.onAttack ?? 0;
+  for (let i = 0; i < perStrike; i++) {
+    creditRefund(ctx, attacker.side, { id: attacker.defId, name: attacker.name }, attacker.anchor);
+  }
 }
 
 /**

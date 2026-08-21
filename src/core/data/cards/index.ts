@@ -10,6 +10,7 @@ import type { CardDef } from '../../types/cards.js';
 import { ascendCardDef } from '../ascension.js';
 import { STARTER_CARDS, STARTER_DECK } from './starter.js';
 import { ARCANE_CARDS } from './arcane.js';
+import { PYRE_CARDS } from './pyre.js';
 import { FROST_CARDS } from './frost.js';
 import { COMPANION_UNIT_CARDS } from './companionUnits.js';
 import { TERRAIN_CARDS } from './terrain.js';
@@ -27,6 +28,7 @@ import { AURA_CARDS } from './auras.js';
 const RANK1: Record<string, CardDef> = {
   ...STARTER_CARDS,
   ...ARCANE_CARDS,
+  ...PYRE_CARDS,
   ...FROST_CARDS,
   ...COMPANION_UNIT_CARDS,
   ...TERRAIN_CARDS,

@@ -116,6 +116,12 @@ export const TERMS: Record<string, GlossaryEntry> = {
     title: 'Brittle',
     body: 'The target takes +2 damage from every hit until it wears off.',
   },
+  fleet: {
+    title: 'Fleet',
+    body: 'Quickened. +1 tile of movement per stack, for this turn only.',
+    detail:
+      'It lengthens a stride rather than granting one: a unit that cannot move at all is not mobilised by it.',
+  },
   charged: {
     title: 'Charged',
     body: 'Residual Surge energy. On its own it does nothing — it is what fire and frost react to.',

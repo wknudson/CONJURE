@@ -239,7 +239,16 @@ export type HazardKind =
   /** What a broken wall leaves behind. Costs more to cross; blocks nothing. */
   | 'rubble'
   /** Moving ground. Carries whatever stands on it one tile at the end of the round. */
-  | 'current';
+  | 'current'
+  /**
+   * Ground still alight. Sets fire to whoever begins a turn standing on it.
+   *
+   * Blocks nothing and costs nothing to cross — the punishment is for *stopping*, which is
+   * what makes a burning tile a wall you are allowed to walk through and a shove into one
+   * a real threat. Unlike steam, it burns whoever is standing there including the side
+   * that lit it: fire does not check a uniform.
+   */
+  | 'burning';
 
 /**
  * A declared enemy action, shown to the player before it happens.

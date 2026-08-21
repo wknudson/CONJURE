@@ -156,17 +156,94 @@ export const FROST_CARDS: Record<string, CardDef> = {
       escalationBonus: { atk: 0, hp: 10 },
     },
   },
-};
 
-/**
- * Boreas' deck: the Pyre starter's Hero cards with the Companion slots swapped for Frost.
- * Built in `starter.ts` terms so the two companions play the same physical game and
- * differ only in what their Companion casts.
- */
-export const FROST_COMPANION_CARDS = [
-  'glacial_spike',
-  'glacial_spike',
-  'frost_nova',
-  'brittle_touch',
-  'flash_freeze',
-] as const;
+  // ------------------------------------------------------------ the expansion shelf
+
+  /**
+   * Chill, spread rather than stacked.
+   *
+   * A Pip for five tiles of one stack is a bad rate against any single body and a very
+   * good one against a line that has bunched up, which is the decision the card exists to
+   * pose. Chill is the school's whole engine -- three stacks is a Freeze, and a Freeze is
+   * what Shatter and Vaporize are both waiting for -- so a cheap way to start it
+   * everywhere at once is the thing Frost was missing.
+   */
+  creeping_rime: {
+    id: 'creeping_rime',
+    name: 'Creeping Rime',
+    cost: { pips: 1, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Chills the target tile and everything orthogonally beside it (Chill 1).',
+    target: { kind: 'entity', side: 'any', includeObstacles: false },
+    effect: { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'plus', radius: 1 } },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * A hunter, and the first body in the game that cares what its prey is carrying.
+   *
+   * Twenty attack is unremarkable and forty against something Chilled is most of a
+   * Sentinel, which makes the Stalker a body you deploy *behind* a plan rather than as
+   * one. `bonusVs` is read off the target at the moment of the swing, so it cannot chill
+   * something and cash in with the same blow.
+   */
+  glacial_stalker: {
+    id: 'glacial_stalker',
+    name: 'Glacial Stalker',
+    cost: { pips: 2, marrow: 0 },
+    school: 'frost',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Deals 20 extra damage to a Chilled or Frozen target.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'glacial_stalker' },
+    keywords: [],
+    unit: {
+      atk: 20,
+      hp: 50,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+      bonusVs: { statuses: ['chill', 'freeze'], amount: 20 },
+    },
+  },
+
+  /**
+   * The finisher, and the reason its condition is asked *first*.
+   *
+   * A Freeze applied and then tested would always find one, so the `ifMet` runs before the
+   * `applyStatus` and the card reads exactly as it is written: it hits something already
+   * held down, or it holds it down. Never both, which is what keeps three Pips from buying
+   * a lock and a kill in one turn.
+   *
+   * **Pierce is the `true` damage type.** Armor is bypassed by a property of the blow in
+   * this engine, not by a keyword on the caster; 50 through plate is what the brief's five
+   * points of Pierce damage means once the Stat Stretch is applied.
+   */
+  rime_lock: {
+    id: 'rime_lock',
+    name: 'Rime Lock',
+    cost: { pips: 3, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Freezes the target solid. If it was already Frozen, deals 50 damage through any armor instead.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'ifMet',
+      cond: { kind: 'targetStatus', status: 'freeze' },
+      then: { op: 'damage', amount: 50, dtype: 'true', area: { shape: 'target' } },
+      otherwise: { op: 'applyStatus', status: 'freeze', stacks: 1, area: { shape: 'target' } },
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+};

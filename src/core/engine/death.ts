@@ -8,11 +8,11 @@ import { onAnchorDied } from './subjugation.js';
 import { emit, newCause } from './context.js';
 import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
-import { getEntity, unitAt } from './board.js';
+import { entityAt, getEntity, unitAt } from './board.js';
 import { evaluateRuneOnDeath } from './runes.js';
 import { placeOpeningUnit } from './spawn.js';
 import { CARDS } from '../data/cards/index.js';
-import { spawnHazard } from './reactions.js';
+import { creditRefund, spawnHazard } from './reactions.js';
 import { applyStatusTo } from './status.js';
 import { dealDamage } from './damage.js';
 import { inBounds } from '../types/state.js';
@@ -86,6 +86,8 @@ export function killEntity(
     if (live.side === 'enemy') ctx.state.defeated.push(live.defId);
     lightPyre(ctx, live, at);
     payBounty(ctx, live.defId, at);
+    deathburst(ctx, live, at);
+    payDeathRefund(ctx, live);
   } else {
     delete ctx.state.obstacles[live.id];
     emit(ctx, { t: 'obstacleDestroyed', obstacleId: live.id, at });
@@ -105,6 +107,43 @@ export function killEntity(
   }
 
   checkLethal(ctx);
+}
+
+/**
+ * The corpse lashing out.
+ *
+ * Runs after the body is off the board, in the same slot an obstacle's burst does and for
+ * the same reason: nothing should be able to catch its own dead host, and the board the
+ * burst reads has to already be correct.
+ *
+ * **Enemies of the dead body only.** A Deathburst is what the thing was full of, released
+ * where it fell -- not a bomb that fails to tell sides apart. That is the half that makes
+ * it worth fielding one deliberately.
+ */
+function deathburst(ctx: Ctx, dead: Unit, at: Coord): void {
+  const spec = CARDS[dead.defId]?.unit?.deathburst;
+  if (!spec) return;
+
+  for (const cell of DIRS_8.map((d) => ({ x: at.x + d.x, y: at.y + d.y }))) {
+    const victim = entityAt(ctx.state, cell);
+    if (!victim || !isUnit(victim) || victim.side === dead.side) continue;
+    applyStatusTo(ctx, victim, spec.status, spec.stacks, dead.side);
+    if (ctx.state.result) return;
+  }
+}
+
+/**
+ * What a body pays its owner for dying.
+ *
+ * The Dusk half of `refunds`, and the reason the field holds both moments rather than
+ * being two fields: a Hollowed Husk is worth something because it died, exactly as a Storm
+ * Wisp is worth something because it swung, and the payment is identical either way.
+ */
+function payDeathRefund(ctx: Ctx, dead: Unit): void {
+  const owed = CARDS[dead.defId]?.unit?.refunds?.onDeath ?? 0;
+  for (let i = 0; i < owed; i++) {
+    creditRefund(ctx, dead.side, { id: dead.defId, name: dead.name }, dead.anchor);
+  }
 }
 
 /**

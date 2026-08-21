@@ -218,6 +218,10 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
           if (!u.aura) continue;
           if (spec.requiresAura === 'climax' && !isClimaxed(u)) continue;
         }
+        if (spec.requiresStatus) {
+          if (!isUnitEntity) continue;
+          if (((e as Unit).statuses[spec.requiresStatus] ?? 0) <= 0) continue;
+        }
         if (barred && isUnitEntity && (e as Unit).keywords.includes('BoundForm')) continue;
         // The target itself never blocks the line to itself.
         if (!reaches(cellsOf(e), [e.id])) continue;

@@ -141,4 +141,111 @@ export const SURGE_CARDS: Record<string, CardDef> = {
     effect: { op: 'damage', amount: 30, dtype: 'shock', area: { shape: 'target' } },
     keywords: [],
   },
+
+  // ------------------------------------------------------------ the expansion shelf
+
+  /**
+   * Tempo, spelled in the two statuses the engine already has.
+   *
+   * "Move an allied minion two tiles and leave it Overloaded" is two things the game does
+   * not do -- there is no second target for a destination, and Overload is a *reaction*
+   * rather than something a body can be carrying. Both have exact equivalents: Fleet is
+   * "+1 MOV per stack, this turn only", which is a body moving two further under its own
+   * power, and Charged is precisely the state a fire hit Overloads.
+   *
+   * Written that way it is also a better card, because the minion chooses where to go
+   * after seeing the board rather than being placed by the caster.
+   */
+  arcing_step: {
+    id: 'arcing_step',
+    name: 'Arcing Step',
+    cost: { pips: 1, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'An allied unit moves 2 further this turn and is left Charged. Fire Overloads it; frost Superconducts.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'applyStatus', status: 'fleet', stacks: 2, area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'charged', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+  },
+
+  /**
+   * A generator, and the closest real thing to an Echo.
+   *
+   * The brief pays this out in Echo. **Echo does not exist** -- there is no such resource
+   * anywhere in the engine -- so the Wisp pays a Pip, through `creditRefund`: the one
+   * thing in the game that hands a Pip over as a *reward* rather than as income, which is
+   * how a reaction and Voltara's Storm Tithe both pay. It does not spend the reaction
+   * budget, because that counter exists to stop a cascade funding itself and a body
+   * swinging once a turn is not a cascade.
+   *
+   * Paid whether or not the blow drew blood: a Wisp held off by plate has still
+   * discharged.
+   */
+  storm_wisp: {
+    id: 'storm_wisp',
+    name: 'Storm Wisp',
+    cost: { pips: 1, marrow: 0 },
+    school: 'surge',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Haste. Whenever it attacks, you are paid 1 Pip.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'storm_wisp' },
+    keywords: ['Haste'],
+    unit: {
+      atk: 10,
+      hp: 20,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'skirmisher',
+      escalationBonus: { atk: 0, hp: 0 },
+      refunds: { onAttack: 1 },
+    },
+  },
+
+  /**
+   * A card that reads your own bank, which nothing did before.
+   *
+   * The threshold is checked *after* the cost is paid, because that is the number a player
+   * can see on their own gauge as the card lands -- asking about the bank before payment
+   * would make the card fire on a total the board never displayed.
+   *
+   * The second half is Arc's shape written out as an ordinary effect rather than as a
+   * forced reaction. Arc proper is weather-gated and pays a Pip back; a card that could
+   * summon one on a clear day would be a storm in a bottle at two Pips.
+   */
+  thunderhead: {
+    id: 'thunderhead',
+    name: 'Thunderhead',
+    cost: { pips: 2, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 30 shock damage. If you still hold 3 or more Pips, it earths outward for 20 more to everything adjacent.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'shock', area: { shape: 'target' } },
+        {
+          op: 'ifMet',
+          cond: { kind: 'pipsAtLeast', pips: 3 },
+          then: { op: 'damage', amount: 20, dtype: 'shock', area: { shape: 'adjacent8' } },
+        },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
 };

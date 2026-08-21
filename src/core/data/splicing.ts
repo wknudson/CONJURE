@@ -119,7 +119,51 @@ export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
     resultId: 'aetheric_defibrillator',
     requiredUnlockedCards: ['arc_lash'],
   },
+  // -------------------------------------------------------------- the second pressing
+  //
+  // Six rows that between them reach every school. Note what none of them needs: a new
+  // Core. A pressing is *two* schools, and the base card is always one of them -- so a
+  // Bulwark spell and a Pyre Core is a Pyre/Bulwark hybrid without Bulwark ever having to
+  // be bottled. That is what keeps the reagent table at three entries while the book
+  // covers ten pairings.
+  {
+    baseCardId: 'ember_coat',
+    catalystId: 'core_frost',
+    resultId: 'thermal_eruption',
+    requiredUnlockedCards: ['glacial_spike'],
+  },
+  {
+    baseCardId: 'arc_lash',
+    catalystId: 'core_pyre',
+    resultId: 'plasma_arc',
+    requiredUnlockedCards: ['flame_surge'],
+  },
+  {
+    baseCardId: 'seismic_slam',
+    catalystId: 'core_pyre',
+    resultId: 'magma_shove',
+    requiredUnlockedCards: ['flame_surge'],
+  },
+  {
+    baseCardId: 'spore_cloud',
+    catalystId: 'core_pyre',
+    resultId: 'scorched_earth',
+    requiredUnlockedCards: ['flame_surge'],
+  },
+  {
+    baseCardId: 'seismic_slam',
+    catalystId: 'core_frost',
+    resultId: 'icebreaker',
+    requiredUnlockedCards: ['glacial_spike'],
+  },
+  {
+    baseCardId: 'marrow_siphon',
+    catalystId: 'core_surge',
+    resultId: 'aetheric_overload',
+    requiredUnlockedCards: ['arc_lash'],
+  },
 ];
+
 
 /**
  * Guards the book against two rows claiming the same pressing.
