@@ -27,7 +27,7 @@ import {
   writeSave,
   type SaveFile,
 } from '../app/save.js';
-import { drawCommander, drawCompanion } from '../render/sprites.js';
+import { RAMP, drawCommander, drawCompanion } from '../render/sprites.js';
 
 /**
  * Character creation: the desk, and what walks away from it.
@@ -320,6 +320,15 @@ function recordingContext(): { ctx: CanvasRenderingContext2D; log: string[] } {
     set globalCompositeOperation(v: string) {
       log.push(`gco=${v}`);
     },
+    set globalAlpha(v: number) {
+      log.push(`alpha=${round(v)}`);
+    },
+    set shadowColor(v: string) {
+      log.push(`shadowColor=${v}`);
+    },
+    set shadowBlur(v: number) {
+      log.push(`shadowBlur=${round(v)}`);
+    },
   } as unknown as CanvasRenderingContext2D;
 
   return { ctx, log };
@@ -343,7 +352,9 @@ function transcript(look: CharacterLook): string {
 function shapeOf(look: CharacterLook): string {
   const { ctx, log } = recordingContext();
   drawCommander(ctx, 80, look);
-  return log.filter((line) => !/^(fillStyle|strokeStyle|lineWidth)=/.test(line)).join('|');
+  return log
+    .filter((line) => !/^(fillStyle|strokeStyle|lineWidth|alpha|shadow\w+)=/.test(line))
+    .join('|');
 }
 
 describe('the sprite on the stage', () => {
@@ -387,6 +398,82 @@ describe('the sprite on the stage', () => {
   it('draws something for a look that has been tampered with', () => {
     const wild = { ...defaultLook(), hairPreset: 900, facePreset: -7 } as CharacterLook;
     expect(transcript(wild).length, 'no crash, and not an empty canvas').toBeGreaterThan(50);
+  });
+
+  it('never erases, in any style', () => {
+    // The bug this guards. `shorn` used to cut its shape with `destination-out`, which does
+    // not remove "the hair" — it removes pixels, and the sprite is drawn straight onto a
+    // diorama that already has sky and ground on it. A Shorn Commander arrived with a hole
+    // bitten through their skull and the landscape behind it: 782 transparent pixels on a
+    // 200x200 probe, against zero for every other preset.
+    //
+    // Asserted on the transcript rather than on pixels so it holds without a canvas, and so
+    // it catches the *next* style that reaches for the same trick.
+    for (const [i, preset] of HAIR_PRESETS.entries()) {
+      const t = transcript({ ...defaultLook(), hairPreset: i });
+      expect(t, `${preset.name} erases`).not.toContain('gco=destination-out');
+    }
+  });
+
+  it('shades the coat rather than filling it flat', () => {
+    // Two panels, two values, one break down the centre line. A single fill is a garment
+    // with no body under it.
+    const t = transcript(defaultLook());
+    const fills = [...t.matchAll(/fillStyle=(#[0-9A-Fa-f]{6})/g)].map((m) => m[1]!);
+    expect(new Set(fills).size, 'more than one tone on the figure').toBeGreaterThan(3);
+    expect(t, 'a lit panel').toContain(`fillStyle=${RAMP.coatLight}`);
+    expect(t, 'and a shadow panel').toContain(`fillStyle=${RAMP.coatDark}`);
+  });
+
+  it('keeps the value ramp in order', () => {
+    // Read off `RAMP` itself, not off hex literals pasted in here — a test that compares two
+    // strings it typed proves only that the test author can subtract, and this one was
+    // exactly that until a mutation walked straight through it.
+    //
+    // The rule: the ink line must sit *below* the shadow panel, or an outline darker than
+    // the form flattens the very break it is drawn around; and the shadow must sit below
+    // the lit side, or there is no break at all.
+    const value = (hex: string): number =>
+      Number.parseInt(hex.slice(1, 3), 16) +
+      Number.parseInt(hex.slice(3, 5), 16) +
+      Number.parseInt(hex.slice(5, 7), 16);
+
+    expect(value(RAMP.coatInk), 'ink under shadow').toBeLessThan(value(RAMP.coatDark));
+    // And *not far* under it. "Below the shadow panel" alone permits pure black, which is
+    // the failure the ink line was lightened to avoid: an outline that reads as a void
+    // rather than as an edge flattens the form it surrounds. So the ink has to sit nearer
+    // its own shadow panel than it does to black.
+    expect(
+      value(RAMP.coatDark) - value(RAMP.coatInk),
+      'an edge, not a void',
+    ).toBeLessThan(value(RAMP.coatInk));
+    expect(value(RAMP.coatDark), 'shadow under lit').toBeLessThan(value(RAMP.coatLight));
+    expect(value(RAMP.brass), 'brass under its own highlight').toBeLessThan(value(RAMP.brassLit));
+    expect(value(RAMP.rim), 'and the key light is the brightest thing on the figure')
+      .toBeGreaterThan(value(RAMP.coatLight));
+  });
+
+  it('highlights the brass rather than filling it flat', () => {
+    const t = transcript(defaultLook());
+    expect(t, 'the metal').toContain(`fillStyle=${RAMP.brass}`);
+    expect(t, 'and the catch of light along its top edge').toContain(
+      `strokeStyle=${RAMP.brassLit}`,
+    );
+  });
+
+  it('catches a rim light down the lit side', () => {
+    const t = transcript(defaultLook());
+    expect(t, 'the key light').toContain(`strokeStyle=${RAMP.rim}`);
+    expect(t, 'as light, not as an outline').toContain('alpha=0.55');
+  });
+
+  it('lights the beast’s eye rather than dotting it', () => {
+    const { ctx, log } = recordingContext();
+    drawCompanion(ctx, 80, 'frost');
+    const t = log.join('|');
+    expect(t, 'a source').toContain('shadowColor=#6FB6D8');
+    expect(t.match(/shadowBlur=/g), 'blurred once, and turned off again').toHaveLength(1);
+    expect(t, 'and restored, so nothing downstream inherits it').toContain('restore()');
   });
 
   it('gives each school its own beast colour', () => {

@@ -22,6 +22,34 @@ import {
 } from '../core/data/characterLook.js';
 import type { School } from '../contract/ids.js';
 
+/**
+ * The Commander's own value ramp.
+ *
+ * Exported so the ordering rule below can be *tested* against the real values rather than
+ * against a copy of them pasted into an assertion.
+ *
+ * Named rather than inlined because these six have to be read *against each other* to
+ * stay legible: the lit panel must sit above the shadow panel, and the ink line must sit
+ * below both or it eats the break between them. Editing one in isolation is how a sprite
+ * goes flat.
+ */
+export const RAMP = {
+  coatLight: '#3D4A60',
+  coatDark: '#1D2430',
+  coatInk: '#12151C',
+  brass: '#C8A558',
+  brassLit: '#E8D6A0',
+  /** Key light, warm and low. One stroke of it, at 55%. */
+  rim: '#F0E4C8',
+} as const;
+
+const COAT_LIGHT = RAMP.coatLight;
+const COAT_DARK = RAMP.coatDark;
+const COAT_INK = RAMP.coatInk;
+const BRASS = RAMP.brass;
+const BRASS_LIT = RAMP.brassLit;
+const RIM = RAMP.rim;
+
 /** A school's colour on the stage. The same six the enrolment crests use. */
 export const SCHOOL_COLOR: Record<string, string> = {
   pyre: '#D9643A',
@@ -57,16 +85,36 @@ export function drawCommander(
   const bodyTop = -unit * 1.02;
   const bodyBottom = -unit * 0.06;
 
-  // The coat.
+  // The coat, split into a lit panel and a shadow panel down the centre line rather than
+  // filled flat. This is the cheapest thing that makes a garment read as a *form*: one
+  // value break tells the eye there is a body under the cloth turning away from the light.
+  ctx.beginPath();
+  ctx.moveTo(-shoulder, bodyTop);
+  ctx.lineTo(0, bodyTop);
+  ctx.lineTo(0, bodyBottom);
+  ctx.lineTo(-hem, bodyBottom);
+  ctx.closePath();
+  ctx.fillStyle = COAT_LIGHT;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(0, bodyTop);
+  ctx.lineTo(shoulder, bodyTop);
+  ctx.lineTo(hem, bodyBottom);
+  ctx.lineTo(0, bodyBottom);
+  ctx.closePath();
+  ctx.fillStyle = COAT_DARK;
+  ctx.fill();
+
+  // The outline goes around the whole garment, and is deliberately *not* pure black: an
+  // ink line darker than the shadow panel flattens the value break it is drawn around.
   ctx.beginPath();
   ctx.moveTo(-shoulder, bodyTop);
   ctx.lineTo(shoulder, bodyTop);
   ctx.lineTo(hem, bodyBottom);
   ctx.lineTo(-hem, bodyBottom);
   ctx.closePath();
-  ctx.fillStyle = '#2E3646';
-  ctx.fill();
-  ctx.strokeStyle = '#151A24';
+  ctx.strokeStyle = COAT_INK;
   ctx.lineWidth = Math.max(1, unit * 0.035);
   ctx.stroke();
 
@@ -76,8 +124,17 @@ export function drawCommander(
   ctx.lineTo(shoulder * 0.55, bodyTop + unit * 0.04);
   ctx.lineTo(0, bodyTop + unit * 0.26);
   ctx.closePath();
-  ctx.fillStyle = '#C8A558';
+  ctx.fillStyle = BRASS;
   ctx.fill();
+
+  // Metal is a value gradient or it is a triangle painted gold. One highlight along the
+  // top edge only, where the light would actually catch it.
+  ctx.beginPath();
+  ctx.moveTo(-shoulder * 0.5, bodyTop + unit * 0.05);
+  ctx.lineTo(shoulder * 0.5, bodyTop + unit * 0.05);
+  ctx.strokeStyle = BRASS_LIT;
+  ctx.lineWidth = Math.max(1, unit * 0.02);
+  ctx.stroke();
 
   // Head.
   const headR = unit * 0.20;
@@ -89,7 +146,40 @@ export function drawCommander(
 
   drawHair(ctx, headY, headR, hair.id, hairTone);
   drawFace(ctx, headY, headR, faceIdx);
+
+  // Rim light, last, so it catches the hair silhouette rather than being buried under it.
+  //
+  // The single highest-value mark on the sprite: a bright edge down the lit side is what
+  // separates "a lit form standing in a place" from "a sticker on a background", and it is
+  // two strokes. Kept translucent so it reads as light rather than as a drawn outline.
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = RIM;
+  ctx.lineWidth = Math.max(1, unit * 0.025);
+  ctx.beginPath();
+  ctx.arc(0, headY, headR * 1.02, Math.PI * 1.25, Math.PI * 1.55);
+  ctx.moveTo(-shoulder * 0.92, bodyTop + unit * 0.02);
+  ctx.lineTo(-shoulder * 0.7, bodyTop + unit * 0.3);
+  ctx.stroke();
+  ctx.restore();
 }
+
+/**
+ * The cap each style wears, as radius and arc.
+ *
+ * Per-style rather than one shared cap, and that is a **bug fix** rather than tidying.
+ * `shorn` used to draw the common cap and then erase a disc out of it with
+ * `destination-out` — which does not erase "the hair". It erases pixels, and the sprite is
+ * drawn straight onto a diorama that already has sky and ground on it, so a Shorn Commander
+ * came with a hole bitten clean through their skull and the landscape behind it. Measured
+ * at 782 transparent pixels on a 200x200 probe against zero for every other preset.
+ *
+ * A tighter cap says the same thing and composites like everything else.
+ */
+const HAIR_CAP: Record<string, { r: number; from: number; to: number }> = {
+  shorn: { r: 0.98, from: 1.2, to: 1.8 },
+  default: { r: 1.04, from: 1.06, to: 1.94 },
+};
 
 /** The six silhouettes, each a different outline against the sky. */
 function drawHair(
@@ -101,10 +191,21 @@ function drawHair(
 ): void {
   ctx.fillStyle = tone;
 
-  // The cap every style shares: hair sits on the skull rather than floating above it.
+  // The cap: hair sits on the skull rather than floating above it.
+  const cap = HAIR_CAP[id] ?? HAIR_CAP.default!;
   ctx.beginPath();
-  ctx.arc(0, headY, headR * 1.04, Math.PI * 1.06, Math.PI * 1.94);
+  ctx.arc(0, headY, headR * cap.r, Math.PI * cap.from, Math.PI * cap.to);
   ctx.fill();
+
+  // The shadow the hairline casts on the forehead. One arc, and it does more to separate
+  // "hair" from "head" at this scale than the colour difference does — two tones of
+  // similar value sit flat against each other without it, whatever the hue.
+  ctx.beginPath();
+  ctx.arc(0, headY, headR * 1.0, Math.PI * 1.1, Math.PI * 1.9);
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = Math.max(1, headR * 0.12);
+  ctx.stroke();
+  ctx.fillStyle = tone;
 
   switch (id) {
     case 'crop':
@@ -129,13 +230,8 @@ function drawHair(
       break;
 
     case 'shorn':
-      // Nothing above the cap, and the cap itself is tighter.
-      ctx.save();
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(0, headY - headR * 0.35, headR * 0.85, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      // Nothing above the cap. The tighter arc in `HAIR_CAP` is the whole style, so there
+      // is deliberately no second shape here — and, crucially, nothing erased.
       break;
 
     case 'wild':
@@ -235,11 +331,17 @@ export function drawCompanion(
   ctx.fill();
   ctx.stroke();
 
-  // Two eyes of its element, which is the whole colour cue at a distance.
+  // The eye, and the only lit thing on the beast. `shadowBlur` in the element's own colour
+  // makes it a source rather than a dot -- which is what sells the silhouette as a creature
+  // with something burning inside it, at a size where no amount of detail would.
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = unit * 0.18;
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.arc(w * 0.68, top - unit * 0.13, unit * 0.035, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
 
   // A tail, so the silhouette has a direction.
   ctx.beginPath();

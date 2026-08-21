@@ -270,6 +270,37 @@ The beast's arrival uses ease-out-back ([`ease()`:395](../src/app/CharacterCreat
 so it overshoots slightly as it lands, and its shadow tightens as it comes down
 ([Diorama.ts:200-210](../src/render/Diorama.ts#L200)).
 
+### The sprites are lit, not flat
+
+Three marks do the work, and all three are value rather than detail — which is the only
+thing that survives at this size:
+
+- **The coat is two panels, not one fill.** A lit side and a shadow side split down the
+  centre line ([sprites.ts:60-88](../src/render/sprites.ts#L60)). One value break tells the
+  eye there is a body under the cloth turning away from the light.
+- **The ink line is not black.** `RAMP.coatInk` sits *below* the shadow panel but near it.
+  An outline darker than the form reads as a void and flattens the very break it surrounds.
+- **A rim light down the lit edge**, head to shoulder, at 55% alpha
+  ([:112-124](../src/render/sprites.ts#L112)). This is the single highest-value mark on the
+  figure: a bright edge is what separates "a lit form standing in a place" from "a sticker
+  on a background", and it is two strokes.
+
+Plus a hairline shadow under the cap — two tones of similar value sit flat against each
+other whatever their hue, and one arc separates hair from head better than the colour
+difference does — and a highlight along the top edge of the brass, because metal is a value
+gradient or it is a triangle painted gold.
+
+The beast's eye is the one lit thing on the Companion: `shadowBlur` in its own element
+colour makes it a *source* rather than a dot, which sells the silhouette as a creature with
+something burning inside it.
+
+Measured on a 200×200 probe: the figure's luminance now spans **22 → 202**, where the flat
+coat topped out around 148 with no mid-tone break in the garment at all.
+
+The ramp is exported as `RAMP` ([sprites.ts:26](../src/render/sprites.ts#L26)) so the
+ordering rule — ink under shadow under lit, rim brightest — is tested against the real
+values rather than against a copy pasted into an assertion.
+
 ### Why the sprites are canvas shapes
 
 Every body on the combat board is canvas shapes out of `palette.ts`. The creator draws its
@@ -366,7 +397,7 @@ drift, and the drift is invisible because both look correct in isolation.
 
 ## 8. What is tested, and one thing that nearly was not
 
-[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 29 tests, all 17 deliberate
+[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 35 tests, all 25 deliberate
 mutations of these rules confirmed to fail the suite.
 
 Coverage: look normalisation (trim, cap, blank, wrap, string-form indices, total nonsense);
@@ -398,6 +429,13 @@ claims.
 
 ## 9. Open questions
 
+- **`shorn` used to cut a hole in the world.** It drew the shared hair cap and then erased a
+  disc out of it with `destination-out` — which does not remove "the hair", it removes
+  pixels, and the sprite is drawn straight onto a diorama that already has sky and ground on
+  it. A Shorn Commander arrived with a bite taken clean through their skull and the landscape
+  behind it: **782 transparent pixels** on a 200×200 probe against zero for every other
+  preset. Fixed by giving each style its own cap radius (`HAIR_CAP`) so nothing erases; a
+  test now asserts no style emits `destination-out`.
 - **The animation has not been seen.** The dev-browser pane used for verification does not
   composite frames, so `requestAnimationFrame` never ticks there. The render path was verified
   by driving `Diorama.render` directly and hashing pixels — seven look variants produced six
