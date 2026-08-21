@@ -11,6 +11,7 @@ import { growthCapFor } from './growth.js';
 import { canPlace } from './board.js';
 import type { GameState } from '../types/state.js';
 import { startingZone } from '../types/state.js';
+import { vanguardBonus } from '../data/roster.js';
 import { toSnapshot } from './views.js';
 
 export function nextId(ctx: Ctx, prefix: string): UnitId {
@@ -23,12 +24,24 @@ export function summonUnit(
   defId: CardDefId,
   side: Side,
   anchor: Coord,
+  /**
+   * The Vanguard level this body fights at. Absent is level 1 -- the printed card.
+   *
+   * Folded in **here**, before the unit is written and before `unitSummoned` goes out,
+   * and that placement is the whole point. The event embeds a snapshot the renderer draws
+   * from and never re-reads, so a body created at its base stats and raised a line later
+   * would be permanently drawn at the wrong numbers -- the same trap `spawnObstacle`
+   * documents about its health.
+   */
+  level?: number,
 ): UnitId | undefined {
   const def = CARDS[defId];
   if (!def?.unit) return undefined;
   const stats = def.unit;
 
   if (!canPlace(ctx.state, anchor, stats.footprint)) return undefined;
+
+  const trained = vanguardBonus(level ?? 1);
 
   const unit: Unit = {
     id: nextId(ctx, 'u'),
@@ -37,10 +50,10 @@ export function summonUnit(
     side,
     anchor: { ...anchor },
     footprint: stats.footprint,
-    hp: stats.hp,
-    maxHp: stats.hp,
+    hp: stats.hp + trained.maxHp,
+    maxHp: stats.hp + trained.maxHp,
     armor: 0,
-    atk: stats.atk,
+    atk: stats.atk + trained.atk,
     mov: stats.mov,
     rangeMin: stats.rangeMin,
     rangeMax: stats.rangeMax,
@@ -87,10 +100,12 @@ export function placeOpeningUnit(
   defId: string,
   side: Side,
   at: Coord,
+  /** The Vanguard level, for a deployed roster body. Absent everywhere else. */
+  level?: number,
 ): UnitId | undefined {
   const spot = firstFreeNear(ctx.state, at, side);
   if (!spot) return undefined;
-  const id = summonUnit(ctx, defId, side, spot);
+  const id = summonUnit(ctx, defId, side, spot, level);
   if (!id) return undefined;
   const unit = ctx.state.units[id];
   if (!unit) return undefined;

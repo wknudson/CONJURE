@@ -46,9 +46,9 @@ export const COMPANION_TRAITS: Record<string, CompanionTrait> = {
   banked_coals: {
     id: 'banked_coals',
     name: 'Banked Coals',
-    text: 'Holds its heat overnight. Opens every contract wearing 2 Armor.',
+    text: 'Holds its heat overnight. Opens every contract wearing 20 Armor.',
     baseId: 'ignis',
-    boons: { armor: 2 },
+    boons: { armor: 20 },
   },
 
   // --------------------------------------------------------------- boreas
@@ -95,9 +95,9 @@ const VOLTARA_TRAITS: Record<string, CompanionTrait> = {
   earthed_pelt: {
     id: 'earthed_pelt',
     name: 'Earthed Pelt',
-    text: 'Grounded to the bone. Opens every contract wearing 2 Armor.',
+    text: 'Grounded to the bone. Opens every contract wearing 20 Armor.',
     baseId: 'voltara',
-    boons: { armor: 2 },
+    boons: { armor: 20 },
   },
 
   static_cling: {
@@ -120,20 +120,20 @@ const MORTIS_TRAITS: Record<string, CompanionTrait> = {
   soul_siphon: {
     id: 'soul_siphon',
     name: 'Soul Siphon',
-    text: 'Takes a little back from every offering. Each tithe returns 1 HP to the Pact.',
+    text: 'Takes a little back from every offering. Each tithe returns 10 HP to the Pact.',
     baseId: 'mortis',
-    boons: { healOnTithe: 1 },
+    boons: { healOnTithe: 10 },
   },
 
   grave_ward: {
     id: 'grave_ward',
     name: 'Grave-Ward',
-    text: 'Comes wrapped in something older than it is. Opens every contract wearing 2 Armor.',
+    text: 'Comes wrapped in something older than it is. Opens every contract wearing 20 Armor.',
     baseId: 'mortis',
     // `armor` rather than `startingArmor`: the latter is a *Companion progression* field
     // that levelling writes, and a trait speaks in the engine's vocabulary. Both end up in
     // the same sum inside `carryFor`, which is where the two are added together.
-    boons: { armor: 2 },
+    boons: { armor: 20 },
   },
 
   ethereal_bound: {
@@ -163,12 +163,12 @@ const SYLVA_TRAITS: Record<string, CompanionTrait> = {
   iron_wood: {
     id: 'iron_wood',
     name: 'Iron-Wood',
-    text: 'Grows its walls dense. Every obstacle you raise stands 2 HP sturdier.',
+    text: 'Grows its walls dense. Every obstacle you raise stands 20 HP sturdier.',
     baseId: 'sylva',
     // The Alchemist's Mortar's own capability, reached from the other direction. A trait
     // and a relic asking for the same rule is the system working: they stack, and neither
     // needed the engine to learn a new word.
-    boons: { bonusObstacleHp: 2 },
+    boons: { bonusObstacleHp: 20 },
   },
 
   toxic_bloom: {
@@ -210,9 +210,9 @@ const FERRUM_TRAITS: Record<string, CompanionTrait> = {
   heavy_plating: {
     id: 'heavy_plating',
     name: 'Heavy Plating',
-    text: 'Braced for the impact. Your units take 1 less damage from every collision.',
+    text: 'Braced for the impact. Your units take 10 less damage from every collision.',
     baseId: 'ferrum',
-    boons: { collisionResist: 1 },
+    boons: { collisionResist: 10 },
   },
 
   /**
@@ -224,9 +224,9 @@ const FERRUM_TRAITS: Record<string, CompanionTrait> = {
   trench_maker: {
     id: 'trench_maker',
     name: 'Trench-Maker',
-    text: 'Digs in wherever it stops. Every obstacle you raise stands 2 HP sturdier.',
+    text: 'Digs in wherever it stops. Every obstacle you raise stands 20 HP sturdier.',
     baseId: 'ferrum',
-    boons: { bonusObstacleHp: 2 },
+    boons: { bonusObstacleHp: 20 },
   },
 };
 

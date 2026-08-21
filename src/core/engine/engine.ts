@@ -81,11 +81,18 @@ export function deployRefusal(state: GameState, defId: string, at: Coord): strin
  * Vanguard is not summoned, it was always there. Summoning sickness would make the whole
  * phase a turn of doing nothing.
  */
+/** The reserve entry this deploy is spending, if there is one. */
+function entryOf(ctx: Ctx, defId: string) {
+  return ctx.state.players.player.roster.find(
+    (r) => r.defId === defId && r.status === 'reserve',
+  );
+}
+
 function deployUnit(ctx: Ctx, defId: string, at: Coord): void {
   const refusal = deployRefusal(ctx.state, defId, at);
   if (refusal) throw new IllegalCommandError(refusal);
 
-  const id = placeOpeningUnit(ctx, defId, 'player', at);
+  const id = placeOpeningUnit(ctx, defId, 'player', at, entryOf(ctx, defId)?.level);
   if (!id) throw new IllegalCommandError('there is no room there');
 
   const entry = ctx.state.players.player.roster.find(
@@ -406,7 +413,7 @@ function moveUnit(ctx: Ctx, unitId: string, to: { x: number; y: number }): void 
 }
 
 /** What an Overload charge deals to each body it passes straight through. */
-export const OVERLOAD_PHASE_DAMAGE = 1;
+export const OVERLOAD_PHASE_DAMAGE = 10;
 
 /**
  * Everything the route ran over, by id.

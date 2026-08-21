@@ -59,6 +59,7 @@ import { makeRng } from './core/util/rng.js';
 import { NOVICE_AI, profileByName } from './core/ai/controller.js';
 import type { EncounterDef } from './core/data/encounters/registry.js';
 import type { CombatResult } from './contract/events.js';
+import { unlockVanguard } from './core/data/roster.js';
 
 const root = document.getElementById('app');
 if (!root) throw new Error('#app root element is missing');
@@ -392,6 +393,12 @@ function showBuilder(companionId: string, onDone: () => void): void {
         // One warband per character, not per Companion — so this is written beside the
         // decks rather than into the one that was open.
         profile().roster = result.roster;
+        // Anything newly enrolled starts a record, at level 1 with nothing earned.
+        // Idempotent, so re-saving an unchanged warband demotes nobody — and a body
+        // dropped from the roster keeps its record, because a career is not a loadout.
+        for (const defId of result.roster) {
+          profile().vanguardProgress = unlockVanguard(profile().vanguardProgress, defId);
+        }
         persist();
         onDone();
       },
@@ -467,7 +474,7 @@ function startCombat(
   bounty: Bounty,
 ): void {
   const global = profile().state;
-  const carry = carryFor(global.overworld, activeCompanion());
+  const carry = carryFor(global.overworld, activeCompanion(), profile().vanguardProgress);
 
   // Commit to the fight on disk *before* it is mounted. From here until `resolveCombat`
   // clears it, the save says a fight is open, and a boot that finds it open collects on

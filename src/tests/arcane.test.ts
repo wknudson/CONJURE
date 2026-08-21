@@ -111,8 +111,8 @@ describe('Grapple Line', () => {
   /** Three enemies in a column at y=1,2,3, with the player's line thrown from y=4. */
   const hooked = () => {
     const state = scenario({ width: 5, height: 6, hand: ['grapple_line'], pips: 5 });
-    const near = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, hp: 9 });
-    const far = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 9 });
+    const near = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, hp: 90 });
+    const far = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 90 });
     return { state, near, far };
   };
 
@@ -141,8 +141,8 @@ describe('Grapple Line', () => {
         .filter((e) => e.cause === 'spell' && e.target.kind === 'unit' && e.target.id === id)
         .reduce((sum, e) => sum + e.hpLoss, 0);
 
-    expect(struck(near.id)).toBe(1);
-    expect(struck(far.id)).toBe(1);
+    expect(struck(near.id)).toBe(10);
+    expect(struck(far.id)).toBe(10);
     // And the drag hurts more than the hook does, which is where the card's damage
     // actually comes from.
     expect(damageTo(res.events, far.id)).toBeGreaterThan(struck(far.id));
@@ -192,8 +192,8 @@ describe('Scrap Phalanx', () => {
     const summoned = eventsOf(res.events, 'unitSummoned')[0];
 
     expect(summoned).toBeDefined();
-    expect(summoned!.unit.hp).toBe(6);
-    expect(summoned!.unit.atk).toBe(1);
+    expect(summoned!.unit.hp).toBe(60);
+    expect(summoned!.unit.atk).toBe(10);
     expect(summoned!.unit.mov).toBe(1);
     expect(summoned!.unit.keywords).toContain('Guardian');
   });
@@ -218,13 +218,13 @@ describe('Scrap Phalanx', () => {
 describe('Cull the Weak', () => {
   const wounded = () => {
     const state = scenario({ width: 5, height: 6, hand: ['cull_the_weak'], pips: 5, marrow: 1 });
-    const healthy = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 1 }, hp: 9 });
+    const healthy = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 1 }, hp: 90 });
     const weak = addUnit(state, {
       def: 'scout_imp',
       side: 'enemy',
       at: { x: 3, y: 1 },
-      hp: 7,
-      armor: 6,
+      hp: 70,
+      armor: 60,
     });
     return { state, healthy, weak };
   };
@@ -235,7 +235,7 @@ describe('Cull the Weak', () => {
 
     const res = run(state, play(card, { kind: 'global' }));
 
-    expect(damageTo(res.events, weak.id)).toBe(4);
+    expect(damageTo(res.events, weak.id)).toBe(40);
     expect(damageTo(res.events, healthy.id)).toBe(0);
   });
 
@@ -247,9 +247,9 @@ describe('Cull the Weak', () => {
 
     const res = run(state, play(card, { kind: 'global' }));
 
-    expect(res.state.units[weak.id]!.hp).toBe(3);
+    expect(res.state.units[weak.id]!.hp).toBe(30);
     // Untouched: true damage goes past plate rather than through it.
-    expect(res.state.units[weak.id]!.armor).toBe(6);
+    expect(res.state.units[weak.id]!.armor).toBe(60);
   });
 
   it('cannot be paid for with Pips at any price', () => {
@@ -287,21 +287,21 @@ describe("Alchemist's Barricade", () => {
     const raised = eventsOf(res.events, 'obstacleSpawned')[0];
 
     expect(raised).toBeDefined();
-    expect(raised!.obstacle.hp).toBe(8);
-    expect(raised!.obstacle.maxHp).toBe(8);
+    expect(raised!.obstacle.hp).toBe(80);
+    expect(raised!.obstacle.maxHp).toBe(80);
   });
 
   it('carries an obstacleHp of its own, or nothing would spawn at all', () => {
     // `spawnObstacle` refuses any def without one, and `spawnConstruct` calls straight
     // through it — so a construct card that omitted this would silently do nothing.
-    expect(CARDS.alchemists_barricade!.obstacleHp).toBe(8);
+    expect(CARDS.alchemists_barricade!.obstacleHp).toBe(80);
   });
 
   it('breaks into rubble rather than into open ground', () => {
     const state = scenario({
       width: 5,
       height: 6,
-      obstacles: [{ at: { x: 2, y: 3 }, hp: 8 }],
+      obstacles: [{ at: { x: 2, y: 3 }, hp: 80 }],
     });
     // Retag the planted obstacle as this card's, so the death path reads our def.
     const obstacle = Object.values(state.obstacles)[0]!;
@@ -311,7 +311,7 @@ describe("Alchemist's Barricade", () => {
       def: 'scout_imp',
       side: 'player',
       at: { x: 2, y: 4 },
-      atk: 20,
+      atk: 200,
     });
     const res = run(state, {
       type: 'attack',
@@ -326,7 +326,7 @@ describe("Alchemist's Barricade", () => {
   });
 
   it('blocks line of sight while it stands', () => {
-    const state = scenario({ width: 5, height: 6, obstacles: [{ at: { x: 2, y: 3 }, hp: 8 }] });
+    const state = scenario({ width: 5, height: 6, obstacles: [{ at: { x: 2, y: 3 }, hp: 80 }] });
     expect(hasLoS(state, { x: 2, y: 5 }, { x: 2, y: 1 }, [])).toBe(false);
   });
 });

@@ -92,9 +92,9 @@ describe('the third variants', () => {
 
   it('gives Mortis armour and Sylva thicker walls', () => {
     expect(COMPANION_TRAITS.grave_ward!.baseId).toBe('mortis');
-    expect(COMPANION_TRAITS.grave_ward!.boons.armor).toBe(2);
+    expect(COMPANION_TRAITS.grave_ward!.boons.armor).toBe(20);
     expect(COMPANION_TRAITS.iron_wood!.baseId).toBe('sylva');
-    expect(COMPANION_TRAITS.iron_wood!.boons.bonusObstacleHp).toBe(2);
+    expect(COMPANION_TRAITS.iron_wood!.boons.bonusObstacleHp).toBe(20);
   });
 
   it('stacks Iron-Wood with the Mortar rather than replacing it', () => {
@@ -102,7 +102,7 @@ describe('the third variants', () => {
     const g = wearing('relic_mortar');
     const beast: CompanionInstance = { ...tameCompanion(makeRng(1), 'sylva', 1), traitId: 'iron_wood' };
 
-    expect(carryFor(g.overworld, beast).boons?.bonusObstacleHp, '2 mortar + 2 wood').toBe(4);
+    expect(carryFor(g.overworld, beast).boons?.bonusObstacleHp, '20 mortar + 20 wood').toBe(40);
   });
 });
 
@@ -171,8 +171,8 @@ describe('Aether-Weave Gloves', () => {
   /** A Companion board with two Companion cards in hand. */
   const board = (twice: boolean) => {
     const state = scenario({ width: 6, height: 8, hand: ['spore_cloud', 'spore_cloud'], pips: 8 });
-    state.players.player.maxHp = 40;
-    state.players.player.hp = 20;
+    state.players.player.maxHp = 400;
+    state.players.player.hp = 200;
     state.players.player.companionSchool = 'bloom';
     state.players.player.doubleResonance = twice;
     const body = addUnit(state, {
@@ -183,7 +183,7 @@ describe('Aether-Weave Gloves', () => {
     });
     state.players.player.companionUnitId = body.id;
     state.players.player.companionUnitDefId = 'sylva_bound';
-    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 9 });
+    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 90 });
     return state;
   };
 
@@ -237,7 +237,7 @@ describe("Splicer's Goggles", () => {
     const state = scenario({ width: 6, height: 8, hand: ['galvanic_spores'], pips: 8, marrow: 4 });
     state.players.player.discountHybrids = on;
     addUnit(state, { def: 'sylva_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
-    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 9 });
+    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 90 });
     return state;
   };
 

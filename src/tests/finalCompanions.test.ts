@@ -30,10 +30,10 @@ describe('poison is credited to whoever laid it', () => {
       def: 'scout_imp',
       side: 'player',
       at: { x: 2, y: 2 },
-      hp: 20,
+      hp: 200,
       rune: 'rot_root_snare',
     });
-    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 20 });
+    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 200 });
 
     // The player laid it and holds Toxic Bloom; it springs while the enemy is acting.
     state.players.player.bonusToxinStacks = 1;
@@ -53,10 +53,10 @@ describe('poison is credited to whoever laid it', () => {
       def: 'scout_imp',
       side: 'player',
       at: { x: 2, y: 2 },
-      hp: 20,
+      hp: 200,
       rune: 'rot_root_snare',
     });
-    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 20 });
+    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 200 });
 
     // The *enemy* holds the stat this time, and it is their turn. Reading the clock would
     // have credited them for walking into someone else's roots.
@@ -78,7 +78,7 @@ describe('poison is credited to whoever laid it', () => {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 2, y: 2 },
-      hp: 20,
+      hp: 200,
     });
     state.players.player.bonusToxinStacks = 2;
 
@@ -95,7 +95,7 @@ describe('poison is credited to whoever laid it', () => {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 2, y: 2 },
-      hp: 20,
+      hp: 200,
     });
     state.players.player.bonusToxinStacks = 3;
     state.players.enemy.bonusToxinStacks = 3;
@@ -149,7 +149,7 @@ describe('Shield Oath', () => {
     const ctx = makeCtx(state);
     RESONANCE.bulwark!.apply(ctx, 'player', 2);
 
-    expect(ctx.state.units[inLane.id]!.armor).toBe(1);
+    expect(ctx.state.units[inLane.id]!.armor).toBe(10);
     expect(ctx.state.units[offLane.id]!.armor, 'a different lane').toBe(0);
     expect(ctx.state.units[foe.id]!.armor, 'the enemy standing in it').toBe(0);
   });
@@ -199,27 +199,27 @@ describe('Marginalia', () => {
 describe('the new knacks reach the engine', () => {
   it('braces a collision by exactly what Heavy Plating promises', () => {
     const state = scenario({ width: 7, height: 7 });
-    const shoved = addUnit(state, { def: 'vanguard_footman', side: 'player', at: { x: 3, y: 3 }, hp: 20 });
-    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 3, y: 4 }, hp: 20 });
-    state.players.player.collisionResist = 1;
+    const shoved = addUnit(state, { def: 'vanguard_footman', side: 'player', at: { x: 3, y: 3 }, hp: 200 });
+    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 3, y: 4 }, hp: 200 });
+    state.players.player.collisionResist = 10;
 
     const ctx = makeCtx(state);
     pushUnit(ctx, ctx.state.units[shoved.id]!, { x: 0, y: 1 }, 1);
 
-    // 3 into the shoved body, less one for the plate.
-    expect(ctx.state.units[shoved.id]!.hp).toBe(20 - 2);
+    // 30 into the shoved body, less ten for the plate.
+    expect(ctx.state.units[shoved.id]!.hp).toBe(200 - 20);
   });
 
   it('never turns a collision into a heal', () => {
     const state = scenario({ width: 7, height: 7 });
-    const shoved = addUnit(state, { def: 'vanguard_footman', side: 'player', at: { x: 3, y: 3 }, hp: 20 });
-    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 3, y: 4 }, hp: 20 });
+    const shoved = addUnit(state, { def: 'vanguard_footman', side: 'player', at: { x: 3, y: 3 }, hp: 200 });
+    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 3, y: 4 }, hp: 200 });
     state.players.player.collisionResist = 99;
 
     const ctx = makeCtx(state);
     pushUnit(ctx, ctx.state.units[shoved.id]!, { x: 0, y: 1 }, 1);
 
-    expect(ctx.state.units[shoved.id]!.hp).toBe(20);
+    expect(ctx.state.units[shoved.id]!.hp).toBe(200);
   });
 
   it('sees past a Guardian with Piercing Gaze, and never past a Behemoth', () => {
@@ -270,7 +270,7 @@ describe('the three dormant mechanics have a user', () => {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 2, y: 3 },
-      hp: 20,
+      hp: 200,
     });
 
     const out = run(state, {
@@ -295,7 +295,7 @@ describe('the three dormant mechanics have a user', () => {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 2, y: 3 },
-      hp: 20,
+      hp: 200,
     });
 
     const hit = run(state, {
@@ -325,8 +325,8 @@ describe('the three dormant mechanics have a user', () => {
       at: { x: 3, y: 5 },
       keywords: ['BoundForm'],
     });
-    const foe = addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 3, y: 3 }, hp: 20 });
-    const ally = addUnit(state, { def: 'vanguard_footman', side: 'player', at: { x: 3, y: 2 }, hp: 20 });
+    const foe = addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 3, y: 3 }, hp: 200 });
+    const ally = addUnit(state, { def: 'vanguard_footman', side: 'player', at: { x: 3, y: 2 }, hp: 200 });
 
     const card = Object.keys(state.players.player.cards)[0]!;
     const out = run(state, {
@@ -335,8 +335,8 @@ describe('the three dormant mechanics have a user', () => {
       target: { kind: 'line', from: { x: 3, y: 4 }, dir: { x: 0, y: -1 } },
     });
 
-    expect(out.state.units[foe.id]!.hp, 'the enemy on the line').toBe(17);
-    expect(out.state.units[ally.id]!.hp, 'a beam does not check sides').toBe(17);
+    expect(out.state.units[foe.id]!.hp, 'the enemy on the line').toBe(170);
+    expect(out.state.units[ally.id]!.hp, 'a beam does not check sides').toBe(170);
   });
 
   it('raises cover from a card for the first time', () => {

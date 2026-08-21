@@ -68,8 +68,8 @@ describe('Brittle', () => {
   it('adds flat damage to every hit that lands', () => {
     const base = scenario({
       units: [
-        { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 }, atk: 3 },
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 1 }, hp: 20, keywords: [] },
+        { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 }, atk: 30 },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 1 }, hp: 200, keywords: [] },
       ],
     });
     const attacker = findUnit(base, 'scout_imp', 'player');
@@ -80,8 +80,8 @@ describe('Brittle', () => {
 
     const brittle = scenario({
       units: [
-        { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 }, atk: 3 },
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 1 }, hp: 20, keywords: [] },
+        { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 }, atk: 30 },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 1 }, hp: 200, keywords: [] },
       ],
     });
     brittle.units[findUnit(brittle, 'grave_sentinel', 'enemy').id]!.statuses.brittle = 2;
@@ -92,7 +92,7 @@ describe('Brittle', () => {
 
   it('does not amplify armor-bypassing true damage', () => {
     const state = scenario({
-      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 2 }, hp: 9 }],
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 2 }, hp: 90 }],
     });
     const unit = findUnit(state, 'scout_imp', 'player');
     state.units[unit.id]!.statuses.brittle = 2;
@@ -100,7 +100,7 @@ describe('Brittle', () => {
 
     // Toxin ticks for 1 true damage; Brittle must not turn that into 3.
     const after = run(state, { type: 'endTurn' }, { type: 'endTurn' }).state;
-    expect(after.units[unit.id]!.hp).toBe(8);
+    expect(after.units[unit.id]!.hp).toBe(80);
   });
 });
 
@@ -109,7 +109,7 @@ describe('Vaporize', () => {
     const state = scenario({
       width: 6,
       height: 6,
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, keywords: [] }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['flame_surge'],
       pips: 8,
     });
@@ -138,7 +138,7 @@ describe('Vaporize', () => {
 
   it('expires after its stated duration', () => {
     const state = scenario({
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, keywords: [] }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['flame_surge'],
       pips: 8,
     });
@@ -174,13 +174,13 @@ describe('Vaporize biting through plate', () => {
     const state = scenario({
       width: 6,
       height: 6,
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, keywords: [] }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['flame_surge'],
       pips: 8,
     });
     const foe = findUnit(state, 'grave_sentinel', 'enemy');
     state.units[foe.id]!.statuses.chill = 2;
-    state.units[foe.id]!.armor = 2;
+    state.units[foe.id]!.armor = 20;
     const before = state.units[foe.id]!.hp;
 
     const res = run(
@@ -195,7 +195,7 @@ describe('Vaporize biting through plate', () => {
     expect(eventsOf(res.events, 'reactionTriggered').length).toBeGreaterThan(0);
     const after = res.state.units[foe.id];
     // Armor soaked 2 of the 3 fire, so 1 landed; the 2 true damage then landed whole.
-    expect(after && before - after.hp).toBe(3);
+    expect(after && before - after.hp).toBe(30);
   });
 });
 
@@ -205,9 +205,9 @@ describe('Shatter', () => {
       width: 6,
       height: 6,
       units: [
-        { def: 'scout_imp', side: 'player', at: { x: 2, y: 3 }, atk: 2 },
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, armor: 6, keywords: [] },
-        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 9 },
+        { def: 'scout_imp', side: 'player', at: { x: 2, y: 3 }, atk: 20 },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, armor: 60, keywords: [] },
+        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 90 },
       ],
     });
     const attacker = findUnit(state, 'scout_imp', 'player');
@@ -227,13 +227,13 @@ describe('Shatter', () => {
     expect(res.state.units[frozen.id]!.armor).toBe(0);
     expect(res.state.units[frozen.id]!.statuses.freeze ?? 0).toBe(0);
     // 4 shrapnel to the unit standing beside it.
-    expect(res.state.units[bystander.id]!.hp).toBe(9 - 4);
+    expect(res.state.units[bystander.id]!.hp).toBe(90 - 40);
   });
 
   it('is not set off by a spell', () => {
     // Module 1 pairs Shatter with Bulwark: it takes a physical blow, not a fireball.
     const state = scenario({
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, keywords: [] }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['flame_surge'],
       pips: 8,
     });
@@ -255,7 +255,7 @@ describe('Shatter', () => {
     const state = scenario({
       width: 6,
       height: 6,
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 0 }, hp: 20, armor: 5, keywords: [] }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 0 }, hp: 200, armor: 50, keywords: [] }],
       hand: ['shield_bash'],
       pips: 8,
     });
@@ -276,7 +276,7 @@ describe('Surge reactions', () => {
     const state = scenario({
       width: 7,
       height: 7,
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 3 }, hp: 30, keywords: [] }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 3 }, hp: 300, keywords: [] }],
       hand: ['flame_surge'],
       pips: 8,
       ...extra,
@@ -290,7 +290,7 @@ describe('Surge reactions', () => {
     const state = scenario({
       width: 6,
       height: 6,
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, keywords: [] }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['arc_lash'],
       pips: 8,
     });
@@ -322,12 +322,12 @@ describe('Surge reactions', () => {
     expect(res.state.units[a]?.anchor.y ?? 1).toBeLessThan(2);
     expect(res.state.units[b]?.anchor.y ?? 5).toBeGreaterThan(4);
     // And the target itself took the pierce.
-    expect(res.state.units[foe.id]!.hp).toBeLessThan(30);
+    expect(res.state.units[foe.id]!.hp).toBeLessThan(300);
   });
 
   it('Superconduct strips plate and leaves the target Brittle', () => {
     const { state, foe } = charged({ hand: ['glacial_spike'] });
-    state.units[foe.id]!.armor = 6;
+    state.units[foe.id]!.armor = 60;
 
     const res = run(state, play(handCard(state, 'player', 'glacial_spike'), atUnit(foe.id)));
 
@@ -340,7 +340,7 @@ describe('Surge reactions', () => {
     // Like Shatter: this happens to the plate, so the plate stopping the hit must not
     // be what prevents it.
     const { state, foe } = charged({ hand: ['glacial_spike'] });
-    state.units[foe.id]!.armor = 50;
+    state.units[foe.id]!.armor = 500;
 
     const res = run(state, play(handCard(state, 'player', 'glacial_spike'), atUnit(foe.id)));
     expect(res.state.units[foe.id]?.armor).toBe(0);
@@ -366,7 +366,7 @@ describe('armor gating', () => {
   it('does not fire a reaction when armor absorbs the whole hit', () => {
     // Same rule as runes: a blow that never reaches health changes nothing.
     const state = scenario({
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, armor: 30, keywords: [] }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, armor: 300, keywords: [] }],
       hand: ['flame_surge'],
       pips: 8,
     });
@@ -430,7 +430,7 @@ describe('reaction pip refunds', () => {
     const state = scenario({
       width: 6,
       height: 6,
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, keywords: [] }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['flame_surge', 'flame_surge', 'flame_surge'],
       pips,
     });
@@ -469,7 +469,7 @@ describe('reaction pip refunds', () => {
       const alive = cur.units[foe.id];
       if (!alive) break;
       alive.statuses.chill = 2;
-      alive.hp = 20;
+      alive.hp = 200;
       const before = cur.players.player.pips;
       const res = run(cur, play(handCard(cur, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
       expect(eventsOf(res.events, 'reactionTriggered').length, `reaction ${i + 1}`).toBeGreaterThan(0);
@@ -520,7 +520,7 @@ describe('reaction pip refunds', () => {
       const alive = cur.units[foe.id];
       if (!alive) break;
       alive.statuses.chill = 2;
-      alive.hp = 20;
+      alive.hp = 200;
       const res = run(cur, play(handCard(cur, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
       counts.push(eventsOf(res.events, 'pipRefunded').length);
       cur = res.state;
@@ -535,7 +535,7 @@ describe('reaction pip refunds', () => {
     const state = scenario({
       width: 6,
       height: 6,
-      units: [{ def: 'grave_sentinel', side: 'player', at: { x: 2, y: 2 }, hp: 20, keywords: [] }],
+      units: [{ def: 'grave_sentinel', side: 'player', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: [],
     });
     const victim = findUnit(state, 'grave_sentinel', 'player');

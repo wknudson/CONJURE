@@ -38,7 +38,7 @@ const contract = (ducats = 0, marrowShards = 0) => ({
   spoils: { ducats, marrowShards },
 });
 
-const potion = (value = 10): Consumable => ({
+const potion = (value = 100): Consumable => ({
   id: 'field_dressing',
   name: 'Field Dressing',
   type: 'healing',
@@ -66,18 +66,18 @@ describe('the satchel', () => {
 describe('using an item', () => {
   it('heals the Pact and spends the item', () => {
     const g = global();
-    g.overworld.pact.currentHp = 20;
-    addConsumable(g.overworld, potion(10));
+    g.overworld.pact.currentHp = 200;
+    addConsumable(g.overworld, potion(100));
 
     expect(useConsumable(g, 0)).toBe(true);
-    expect(g.overworld.pact.currentHp).toBe(30);
+    expect(g.overworld.pact.currentHp).toBe(300);
     expect(g.overworld.inventory).toHaveLength(0);
   });
 
   it('does not overheal past the Pact maximum', () => {
     const g = global();
-    g.overworld.pact.currentHp = 38;
-    addConsumable(g.overworld, potion(10));
+    g.overworld.pact.currentHp = 380;
+    addConsumable(g.overworld, potion(100));
 
     useConsumable(g, 0);
     expect(g.overworld.pact.currentHp).toBe(g.overworld.pact.maxHp);
@@ -87,13 +87,13 @@ describe('using an item', () => {
     // The rule that keeps healing inside the deterministic reducer: an item drunk
     // mid-fight would undo a lethal turn the engine had already committed to.
     const g = global();
-    g.overworld.pact.currentHp = 10;
-    addConsumable(g.overworld, potion(10));
+    g.overworld.pact.currentHp = 100;
+    addConsumable(g.overworld, potion(100));
     g.combat = { pretend: 'a live fight' };
 
     expect(consumableRefusal(g, 0)).toBe('in-combat');
     expect(useConsumable(g, 0)).toBe(false);
-    expect(g.overworld.pact.currentHp, 'nothing happened').toBe(10);
+    expect(g.overworld.pact.currentHp, 'nothing happened').toBe(100);
     expect(g.overworld.inventory, 'and nothing was spent').toHaveLength(1);
   });
 
@@ -119,11 +119,11 @@ describe('using an item', () => {
 describe('carrying a run into a fight', () => {
   it('starts the Pact where the run left it, against the full maximum', () => {
     const g = global();
-    g.overworld.pact.currentHp = 12;
+    g.overworld.pact.currentHp = 120;
 
     const { state } = createCombat(NOVICE_DUELIST, 7, undefined, undefined, carryFor(g.overworld));
 
-    expect(state.players.player.hp).toBe(12);
+    expect(state.players.player.hp).toBe(120);
     // The gauge has to show what was already lost, so the maximum is untouched.
     expect(state.players.player.maxHp).toBe(NOVICE_DUELIST.playerHp);
   });
@@ -149,7 +149,7 @@ describe('carrying a run into a fight', () => {
     };
 
     it('ironbrew opens with armour', () => {
-      expect(withBuff('ironbrew').players.player.armor).toBe(5);
+      expect(withBuff('ironbrew').players.player.armor).toBe(50);
       expect(createCombat(NOVICE_DUELIST, 7).state.players.player.armor, 'baseline').toBe(0);
     });
 
@@ -180,9 +180,9 @@ describe('resolving a fight back into the run', () => {
     g.combat = { pretend: 'a live fight' };
     g.overworld.activeEncounter = contract(25);
 
-    resolveCombat(g, finished(13), 'victory');
+    resolveCombat(g, finished(130), 'victory');
 
-    expect(g.overworld.pact.currentHp, 'the Gauntlet does not heal you').toBe(13);
+    expect(g.overworld.pact.currentHp, 'the Gauntlet does not heal you').toBe(130);
     expect(g.overworld.economy.ducats).toBe(25);
     expect(g.combat, 'and we are back in the overworld').toBeNull();
   });
@@ -217,9 +217,9 @@ describe('resolving a fight back into the run', () => {
     const g = global();
     g.combat = {};
     g.overworld.activeEncounter = contract(40, 2);
-    resolveCombat(g, finished(1), 'bound');
+    resolveCombat(g, finished(10), 'bound');
 
-    expect(g.overworld.pact.currentHp).toBe(1);
+    expect(g.overworld.pact.currentHp).toBe(10);
     expect(g.overworld.economy.ducats, 'binding is a win too').toBe(40);
     expect(g.overworld.economy.marrowShards).toBe(2);
     expect(isDown(g.overworld)).toBe(false);
@@ -227,16 +227,16 @@ describe('resolving a fight back into the run', () => {
 
   it('round-trips: a wounded run fights, survives, and stays wounded', () => {
     const g = global();
-    g.overworld.pact.currentHp = 30;
+    g.overworld.pact.currentHp = 300;
 
     const { state } = createCombat(NOVICE_DUELIST, 7, undefined, undefined, carryFor(g.overworld));
     g.combat = state;
-    expect(state.players.player.hp).toBe(30);
+    expect(state.players.player.hp).toBe(300);
 
-    state.players.player.hp = 22;
+    state.players.player.hp = 220;
     resolveCombat(g, { pactHp: state.players.player.hp }, 'victory');
 
-    expect(g.overworld.pact.currentHp).toBe(22);
+    expect(g.overworld.pact.currentHp).toBe(220);
     expect(g.combat).toBeNull();
   });
 });
@@ -246,21 +246,21 @@ describe('the loop, closed', () => {
     // The whole point of the Gauntlet in one test: fight, survive badly, get paid, and
     // arrive at the next door still hurt and richer.
     const g = global();
-    g.overworld.pact.currentHp = 34;
+    g.overworld.pact.currentHp = 340;
 
     const first = createCombat(NOVICE_DUELIST, 7, undefined, undefined, carryFor(g.overworld));
-    expect(first.state.players.player.hp, 'opens where the run left it').toBe(34);
+    expect(first.state.players.player.hp, 'opens where the run left it').toBe(340);
 
     g.combat = first.state;
     g.overworld.activeEncounter = contract(50, 1);
-    resolveCombat(g, { pactHp: 19 }, 'victory');
+    resolveCombat(g, { pactHp: 190 }, 'victory');
 
-    expect(g.overworld.pact.currentHp).toBe(19);
+    expect(g.overworld.pact.currentHp).toBe(190);
     expect(g.overworld.economy.ducats).toBe(50);
     expect(g.overworld.economy.marrowShards).toBe(1);
 
     const second = createCombat(NOVICE_DUELIST, 11, undefined, undefined, carryFor(g.overworld));
-    expect(second.state.players.player.hp, 'the next room is fought at 19').toBe(19);
+    expect(second.state.players.player.hp, 'the next room is fought at 19').toBe(190);
     expect(second.state.players.player.maxHp, 'against the full gauge').toBe(NOVICE_DUELIST.playerHp);
   });
 
@@ -270,9 +270,9 @@ describe('the loop, closed', () => {
     useConsumable(g, 0);
 
     const first = createCombat(NOVICE_DUELIST, 7, undefined, undefined, carryFor(g.overworld));
-    expect(first.state.players.player.armor).toBe(5);
+    expect(first.state.players.player.armor).toBe(50);
 
-    resolveCombat(g, { pactHp: 20 }, 'victory');
+    resolveCombat(g, { pactHp: 200 }, 'victory');
 
     const second = createCombat(NOVICE_DUELIST, 7, undefined, undefined, carryFor(g.overworld));
     expect(second.state.players.player.armor, 'the bottle is empty').toBe(0);
@@ -305,9 +305,9 @@ describe('walking away from a fight', () => {
 
   it('leaves an ordinary run alone', () => {
     const g = global();
-    g.overworld.pact.currentHp = 25;
+    g.overworld.pact.currentHp = 250;
     expect(forfeitIfAbandoned(g.overworld)).toBe(false);
-    expect(g.overworld.pact.currentHp).toBe(25);
+    expect(g.overworld.pact.currentHp).toBe(250);
   });
 
   it('collects once, not on every boot after', () => {
@@ -322,10 +322,10 @@ describe('walking away from a fight', () => {
     g.overworld.activeEncounter = contract();
     g.combat = { pretend: 'a live fight' };
 
-    resolveCombat(g, { pactHp: 14 }, 'victory');
+    resolveCombat(g, { pactHp: 140 }, 'victory');
 
     expect(g.overworld.activeEncounter, 'the fight was answered for').toBeNull();
-    expect(g.overworld.pact.currentHp).toBe(14);
+    expect(g.overworld.pact.currentHp).toBe(140);
   });
 
   it('locks the satchel even if the live handle went missing', () => {
@@ -378,7 +378,7 @@ describe('the rescue', () => {
     const g = floored();
     rescuePlayer(g);
 
-    expect(g.overworld.pact.currentHp).toBe(1);
+    expect(g.overworld.pact.currentHp).toBe(10);
     expect(g.overworld.pact.currentHp).not.toBe(g.overworld.pact.maxHp);
     expect(isDown(g.overworld), 'upright again').toBe(false);
     expect(isCritical(g.overworld), 'but in no state to work').toBe(true);
@@ -404,7 +404,7 @@ describe('the rescue', () => {
 
     expect(rescuePlayer(g)).toBe(0);
     expect(g.overworld.economy.ducats).toBe(0);
-    expect(g.overworld.pact.currentHp).toBe(1);
+    expect(g.overworld.pact.currentHp).toBe(10);
   });
 
   it('is felt by a rich player as much as a poor one', () => {

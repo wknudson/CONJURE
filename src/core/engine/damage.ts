@@ -70,7 +70,7 @@ export interface DamageOutcome {
  * Returns what actually landed, because rune triggers depend on real HP loss.
  */
 /** Brittle (Module 1): a frozen-through target takes this much extra from every hit. */
-export const BRITTLE_BONUS = 2;
+export const BRITTLE_BONUS = 20;
 
 /** The depth a secondary effect of this hit should carry. */
 export function nextDepth(req: { chainDepth?: number }): number {
@@ -147,7 +147,7 @@ function dampenFire(ctx: Ctx, req: DamageRequest): number {
 }
 
 /** How much a downpour takes off every point of fire. */
-export const RAIN_FIRE_PENALTY = 1;
+export const RAIN_FIRE_PENALTY = 10;
 
 function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side, at?: Coord): DamageOutcome {
   const cmd = ctx.state.players[side];

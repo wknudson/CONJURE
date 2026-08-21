@@ -123,11 +123,13 @@ describe('the splicing bench spends a Core, not a card', () => {
   const BASE = SPLICE_RECIPES[0]!.baseCardId;
   const CORE = SPLICE_RECIPES[0]!.catalystId;
   const RESULT = SPLICE_RECIPES[0]!.resultId;
+  /** The other half of the fusion, which the bench now insists the player has learned. */
+  const PREREQS = SPLICE_RECIPES[0]!.requiredUnlockedCards ?? [];
 
   it('keeps the base unlocked and adds the hybrid', () => {
     const g = rich();
     g.overworld.economy.reagents = { [CORE]: 1 };
-    const done = spliceCard(g, { unlocked: [BASE] }, BASE, CORE)!;
+    const done = spliceCard(g, { unlocked: [BASE, ...PREREQS] }, BASE, CORE)!;
 
     expect(isUnlocked(done.collection, BASE), 'knowing a spell cannot be taken away').toBe(true);
     expect(isUnlocked(done.collection, RESULT)).toBe(true);
@@ -137,7 +139,7 @@ describe('the splicing bench spends a Core, not a card', () => {
   it('never needs to trim a deck, because nothing was lost', () => {
     const g = rich();
     g.overworld.economy.reagents = { [CORE]: 1 };
-    const done = spliceCard(g, { unlocked: [BASE] }, BASE, CORE)!;
+    const done = spliceCard(g, { unlocked: [BASE, ...PREREQS] }, BASE, CORE)!;
     expect(done.trimmed).toBe(0);
   });
 });

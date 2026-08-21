@@ -177,10 +177,10 @@ describe('the level reaching the board', () => {
     // A levelled Companion and an Ironbrew are two separate purchases.
     const g = flush();
     const pet = newCompanion();
-    pet.startingArmor = 2;
+    pet.startingArmor = 20;
     g.overworld.activeBuff = 'ironbrew';
 
     const carry = carryFor(g.overworld, pet);
-    expect(carry.boons?.armor).toBe(5 + 2);
+    expect(carry.boons?.armor).toBe(50 + 20);
   });
 });

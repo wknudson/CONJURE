@@ -282,6 +282,15 @@ export interface CombatCarry {
    */
   maxHp?: number;
   boons?: CombatBoons;
+  /**
+   * What each Vanguard body has trained to, by def id. Anything absent fights at 1.
+   *
+   * A flat `defId -> level` map, translated by the overworld exactly as a relic is
+   * translated into "3 Armor": the reducer is handed a level and has never heard of XP,
+   * a Profile, or a progression curve. Whenever there is a levelling curve, it lives
+   * entirely outside this file.
+   */
+  vanguardLevels?: Record<string, number>;
 }
 
 /**
@@ -370,6 +379,11 @@ function occupiedTile(state: GameState, at: Coord): boolean {
     if (o.anchor.x === at.x && o.anchor.y === at.y) return true;
   }
   return false;
+}
+
+/** How much a piece of encounter scenery takes to break, per its own definition. */
+function terrainHp(isCover: boolean): number {
+  return CARDS[isCover ? 'terrain_cover' : 'terrain_wall']?.obstacleHp ?? 10;
 }
 
 export function createCombat(
@@ -529,8 +543,10 @@ export function createCombat(
       side: 'player',
       anchor: { ...t.at },
       footprint: 1,
-      hp: t.hp ?? (isCover ? 4 : 8),
-      maxHp: t.hp ?? (isCover ? 4 : 8),
+      // Read off the definition rather than restated. This was two literals, and the
+      // Stat Stretch is exactly the kind of change that moves one and forgets the other.
+      hp: t.hp ?? terrainHp(isCover),
+      maxHp: t.hp ?? terrainHp(isCover),
       destructible: true,
       ...(isCover ? { cover: true } : {}),
     };
@@ -608,7 +624,13 @@ export function createCombat(
   // no roster, so the two Rallies in Phase 4 always have somewhere to put a body back.
   const warband = (roster ?? []).filter((id) => CARDS[id]);
   state.anchors = placeAnchors(state, rng, warband.length);
-  state.players.player.roster = warband.map((defId) => ({ defId, status: 'reserve' as const }));
+  state.players.player.roster = warband.map((defId) => ({
+    defId,
+    status: 'reserve' as const,
+    // Resolved once, here, and then carried on the entry. A body that looked its level up
+    // at deploy time would be looking it up in a place the engine is not allowed to read.
+    level: Math.max(1, carry?.vanguardLevels?.[defId] ?? 1),
+  }));
 
   if (warband.length > 0) {
     // Deployment happens before anything else, so the board the player builds is the board

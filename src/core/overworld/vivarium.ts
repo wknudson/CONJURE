@@ -74,8 +74,8 @@ export function newCompanion(): CompanionProgress {
 }
 
 /** The band a wild Companion's constitution falls in. Tight on purpose. */
-export const HP_ROLL_MIN = 36;
-export const HP_ROLL_MAX = 44;
+export const HP_ROLL_MIN = 360;
+export const HP_ROLL_MAX = 440;
 
 /**
  * Rolls a wild beast.
@@ -98,7 +98,7 @@ export const MODIFIER_CHANCE = 0.25;
  */
 const MODIFIER_TABLE: { weight: number; mod: CardModifier }[] = [
   { weight: 2, mod: { pipCostDelta: -1 } },
-  { weight: 4, mod: { bonusDamage: 1 } },
+  { weight: 4, mod: { bonusDamage: 10 } },
   { weight: 3, mod: { grantRetain: true } },
 ];
 
@@ -156,10 +156,10 @@ export function tameCompanion(
 }
 
 /** The Pact's ceiling with nobody standing beside it — and the roll's own midpoint. */
-export const BASE_PACT_HP = 40;
+export const BASE_PACT_HP = 400;
 
 /** Health a level buys. The whole benefit, for now. */
-export const HP_PER_LEVEL = 2;
+export const HP_PER_LEVEL = 20;
 
 /**
  * What the next level costs.

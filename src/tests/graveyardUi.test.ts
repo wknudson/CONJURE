@@ -33,7 +33,7 @@ function withPyre(): CombatSession {
 
   const entry = session.debugState.players.player.roster[0]!;
   // A Grave Sentinel has 6 health; wound it first so one tithe finishes the job.
-  session.debugState.units[entry.unitId!]!.hp = 2;
+  session.debugState.units[entry.unitId!]!.hp = 20;
   session.dispatch({ type: 'bloodTithe', unit: entry.unitId! });
   return session;
 }

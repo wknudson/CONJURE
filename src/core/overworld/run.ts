@@ -19,6 +19,7 @@ import { boonsOfRelics } from '../data/relics.js';
 import { traitById } from '../data/companionTraits.js';
 import { tameCompanion } from './vivarium.js';
 import { makeRng } from '../util/rng.js';
+import { vanguardLevels, type VanguardProgress } from '../data/roster.js';
 
 /**
  * What each brew does to a fight.
@@ -29,7 +30,7 @@ import { makeRng } from '../util/rng.js';
  */
 export const BUFF_EFFECTS: Record<BuffId, CombatBoons> = {
   /** Armour to soak the first exchange. */
-  ironbrew: { armor: 5 },
+  ironbrew: { armor: 50 },
   /** Opens on a bigger bank, so a turn-one Power Tier play is briefly possible. */
   kinetic_capacitor: { pips: 2 },
   /** A wider opening hand: more options rather than more power. */
@@ -82,6 +83,14 @@ export function openContract(state: GlobalGameState, bounty: Bounty): boolean {
 export function carryFor(
   overworld: OverworldState,
   companion?: CompanionInstance | CompanionProgress,
+  /**
+   * What each Vanguard body has trained to.
+   *
+   * Passed in rather than reached for, exactly as the Companion is and for the same
+   * reason: progression lives on the Profile, and `run.ts` is allowed to know about the
+   * fight but not about the save file. Omitted means every body fights at level 1.
+   */
+  vanguardProgress?: Record<string, VanguardProgress>,
 ): CombatCarry {
   const brew = overworld.activeBuff ? BUFF_EFFECTS[overworld.activeBuff] : undefined;
   // Relics are translated here, not passed on as ids. `createCombat` is handed "3 Armor"
@@ -138,6 +147,8 @@ export function carryFor(
   const spellModifiers =
     companion && 'spellModifiers' in companion ? companion.spellModifiers : undefined;
 
+  const levels = vanguardLevels(vanguardProgress);
+
   return {
     startingHp: overworld.pact.currentHp,
     ...(spellModifiers && Object.keys(spellModifiers).length > 0 ? { spellModifiers } : {}),
@@ -146,6 +157,9 @@ export function carryFor(
     // differently at each end.
     maxHp: overworld.pact.maxHp,
     ...(Object.keys(boons).length > 0 ? { boons } : {}),
+    // Flattened to `defId -> level` here. `createCombat` learns that a Footman fights at
+    // three; it never learns that XP, a curve, or a Profile exist.
+    ...(Object.keys(levels).length > 0 ? { vanguardLevels: levels } : {}),
   };
 }
 

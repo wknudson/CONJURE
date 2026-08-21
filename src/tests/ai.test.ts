@@ -16,8 +16,8 @@ describe('novice AI', () => {
     // Player commander at 2 HP, enemy minion in the player home rows with 5 ATK.
     const state = enemyTurn(
       scenario({
-        playerHp: 2,
-        units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 4 }, atk: 5 }],
+        playerHp: 20,
+        units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 4 }, atk: 50 }],
       }),
     );
 
@@ -32,11 +32,11 @@ describe('novice AI', () => {
     // that would help; any self-destructive line must be rejected.
     const state = enemyTurn(
       scenario({
-        enemyHp: 1,
-        playerHp: 40,
+        enemyHp: 10,
+        playerHp: 400,
         units: [
           { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 } },
-          { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 3 }, hp: 10 },
+          { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 3 }, hp: 100 },
         ],
       }),
     );
@@ -110,10 +110,10 @@ describe('novice AI', () => {
     const state = enemyTurn(
       scenario({
         units: [
-          { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, atk: 20 },
+          { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, atk: 200 },
           // Both are one hit from death; the Guardian carries a +60 threat bonus.
-          { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 3 }, hp: 2 },
-          { def: 'scout_imp', side: 'player', at: { x: 1, y: 2 }, hp: 2 },
+          { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 3 }, hp: 20 },
+          { def: 'scout_imp', side: 'player', at: { x: 1, y: 2 }, hp: 20 },
         ],
       }),
     );

@@ -26,7 +26,7 @@ function climaxed(state: GameState, unitId: string, aura: string): Unit {
   return unit;
 }
 
-const board = () => scenario({ width: 7, height: 8, playerHp: 500, enemyHp: 500 });
+const board = () => scenario({ width: 7, height: 8, playerHp: 5000, enemyHp: 5000 });
 
 describe('Overload: it stops going around things', () => {
   it('paths straight through a body that would otherwise block it', () => {
@@ -61,7 +61,7 @@ describe('Overload: it stops going around things', () => {
   it('deals 1 unblockable damage to each enemy it passes through', () => {
     const state = board();
     const mover = addUnit(state, { def: 'voltaic_hound', side: 'player', at: { x: 3, y: 5 }, fresh: false });
-    const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 4 }, hp: 9 });
+    const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 4 }, hp: 90 });
     climaxed(state, mover.id, 'aura_static_charge');
 
     const res = applyCommand(state, { type: 'moveUnit', unit: mover.id, to: { x: 3, y: 3 } });
@@ -73,21 +73,21 @@ describe('Overload: it stops going around things', () => {
   it('cuts through armor, which is what unblockable means', () => {
     const state = board();
     const mover = addUnit(state, { def: 'voltaic_hound', side: 'player', at: { x: 3, y: 5 }, fresh: false });
-    const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 4 }, hp: 9 });
-    state.units[victim.id]!.armor = 10;
+    const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 4 }, hp: 90 });
+    state.units[victim.id]!.armor = 100;
     const hpBefore = state.units[victim.id]!.hp;
     climaxed(state, mover.id, 'aura_static_charge');
 
     const res = applyCommand(state, { type: 'moveUnit', unit: mover.id, to: { x: 3, y: 3 } });
 
     expect(res.state.units[victim.id]!.hp).toBe(hpBefore - OVERLOAD_PHASE_DAMAGE);
-    expect(res.state.units[victim.id]!.armor, 'and the plate is not spent on it').toBe(10);
+    expect(res.state.units[victim.id]!.armor, 'and the plate is not spent on it').toBe(100);
   });
 
   it('bills a body once, however many of its cells the route crossed', () => {
     const state = board();
     const mover = addUnit(state, { def: 'voltaic_hound', side: 'player', at: { x: 3, y: 6 }, fresh: false });
-    const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 5 }, hp: 9 });
+    const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 5 }, hp: 90 });
     climaxed(state, mover.id, 'aura_static_charge');
 
     const res = applyCommand(state, { type: 'moveUnit', unit: mover.id, to: { x: 3, y: 4 } });
@@ -169,8 +169,8 @@ describe('Heavy Footprint: nothing shoves it, and walls do not stop it', () => {
     const state = scenario({
       width: 7,
       height: 8,
-      playerHp: 500,
-      enemyHp: 500,
+      playerHp: 5000,
+      enemyHp: 5000,
       obstacles: [{ at: { x: 3, y: 4 } }],
     });
     const mover = addUnit(state, { def: 'slag_iron_golem', side: 'player', at: { x: 3, y: 5 }, fresh: false });
@@ -193,8 +193,8 @@ describe('Heavy Footprint: nothing shoves it, and walls do not stop it', () => {
     const state = scenario({
       width: 7,
       height: 8,
-      playerHp: 500,
-      enemyHp: 500,
+      playerHp: 5000,
+      enemyHp: 5000,
       obstacles: [{ at: { x: 3, y: 4 } }],
     });
     const mover = addUnit(state, { def: 'voltaic_hound', side: 'player', at: { x: 3, y: 5 }, fresh: false });

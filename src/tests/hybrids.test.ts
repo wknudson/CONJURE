@@ -96,8 +96,11 @@ describe('the hybrids as cards', () => {
 });
 
 describe('pressing them', () => {
+  // The base *and* whatever the recipe asks the player to already have learned. A hybrid
+  // is two schools, and the bench now checks for both halves.
   const press = (base: string, core: string) => {
-    const { global, collection } = bench([base], { [core]: 1 });
+    const prereqs = recipeFor(base, core)?.requiredUnlockedCards ?? [];
+    const { global, collection } = bench([base, ...prereqs], { [core]: 1 });
     return { global, result: spliceCard(global, collection, base, core) };
   };
 
@@ -134,7 +137,7 @@ describe('Cryo-Combustion', () => {
   const aimed = (statuses: Record<string, number> = {}) => {
     const state = scenario({ width: 6, height: 8, hand: ['cryo_combustion'], pips: 8 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
-    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 3 }, hp: 14 });
+    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 3 }, hp: 140 });
     Object.assign(state.units[foe.id]!.statuses, statuses);
     return { state, foe };
   };
@@ -145,13 +148,13 @@ describe('Cryo-Combustion', () => {
 
     const res = run(state, play(card, { kind: 'entity', ref: { kind: 'unit', id: foe.id } }));
 
-    expect(damageTo(res.events, foe.id)).toBe(2);
+    expect(damageTo(res.events, foe.id)).toBe(20);
     expect(res.state.units[foe.id]!.statuses.burn).toBe(2);
   });
 
   it('Shatters a Frozen target, which is what the impact is for', () => {
     const { state, foe } = aimed({ freeze: 1 });
-    state.units[foe.id]!.armor = 6;
+    state.units[foe.id]!.armor = 60;
     const card = handCard(state, 'player', 'cryo_combustion');
 
     const res = run(state, play(card, { kind: 'entity', ref: { kind: 'unit', id: foe.id } }));
@@ -194,8 +197,8 @@ describe('Galvanic Spores', () => {
   it('lays both fuses on the same cross', () => {
     const state = scenario({ width: 6, height: 8, hand: ['galvanic_spores'], pips: 8, marrow: 4 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
-    const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 9 });
-    const corner = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 9 });
+    const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 90 });
+    const corner = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 90 });
     const card = handCard(state, 'player', 'galvanic_spores');
 
     const res = run(state, play(card, atTile(2, 3)));

@@ -35,6 +35,11 @@ import { legalMoves } from './engine/movement.js';
 import { occludedTiles } from './engine/los.js';
 import { threatMap } from './engine/threat.js';
 import { getEntity } from './engine/board.js';
+import {
+  COLLISION_BLOCKER_DAMAGE,
+  COLLISION_OBSTACLE_DAMAGE,
+  COLLISION_TARGET_DAMAGE,
+} from './engine/displacement.js';
 import { boardForNextEnemyTurn, commandsForDeclaredTurn } from './engine/intents.js';
 import { planTurn, NOVICE_AI, type AiProfile } from './ai/controller.js';
 import { lineCovers } from './engine/targeting.js';
@@ -306,9 +311,21 @@ export class CombatSession implements RulesQuery {
             collision: {
               at: e.at,
               against: e.against,
-              damage: 3,
+              // Read from the engine's own constants rather than restated. The preview
+              // is a promise about what the reducer will do, and a promise written twice
+              // is a promise that drifts -- which is exactly what the Stat Stretch would
+              // have done to a hard-coded three.
+              damage: COLLISION_TARGET_DAMAGE,
               ...(blocker
-                ? { collateral: { id: blocker.id, damage: e.against === 'obstacle' ? 3 : 2 } }
+                ? {
+                    collateral: {
+                      id: blocker.id,
+                      damage:
+                        e.against === 'obstacle'
+                          ? COLLISION_OBSTACLE_DAMAGE
+                          : COLLISION_BLOCKER_DAMAGE,
+                    },
+                  }
                 : {}),
             },
           });

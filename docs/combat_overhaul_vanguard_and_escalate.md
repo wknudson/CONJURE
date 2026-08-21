@@ -12,6 +12,32 @@ can tell the ruling from the reasoning.
 
 ---
 
+## 0.0 Addendum — the Stat Stretch (shipped after this document was written)
+
+**Every health number in this document is now authored ten times larger.** A `TITHE_DAMAGE`
+of 3 below is `30` in the code; a 6-HP Scrap Phalanx is a 60-HP one; a Pact of 40 is a Pact
+of 400. Read every wound, every hit point, every point of armour and every heal in these
+pages as a tenth of the value the source now carries.
+
+The reason is Vanguard levelling, and it is the only reason. A level that grants *one*
+attack to a 3-attack body is a 33% buff and unshippable; two points out of thirty is a
+raise a player feels over a campaign rather than over a contract. Small integers cannot
+express a small improvement, so the integers stopped being small. `src/core/scale.ts`
+carries the factor and the rule.
+
+**What did not stretch is everything that is counted rather than measured.** Pips, Marrow,
+cards in hand, card costs, movement, range, footprint, Anchor Tiles, status stacks and Aura
+stacks are all quantities of *things*, and every number this document fixes for them —
+the 10-point roster budget, the 2/3/6 ladder, Aetheric Resurgence's X≤5 at 20% a pip,
+Anchor Rally's 3 pips, Blood & Bone's 3 Marrow, the Rule of 3 itself — stands exactly as
+written.
+
+Two seams cross the boundary and undo the factor deliberately: the Clinic prices health in
+Ducats, which did not stretch, and Harvest the Weak caps a *Marrow* payout against a
+*blood* figure. Both divide by the scale rather than comparing across it.
+
+---
+
 ## 0. Why
 
 ### The Pip Tax

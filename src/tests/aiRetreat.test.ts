@@ -26,8 +26,8 @@ describe('AI retreat', () => {
       width: 10,
       height: 8,
       units: [
-        { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 6 }, hp: 2 },
-        { def: 'grave_sentinel', side: 'player', at: { x: 0, y: 6 }, atk: 6, keywords: [] },
+        { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 6 }, hp: 20 },
+        { def: 'grave_sentinel', side: 'player', at: { x: 0, y: 6 }, atk: 60, keywords: [] },
       ],
     });
     state.activeSide = 'enemy';
@@ -54,11 +54,11 @@ describe('AI retreat', () => {
     const state = scenario({
       width: 6,
       height: 8,
-      enemyHp: 40,
-      playerHp: 2,
+      enemyHp: 400,
+      playerHp: 20,
       units: [
-        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 5 }, hp: 1 },
-        { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, atk: 6, keywords: [] },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 5 }, hp: 10 },
+        { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, atk: 60, keywords: [] },
       ],
     });
     state.activeSide = 'enemy';
@@ -96,8 +96,8 @@ describe('AI retreat', () => {
       width: 6,
       height: 8,
       units: [
-        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, hp: 2 },
-        { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 5 }, atk: 6 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, hp: 20 },
+        { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 5 }, atk: 60 },
       ],
     });
     state.activeSide = 'enemy';

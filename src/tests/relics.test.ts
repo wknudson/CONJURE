@@ -76,7 +76,7 @@ describe('folding gear into capabilities', () => {
   it('adds armour across pieces', () => {
     // One coat per loadout now — the slot is what stops two — so this reads the fold
     // directly rather than through a loadout that could not legally exist.
-    expect(boonsOfRelics(worn('relic_coat')).armor).toBe(3);
+    expect(boonsOfRelics(worn('relic_coat')).armor).toBe(30);
   });
 
   it('takes the highest ceiling rather than summing it', () => {
@@ -89,7 +89,7 @@ describe('folding gear into capabilities', () => {
 
   it('skips a relic that no longer exists rather than throwing', () => {
     // A save naming a cut relic should lose the relic, not the fight.
-    expect(boonsOfRelics({ ...worn('relic_coat'), optics: 'relic_that_was_cut' }).armor).toBe(3);
+    expect(boonsOfRelics({ ...worn('relic_coat'), optics: 'relic_that_was_cut' }).armor).toBe(30);
   });
 
   it('is empty for bare slots', () => {
@@ -166,7 +166,7 @@ describe('what reaches the board', () => {
   };
 
   it('opens the contract wearing the coat', () => {
-    expect(fightWith('relic_coat').players.player.armor).toBe(3);
+    expect(fightWith('relic_coat').players.player.armor).toBe(30);
     expect(fightWith().players.player.armor, 'baseline').toBe(0);
   });
 
@@ -197,7 +197,7 @@ describe('what reaches the board', () => {
     g.overworld.equippedRelics = worn('relic_coat', 'relic_battery');
 
     const carry = carryFor(g.overworld);
-    expect(carry.boons?.armor).toBe(3);
+    expect(carry.boons?.armor).toBe(30);
     expect(carry.boons?.maxPips).toBe(9);
     expect(JSON.stringify(carry)).not.toContain('relic_');
   });
@@ -207,7 +207,7 @@ describe('what reaches the board', () => {
     g.overworld.equippedRelics = worn('relic_coat');
     g.overworld.activeBuff = 'ironbrew';
 
-    expect(carryFor(g.overworld).boons?.armor, '5 from the brew, 3 from the coat').toBe(8);
+    expect(carryFor(g.overworld).boons?.armor, '5 from the brew, 3 from the coat').toBe(80);
   });
 });
 

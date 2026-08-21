@@ -16,10 +16,10 @@ export const RUNES: Record<string, RuneDef> = {
     name: 'Cinder Rune',
     school: 'pyre',
     trigger: { kind: 'hpLoss', alignedTypes: ['fire', 'spell'] },
-    damage: 4,
+    damage: 40,
     dtype: 'fire',
     blast: { shape: 'adjacent8' },
-    text: 'Detonates for 4 fire damage to all adjacent when the host loses HP to fire or spell damage.',
+    text: 'Detonates for 40 fire damage to all adjacent when the host loses HP to fire or spell damage.',
   },
   /**
    * The control trap. No damage at all — everything it does is a status.
@@ -64,12 +64,12 @@ export const RUNES: Record<string, RuneDef> = {
     name: 'Volatile Munitions',
     school: 'arcane',
     trigger: { kind: 'death' },
-    damage: 3,
+    damage: 30,
     dtype: 'impact',
     // A cross rather than a ring: the blast runs down the aisles, so standing on the
     // diagonal from a cask is the safe place to be.
     blast: { shape: 'plus', radius: 1 },
-    text: 'When the cask is destroyed, it goes up: 3 impact damage in a cross around it.',
+    text: 'When the cask is destroyed, it goes up: 30 impact damage in a cross around it.',
   },
 
   soul_splinter_rune: {
@@ -77,9 +77,9 @@ export const RUNES: Record<string, RuneDef> = {
     name: 'Soul Splinter Rune',
     school: 'dusk',
     trigger: { kind: 'death' },
-    damage: 5,
+    damage: 50,
     dtype: 'spell',
     blast: { shape: 'lowestHpEnemy' },
-    text: 'When the host dies, deals 5 damage to the lowest-HP enemy.',
+    text: 'When the host dies, deals 50 damage to the lowest-HP enemy.',
   },
 };

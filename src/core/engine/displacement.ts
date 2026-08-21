@@ -1,9 +1,9 @@
 /**
  * Displacement and collision physics (Draft 7 §5.1).
  *
- *   Hits wall / arena border   -> pushed unit takes 3
- *   Hits obstructing unit      -> pushed unit takes 3, blocker takes 2 collateral
- *   Hits destructible obstacle -> pushed unit takes 3, obstacle takes 3
+ *   Hits wall / arena border   -> pushed unit takes 30
+ *   Hits obstructing unit      -> pushed unit takes 30, blocker takes 20 collateral
+ *   Hits destructible obstacle -> pushed unit takes 30, obstacle takes 30
  *
  * Mass Invariance: the numbers do not change when a 2x2 is involved, in either role.
  * Draft 7 states this explicitly and Module 8's competing mass-crush rule is not used.
@@ -21,9 +21,9 @@ import { inBounds } from '../types/state.js';
 import type { GameState } from '../types/state.js';
 import { climaxTraitOf } from './growth.js';
 
-export const COLLISION_TARGET_DAMAGE = 3;
-export const COLLISION_BLOCKER_DAMAGE = 2;
-export const COLLISION_OBSTACLE_DAMAGE = 3;
+export const COLLISION_TARGET_DAMAGE = 30;
+export const COLLISION_BLOCKER_DAMAGE = 20;
+export const COLLISION_OBSTACLE_DAMAGE = 30;
 
 /**
  * What a collision actually costs a given body, after its side's plate.

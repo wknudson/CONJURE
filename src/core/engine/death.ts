@@ -17,6 +17,7 @@ import { applyStatusTo } from './status.js';
 import { dealDamage } from './damage.js';
 import { inBounds } from '../types/state.js';
 import { DIRS_8 } from '../util/grid.js';
+import { STAT_SCALE } from '../scale.js';
 
 /**
  * Removes an entity from the board. `devoured` routes to the fizzle path: a devoured
@@ -219,7 +220,7 @@ export function checkLethal(ctx: Ctx): void {
   if (playerDead && enemyDead) {
     if (ctx.state.suddenDeath) {
       // A second mutual KO during sudden death resolves to the instigator (Module 8).
-      player.hp = 1;
+      player.hp = STAT_SCALE;
       enemy.hp = 0;
       finish(ctx, 'victory');
       return;
@@ -236,7 +237,7 @@ function enterSuddenDeath(ctx: Ctx): void {
 
   for (const side of ['player', 'enemy'] as const) {
     const cmd = ctx.state.players[side];
-    cmd.hp = 1;
+    cmd.hp = STAT_SCALE;
     cmd.armor = 0;
   }
 

@@ -11,6 +11,7 @@ import type { GameState } from '../core/types/state.js';
 import type { ChosenTarget } from '../core/types/cards.js';
 import { CombatSession } from '../core/session.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
+import { STAT_SCALE } from '../core/scale.js';
 
 /**
  * Soul Pyres, X-costs, and the three ways to stand a body back up.
@@ -25,7 +26,7 @@ import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
 function withVanguard(def = 'grave_sentinel', opts: Record<string, unknown> = {}) {
   const state = scenario({ width: 6, height: 8, pips: 8, marrow: 8, ...opts });
   const unit = addUnit(state, { def, side: 'player', at: { x: 2, y: 5 }, fresh: false });
-  state.players.player.roster = [{ defId: def, status: 'fielded', unitId: unit.id }];
+  state.players.player.roster = [{ defId: def, status: 'fielded', unitId: unit.id, level: 1 }];
   state.anchors = [{ x: 0, y: 7 }, { x: 1, y: 7 }];
   return { state, unit };
 }
@@ -283,8 +284,8 @@ describe('the two Rallies', () => {
     const res = applyCommand(state, { type: 'playCard', card, target: fallen() });
     const body = res.state.units[res.state.players.player.roster[0]!.unitId!]!;
 
-    expect(body.hp).toBe(1);
-    expect(body.armor, 'armor equal to everything it lost').toBe(maxHp - 1);
+    expect(body.hp).toBe(10);
+    expect(body.armor, 'armor equal to everything it lost').toBe(maxHp - STAT_SCALE);
   });
 
   it('Blood & Bone cannot be bought with Pips at any total', () => {

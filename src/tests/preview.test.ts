@@ -31,7 +31,7 @@ describe('an area displacement', () => {
       { x: 2, y: 3 },
       { x: 4, y: 3 },
     ]) {
-      addUnit(state, { def: 'grave_sentinel', side: 'enemy', at, hp: 20 });
+      addUnit(state, { def: 'grave_sentinel', side: 'enemy', at, hp: 200 });
     }
     const card = giveCard(state, 'player', 'aetheric_tether');
 
@@ -75,7 +75,7 @@ describe('an area displacement', () => {
 
   it('says nothing about displacement for a cast that moves nobody', () => {
     const state = scenario({ width: 6, height: 6, pips: 8 });
-    const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 20 });
+    const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 200 });
     const card = giveCard(state, 'player', 'flame_surge');
 
     const preview = sessionOn(state).previewAction({

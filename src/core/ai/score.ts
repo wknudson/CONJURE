@@ -20,6 +20,7 @@ import { threatMap } from '../engine/threat.js';
 import { threatensFrom } from '../engine/targeting.js';
 import { coordKey } from '../../contract/ids.js';
 import { footprintDistance } from '../util/grid.js';
+import { STAT_SCALE } from '../scale.js';
 
 export interface UtilityWeights {
   kill: number;
@@ -60,6 +61,25 @@ export interface UtilityWeights {
   retreatSurvival: number;
   /** Per point of HP knocked off an enemy unit without killing it. */
   unitDamage: number;
+}
+
+/**
+ * A stretched health figure in the units this weight table is written in.
+ *
+ * Every weight below is priced per *old* point of health, and deliberately stays that
+ * way. The alternative was to divide the whole table by ten, and that would have made
+ * every number in it a decimal fraction of a tile of ground -- unreadable, and impossible
+ * to tune by eye against `advance` or `collision`, which did not stretch and never will.
+ *
+ * So the conversion happens at the seven places health enters the score instead. Left
+ * undone, a single swing would outweigh every positional term in the matrix put together
+ * and the AI would walk into any trap that let it land one.
+ *
+ * Not rounded: the utility is a comparison, never a display, and rounding a chip hit down
+ * to zero would make two genuinely different lines score identically.
+ */
+function hpPoints(value: number): number {
+  return value / STAT_SCALE;
 }
 
 export const NOVICE_WEIGHTS: UtilityWeights = {
@@ -150,7 +170,7 @@ function anchorPressure(
   for (const e of events) {
     if (e.t !== 'damageDealt') continue;
     if (e.target.kind !== 'unit' || e.target.id !== anchorId) continue;
-    score += ANCHOR_CHIP * e.hpLoss;
+    score += ANCHOR_CHIP * hpPoints(e.hpLoss);
   }
 
   // Closing the distance, judged only for the unit that actually moved.
@@ -262,7 +282,8 @@ export function scoreAction(
     if (e.t !== 'damageDealt' || e.target.kind !== 'unit' || e.hpLoss <= 0) continue;
     const victim = state.units[e.target.id] ?? next.units[e.target.id];
     if (!victim) continue;
-    utility += (victim.side === foe ? weights.unitDamage : -weights.unitDamage) * e.hpLoss;
+    utility +=
+      (victim.side === foe ? weights.unitDamage : -weights.unitDamage) * hpPoints(e.hpLoss);
   }
 
   // --- Face damage ---
@@ -276,8 +297,8 @@ export function scoreAction(
   for (const e of events) {
     if (e.t !== 'damageDealt') continue;
     if (e.target.kind !== 'portrait') continue;
-    if (e.target.side === foe) utility += faceWeight * e.hpLoss;
-    else utility -= weights.face * e.hpLoss;
+    if (e.target.side === foe) utility += faceWeight * hpPoints(e.hpLoss);
+    else utility -= weights.face * hpPoints(e.hpLoss);
   }
 
     // --- Position ---
@@ -324,7 +345,7 @@ export function scoreAction(
         const there = Math.min(danger.get(coordKey(command.to)) ?? 0, effective);
 
         if (here > there) {
-          utility += weights.retreat * (here - there);
+          utility += weights.retreat * hpPoints(here - there);
           // Stepping out of *lethal* range is worth far more than the damage figure
           // suggests — it is the difference between keeping the unit and losing it, so
           // price it at what the opponent would have gained by killing it.
@@ -340,14 +361,14 @@ export function scoreAction(
   // Without this, summoning scores exactly zero and the AI never builds a board.
   for (const e of events) {
     if (e.t === 'unitSummoned' && e.unit.side === side) {
-      utility += weights.developAtk * e.unit.atk + weights.developHp * e.unit.hp;
+      utility += weights.developAtk * hpPoints(e.unit.atk) + weights.developHp * hpPoints(e.unit.hp);
     }
     if (e.t === 'armorGained') {
       const mine =
         (e.target.kind === 'portrait' && e.target.side === side) ||
         (e.target.kind === 'unit' && state.units[e.target.id]?.side === side) ||
         (e.target.kind === 'unit' && next.units[e.target.id]?.side === side);
-      if (mine) utility += weights.armorValue * e.amount;
+      if (mine) utility += weights.armorValue * hpPoints(e.amount);
     }
     if (e.t === 'runeAttached') {
       const host = next.units[e.hostId] ?? next.obstacles[e.hostId];
@@ -374,7 +395,7 @@ export function scoreAction(
     if (e.t !== 'damageDealt') continue;
     if (e.cause !== 'counter') continue;
     if (e.target.kind === 'unit' && state.units[e.target.id]?.side === side) {
-      utility -= weights.counterRisk * e.hpLoss;
+      utility -= weights.counterRisk * hpPoints(e.hpLoss);
     }
   }
 

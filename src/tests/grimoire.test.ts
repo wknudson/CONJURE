@@ -164,7 +164,7 @@ describe('the roll', () => {
       const beast = tameCompanion(makeRng(seed), 'voltara', 1);
       for (const mod of Object.values(beast.spellModifiers) as CardModifier[]) {
         if (mod.pipCostDelta !== undefined) expect(mod.pipCostDelta).toBe(-1);
-        if (mod.bonusDamage !== undefined) expect(mod.bonusDamage).toBe(1);
+        if (mod.bonusDamage !== undefined) expect(mod.bonusDamage).toBe(10);
         if (mod.grantRetain !== undefined) expect(mod.grantRetain).toBe(true);
         expect(Object.keys(mod).length, 'one roll per spell').toBe(1);
       }
@@ -289,7 +289,7 @@ describe('a roll changes the fight, not just the save', () => {
     // to be thrown from and lands the same way every time.
     const cast = (mods?: CardModifier) => {
       const st = scenario({ width: 6, height: 8, pips: 8, marrow: 4 });
-      const victim = addUnit(st, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 12 });
+      const victim = addUnit(st, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 120 });
       st.nextId += 1;
       const id = `g${st.nextId}`;
       st.players.player.cards[id] = {

@@ -196,8 +196,8 @@ export const IGNIS_TRIAL: EncounterDef = registerEncounter({
   // An open 8x8 arena: room to circle a Behemoth and to use the drake's full board.
   width: 8,
   height: 8,
-  playerHp: 40,
-  enemyHp: 44,
+  playerHp: 400,
+  enemyHp: 440,
   playerName: 'Hero',
   companionName: 'Ignis',
   companionSchool: 'pyre',

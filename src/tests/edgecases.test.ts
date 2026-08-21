@@ -15,6 +15,7 @@ import { legalAttacks, legalCardTargets } from '../core/engine/targeting.js';
 import { canAttack, legalMoves } from '../core/engine/movement.js';
 import { CombatSession } from '../core/session.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
+import { STAT_SCALE } from '../core/scale.js';
 
 describe('deployment edges', () => {
   it('offers no target for a Behemoth when no 2x2 space remains in territory', () => {
@@ -68,14 +69,14 @@ describe('resource and card edges', () => {
   });
 
   it('does not crash or damage anyone when deck and discard are both empty', () => {
-    const state = scenario({ playerHp: 40 });
+    const state = scenario({ playerHp: 400 });
     state.players.player.deck = [];
     state.players.player.discard = [];
     state.players.player.hand = [];
 
     const res = run(state, { type: 'endTurn' }, { type: 'endTurn' });
 
-    expect(res.state.players.player.hp).toBe(40);
+    expect(res.state.players.player.hp).toBe(400);
     expect(res.state.players.player.hand).toHaveLength(0);
   });
 
@@ -97,8 +98,8 @@ describe('combat resolution edges', () => {
   it('kills the attacker when Counter damage exceeds its remaining HP', () => {
     const state = scenario({
       units: [
-        { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 }, hp: 1 },
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 1 }, hp: 10, atk: 5 },
+        { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 }, hp: 10 },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 1 }, hp: 100, atk: 50 },
       ],
     });
     const attacker = findUnit(state, 'scout_imp', 'player');
@@ -111,14 +112,14 @@ describe('combat resolution edges', () => {
     });
 
     expect(res.state.units[attacker.id]).toBeUndefined();
-    expect(res.state.units[sentinel.id]!.hp).toBe(8);
+    expect(res.state.units[sentinel.id]!.hp).toBe(80);
   });
 
   it('takes only one wall hit when shoved into a corner', () => {
     const state = scenario({
       width: 6,
       height: 6,
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 0, y: 0 }, hp: 10 }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 0, y: 0 }, hp: 100 }],
       hand: ['shield_bash'],
     });
     const foe = findUnit(state, 'grave_sentinel', 'enemy');
@@ -126,13 +127,13 @@ describe('combat resolution edges', () => {
     const res = run(state, play(handCard(state, 'player', 'shield_bash'), atUnit(foe.id)));
 
     expect(eventsOf(res.events, 'collision')).toHaveLength(1);
-    expect(res.state.units[foe.id]!.hp).toBe(10 - 2 - 3);
+    expect(res.state.units[foe.id]!.hp).toBe(100 - 20 - 30);
   });
 
   it('fizzles a rune attached to an obstacle when the obstacle is destroyed', () => {
     const state = scenario({
-      obstacles: [{ at: { x: 2, y: 2 }, hp: 2, rune: 'cinder_rune' }],
-      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 3 }, atk: 9 }],
+      obstacles: [{ at: { x: 2, y: 2 }, hp: 20, rune: 'cinder_rune' }],
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 3 }, atk: 90 }],
     });
     const attacker = findUnit(state, 'scout_imp', 'player');
     const obstacleId = Object.keys(state.obstacles)[0]!;
@@ -154,8 +155,8 @@ describe('combat resolution edges', () => {
     // own rune then detonates back into the now-empty tile.
     const state = scenario({
       units: [
-        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 1, rune: 'cinder_rune' },
-        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 1, rune: 'cinder_rune' },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 10, rune: 'cinder_rune' },
+        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 10, rune: 'cinder_rune' },
       ],
       hand: ['flame_surge'],
     });
@@ -188,9 +189,9 @@ describe('combat resolution edges', () => {
 
   it('does not escalate HP past a fresh unit maximum incorrectly', () => {
     const state = scenario({
-      playerHp: 500,
-      enemyHp: 500,
-      units: [{ def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 6 }],
+      playerHp: 5000,
+      enemyHp: 5000,
+      units: [{ def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 60 }],
     });
     const sentinel = findUnit(state, 'grave_sentinel', 'player');
 
@@ -199,7 +200,8 @@ describe('combat resolution edges', () => {
 
     // Escalation raises max and current HP together, so it never exceeds its own max.
     expect(after.hp).toBeLessThanOrEqual(after.maxHp);
-    expect(after.maxHp).toBe(6 + after.escalation);
+    // A stretched body, and a growth step that stretched with it.
+    expect(after.maxHp).toBe(60 + after.escalation * STAT_SCALE);
   });
 });
 

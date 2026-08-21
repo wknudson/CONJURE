@@ -34,7 +34,7 @@ export const TERRAIN_CARDS: Record<string, CardDef> = {
    * rather than as a special case buried in the death path.
    */
   terrain_wall: {
-    ...scenery('terrain_wall', 'Rubble Wall', 'Blocks movement and sight until broken.', 8),
+    ...scenery('terrain_wall', 'Rubble Wall', 'Blocks movement and sight until broken.', 80),
     // Masonry does not vanish when it falls.
     leavesRubble: true,
   },
@@ -43,7 +43,7 @@ export const TERRAIN_CARDS: Record<string, CardDef> = {
       'terrain_cover',
       'Bramble Screen',
       'Blocks sight but not movement. Units may stand in it.',
-      4,
+      40,
     ),
     // Encounter terrain builds its obstacles directly rather than through `spawnObstacle`,
     // so this flag is not what makes *that* path work. It is here so the definition is not
@@ -70,12 +70,12 @@ export const TERRAIN_CARDS: Record<string, CardDef> = {
     effect: { op: 'seq', effects: [] },
     keywords: [],
     setupOnly: true,
-    obstacleHp: 1,
+    obstacleHp: 10,
     onDestroyReward: { marrow: 2 },
   },
 
   /**
-   * Crystals are traps you set off rather than pick up. Two HP is enough that breaking
+   * Crystals are traps you set off rather than pick up. Twenty HP is enough that breaking
    * one is a choice, and the blast catches everything in the nine tiles around it — both
    * armies — so the question is never "should I shoot it" but "who is standing there".
    *
@@ -86,7 +86,7 @@ export const TERRAIN_CARDS: Record<string, CardDef> = {
       'cryo_crystal',
       'Cryo-Crystal',
       'Volatile. Shattering it freezes every unit around it, friend and foe.',
-      2,
+      20,
     ),
     school: 'frost',
     obstacleDeath: { status: 'freeze', stacks: 1 },
@@ -98,7 +98,7 @@ export const TERRAIN_CARDS: Record<string, CardDef> = {
       'magma_crystal',
       'Magma Barrel',
       'Volatile. Shattering it sets fire to every unit around it, friend and foe.',
-      2,
+      20,
     ),
     school: 'pyre',
     obstacleDeath: { status: 'burn', stacks: 2 },

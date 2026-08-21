@@ -81,6 +81,7 @@ const REFUSAL_COPY: Record<string, string> = {
   'too-poor': 'Not enough Shards',
   'no-recipe': 'The bench knows no such pressing',
   'no-reagent': 'You hold none of that core',
+  'missing-prerequisite': 'You have not learned the other half of this fusion',
 };
 
 /**

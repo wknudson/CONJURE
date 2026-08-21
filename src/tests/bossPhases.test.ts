@@ -18,7 +18,7 @@ function ignisScenario(opts: Parameters<typeof scenario>[0] = {}): GameState {
   const state = scenario(opts);
   state.encounter.id = 'ignis_trial';
   state.encounter.name = 'Subjugation Trial: Ignis';
-  state.players.enemy.maxHp = 44;
+  state.players.enemy.maxHp = 440;
   return state;
 }
 
@@ -30,7 +30,7 @@ function ignisScenario(opts: Parameters<typeof scenario>[0] = {}): GameState {
  * routing every tether test through a damage race would make them all depend on it.
  */
 function sealedTrial(): { state: GameState; anchor: { id: string }; riteId: string } {
-  const state = ignisScenario({ enemyHp: 10 });
+  const state = ignisScenario({ enemyHp: 100 });
   const ctx = makeCtx(state);
   // The Alpha's body, which is what the seal and the punitive stack both attach to.
   const boss = summonUnit(ctx, 'ignis_drake_bound', 'enemy', { x: 2, y: 1 });
@@ -52,8 +52,8 @@ describe('Ignis trial phase gates', () => {
     // Boss at 24/44. Halfway is 22. A 12-damage hit would take it to 12, but the gate
     // clamps it to exactly 22.
     const state = ignisScenario({
-      enemyHp: 24,
-      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 12 }],
+      enemyHp: 240,
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 120 }],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
 
@@ -63,15 +63,15 @@ describe('Ignis trial phase gates', () => {
       target: { kind: 'portrait', side: 'enemy' },
     });
 
-    expect(res.state.players.enemy.hp).toBe(22);
+    expect(res.state.players.enemy.hp).toBe(220);
     expect(res.state.encounter.bossPhase).toBe(2);
     expect(eventsOf(res.events, 'bossPhaseShift')).toHaveLength(1);
   });
 
   it('fires the phase shift exactly once', () => {
     const state = ignisScenario({
-      enemyHp: 24,
-      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 12 }],
+      enemyHp: 240,
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 120 }],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
 
@@ -93,16 +93,16 @@ describe('Ignis trial phase gates', () => {
 
     expect(eventsOf(second.events, 'bossPhaseShift')).toHaveLength(0);
     // Now it takes real damage: 22 - 12 = 10.
-    expect(second.state.players.enemy.hp).toBe(10);
+    expect(second.state.players.enemy.hp).toBe(100);
   });
 
   it('spawns a phase-2 add, evicting a player minion and refunding a marrow', () => {
     // A player minion is squatting on the first spawn site (1,1).
     const state = ignisScenario({
-      enemyHp: 24,
+      enemyHp: 240,
       units: [
-        { def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 12 },
-        { def: 'grave_sentinel', side: 'player', at: { x: 1, y: 1 }, hp: 6 },
+        { def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 120 },
+        { def: 'grave_sentinel', side: 'player', at: { x: 1, y: 1 }, hp: 60 },
       ],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
@@ -130,8 +130,8 @@ describe('Ignis trial phase gates', () => {
   it('seals itself and deals the Rite at 25% boss HP', () => {
     // Boss at 12/44. 25% is 11. A 2-damage hit takes it to 10, crossing the threshold.
     const state = ignisScenario({
-      enemyHp: 12,
-      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 2 }],
+      enemyHp: 120,
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 20 }],
     });
     state.encounter.firedGates.push('phase2'); // already past the 50% gate
     const imp = findUnit(state, 'scout_imp', 'player');
@@ -157,8 +157,8 @@ describe('Ignis trial phase gates', () => {
 
   it('stops taking damage once it is sealed, by either route', () => {
     const state = ignisScenario({
-      enemyHp: 12,
-      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 2 }],
+      enemyHp: 120,
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 20 }],
     });
     state.encounter.firedGates.push('phase2');
     const imp = findUnit(state, 'scout_imp', 'player');
@@ -257,7 +257,7 @@ describe('encounter definitions', () => {
 
     expect(state.phase).toBe('action');
     expect(state.activeSide).toBe('player');
-    expect(state.players.player.hp).toBe(40);
+    expect(state.players.player.hp).toBe(400);
     // The opening hand of 5 serves as turn one's draw, so nothing is burned.
     expect(state.players.player.hand.length).toBe(5);
     expect(events.some((e) => e.t === 'combatStarted')).toBe(true);
@@ -313,7 +313,7 @@ describe('the drake on the board', () => {
 
     expect(body?.defId).toBe('ignis_drake_bound');
     expect(body?.keywords).toContain('BoundForm');
-    expect(st.players.enemy.maxHp).toBe(44);
+    expect(st.players.enemy.maxHp).toBe(440);
   });
 
   it('wounds the trial pool when the drake is struck', () => {
@@ -338,7 +338,7 @@ describe('the drake on the board', () => {
 
   it('grows into its enraged shape at the halfway mark', () => {
     const { session, st } = trial();
-    st.players.enemy.hp = 20; // under the 22 threshold
+    st.players.enemy.hp = 200; // under the 22 threshold
 
     session.dispatch({ type: 'endTurn' });
     const after = session.debugState;
@@ -352,16 +352,16 @@ describe('the drake on the board', () => {
   it('carries the same pool through the change', () => {
     // The transformation is a change of body, not a heal and not a second health bar.
     const { session, st } = trial();
-    st.players.enemy.hp = 20;
+    st.players.enemy.hp = 200;
 
     session.dispatch({ type: 'endTurn' });
 
-    expect(session.debugState.players.enemy.hp).toBe(20);
+    expect(session.debugState.players.enemy.hp).toBe(200);
   });
 
   it('leaves exactly one enemy body behind', () => {
     const { session, st } = trial();
-    st.players.enemy.hp = 20;
+    st.players.enemy.hp = 200;
 
     session.dispatch({ type: 'endTurn' });
     const after = session.debugState;
@@ -375,7 +375,7 @@ describe('the drake on the board', () => {
 
   it('clears declared intents, which were aimed from a body that has moved', () => {
     const { session, st } = trial();
-    st.players.enemy.hp = 20;
+    st.players.enemy.hp = 200;
     st.intents = [
       { unitId: bodyOf(st)!.id, kind: 'attack', at: { x: 3, y: 3 }, damage: 4 },
     ];
@@ -387,7 +387,7 @@ describe('the drake on the board', () => {
 
   it('keeps its footing after sudden death, restoring the shape it now wears', () => {
     const { session, st } = trial();
-    st.players.enemy.hp = 20;
+    st.players.enemy.hp = 200;
     session.dispatch({ type: 'endTurn' });
 
     const grown = session.debugState;
@@ -408,7 +408,7 @@ describe('the drake on the board', () => {
   it('announces the shift once, even when it cannot grow immediately', () => {
     // A boxed-in drake still enters phase two; only the transformation waits.
     const { session, st } = trial();
-    st.players.enemy.hp = 20;
+    st.players.enemy.hp = 200;
     delete st.players.enemy.companionUnitId;
 
     const first = session.dispatch({ type: 'endTurn' });
@@ -430,14 +430,14 @@ describe('the drake on the board', () => {
 describe('the beast hunting its anchor', () => {
   /** A tethered board where the enemy can reach both the anchor and the player's face. */
   const hunt = () => {
-    const state = ignisScenario({ enemyHp: 10, width: 6, height: 8 });
+    const state = ignisScenario({ enemyHp: 100, width: 6, height: 8 });
     const ctx = makeCtx(state);
     beginSubjugation(ctx);
 
     const anchor = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 1, y: 6 } });
     // A hunter standing where the player's territory rows are already in melee reach of
     // the portrait, so face damage is genuinely on the table as an alternative.
-    const hunter = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 7 }, atk: 3 });
+    const hunter = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 7 }, atk: 30 });
 
     const sub = state.encounter.subjugation;
     sub.active = true;

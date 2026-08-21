@@ -91,9 +91,9 @@ export const AURAS: Record<string, AuraDef> = {
     name: 'Conflagration',
     school: 'pyre',
     maxStacks: AURA_MAX_STACKS,
-    passiveStat: { atk: 1 },
+    passiveStat: { atk: 10 },
     climaxTrait: 'conflagration',
-    text: '+1 ATK per stack. At Climax: Ignite (2) on attack, and it leaves fire in its wake.',
+    text: '+10 ATK per stack. At Climax: Ignite (2) on attack, and it leaves fire in its wake.',
   },
 
   aura_overgrowth: {
@@ -101,9 +101,9 @@ export const AURAS: Record<string, AuraDef> = {
     name: 'Overgrowth',
     school: 'bloom',
     maxStacks: AURA_MAX_STACKS,
-    passiveStat: { maxHp: 2 },
+    passiveStat: { maxHp: 20 },
     climaxTrait: 'overgrowth',
-    text: '+2 Max HP per stack. At Climax: Leech, and a Toxin burst when it dies.',
+    text: '+20 Max HP per stack. At Climax: Leech, and a Toxin burst when it dies.',
   },
 
   aura_static_charge: {
@@ -121,9 +121,9 @@ export const AURAS: Record<string, AuraDef> = {
     name: 'Petrifying Mantle',
     school: 'bulwark',
     maxStacks: AURA_MAX_STACKS,
-    passiveStat: { armor: 1 },
+    passiveStat: { armor: 10 },
     climaxTrait: 'heavyFootprint',
-    text: '+1 Persistent Armor per stack. At Climax: Heavy Footprint — nothing shoves it.',
+    text: '+10 Persistent Armor per stack. At Climax: Heavy Footprint — nothing shoves it.',
   },
 
   /**
@@ -136,9 +136,9 @@ export const AURAS: Record<string, AuraDef> = {
     school: 'dusk',
     maxStacks: AURA_MAX_STACKS,
     passiveStat: {},
-    upkeep: { selfDamage: 1, marrow: 1 },
+    upkeep: { selfDamage: 10, marrow: 1 },
     climaxTrait: 'hollow',
-    text: 'Each turn it bleeds 1 and yields 1 Marrow. At Climax: Hollow — its wounds fester.',
+    text: 'Each turn it bleeds 10 and yields 1 Marrow. At Climax: Hollow — its wounds fester.',
   },
 };
 

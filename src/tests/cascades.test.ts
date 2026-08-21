@@ -33,19 +33,19 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 2, y: 2 },
-      hp: 20,
+      hp: 200,
     });
 
     const ctx = makeCtx(state);
     dealDamage(ctx, {
       target: { kind: 'unit', id: victim.id },
-      amount: 4,
+      amount: 40,
       dtype: 'physical',
       cause: 'spell',
       chainDepth: MAX_CHAIN_DEPTH,
     });
 
-    expect(ctx.state.units[victim.id]!.hp).toBe(16);
+    expect(ctx.state.units[victim.id]!.hp).toBe(160);
   });
 
   it('refuses a reaction reached at the ceiling', () => {
@@ -58,29 +58,29 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 3, y: 3 },
-      hp: 20,
+      hp: 200,
     });
     const neighbour = addUnit(state, {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 4, y: 3 },
-      hp: 20,
+      hp: 200,
     });
     state.units[frozen.id]!.statuses.freeze = 1;
 
     const ctx = makeCtx(state);
     dealDamage(ctx, {
       target: { kind: 'unit', id: frozen.id },
-      amount: 2,
+      amount: 20,
       dtype: 'impact',
       cause: 'collision',
       chainDepth: MAX_CHAIN_DEPTH,
     });
 
     expect(eventsOf(ctx.events, 'reactionTriggered'), 'Shatter must not fire').toHaveLength(0);
-    expect(ctx.state.units[neighbour.id]!.hp, 'and nothing splashed').toBe(20);
+    expect(ctx.state.units[neighbour.id]!.hp, 'and nothing splashed').toBe(200);
     // The blow itself still landed.
-    expect(ctx.state.units[frozen.id]!.hp).toBe(18);
+    expect(ctx.state.units[frozen.id]!.hp).toBe(180);
   });
 
   it('fires that same reaction one link shallower', () => {
@@ -90,15 +90,15 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 3, y: 3 },
-      hp: 20,
+      hp: 200,
     });
-    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 4, y: 3 }, hp: 20 });
+    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 4, y: 3 }, hp: 200 });
     state.units[frozen.id]!.statuses.freeze = 1;
 
     const ctx = makeCtx(state);
     dealDamage(ctx, {
       target: { kind: 'unit', id: frozen.id },
-      amount: 2,
+      amount: 20,
       dtype: 'impact',
       cause: 'collision',
       chainDepth: MAX_CHAIN_DEPTH - 1,
@@ -115,28 +115,28 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       def: 'vanguard_footman',
       side: 'player',
       at: { x: 2, y: 2 },
-      hp: 20,
+      hp: 200,
     });
     const sentinel = addUnit(state, {
       def: 'grave_sentinel',
       side: 'enemy',
       at: { x: 2, y: 3 },
-      hp: 20,
-      atk: 5,
+      hp: 200,
+      atk: 50,
       keywords: ['Counter'],
     });
 
     const ctx = makeCtx(state);
     dealDamage(ctx, {
       target: { kind: 'unit', id: sentinel.id },
-      amount: 2,
+      amount: 20,
       dtype: 'physical',
       cause: 'attack',
       sourceUnitId: attacker.id,
       chainDepth: MAX_CHAIN_DEPTH,
     });
 
-    expect(ctx.state.units[attacker.id]!.hp, 'no riposte at the ceiling').toBe(20);
+    expect(ctx.state.units[attacker.id]!.hp, 'no riposte at the ceiling').toBe(200);
   });
 
   it('carries the count through a shove, which is where it used to reset', () => {
@@ -149,13 +149,13 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       def: 'scout_imp',
       side: 'enemy',
       at: { x: 2, y: 2 },
-      hp: 20,
+      hp: 200,
       // Aligned to `impact`, so a collision actually sets it off. A Cinder Rune would
       // fizzle on an unaligned blow and the test would prove nothing.
       rune: 'rot_root_snare',
     });
     // Something solid directly behind it, so the shove is guaranteed to collide.
-    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 30 });
+    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 300 });
 
     const ctx = makeCtx(state);
     pushUnit(ctx, ctx.state.units[shoved.id]!, { x: 0, y: 1 }, 1, MAX_CHAIN_DEPTH);
@@ -172,10 +172,10 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       def: 'scout_imp',
       side: 'enemy',
       at: { x: 2, y: 2 },
-      hp: 20,
+      hp: 200,
       rune: 'rot_root_snare',
     });
-    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 30 });
+    addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 300 });
 
     const ctx = makeCtx(state);
     pushUnit(ctx, ctx.state.units[shoved.id]!, { x: 0, y: 1 }, 1, 0);
@@ -192,13 +192,13 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 3, y: 3 },
-      hp: 20,
+      hp: 200,
     });
     const bystander = addUnit(state, {
       def: 'scout_imp',
       side: 'enemy',
       at: { x: 4, y: 3 },
-      hp: 30,
+      hp: 300,
       // Impact-aligned, and Shatter splashes `impact`.
       rune: 'rot_root_snare',
     });
@@ -208,14 +208,14 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
     // One below the ceiling: the reaction resolves, and its splash lands *at* it.
     dealDamage(ctx, {
       target: { kind: 'unit', id: frozen.id },
-      amount: 2,
+      amount: 20,
       dtype: 'impact',
       cause: 'collision',
       chainDepth: MAX_CHAIN_DEPTH - 1,
     });
 
     expect(eventsOf(ctx.events, 'reactionTriggered'), 'Shatter still fires').toHaveLength(1);
-    expect(ctx.state.units[bystander.id]!.hp, 'and the splash still lands').toBeLessThan(30);
+    expect(ctx.state.units[bystander.id]!.hp, 'and the splash still lands').toBeLessThan(300);
     expect(
       eventsOf(ctx.events, 'runeDetonated'),
       'but the splash must not start a fresh chain',
@@ -230,16 +230,16 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       def: 'scout_imp',
       side: 'enemy',
       at: { x: 3, y: 3 },
-      hp: 2,
+      hp: 20,
       // Fires when the host dies.
       rune: 'soul_splinter_rune',
     });
-    addUnit(state, { def: 'vanguard_footman', side: 'player', at: { x: 5, y: 5 }, hp: 20 });
+    addUnit(state, { def: 'vanguard_footman', side: 'player', at: { x: 5, y: 5 }, hp: 200 });
 
     const ctx = makeCtx(state);
     dealDamage(ctx, {
       target: { kind: 'unit', id: doomed.id },
-      amount: 9,
+      amount: 90,
       dtype: 'physical',
       cause: 'spell',
       chainDepth: MAX_CHAIN_DEPTH,
@@ -261,7 +261,7 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
         def: 'scout_imp',
         side: 'enemy',
         at: { x, y },
-        hp: 4,
+        hp: 40,
         rune: 'cinder_rune',
       });
     }
@@ -272,7 +272,7 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
     // Light the first one. Each blast reaches the others, whose runes reach back.
     dealDamage(ctx, {
       target: { kind: 'unit', id: first.id },
-      amount: 3,
+      amount: 30,
       dtype: 'fire',
       cause: 'spell',
     });
@@ -297,19 +297,19 @@ describe('Arc is a reaction like any other', () => {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 3, y: 3 },
-      hp: 20,
+      hp: 200,
     });
     const near = addUnit(state, {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 4, y: 3 },
-      hp: 20,
+      hp: 200,
     });
     const far = addUnit(state, {
       def: 'vanguard_footman',
       side: 'enemy',
       at: { x: 6, y: 6 },
-      hp: 20,
+      hp: 200,
     });
     return { state, target, near, far };
   };
@@ -335,14 +335,14 @@ describe('Arc is a reaction like any other', () => {
 
     dealDamage(ctx, {
       target: { kind: 'unit', id: target.id },
-      amount: 3,
+      amount: 30,
       dtype: 'shock',
       cause: 'spell',
     });
 
-    expect(ctx.state.units[target.id]!.hp).toBe(17);
-    expect(ctx.state.units[near.id]!.hp, 'the arc').toBe(19);
-    expect(ctx.state.units[far.id]!.hp, 'out of reach').toBe(20);
+    expect(ctx.state.units[target.id]!.hp).toBe(170);
+    expect(ctx.state.units[near.id]!.hp, 'the arc').toBe(190);
+    expect(ctx.state.units[far.id]!.hp, 'out of reach').toBe(200);
   });
 
   it('announces itself, which it never used to', () => {
@@ -353,7 +353,7 @@ describe('Arc is a reaction like any other', () => {
 
     dealDamage(ctx, {
       target: { kind: 'unit', id: target.id },
-      amount: 3,
+      amount: 30,
       dtype: 'shock',
       cause: 'spell',
     });
@@ -371,7 +371,7 @@ describe('Arc is a reaction like any other', () => {
     const ctx = makeCtx(state);
     dealDamage(ctx, {
       target: { kind: 'unit', id: target.id },
-      amount: 3,
+      amount: 30,
       dtype: 'shock',
       cause: 'spell',
     });
@@ -389,7 +389,7 @@ describe('Arc is a reaction like any other', () => {
     const ctx = makeCtx(state);
     dealDamage(ctx, {
       target: { kind: 'unit', id: target.id },
-      amount: 3,
+      amount: 30,
       dtype: 'shock',
       cause: 'spell',
     });
@@ -402,18 +402,18 @@ describe('Arc is a reaction like any other', () => {
     // hpLoss, so a shock entirely eaten by plate still arced. Nothing else in the table
     // works that way.
     const { state, target, near } = storm();
-    state.units[target.id]!.armor = 9;
+    state.units[target.id]!.armor = 90;
 
     const ctx = makeCtx(state);
     dealDamage(ctx, {
       target: { kind: 'unit', id: target.id },
-      amount: 3,
+      amount: 30,
       dtype: 'shock',
       cause: 'spell',
     });
 
-    expect(ctx.state.units[target.id]!.hp, 'plate ate it').toBe(20);
-    expect(ctx.state.units[near.id]!.hp, 'so nothing arced').toBe(20);
+    expect(ctx.state.units[target.id]!.hp, 'plate ate it').toBe(200);
+    expect(ctx.state.units[near.id]!.hp, 'so nothing arced').toBe(200);
   });
 
   it('does not arc in clear weather', () => {
@@ -423,12 +423,12 @@ describe('Arc is a reaction like any other', () => {
     const ctx = makeCtx(state);
     dealDamage(ctx, {
       target: { kind: 'unit', id: target.id },
-      amount: 3,
+      amount: 30,
       dtype: 'shock',
       cause: 'spell',
     });
 
-    expect(ctx.state.units[near.id]!.hp).toBe(20);
+    expect(ctx.state.units[near.id]!.hp).toBe(200);
   });
 
   it('cannot arc from an arc', () => {
@@ -449,7 +449,7 @@ describe('Arc is a reaction like any other', () => {
 
     dealDamage(ctx, {
       target: { kind: 'unit', id: target.id },
-      amount: 3,
+      amount: 30,
       dtype: 'shock',
       cause: 'spell',
     });

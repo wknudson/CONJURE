@@ -107,13 +107,13 @@ describe('the beast takes its turn', () => {
       def: 'grave_sentinel',
       side: 'player',
       at: { x: 2, y: 5 },
-      hp: 20,
+      hp: 200,
       keywords: [],
     });
 
     const res = run(state, { type: 'endTurn' });
 
-    expect(res.state.units[victim.id]!.hp).toBeLessThan(20);
+    expect(res.state.units[victim.id]!.hp).toBeLessThan(200);
   });
 
   it('goes for its own side when they are the closer meal', () => {
@@ -124,15 +124,15 @@ describe('the beast takes its turn', () => {
       def: 'grave_sentinel',
       side: 'enemy',
       at: { x: 2, y: 3 },
-      hp: 20,
+      hp: 200,
       keywords: [],
     });
     // The player's unit is further away.
-    addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 5, y: 7 }, hp: 20, keywords: [] });
+    addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 5, y: 7 }, hp: 200, keywords: [] });
 
     const res = run(state, { type: 'endTurn' });
 
-    expect(res.state.units[ally.id]!.hp, 'the wolf ate what was closest').toBeLessThan(20);
+    expect(res.state.units[ally.id]!.hp, 'the wolf ate what was closest').toBeLessThan(200);
   });
 });
 
@@ -166,7 +166,7 @@ describe('the scavenger', () => {
       def: 'gilded_scavenger',
       side: 'enemy',
       at: { x: 2, y: 4 },
-      hp: 1,
+      hp: 10,
     });
     const hunter = addUnit(state, { def: 'magma_brute', side: 'player', at: { x: 2, y: 5 } });
 

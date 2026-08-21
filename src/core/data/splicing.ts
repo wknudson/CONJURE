@@ -60,6 +60,21 @@ export interface SpliceRecipe {
   baseCardId: string;
   catalystId: string;
   resultId: string;
+  /**
+   * Cards that must already be unlocked before the bench will attempt this pressing.
+   *
+   * A hybrid is two schools fused, and the base card only ever accounts for one of them.
+   * The prerequisite is the *other* half: you may not press a Vaporize Blast out of a fire
+   * spell and a cold rock unless you have actually learned to cast frost. It turns the
+   * bench from a shop into a payoff for having played both schools.
+   *
+   * **Never consumed.** These are permanent unlocks, and an unlock that could be spent
+   * would not be one — the same rule that stopped the base card being eaten. The Core is
+   * the whole price; this is the qualification.
+   *
+   * `baseCardId` is checked separately and needs no entry here.
+   */
+  requiredUnlockedCards?: readonly string[];
 }
 
 /**
@@ -74,11 +89,13 @@ export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
     baseCardId: 'flame_surge',
     catalystId: 'core_frost',
     resultId: 'vaporize_blast',
+    requiredUnlockedCards: ['glacial_spike'],
   },
   {
     baseCardId: 'flame_surge',
     catalystId: 'core_surge',
     resultId: 'overload_strike',
+    requiredUnlockedCards: ['arc_lash'],
   },
   // The mirror of the first row, and the only thing a Pyre Core is good for. Until this
   // existed the bench had no recipe taking one at all, so a core earned from a Master
@@ -87,16 +104,19 @@ export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
     baseCardId: 'glacial_spike',
     catalystId: 'core_pyre',
     resultId: 'cryo_combustion',
+    requiredUnlockedCards: ['flame_surge'],
   },
   {
     baseCardId: 'spore_cloud',
     catalystId: 'core_surge',
     resultId: 'galvanic_spores',
+    requiredUnlockedCards: ['arc_lash'],
   },
   {
     baseCardId: 'dark_tithe',
     catalystId: 'core_surge',
     resultId: 'aetheric_defibrillator',
+    requiredUnlockedCards: ['arc_lash'],
   },
 ];
 
@@ -113,6 +133,11 @@ export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
     const key = `${r.baseCardId}+${r.catalystId}`;
     if (seen.has(key)) throw new Error(`duplicate splice recipe: ${key}`);
     seen.add(key);
+    // A prerequisite naming the recipe's own product would be a card gated behind itself:
+    // unreachable, and silently so everywhere except here.
+    if (r.requiredUnlockedCards?.includes(r.resultId)) {
+      throw new Error(`splice recipe ${key} requires its own result`);
+    }
   }
 }
 

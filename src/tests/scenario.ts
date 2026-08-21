@@ -68,13 +68,13 @@ export function scenario(opts: {
     players: {
       player: blankCommander(
         'Hero',
-        opts.playerHp ?? 40,
+        opts.playerHp ?? 400,
         opts.playerArmor ?? 0,
         opts.pips ?? 10,
         opts.marrow ?? 0,
         width,
       ),
-      enemy: blankCommander('Foe', opts.enemyHp ?? 40, opts.enemyArmor ?? 0, 10, 0, width),
+      enemy: blankCommander('Foe', opts.enemyHp ?? 400, opts.enemyArmor ?? 0, 10, 0, width),
     },
     encounter: {
       id: 'test',
@@ -104,8 +104,8 @@ export function scenario(opts: {
       side: o.side ?? 'player',
       anchor: { ...o.at },
       footprint: 1,
-      hp: o.hp ?? 6,
-      maxHp: o.hp ?? 6,
+      hp: o.hp ?? 60,
+      maxHp: o.hp ?? 60,
       destructible: true,
       ...(o.rune ? { rune: { defId: o.rune, ownerSide: (o.side ?? 'player') as Side } } : {}),
     };

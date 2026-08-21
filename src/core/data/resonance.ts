@@ -28,7 +28,7 @@ export interface ResonanceDef {
 }
 
 /** What Verdant Growth returns. Small on purpose — see the passive. */
-export const VERDANT_GROWTH_HEAL = 2;
+export const VERDANT_GROWTH_HEAL = 20;
 
 export const RESONANCE: Partial<Record<School, ResonanceDef>> = {
   pyre: {
@@ -65,7 +65,7 @@ export const RESONANCE: Partial<Record<School, ResonanceDef>> = {
     apply(ctx, side, column) {
       for (const ally of unitsOf(ctx.state, side)) {
         if (!cellsOf(ally).some((c) => c.x === column)) continue;
-        grantArmor(ctx, { kind: 'unit', id: ally.id }, 1);
+        grantArmor(ctx, { kind: 'unit', id: ally.id }, 10);
       }
     },
   },
@@ -92,7 +92,7 @@ export const RESONANCE: Partial<Record<School, ResonanceDef>> = {
     name: 'Rime Guard',
     text: 'Your first Companion card each turn grants your Hero +2 Persistent Armor.',
     apply(ctx, side) {
-      grantArmor(ctx, { kind: 'portrait', side }, 2);
+      grantArmor(ctx, { kind: 'portrait', side }, 20);
     },
   },
 
@@ -143,7 +143,7 @@ export const RESONANCE: Partial<Record<School, ResonanceDef>> = {
       if (!victim) return;
       dealDamage(ctx, {
         target: { kind: 'unit', id: victim.id },
-        amount: 2,
+        amount: 20,
         dtype: 'spell',
         cause: 'spell',
       });

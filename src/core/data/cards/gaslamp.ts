@@ -24,12 +24,12 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
-    text: 'Vent a widening blast: 3 fire damage in a 3-deep cone, then shove everything caught 1 tile away.',
+    text: 'Vent a widening blast: 30 fire damage in a 3-deep cone, then shove everything caught 1 tile away.',
     target: { kind: 'line', length: 3 },
     effect: {
       op: 'seq',
       effects: [
-        { op: 'damage', amount: 3, dtype: 'fire', area: { shape: 'cone', depth: 3 } },
+        { op: 'damage', amount: 30, dtype: 'fire', area: { shape: 'cone', depth: 3 } },
         { op: 'shoveArea', distance: 1, area: { shape: 'cone', depth: 3 } },
       ],
     },
@@ -41,11 +41,11 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     // it hits — the same reason the shove goes to 2 instead of the damage going to 4.
     rank2: {
       cost: { pips: 2, marrow: 0 },
-      text: 'Vent a widening blast: 3 fire damage in a 4-deep cone, then shove everything caught 2 tiles away.',
+      text: 'Vent a widening blast: 30 fire damage in a 4-deep cone, then shove everything caught 2 tiles away.',
       effect: {
         op: 'seq',
         effects: [
-          { op: 'damage', amount: 3, dtype: 'fire', area: { shape: 'cone', depth: 4 } },
+          { op: 'damage', amount: 30, dtype: 'fire', area: { shape: 'cone', depth: 4 } },
           { op: 'shoveArea', distance: 2, area: { shape: 'cone', depth: 4 } },
         ],
       },
@@ -73,14 +73,14 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     keywords: ['Growth'],
     leavesRubble: true,
     unit: {
-      atk: 2,
-      hp: 6,
+      atk: 20,
+      hp: 60,
       mov: 1,
       rangeMin: 2,
       rangeMax: 4,
       footprint: 1,
       archetype: 'sniper',
-      escalationBonus: { atk: 1, hp: 0 },
+      escalationBonus: { atk: 10, hp: 0 },
       attackProfile: 'arcing',
     },
     // A bigger gun on the same carriage. The blind spot stays — a mortar that could
@@ -88,7 +88,7 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     // be screened.
     rank2: {
       text: 'Lobber. Fires 2-5 tiles, arcing over cover, and cannot depress its aim onto anything adjacent. Leaves rubble when it breaks.',
-      unit: { atk: 3, hp: 8, rangeMax: 5 },
+      unit: { atk: 30, hp: 80, rangeMax: 5 },
     },
   },
 
@@ -139,7 +139,7 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     school: 'dusk',
     source: 'hero',
     kind: 'spell',
-    text: 'Bleed an un-exhausted friendly minion for 4. Extract Marrow equal to the health actually taken, up to 4, and draw a card.',
+    text: 'Bleed an un-exhausted friendly minion for 40. Extract Marrow equal to the health actually taken, up to 4, and draw a card.',
     target: { kind: 'entity', side: 'ally', includeObstacles: false, requireUnexhausted: true },
     // The card's identity survives the overhaul untouched, because `titheDamage` records
     // the *landed* wound: bleeding a 2-HP body still yields 2, and a fat one still caps at
@@ -148,7 +148,7 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     effect: {
       op: 'seq',
       effects: [
-        { op: 'tithe', damage: 4, marrow: 0 },
+        { op: 'tithe', damage: 40, marrow: 0 },
         { op: 'extractMarrow', amount: { from: 'titheDamage', max: 4 } },
         { op: 'drawCards', amount: 1 },
       ],
@@ -156,11 +156,11 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     keywords: [],
     // The cap is the card, so the cap is what moves. Still free, still paid for in bodies.
     rank2: {
-      text: 'Bleed an un-exhausted friendly minion for 6. Extract Marrow equal to the health actually taken, up to 6, and draw two cards.',
+      text: 'Bleed an un-exhausted friendly minion for 60. Extract Marrow equal to the health actually taken, up to 6, and draw two cards.',
       effect: {
         op: 'seq',
         effects: [
-          { op: 'tithe', damage: 6, marrow: 0 },
+          { op: 'tithe', damage: 60, marrow: 0 },
           { op: 'extractMarrow', amount: { from: 'titheDamage', max: 6 } },
           { op: 'drawCards', amount: 2 },
         ],

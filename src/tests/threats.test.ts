@@ -60,7 +60,7 @@ describe('Scrap-Titan', () => {
   it('is a 2x2 body that grows without a ceiling', () => {
     const stats = CARDS.scrap_titan!.unit!;
     expect(stats.footprint).toBe(2);
-    expect(stats.hp).toBe(25);
+    expect(stats.hp).toBe(250);
     expect(CARDS.scrap_titan!.keywords).toContain('Growth');
 
     const { state, beast } = titan();
@@ -156,8 +156,8 @@ describe('Marrow-Hound', () => {
       at: { x: 3, y: 4 },
       fresh: false,
     });
-    const healthy = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 3, y: 5 }, hp: 12 });
-    const wounded = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 6, y: 4 }, hp: 1 });
+    const healthy = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 3, y: 5 }, hp: 120 });
+    const wounded = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 6, y: 4 }, hp: 10 });
     state.activeSide = 'enemy';
     return { state, hound, healthy, wounded };
   };
@@ -169,7 +169,7 @@ describe('Marrow-Hound', () => {
     feralAggressStep(ctx, hound.id);
 
     // It should not have bitten the thing that was already touching it.
-    expect(ctx.state.units[healthy.id]!.hp, 'the healthy one is untouched').toBe(12);
+    expect(ctx.state.units[healthy.id]!.hp, 'the healthy one is untouched').toBe(120);
     // And it should have closed on, or killed, the wounded one.
     const stillThere = ctx.state.units[wounded.id];
     const closed = Math.max(
@@ -183,15 +183,15 @@ describe('Marrow-Hound', () => {
     // The Ridge Wolf's behaviour must be untouched by the new field.
     const state = scenario({ width: 8, height: 8 });
     const wolf = addUnit(state, { def: 'ridge_wolf', side: 'enemy', at: { x: 3, y: 4 }, fresh: false });
-    const close = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 3, y: 5 }, hp: 12 });
-    const farAndHurt = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 7, y: 4 }, hp: 1 });
+    const close = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 3, y: 5 }, hp: 120 });
+    const farAndHurt = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 7, y: 4 }, hp: 10 });
     state.activeSide = 'enemy';
     const ctx = makeCtx(state);
 
     feralAggressStep(ctx, wolf.id);
 
-    expect(ctx.state.units[close.id]!.hp, 'it bit what was closest').toBeLessThan(12);
-    expect(ctx.state.units[farAndHurt.id]!.hp, 'and ignored the distant wound').toBe(1);
+    expect(ctx.state.units[close.id]!.hp, 'it bit what was closest').toBeLessThan(120);
+    expect(ctx.state.units[farAndHurt.id]!.hp, 'and ignored the distant wound').toBe(10);
   });
 
   it('belongs to nobody, and moves the turn it lands', () => {
@@ -216,8 +216,8 @@ describe('Plague-Bearer', () => {
       def: 'grave_sentinel',
       side: 'player',
       at: { x: 3, y: 5 },
-      hp: 12,
-      armor: opts.armor ?? 6,
+      hp: 120,
+      armor: opts.armor ?? 60,
     });
     state.activeSide = 'enemy';
     return { state, carrier, victim };
@@ -253,7 +253,7 @@ describe('Plague-Bearer', () => {
     expect(hit.state.units[victim.id]!.statuses.toxin, 'and so is the venom').toBeUndefined();
     // Armour is still spent as it soaks (`cmd.armor -= absorbed`), so the swing was not
     // free for the defender either.
-    expect(hit.state.units[victim.id]!.armor).toBe(5);
+    expect(hit.state.units[victim.id]!.armor).toBe(50);
   });
 
   it('goes around armour once it is actually in', () => {
@@ -267,7 +267,7 @@ describe('Plague-Bearer', () => {
     });
 
     // Re-plate the victim *after* the poison is in, so the tick has armour to ignore.
-    hit.state.units[victim.id]!.armor = 5;
+    hit.state.units[victim.id]!.armor = 50;
     expect(hit.state.units[victim.id]!.statuses.toxin).toBe(1);
 
     const ticked = run(hit.state, { type: 'endTurn' });
@@ -279,11 +279,11 @@ describe('Plague-Bearer', () => {
     expect(
       ticked.state.units[victim.id]!.armor,
       'the tick goes around the armour rather than through it',
-    ).toBe(5);
+    ).toBe(50);
   });
 
   it('hits for almost nothing, which is the point', () => {
-    expect(CARDS.plague_bearer!.unit!.atk).toBe(1);
-    expect(CARDS.plague_bearer!.unit!.hp).toBe(8);
+    expect(CARDS.plague_bearer!.unit!.atk).toBe(10);
+    expect(CARDS.plague_bearer!.unit!.hp).toBe(80);
   });
 });

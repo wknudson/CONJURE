@@ -104,15 +104,15 @@ describe('the roll reaching the Pact', () => {
 
   it('opens the fight on this beast constitution', () => {
     const g = character();
-    const beast = withRoll(43);
+    const beast = withRoll(430);
     syncPactCeiling(g.overworld, beast);
 
     const { state } = createCombat(NOVICE_DUELIST, 7, undefined, undefined, carryFor(g.overworld, beast));
-    expect(state.players.player.maxHp).toBe(43);
+    expect(state.players.player.maxHp).toBe(430);
     // Not 43: the character was standing at 40 and a bigger beast is a bigger gauge, not
     // a heal. Growth of your own is what `levelCompanion` hands over; this is somebody
     // else's constitution.
-    expect(state.players.player.hp).toBe(40);
+    expect(state.players.player.hp).toBe(400);
   });
 
   it('falls back to the standard body for a companion with no roll', () => {
@@ -150,7 +150,7 @@ describe('the knack reaching the board', () => {
     // The same boundary relics and brews keep.
     const g = character();
     const carry = carryFor(g.overworld, wearing('banked_coals'));
-    expect(carry.boons?.armor).toBe(2);
+    expect(carry.boons?.armor).toBe(20);
     expect(JSON.stringify(carry)).not.toContain('banked_coals');
   });
 
@@ -159,7 +159,7 @@ describe('the knack reaching the board', () => {
     g.overworld.relics = ['relic_coat'];
     g.overworld.equippedRelics = { ...emptyLoadout(), vestment: 'relic_coat' };
 
-    expect(carryFor(g.overworld, wearing('banked_coals')).boons?.armor, '3 coat + 2 coals').toBe(5);
+    expect(carryFor(g.overworld, wearing('banked_coals')).boons?.armor, '3 coat + 2 coals').toBe(50);
   });
 
   it('takes the higher ceiling when gear and knack both raise it', () => {

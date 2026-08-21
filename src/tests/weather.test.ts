@@ -147,14 +147,14 @@ describe('torrential rain', () => {
       def: 'grave_sentinel',
       side: 'enemy',
       at: { x: 3, y: 3 },
-      hp: 20,
+      hp: 200,
       keywords: [],
     });
     state.units[foe.id]!.statuses.burn = stacks;
 
     // Statuses tick at the start of the burning side's turn.
     const res = applyCommand(state, { type: 'endTurn' });
-    return 20 - res.state.units[foe.id]!.hp;
+    return 200 - res.state.units[foe.id]!.hp;
   }
 
   it('blunts fire', () => {
@@ -168,7 +168,7 @@ describe('torrential rain', () => {
       def: 'grave_sentinel',
       side: 'enemy',
       at: { x: 3, y: 3 },
-      hp: 20,
+      hp: 200,
       keywords: [],
     });
 
@@ -178,7 +178,7 @@ describe('torrential rain', () => {
       target: { kind: 'unit', id: foe.id },
     });
 
-    expect(20 - res.state.units[foe.id]!.hp).toBe(state.units[imp.id]!.atk);
+    expect(200 - res.state.units[foe.id]!.hp).toBe(state.units[imp.id]!.atk);
   });
 
   it('cannot drive a hit below nothing', () => {
@@ -218,7 +218,7 @@ describe('torrential rain conducting a shock', () => {
     const ctx = makeCtx(next);
     dealDamage(ctx, {
       target: { kind: 'unit', id: targetId },
-      amount: 3,
+      amount: 30,
       dtype,
       cause: 'spell',
     });
@@ -229,11 +229,11 @@ describe('torrential rain conducting a shock', () => {
     const state = underSky(weather);
     // The one struck, two of its own side touching it, one standing clear, and a unit
     // of the caster's side pressed right up against the target.
-    const primary = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 3 }, hp: 20 });
-    const orthogonal = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 3 }, hp: 20 });
-    const diagonal = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 20 });
-    const clear = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 6, y: 6 }, hp: 20 });
-    const ally = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 3, y: 4 }, hp: 20 });
+    const primary = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 3 }, hp: 200 });
+    const orthogonal = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 3 }, hp: 200 });
+    const diagonal = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200 });
+    const clear = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 6, y: 6 }, hp: 200 });
+    const ally = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 3, y: 4 }, hp: 200 });
     return { state, primary, orthogonal, diagonal, clear, ally };
   };
 
@@ -241,33 +241,33 @@ describe('torrential rain conducting a shock', () => {
     const { state, primary, orthogonal, diagonal, clear } = cluster({ kind: 'rain' });
     const out = strike(state, primary.id, 'shock');
 
-    expect(out.units[primary.id]!.hp, 'the primary takes the full hit').toBe(17);
-    expect(out.units[orthogonal.id]!.hp, 'orthogonal neighbour').toBe(19);
-    expect(out.units[diagonal.id]!.hp, 'diagonal neighbour').toBe(19);
-    expect(out.units[clear.id]!.hp, 'two tiles away, untouched').toBe(20);
+    expect(out.units[primary.id]!.hp, 'the primary takes the full hit').toBe(170);
+    expect(out.units[orthogonal.id]!.hp, 'orthogonal neighbour').toBe(190);
+    expect(out.units[diagonal.id]!.hp, 'diagonal neighbour').toBe(190);
+    expect(out.units[clear.id]!.hp, 'two tiles away, untouched').toBe(200);
   });
 
   it("strikes the caster's own line too, exactly as a volatile crystal does", () => {
     // Electricity does not check allegiance. This is what makes casting into a melee in
     // the rain a decision rather than a free bonus.
     const { state, primary, ally } = cluster({ kind: 'rain' });
-    expect(strike(state, primary.id, 'shock').units[ally.id]!.hp).toBe(19);
+    expect(strike(state, primary.id, 'shock').units[ally.id]!.hp).toBe(190);
   });
 
   it('does nothing under any other sky', () => {
     const { state, primary, orthogonal, diagonal } = cluster({ kind: 'fog' });
     const out = strike(state, primary.id, 'shock');
-    expect(out.units[primary.id]!.hp).toBe(17);
-    expect(out.units[orthogonal.id]!.hp).toBe(20);
-    expect(out.units[diagonal.id]!.hp).toBe(20);
+    expect(out.units[primary.id]!.hp).toBe(170);
+    expect(out.units[orthogonal.id]!.hp).toBe(200);
+    expect(out.units[diagonal.id]!.hp).toBe(200);
   });
 
   it('does not arc from fire, however wet the ground', () => {
     const { state, primary, orthogonal } = cluster({ kind: 'rain' });
     const out = strike(state, primary.id, 'fire');
     // Rain dampens the fire instead, which is the other half of the same sky.
-    expect(out.units[primary.id]!.hp).toBe(20 - (3 - RAIN_FIRE_PENALTY));
-    expect(out.units[orthogonal.id]!.hp).toBe(20);
+    expect(out.units[primary.id]!.hp).toBe(200 - (30 - RAIN_FIRE_PENALTY));
+    expect(out.units[orthogonal.id]!.hp).toBe(200);
   });
 
   it('arcs deal physical, so an arc cannot arc', () => {

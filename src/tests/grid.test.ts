@@ -92,7 +92,7 @@ describe('Clockwork Bombardier', () => {
     });
     // A Guardian directly in the line, which would stop any ordinary shot.
     addUnit(state, { def: 'slag_iron_golem', side: 'player', at: { x: 2, y: 4 } });
-    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 12 });
+    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 120 });
     return { state, gun, foe };
   };
 
@@ -114,7 +114,7 @@ describe('Clockwork Bombardier', () => {
       at: { x: 2, y: 5 },
       fresh: false,
     });
-    const close = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 4 }, hp: 9 });
+    const close = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 4 }, hp: 90 });
 
     const shots = legalAttacks(state, state.units[gun.id]!);
     expect(shots.some((t) => t.kind === 'unit' && t.id === close.id)).toBe(false);
@@ -129,7 +129,7 @@ describe('Clockwork Bombardier', () => {
       target: { kind: 'unit', id: foe.id },
     });
 
-    expect(damageTo(res.events, foe.id)).toBe(1);
+    expect(damageTo(res.events, foe.id)).toBe(10);
     expect(res.state.units[foe.id]!.statuses.charged).toBe(1);
     expect(eventsOf(res.events, 'statusApplied').some((e) => e.status === 'charged')).toBe(true);
   });
@@ -155,7 +155,7 @@ describe('Clockwork Bombardier', () => {
       at: { x: 2, y: 5 },
       fresh: false,
     });
-    const doomed = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 1 });
+    const doomed = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 10 });
 
     const res = run(state, {
       type: 'attack',
@@ -199,7 +199,7 @@ describe('Clockwork Bombardier', () => {
       at: { x: 2, y: 3 },
       fresh: false,
     });
-    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 12 });
+    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 120 });
 
     const res = run(state, {
       type: 'attack',
@@ -217,9 +217,9 @@ describe('Seismic Slam', () => {
   const ringed = () => {
     const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], pips: 6 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
-    const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 9 });
-    const east = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 3 }, hp: 9 });
-    const corner = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 9 });
+    const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 90 });
+    const east = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 3 }, hp: 90 });
+    const corner = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 90 });
     return { state, north, east, corner };
   };
 
@@ -240,7 +240,7 @@ describe('Seismic Slam', () => {
     // Everything it produces comes from what the bodies hit on the way out.
     const state = scenario({ width: 8, height: 8, hand: ['seismic_slam'], pips: 6 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 4, y: 5 }, titheBonus: 0 });
-    const lone = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 4, y: 3 }, hp: 9 });
+    const lone = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 4, y: 3 }, hp: 90 });
     const card = handCard(state, 'player', 'seismic_slam');
 
     const res = run(state, play(card, atTile(4, 4)));
@@ -255,7 +255,7 @@ describe('Seismic Slam', () => {
     // restraint, and the reason it is aimed at a tile rather than at an enemy.
     const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], pips: 6 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 4, y: 5 }, titheBonus: 0 });
-    const friend = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 5 }, hp: 9 });
+    const friend = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 5 }, hp: 90 });
     const card = handCard(state, 'player', 'seismic_slam');
 
     const res = run(state, play(card, atTile(2, 4)));
@@ -268,7 +268,7 @@ describe('Seismic Slam', () => {
     // collision — which is the card's entire reason to exist.
     const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], pips: 6 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
-    const pinned = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 0 }, hp: 9 });
+    const pinned = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 0 }, hp: 90 });
     const card = handCard(state, 'player', 'seismic_slam');
 
     const res = run(state, play(card, atTile(2, 1)));
@@ -286,8 +286,8 @@ describe('Slag-Iron Golem', () => {
     const res = run(state, play(card, atTile(2, 6)));
     const summoned = eventsOf(res.events, 'unitSummoned')[0]!;
 
-    expect(summoned.unit.hp).toBe(8);
-    expect(summoned.unit.atk).toBe(3);
+    expect(summoned.unit.hp).toBe(80);
+    expect(summoned.unit.atk).toBe(30);
     expect(summoned.unit.keywords).toEqual(expect.arrayContaining(['Guardian', 'Counter']));
   });
 
@@ -305,7 +305,7 @@ describe('Slag-Iron Golem', () => {
       def: 'grave_sentinel',
       side: 'enemy',
       at: { x: 2, y: 3 },
-      hp: 12,
+      hp: 120,
       fresh: false,
     });
     // Drive the swing directly rather than hoping the AI throws itself at a Counter wall.
@@ -318,11 +318,11 @@ describe('Slag-Iron Golem', () => {
     });
 
     // The Sentinel's 2 lands, then the Golem ripostes for its own 3.
-    expect(res.state.units[golem.id]!.hp, '8 less the Sentinel 2').toBe(6);
-    expect(res.state.units[attacker.id]!.hp, '12 less the riposte 3').toBe(9);
+    expect(res.state.units[golem.id]!.hp, '8 less the Sentinel 2').toBe(60);
+    expect(res.state.units[attacker.id]!.hp, '12 less the riposte 3').toBe(90);
     const counters = eventsOf(res.events, 'damageDealt').filter((e) => e.cause === 'counter');
     expect(counters).toHaveLength(1);
-    expect(counters[0]!.amount).toBe(3);
+    expect(counters[0]!.amount).toBe(30);
   });
 
   it('does not riposte a shot it cannot reach', () => {
@@ -345,7 +345,7 @@ describe('Slag-Iron Golem', () => {
     });
 
     expect(eventsOf(res.events, 'damageDealt').filter((e) => e.cause === 'counter')).toEqual([]);
-    expect(res.state.units[gun.id]!.hp, 'untouched').toBe(4);
+    expect(res.state.units[gun.id]!.hp, 'untouched').toBe(40);
   });
 });
 

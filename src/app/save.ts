@@ -28,7 +28,16 @@ import { RELICS, slotOf } from '../core/data/relics.js';
 import { HERO_SCHOOLS, validateDeck } from '../core/data/deckRules.js';
 import type { CardModifier } from '../core/types/cards.js';
 import { rollSpellModifiers } from '../core/overworld/vivarium.js';
-import { DEFAULT_ROSTER, ROSTER_BUDGET, validateRoster } from '../core/data/roster.js';
+import {
+  DEFAULT_ROSTER,
+  ROSTER_BUDGET,
+  UNIVERSAL_ROSTER,
+  VANGUARD_START_LEVEL,
+  unlockVanguard,
+  validateRoster,
+  type VanguardProgress,
+} from '../core/data/roster.js';
+import { STAT_SCALE } from '../core/scale.js';
 import { COMPANIONS, DEFAULT_COMPANION, companionById } from '../core/data/companions.js';
 import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
 import type {
@@ -42,17 +51,29 @@ import type { RelicLoadout } from '../core/overworld/state.js';
 import {
   syncPactCeiling,
   BASE_PACT_HP,
+  HP_PER_LEVEL,
   HP_ROLL_MAX,
   HP_ROLL_MIN,
   tameCompanion,
   type CompanionInstance,
 } from '../core/overworld/vivarium.js';
+import { APOTHECARY_STOCK } from '../core/data/apothecary.js';
 import { traitById, traitsFor } from '../core/data/companionTraits.js';
 import { makeRng } from '../core/util/rng.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
+
+/**
+ * The first version whose health numbers are written at the stretched scale.
+ *
+ * Anything older holds a Pact of 40 and a Companion rolled between 36 and 44, and those
+ * are now a tenth of what they should be. Left alone, a returning player would boot into
+ * a character at 22 of 400 -- critically wounded by an upgrade, and unable to take a
+ * contract until they had paid a Clinic bill for damage they never took.
+ */
+const FIRST_STRETCHED_SAVE = 14;
 
 /** Posters on the wall. Three, and the wall is the reason it is three. */
 export const PROFILE_SLOTS = 3;
@@ -141,6 +162,19 @@ export interface Profile {
    * deployment phase at all, which is exactly the pre-overhaul behaviour.
    */
   roster: string[];
+  /**
+   * What each Vanguard body has trained to, keyed by its `defId` (v14).
+   *
+   * Separate from `roster` above, and it has to be: the roster is *this season's* four
+   * bodies, and progress belongs to every body the character has ever unlocked. Benching a
+   * Footman for a Behemoth must not cost the Footman its career, or the point-buy would
+   * quietly become a decision you can never take back.
+   *
+   * A key exists from the moment a body is unlocked, not from the moment it is fielded.
+   * Anything missing fights at level 1, so a save written before this field is a save
+   * where everything is simply new.
+   */
+  vanguardProgress: Record<string, VanguardProgress>;
   /**
    * The **instance** currently standing beside the player, by `instanceId` (v9).
    *
@@ -244,6 +278,11 @@ export function newProfile(profileId: string, name = 'Commander'): Profile {
     // A warband that spends the ten exactly, so a new player meets the deployment phase
     // with a real line to place rather than an empty tray and a rule to go and read.
     roster: [...DEFAULT_ROSTER],
+    // Everything they can field, on the books at level 1. Seeded at creation rather than
+    // on first deployment so the Assembly screen can show a level beside a body the player
+    // has not taken into a fight yet -- an unlocked body with no record would read as a
+    // bug, not as a body at level 1.
+    vanguardProgress: startingVanguardProgress(),
     activeCompanionId: companions[0]!.instanceId,
     companions,
     record: { wins: 0, losses: 0, bound: 0 },
@@ -357,7 +396,7 @@ function migrateFile(raw: unknown, notes: string[]): SaveFile {
 
   // --- the single-character shape, v6 and earlier ---
   if (!data.profiles && data.collection) {
-    const only = migrateProfile(raw, SLOT_IDS[0], notes);
+    const only = migrateProfile(raw, SLOT_IDS[0], notes, version);
     notes.push('Your character was pinned to the first poster.');
     return {
       version: SAVE_VERSION,
@@ -371,7 +410,7 @@ function migrateFile(raw: unknown, notes: string[]): SaveFile {
   for (const slot of SLOT_IDS) {
     const saved = data.profiles?.[slot];
     if (!saved || typeof saved !== 'object') continue;
-    profiles[slot] = migrateProfile(saved, slot, notes);
+    profiles[slot] = migrateProfile(saved, slot, notes, version);
   }
 
   // A pointer at an empty slot is worse than no pointer: it would open a character that
@@ -382,11 +421,49 @@ function migrateFile(raw: unknown, notes: string[]): SaveFile {
   return { version: SAVE_VERSION, activeProfileId, difficulty, profiles };
 }
 
+/** Every universally available body, plus the starting warband, all at level 1. */
+function startingVanguardProgress(): Record<string, VanguardProgress> {
+  let progress: Record<string, VanguardProgress> = {};
+  for (const defId of [...UNIVERSAL_ROSTER, ...DEFAULT_ROSTER]) {
+    progress = unlockVanguard(progress, defId);
+  }
+  return progress;
+}
+
+/**
+ * Rebuilds Vanguard progression from disk.
+ *
+ * Every entry is reconstructed rather than trusted, on this file's standing rule. A record
+ * naming a body that no longer exists is dropped outright -- the alternative is a level
+ * quietly attached to nothing, which would resurface as an Assembly screen listing a unit
+ * the game cannot build.
+ */
+function readVanguardProgress(raw: unknown): Record<string, VanguardProgress> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, VanguardProgress> = {};
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    const defId = rename(id);
+    if (!CARDS[defId]) continue;
+    const p = value as Partial<VanguardProgress> | undefined;
+    out[defId] = {
+      level: Math.max(VANGUARD_START_LEVEL, Math.round(numberOr(p?.level, VANGUARD_START_LEVEL))),
+      xp: Math.max(0, Math.round(numberOr(p?.xp, 0))),
+    };
+  }
+  return out;
+}
+
 /**
  * Brings one character up to the current shape. Unknown fields are dropped and missing
  * ones filled from defaults, so a profile can never be *partly* valid.
  */
-function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
+function migrateProfile(
+  raw: unknown,
+  slot: SlotId,
+  notes: string[],
+  /** The file's version, so pre-Stretch health can be scaled on the way in. */
+  version: number,
+): Profile {
   const base = newProfile(slot);
   if (!raw || typeof raw !== 'object') return base;
   const data = raw as Partial<Profile> & { overworld?: unknown };
@@ -502,7 +579,18 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
     roster = repaired;
   }
 
-  const companions = readRoster(data.companions, base.companions);
+  // --- Vanguard progression (v14) ---
+  //
+  // Read what is there, then backfill: any body on the roster, and every universally
+  // available one, gets a record if it does not have one. A save from before this field
+  // existed therefore arrives with a complete set at level 1, which is exactly the state
+  // the game had before levelling.
+  let vanguardProgress = readVanguardProgress(data.vanguardProgress);
+  for (const defId of [...UNIVERSAL_ROSTER, ...roster]) {
+    vanguardProgress = unlockVanguard(vanguardProgress, defId);
+  }
+
+  const companions = readRoster(data.companions, base.companions, version);
 
   // v5 and earlier called this `lastCompanionId`; v8 and earlier held a *species* id.
   // Read any of the three, write an instance id — falling back to whoever is first on the
@@ -547,9 +635,12 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
   // fight in progress and is deliberately never restored: a reload is not a resume, and
   // the open contract on `overworld` is what the forfeit failsafe reads instead.
   const nested = (data.state as { overworld?: unknown } | undefined)?.overworld;
-  const overworld = readOverworld(nested ?? data.overworld) ?? newRun(
+  const overworld = readOverworld(nested ?? data.overworld, version) ?? newRun(
     Math.floor(Math.random() * 1e9) >>> 0,
   );
+  if (version < FIRST_STRETCHED_SAVE) {
+    notes.push('Health numbers are ten times larger now. Yours were scaled to match.');
+  }
 
   const profile: Profile = {
     profileId: slot,
@@ -559,6 +650,7 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
     collection,
     decks,
     roster,
+    vanguardProgress,
     activeCompanionId,
     companions,
     record,
@@ -582,15 +674,18 @@ function migrateProfile(raw: unknown, slot: SlotId, notes: string[]): Profile {
  * load-bearing rather than paranoid, and a run that cannot be rebuilt is dropped whole
  * instead of resurrected with holes in it.
  */
-function readOverworld(raw: unknown): OverworldState | undefined {
+function readOverworld(raw: unknown, version: number): OverworldState | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const data = raw as Partial<OverworldState>;
   if (!data.pact || typeof data.pact !== 'object') return undefined;
 
-  const maxHp = Math.max(1, Math.round(numberOr(data.pact.maxHp, 40)));
+  // Both halves of the gauge, or neither. Scaling the ceiling without the current health
+  // is the same bug as not scaling at all, wearing a different mask.
+  const stretch = version < FIRST_STRETCHED_SAVE ? STAT_SCALE : 1;
+  const maxHp = Math.max(1, Math.round(numberOr(data.pact.maxHp, BASE_PACT_HP / stretch)) * stretch);
   const currentHp = Math.max(
     0,
-    Math.min(maxHp, Math.round(numberOr(data.pact.currentHp, maxHp))),
+    Math.min(maxHp, Math.round(numberOr(data.pact.currentHp, maxHp / stretch)) * stretch),
   );
 
   const pos = data.playerPos;
@@ -600,8 +695,14 @@ function readOverworld(raw: unknown): OverworldState | undefined {
     mapId: typeof pos?.mapId === 'string' ? pos.mapId : 'start',
   };
 
+  // Re-read off the shelf rather than trusted off disk. What a Mending Tonic restores is
+  // a balance decision that lives in one file, and a bottle bought before the Stat Stretch
+  // would otherwise keep healing 12 of 400 forever. Anything the shelf no longer sells is
+  // dropped, which is what `isConsumable` already did for a retired brew.
   const inventory = (Array.isArray(data.inventory) ? data.inventory : [])
     .filter(isConsumable)
+    .map((item) => APOTHECARY_STOCK.find((s) => s.item.id === item.id)?.item)
+    .filter((item): item is Consumable => item !== undefined)
     .slice(0, INVENTORY_LIMIT);
 
   return {
@@ -812,7 +913,12 @@ function readSpellModifiers(
       mod.pipCostDelta = Math.max(-1, Math.min(1, Math.round(v.pipCostDelta)));
     }
     if (typeof v.bonusDamage === 'number' && Number.isFinite(v.bonusDamage)) {
-      mod.bonusDamage = Math.max(0, Math.min(1, Math.round(v.bonusDamage)));
+      // The table rolls one *stretched* point. A pre-Stretch save holding a literal 1 is
+      // scaled up rather than clamped down, or the roll a player caught would quietly
+      // become a tenth of what it was worth.
+      const raw = Math.round(v.bonusDamage);
+      const scaled = raw > 0 && raw < STAT_SCALE ? raw * STAT_SCALE : raw;
+      mod.bonusDamage = Math.max(0, Math.min(STAT_SCALE, scaled));
     }
     if (v.grantRetain === true) mod.grantRetain = true;
     if (Object.keys(mod).length > 0) out[defId] = mod;
@@ -820,15 +926,21 @@ function readSpellModifiers(
   return out;
 }
 
-function readRoster(raw: unknown, base: CompanionInstance[]): CompanionInstance[] {
+function readRoster(
+  raw: unknown,
+  base: CompanionInstance[],
+  version: number,
+): CompanionInstance[] {
   if (!raw || typeof raw !== 'object') return base;
   const known = new Set(COMPANIONS.map((c) => c.id));
+  const stretch = version < FIRST_STRETCHED_SAVE ? STAT_SCALE : 1;
 
   const clean = (
     saved: Partial<CompanionInstance>,
     baseId: string,
     fallbackId: string,
   ): CompanionInstance => {
+    const level = Math.max(1, Math.round(numberOr(saved.level, 1)));
     const pool = traitsFor(baseId);
     const traitId =
       typeof saved.traitId === 'string' && traitById(saved.traitId)?.baseId === baseId
@@ -838,13 +950,22 @@ function readRoster(raw: unknown, base: CompanionInstance[]): CompanionInstance[
     return {
       instanceId: typeof saved.instanceId === 'string' && saved.instanceId ? saved.instanceId : fallbackId,
       baseId,
-      // Clamped to the band it could have been rolled in, so a hand-edited 400 is a 44.
+      // Clamped to the band it could have been rolled in, so a hand-edited 4000 is a 440.
+      // Scaled first: a pre-Stretch roll of 44 clamps to 360 if it is read as-is, which
+      // would quietly turn every good constitution into the worst one.
       baseHpRoll: Math.min(
         HP_ROLL_MAX,
-        Math.max(HP_ROLL_MIN, Math.round(numberOr(saved.baseHpRoll, BASE_PACT_HP))),
+        Math.max(
+          HP_ROLL_MIN,
+          Math.round(numberOr(saved.baseHpRoll, BASE_PACT_HP / stretch)) * stretch,
+        ),
       ),
-      level: Math.max(1, Math.round(numberOr(saved.level, 1))),
-      bonusMaxHp: Math.max(0, Math.round(numberOr(saved.bonusMaxHp, 0))),
+      level,
+      // Derived from the level rather than read, which is what it has always been:
+      // `levelCompanion` raises the two together and nothing else touches either. Deriving
+      // it means the pre-Stretch value on disk needs no scaling rule of its own -- and a
+      // hand-edited bonus can no longer disagree with the level that was paid for.
+      bonusMaxHp: (level - 1) * HP_PER_LEVEL,
       startingArmor: Math.max(0, Math.round(numberOr(saved.startingArmor, 0))),
       bonusPips: Math.max(0, Math.round(numberOr(saved.bonusPips, 0))),
       traitId,
@@ -876,7 +997,11 @@ function readRoster(raw: unknown, base: CompanionInstance[]): CompanionInstance[
     const saved = (raw as Record<string, Partial<CompanionInstance>>)[companion.id];
     if (!saved || typeof saved !== 'object') continue;
     n += 1;
-    legacy.push(clean({ ...saved, baseHpRoll: BASE_PACT_HP }, companion.id, `${companion.id}-${n}`));
+    // No `baseHpRoll` override: a v8 entry never had one, and `clean` already falls back
+    // to the standard body *in the units the save was written in*. Forcing the current
+    // constant in here fed a stretched 400 into the pre-Stretch scaling and handed every
+    // migrated beast the best constitution in the band.
+    legacy.push(clean({ ...saved }, companion.id, `${companion.id}-${n}`));
   }
 
   return legacy.length > 0 ? legacy : base;

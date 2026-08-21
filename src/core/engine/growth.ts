@@ -19,6 +19,7 @@ import type { Unit } from '../types/units.js';
 import { CARDS } from '../data/cards/index.js';
 import { auraDef, AURA_LAST_PAYING_STACK } from '../data/auras.js';
 import { dealDamage } from './damage.js';
+import { STAT_SCALE } from '../scale.js';
 
 /** A 1x1 enemy's ceiling, unchanged. */
 export const GROWTH_CAP = 3;
@@ -61,7 +62,7 @@ export function growUnit(ctx: Ctx, unit: Unit): void {
   }
   if (unit.escalation >= unit.escalationCap) return;
 
-  const bonus = CARDS[unit.defId]?.unit?.escalationBonus ?? { atk: 1, hp: 0 };
+  const bonus = CARDS[unit.defId]?.unit?.escalationBonus ?? { atk: STAT_SCALE, hp: 0 };
   unit.escalation += 1;
   unit.atk += bonus.atk;
   unit.maxHp += bonus.hp;

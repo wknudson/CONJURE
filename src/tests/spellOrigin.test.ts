@@ -30,7 +30,7 @@ const RANGED_BOLT = defineCard({
   kind: 'spell',
   text: 'A test spell with reach.',
   target: { kind: 'entity', side: 'enemy', includeObstacles: false },
-  effect: { op: 'damage', amount: 2, dtype: 'frost', area: { shape: 'target' } },
+  effect: { op: 'damage', amount: 20, dtype: 'frost', area: { shape: 'target' } },
   keywords: [],
   range: 3,
   needsLoS: true,
@@ -45,7 +45,7 @@ const HERO_BOLT = defineCard({
   kind: 'spell',
   text: 'A test spell cast by the Architect.',
   target: { kind: 'entity', side: 'enemy', includeObstacles: false },
-  effect: { op: 'damage', amount: 2, dtype: 'spell', area: { shape: 'target' } },
+  effect: { op: 'damage', amount: 20, dtype: 'spell', area: { shape: 'target' } },
   keywords: [],
 });
 
@@ -102,7 +102,7 @@ describe('sight from the Companion', () => {
       side: 'player',
       anchor: { x: 2, y: 5 },
       footprint: 1,
-      hp: 8,
+      hp: 80,
       maxHp: 8,
       destructible: true,
     };
@@ -120,7 +120,7 @@ describe('sight from the Companion', () => {
       side: 'player',
       anchor: { x: 2, y: 5 },
       footprint: 1,
-      hp: 8,
+      hp: 80,
       maxHp: 8,
       destructible: true,
     };
@@ -226,7 +226,7 @@ describe('cast shape', () => {
       kind: 'spell',
       text: '',
       target: { kind: 'entity', side: 'enemy', includeObstacles: false },
-      effect: { op: 'damage', amount: 1, dtype: 'spell', area: { shape: 'target' } },
+      effect: { op: 'damage', amount: 10, dtype: 'spell', area: { shape: 'target' } },
       keywords: [],
       range: 5,
       ...extra,

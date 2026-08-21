@@ -150,6 +150,92 @@ export function pointsRemaining(roster: string[]): number {
   return Math.max(0, ROSTER_BUDGET - rosterCost(roster));
 }
 
+// ---------------------------------------------------------------- progression
+
+/**
+ * What one Vanguard body has earned, across every run it has ever fought in.
+ *
+ * Keyed by `defId` rather than by a per-copy instance id, and that is a design decision
+ * rather than a shortcut: a warband holding two Footmen holds two of *the same* Footman.
+ * They train together, they level together, and a player who had to remember which of two
+ * identical bodies was the good one would be playing a spreadsheet.
+ *
+ * Progress outlives the run, the dungeon and the Pact. It is the one thing on the
+ * character that a knockout genuinely cannot touch.
+ */
+export interface VanguardProgress {
+  level: number;
+  xp: number;
+}
+
+/** Where every body starts, the moment it is unlocked. */
+export const VANGUARD_START_LEVEL = 1;
+
+/** Attack a level buys. Two points of a stretched stat -- a fifth of an old one. */
+export const VANGUARD_ATK_PER_LEVEL = 2;
+
+/** Ceiling a level buys. One old point of health, expressed in stretched units. */
+export const VANGUARD_MAX_HP_PER_LEVEL = 10;
+
+/**
+ * What a level is worth, in stats.
+ *
+ * Linear, and deliberately small. This is the payoff the Stat Stretch was built for: at
+ * the old scale the smallest expressible raise was a whole point of attack, which on a
+ * 3-attack body is a **33% buff per level** and unshippable. Two points out of thirty is
+ * a raise you feel over a campaign rather than over one contract.
+ *
+ * Level 1 is the baseline and pays nothing, so a freshly unlocked body fights at exactly
+ * the numbers printed on its card.
+ */
+export function vanguardBonus(level: number): { atk: number; maxHp: number } {
+  const steps = Math.max(0, Math.floor(level) - VANGUARD_START_LEVEL);
+  return { atk: steps * VANGUARD_ATK_PER_LEVEL, maxHp: steps * VANGUARD_MAX_HP_PER_LEVEL };
+}
+
+/** What level this body fights at. Anything unheard-of is level 1, never level zero. */
+export function vanguardLevelOf(
+  progress: Record<string, VanguardProgress> | undefined,
+  defId: string,
+): number {
+  return Math.max(VANGUARD_START_LEVEL, progress?.[defId]?.level ?? VANGUARD_START_LEVEL);
+}
+
+/**
+ * Starts a body's record, if it does not already have one.
+ *
+ * **Idempotent, and that is the whole contract.** Unlocking is the only event that creates
+ * a record, and a second unlock of something already owned must not quietly reset it to
+ * level 1 -- which is exactly what would happen if a Companion re-granted its bodies on
+ * every taming. Returns the same object when there is nothing to do, so a caller can use
+ * identity to decide whether anything changed.
+ */
+export function unlockVanguard(
+  progress: Record<string, VanguardProgress>,
+  defId: string,
+): Record<string, VanguardProgress> {
+  if (progress[defId]) return progress;
+  if (!CARDS[defId] || !isRosterEligible(CARDS[defId]!)) return progress;
+  return { ...progress, [defId]: { level: VANGUARD_START_LEVEL, xp: 0 } };
+}
+
+/**
+ * Every body's level, flattened for the engine.
+ *
+ * The engine is handed a plain `defId -> level` map and never learns that XP exists, the
+ * same translation `carryFor` performs on relics and knacks. It is also what keeps the
+ * levelling curve -- whenever there is one -- entirely outside the reducer.
+ */
+export function vanguardLevels(
+  progress: Record<string, VanguardProgress> | undefined,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [defId, p] of Object.entries(progress ?? {})) {
+    if (p.level > VANGUARD_START_LEVEL) out[defId] = p.level;
+  }
+  return out;
+}
+
 /**
  * The warband a new player starts with, and the one legacy callers get by default.
  *

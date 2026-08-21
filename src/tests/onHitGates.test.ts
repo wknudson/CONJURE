@@ -29,8 +29,8 @@ describe('a rider needs a wound', () => {
     // effect in the engine that ignored it.
     const state = scenario({
       units: [
-        { def: BEARER, side: 'player', at: { x: 1, y: 1 }, atk: 2 },
-        { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 1 }, armor: 9 },
+        { def: BEARER, side: 'player', at: { x: 1, y: 1 }, atk: 20 },
+        { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 1 }, armor: 90 },
       ],
     });
     const [bearer, victim] = Object.values(state.units);
@@ -49,8 +49,8 @@ describe('a rider needs a wound', () => {
     // The gate is `hpLoss > 0`, not "unarmored" — a blow that mostly bounces still bites.
     const state = scenario({
       units: [
-        { def: BEARER, side: 'player', at: { x: 1, y: 1 }, atk: 3 },
-        { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 1 }, armor: 2 },
+        { def: BEARER, side: 'player', at: { x: 1, y: 1 }, atk: 30 },
+        { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 1 }, armor: 20 },
       ],
     });
     const [bearer, victim] = Object.values(state.units);
@@ -61,7 +61,7 @@ describe('a rider needs a wound', () => {
       target: { kind: 'unit', id: victim!.id },
     });
 
-    expect(out.state.units[victim!.id]!.hp).toBe(victim!.hp - 1);
+    expect(out.state.units[victim!.id]!.hp).toBe(victim!.hp - 10);
     expect(toxinOn(out.state, victim!.id)).toBe(1);
   });
 });
@@ -74,13 +74,13 @@ describe('a rider needs a living arm behind it', () => {
     // corpse's intentions, and the corpse poisoned the thing that killed it.
     const state = scenario({
       units: [
-        { def: BEARER, side: 'player', at: { x: 1, y: 1 }, hp: 1, atk: 1 },
+        { def: BEARER, side: 'player', at: { x: 1, y: 1 }, hp: 10, atk: 10 },
         {
           def: 'grave_sentinel',
           side: 'enemy',
           at: { x: 2, y: 1 },
-          hp: 20,
-          atk: 9,
+          hp: 200,
+          atk: 90,
           keywords: ['Counter'],
         },
       ],
@@ -106,7 +106,7 @@ describe('a rider needs a body that can hold it', () => {
     // was the only route in the game from a melee swing to poisoning a portrait.
     const state = scenario({
       units: [
-        { def: BEARER, side: 'player', at: { x: 1, y: 1 }, atk: 2 },
+        { def: BEARER, side: 'player', at: { x: 1, y: 1 }, atk: 20 },
         {
           def: 'ignis_bound',
           side: 'enemy',
@@ -142,8 +142,8 @@ describe('a rider needs a body that can hold it', () => {
     // comment exists so nobody reads a passing test as proof that it fires.
     const state = scenario({
       units: [
-        { def: BEARER, side: 'player', at: { x: 1, y: 1 }, atk: 2 },
-        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 30 },
+        { def: BEARER, side: 'player', at: { x: 1, y: 1 }, atk: 20 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 300 },
       ],
     });
     const [bearer, alpha] = Object.values(state.units);
@@ -172,8 +172,8 @@ describe('the rider still works where it should', () => {
     // leaves `charged` for fire or frost to find.
     const state = scenario({
       units: [
-        { def: 'clockwork_bombardier', side: 'player', at: { x: 1, y: 1 }, atk: 2 },
-        { def: 'vanguard_footman', side: 'enemy', at: { x: 3, y: 1 }, hp: 12 },
+        { def: 'clockwork_bombardier', side: 'player', at: { x: 1, y: 1 }, atk: 20 },
+        { def: 'vanguard_footman', side: 'enemy', at: { x: 3, y: 1 }, hp: 120 },
       ],
     });
     const [bomb, victim] = Object.values(state.units);

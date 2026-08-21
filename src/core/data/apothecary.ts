@@ -12,6 +12,7 @@
 import type { BuffId, Consumable, OverworldState } from '../overworld/state.js';
 import type { CombatBoons } from '../engine/setup.js';
 import { BUFF_EFFECTS } from '../overworld/run.js';
+import { unscaleStat } from '../scale.js';
 
 export interface StockItem {
   item: Consumable;
@@ -29,7 +30,7 @@ export interface StockItem {
  */
 export const APOTHECARY_STOCK: readonly StockItem[] = [
   {
-    item: { id: 'mending_tonic', name: 'Mending Tonic', type: 'healing', value: 12 },
+    item: { id: 'mending_tonic', name: 'Mending Tonic', type: 'healing', value: 120 },
     price: 25,
     blurb: 'Bitter, and it seals the smaller tears. Drunk here, not out there.',
   },
@@ -46,18 +47,23 @@ export const APOTHECARY_STOCK: readonly StockItem[] = [
 ];
 
 /**
- * Ducats per point of health at the Clinic.
+ * Ducats per **ten** points of health at the Clinic.
  *
  * Priced above a Mending Tonic per point on purpose: the Clinic is the expensive way to
  * get well, and buying tonics ahead of time is meant to be the thrifty one. It exists so
- * that waking at 1 health after a rescue is a bill rather than a dead end.
+ * that waking at 10 health after a rescue is a bill rather than a dead end.
+ *
+ * Per ten rather than per point because health stretched and Ducats did not. Left as a
+ * per-point rate this would have multiplied every Clinic bill by ten overnight and made
+ * the one recovery a broke player can afford the most expensive thing in the game.
  */
 export const CLINIC_RATE = 3;
 
 /** What it would cost to walk out of the Clinic whole. Zero when already whole. */
 export function clinicPrice(overworld: OverworldState): number {
   const missing = Math.max(0, overworld.pact.maxHp - overworld.pact.currentHp);
-  return missing * CLINIC_RATE;
+  // Rounded up, so a wound too small to be worth a full band still costs something.
+  return unscaleStat(missing) * CLINIC_RATE;
 }
 
 /**

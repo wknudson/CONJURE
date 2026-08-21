@@ -9,6 +9,15 @@ import type { Obstacle, Unit } from './units.js';
 export interface RosterEntry {
   defId: string;
   status: 'reserve' | 'fielded' | 'fallen';
+  /**
+   * What this body has trained to, carried in from the character who owns it.
+   *
+   * On the entry rather than looked up, because the engine has never heard of a Profile
+   * and must not start now. `createCombat` resolves the character's progression into a
+   * number here, exactly as it resolves a relic into "3 Armor" -- and a fight built
+   * without one gets 1, which is the printed card and the pre-levelling behaviour.
+   */
+  level: number;
   /** Set while `fielded`, so the tray and the board agree on which unit is which. */
   unitId?: UnitId;
   /** Where it died. The Soul Pyre, for Phase 4. */

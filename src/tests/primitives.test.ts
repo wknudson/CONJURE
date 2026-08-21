@@ -41,7 +41,7 @@ const board = () => scenario({ width: 7, height: 7, pips: 8 });
 describe('cone', () => {
   const coneCard = () =>
     probe(
-      { op: 'damage', amount: 2, dtype: 'spell', area: { shape: 'cone', depth: 3 } },
+      { op: 'damage', amount: 20, dtype: 'spell', area: { shape: 'cone', depth: 3 } },
       { target: { kind: 'line', length: 3 } },
     );
 
@@ -49,54 +49,54 @@ describe('cone', () => {
     const state = board();
     // Straight ahead at depth 2, and two tiles off-axis at depth 2 — both inside a wedge
     // that a plain line would miss entirely.
-    const ahead = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 1 }, hp: 20 });
-    const flank = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 5, y: 1 }, hp: 20 });
+    const ahead = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 1 }, hp: 200 });
+    const flank = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 5, y: 1 }, hp: 200 });
     const id = giveCard(state, 'player', coneCard());
 
     const res = run(state, play(id, { kind: 'line', from: { x: 3, y: 3 }, dir: { x: 0, y: -1 } }));
 
-    expect(res.state.units[ahead.id]!.hp, 'on the axis').toBe(18);
-    expect(res.state.units[flank.id]!.hp, 'two tiles off, at depth two').toBe(18);
+    expect(res.state.units[ahead.id]!.hp, 'on the axis').toBe(180);
+    expect(res.state.units[flank.id]!.hp, 'two tiles off, at depth two').toBe(180);
   });
 
   it('does not reach past its depth', () => {
     const state = board();
     // A decoy inside the wedge, so the line is a legal target at all, and the real
     // subject beyond its far edge.
-    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 20 });
-    const far = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 0 }, hp: 20 });
+    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 200 });
+    const far = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 0 }, hp: 200 });
     const id = giveCard(state, 'player', coneCard());
 
     const res = run(state, play(id, { kind: 'line', from: { x: 3, y: 3 }, dir: { x: 0, y: -1 } }));
-    expect(res.state.units[far.id]!.hp, 'depth 3 covers y=3..1, not y=0').toBe(20);
+    expect(res.state.units[far.id]!.hp, 'depth 3 covers y=3..1, not y=0').toBe(200);
   });
 });
 
 describe('adjacentCross', () => {
   it('takes the orthogonals and spares the diagonals', () => {
     const state = board();
-    const orth = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 20 });
-    const diag = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 4, y: 2 }, hp: 20 });
+    const orth = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 200 });
+    const diag = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 4, y: 2 }, hp: 200 });
     const id = giveCard(
       state,
       'player',
       probe(
-        { op: 'damage', amount: 2, dtype: 'spell', area: { shape: 'adjacentCross' } },
+        { op: 'damage', amount: 20, dtype: 'spell', area: { shape: 'adjacentCross' } },
         { target: { kind: 'emptyTile', zone: 'any', footprint: 1 } },
       ),
     );
 
     const res = run(state, play(id, { kind: 'tile', at: { x: 3, y: 3 } }));
-    expect(res.state.units[orth.id]!.hp, 'orthogonal').toBe(18);
-    expect(res.state.units[diag.id]!.hp, 'diagonal is spared').toBe(20);
+    expect(res.state.units[orth.id]!.hp, 'orthogonal').toBe(180);
+    expect(res.state.units[diag.id]!.hp, 'diagonal is spared').toBe(200);
   });
 });
 
 describe('shoveArea', () => {
   it('throws everything in the area directly away from the origin', () => {
     const state = board();
-    const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 20 });
-    const south = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 4 }, hp: 20 });
+    const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 200 });
+    const south = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 4 }, hp: 200 });
     const id = giveCard(
       state,
       'player',
@@ -122,8 +122,8 @@ describe('pullArea', () => {
   it('drags everything in the area onto the tile it was cast on', () => {
     const state = board();
     // One either side. The centre is empty, so the first to arrive takes it.
-    const north = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 }, hp: 20 });
-    const south = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 4 }, hp: 20 });
+    const north = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 }, hp: 200 });
+    const south = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 4 }, hp: 200 });
     const id = giveCard(state, 'player', gravity());
 
     const res = run(state, play(id, { kind: 'tile', at: { x: 3, y: 3 } }));
@@ -136,26 +136,26 @@ describe('pullArea', () => {
 
   it('hurts them for converging, which is where the damage comes from', () => {
     const state = board();
-    const north = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 }, hp: 20 });
-    const south = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 4 }, hp: 20 });
+    const north = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 }, hp: 200 });
+    const south = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 4 }, hp: 200 });
     const id = giveCard(state, 'player', gravity());
 
     const res = run(state, play(id, { kind: 'tile', at: { x: 3, y: 3 } }));
 
     // The spell deals no damage of its own; every point here is the collision.
     expect(res.events.some((e) => e.t === 'collision')).toBe(true);
-    expect(res.state.units[south.id]!.hp, 'the one that slammed into a body').toBeLessThan(20);
+    expect(res.state.units[south.id]!.hp, 'the one that slammed into a body').toBeLessThan(200);
     void north;
   });
 
   it('spares the diagonals, since the area does', () => {
     const state = board();
-    const diag = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 2 }, hp: 20 });
+    const diag = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 2 }, hp: 200 });
     const id = giveCard(state, 'player', gravity());
 
     const res = run(state, play(id, { kind: 'tile', at: { x: 3, y: 3 } }));
     expect(res.state.units[diag.id]!.anchor).toEqual({ x: 4, y: 2 });
-    expect(res.state.units[diag.id]!.hp).toBe(20);
+    expect(res.state.units[diag.id]!.hp).toBe(200);
   });
 
   it('resolves the same way every time, whatever order the units were created in', () => {
@@ -165,8 +165,8 @@ describe('pullArea', () => {
     for (const reversed of [false, true]) {
       const state = board();
       const specs = [
-        { def: 'grave_sentinel' as const, side: 'enemy' as const, at: { x: 3, y: 2 }, hp: 20 },
-        { def: 'grave_sentinel' as const, side: 'enemy' as const, at: { x: 3, y: 4 }, hp: 20 },
+        { def: 'grave_sentinel' as const, side: 'enemy' as const, at: { x: 3, y: 2 }, hp: 200 },
+        { def: 'grave_sentinel' as const, side: 'enemy' as const, at: { x: 3, y: 4 }, hp: 200 },
       ];
       for (const spec of reversed ? [...specs].reverse() : specs) addUnit(state, spec);
       const id = giveCard(state, 'player', gravity());
@@ -216,7 +216,7 @@ describe('extractMarrow scaled off a tithe', () => {
 
   it('pays out the body it just spent', () => {
     const state = scenario({ width: 6, height: 6, pips: 8, marrow: 0 });
-    const victim = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 3 });
+    const victim = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 30 });
     const id = giveCard(state, 'player', harvest(4));
 
     const res = run(state, play(id, { kind: 'entity', ref: { kind: 'unit', id: victim.id } }));
@@ -225,7 +225,7 @@ describe('extractMarrow scaled off a tithe', () => {
 
   it('caps what a fat target is worth', () => {
     const state = scenario({ width: 6, height: 6, pips: 8, marrow: 0 });
-    const victim = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 9 });
+    const victim = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 90 });
     const id = giveCard(state, 'player', harvest(4));
 
     const res = run(state, play(id, { kind: 'entity', ref: { kind: 'unit', id: victim.id } }));
@@ -240,7 +240,7 @@ describe('spawnConstruct', () => {
       state,
       'player',
       probe(
-        { op: 'spawnConstruct', obstacleDef: 'stone_barricade', hp: 4 },
+        { op: 'spawnConstruct', obstacleDef: 'stone_barricade', hp: 40 },
         { target: { kind: 'emptyTile', zone: 'any', footprint: 1 } },
       ),
     );
@@ -251,8 +251,8 @@ describe('spawnConstruct', () => {
     );
 
     expect(built, 'something was raised').toBeDefined();
-    expect(built!.hp).toBe(4);
-    expect(built!.maxHp, 'at full health, not damaged down to it').toBe(4);
-    expect(CARDS.stone_barricade!.obstacleHp, 'the shared card is untouched').not.toBe(4);
+    expect(built!.hp).toBe(40);
+    expect(built!.maxHp, 'at full health, not damaged down to it').toBe(40);
+    expect(CARDS.stone_barricade!.obstacleHp, 'the shared card is untouched').not.toBe(40);
   });
 });

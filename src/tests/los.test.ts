@@ -52,7 +52,7 @@ describe('line of sight', () => {
   });
 
   it('reopens line of sight once a barricade is destroyed', () => {
-    const state = scenario({ obstacles: [{ at: { x: 2, y: 2 }, hp: 6 }] });
+    const state = scenario({ obstacles: [{ at: { x: 2, y: 2 }, hp: 60 }] });
     expect(hasLoS(state, { x: 2, y: 4 }, { x: 2, y: 0 })).toBe(false);
 
     delete state.obstacles[Object.keys(state.obstacles)[0]!];

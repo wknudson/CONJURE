@@ -96,9 +96,9 @@ export const REACTIONS: ReactionDef[] = [
     requires: 'chill',
     consumes: true,
     requiresHpLoss: true,
-    trueDamage: 2,
+    trueDamage: 20,
     outcome: { op: 'spawnHazard', kind: 'steam_fog', turns: 1 },
-    text: 'Fire on a Chilled target flash-boils it: 2 damage through any armor, and the tile fogs for a turn. Ranged attacks cannot see through fog.',
+    text: 'Fire on a Chilled target flash-boils it: 20 damage through any armor, and the tile fogs for a turn. Ranged attacks cannot see through fog.',
   },
   {
     id: 'shatter',
@@ -108,8 +108,8 @@ export const REACTIONS: ReactionDef[] = [
     requires: 'freeze',
     consumes: true,
     requiresHpLoss: false,
-    outcome: { op: 'shatter', splash: 4 },
-    text: 'A physical hit on a Frozen target breaks the ice: it loses all Armor, and adjacent units take 4 shrapnel damage.',
+    outcome: { op: 'shatter', splash: 40 },
+    text: 'A physical hit on a Frozen target breaks the ice: it loses all Armor, and adjacent units take 40 shrapnel damage.',
   },
   {
     id: 'overload',
@@ -119,9 +119,9 @@ export const REACTIONS: ReactionDef[] = [
     consumes: true,
     requiresHpLoss: true,
     // Small on the target and violent around it: the point is the shove, not the number.
-    trueDamage: 1,
+    trueDamage: 10,
     outcome: { op: 'overload', shove: 1 },
-    text: 'Fire into a Charged target detonates the charge: 1 damage through armor, and everything adjacent is thrown a tile directly away, taking collision damage if it hits something.',
+    text: 'Fire into a Charged target detonates the charge: 10 damage through armor, and everything adjacent is thrown a tile directly away, taking collision damage if it hits something.',
   },
   {
     id: 'superconduct',
@@ -166,8 +166,8 @@ export const REACTIONS: ReactionDef[] = [
     // Nothing to spend. The rain does not run out.
     consumes: false,
     requiresHpLoss: true,
-    outcome: { op: 'conduct', damage: 1, dtype: 'physical' },
-    text: 'Surge damage in the rain earths itself through everything touching the target: 1 damage to every adjacent unit, whoever it belongs to.',
+    outcome: { op: 'conduct', damage: 10, dtype: 'physical' },
+    text: 'Surge damage in the rain earths itself through everything touching the target: 10 damage to every adjacent unit, whoever it belongs to.',
   },
   {
     id: 'wildfire',
@@ -176,8 +176,8 @@ export const REACTIONS: ReactionDef[] = [
     requires: 'toxin',
     consumes: true,
     requiresHpLoss: true,
-    outcome: { op: 'consumeForAoe', perStack: 2, dtype: 'fire' },
-    text: 'Fire ignites Toxin, consuming every stack to deal 2 fire damage per stack to everything adjacent.',
+    outcome: { op: 'consumeForAoe', perStack: 20, dtype: 'fire' },
+    text: 'Fire ignites Toxin, consuming every stack to deal 20 fire damage per stack to everything adjacent.',
   },
 ];
 

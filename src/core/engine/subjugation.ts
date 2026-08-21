@@ -21,6 +21,7 @@ import type { Unit } from '../types/units.js';
 import { CARDS } from '../data/cards/index.js';
 import { toCardSnapshot } from './views.js';
 import { finish } from './death.js';
+import { STAT_SCALE } from '../scale.js';
 
 /** The card the protocol deals. Kept here so the encounter never has to name it. */
 export const RITE_CARD_DEF = 'rite_of_subjugation';
@@ -207,7 +208,7 @@ function enrageBoss(ctx: Ctx): void {
   const boss = bossUnitOf(ctx.state);
   if (!boss) return;
 
-  const bonus = CARDS[boss.defId]?.unit?.escalationBonus ?? { atk: 1, hp: 0 };
+  const bonus = CARDS[boss.defId]?.unit?.escalationBonus ?? { atk: STAT_SCALE, hp: 0 };
   boss.escalation += 1;
   boss.atk += bonus.atk;
   boss.maxHp += bonus.hp;

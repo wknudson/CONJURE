@@ -83,9 +83,9 @@ describe('Static Arc', () => {
   const cluster = () => {
     const state = scenario({ width: 6, height: 7, hand: ['static_arc'], pips: 6 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, titheBonus: 0 });
-    const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 9 });
-    const east = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 9 });
-    const corner = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 1 }, hp: 9 });
+    const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 90 });
+    const east = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 90 });
+    const corner = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 1 }, hp: 90 });
     return { state, north, east, corner };
   };
 
@@ -107,8 +107,8 @@ describe('Static Arc', () => {
 
     const res = run(state, play(card, atTile(2, 2)));
 
-    expect(damageTo(res.events, north.id)).toBe(2);
-    expect(damageTo(res.events, east.id)).toBe(2);
+    expect(damageTo(res.events, north.id)).toBe(20);
+    expect(damageTo(res.events, east.id)).toBe(20);
     expect(damageTo(res.events, corner.id)).toBe(0);
   });
 
@@ -127,9 +127,9 @@ describe('the handoff Surge exists for', () => {
   const charged = (hand: string[], armor = 0) => {
     const state = scenario({ width: 6, height: 7, hand, pips: 8, marrow: 4 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, titheBonus: 0 });
-    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 12, armor });
+    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 120, armor });
     foe.statuses.charged = 1;
-    const bystander = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 9 });
+    const bystander = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 90 });
     return { state, foe, bystander };
   };
 
@@ -177,14 +177,14 @@ describe('the handoff Surge exists for', () => {
 });
 
 describe('Spore Cloud', () => {
-  const dosed = (hand: string[] = ['spore_cloud'], armor = 8) => {
+  const dosed = (hand: string[] = ['spore_cloud'], armor = 80) => {
     const state = scenario({ width: 6, height: 7, hand, pips: 8 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, titheBonus: 0 });
     const foe = addUnit(state, {
       def: 'grave_sentinel',
       side: 'enemy',
       at: { x: 2, y: 2 },
-      hp: 12,
+      hp: 120,
       armor,
     });
     return { state, foe };
@@ -293,7 +293,7 @@ describe('Creeping Briar', () => {
       at: { x: 2, y: 4 },
       fresh: false,
     });
-    const foe = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, hp: 9 });
+    const foe = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, hp: 90 });
 
     const res = run(state, {
       type: 'attack',
@@ -371,7 +371,7 @@ describe('Storm Tithe', () => {
     });
     state.players.player.companionUnitId = body.id;
     state.players.player.companionUnitDefId = 'voltara_bound';
-    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 9 });
+    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 90 });
     return { state, body };
   };
 
@@ -523,7 +523,7 @@ describe('the Reaction matrix, as content', () => {
     expect(CHILL_TO_FREEZE).toBeGreaterThan(0);
 
     const state = scenario({ width: 6, height: 7 });
-    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 12 });
+    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 120 });
     for (let i = 0; i < CHILL_TO_FREEZE; i++) {
       applyStatusTo({ state, events: [] } as never, state.units[foe.id]!, 'chill', 1);
     }

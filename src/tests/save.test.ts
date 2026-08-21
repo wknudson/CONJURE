@@ -78,7 +78,7 @@ describe('the wall', () => {
     // Two cores in the satchel: the splicing bench has no other way in yet, so a
     // character who could not reach it at all would never learn it exists.
     expect(p.state.overworld.economy.reagents).toEqual({ core_frost: 2, core_surge: 2 });
-    expect(p.state.overworld.pact).toEqual({ currentHp: 40, maxHp: 40 });
+    expect(p.state.overworld.pact).toEqual({ currentHp: 400, maxHp: 400 });
     expect(p.activeCompanionId, 'an instance id, not a species').toBe(
       p.companions[0]!.instanceId,
     );
@@ -206,7 +206,7 @@ describe('the upgrade from one character to three', () => {
 
     expect(p.state.overworld.economy.ducats).toBe(640);
     expect(p.state.overworld.economy.marrowShards).toBe(4);
-    expect(p.state.overworld.pact.currentHp).toBe(22);
+    expect(p.state.overworld.pact.currentHp).toBe(220);
     expect(p.collection.ascended).toContain('shield_bash');
     expect(p.record.wins).toBe(4);
   });
@@ -225,8 +225,8 @@ describe('the upgrade from one character to three', () => {
     // fighting with — 40, not a fresh roll, so upgrading is not a lottery ticket.
     const active = p.companions.find((c) => c.instanceId === p.activeCompanionId)!;
     expect(active.baseId).toBe('boreas');
-    expect(active.baseHpRoll).toBe(40);
-    expect(p.state.overworld.pact.maxHp).toBe(44);
+    expect(active.baseHpRoll).toBe(400);
+    expect(p.state.overworld.pact.maxHp).toBe(440);
     expect(p.level, 'and the poster shows the level without opening them').toBe(3);
   });
 
@@ -257,18 +257,18 @@ describe('one character on disk', () => {
 
   it('carries a wounded, half-spent character', () => {
     const p = saved((c) => {
-      c.state.overworld.pact = { currentHp: 17, maxHp: 40 };
+      c.state.overworld.pact = { currentHp: 170, maxHp: 400 };
       c.state.overworld.economy = { ducats: 95, marrowShards: 4, reagents: {} };
       c.state.overworld.activeBuff = 'ironbrew';
       addConsumable(c.state.overworld, {
         id: 'mending_tonic',
         name: 'Mending Tonic',
         type: 'healing',
-        value: 12,
+        value: 120,
       });
     });
 
-    expect(p.state.overworld.pact.currentHp).toBe(17);
+    expect(p.state.overworld.pact.currentHp).toBe(170);
     // The ceiling comes from whichever beast is standing there, so it is the roll rather
     // than a constant — the point of the taming loop.
     expect(p.state.overworld.pact.maxHp).toBe(p.companions[0]!.baseHpRoll);
@@ -292,7 +292,7 @@ describe('one character on disk', () => {
     writeSave(file);
     const raw = JSON.parse(localStorage.getItem('conjure.save')!);
     raw.profiles['slot-1'].state.overworld = {
-      pact: { currentHp: 9999, maxHp: 40 },
+      pact: { currentHp: 99999, maxHp: 400 },
       economy: { ducats: -50, marrowShards: 2.7 },
       inventory: Array.from({ length: 6 }, () => ({
         id: 'mending_tonic',
@@ -336,13 +336,13 @@ describe('one character on disk', () => {
 
     const back = loadSave().save.profiles['slot-1']!.companions[0]!;
     expect(back.level).toBe(4);
-    expect(back.bonusMaxHp).toBe(6);
+    expect(back.bonusMaxHp).toBe(60);
     expect(back.baseHpRoll).toBeGreaterThanOrEqual(HP_ROLL_MIN);
     expect(back.baseHpRoll).toBeLessThanOrEqual(HP_ROLL_MAX);
 
     const raw = JSON.parse(localStorage.getItem('conjure.save')!);
     raw.profiles['slot-1'].companions = [
-      { instanceId: 'ignis-1', baseId: 'ignis', level: -3, bonusMaxHp: -99, baseHpRoll: 400 },
+      { instanceId: 'ignis-1', baseId: 'ignis', level: -3, bonusMaxHp: -99, baseHpRoll: 4000 },
     ];
     localStorage.setItem('conjure.save', JSON.stringify(raw));
 

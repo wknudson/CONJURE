@@ -39,12 +39,12 @@ export const SURGE_CARDS: Record<string, CardDef> = {
     school: 'surge',
     source: 'companion',
     kind: 'spell',
-    text: 'Deals 2 spell damage to everything orthogonally beside the target tile and leaves it Charged. Fire into a Charged target Overloads; frost Superconducts.',
+    text: 'Deals 20 spell damage to everything orthogonally beside the target tile and leaves it Charged. Fire into a Charged target Overloads; frost Superconducts.',
     target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
     effect: {
       op: 'seq',
       effects: [
-        { op: 'damage', amount: 2, dtype: 'spell', area: { shape: 'adjacentCross' } },
+        { op: 'damage', amount: 20, dtype: 'spell', area: { shape: 'adjacentCross' } },
         { op: 'applyStatus', status: 'charged', stacks: 1, area: { shape: 'adjacentCross' } },
       ],
     },
@@ -74,8 +74,8 @@ export const SURGE_CARDS: Record<string, CardDef> = {
     effect: { op: 'summon', unitDef: 'voltaic_hound' },
     keywords: ['Haste'],
     unit: {
-      atk: 3,
-      hp: 2,
+      atk: 30,
+      hp: 20,
       mov: 3,
       rangeMin: 1,
       rangeMax: 1,
@@ -114,8 +114,8 @@ export const SURGE_CARDS: Record<string, CardDef> = {
     effect: { op: 'summon', unitDef: 'clockwork_bombardier' },
     keywords: [],
     unit: {
-      atk: 1,
-      hp: 4,
+      atk: 10,
+      hp: 40,
       mov: 1,
       // The mortar profile, matching the two lobbers already in the game.
       rangeMin: 2,
@@ -136,9 +136,9 @@ export const SURGE_CARDS: Record<string, CardDef> = {
     school: 'surge',
     source: 'hero',
     kind: 'spell',
-    text: 'Deal 3 shock damage to a unit. In rain, the charge arcs for 1 to everything adjacent to it.',
+    text: 'Deal 30 shock damage to a unit. In rain, the charge arcs for 10 to everything adjacent to it.',
     target: { kind: 'entity', side: 'enemy', includeObstacles: false },
-    effect: { op: 'damage', amount: 3, dtype: 'shock', area: { shape: 'target' } },
+    effect: { op: 'damage', amount: 30, dtype: 'shock', area: { shape: 'target' } },
     keywords: [],
   },
 };

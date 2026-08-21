@@ -61,13 +61,13 @@ describe('a successful tithe', () => {
     // `true` damage on purpose: a plated Bulwark line that could not be tithed would be a
     // school locked out of its own economy.
     const { state, victim } = withVictim();
-    state.units[victim.id]!.armor = 10;
+    state.units[victim.id]!.armor = 100;
     const hpBefore = state.units[victim.id]!.hp;
 
     const res = run(state, { type: 'bloodTithe', unit: victim.id });
 
     expect(res.state.units[victim.id]!.hp).toBe(hpBefore - TITHE_DAMAGE);
-    expect(res.state.units[victim.id]!.armor, 'and the plate is not spent on it').toBe(10);
+    expect(res.state.units[victim.id]!.armor, 'and the plate is not spent on it').toBe(100);
   });
 
   it('announces itself with the Marrow it actually paid', () => {
@@ -100,7 +100,7 @@ describe('a lethal tithe', () => {
   it('still pays the Marrow, in full, before the body drops', () => {
     // The rule the execution order exists for. A tithe that killed and paid nothing would
     // make every Blood Magic play a health check first.
-    const { state, victim } = withVictim('grave_sentinel', { hp: 2 });
+    const { state, victim } = withVictim('grave_sentinel', { hp: 20 });
 
     const res = run(state, { type: 'bloodTithe', unit: victim.id });
 
@@ -111,12 +111,12 @@ describe('a lethal tithe', () => {
   it('is not refused for being lethal', () => {
     // Deliberately legal: bleeding something out is sometimes the right play, so the
     // warning belongs on the button rather than in the rule.
-    const { state, victim } = withVictim('grave_sentinel', { hp: 1 });
+    const { state, victim } = withVictim('grave_sentinel', { hp: 10 });
     expect(bloodTitheRefusal(state, victim.id)).toBeNull();
   });
 
   it('leaves no body to exhaust, and no invariant broken', () => {
-    const { state, victim } = withVictim('grave_sentinel', { hp: 1 });
+    const { state, victim } = withVictim('grave_sentinel', { hp: 10 });
     const res = run(state, { type: 'bloodTithe', unit: victim.id });
 
     expect(res.state.units[victim.id]).toBeUndefined();
@@ -149,7 +149,7 @@ describe('refusals', () => {
   });
 
   it('refuses a Bound Form', () => {
-    const state = scenario({ width: 6, height: 8, playerHp: 40 });
+    const state = scenario({ width: 6, height: 8, playerHp: 400 });
     const bound = addUnit(state, {
       def: 'vanguard_footman',
       side: 'player',

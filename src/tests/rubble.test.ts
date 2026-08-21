@@ -22,7 +22,7 @@ describe('what breaking a wall leaves', () => {
     const state = scenario({ width: 6, height: 8 });
     const brute = addUnit(state, { def: 'magma_brute', side: 'player', at: { x: 2, y: 5 } });
     const wall = spawnObstacle(state, 'stone_barricade', { x: 2, y: 4 });
-    state.obstacles[wall]!.hp = 1; // one blow away from falling
+    state.obstacles[wall]!.hp = 10; // one blow away from falling
 
     const res = applyCommand(state, {
       type: 'attack',

@@ -28,8 +28,25 @@ export type SpliceRefusal =
   | 'in-combat'
   | 'no-recipe'
   | 'not-owned'
+  | 'missing-prerequisite'
   | 'no-reagent'
   | null;
+
+/**
+ * Which of a recipe's prerequisites the player has not learned yet.
+ *
+ * Returned as a list rather than a boolean so the counter can name them. A refusal that
+ * says only "you are missing something" sends the player back to the card list to work
+ * out what, and the answer is already known here.
+ */
+export function missingPrerequisites(
+  collection: Collection,
+  baseCardId: string,
+  catalystId: string,
+): string[] {
+  const recipe = recipeFor(baseCardId, catalystId);
+  return (recipe?.requiredUnlockedCards ?? []).filter((id) => !isUnlocked(collection, id));
+}
 
 export function spliceRefusal(
   state: GlobalGameState,
@@ -45,6 +62,11 @@ export function spliceRefusal(
   if (!recipe || !CARDS[recipe.resultId]) return 'no-recipe';
 
   if (!isUnlocked(collection, baseCardId)) return 'not-owned';
+  // Asked before the reagent, so a player short of both is told about the thing they
+  // cannot buy their way out of first.
+  if (missingPrerequisites(collection, baseCardId, catalystId).length > 0) {
+    return 'missing-prerequisite';
+  }
   if ((state.overworld.economy.reagents[catalystId] ?? 0) <= 0) return 'no-reagent';
   return null;
 }

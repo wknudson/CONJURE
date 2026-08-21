@@ -27,7 +27,7 @@ function withBound(opts: { at?: Coord; extra?: Parameters<typeof scenario>[0] } 
   const state = scenario({
     width: 6,
     height: 8,
-    playerHp: 40,
+    playerHp: 400,
     ...(opts.extra ?? {}),
   });
   const bound = addUnit(state, {
@@ -106,7 +106,7 @@ describe('damage lands on the Pact, not the body', () => {
     // Statuses tick at the start of the owner's turn, so the round has to come back around.
     const res = run(state, { type: 'endTurn' }, { type: 'endTurn' });
 
-    expect(res.state.players.player.hp).toBeLessThan(40);
+    expect(res.state.players.player.hp).toBeLessThan(400);
     const body = res.state.units[boundId];
     if (body) expect(body.hp).toBe(body.maxHp);
   });
@@ -262,7 +262,7 @@ describe('the Companion takes the field', () => {
 describe('it still plays like a unit', () => {
   it('moves and attacks on the same turn, like anything else', () => {
     const { state, boundId } = withBound({ at: { x: 2, y: 5 } });
-    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, hp: 20 });
+    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, hp: 200 });
     const foe = findUnit(state, 'scout_imp', 'enemy');
 
     const moved = applyCommand(state, { type: 'moveUnit', unit: boundId, to: { x: 2, y: 4 } });
@@ -272,7 +272,7 @@ describe('it still plays like a unit', () => {
       target: { kind: 'unit', id: foe.id },
     });
 
-    expect(struck.state.units[foe.id]!.hp).toBeLessThan(20);
+    expect(struck.state.units[foe.id]!.hp).toBeLessThan(200);
     expect(checkInvariants(struck.state, 'after its own turn')).toEqual([]);
   });
 

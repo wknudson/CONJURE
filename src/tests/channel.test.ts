@@ -41,7 +41,7 @@ describe('channelling', () => {
     const state = scenario({
       units: [
         { def: 'scout_imp', side: 'player', at: { x: 2, y: 3 } },
-        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 20 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 200 },
       ],
     });
     const mine = findUnit(state, 'scout_imp', 'player');

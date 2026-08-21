@@ -73,7 +73,7 @@ describe('resources', () => {
     const reshuffles = eventsOf(res.events, 'deckReshuffled').filter((e) => e.side === 'player');
     expect(reshuffles.length).toBeGreaterThan(0);
     // No fatigue damage: the commander is untouched.
-    expect(res.state.players.player.hp).toBe(40);
+    expect(res.state.players.player.hp).toBe(400);
   });
 
   it('keeps Retain cards in hand through end-of-turn cleanup', () => {
@@ -93,7 +93,7 @@ describe('action economy', () => {
     const state = scenario({
       units: [
         { def: 'scout_imp', side: 'player', at: { x: 2, y: 3 } },
-        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 9 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 90 },
       ],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
@@ -117,7 +117,7 @@ describe('action economy', () => {
     const state = scenario({
       units: [
         { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 } },
-        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 9 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 90 },
       ],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
@@ -151,7 +151,7 @@ describe('action economy', () => {
     const state = scenario({
       units: [
         { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 } },
-        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 20 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 200 },
       ],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
@@ -184,7 +184,7 @@ describe('action economy', () => {
 describe('pacifist lockout', () => {
   it('does nothing while commanders are trading damage', () => {
     const state = scenario({
-      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 1 }],
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 10 }],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
 
@@ -199,23 +199,23 @@ describe('pacifist lockout', () => {
   });
 
   it('stays silent through five idle rounds, then punishes both commanders', () => {
-    let cur = scenario({ playerHp: 40, enemyHp: 40 });
+    let cur = scenario({ playerHp: 400, enemyHp: 400 });
 
     // The threshold is deliberately high: competent play should never reach it.
     for (let i = 0; i < 5; i++) {
       cur = run(cur, { type: 'endTurn' }, { type: 'endTurn' }).state;
     }
-    expect(cur.players.player.hp).toBe(40);
-    expect(cur.players.enemy.hp).toBe(40);
+    expect(cur.players.player.hp).toBe(400);
+    expect(cur.players.enemy.hp).toBe(400);
 
     cur = run(cur, { type: 'endTurn' }, { type: 'endTurn' }).state;
     expect(cur.stalledRounds).toBeGreaterThanOrEqual(6);
-    expect(cur.players.player.hp).toBeLessThan(40);
-    expect(cur.players.enemy.hp).toBeLessThan(40);
+    expect(cur.players.player.hp).toBeLessThan(400);
+    expect(cur.players.enemy.hp).toBeLessThan(400);
   });
 
   it('guarantees an idle game eventually ends', () => {
-    let cur = scenario({ playerHp: 40, enemyHp: 40 });
+    let cur = scenario({ playerHp: 400, enemyHp: 400 });
     let guard = 0;
     while (!cur.result && guard++ < 40) {
       cur = run(cur, { type: 'endTurn' }, { type: 'endTurn' }).state;
@@ -227,8 +227,8 @@ describe('pacifist lockout', () => {
 describe('Growth is the enemy clock only', () => {
   it('does not grow an enemy unit on the turn it arrived', () => {
     const state = scenario({
-      playerHp: 500,
-      enemyHp: 500,
+      playerHp: 5000,
+      enemyHp: 5000,
       units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, fresh: true }],
     });
     const imp = findUnit(state, 'scout_imp', 'enemy');
@@ -246,8 +246,8 @@ describe('Growth is the enemy clock only', () => {
     // The whole point of the split. A player body that kept the keyword would be growing
     // on two clocks at once, and the uncapped one would win.
     const state = scenario({
-      playerHp: 500,
-      enemyHp: 500,
+      playerHp: 5000,
+      enemyHp: 5000,
       units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 4 }, fresh: false }],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
@@ -266,8 +266,8 @@ describe('Growth is the enemy clock only', () => {
     // High commander HP so the Pacifist Lockout, which fires after three idle rounds,
     // does not end the game before growth reaches its cap.
     const state = scenario({
-      playerHp: 500,
-      enemyHp: 500,
+      playerHp: 5000,
+      enemyHp: 5000,
       units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, fresh: false }],
     });
     let cur = state;

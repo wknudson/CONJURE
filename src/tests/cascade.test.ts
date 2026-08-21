@@ -21,8 +21,8 @@ describe('runes and cascades', () => {
   it('detonates a Cinder Rune when fire damage causes real HP loss', () => {
     const state = scenario({
       units: [
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 10, rune: 'cinder_rune' },
-        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 8 },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 100, rune: 'cinder_rune' },
+        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 80 },
       ],
       hand: ['flame_surge'],
     });
@@ -40,8 +40,8 @@ describe('runes and cascades', () => {
     expect(dets[0]!.rune).toBe('cinder_rune');
 
     // Host: 3 from Flame Surge. Adjacent bystander: 4 from the detonation.
-    expect(res.state.units[host.id]!.hp).toBe(10 - 3);
-    expect(res.state.units[bystander.id]!.hp).toBe(8 - 4);
+    expect(res.state.units[host.id]!.hp).toBe(100 - 30);
+    expect(res.state.units[bystander.id]!.hp).toBe(80 - 40);
   });
 
   it('does NOT detonate when armor absorbs the entire hit', () => {
@@ -51,8 +51,8 @@ describe('runes and cascades', () => {
           def: 'grave_sentinel',
           side: 'enemy',
           at: { x: 2, y: 2 },
-          hp: 10,
-          armor: 5,
+          hp: 100,
+          armor: 50,
           rune: 'cinder_rune',
         },
       ],
@@ -67,28 +67,28 @@ describe('runes and cascades', () => {
 
     expect(eventsOf(res.events, 'runeDetonated')).toHaveLength(0);
     // 3 damage fully absorbed: armor 5 -> 2, HP untouched, rune still attached.
-    expect(res.state.units[host.id]!.armor).toBe(2);
-    expect(res.state.units[host.id]!.hp).toBe(10);
+    expect(res.state.units[host.id]!.armor).toBe(20);
+    expect(res.state.units[host.id]!.hp).toBe(100);
     expect(res.state.units[host.id]!.rune).toBeDefined();
   });
 
   it('chains to an adjacent rune only when the blast penetrates its armor', () => {
     const state = scenario({
       units: [
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 10, rune: 'cinder_rune' },
-        // Armor 4 exactly absorbs the 4-damage blast, so this rune must NOT chain.
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 100, rune: 'cinder_rune' },
+        // Armor 40 exactly absorbs the 40-damage blast, so this rune must NOT chain.
         {
           def: 'grave_sentinel',
           side: 'enemy',
           at: { x: 3, y: 2 },
-          hp: 10,
-          armor: 4,
+          hp: 100,
+          armor: 40,
           rune: 'cinder_rune',
         },
       ],
       hand: ['flame_surge'],
     });
-    const shielded = Object.values(state.units).find((u) => u.armor === 4)!;
+    const shielded = Object.values(state.units).find((u) => u.armor === 40)!;
 
     const res = run(
       state,
@@ -97,15 +97,15 @@ describe('runes and cascades', () => {
 
     expect(eventsOf(res.events, 'runeDetonated')).toHaveLength(1);
     expect(res.state.units[shielded.id]!.armor).toBe(0);
-    expect(res.state.units[shielded.id]!.hp).toBe(10);
+    expect(res.state.units[shielded.id]!.hp).toBe(100);
     expect(res.state.units[shielded.id]!.rune).toBeDefined();
   });
 
   it('chains through an unarmored neighbour in the same resolution step', () => {
     const state = scenario({
       units: [
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 10, rune: 'cinder_rune' },
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 }, hp: 10, rune: 'cinder_rune' },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 100, rune: 'cinder_rune' },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 }, hp: 100, rune: 'cinder_rune' },
       ],
       hand: ['flame_surge'],
     });
@@ -124,9 +124,9 @@ describe('runes and cascades', () => {
   it('fizzles a Cinder Rune when the host is killed by unaligned physical damage', () => {
     const state = scenario({
       units: [
-        { def: 'scout_imp', side: 'player', at: { x: 2, y: 3 }, atk: 9 },
-        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 2, rune: 'cinder_rune' },
-        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 8 },
+        { def: 'scout_imp', side: 'player', at: { x: 2, y: 3 }, atk: 90 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 20, rune: 'cinder_rune' },
+        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 80 },
       ],
     });
     const attacker = findUnit(state, 'scout_imp', 'player');
@@ -146,7 +146,7 @@ describe('runes and cascades', () => {
     expect(fizzles).toHaveLength(1);
     expect(fizzles[0]!.reason).toBe('unaligned');
     // The bystander is untouched: the rune never went off.
-    expect(res.state.units[bystander.id]!.hp).toBe(8);
+    expect(res.state.units[bystander.id]!.hp).toBe(80);
   });
 
   it('fires a death-triggered Soul Splinter Rune when its host is sacrificed', () => {
@@ -158,8 +158,8 @@ describe('runes and cascades', () => {
           at: { x: 2, y: 3 },
           rune: 'soul_splinter_rune',
         },
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 0, y: 0 }, hp: 10 },
-        { def: 'scout_imp', side: 'enemy', at: { x: 4, y: 0 }, hp: 3 },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 0, y: 0 }, hp: 100 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 4, y: 0 }, hp: 30 },
       ],
       hand: ['dark_tithe'],
     });
@@ -180,10 +180,10 @@ describe('runes and cascades', () => {
       pips: 8,
       marrow: 2,
       units: [
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 0, y: 0 }, hp: 20, rune: 'cinder_rune' },
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 0 }, hp: 20, rune: 'cinder_rune' },
-        { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 0 }, hp: 20 },
-        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 0 }, hp: 20 },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 0, y: 0 }, hp: 200, rune: 'cinder_rune' },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 0 }, hp: 200, rune: 'cinder_rune' },
+        { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 0 }, hp: 200 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 0 }, hp: 200 },
       ],
       hand: ['cataclysmic_core'],
     });
@@ -195,6 +195,6 @@ describe('runes and cascades', () => {
 
     expect(eventsOf(res.events, 'runeDetonated')).toHaveLength(2);
     // Base 4 + 2 bonus = 6 to each adjacent unit.
-    expect(res.state.units[nearFirst.id]!.hp).toBe(20 - 6);
+    expect(res.state.units[nearFirst.id]!.hp).toBe(200 - 60);
   });
 });

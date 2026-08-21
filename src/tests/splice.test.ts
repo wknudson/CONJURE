@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { spliceCard, spliceRefusal } from '../core/overworld/splice.js';
+import { missingPrerequisites, spliceCard, spliceRefusal } from '../core/overworld/splice.js';
 import { newRun, type GlobalGameState } from '../core/overworld/state.js';
 import { recipeFor, spliceableBaseIds, SPLICE_RECIPES } from '../core/data/splicing.js';
 import { CARDS } from '../core/data/cards/index.js';
@@ -27,14 +27,21 @@ const bench = (owned = 1, cores = 2): GlobalGameState => {
   return { overworld, combat: null };
 };
 
+/** Everything this recipe asks the player to already know: the base, and the other half. */
+const PREREQS = SPLICE_RECIPES[0]!.requiredUnlockedCards ?? [];
+
 /**
- * A collection that knows the base card.
+ * A collection that knows the base card, and the school it is being fused with.
  *
  * Took a copy count once. There are no copies now — the bench needs the base *unlocked*
  * and consumes only the Core — so every caller asking for one, two or three is asking the
  * same question, and the parameter is gone with the model it belonged to.
+ *
+ * The prerequisites are folded in here rather than listed at each call site, so a recipe
+ * that gains a second one does not silently turn thirty passing tests into refusals about
+ * something none of them are testing.
  */
-const holding = (): Collection => ({ unlocked: [BASE] });
+const holding = (): Collection => ({ unlocked: [BASE, ...PREREQS] });
 
 describe('the recipe book', () => {
   it('names only cards the registry actually has', () => {
@@ -96,7 +103,7 @@ describe('pressing a card', () => {
   it('keeps everything else in the collection', () => {
     const g = bench();
     const before: Collection = {
-      unlocked: [BASE, 'scout_imp'],
+      unlocked: [BASE, ...PREREQS, 'scout_imp'],
       ascended: ['shield_bash'],
     };
     const done = spliceCard(g, before, BASE, CORE)!;
@@ -169,5 +176,83 @@ describe('what the bench refuses', () => {
     const second = SPLICE_RECIPES.find((r) => r.catalystId !== CORE)!;
     expect(second.resultId).not.toBe(first.resultId);
     expect(CARDS[second.resultId]).toBeDefined();
+  });
+});
+
+describe('prerequisites', () => {
+  it('asks for the other half of the fusion, and names it', () => {
+    // A hybrid is two schools pressed together and the base card only ever accounts for
+    // one of them. Pressing a Vaporize Blast out of a fire spell and a cold rock without
+    // ever having learned frost would make the bench a shop rather than a payoff.
+    expect(PREREQS.length, 'the first recipe should gate on something').toBeGreaterThan(0);
+    for (const id of PREREQS) expect(CARDS[id], id).toBeDefined();
+  });
+
+  it('refuses the pressing while the other half is unlearned', () => {
+    const g = bench();
+    const knowsOnlyTheBase: Collection = { unlocked: [BASE] };
+    expect(spliceRefusal(g, knowsOnlyTheBase, BASE, CORE)).toBe('missing-prerequisite');
+    expect(spliceCard(g, knowsOnlyTheBase, BASE, CORE)).toBeNull();
+  });
+
+  it('charges nothing for a refused pressing', () => {
+    // The standing rule at every counter in this game: a refusal is free. A bench that
+    // ate the Core and then declined would be the worst possible way to learn the rule.
+    const g = bench();
+    const before = { ...g.overworld.economy.reagents };
+    spliceCard(g, { unlocked: [BASE] }, BASE, CORE);
+    expect(g.overworld.economy.reagents).toEqual(before);
+  });
+
+  it('allows it the moment the other half is learned', () => {
+    const g = bench();
+    expect(spliceRefusal(g, holding(), BASE, CORE)).toBeNull();
+    expect(spliceCard(g, holding(), BASE, CORE)?.resultId).toBe(RESULT);
+  });
+
+  it('never consumes a prerequisite', () => {
+    // The same rule that stopped the base card being eaten. An unlock that can be spent
+    // is not an unlock, and a bench that ate the frost spell would make the *second*
+    // pressing of the same recipe impossible.
+    const g = bench();
+    const result = spliceCard(g, holding(), BASE, CORE)!;
+    for (const id of PREREQS) expect(isUnlocked(result.collection, id), id).toBe(true);
+    expect(isUnlocked(result.collection, BASE), BASE).toBe(true);
+  });
+
+  it('names exactly what is missing, so the counter can say so', () => {
+    expect(missingPrerequisites({ unlocked: [BASE] }, BASE, CORE)).toEqual([...PREREQS]);
+    expect(missingPrerequisites(holding(), BASE, CORE)).toEqual([]);
+    // An unknown pairing has no prerequisites to be missing — `no-recipe` is that story,
+    // and this must not invent a second one.
+    expect(missingPrerequisites({ unlocked: [] }, 'scout_imp', CORE)).toEqual([]);
+  });
+
+  it('asks about the qualification before the reagent', () => {
+    // A player short of both is told about the thing they cannot buy their way out of.
+    const broke = bench(1, 0);
+    expect(spliceRefusal(broke, { unlocked: [BASE] }, BASE, CORE)).toBe('missing-prerequisite');
+  });
+
+  it('never gates a recipe behind its own product', () => {
+    // Checked at module load too, but stated here as well: the failure mode is a card in
+    // the registry that no amount of play could ever produce, and it is silent.
+    for (const recipe of SPLICE_RECIPES) {
+      expect(recipe.requiredUnlockedCards ?? [], recipe.resultId).not.toContain(recipe.resultId);
+      expect(recipe.requiredUnlockedCards ?? [], recipe.resultId).not.toContain(recipe.baseCardId);
+    }
+  });
+
+  it('gates every recipe on something the player can actually get', () => {
+    for (const recipe of SPLICE_RECIPES) {
+      for (const id of recipe.requiredUnlockedCards ?? []) {
+        const def = CARDS[id];
+        expect(def, `${recipe.resultId} requires ${id}`).toBeDefined();
+        // A prerequisite that is itself splice-only would be a chain the player can never
+        // start, and one that is `setupOnly` could never be unlocked at all.
+        expect(def!.spliceOnly, id).toBeUndefined();
+        expect(def!.setupOnly, id).toBeUndefined();
+      }
+    }
   });
 });

@@ -50,14 +50,14 @@ describe('threat projection', () => {
       width: 6,
       height: 6,
       units: [
-        { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 1 }, atk: 2 },
-        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 1 }, atk: 3 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 1 }, atk: 20 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 1 }, atk: 30 },
       ],
     });
 
     const map = threatMap(state, 'player');
     // A tile between them is reachable by both, so the shown damage is the sum.
-    expect(map.damageByTile.get(coordKey({ x: 2, y: 2 }))).toBe(5);
+    expect(map.damageByTile.get(coordKey({ x: 2, y: 2 }))).toBe(50);
   });
 
   it('flags melee that can already reach the player Commander', () => {

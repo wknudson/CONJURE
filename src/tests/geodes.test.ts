@@ -185,7 +185,7 @@ describe('the geode itself', () => {
   });
 
   it('dies to a single hit', () => {
-    expect(CARDS.marrow_geode!.obstacleHp).toBe(1);
+    expect(CARDS.marrow_geode!.obstacleHp).toBe(10);
   });
 });
 

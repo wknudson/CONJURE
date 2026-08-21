@@ -20,7 +20,7 @@ describe('collision physics', () => {
   it('deals 3 impact damage when a unit is shoved into the arena wall', () => {
     // Enemy sits on the top row (y=0); the shove pushes it further up, into the boundary.
     const state = scenario({
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 0 }, hp: 10 }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 0 }, hp: 100 }],
       hand: ['shield_bash'],
     });
     const foe = findUnit(state, 'grave_sentinel', 'enemy');
@@ -32,7 +32,7 @@ describe('collision physics', () => {
     expect(collisions[0]!.against).toBe('wall');
 
     // 2 from the spell + 3 from the wall.
-    expect(res.state.units[foe.id]!.hp).toBe(10 - 2 - 3);
+    expect(res.state.units[foe.id]!.hp).toBe(100 - 20 - 30);
     // It stays on the outermost tile.
     expect(res.state.units[foe.id]!.anchor).toEqual({ x: 2, y: 0 });
   });
@@ -40,8 +40,8 @@ describe('collision physics', () => {
   it('splits 3 / 2 when shoved into another unit', () => {
     const state = scenario({
       units: [
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 1 }, hp: 10 },
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 0 }, hp: 10 },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 1 }, hp: 100 },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 0 }, hp: 100 },
       ],
       hand: ['shield_bash'],
     });
@@ -54,15 +54,15 @@ describe('collision physics', () => {
     expect(collision.against).toBe('unit');
     expect(collision.blockerId).toBe(blocker.id);
 
-    expect(res.state.units[pushed.id]!.hp).toBe(10 - 2 - 3);
-    expect(res.state.units[blocker.id]!.hp).toBe(10 - 2);
+    expect(res.state.units[pushed.id]!.hp).toBe(100 - 20 - 30);
+    expect(res.state.units[blocker.id]!.hp).toBe(100 - 20);
     expect(res.state.units[pushed.id]!.anchor).toEqual({ x: 2, y: 1 });
   });
 
   it('deals 3 to both when shoved into a destructible obstacle', () => {
     const state = scenario({
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 1 }, hp: 10 }],
-      obstacles: [{ at: { x: 2, y: 0 }, hp: 6 }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 1 }, hp: 100 }],
+      obstacles: [{ at: { x: 2, y: 0 }, hp: 60 }],
       hand: ['shield_bash'],
     });
     const pushed = findUnit(state, 'grave_sentinel', 'enemy');
@@ -71,13 +71,13 @@ describe('collision physics', () => {
     const res = run(state, play(handCard(state, 'player', 'shield_bash'), atUnit(pushed.id)));
 
     expect(eventsOf(res.events, 'collision')[0]!.against).toBe('obstacle');
-    expect(res.state.units[pushed.id]!.hp).toBe(10 - 2 - 3);
-    expect(res.state.obstacles[obstacleId]!.hp).toBe(6 - 3);
+    expect(res.state.units[pushed.id]!.hp).toBe(100 - 20 - 30);
+    expect(res.state.obstacles[obstacleId]!.hp).toBe(60 - 30);
   });
 
   it('moves the unit and deals no damage when the push lands on empty ground', () => {
     const state = scenario({
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 10 }],
+      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 100 }],
       hand: ['shield_bash'],
     });
     const foe = findUnit(state, 'grave_sentinel', 'enemy');
@@ -86,7 +86,7 @@ describe('collision physics', () => {
 
     expect(eventsOf(res.events, 'collision')).toHaveLength(0);
     // Only the spell's own 2 damage.
-    expect(res.state.units[foe.id]!.hp).toBe(8);
+    expect(res.state.units[foe.id]!.hp).toBe(80);
     expect(res.state.units[foe.id]!.anchor).toEqual({ x: 2, y: 1 });
   });
 
@@ -95,8 +95,8 @@ describe('collision physics', () => {
     // The pushed unit at (2,2) is shoved up into the Behemoth's (2,1) cell.
     const state = scenario({
       units: [
-        { def: 'magma_brute', side: 'enemy', at: { x: 1, y: 0 }, hp: 12 },
-        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 10 },
+        { def: 'magma_brute', side: 'enemy', at: { x: 1, y: 0 }, hp: 120 },
+        { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 100 },
       ],
       hand: ['shield_bash'],
     });
@@ -106,7 +106,7 @@ describe('collision physics', () => {
     const res = run(state, play(handCard(state, 'player', 'shield_bash'), atUnit(pushed.id)));
 
     expect(eventsOf(res.events, 'collision')[0]!.against).toBe('unit');
-    expect(res.state.units[brute.id]!.hp).toBe(12 - 2);
-    expect(res.state.units[pushed.id]!.hp).toBe(10 - 2 - 3);
+    expect(res.state.units[brute.id]!.hp).toBe(120 - 20);
+    expect(res.state.units[pushed.id]!.hp).toBe(100 - 20 - 30);
   });
 });

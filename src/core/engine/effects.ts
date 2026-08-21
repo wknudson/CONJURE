@@ -16,6 +16,7 @@ import { applyStatusTo } from './status.js';
 import { emit } from './context.js';
 import { allEntities, entityAt, getEntity, lowestHpEnemy, refOf } from './board.js';
 import { dealDamage, grantArmor, healCommander } from './damage.js';
+import { unscaleStat } from '../scale.js';
 import { killEntity } from './death.js';
 import { setAnchor } from './subjugation.js';
 import { attachRune, detonateAllRunes } from './runes.js';
@@ -29,7 +30,7 @@ import { cellsOf, chebyshev, manhattan, toDirection } from '../util/grid.js';
 import { inBounds } from '../types/state.js';
 
 /** Health taken by one tithe, and the Marrow it pays before the wound lands. */
-export const TITHE_DAMAGE = 3;
+export const TITHE_DAMAGE = 30;
 export const TITHE_MARROW = 2;
 
 /**
@@ -240,7 +241,10 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       // Built fresh from the definition rather than restored: a new instance carries no
       // runes, no statuses, no Aura and no growth. "Stripped of everything" is implemented
       // as *copying nothing*, which is one rule instead of five.
-      const id = summonUnit(ctx, entry.defId, play.side, at);
+      // Raised at the level it trained to. Stripped of runes, statuses and growth --
+      // but not of its career. A revival that came back at the printed card would
+      // make every death a demotion nothing in the game could undo.
+      const id = summonUnit(ctx, entry.defId, play.side, at, entry.level);
       if (!id) return;
       const unit = ctx.state.units[id];
       if (!unit) return;
@@ -325,10 +329,17 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       const cmd = ctx.state.players[play.side];
       // A fixed number, or what the body just given up was worth, capped so a fat target
       // cannot pay for the whole turn on its own.
+      //
+      // The dynamic form crosses the Stat Stretch and so has to undo it. Blood is a
+      // stretched quantity and Marrow is a counted one, and a cap of four measured
+      // against a wound of forty is not a cap at all -- Harvest the Weak would pay its
+      // maximum off any body with a scratch on it, which is precisely the thing the cap
+      // exists to stop. `unscaleStat` puts the wound back in the units the cap is written
+      // in, so bleeding a 20-health body still yields exactly two.
       const amount =
         typeof node.amount === 'number'
           ? node.amount
-          : Math.min(node.amount.max, play.titheDamage ?? 0);
+          : Math.min(node.amount.max, unscaleStat(play.titheDamage ?? 0));
       if (amount <= 0) return;
       cmd.marrow += amount;
       emit(ctx, {

@@ -12,6 +12,7 @@ import { newRun } from '../core/overworld/state.js';
 import { type BuffId } from '../core/overworld/state.js';
 import { isObtainable, startingCollection } from '../core/data/collection.js';
 import type { Collection } from '../core/data/deckRules.js';
+import { STAT_SCALE, unscaleStat } from '../core/scale.js';
 
 /**
  * What the two shops are allowed to sell.
@@ -104,20 +105,34 @@ describe('the Clinic', () => {
     expect(clinicPrice(newRun(1))).toBe(0);
   });
 
-  it('bills by the point, so being carried in is dear and a scratch is not', () => {
+  it('bills by the band, so being carried in is dear and a scratch is not', () => {
     const scratched = newRun(1);
-    scratched.pact.currentHp = scratched.pact.maxHp - 2;
+    scratched.pact.currentHp = scratched.pact.maxHp - 20;
     const floored = newRun(1);
-    floored.pact.currentHp = 1;
+    floored.pact.currentHp = STAT_SCALE;
 
+    // Priced per ten points of health, because health stretched by ten and the Ducat did
+    // not. The bill a player pays is the bill they always paid.
     expect(clinicPrice(scratched)).toBe(2 * CLINIC_RATE);
-    expect(clinicPrice(floored)).toBe((floored.pact.maxHp - 1) * CLINIC_RATE);
+    expect(clinicPrice(floored)).toBe(
+      unscaleStat(floored.pact.maxHp - STAT_SCALE) * CLINIC_RATE,
+    );
     expect(clinicPrice(floored)).toBeGreaterThan(clinicPrice(scratched));
+  });
+
+  it('rounds a scratch up rather than treating it for nothing', () => {
+    // Under a full band is still a wound. Free treatment for it would make the Clinic a
+    // way to top yourself off between contracts.
+    const grazed = newRun(1);
+    grazed.pact.currentHp = grazed.pact.maxHp - 1;
+    expect(clinicPrice(grazed)).toBe(CLINIC_RATE);
   });
 
   it('is the expensive way to heal, so buying tonics ahead stays worth it', () => {
     // If a Clinic point were cheaper than a tonic point, the satchel would be pointless.
+    // Both sides in Ducats *per point of health*, or the comparison is between a rate and
+    // a rate-per-ten and means nothing.
     const tonic = APOTHECARY_STOCK.find((s) => s.item.type === 'healing')!;
-    expect(CLINIC_RATE).toBeGreaterThan(tonic.price / tonic.item.value);
+    expect(CLINIC_RATE / STAT_SCALE).toBeGreaterThan(tonic.price / tonic.item.value);
   });
 });

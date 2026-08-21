@@ -16,7 +16,7 @@ function crystalAt(defId: string) {
   const state = scenario({ width: 6, height: 8 });
   const striker = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 5 } });
   const id = spawnObstacle(state, defId, { x: 2, y: 4 });
-  state.obstacles[id]!.hp = 1;
+  state.obstacles[id]!.hp = 10;
   return { state, striker, id };
 }
 
@@ -78,7 +78,7 @@ describe('chains', () => {
   it('sets off a neighbouring crystal without looping', () => {
     const { state, striker, id } = crystalAt('magma_crystal');
     const second = spawnObstacle(state, 'magma_crystal', { x: 3, y: 3 });
-    state.obstacles[second]!.hp = 1;
+    state.obstacles[second]!.hp = 10;
     const bystander = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 4, y: 2 } });
 
     // The first burst does no damage, so the second only goes off if something else
@@ -120,7 +120,7 @@ describe('crystals and reactions', () => {
       def: 'grave_sentinel',
       side: 'enemy',
       at: { x: 3, y: 3 },
-      hp: 20,
+      hp: 200,
       keywords: [],
     });
     state.units[foe.id]!.statuses.chill = 2;

@@ -71,7 +71,7 @@ describe('Lead-Lined Trenchcoat', () => {
   const poisoned = (immune: boolean) => {
     const state = scenario({ width: 6, height: 7 });
     state.players.player.immuneToToxin = immune;
-    const mine = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 4 }, hp: 9 });
+    const mine = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 4 }, hp: 90 });
     state.units[mine.id]!.statuses.toxin = 2;
     return { state, mine };
   };
@@ -85,7 +85,7 @@ describe('Lead-Lined Trenchcoat', () => {
       (e) => e.unitId === mine.id && e.status === 'toxin',
     );
     expect(ticks.every((t) => t.damage === 0), 'no damage from any tick').toBe(true);
-    expect(res.state.units[mine.id]!.hp, 'untouched').toBe(9);
+    expect(res.state.units[mine.id]!.hp, 'untouched').toBe(90);
   });
 
   it('is an immunity, not a cleanse — the stacks still burn off', () => {
@@ -103,7 +103,7 @@ describe('Lead-Lined Trenchcoat', () => {
     const { state, mine } = poisoned(false);
     const res = run(state, { type: 'endTurn' }, { type: 'endTurn' });
 
-    expect(res.state.units[mine.id]!.hp).toBeLessThan(9);
+    expect(res.state.units[mine.id]!.hp).toBeLessThan(90);
   });
 });
 
@@ -120,12 +120,12 @@ describe('Alchemist’s Mortar', () => {
     const bare = run(plain, play(handCard(plain, 'player', 'stone_barricade'), atTile(2, 3)));
     const base = eventsOf(bare.events, 'obstacleSpawned')[0]!.obstacle.maxHp;
 
-    const state = raising('stone_barricade', 2);
+    const state = raising('stone_barricade', 20);
     const res = run(state, play(handCard(state, 'player', 'stone_barricade'), atTile(2, 3)));
     const raised = eventsOf(res.events, 'obstacleSpawned')[0]!;
 
-    expect(raised.obstacle.maxHp).toBe(base + 2);
-    expect(raised.obstacle.hp).toBe(base + 2);
+    expect(raised.obstacle.maxHp).toBe(base + 20);
+    expect(raised.obstacle.hp).toBe(base + 20);
   });
 
   it('thickens a construct too, on top of the strength the spell chose', () => {
@@ -133,12 +133,12 @@ describe('Alchemist’s Mortar', () => {
     // numbers have to be added together *before* the spawn — the event embeds a snapshot
     // the renderer never re-reads, and adjusting health afterwards would draw the pillar
     // permanently wrong.
-    const state = raising('flash_freeze', 2);
+    const state = raising('flash_freeze', 20);
     const res = run(state, play(handCard(state, 'player', 'flash_freeze'), atTile(2, 3)));
 
     const raised = eventsOf(res.events, 'obstacleSpawned')[0];
     expect(raised, 'the pillar went up').toBeDefined();
-    expect(raised!.obstacle.maxHp, '4 from the spell, 2 from the mortar').toBe(6);
+    expect(raised!.obstacle.maxHp, '4 from the spell, 2 from the mortar').toBe(60);
   });
 
   it('leaves the map’s own scenery alone', () => {
@@ -220,7 +220,7 @@ describe('the four together', () => {
     const carry = carryFor(g.overworld);
     expect(carry.boons?.revealIntents).toBe(true);
     expect(carry.boons?.immuneToToxin).toBe(true);
-    expect(carry.boons?.bonusObstacleHp).toBe(2);
+    expect(carry.boons?.bonusObstacleHp).toBe(20);
     expect(carry.boons?.bonusTitheMarrow).toBe(1);
   });
 
@@ -234,7 +234,7 @@ describe('the four together', () => {
 
     expect(me.revealsIntents).toBe(true);
     expect(me.immuneToToxin).toBe(true);
-    expect(me.bonusObstacleHp).toBe(2);
+    expect(me.bonusObstacleHp).toBe(20);
     expect(me.bonusTitheMarrow).toBe(1);
   });
 

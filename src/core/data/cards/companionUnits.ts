@@ -20,7 +20,7 @@ import type { CardDef } from '../../types/cards.js';
 /** The Pact's full pool, mirrored so the body never reads as wounded. */
 const PACT_HP = 40;
 /** The Trial's own pool, mirrored on the boss's bodies for the same reason. */
-const BOSS_HP = 44;
+const BOSS_HP = 440;
 
 export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   ignis_bound: {
@@ -38,7 +38,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     unit: {
       // A drake that fights at arm's length: it wants to be near the fray, which is the
       // same place its spells reach furthest from — and the same place it is shoved.
-      atk: 3,
+      atk: 30,
       hp: PACT_HP,
       mov: 2,
       rangeMin: 1,
@@ -69,7 +69,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     keywords: ['BoundForm'],
     setupOnly: true,
     unit: {
-      atk: 2,
+      atk: 20,
       hp: PACT_HP,
       mov: 2,
       rangeMin: 1,
@@ -100,7 +100,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     keywords: ['BoundForm'],
     setupOnly: true,
     unit: {
-      atk: 4,
+      atk: 40,
       hp: BOSS_HP,
       mov: 2,
       rangeMin: 1,
@@ -129,7 +129,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     keywords: ['BoundForm'],
     setupOnly: true,
     unit: {
-      atk: 5,
+      atk: 50,
       hp: BOSS_HP,
       mov: 1,
       rangeMin: 1,
@@ -156,7 +156,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       // Fast and thin, between the drake and the bear: Surge's bursts are thrown short,
       // so the body that throws them has to be able to reposition every turn and cannot
       // afford to be the thing standing in the way when it gets there.
-      atk: 2,
+      atk: 20,
       hp: PACT_HP,
       mov: 3,
       rangeMin: 1,
@@ -182,7 +182,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     unit: {
       // Slow and unbothered. A Dusk deck spends its own bodies rather than chasing, so the
       // thing it casts from wants to stand somewhere useful and stay there.
-      atk: 2,
+      atk: 20,
       hp: PACT_HP,
       mov: 2,
       rangeMin: 1,
@@ -208,7 +208,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     unit: {
       // The longest reach of any Bound Form and the least willing to swing. Bloom wins by
       // waiting, so its body wants to be far enough back to still be there when it does.
-      atk: 1,
+      atk: 10,
       hp: PACT_HP,
       mov: 2,
       rangeMin: 1,
@@ -240,7 +240,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     keywords: ['BoundForm', 'Guardian'],
     setupOnly: true,
     unit: {
-      atk: 2,
+      atk: 20,
       hp: PACT_HP,
       mov: 1,
       rangeMin: 1,
@@ -272,7 +272,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     keywords: ['BoundForm'],
     setupOnly: true,
     unit: {
-      atk: 1,
+      atk: 10,
       hp: PACT_HP,
       mov: 3,
       rangeMin: 1,
@@ -298,7 +298,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     unit: {
       // A bear that keeps its distance: weaker in the melee, but able to hold a sightline
       // from further back, which suits Frost's longer reach.
-      atk: 2,
+      atk: 20,
       hp: PACT_HP,
       mov: 2,
       rangeMin: 1,

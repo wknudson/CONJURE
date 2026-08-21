@@ -41,13 +41,19 @@ function enchant(state: GameState, unitId: string, auraId: string): void {
 
 /** A board where nothing else can end the fight while an Aura grows. */
 function quiet() {
-  return scenario({ width: 6, height: 8, playerHp: 500, enemyHp: 500, marrow: 0 });
+  return scenario({ width: 6, height: 8, playerHp: 5000, enemyHp: 5000, marrow: 0 });
 }
 
 /** One full round: our turn ends, theirs ends, our start-of-turn fires. */
 function round(state: GameState): GameState {
   return run(state, { type: 'endTurn' }, { type: 'endTurn' }).state;
 }
+
+/** What one stack of an Aura pays, read off the data rather than restated in each test. */
+const PER_STACK_ATK = AURAS.aura_conflagration!.passiveStat.atk!;
+const PER_STACK_HP = AURAS.aura_overgrowth!.passiveStat.maxHp!;
+/** The wound the Dusk siphon takes each turn. */
+const SIPHON_BLEED = AURAS.aura_marrow_siphon!.upkeep!.selfDamage!;
 
 describe('the registry', () => {
   it('ships one Aura for each of the five launch schools', () => {
@@ -80,7 +86,7 @@ describe('attaching', () => {
     enchant(state, u.id, 'aura_conflagration');
 
     expect(state.units[u.id]!.aura).toEqual({ defId: 'aura_conflagration', stacks: 1 });
-    expect(state.units[u.id]!.atk).toBe(atkBefore + 1);
+    expect(state.units[u.id]!.atk).toBe(atkBefore + PER_STACK_ATK);
   });
 
   it('refuses a Bound Form outright', () => {
@@ -130,18 +136,22 @@ describe('the three-stack cap', () => {
     const base = state.units[u.id]!.atk;
 
     enchant(state, u.id, 'aura_conflagration');
-    expect(state.units[u.id]!.atk, 'stack 1').toBe(base + 1);
+    expect(state.units[u.id]!.atk, 'stack 1').toBe(base + PER_STACK_ATK);
 
     const two = round(state);
-    expect(two.units[u.id]!.atk, 'stack 2').toBe(base + 2);
+    expect(two.units[u.id]!.atk, 'stack 2').toBe(base + PER_STACK_ATK * 2);
 
     const three = round(two);
     expect(three.units[three.units[u.id]!.id]!.aura!.stacks).toBe(3);
     // The third stack buys the Climax trait instead of a number.
-    expect(three.units[u.id]!.atk, 'stack 3 pays no stat').toBe(base + AURA_LAST_PAYING_STACK);
+    expect(three.units[u.id]!.atk, 'stack 3 pays no stat').toBe(
+      base + PER_STACK_ATK * AURA_LAST_PAYING_STACK,
+    );
 
     const four = round(three);
-    expect(four.units[u.id]!.atk, 'and nothing after it').toBe(base + AURA_LAST_PAYING_STACK);
+    expect(four.units[u.id]!.atk, 'and nothing after it').toBe(
+      base + PER_STACK_ATK * AURA_LAST_PAYING_STACK,
+    );
   });
 
   it('announces the Climax exactly once', () => {
@@ -196,7 +206,7 @@ describe('the Dusk upkeep', () => {
 
     const after = round(state);
 
-    expect(after.units[u.id]!.hp).toBe(hpBefore - 1);
+    expect(after.units[u.id]!.hp).toBe(hpBefore - SIPHON_BLEED);
     expect(after.players.player.marrow).toBeGreaterThanOrEqual(1);
   });
 
@@ -212,20 +222,20 @@ describe('the Dusk upkeep', () => {
     expect(cur.units[u.id]!.aura!.stacks).toBe(AURA_MAX_STACKS);
     expect(isClimaxed(cur.units[u.id]!)).toBe(true);
     // Four rounds, four wounds — the cap stopped the growth, not the bleeding.
-    expect(cur.units[u.id]!.hp).toBe(cur.units[u.id]!.maxHp - 4);
+    expect(cur.units[u.id]!.hp).toBe(cur.units[u.id]!.maxHp - SIPHON_BLEED * 4);
   });
 
   it('cuts through armor, so plate does not buy a free siphon', () => {
     const state = quiet();
     const u = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 5 }, fresh: false });
-    state.units[u.id]!.armor = 10;
+    state.units[u.id]!.armor = 100;
     const hpBefore = state.units[u.id]!.hp;
     enchant(state, u.id, 'aura_marrow_siphon');
 
     const after = round(state);
 
-    expect(after.units[u.id]!.hp).toBe(hpBefore - 1);
-    expect(after.units[u.id]!.armor, 'and the plate is untouched').toBe(10);
+    expect(after.units[u.id]!.hp).toBe(hpBefore - SIPHON_BLEED);
+    expect(after.units[u.id]!.armor, 'and the plate is untouched').toBe(100);
   });
 
   it('can bleed its own host to death', () => {
@@ -234,7 +244,7 @@ describe('the Dusk upkeep', () => {
       def: 'grave_sentinel',
       side: 'player',
       at: { x: 2, y: 5 },
-      hp: 1,
+      hp: 10,
       fresh: false,
     });
     enchant(state, u.id, 'aura_marrow_siphon');
@@ -251,7 +261,7 @@ describe('the Dusk upkeep', () => {
       def: 'grave_sentinel',
       side: 'player',
       at: { x: 2, y: 5 },
-      hp: 1,
+      hp: 10,
       fresh: false,
     });
     enchant(state, u.id, 'aura_marrow_siphon');
@@ -279,12 +289,14 @@ describe('replacement hands back what the old Aura paid', () => {
 
     enchant(state, u.id, 'aura_conflagration');
     const grown = round(round(state));
-    expect(grown.units[u.id]!.atk).toBe(baseAtk + AURA_LAST_PAYING_STACK);
+    expect(grown.units[u.id]!.atk).toBe(baseAtk + PER_STACK_ATK * AURA_LAST_PAYING_STACK);
 
     enchant(grown, u.id, 'aura_overgrowth');
 
     expect(grown.units[u.id]!.atk, 'the fire is given back in full').toBe(baseAtk);
-    expect(grown.units[u.id]!.maxHp, 'and the vines pay their first stack').toBe(baseHp + 2);
+    expect(grown.units[u.id]!.maxHp, 'and the vines pay their first stack').toBe(
+      baseHp + PER_STACK_HP,
+    );
     expect(grown.units[u.id]!.aura).toEqual({ defId: 'aura_overgrowth', stacks: 1 });
   });
 
@@ -321,7 +333,9 @@ describe('replacement hands back what the old Aura paid', () => {
     const baseArmor = state.units[u.id]!.armor;
     enchant(state, u.id, 'aura_petrifying_mantle');
     const grown = round(round(state));
-    expect(grown.units[u.id]!.armor).toBe(baseArmor + AURA_LAST_PAYING_STACK);
+    expect(grown.units[u.id]!.armor).toBe(
+      baseArmor + AURAS.aura_petrifying_mantle!.passiveStat.armor! * AURA_LAST_PAYING_STACK,
+    );
 
     const spent = removeAura(grown.units[u.id]!);
 
@@ -423,7 +437,7 @@ describe('attachAura and detonateAura as card ops', () => {
 
   it('never offers a Bound Form as a target', () => {
     opCard('probe_attach_aura2', { op: 'attachAura', aura: 'aura_conflagration' }, ALLY_TARGET);
-    const state = scenario({ width: 6, height: 8, playerHp: 40 });
+    const state = scenario({ width: 6, height: 8, playerHp: 400 });
     const bound = addUnit(state, {
       def: 'vanguard_footman',
       side: 'player',

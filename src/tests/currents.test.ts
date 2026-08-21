@@ -78,7 +78,7 @@ describe('what stops it', () => {
   it('bruises a unit shoved into the arena wall', () => {
     // A current running into a wall is a weapon, which is why the lane is worth taking.
     const state = scenario({ width: 6, height: 8 });
-    const rider = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, hp: 9 });
+    const rider = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, hp: 90 });
     current(state, { x: 2, y: 0 }, { x: 0, y: -1 });
 
     const before = state.units[rider.id]!.hp;
@@ -89,7 +89,7 @@ describe('what stops it', () => {
   });
 
   it('bleeds the Pact when it slams the Bound Form', () => {
-    const state = scenario({ width: 6, height: 8, playerHp: 40 });
+    const state = scenario({ width: 6, height: 8, playerHp: 400 });
     const body = addUnit(state, {
       def: 'ignis_bound',
       side: 'player',
@@ -101,7 +101,7 @@ describe('what stops it', () => {
 
     const after = round(state);
 
-    expect(after.players.player.hp).toBeLessThan(40);
+    expect(after.players.player.hp).toBeLessThan(400);
     expect(after.units[body.id]!.hp, 'the body keeps no health of its own').toBe(
       after.units[body.id]!.maxHp,
     );
@@ -111,14 +111,14 @@ describe('what stops it', () => {
     const state = scenario({ width: 6, height: 8 });
     // Tough enough to survive the impact: a Scout Imp is killed outright by it, which is
     // itself a fair fate for standing in a current facing a wall.
-    const rider = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 5 }, hp: 20 });
+    const rider = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 5 }, hp: 200 });
     spawnObstacle(state, 'stone_barricade', { x: 2, y: 4 });
     current(state, { x: 2, y: 5 }, { x: 0, y: -1 });
 
     const after = round(state);
 
     expect(after.units[rider.id]!.anchor).toEqual({ x: 2, y: 5 });
-    expect(after.units[rider.id]!.hp).toBeLessThan(20);
+    expect(after.units[rider.id]!.hp).toBeLessThan(200);
   });
 });
 

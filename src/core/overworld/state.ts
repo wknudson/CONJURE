@@ -216,7 +216,7 @@ export type Bestiary = Record<string, { encountered: number; defeated: number }>
 export const INVENTORY_LIMIT = 3;
 
 /** A fresh character. */
-export function newRun(bountySeed = 1, maxHp = 40): OverworldState {
+export function newRun(bountySeed = 1, maxHp = 400): OverworldState {
   return {
     playerPos: { x: 0, y: 0, mapId: 'start' },
     pact: { currentHp: maxHp, maxHp },
@@ -319,7 +319,7 @@ export function isDown(state: OverworldState): boolean {
 }
 
 /** At or below this, the player is upright but in no state to take a contract. */
-export const CRITICAL_HP = 5;
+export const CRITICAL_HP = 50;
 
 export function isCritical(state: OverworldState): boolean {
   return !isDown(state) && state.pact.currentHp <= CRITICAL_HP;
@@ -368,7 +368,7 @@ export function rescuePlayer(state: GlobalGameState): number {
   overworld.economy.ducats = Math.floor(before * (1 - RESCUE_FEE_RATE));
   const fee = before - overworld.economy.ducats;
 
-  overworld.pact.currentHp = 1;
+  overworld.pact.currentHp = 10;
   overworld.activeBuff = null;
   overworld.activeEncounter = null;
   state.combat = null;

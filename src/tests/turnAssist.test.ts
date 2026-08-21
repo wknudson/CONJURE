@@ -51,8 +51,8 @@ describe('snapshot and restore', () => {
   it('hands back a copy, so the caller cannot mutate the live board', () => {
     const session = fresh();
     const snap = session.snapshot();
-    snap.players.player.hp = 1;
-    expect(session.getBoard().player.hp).not.toBe(1);
+    snap.players.player.hp = 10;
+    expect(session.getBoard().player.hp).not.toBe(10);
   });
 
   it('restores by value, so a snapshot survives being restored', () => {

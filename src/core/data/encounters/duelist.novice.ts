@@ -15,8 +15,8 @@ export const NOVICE_DUELIST: EncounterDef = registerEncounter({
   // approach itself is a decision. Rows 6-7 are yours, 0-1 theirs, four neutral between.
   width: 6,
   height: 8,
-  playerHp: 40,
-  enemyHp: 40,
+  playerHp: 400,
+  enemyHp: 400,
   playerName: 'Hero',
   companionName: 'Ignis',
   companionSchool: 'pyre',

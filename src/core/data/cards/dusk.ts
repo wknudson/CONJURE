@@ -34,7 +34,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
     kind: 'spell',
     text: 'A held breath of black smoke. Blocks line of sight; anyone may walk into it.',
     target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
-    effect: { op: 'spawnConstruct', obstacleDef: 'smoke_bank', hp: 3 },
+    effect: { op: 'spawnConstruct', obstacleDef: 'smoke_bank', hp: 30 },
     keywords: [],
   },
 
@@ -51,7 +51,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
     effect: { op: 'seq', effects: [] },
     keywords: [],
     setupOnly: true,
-    obstacleHp: 3,
+    obstacleHp: 30,
     obstacleCover: true,
   },
 
@@ -80,8 +80,8 @@ export const DUSK_CARDS: Record<string, CardDef> = {
     keywords: ['Haste'],
     setupOnly: true,
     unit: {
-      atk: 2,
-      hp: 3,
+      atk: 20,
+      hp: 30,
       mov: 2,
       rangeMin: 1,
       rangeMax: 1,
@@ -121,8 +121,8 @@ export const DUSK_CARDS: Record<string, CardDef> = {
       // The whole point of the card, and the same premium the Marrow Wisp charges — bought
       // here with immobility and a turn of waiting rather than with a Pip and mobility.
       titheBonus: 1,
-      atk: 2,
-      hp: 2,
+      atk: 20,
+      hp: 20,
       mov: 0,
       rangeMin: 1,
       rangeMax: 1,

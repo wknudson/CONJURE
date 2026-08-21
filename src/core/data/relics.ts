@@ -159,9 +159,9 @@ export const RELICS: Record<string, RelicDef> = {
   relic_coat: {
     id: 'relic_coat',
     name: 'Heavy Trenchcoat',
-    text: 'Oilcloth over plate. Start every contract wearing 3 Armor.',
+    text: 'Oilcloth over plate. Start every contract wearing 30 Armor.',
     slot: 'vestment',
-    boons: { armor: 3 },
+    boons: { armor: 30 },
   },
 
   /**
@@ -207,9 +207,9 @@ export const RELICS: Record<string, RelicDef> = {
   relic_mortar: {
     id: 'relic_mortar',
     name: "Alchemist's Mortar",
-    text: 'Ground glass and quicklime, worked into the mix. Every wall you raise stands 2 HP sturdier.',
+    text: 'Ground glass and quicklime, worked into the mix. Every wall you raise stands 20 HP sturdier.',
     slot: 'trinket',
-    boons: { bonusObstacleHp: 2 },
+    boons: { bonusObstacleHp: 20 },
   },
 
   // ------------------------------------------------------------------- will

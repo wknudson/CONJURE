@@ -52,15 +52,15 @@ describe('Rot-Root Snare', () => {
       def: 'grave_sentinel',
       side: 'enemy',
       at: { x: 2, y: 3 },
-      hp: 12,
+      hp: 120,
       rune: 'rot_root_snare',
     });
-    const beside = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 3 }, hp: 9 });
+    const beside = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 3 }, hp: 90 });
     const striker = addUnit(state, {
       def: 'scout_imp',
       side: 'player',
       at: { x: 2, y: 4 },
-      hp: 9,
+      hp: 90,
       fresh: false,
     });
     return { state, host, beside, striker };
@@ -159,8 +159,8 @@ describe('Volatile Munitions Cask', () => {
 
   it('goes up at 4 HP', () => {
     const { raised } = withCask();
-    expect(raised.obstacle.hp).toBe(4);
-    expect(raised.obstacle.maxHp).toBe(4);
+    expect(raised.obstacle.hp).toBe(40);
+    expect(raised.obstacle.maxHp).toBe(40);
   });
 
   it('goes up **armed** — the seq wires what it just built', () => {
@@ -180,7 +180,7 @@ describe('Volatile Munitions Cask', () => {
       def: 'scout_imp',
       side: 'player',
       at: { x: 2, y: 5 },
-      atk: 1,
+      atk: 10,
       fresh: false,
     });
 
@@ -197,13 +197,13 @@ describe('Volatile Munitions Cask', () => {
   it('detonates in a cross when it is broken', () => {
     const { state, caskId } = withCask();
     // Orthogonal: caught. Diagonal: spared — the blast runs down the aisles.
-    const orthogonal = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, hp: 9 });
-    const diagonal = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 3 }, hp: 9 });
+    const orthogonal = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, hp: 90 });
+    const diagonal = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 3 }, hp: 90 });
     const breaker = addUnit(state, {
       def: 'scout_imp',
       side: 'player',
       at: { x: 2, y: 5 },
-      atk: 20,
+      atk: 200,
       fresh: false,
     });
 
@@ -214,7 +214,7 @@ describe('Volatile Munitions Cask', () => {
     });
 
     expect(eventsOf(res.events, 'runeDetonated').length).toBe(1);
-    expect(damageTo(res.events, orthogonal.id)).toBe(3);
+    expect(damageTo(res.events, orthogonal.id)).toBe(30);
     expect(damageTo(res.events, diagonal.id), 'the diagonal is the safe place').toBe(0);
   });
 
@@ -224,7 +224,7 @@ describe('Volatile Munitions Cask', () => {
       def: 'scout_imp',
       side: 'player',
       at: { x: 2, y: 5 },
-      atk: 20,
+      atk: 200,
       fresh: false,
     });
 
@@ -242,12 +242,12 @@ describe('Volatile Munitions Cask', () => {
     // It does not know whose army is standing beside it, which is what makes placing one
     // a decision rather than free removal.
     const { state, caskId } = withCask();
-    const friend = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 1, y: 4 }, hp: 9 });
+    const friend = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 1, y: 4 }, hp: 90 });
     const breaker = addUnit(state, {
       def: 'scout_imp',
       side: 'player',
       at: { x: 2, y: 5 },
-      atk: 20,
+      atk: 200,
       fresh: false,
     });
 
@@ -257,7 +257,7 @@ describe('Volatile Munitions Cask', () => {
       target: { kind: 'obstacle', id: caskId },
     });
 
-    expect(damageTo(res.events, friend.id)).toBe(3);
+    expect(damageTo(res.events, friend.id)).toBe(30);
   });
 });
 
@@ -276,7 +276,7 @@ describe('Soul Splinter Rune', () => {
     const rune = RUNES.soul_splinter_rune!;
     expect(rune.trigger).toEqual({ kind: 'death' });
     expect(rune.blast).toEqual({ shape: 'lowestHpEnemy' });
-    expect(rune.damage).toBe(5);
+    expect(rune.damage).toBe(50);
     expect(rune.dtype, 'the one delta from the brief').toBe('spell');
   });
 
@@ -289,14 +289,14 @@ describe('Soul Splinter Rune', () => {
       rune: 'soul_splinter_rune',
       fresh: false,
     });
-    const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 9 });
+    const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 90 });
 
-    // A Marrow Wisp has exactly 3 health, and a tithe takes exactly 3. The rune's
+    // A Marrow Wisp has exactly 30 health, and a tithe takes exactly 30. The rune's
     // trigger is `death`, so what matters is that a self-inflicted death is still a death.
     const res = run(state, { type: 'bloodTithe', unit: host.id });
 
     expect(eventsOf(res.events, 'runeDetonated').length).toBe(1);
-    expect(damageTo(res.events, victim.id)).toBe(5);
+    expect(damageTo(res.events, victim.id)).toBe(50);
   });
 });
 

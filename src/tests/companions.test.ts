@@ -96,7 +96,7 @@ describe('Verdant Growth', () => {
     const state = scenario({ width: 6, height: 8, hand, pips: 8 });
     // `scenario` sets maxHp to whatever hp it is given, so asking for 20 would produce a
     // Pact that is *full at 20* and has nothing to heal. Wound it against a real ceiling.
-    state.players.player.maxHp = 40;
+    state.players.player.maxHp = 400;
     state.players.player.hp = hp;
     state.players.player.companionSchool = 'bloom';
     const body = addUnit(state, {
@@ -107,17 +107,17 @@ describe('Verdant Growth', () => {
     });
     state.players.player.companionUnitId = body.id;
     state.players.player.companionUnitDefId = 'sylva_bound';
-    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 9 });
+    addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 90 });
     return state;
   };
 
   it('puts health back on the first Companion card', () => {
-    const state = board(['spore_cloud'], 20);
+    const state = board(['spore_cloud'], 200);
     const card = handCard(state, 'player', 'spore_cloud');
 
     const res = run(state, play(card, atTile(2, 3)));
 
-    expect(res.state.players.player.hp).toBe(20 + VERDANT_GROWTH_HEAL);
+    expect(res.state.players.player.hp).toBe(200 + VERDANT_GROWTH_HEAL);
     const healed = eventsOf(res.events, 'healed');
     expect(healed.length, 'and says so').toBe(1);
     expect(healed[0]!.amount).toBe(VERDANT_GROWTH_HEAL);
@@ -125,27 +125,27 @@ describe('Verdant Growth', () => {
 
   it('says nothing when the Pact is already full', () => {
     // A floater reading "+0" is worse than no floater.
-    const state = board(['spore_cloud'], 40);
+    const state = board(['spore_cloud'], 400);
     const card = handCard(state, 'player', 'spore_cloud');
 
     const res = run(state, play(card, atTile(2, 3)));
 
-    expect(res.state.players.player.hp).toBe(40);
+    expect(res.state.players.player.hp).toBe(400);
     expect(eventsOf(res.events, 'healed')).toEqual([]);
   });
 
   it('never overheals past the ceiling', () => {
-    const state = board(['spore_cloud'], 39);
+    const state = board(['spore_cloud'], 390);
     const card = handCard(state, 'player', 'spore_cloud');
 
     const res = run(state, play(card, atTile(2, 3)));
 
-    expect(res.state.players.player.hp).toBe(40);
-    expect(eventsOf(res.events, 'healed')[0]!.amount, 'only what was owed').toBe(1);
+    expect(res.state.players.player.hp).toBe(400);
+    expect(eventsOf(res.events, 'healed')[0]!.amount, 'only what was owed').toBe(10);
   });
 
   it('fires once a turn, not once a card', () => {
-    const state = board(['spore_cloud', 'spore_cloud'], 20);
+    const state = board(['spore_cloud', 'spore_cloud'], 200);
     const first = handCard(state, 'player', 'spore_cloud');
     const after = run(state, play(first, atTile(2, 3))).state;
     const second = handCard(after, 'player', 'spore_cloud');
@@ -159,9 +159,9 @@ describe('Verdant Growth', () => {
 describe('Soul Siphon', () => {
   const siphoning = (hand: string[] = []) => {
     const state = scenario({ width: 6, height: 8, hand, pips: 8 });
-    state.players.player.maxHp = 40;
-    state.players.player.hp = 20;
-    state.players.player.healOnTithe = 1;
+    state.players.player.maxHp = 400;
+    state.players.player.hp = 200;
+    state.players.player.healOnTithe = 10;
     const victim = addUnit(state, {
       def: 'marrow_wisp',
       side: 'player',
@@ -173,11 +173,11 @@ describe('Soul Siphon', () => {
 
   it('reaches the engine as a capability, not a listener', () => {
     const { carry } = withKnack('mortis', 'soul_siphon');
-    expect(carry.boons?.healOnTithe).toBe(1);
+    expect(carry.boons?.healOnTithe).toBe(10);
     expect(JSON.stringify(carry), 'the engine never hears the name').not.toContain('soul_siphon');
 
     const { state } = createCombat(NOVICE_DUELIST, 7, 'mortis', undefined, carry);
-    expect(state.players.player.healOnTithe).toBe(1);
+    expect(state.players.player.healOnTithe).toBe(10);
     expect(state.players.enemy.healOnTithe, 'and the enemy gets nothing').toBe(0);
   });
 
@@ -185,7 +185,7 @@ describe('Soul Siphon', () => {
     const { state, victim } = siphoning();
     const res = run(state, { type: 'bloodTithe', unit: victim.id });
 
-    expect(res.state.players.player.hp).toBe(21);
+    expect(res.state.players.player.hp).toBe(210);
     expect(eventsOf(res.events, 'healed').length).toBe(1);
   });
 
@@ -198,13 +198,13 @@ describe('Soul Siphon', () => {
 
     const res = run(state, play(card, { kind: 'entity', ref: { kind: 'unit', id: victim.id } }));
 
-    expect(res.state.players.player.hp).toBe(21);
+    expect(res.state.players.player.hp).toBe(210);
   });
 
   it('gives nothing without the knack', () => {
     const state = scenario({ width: 6, height: 8 });
-    state.players.player.maxHp = 40;
-    state.players.player.hp = 20;
+    state.players.player.maxHp = 400;
+    state.players.player.hp = 200;
     const victim = addUnit(state, {
       def: 'marrow_wisp',
       side: 'player',
@@ -214,7 +214,7 @@ describe('Soul Siphon', () => {
 
     const res = run(state, { type: 'bloodTithe', unit: victim.id });
 
-    expect(res.state.players.player.hp).toBe(20);
+    expect(res.state.players.player.hp).toBe(200);
     expect(eventsOf(res.events, 'healed')).toEqual([]);
   });
 });
@@ -224,7 +224,7 @@ describe('Toxic Bloom', () => {
     const state = scenario({ width: 6, height: 8, hand: ['spore_cloud'], pips: 8 });
     state.players.player.bonusToxinStacks = bonus;
     addUnit(state, { def: 'sylva_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
-    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 12 });
+    const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 120 });
     return { state, foe };
   };
 
@@ -264,7 +264,7 @@ describe('Toxic Bloom', () => {
       at: { x: 2, y: 3 },
       fresh: false,
     });
-    const mine = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 12 });
+    const mine = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 120 });
 
     const res = run(state, {
       type: 'attack',

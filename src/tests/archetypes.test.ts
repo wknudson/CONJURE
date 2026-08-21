@@ -113,7 +113,7 @@ describe('the turret is bolted down', () => {
     // and never counted as spent -- the board drew it as ready long after it had fired.
     const state = board();
     const turret = addUnit(state, { def: 'arc_turret', side: 'player', at: { x: 3, y: 6 } });
-    const foe = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 3 }, hp: 20 });
+    const foe = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 3 }, hp: 200 });
 
     expect(canAttack(state.units[turret.id]!)).toBe(true);
     expect(isSpent(state.units[turret.id]!), 'not spent before firing').toBe(false);
@@ -185,7 +185,7 @@ describe('the planner reading the archetypes', () => {
     const state = scenario({ width: 3, height: 12 });
     state.activeSide = 'enemy';
     const lobber = addUnit(state, { def: 'cinder_lobber', side: 'enemy', at: { x: 1, y: 2 } });
-    addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 1, y: 5 }, hp: 30 });
+    addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 1, y: 5 }, hp: 300 });
     state.units[lobber.id]!.attackedThisTurn = true;
     return { state, lobber };
   };
@@ -204,7 +204,7 @@ describe('the planner reading the archetypes', () => {
     const state = scenario({ width: 7, height: 8 });
     state.activeSide = 'enemy';
     const sniper = addUnit(state, { def: 'longshot_stalker', side: 'enemy', at: { x: 2, y: 2 } });
-    addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 3, y: 6 }, hp: 30 });
+    addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 3, y: 6 }, hp: 300 });
     state.units[sniper.id]!.attackedThisTurn = true;
 
     const plan = planTurn(state, 'enemy');
@@ -220,7 +220,7 @@ describe('the planner reading the archetypes', () => {
     const state = scenario({ width: 6, height: 8 });
     state.activeSide = 'enemy';
     const turret = addUnit(state, { def: 'arc_turret', side: 'enemy', at: { x: 3, y: 1 } });
-    addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 3, y: 6 }, hp: 30 });
+    addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 3, y: 6 }, hp: 300 });
 
     const moves = enumerateActions(state, 'enemy').filter(
       (c) => c.type === 'moveUnit' && c.unit === turret.id,

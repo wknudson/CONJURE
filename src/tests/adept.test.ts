@@ -27,7 +27,7 @@ describe('lookahead fixes action ordering', () => {
       height: 8,
       units: [
         { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 } },
-        { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 2 }, hp: 20, keywords: [] },
+        { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 2 }, hp: 200, keywords: [] },
       ],
     });
     state.activeSide = 'enemy';
@@ -107,7 +107,7 @@ describe('Adept profile', () => {
     const state = scenario({
       width: 8,
       height: 8,
-      playerHp: 2,
+      playerHp: 20,
       units: [{ def: 'scout_imp', side: 'enemy', at: { x: 3, y: 6 } }],
     });
     state.activeSide = 'enemy';

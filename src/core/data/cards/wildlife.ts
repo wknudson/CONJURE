@@ -29,7 +29,7 @@ export const WILDLIFE_CARDS: Record<string, CardDef> = {
     bounty: { marrow: 3 },
     unit: {
       atk: 0,
-      hp: 6,
+      hp: 60,
       // Faster than anything chasing it: catching one has to cost a real commitment.
       mov: 4,
       rangeMin: 1,
@@ -58,8 +58,8 @@ export const WILDLIFE_CARDS: Record<string, CardDef> = {
     keywords: ['Feral'],
     setupOnly: true,
     unit: {
-      atk: 3,
-      hp: 5,
+      atk: 30,
+      hp: 50,
       mov: 3,
       rangeMin: 1,
       rangeMax: 1,

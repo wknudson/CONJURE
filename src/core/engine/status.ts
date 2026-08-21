@@ -15,12 +15,13 @@ import { unitsOf } from './board.js';
 import { dealDamage } from './damage.js';
 import { tickHazards } from './reactions.js';
 import { growUnit, tickAura } from './growth.js';
+import { STAT_SCALE } from '../scale.js';
 
 /** Damage per stack, per tick. */
 const TICK_DAMAGE: Partial<Record<StatusKind, { amount: number; dtype: 'true' | 'fire' }>> = {
   // Toxin bypasses armor entirely.
-  toxin: { amount: 1, dtype: 'true' },
-  burn: { amount: 1, dtype: 'fire' },
+  toxin: { amount: STAT_SCALE, dtype: 'true' },
+  burn: { amount: STAT_SCALE, dtype: 'fire' },
 };
 
 export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
