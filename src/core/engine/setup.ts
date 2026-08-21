@@ -20,6 +20,7 @@ import { HAND_LIMIT, OPENING_HAND, PIP_CAP, drawCards } from './deck.js';
 import { placeOpeningUnit, spawnObstacle } from './spawn.js';
 import { beginTurn } from './turn.js';
 import { resolveGrimoire } from '../data/grimoire.js';
+import { printedWith } from '../data/collection.js';
 
 /**
  * Where the Hero and Companion stand: they flank the board, Hero left of centre and
@@ -308,6 +309,17 @@ export interface CombatCarry {
    * `CompanionInstance`, a Forge, or the school rule that let the swap happen.
    */
   grimoireOverrides?: Record<number, string>;
+  /**
+   * Base card ids the character has Ascended, so the Companion's half arrives at Rank 2.
+   *
+   * The Hero half is printed by the caller before it ever reaches here, and for a long
+   * time the Grimoire was not -- so a player could pay Ducats, Shards and a Core to raise
+   * Flame Surge and then watch their Ignis deal the Rank 1 printing all fight. The two
+   * halves are resolved in different places (the sockets are applied *here*), so the
+   * printing has to happen here too, and the list is what makes that possible without the
+   * reducer learning what a collection is.
+   */
+  ascended?: readonly string[];
 }
 
 /**
@@ -445,7 +457,12 @@ export function createCombat(
   // definition of "what is actually in this Grimoire", shared with the Field Journal that
   // edits it -- two readings of that question is how a screen comes to show one book while
   // the board deals another.
-  const grimoire = resolveGrimoire(drafted, carry?.grimoireOverrides);
+  // Sockets first, then printings. The order matters and only reads one way: a socketed
+  // card is a card, so it earns its Rank 2 exactly as a drafted one does -- printing before
+  // socketing would raise the card being replaced and leave the replacement at Rank 1.
+  const socketed = resolveGrimoire(drafted, carry?.grimoireOverrides);
+  const ascended = carry?.ascended ?? [];
+  const grimoire = socketed.map((id) => printedWith(ascended, id));
 
   const player = buildCommander({
     name: encounter.playerName,

@@ -48,6 +48,7 @@ import { companionById, DEFAULT_COMPANION } from './core/data/companions.js';
 import { grantCard, printedDeck, rollRewards } from './core/data/collection.js';
 import { ascendCard, forgeSchematic } from './core/overworld/forge.js';
 import { spliceCard } from './core/overworld/splice.js';
+import { socketRefusal } from './core/data/grimoire.js';
 import {
   levelCompanion,
   tameCompanion,
@@ -309,6 +310,22 @@ function showSafehouse(companionId: string): void {
               p.collection = done.collection;
               return done;
             },
+            // The bench is Companion-centric now: it presses a spell out of a particular
+            // beast's book, so it needs the roster and a way to write back to one instance.
+            companions: () => profile().companions,
+            activeCompanionId: () => profile().activeCompanionId,
+            onSocket: (instanceId, slot, cardId) => {
+              const beast = profile().companions.find((c) => c.instanceId === instanceId);
+              const source = beast ? companionById(beast.baseId)?.grimoire : undefined;
+              if (!beast || !source) return false;
+              // Asked again here, not trusted from the screen. A modal is a render, and a
+              // render can be stale.
+              if (socketRefusal(source, profile().collection.unlocked, slot, cardId) !== null) {
+                return false;
+              }
+              beast.overrides = { ...beast.overrides, [slot]: cardId };
+              return true;
+            },
             onChange: persist,
             onBack: () => showSafehouse(companionId),
           }),
@@ -480,7 +497,14 @@ function startCombat(
   bounty: Bounty,
 ): void {
   const global = profile().state;
-  const carry = carryFor(global.overworld, activeCompanion(), profile().vanguardProgress);
+  const carry = carryFor(
+    global.overworld,
+    activeCompanion(),
+    profile().vanguardProgress,
+    // The Companion's half is printed inside `createCombat`, after its sockets are
+    // applied; the Hero half is printed on the line below. Both halves, one rule.
+    profile().collection.ascended,
+  );
 
   // Commit to the fight on disk *before* it is mounted. From here until `resolveCombat`
   // clears it, the save says a fight is open, and a boot that finds it open collects on

@@ -108,9 +108,23 @@ export function isAscended(collection: Collection, cardId: string): boolean {
  * list mean the upgraded printing without anything having been migrated.
  */
 export function printedId(collection: Collection, cardId: string): string {
-  return isAscended(collection, cardId) && CARDS[ascendedId(cardId)]
-    ? ascendedId(cardId)
-    : cardId;
+  return printedWith(collection.ascended ?? [], cardId);
+}
+
+/**
+ * The same rule, against a bare list of ascended base ids.
+ *
+ * The Companion's half of the deck is resolved inside the combat reducer — the sockets are
+ * applied there, so the printing has to be too — and the reducer has never heard of a
+ * `Collection`. It is handed the list instead, exactly as it is handed a list of Vanguard
+ * levels rather than a Profile.
+ *
+ * One definition, asked twice. Two readings of "which printing is this" is how the Hero
+ * half of a deck comes to arrive at Rank 2 while the Companion half arrives at Rank 1 --
+ * which is precisely the bug this exists to have fixed.
+ */
+export function printedWith(ascended: readonly string[], cardId: string): string {
+  return ascended.includes(cardId) && CARDS[ascendedId(cardId)] ? ascendedId(cardId) : cardId;
 }
 
 /** A deck as the engine should receive it, with every Ascension applied. */

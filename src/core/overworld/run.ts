@@ -92,6 +92,14 @@ export function carryFor(
    * fight but not about the save file. Omitted means every body fights at level 1.
    */
   vanguardProgress?: Record<string, VanguardProgress>,
+  /**
+   * Base card ids this character has Ascended.
+   *
+   * Passed in rather than reached for, like everything else here: Ascension lives on the
+   * `Collection`, which belongs to the save, and `run.ts` knows about fights rather than
+   * about save files.
+   */
+  ascended?: readonly string[],
 ): CombatCarry {
   const brew = overworld.activeBuff ? BUFF_EFFECTS[overworld.activeBuff] : undefined;
   // Relics are translated here, not passed on as ids. `createCombat` is handed "3 Armor"
@@ -165,6 +173,7 @@ export function carryFor(
     ...(Object.keys(levels).length > 0 ? { vanguardLevels: levels } : {}),
     ...(grimoire && grimoire.length > 0 ? { grimoire } : {}),
     ...(overrides && Object.keys(overrides).length > 0 ? { grimoireOverrides: overrides } : {}),
+    ...(ascended && ascended.length > 0 ? { ascended: [...ascended] } : {}),
   };
 }
 

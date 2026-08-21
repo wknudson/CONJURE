@@ -246,3 +246,81 @@ describe('a freshly caught beast', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------- ascension reaching the Grimoire
+
+describe('an Ascension the Companion actually brings', () => {
+  const book = [
+    'flame_surge',
+    'flame_surge',
+    'cinder_rune',
+    'cinder_rune',
+    'ember_coat',
+    'ember_coat',
+    'cataclysm',
+    'cataclysmic_core',
+  ];
+
+  const dealt = (carry: Record<string, unknown>): string[] => {
+    const { state } = createCombat(
+      NOVICE_DUELIST,
+      7,
+      'ignis',
+      ['shield_bash', 'aegis_ward', 'stone_barricade', 'grapple_line'],
+      { grimoire: book, ...carry },
+    );
+    const p = state.players.player;
+    return [...p.hand, ...p.deck, ...p.discard].map((id) => p.cards[id]!.defId);
+  };
+
+  it('deals Rank 2 out of the Grimoire once the card is raised', () => {
+    // The bug this closes: the Hero half was printed by the caller and the Companion half
+    // was not, so a player could pay Ducats, Shards and a Core to raise Flame Surge and
+    // then watch their Ignis deal the Rank 1 printing all fight.
+    const after = dealt({ ascended: ['flame_surge'] });
+    expect(after.filter((id) => id === ascendedId('flame_surge')), 'both copies').toHaveLength(2);
+    expect(after, 'and none at Rank 1').not.toContain('flame_surge');
+  });
+
+  it('leaves an unraised card exactly where it was', () => {
+    const after = dealt({ ascended: ['flame_surge'] });
+    expect(after.filter((id) => id === 'cinder_rune')).toHaveLength(2);
+  });
+
+  it('raises a socketed card too, because a socketed card is a card', () => {
+    const after = dealt({
+      grimoireOverrides: { 0: 'vaporize_blast' },
+      ascended: ['vaporize_blast'],
+    });
+    expect(after).toContain(ascendedId('vaporize_blast'));
+    expect(after).not.toContain('vaporize_blast');
+  });
+
+  it('raises the replacement rather than the card it replaced', () => {
+    // The ordering that only reads one way. Printing before socketing would raise the
+    // displaced card and leave the socketed one at Rank 1.
+    const after = dealt({
+      grimoireOverrides: { 0: 'vaporize_blast' },
+      ascended: ['flame_surge', 'vaporize_blast'],
+    });
+    expect(after).toContain(ascendedId('vaporize_blast'));
+    // Slot 1 still holds the other Flame Surge, raised.
+    expect(after.filter((id) => id === ascendedId('flame_surge'))).toHaveLength(1);
+  });
+
+  it('changes nothing at all when the character has ascended nothing', () => {
+    expect(dealt({})).toEqual(dealt({ ascended: [] }));
+  });
+
+  it('ignores an Ascension of a card with no Rank 2 printing', () => {
+    // Cinder Rune is *in this book* and has no Rank 2 — attaching a rune moves no number
+    // Ascension may touch, so the registry holds no `cinder_rune_r2`. A hand-edited save
+    // claiming one must not deal a card that does not exist.
+    expect(book, 'the premise').toContain('cinder_rune');
+    expect(CARDS[ascendedId('cinder_rune')], 'and it genuinely has no Rank 2').toBeUndefined();
+
+    const after = dealt({ ascended: ['cinder_rune'] });
+    expect(after.filter((id) => id === 'cinder_rune'), 'dealt at Rank 1').toHaveLength(2);
+    for (const id of after) expect(CARDS[id], `${id} is a real card`).toBeDefined();
+  });
+});

@@ -232,10 +232,25 @@ taking any contract, and a Core is not. Telling a player with a full purse that 
 
 ### Where the Rank 2 goes
 
-Ascension writes to `collection.ascended`, and `printedDeck`
-([collection.ts:117](src/core/data/collection.ts:117)) swaps base ids for their Rank 2
-printings when the deck is handed to a fight. Both ranks share one copy cap through
-`baseIdOf`, so deck validation, Tier limits and the builder need no idea Ascension happened.
+Ascension writes to `collection.ascended`, and **both halves of the fused deck are printed
+from it**:
+
+- The **Hero half** by `printedDeck` ([collection.ts:117](src/core/data/collection.ts:117))
+  at the call site, before the fight is built.
+- The **Companion half** inside `createCombat`, after the sockets are applied — the two
+  halves are resolved in different places, so the printing happens in two places too, and
+  `printedWith` is the one rule both of them ask.
+
+The ordering on the Companion side only reads one way: **sockets first, then printings**. A
+socketed card is a card and earns its Rank 2 exactly as a drafted one does; printing first
+would raise the card being replaced and leave the replacement at Rank 1.
+
+> This was a real gap until recently. The Hero half was printed and the Grimoire was not, so
+> a player could pay Ducats, Shards and a Core to raise Flame Surge and then watch their
+> Ignis deal the Rank 1 printing all fight. It is fixed, and pinned by tests.
+
+Both ranks share one copy cap through `baseIdOf`, so deck validation, Tier limits and the
+builder need no idea Ascension happened.
 
 ---
 
@@ -315,18 +330,11 @@ claim to the card:
 
 ## What the bench cannot do yet
 
-Three honest gaps, all of them visible in the code rather than hidden:
+Two honest gaps, both visible in the code rather than hidden:
 
-1. **Ascension has no observable effect on an elemental or Hybrid card.** The Forge will
-   take the payment and record the Ascension, but the Rank 2 printing has no route into a
-   fight: the Hero Deck refuses elemental schools, and the Companion's Grimoire deals its
-   own base ids without passing through `printedDeck`. Verified — an ascended `flame_surge`
-   still deals `flame_surge` twice out of an Ignis Grimoire. Today, Ascension is worth
-   buying on neutral and arcane cards only.
-
-2. **Cores have no region.** "Regional Reagents" is the design word; the implementation
+1. **Cores have no region.** "Regional Reagents" is the design word; the implementation
    spends whichever stack is deepest, because there is no geography to match against.
 
-3. **Every Schematic is assumed available.** The shelf offers every unowned obtainable card.
+2. **Every Schematic is assumed available.** The shelf offers every unowned obtainable card.
    When Schematics become things a player *finds*, `schematicsFor` grows a second argument
    and nothing else changes.

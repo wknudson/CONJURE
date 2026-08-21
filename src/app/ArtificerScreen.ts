@@ -25,10 +25,12 @@ import type { Screen } from './ScreenManager.js';
 import type { CardDef } from '../core/types/cards.js';
 import type { Collection } from '../core/data/deckRules.js';
 import type { GlobalGameState } from '../core/overworld/state.js';
-import type { Reagent } from '../core/data/splicing.js';
 import { schematicCatalogue } from '../core/data/artificer.js';
 import { REAGENTS, recipeFor, spliceableBaseIds } from '../core/data/splicing.js';
-import { spliceRefusal, type SpliceResult } from '../core/overworld/splice.js';
+import { missingPrerequisites, spliceRefusal, type SpliceResult } from '../core/overworld/splice.js';
+import { companionById } from '../core/data/companions.js';
+import { resolveGrimoire, socketRefusal } from '../core/data/grimoire.js';
+import type { CompanionInstance } from '../core/overworld/vivarium.js';
 import {
   ASCENSION_COST,
   reagentForAscension,
@@ -66,8 +68,19 @@ export interface ArtificerOpts {
    */
   onAscend: (cardId: string) => boolean;
   onForgeSchematic: (cardId: string) => boolean;
+  /**
+   * The tamed roster, read as a function for the same reason the collection is.
+   *
+   * The bench is Companion-centric now: what it presses is a spell out of a *particular*
+   * beast's book, and a socket written by the choice modal has to land on that instance.
+   */
+  companions: () => CompanionInstance[];
+  /** Whichever beast is currently bound, so the picker opens on the one that matters. */
+  activeCompanionId: () => string | undefined;
   /** Presses a card and a core together. Null when the bench refused. */
   onSplice: (baseCardId: string, catalystId: string) => SpliceResult | null;
+  /** Writes a socket after a pressing. Reports whether it took. */
+  onSocket: (instanceId: string, slot: number, cardId: string) => boolean;
   /** Called once after either, when the purse and the collection have both moved. */
   onChange: () => void;
   onBack: () => void;
@@ -80,6 +93,14 @@ const REFUSAL_COPY: Record<string, string> = {
   none: '',
   'in-combat': 'Not while a contract is open',
   'not-owned': 'You have never held this card',
+  // The same state, said where it is actionable. A Companion *brings* its eight; it does
+  // not give them to you, and "you have never held this" is confusing next to a card the
+  // player watches it cast every fight.
+  'not-forged': 'Requires Schematic Forging',
+  'not-unlocked': 'Requires Schematic Forging',
+  'off-school': 'This beast has no claim to that school',
+  'not-castable': 'Not a card a Companion can carry',
+  'bad-slot': 'No such slot',
   'already-ascended': 'Already raised',
   'no-rank-2': 'This card has no Rank 2',
   'too-poor': 'Not enough Ducats or Shards',
@@ -140,14 +161,24 @@ export class ArtificerScreen implements Screen {
     sort: 'unlock',
   };
 
-  /** The splicing bench's two slots. Held, displayed, and otherwise inert. */
-  private slotA: string | null = null;
+  /** Which beast's book the press is looking at, by instance id. */
+  private beast: string | null = null;
+  /** Which of its eight slots is loaded, and which Core is beside it. */
+  private slotIndex: number | null = null;
   private slotB: string | null = null;
 
   /** The card laid on the Forge, whose two printings are being compared. */
   private chosen: string | null = null;
-  /** The last thing the press produced, so the bench can say what it made. */
-  private lastSplice: SpliceResult | null = null;
+
+  /**
+   * Which shelf the Ascension Forge is showing.
+   *
+   * `innate` is the half that needed saying out loud: a player's Companion casts eight
+   * spells they may not own a single one of, and the old Forge simply did not list them —
+   * so the answer to "why can I not raise my Ignis's Flame Surge" was an empty list rather
+   * than an instruction.
+   */
+  private ascendView: 'owned' | 'innate' = 'owned';
 
   constructor(private readonly opts: ArtificerOpts) {}
 
@@ -390,16 +421,63 @@ export class ArtificerScreen implements Screen {
 
   // -------------------------------------------------------- ascension forge
 
+  /**
+   * Every spell the player's beasts fuse in, whether or not the player owns one.
+   *
+   * The list the Forge was missing. A Companion brings eight cards to every fight and the
+   * player may own none of them, so a Forge that showed only owned cards answered "why can
+   * I not raise my Ignis's Flame Surge" with an empty shelf — which reads as the bench
+   * having never heard of the card rather than as an instruction.
+   *
+   * Deduplicated across the roster: two Ignis carrying the same spell is one entry, because
+   * Ascension is account-wide and raising it once raises it for both.
+   */
+  private innateAscendables(): string[] {
+    const seen = new Set<string>();
+    for (const beast of this.opts.companions()) {
+      for (const id of this.bookOf(beast)) {
+        if (CARDS[ascendedId(id)]) seen.add(id);
+      }
+    }
+    return [...seen].sort((a, b) => CARDS[a]!.name.localeCompare(CARDS[b]!.name));
+  }
+
   private forgeBench(): HTMLElement {
     const host = document.createElement('div');
     host.className = 'forge-bench';
 
-    const candidates = ascendableFor(this.opts.collection());
+    const collection = this.opts.collection();
+    const owned = ascendableFor(collection);
+    const innate = this.innateAscendables();
+    const candidates = this.ascendView === 'innate' ? innate : owned;
+
+    const tabs = document.createElement('div');
+    tabs.className = 'forge-views';
+    for (const [key, label, n] of [
+      ['owned', 'Cards you own', owned.length],
+      ['innate', 'Companion innate', innate.length],
+    ] as const) {
+      const pill = document.createElement('button');
+      pill.className = 'forge-view';
+      pill.classList.toggle('is-active', this.ascendView === key);
+      pill.textContent = `${label} · ${n}`;
+      pill.addEventListener('click', () => {
+        this.ascendView = key;
+        this.chosen = null;
+        this.render();
+      });
+      tabs.appendChild(pill);
+    }
+    host.appendChild(tabs);
+
     if (candidates.length === 0) {
-      host.innerHTML = `<div class="forge-empty brass-panel">
-        Nothing on the bench. Ascension needs a card you own and have not already raised —
-        win one, or come back when the Board has paid you better.
-      </div>`;
+      const empty = document.createElement('div');
+      empty.className = 'forge-empty brass-panel';
+      empty.textContent =
+        this.ascendView === 'innate'
+          ? 'No Companion is bound, so there is no innate book to raise.'
+          : 'Nothing on the bench. Ascension needs a card you own and have not already raised — win one, or come back when the Board has paid you better.';
+      host.appendChild(empty);
       return host;
     }
 
@@ -412,22 +490,32 @@ export class ArtificerScreen implements Screen {
 
     const list = document.createElement('div');
     list.className = 'forge-list';
-    for (const id of candidates) list.appendChild(this.candidateRow(id));
+    for (const id of candidates) list.appendChild(this.candidateRow(id, collection));
 
     layout.append(list, this.comparison(this.chosen));
     host.appendChild(layout);
     return host;
   }
 
-  private candidateRow(cardId: string): HTMLElement {
+  private candidateRow(cardId: string, collection: Collection): HTMLElement {
     const def = CARDS[cardId]!;
+    const locked = !collection.unlocked.includes(cardId);
+
     const row = document.createElement('button');
     row.className = 'forge-row brass-panel';
     row.classList.toggle('is-chosen', this.chosen === cardId);
+    // Greyed rather than hidden: the point of the innate shelf is to *show* the card and
+    // say where to go about owning it.
+    row.classList.toggle('is-locked', locked);
     row.style.setProperty('--school', schoolOf(def.school as never).main);
     row.innerHTML = `
       <span class="forge-row__cost">${formatCost(def.cost)}</span>
       <span class="forge-row__name">${def.name}</span>
+      ${
+        locked
+          ? '<span class="forge-row__lock" data-tip="Locked|Requires Schematic Forging.|Your Companion brings this card to every fight, but bringing is not owning — Ascension raises a card in your own collection.">🔒</span>'
+          : ''
+      }
       <span class="forge-row__tier">T${tierOf(def)}</span>
     `;
     row.addEventListener('click', () => {
@@ -450,7 +538,13 @@ export class ArtificerScreen implements Screen {
     const after = CARDS[ascendedId(cardId)];
     const economy = this.opts.global.overworld.economy;
     const core = reagentForAscension(economy.reagents);
-    const refusal = ascensionRefusal(this.opts.global, this.opts.collection(), cardId);
+    const collection = this.opts.collection();
+    const refusal = ascensionRefusal(this.opts.global, collection, cardId);
+    // `not-owned` is the truthful code and the wrong words for this shelf. A player looking
+    // at a spell their Companion casts every fight has certainly *seen* it; what they have
+    // not done is forge it, and that is the sentence that tells them where to go.
+    const why =
+      refusal === 'not-owned' && !collection.unlocked.includes(cardId) ? 'not-forged' : refusal;
 
     const host = document.createElement('div');
     host.className = 'forge-compare';
@@ -470,7 +564,7 @@ export class ArtificerScreen implements Screen {
           }</span>
         </div>
         <button class="brass-btn forge-till__go">Ascend Card</button>
-        <div class="forge-till__refusal">${REFUSAL_COPY[refusal ?? 'none']}</div>
+        <div class="forge-till__refusal">${REFUSAL_COPY[why ?? 'none']}</div>
       </div>
     `;
 
@@ -542,185 +636,305 @@ export class ArtificerScreen implements Screen {
   // -------------------------------------------------------- aetheric splicing
 
   /**
-   * The press: a base card in slot A, a core in slot B, a hybrid out of the die.
+   * The press, rebuilt around the beast rather than around the bag.
    *
-   * A hybrid is *looked up*, never assembled — the recipe book names a card that already
-   * exists in the registry, so the bench cannot produce something the engine has no idea
-   * how to resolve. The output pane reads that card straight out of `CARDS`, which means
-   * what is previewed here and what lands in the collection are the same object.
+   * The old bench was two slots and a tray of "cards the book can press". It was correct
+   * and it taught nothing: a player had no way to see that the Flame Surge in the tray was
+   * the *same card their Ignis brings to every fight*, and no reason to connect pressing it
+   * with what would happen on the board. Splicing read as inventory management.
+   *
+   * It is Companion-centric now. Pick a beast, see its eight, press one of them. The card
+   * you are mutating is a card you have watched it cast, and the fusion that comes out has
+   * a slot waiting for it — which is the whole loop, said in one screen.
+   *
+   * The lock is the other half of the lesson. A Companion *brings* its eight; it does not
+   * give them to you. Mutating a card means owning it, and owning it means Schematic
+   * Forging — so a card the beast casts every fight can still be greyed out here, and the
+   * tooltip says exactly which bench to go to.
    */
   private spliceBench(): HTMLElement {
     const host = document.createElement('div');
-    host.className = 'splicing-bench';
-    host.innerHTML = `
-      <div class="splicing-rig">
-        <div class="splicing-slot splicing-slot--base">
-          <div class="splicing-slot__label">Slot A · Base Card</div>
-          <div class="splicing-slot__well"></div>
-        </div>
-        <div class="splicing-arm"><i></i><i></i><i></i></div>
-        <div class="splicing-slot splicing-slot--catalyst">
-          <div class="splicing-slot__label">Slot B · Catalyst Core</div>
-          <div class="splicing-slot__well"></div>
-        </div>
-        <div class="splicing-arm"><i></i><i></i><i></i></div>
-        <div class="splicing-output brass-panel">
-          <div class="splicing-output__label">Output</div>
-          <div class="splicing-output__plate"></div>
-          <button class="brass-btn splicing-output__go">Splice</button>
-          <div class="splicing-output__refusal"></div>
-        </div>
-      </div>
+    host.className = 'splice2';
 
-      <div class="splicing-trays">
-        <div class="splicing-tray splicing-tray--cards">
-          <div class="splicing-tray__title">Cards the bench can press</div>
-          <div class="splicing-tray__items" data-tray="a"></div>
+    const roster = this.opts.companions();
+    if (roster.length === 0) {
+      host.innerHTML = `<div class="forge-empty brass-panel">
+        No Companion is bound. The press works on a beast's own spells, and there is no
+        beast — take a Subjugation contract and come back with one.
+      </div>`;
+      return host;
+    }
+
+    if (!this.beast || !roster.some((c) => c.instanceId === this.beast)) {
+      this.beast = this.opts.activeCompanionId() ?? roster[0]!.instanceId;
+    }
+
+    host.innerHTML = `
+      <div class="splice2__beasts brass-panel">
+        <div class="splice2__beasts-title">The Vivarium</div>
+        <div class="splice2__beasts-list"></div>
+      </div>
+      <div class="splice2__book">
+        <div class="splice2__book-head">
+          <span class="splice2__book-title"></span>
+          <span class="splice2__book-sub"></span>
         </div>
-        <div class="splicing-tray splicing-tray--reagents">
-          <div class="splicing-tray__title">Cores held</div>
-          <div class="splicing-tray__items" data-tray="b"></div>
-        </div>
+        <div class="splice2__slots"></div>
+      </div>
+      <div class="splice2__press brass-panel">
+        <div class="splice2__press-title">The Press</div>
+        <div class="splice2__cores"></div>
+        <div class="splice2__out"></div>
+        <button class="brass-btn splice2__go">Splice</button>
+        <div class="splice2__refusal"></div>
       </div>
     `;
 
-    if (this.lastSplice) {
-      const said = document.createElement('div');
-      said.className = 'splicing-said brass-panel';
-      const made = CARDS[this.lastSplice.resultId];
-      said.textContent = this.lastSplice.trimmed > 0
-        ? `The press yields ${made?.name ?? 'something'}. ${this.lastSplice.trimmed} copy pulled from a deck to pay for it.`
-        : `The press yields ${made?.name ?? 'something'}.`;
-      host.prepend(said);
-    }
-
-    this.fillCardTray(host);
-    this.fillReagentTray(host);
-    this.paintSlots(host);
+    this.paintBeasts(host, roster);
+    this.paintBook(host, roster);
+    this.paintPress(host, roster);
     return host;
   }
 
-  /**
-   * Only cards the book has a recipe for, and only ones the player owns.
-   *
-   * Offering the whole collection would mean most clicks land on "the bench knows no such
-   * pressing", which teaches nothing. Narrowing the tray makes the choice legible: these
-   * are the things that go in the press.
-   */
-  private fillCardTray(host: HTMLElement): void {
-    const tray = host.querySelector('[data-tray="a"]')!;
-    const collection = this.opts.collection();
-    const owned = spliceableBaseIds()
-      .filter((id) => collection.unlocked.includes(id) && CARDS[id])
-      .map((id) => CARDS[id]!);
+  /** The roster, as a column. Two Ignis are two animals and socket separately. */
+  private paintBeasts(host: HTMLElement, roster: readonly CompanionInstance[]): void {
+    const list = host.querySelector('.splice2__beasts-list')!;
+    const active = this.opts.activeCompanionId();
 
-    if (owned.length === 0) {
-      tray.innerHTML =
-        '<span class="splicing-tray__empty">Nothing here presses. The book wants a Pyre spell.</span>';
-      return;
-    }
-
-    for (const def of owned) {
-      const chip = document.createElement('button');
-      chip.className = 'splicing-chip';
-      chip.style.setProperty('--school', schoolOf(def.school as never).main);
-      chip.textContent = def.name;
-      chip.classList.toggle('is-loaded', this.slotA === def.id);
-      chip.addEventListener('click', () => {
-        this.slotA = this.slotA === def.id ? null : def.id;
+    for (const beast of roster) {
+      const def = companionById(beast.baseId);
+      const row = document.createElement('button');
+      row.className = 'splice2__beast';
+      row.classList.toggle('is-chosen', beast.instanceId === this.beast);
+      row.style.setProperty('--school', schoolOf((def?.school ?? 'neutral') as never).main);
+      const socketed = Object.keys(beast.overrides ?? {}).length;
+      row.innerHTML = `
+        <span class="splice2__beast-name">${def?.name ?? beast.baseId}</span>
+        <span class="splice2__beast-sub">${def?.school ?? ''} · Lv ${beast.level}${
+          socketed ? ` · ${socketed} socketed` : ''
+        }${beast.instanceId === active ? ' · bound' : ''}</span>
+      `;
+      row.addEventListener('click', () => {
+        this.beast = beast.instanceId;
+        // The loaded slot belonged to the other beast's book.
+        this.slotIndex = null;
         this.render();
       });
-      tray.appendChild(chip);
+      list.appendChild(row);
     }
   }
 
-  /** The bag, as chips. A core the player holds none of is shown spent rather than hidden. */
-  private fillReagentTray(host: HTMLElement): void {
-    const tray = host.querySelector('[data-tray="b"]')!;
-    const { reagents } = this.opts.global.overworld.economy;
+  /** Whichever beast is being looked at, and the eight it will actually fuse in. */
+  private chosenBeast(roster: readonly CompanionInstance[]): CompanionInstance | undefined {
+    return roster.find((c) => c.instanceId === this.beast);
+  }
 
+  private bookOf(beast: CompanionInstance): string[] {
+    const def = companionById(beast.baseId);
+    const drafted = beast.grimoire.length > 0 ? beast.grimoire : (def?.legacyGrimoire ?? []);
+    return resolveGrimoire(drafted, beast.overrides);
+  }
+
+  /**
+   * The beast's eight, as cards, each one either pressable or locked.
+   *
+   * Locked is drawn rather than hidden, and that is the point of the panel: a player has to
+   * be able to see the card their Companion casts, understand that they do not *own* it,
+   * and be told where to go about that.
+   */
+  private paintBook(host: HTMLElement, roster: readonly CompanionInstance[]): void {
+    const beast = this.chosenBeast(roster);
+    const slots = host.querySelector('.splice2__slots')!;
+    const collection = this.opts.collection();
+    if (!beast) return;
+
+    const def = companionById(beast.baseId);
+    host.querySelector('.splice2__book-title')!.textContent = `${def?.name ?? beast.baseId}'s Grimoire`;
+    host.querySelector('.splice2__book-sub')!.textContent =
+      'The eight it fuses in at the bell. Press one you own to mutate it.';
+
+    const book = this.bookOf(beast);
+    book.forEach((cardId, slot) => {
+      const card = CARDS[cardId];
+      if (!card) return;
+
+      const owned = collection.unlocked.includes(cardId);
+      const pressable = owned && spliceableBaseIds().includes(cardId);
+      const socketed = Boolean(beast.overrides?.[slot]);
+
+      const cell = document.createElement('button');
+      cell.className = 'splice2__slot';
+      cell.classList.toggle('is-locked', !owned);
+      cell.classList.toggle('is-inert', owned && !pressable);
+      cell.classList.toggle('is-chosen', this.slotIndex === slot);
+      cell.classList.toggle('is-socketed', socketed);
+      cell.disabled = !pressable;
+
+      cell.innerHTML = `
+        <span class="splice2__slot-index">${slot + 1}</span>
+        ${cardFaceHtml(faceOfDef(card), { extraClass: 'card--mini' })}
+        ${
+          owned
+            ? pressable
+              ? ''
+              : '<span class="splice2__slot-note">The book has no pressing for this</span>'
+            : '<span class="splice2__slot-lock" data-tip="Locked|Must unlock via Schematic Forging to mutate.|Your Companion brings this card to every fight, but bringing is not owning — the press works on cards in your own collection.">🔒 Locked</span>'
+        }
+        ${socketed ? '<span class="splice2__slot-socket">SOCKET</span>' : ''}
+      `;
+
+      cell.addEventListener('click', () => {
+        this.slotIndex = this.slotIndex === slot ? null : slot;
+        this.render();
+      });
+      slots.appendChild(cell);
+    });
+  }
+
+  /** Cores, the output preview, and the till. */
+  private paintPress(host: HTMLElement, roster: readonly CompanionInstance[]): void {
+    const beast = this.chosenBeast(roster);
+    const book = beast ? this.bookOf(beast) : [];
+    const baseId = this.slotIndex === null ? undefined : book[this.slotIndex];
+    const base = baseId ? CARDS[baseId] : undefined;
+
+    // --- the bag
+    const cores = host.querySelector('.splice2__cores')!;
+    const held = this.opts.global.overworld.economy.reagents;
     for (const reagent of REAGENTS) {
-      const held = reagents[reagent.id] ?? 0;
+      const count = held[reagent.id] ?? 0;
       const chip = document.createElement('button');
       chip.className = 'splicing-chip splicing-chip--reagent';
       chip.style.setProperty('--school', schoolOf(reagent.school).main);
-      chip.dataset.tip = `${reagent.name}|${reagent.blurb}|${held} held`;
-      chip.textContent = `${reagent.name} ×${held}`;
-      chip.disabled = held <= 0;
+      chip.dataset.tip = `${reagent.name}|${reagent.blurb}|${count} held`;
+      chip.textContent = `${reagent.name} ×${count}`;
+      chip.disabled = count <= 0;
       chip.classList.toggle('is-loaded', this.slotB === reagent.id);
       chip.addEventListener('click', () => {
         this.slotB = this.slotB === reagent.id ? null : reagent.id;
         this.render();
       });
-      tray.appendChild(chip);
+      cores.appendChild(chip);
     }
-  }
 
-  private paintSlots(host: HTMLElement): void {
-    const base = this.slotA ? CARDS[this.slotA] : undefined;
-    const reagent: Reagent | undefined = REAGENTS.find((r) => r.id === this.slotB);
-
-    // Slot A shows the card itself. A bench that names the card you loaded and hides its
-    // rules text is asking you to remember what you are pressing.
-    const wellA = host.querySelector<HTMLElement>('.splicing-slot--base .splicing-slot__well')!;
-    wellA.classList.toggle('is-loaded', Boolean(base));
-    wellA.innerHTML = base
-      ? cardFaceHtml(faceOfDef(base), { extraClass: 'card--mini', showReach: true })
-      : '<span class="splicing-slot__empty">empty</span>';
-
-    // Slot B is a reagent rather than a card, so it gets a card-shaped face without a
-    // cost: a core is not bought at a Pip price, and printing a `0` there would invent one.
-    const wellB = host.querySelector<HTMLElement>('.splicing-slot--catalyst .splicing-slot__well')!;
-    wellB.classList.toggle('is-loaded', Boolean(reagent));
-    wellB.innerHTML = reagent
-      ? `<div class="card card--reagent card--mini" style="--school:${schoolOf(reagent.school).main};--school-deep:${schoolOf(reagent.school).deep}">
-           <div class="card__name">${reagent.name}</div>
-           <div class="card__type"><span class="card__kind">CORE</span><span class="card__source">${reagent.school.toUpperCase()}</span></div>
-           <div class="card__body"><div class="card__text">${reagent.blurb ?? ''}</div></div>
-         </div>`
-      : '<span class="splicing-slot__empty">empty</span>';
-
-    const recipe = base && reagent ? recipeFor(base.id, reagent.id) : undefined;
+    // --- what comes out
+    const recipe = base && this.slotB ? recipeFor(base.id, this.slotB) : undefined;
     const result = recipe ? CARDS[recipe.resultId] : undefined;
     const refusal =
-      base && reagent
-        ? spliceRefusal(this.opts.global, this.opts.collection(), base.id, reagent.id)
+      base && this.slotB
+        ? spliceRefusal(this.opts.global, this.opts.collection(), base.id, this.slotB)
         : null;
 
-    const plate = host.querySelector<HTMLElement>('.splicing-output__plate')!;
-    plate.classList.toggle('is-ready', Boolean(result && refusal === null));
-    // The output is the pressing's whole face, before a Shard is spent. What comes out of
-    // the bench is the thing being bought, so it is shown the way it will be held.
-    plate.innerHTML = result
+    const out = host.querySelector<HTMLElement>('.splice2__out')!;
+    out.classList.toggle('is-ready', Boolean(result && refusal === null));
+    out.innerHTML = result
       ? cardFaceHtml(faceOfDef(result), { extraClass: 'card--mini', showReach: true })
-      : base && reagent
-        ? '<span class="splicing-output__none">Nothing comes of that pairing.</span>'
-        : '<span class="splicing-output__none">Load both slots</span>';
+      : base && this.slotB
+        ? '<span class="splice2__none">Nothing comes of that pairing.</span>'
+        : !base
+          ? '<span class="splice2__none">Pick a spell from the book</span>'
+          : '<span class="splice2__none">Pick a Core</span>';
 
-    const btn = host.querySelector<HTMLButtonElement>('.splicing-output__go')!;
+    const btn = host.querySelector<HTMLButtonElement>('.splice2__go')!;
     btn.disabled = !result || refusal !== null;
     btn.addEventListener('click', () => this.splice());
 
-    host.querySelector('.splicing-output__refusal')!.textContent =
-      base && reagent ? REFUSAL_COPY[refusal ?? 'none'] ?? '' : '';
+    const why = host.querySelector<HTMLElement>('.splice2__refusal')!;
+    why.textContent = base && this.slotB ? (REFUSAL_COPY[refusal ?? 'none'] ?? '') : '';
 
-    host.querySelector('.splicing-rig')!.classList.toggle('is-loaded', Boolean(result));
+    // What the recipe still wants, named rather than merely refused.
+    if (base && this.slotB && refusal === 'missing-prerequisite') {
+      const missing = missingPrerequisites(this.opts.collection(), base.id, this.slotB)
+        .map((id) => CARDS[id]?.name ?? id)
+        .join(', ');
+      why.textContent = `Learn ${missing} first — a fusion needs both its schools.`;
+    }
   }
 
   private splice(): void {
-    if (!this.slotA || !this.slotB) return;
+    const roster = this.opts.companions();
+    const beast = this.chosenBeast(roster);
+    const book = beast ? this.bookOf(beast) : [];
+    const slot = this.slotIndex;
+    const baseId = slot === null ? undefined : book[slot];
+    if (!baseId || !this.slotB || !beast || slot === null) return;
+
     // The bench decides, not the button state: a stale render must not be able to spend.
-    const done = this.opts.onSplice(this.slotA, this.slotB);
+    const done = this.opts.onSplice(baseId, this.slotB);
     if (!done) return;
 
     this.opts.onChange();
-    // The base card may be gone from the tray entirely now, and the core certainly is one
-    // lighter. Clearing both slots is the honest reset — leaving them loaded would show a
-    // press the player may no longer be able to make.
-    this.slotA = null;
+    // The Core is one lighter and the base card is now sitting beside a fusion of itself.
+    // Clearing the Core is the honest reset; the slot stays loaded, because the very next
+    // thing a player may want is to press the same spell with a different Core.
     this.slotB = null;
-    this.lastSplice = done;
     this.render();
+    // The choice the whole redesign exists to offer: the fusion is yours either way, and
+    // the only question is whether the beast starts casting it.
+    this.offerSocket(beast.instanceId, slot, done.resultId, baseId);
+  }
+
+  /**
+   * "You made a thing. Does the beast carry it?"
+   *
+   * A modal rather than an automatic socket, because both answers are right. Slotting it in
+   * is what a player pressing from the book usually wants; keeping the base card is what a
+   * player who was pressing for the *collection* wants, and silently overwriting a spell
+   * their Companion drafted would be the bench making a build decision for them.
+   *
+   * The socket is offered only when it would actually seat. A fusion pressed out of a
+   * beast's own book always shares a school with it, so this is a guard rather than a
+   * common case — but a guard that shows an unusable button is a guard that lies.
+   */
+  private offerSocket(instanceId: string, slot: number, resultId: string, replacedId: string): void {
+    const made = CARDS[resultId];
+    const replaced = CARDS[replacedId];
+    const beast = this.opts.companions().find((c) => c.instanceId === instanceId);
+    const source = beast ? companionById(beast.baseId)?.grimoire : undefined;
+    if (!made || !source) return;
+
+    const refusal = socketRefusal(source, this.opts.collection().unlocked, slot, resultId);
+
+    const modal = document.createElement('div');
+    modal.className = 'socket-modal';
+    modal.innerHTML = `
+      <div class="socket-modal__inner brass-panel">
+        <div class="socket-modal__head">
+          <span class="socket-modal__title">The press yields ${made.name}</span>
+          <span class="socket-modal__sub">It is yours either way. The only question is whether ${
+            companionById(beast!.baseId)?.name ?? 'the beast'
+          } starts casting it in slot ${slot + 1}, in place of ${replaced?.name ?? 'the base card'}.</span>
+        </div>
+        <div class="socket-modal__options">
+          <button class="socket-option" data-choice="socket" ${refusal ? 'disabled' : ''}>
+            <span class="socket-option__label">Socket Hybrid</span>
+            <span class="socket-option__name">${made.name} rides into every fight</span>
+          </button>
+          <button class="socket-option" data-choice="keep">
+            <span class="socket-option__label">Keep Base Card</span>
+            <span class="socket-option__name">${
+              replaced?.name ?? 'The base card'
+            } stays; the fusion waits in the Case</span>
+          </button>
+        </div>
+        ${refusal ? `<div class="socket-modal__empty">${REFUSAL_COPY[refusal] ?? refusal}</div>` : ''}
+      </div>
+    `;
+
+    modal.addEventListener('click', (ev) => {
+      const target = ev.target as HTMLElement;
+      const choice = target.closest<HTMLElement>('[data-choice]');
+      if (!choice) return;
+      if (choice.dataset.choice === 'socket') {
+        this.opts.onSocket(instanceId, slot, resultId);
+        this.opts.onChange();
+      }
+      modal.remove();
+      this.render();
+    });
+
+    this.el?.appendChild(modal);
+    this.tooltip?.attach(modal);
   }
 
   unmount(): void {
