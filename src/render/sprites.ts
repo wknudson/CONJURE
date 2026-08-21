@@ -56,30 +56,45 @@ export const SCHOOL_COLOR: Record<string, string> = {
  * in isolation is how a sprite goes flat.
  */
 export const RAMP = {
-  coatLight: '#3D4A60',
-  coatDark: '#1D2430',
-  coatInk: '#12151C',
-  brass: '#C8A558',
-  brassLit: '#E8D6A0',
-  /** Key light, warm and low. One stroke of it, at 55%. */
-  rim: '#F0E4C8',
-  /** The Magistracy's own indigo, worn until a discipline is vowed to. */
-  cloak: '#3B3A6B',
+  // The coat: a genuinely saturated blue, in three discrete bands rather than two.
+  //
+  // The whole ramp used to live inside a narrow navy-slate spread — coat `#3D4A60`, cloak
+  // `#3B3A6B`, trousers `#3A3550` — which is four garments in one hue family and reads as a
+  // monochrome silhouette however carefully each one is shaded. Every value below now sits
+  // in a *different* hue family from the ones it touches, and the jumps between them are
+  // large enough to survive being quantised to a 48-pixel grid.
+  coatLight: '#3F76C4',
+  coatMid: '#2E5495',
+  coatDark: '#1C3A69',
+  coatInk: '#24304A',
+
+  brass: '#E8C860',
+  brassLit: '#FFF0B8',
+  /** Key light, warm and low. */
+  rim: '#FFF6D8',
+
+  /** The Magistracy's own crimson, worn until a discipline is vowed to. */
+  cloak: '#8E2F3F',
+
   /**
-   * Deliberately **not** a neutral slate.
+   * Legs, in a **warm** dark — deliberately a different hue family from the blue coat above
+   * them and the tan boots below, so all three read as separate blocks rather than as one
+   * tonal slide.
    *
-   * The first value here was `#2A2F3A`, which is byte-identical to `PALETTE.tileA` — the
-   * ground the Commander stands on. The legs were the exact colour of the floor, and at
-   * diorama distance the figure would have ended at the coat hem with two boots floating
-   * under it. A sprite has to be picked out of its own background before anything else
-   * about it matters.
+   * The first value here was `#2A2F3A`, byte-identical to `PALETTE.tileA`: the legs were the
+   * exact colour of the floor they stand on.
    */
-  trouser: '#3A3550',
-  trouserDark: '#26223A',
-  boot: '#5A4632',
+  trouser: '#4A3826',
+  trouserDark: '#2E2318',
+  /** Lighter than the trouser, which is the only reason a boot reads as a separate thing. */
+  boot: '#8A6A44',
+
+  /** The gap between chin and collar. Skin, in shadow, and 1-2px of it is a whole neck. */
+  neck: '#B98460',
 } as const;
 
 const COAT_LIGHT = RAMP.coatLight;
+const COAT_MID = RAMP.coatMid;
 const COAT_DARK = RAMP.coatDark;
 const COAT_INK = RAMP.coatInk;
 const BRASS = RAMP.brass;
@@ -88,32 +103,41 @@ const RIM = RAMP.rim;
 
 /**
  * How tall the figure stands, in `unit`s.
- *
- * Raised, with a much smaller head, taking the reference silhouettes at their word: those
- * are roughly **one head to five** and slim, where this sprite was nearer one to three and a
- * half. Proportion is the first thing read at any distance, and a stubby figure reads as a
- * mascot no matter what is drawn on it.
  */
 const FIGURE = 1.15;
 
-/** The art grid. 44 tall against ~89 on screen is a clean 2x, which is the crispest ratio. */
-const ART_H = 44;
-const ART_W = 34;
+/**
+ * The art grid.
+ *
+ * 48 tall against ~89 on screen. Raised from 44 for one reason: **the face.** At 44 the head
+ * came out four pixels across and the eye dots were 0.6px — drawn, and literally sub-pixel,
+ * which is why the sprite read as facing away when it has been facing forward all along. A
+ * feature that cannot occupy a whole pixel does not exist.
+ */
+const ART_H = 48;
+const ART_W = 36;
 
 /**
  * Landmarks down the body, as a fraction of figure height measured **up from the feet**.
  *
- * A table rather than arithmetic scattered through the drawing, because the whole point of
- * fixing the proportions was to be able to see them in one place and argue about them.
+ * Rebuilt around a **1:4** head. The previous table was 1:5.3, chasing anatomical realism,
+ * and that is the wrong idiom: the reference sprites — and every 16-bit RPG sprite — carry
+ * big heads precisely because the head is where all the identity lives and a realistic one
+ * has no room for a face. Legibility beats proportion at this size.
+ *
+ * There is deliberately no `neck` entry. A landmark for it looked right and drew a hole:
+ * the neck has to be measured off the **head**, from wherever the chin actually lands down
+ * to the collar, or the two disagree by a pixel or two and the figure gets a gap through it.
  */
 const Y = {
   boot: 0.14,
   hem: 0.4,
-  waist: 0.56,
-  chest: 0.72,
-  shoulder: 0.8,
-  chin: 0.83,
+  waist: 0.54,
+  shoulder: 0.68,
+  chin: 0.74,
 } as const;
+
+
 
 /** Rasterised sprites, keyed on everything that changes one. */
 const CACHE = new Map<string, HTMLCanvasElement>();
@@ -203,9 +227,11 @@ export function paintCommander(
   // The two bearings differ in shoulder width and coat flare and in nothing else — enough to
   // read at this size, and not a claim the art cannot keep.
   const broad = look.gender === 'male';
-  const shoulder = p(H * (broad ? 0.135 : 0.115));
-  const waistW = p(H * (broad ? 0.095 : 0.082));
-  const hemW = p(H * (broad ? 0.165 : 0.19));
+  const shoulder = Math.max(4, p(H * (broad ? 0.125 : 0.105)));
+  const hemW = Math.max(5, p(H * (broad ? 0.16 : 0.185)));
+
+  // Hoisted, because the neck below is measured off the head rather than off a landmark.
+  const headR = Math.max(5, p(H * 0.13));
 
   const yBoot = up(Y.boot);
   const yHem = up(Y.hem);
@@ -215,13 +241,13 @@ export function paintCommander(
 
   // ---------------------------------------------------------------- the cloak, behind
   //
-  // A second garment in a contrasting hue, which every figure in the reference has and this
-  // sprite had none of: a cape reading *behind* the body is what gives a silhouette its
-  // outer edge and its second colour region. It takes the vowed school's colour once there
-  // is one, so the Vow visibly changes what the Commander is wearing.
+  // A second garment in a contrasting hue, which every figure in the reference has: a cape
+  // reading *behind* the body is what gives a silhouette its outer edge and its second
+  // colour region. It takes the vowed school's colour once there is one, so the Vow visibly
+  // changes what the Commander is wearing.
   const cloak = accent ?? RAMP.cloak;
-  const cloakBottom = up(Y.boot * 0.7);
-  const cloakW = p(H * 0.225);
+  const cloakBottom = up(Y.boot * 0.8);
+  const cloakW = Math.max(7, p(H * 0.21));
 
   ctx.fillStyle = cloak;
   ctx.beginPath();
@@ -233,7 +259,7 @@ export function paintCommander(
   ctx.fill();
 
   // Its own shadow half, on the same centre line as the coat, so the whole figure agrees
-  // about where the light is coming from.
+  // about where the light comes from.
   ctx.fillStyle = shade(cloak);
   ctx.beginPath();
   ctx.moveTo(0, yShoulder);
@@ -243,123 +269,152 @@ export function paintCommander(
   ctx.closePath();
   ctx.fill();
 
-  // ---------------------------------------------------------------- legs and boots
-  const legW = Math.max(2, p(H * 0.05));
-  const legX = p(H * 0.055);
-  ctx.fillStyle = RAMP.trouser;
-  ctx.fillRect(-legX - legW, yHem, legW, yBoot - yHem);
-  ctx.fillStyle = RAMP.trouserDark;
-  ctx.fillRect(legX, yHem, legW, yBoot - yHem);
-
-  // Wider than the leg, which is the whole reason a boot reads as a boot.
-  ctx.fillStyle = RAMP.boot;
-  ctx.fillRect(-legX - legW - 1, yBoot, legW + 2, -yBoot);
-  ctx.fillRect(legX - 1, yBoot, legW + 2, -yBoot);
-
-  // ---------------------------------------------------------------- the coat
+  // ---------------------------------------------------------------- legs, separated
   //
-  // Split into a lit panel and a shadow panel down the centre line rather than filled flat.
-  // One value break tells the eye there is a body under the cloth turning away from the
-  // light.
+  // Two of them, with a gap of bare pixels down the middle. One leg-shaped block is a robe;
+  // two with daylight between them is a person standing.
+  const legW = Math.max(3, p(H * 0.075));
+  const gap = Math.max(2, p(H * 0.03));
+  ctx.fillStyle = RAMP.trouser;
+  ctx.fillRect(-gap - legW, yHem, legW, yBoot - yHem);
+  ctx.fillStyle = RAMP.trouserDark;
+  ctx.fillRect(gap, yHem, legW, yBoot - yHem);
+
+  // Boots, wider than the leg and *lighter* than it. Both differences matter: the width is
+  // what makes a boot a boot, and the value jump is what stops it merging into the trouser.
+  ctx.fillStyle = RAMP.boot;
+  ctx.fillRect(-gap - legW - 1, yBoot, legW + 2, -yBoot);
+  ctx.fillRect(gap - 1, yBoot, legW + 2, -yBoot);
+
+  // ---------------------------------------------------------------- the coat, in three bands
+  //
+  // Three discrete steps rather than two, and hard-edged rather than blended. Pixel-art
+  // shading is banded because a smooth ramp turns to mud the moment it is quantised — the
+  // middle value is what carries the turn of the form once there are only a few pixels to
+  // say it in.
+  const bandL = -p(shoulder * 0.3);
+  const bandR = p(shoulder * 0.35);
+
+  ctx.fillStyle = COAT_LIGHT;
   ctx.beginPath();
   ctx.moveTo(-shoulder, yShoulder);
-  ctx.lineTo(0, yShoulder);
-  ctx.lineTo(0, yHem);
+  ctx.lineTo(bandL, yShoulder);
+  ctx.lineTo(bandL, yHem);
   ctx.lineTo(-hemW, yHem);
   ctx.closePath();
-  ctx.fillStyle = COAT_LIGHT;
   ctx.fill();
 
+  ctx.fillStyle = COAT_MID;
+  ctx.fillRect(bandL, yShoulder, bandR - bandL, yHem - yShoulder);
+
+  ctx.fillStyle = COAT_DARK;
   ctx.beginPath();
-  ctx.moveTo(0, yShoulder);
+  ctx.moveTo(bandR, yShoulder);
   ctx.lineTo(shoulder, yShoulder);
   ctx.lineTo(hemW, yHem);
-  ctx.lineTo(0, yHem);
+  ctx.lineTo(bandR, yHem);
   ctx.closePath();
-  ctx.fillStyle = COAT_DARK;
   ctx.fill();
 
   // The outline goes around the whole garment, and is deliberately *not* pure black: an ink
-  // line darker than the shadow panel flattens the value break it is drawn around.
+  // line darker than the shadow band flattens the value break it is drawn around.
+  ctx.strokeStyle = COAT_INK;
+  ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(-shoulder, yShoulder);
   ctx.lineTo(shoulder, yShoulder);
   ctx.lineTo(hemW, yHem);
   ctx.lineTo(-hemW, yHem);
   ctx.closePath();
-  ctx.strokeStyle = COAT_INK;
-  ctx.lineWidth = 1;
   ctx.stroke();
 
-  // ---------------------------------------------------------------- arms
+  // ---------------------------------------------------------------- arms, off the torso
   //
-  // The single biggest thing missing before this: the figure was a trapezoid with a head on
-  // it. Arms are what make a silhouette a person, and they are two rects and two squares.
-  const armW = Math.max(2, p(H * 0.042));
-  const yWrist = up(0.46);
-  const handH = Math.max(2, p(H * 0.045));
+  // Held a pixel clear of the body and angled outward, which is the entire difference
+  // between "arms" and "a slightly wider coat". They used to be drawn at `-shoulder - armW +
+  // 1` — overlapping the torso by a pixel, so the silhouette never actually broke.
+  const armW = Math.max(3, p(H * 0.06));
+  const yElbow = up(0.5);
+  const yWrist = up(0.42);
+  const armGap = 1;
+  const flare = Math.max(1, p(H * 0.02));
 
-  ctx.fillStyle = COAT_LIGHT;
-  ctx.fillRect(-shoulder - armW + 1, yShoulder, armW, yWrist - yShoulder);
-  ctx.fillStyle = COAT_DARK;
-  ctx.fillRect(shoulder - 1, yShoulder, armW, yWrist - yShoulder);
-
-  ctx.fillStyle = skin;
-  ctx.fillRect(-shoulder - armW + 1, yWrist, armW, handH);
-  ctx.fillRect(shoulder - 1, yWrist, armW, handH);
+  const arm = (dir: -1 | 1, upper: string, lower: string): void => {
+    const x = dir * (shoulder + armGap);
+    ctx.fillStyle = upper;
+    ctx.fillRect(dir < 0 ? x - armW : x, yShoulder, armW, yElbow - yShoulder);
+    // The forearm steps out by a pixel or two, so the limb has a bend in it.
+    ctx.fillStyle = lower;
+    const fx = x + dir * flare;
+    ctx.fillRect(dir < 0 ? fx - armW : fx, yElbow, armW, yWrist - yElbow);
+    // The hand.
+    ctx.fillStyle = skin;
+    ctx.fillRect(dir < 0 ? fx - armW : fx, yWrist, armW, Math.max(2, p(H * 0.05)));
+  };
+  arm(-1, COAT_LIGHT, COAT_MID);
+  arm(1, COAT_DARK, COAT_DARK);
 
   // ---------------------------------------------------------------- belt and brass
   ctx.fillStyle = COAT_INK;
-  ctx.fillRect(-waistW - 1, yWaist, waistW * 2 + 2, Math.max(1, p(H * 0.03)));
+  ctx.fillRect(-shoulder, yWaist, shoulder * 2, Math.max(1, p(H * 0.028)));
 
-  // The Magistracy's brass, at the collar. One warm mark on a cold silhouette.
-  //
-  // A **rect**, not the triangle it started as. At 44 art-pixels the whole chest is four
-  // pixels tall, and a triangle three of them high anti-aliased into mud — measured at
-  // literally zero pixels within tolerance of the brass colour. Anything meant to read at
-  // this resolution has to be axis-aligned and at least two pixels thick.
-  const collarW = p(shoulder * 1.1);
-  const collarH = Math.max(2, p(H * 0.045));
+  // The Magistracy's brass, at the collar. A **rect**, not the triangle it started as: at
+  // this resolution the chest is a handful of pixels tall and a three-pixel triangle
+  // anti-aliased into mud — measured at literally zero pixels of brass on a real canvas.
+  const collarW = p(shoulder * 0.9);
+  const collarH = Math.max(2, p(H * 0.04));
   ctx.fillStyle = BRASS;
-  ctx.fillRect(-collarW, yShoulder + 1, collarW * 2, collarH);
-
-  // Metal is a value gradient or it is a bar painted gold. One highlight along the top row
-  // only, where the light would actually catch it.
+  ctx.fillRect(-collarW, yShoulder, collarW * 2, collarH);
   ctx.fillStyle = BRASS_LIT;
-  ctx.fillRect(-collarW, yShoulder + 1, collarW * 2, 1);
+  ctx.fillRect(-collarW, yShoulder, collarW * 2, 1);
 
-  // ---------------------------------------------------------------- head
-  const headR = Math.max(3, p(H * 0.095));
+  // ---------------------------------------------------------------- neck
+  //
+  // Two pixels of skin between the collar and the chin. A head sitting straight on a pair of
+  // shoulders is one continuous blob; this is what makes it a person wearing a coat.
+  //
+  // Anchored to the **head**, not to `Y.neck`. Taking the landmark literally left rows of
+  // bare canvas between the chin and the collar — a two-pixel hole through the figure,
+  // which is a gap of the wrong kind entirely.
+  const neckW = Math.max(2, p(H * 0.045));
+  //
+  // `yChin` **is** the bottom of the head — the circle is centred a radius above it — so the
+  // neck runs from there to the collar and the two cannot disagree. Writing `yChin + headR`
+  // put it a whole radius below the shoulder and gave the rect a negative height, which
+  // draws nothing at all and left the hole exactly where it had been.
+  ctx.fillStyle = RAMP.neck;
+  ctx.fillRect(-neckW, yChin, neckW * 2, yShoulder - yChin);
+
+  // ---------------------------------------------------------------- head, facing forward
   const headY = yChin - headR;
   ctx.beginPath();
   ctx.arc(0, headY, headR, 0, Math.PI * 2);
   ctx.fillStyle = skin;
   ctx.fill();
 
+  // The shadow side of the face, as a hard band rather than a gradient — the same three-step
+  // logic the coat uses, at the size a head can afford.
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, headY, headR, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = shade(skin);
+  ctx.fillRect(p(headR * 0.35), headY - headR, headR, headR * 2);
+  ctx.restore();
+
   drawHair(ctx, headY, headR, hair.id, hairTone);
   drawFace(ctx, headY, headR, faceIdx);
 
   // ---------------------------------------------------------------- rim light
   //
-  // Last, so it catches the hair silhouette rather than being buried under it. The single
-  // highest-value mark on the sprite: a bright edge down the lit side is what separates "a
-  // lit form standing in a place" from "a sticker on a background". Kept translucent so it
-  // reads as light rather than as a drawn outline.
-  // Alpha **0.85**, and the arm edge is a `fillRect` rather than a stroke. At 0.55 across a
-  // 1px stroke this was measured at 28 pixels on the whole 48x104 figure — present in the
-  // transcript and invisible on the screen, because a stroke anti-aliases across two rows at
-  // half intensity each and 55% of that is nothing. Third time this file has learned the
-  // same lesson: at 44 art-pixels, a mark is axis-aligned and near-opaque or it does not
-  // exist.
+  // Alpha 0.85, and a `fillRect` rather than a stroke. At 0.55 across a 1px stroke this
+  // measured 28 pixels on the whole figure — present in the transcript and invisible on the
+  // screen, because a stroke anti-aliases across two rows at half intensity each.
   ctx.save();
   ctx.globalAlpha = 0.85;
   ctx.fillStyle = RIM;
-  ctx.fillRect(-shoulder - armW, yShoulder, 1, yWrist - yShoulder);
-  ctx.strokeStyle = RIM;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(0, headY, headR + 1, Math.PI * 1.2, Math.PI * 1.6);
-  ctx.stroke();
+  ctx.fillRect(-shoulder - armGap - armW, yShoulder, 1, yElbow - yShoulder);
+  ctx.fillRect(-headR, headY - p(headR * 0.5), 1, headR);
   ctx.restore();
 }
 
@@ -416,9 +471,14 @@ function drawHair(
       break;
 
     case 'mane':
-      // Down past the shoulders and wider than the head — the biggest silhouette here.
+      // Down *to* the shoulders and wider than the head — the biggest silhouette here.
+      //
+      // It used to reach `headR * 2.2` below the crown, which at this resolution buried six
+      // rows of the figure: the neck and the whole brass collar disappeared under it, and
+      // the two features the sprite had just gained were invisible on the one preset most
+      // likely to be chosen for being the loudest.
       ctx.beginPath();
-      ctx.ellipse(0, headY + headR * 0.5, headR * 1.5, headR * 1.7, 0, 0, Math.PI);
+      ctx.ellipse(0, headY + headR * 0.35, headR * 1.5, headR * 1.1, 0, 0, Math.PI);
       ctx.fill();
       break;
 
@@ -477,20 +537,19 @@ function drawFace(
   const eyeX = headR * 0.42;
   ctx.fillStyle = '#151A24';
 
+  // Floored at a whole pixel of radius. This is the lesson the brass and the rim light each
+  // taught separately: at 48 art-pixels the head is twelve across, and an eye asked for at
+  // `headR * 0.15` is 0.9px — a mark the grid rounds away to nothing, which is exactly why
+  // the sprite read as facing away when it has been facing forward the whole time.
   const dot = (x: number, y: number, r: number): void => {
     ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.arc(x, y, Math.max(1, r), 0, Math.PI * 2);
     ctx.fill();
   };
 
   switch (idx) {
     case 1: // Weathered: a set line, and a heavier brow.
-      ctx.fillRect(
-        -eyeX - headR * 0.16,
-        eyeY - headR * 0.3,
-        headR * 1.16,
-        Math.max(1, headR * 0.14),
-      );
+      ctx.fillRect(-eyeX - headR * 0.16, eyeY - headR * 0.3, headR * 1.16, Math.max(1, headR * 0.2));
       dot(-eyeX, eyeY, headR * 0.13);
       dot(eyeX, eyeY, headR * 0.13);
       break;

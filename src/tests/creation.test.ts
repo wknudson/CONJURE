@@ -309,6 +309,7 @@ function recordingContext(): { ctx: CanvasRenderingContext2D; log: string[] } {
   const ctx = {
     beginPath: note('beginPath'),
     closePath: note('closePath'),
+    clip: note('clip'),
     moveTo: note('moveTo'),
     lineTo: note('lineTo'),
     quadraticCurveTo: note('quadraticCurveTo'),
@@ -362,6 +363,16 @@ function transcript(look: CharacterLook): string {
  * head to `crop` proved exactly that and went unnoticed. This asks the question that
  * actually matters: does the silhouette change?
  */
+/** The buffer scale — the one that decides whether a feature survives the grid. */
+const ART_UNIT = 48 / 1.15;
+
+/** The raw transcript, for the assertions that need to read arguments back. */
+function recordAll(look: CharacterLook, unit = 80): { log: string[] } {
+  const { ctx, log } = recordingContext();
+  paintCommander(ctx, unit, look);
+  return { log };
+}
+
 function shapeOf(look: CharacterLook): string {
   const { ctx, log } = recordingContext();
   paintCommander(ctx, 80, look);
@@ -448,6 +459,98 @@ describe('the sprite on the stage', () => {
     const vowed = log.join('|');
     expect(vowed, 'and the school once there is one').toContain(`fillStyle=${SCHOOL_COLOR.frost}`);
     expect(vowed, 'the Magistracy indigo is gone').not.toContain(`fillStyle=${RAMP.cloak}`);
+  });
+
+  it('never draws a rect with no height', () => {
+    // The neck was anchored to `yChin + headR` — a whole radius *below* the shoulder — which
+    // gives the rect a negative height, draws nothing, and leaves a two-pixel hole punched
+    // clean through the figure between the chin and the collar. Every preset had it.
+    const { log } = recordAll(defaultLook());
+    const rects = log.filter((line) => line.startsWith('fillRect('));
+    expect(rects.length, 'the body is rects').toBeGreaterThan(8);
+    for (const line of rects) {
+      const [, , w, h] = line.slice(9, -1).split(',').map(Number);
+      expect(w!, `${line} has no width`).toBeGreaterThan(0);
+      expect(h!, `${line} has no height`).toBeGreaterThan(0);
+    }
+  });
+
+  it('gives the Commander a neck, between the chin and the collar', () => {
+    const t = transcript(defaultLook());
+    expect(t, 'skin below the jaw').toContain(`fillStyle=${RAMP.neck}`);
+  });
+
+  it('keeps every mark at least a pixel wide at art resolution', () => {
+    // `paintCommander` is called at the *buffer* scale here, which is the one that decides
+    // whether a feature survives. Anything asked for at less than a pixel is a feature that
+    // does not exist — three separate marks on this sprite learned that the hard way.
+    const { log } = recordAll(defaultLook(), ART_UNIT);
+    for (const line of log) {
+      const arc = /^arc\(([-\d.]+),([-\d.]+),([\d.]+)/.exec(line);
+      if (arc) expect(Number(arc[3]), line).toBeGreaterThanOrEqual(1);
+      if (line.startsWith('fillRect(')) {
+        const [, , w, h] = line.slice(9, -1).split(',').map(Number);
+        expect(Math.min(w!, h!), line).toBeGreaterThanOrEqual(1);
+      }
+    }
+  });
+
+  it('shades the coat in three discrete bands, not a gradient', () => {
+    // Pixel-art shading is banded because a smooth ramp turns to mud once quantised. The
+    // middle value is what carries the turn of the form when there are only a few pixels.
+    const t = transcript(defaultLook());
+    for (const band of [RAMP.coatLight, RAMP.coatMid, RAMP.coatDark]) {
+      expect(t, `band ${band}`).toContain(`fillStyle=${band}`);
+    }
+    expect(t, 'and no gradients on the figure').not.toContain('Gradient');
+  });
+
+  it('separates every big garment block from its neighbours', () => {
+    // The palette used to sit inside a narrow navy-slate spread — coat, cloak and legs all
+    // in one hue family, which reads as a monochrome silhouette however carefully each piece
+    // is shaded.
+    //
+    // The rule is **hue or value**, not hue alone. A first pass demanded 45 degrees between
+    // every pair and failed on crimson-against-brown at 40 — which is a real adjacency in
+    // hue and a perfectly legible pair on screen, because the two are far apart in value.
+    // Either separation does the job; demanding the wrong one moves colours to satisfy a
+    // number rather than to be read.
+    const rgb = (hex: string): [number, number, number] => [
+      Number.parseInt(hex.slice(1, 3), 16),
+      Number.parseInt(hex.slice(3, 5), 16),
+      Number.parseInt(hex.slice(5, 7), 16),
+    ];
+    const value = (hex: string): number => rgb(hex).reduce((a, b) => a + b, 0) / 3;
+    const hue = (hex: string): number => {
+      const [r, g, b] = rgb(hex).map((v) => v / 255) as [number, number, number];
+      const mx = Math.max(r, g, b);
+      const mn = Math.min(r, g, b);
+      if (mx === mn) return -1;
+      const d = mx - mn;
+      const h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      return (((h * 60) % 360) + 360) % 360;
+    };
+
+    const blocks: [string, string][] = [
+      ['coat', RAMP.coatLight],
+      ['cloak', RAMP.cloak],
+      ['legs', RAMP.trouser],
+      ['boots', RAMP.boot],
+    ];
+
+    for (let i = 0; i < blocks.length; i++) {
+      for (let j = i + 1; j < blocks.length; j++) {
+        const [an, a] = blocks[i]!;
+        const [bn, b] = blocks[j]!;
+        const apart = Math.abs(hue(a) - hue(b));
+        const byHue = Math.min(apart, 360 - apart);
+        const byValue = Math.abs(value(a) - value(b));
+        expect(
+          byHue > 40 || byValue > 30,
+          `${an} and ${bn} share a hue (${byHue.toFixed(0)}deg) and a value (${byValue.toFixed(0)})`,
+        ).toBe(true);
+      }
+    }
   });
 
   it('never erases, in any style', () => {

@@ -324,6 +324,42 @@ something.
 
 ### The figure has a body
 
+Proportions are **1:4**, head to height. An earlier pass pushed them to 1:5.3 chasing
+anatomical realism, and that is the wrong idiom: the reference sprites — and every 16-bit
+RPG sprite — carry big heads precisely because the head is where the identity lives and a
+realistic one has no room for a face. At 44 art-pixels the head came out 4px across and the
+eye dots were **0.6px**: drawn, sub-pixel, and invisible, which is why the sprite read as
+facing away when it had been facing forward all along.
+
+The body now breaks into parts rather than being one continuous shape:
+
+- **A neck** — skin between the chin and the collar, measured off the *head* rather than a
+  landmark of its own. A landmark looked right and drew a hole (see below).
+- **Arms held a pixel clear of the torso**, with a forearm that steps outward so the limb
+  has a bend. They were previously drawn at `-shoulder - armW + 1` — overlapping the body by
+  a pixel, so the silhouette never actually broke.
+- **Two legs with a gap between them**, in a warm dark that is a different hue family from
+  the blue coat, under **boots that are lighter than the trousers** — both the width and the
+  value jump are what make a boot read as a separate thing.
+
+### The palette
+
+Four hue families carry real area now, where the whole ramp used to sit inside a narrow
+navy-slate spread — coat `#3D4A60`, cloak `#3B3A6B`, trousers `#3A3550`, which is four
+garments in one hue and reads as a monochrome silhouette however carefully each is shaded.
+
+The coat is shaded in **three discrete bands**, not two and not a gradient: pixel-art shading
+is banded because a smooth ramp turns to mud once quantised, and the middle value is what
+carries the turn of the form when there are only a few pixels to say it in.
+
+A test asserts every pair of big garment blocks separates by **hue or by value**. That rule
+took two attempts — the first demanded 45° of hue between every pair and failed on
+crimson-against-brown at 40°, which is a real adjacency in hue and a perfectly legible pair
+on screen because the two are far apart in value. Demanding the wrong separation moves
+colours to satisfy a number rather than to be read.
+
+### The old body notes
+
 Proportions were rebuilt against the reference: roughly **one head to five**, where the
 sprite had been nearer one to three and a half. A stubby figure reads as a mascot no matter
 what is drawn on it. The landmarks live in one table (`Y`) so they can be argued about.
@@ -347,6 +383,9 @@ separate marks had to relearn this:
 | brass collar | 3px triangle | **0 px** | 2px `fillRect` bar → 48 px |
 | rim light | 1px stroke @ 55% alpha | **28 px** on a 48×104 body | 1px `fillRect` @ 85% → 613 px |
 | `shorn` hair | `destination-out` erase | 782 px *hole* | tighter cap → 0 |
+| eye dots | `headR * 0.15` | **0.6 px** | floored at 1px radius |
+| the neck | `yChin + headR` | negative height, **2px hole** through the figure | anchored to `yChin` |
+| the mane | `headR * 2.2` below the crown | buried neck **and** collar | pulled to `1.45` |
 
 ### Why the sprites are canvas shapes
 
@@ -444,7 +483,7 @@ drift, and the drift is invisible because both look correct in isolation.
 
 ## 8. What is tested, and one thing that nearly was not
 
-[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 40 tests, all 31 deliberate
+[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 45 tests, all 36 deliberate
 mutations of these rules confirmed to fail the suite.
 
 Coverage: look normalisation (trim, cap, blank, wrap, string-form indices, total nonsense);
