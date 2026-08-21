@@ -1,0 +1,193 @@
+/*
+ * Choose Your Discipline.
+ *
+ * Six panels on the Magistracy's own paper. Deliberately quieter than the title wall it
+ * sits behind — no pins, no wax, no torn edges — because this is a register being signed
+ * rather than a bounty being read off a post.
+ *
+ * The crest colours are the only place a school's identity is stated visually, and they
+ * are the same six the board already uses for status tints, so a player who has seen a
+ * Chill overlay recognises Frost here without being told.
+ */
+
+.screen--enrol {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 2vh, 1.5rem);
+  align-items: center;
+  padding: clamp(1rem, 4vh, 2.5rem) clamp(1rem, 4vw, 3rem);
+  min-height: 100%;
+  overflow-y: auto;
+}
+
+.enrol__head {
+  max-width: 56rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.enrol__title {
+  margin: 0;
+  font-family: var(--font-display, serif);
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-strong, #efe6d2);
+}
+
+.enrol__lede {
+  margin: 0;
+  max-width: 46rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--ink-dim, #b9ae95);
+}
+
+.enrol__back {
+  align-self: center;
+}
+
+/*
+ * Three across on anything wide enough, two on a tablet, one on a phone. `auto-fit` rather
+ * than a fixed count so a seventh discipline needs no rule here.
+ */
+.enrol__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: clamp(0.6rem, 1.5vw, 1.1rem);
+  width: 100%;
+  max-width: 62rem;
+}
+
+.enrol-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  padding: 1rem 1rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--brass-edge, #6b5a3c);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+
+.enrol-card:hover,
+.enrol-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--brass-bright, #c8a558);
+}
+
+/* Armed, awaiting the second click. The stamp changes wording; this changes weight. */
+.enrol-card.is-confirming {
+  border-color: var(--brass-bright, #c8a558);
+  box-shadow:
+    0 0 0 1px var(--brass-bright, #c8a558),
+    0 0 1.4rem rgba(200, 165, 88, 0.28);
+}
+
+.enrol-card__crest {
+  width: 100%;
+  height: 0.28rem;
+  border-radius: 2px;
+  background: var(--crest, #8a7a55);
+}
+
+.enrol-card__crest[data-school='pyre'] {
+  --crest: #d9643a;
+}
+.enrol-card__crest[data-school='frost'] {
+  --crest: #6fb6d8;
+}
+.enrol-card__crest[data-school='surge'] {
+  --crest: #d9c04a;
+}
+.enrol-card__crest[data-school='bulwark'] {
+  --crest: #9a9086;
+}
+.enrol-card__crest[data-school='dusk'] {
+  --crest: #9a6fc4;
+}
+.enrol-card__crest[data-school='bloom'] {
+  --crest: #79b45c;
+}
+
+.enrol-card__name {
+  font-family: var(--font-display, serif);
+  font-size: 1.35rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-strong, #efe6d2);
+}
+
+.enrol-card__beast {
+  font-size: 0.8rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--brass-bright, #c8a558);
+}
+
+.enrol-card__blurb {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--ink-dim, #b9ae95);
+  flex: 1;
+}
+
+.enrol-card__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+}
+
+.enrol-card__facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.enrol-card__facts dt {
+  color: var(--ink-faint, #8d846f);
+}
+
+.enrol-card__facts dd {
+  margin: 0;
+  color: var(--ink, #d6cbb2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The opening line, named. Small, because it is reassurance rather than a decision. */
+.enrol-card__line {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ink-faint, #8d846f);
+  border-top: 1px solid var(--brass-edge, #6b5a3c);
+  padding-top: 0.4rem;
+}
+
+.enrol-card__stamp {
+  align-self: flex-end;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brass-bright, #c8a558);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enrol-card {
+    transition: none;
+  }
+  .enrol-card:hover,
+  .enrol-card:focus-visible {
+    transform: none;
+  }
+}

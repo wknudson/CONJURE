@@ -19,8 +19,8 @@ import { INVENTORY_LIMIT, isCritical } from '../core/overworld/state.js';
 import { useConsumable } from '../core/overworld/run.js';
 import { ascendableFor } from '../core/data/collection.js';
 import { schematicsFor } from '../core/data/artificer.js';
-import { companionById } from '../core/data/companions.js';
-import { validateDeck } from '../core/data/deckRules.js';
+import { GRIMOIRE_SIZE, companionById } from '../core/data/companions.js';
+import { fusedDeckSize, validateDeck } from '../core/data/deckRules.js';
 import { encounterById } from '../core/data/encounters/index.js';
 import { schoolOf } from '../render/palette.js';
 import { Tooltip } from '../hud/Tooltip.js';
@@ -270,9 +270,14 @@ export class SafehouseScreen implements Screen {
         blurb: 'Every fight you have had, in a hand that got worse as it went.',
         status: () => {
           const problems = validateDeck(deck, collection);
+          // The *fused* count, which is the deck a player actually shuffles: their Hero
+          // half plus the eight their Companion brings. Saying "7 cards" was true of the
+          // half they edit and wrong about the thing they play, which made the number on
+          // this door disagree with every number on the board.
+          const total = fusedDeckSize(deck.length);
           return problems.length > 0
-            ? `${deck.length} cards — needs editing`
-            : `${deck.length} cards — legal`;
+            ? `${deck.length} of ${total} — needs editing`
+            : `${total} cards — ${deck.length} yours, ${GRIMOIRE_SIZE} the beast's`;
         },
         onOpen: this.opts.onJournal,
       },

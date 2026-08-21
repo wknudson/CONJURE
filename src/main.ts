@@ -18,6 +18,7 @@ import './styles/hud.css';
 import './styles/cards.css';
 import './styles/screens.css';
 import './styles/onboarding.css';
+import './styles/enrolment.css';
 import './styles/builder.css';
 import './styles/safehouse.css';
 
@@ -32,6 +33,7 @@ import { PreCombatScreen } from './app/PreCombatScreen.js';
 import { SafehouseScreen } from './app/SafehouseScreen.js';
 import { ShopScreen } from './app/ShopScreen.js';
 import { ArtificerScreen } from './app/ArtificerScreen.js';
+import { EnrolmentScreen } from './app/EnrolmentScreen.js';
 import {
   deleteProfile,
   grantRosterUnlocks,
@@ -225,9 +227,22 @@ function openProfile(slot: SlotId): void {
 }
 
 /** Draws up a new commission on an empty poster, then opens it. */
+/**
+ * A blank slot, and the one question that has to be answered before it can be filled.
+ *
+ * Nothing is written until a discipline is confirmed: backing out of enrolment leaves the
+ * slot exactly as blank as it was, which is what makes the title wall safe to explore.
+ */
 function draftProfile(slot: SlotId): void {
-  saveFile.profiles[slot] = newProfile(slot);
-  openProfile(slot);
+  screens.go(
+    new EnrolmentScreen({
+      onEnrol: (school) => {
+        saveFile.profiles[slot] = newProfile(slot, undefined, school);
+        openProfile(slot);
+      },
+      onCancel: showTitle,
+    }),
+  );
 }
 
 /**

@@ -462,3 +462,13 @@ export function companionById(id: string): CompanionDef | undefined {
 }
 
 export const DEFAULT_COMPANION = COMPANIONS[0]!;
+
+/**
+ * The discipline a character enrols in when nobody asked.
+ *
+ * Read off `DEFAULT_COMPANION` rather than written down, so the fallback school and the
+ * fallback bloodline cannot name different things. It is what a legacy save, a test, and
+ * any caller that has not been through the selection screen all get -- the school the game
+ * started with, before there was a choice to make.
+ */
+export const DEFAULT_SCHOOL: School = DEFAULT_COMPANION.grimoire.schools[0]!;

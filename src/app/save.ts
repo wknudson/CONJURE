@@ -22,6 +22,7 @@
  */
 
 import type { Collection } from '../core/data/deckRules.js';
+import type { School } from '../contract/ids.js';
 import { reconcileCollection, startingCollection } from '../core/data/collection.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { RELICS, slotOf } from '../core/data/relics.js';
@@ -38,8 +39,18 @@ import {
   type VanguardProgress,
 } from '../core/data/roster.js';
 import { STAT_SCALE } from '../core/scale.js';
-import { COMPANIONS, DEFAULT_COMPANION, companionById } from '../core/data/companions.js';
-import { grantsFor, rosterUnlocksFor } from '../core/data/pools.js';
+import {
+  COMPANIONS,
+  DEFAULT_COMPANION,
+  DEFAULT_SCHOOL,
+  companionById,
+} from '../core/data/companions.js';
+import {
+  grantsFor,
+  rosterUnlocksFor,
+  speciesForSchool,
+  startingRosterFor,
+} from '../core/data/pools.js';
 import { NOVICE_AI, profileByName } from '../core/ai/controller.js';
 import type {
   ActiveEncounterState,
@@ -274,7 +285,16 @@ export interface SaveFile {
  * unlocked the same bodies in a different order compare equal.
  */
 function unlockFloor(granted: readonly string[]): string[] {
-  return [...new Set([...UNIVERSAL_ROSTER, ...DEFAULT_ROSTER, ...granted])].sort();
+  // `UNIVERSAL_ROSTER` only. `DEFAULT_ROSTER` used to be in here as well, and it was the
+  // right call while every character started as an Ignis: it made the opening warband
+  // legal by construction. Enrolment changes that -- it carries a Cinder Lobber and a
+  // Longshot Stalker, so keeping it would hand a Boreas a Pyre body and a Dusk one on
+  // creation, which is the exact identity the discipline screen exists to establish.
+  //
+  // Nothing is lost from an existing save: `loadProfile` unions the warband it finds on
+  // disk into this list, so a character who was fielding a Longshot Stalker under the old
+  // rule keeps it.
+  return [...new Set([...UNIVERSAL_ROSTER, ...granted])].sort();
 }
 
 /**
@@ -297,16 +317,38 @@ export function grantRosterUnlocks(profile: Profile, baseId: string): string[] {
   return gained;
 }
 
-export function newProfile(profileId: string, name = 'Commander'): Profile {
+/**
+ * Drafts a fresh commission.
+ *
+ * `school` is the discipline the player enrolled in, and it decides four things at once:
+ * which bloodline they start beside, what that beast drafts into its Grimoire, which
+ * bodies their Vanguard may field, and therefore what the other half of their opening
+ * fifteen actually is. Everything else about a new character is identical whichever they
+ * pick, which is what keeps the choice a *colour* rather than a difficulty setting.
+ *
+ * Defaulted rather than required, because two dozen tests and the legacy title flow call
+ * this with a slot and nothing else, and a character who never chose is a Pyre one -- the
+ * school the game started with.
+ */
+export function newProfile(
+  profileId: string,
+  name = 'Commander',
+  school: School = DEFAULT_SCHOOL,
+): Profile {
+  // A discipline nothing speaks would produce an undefined Companion, so an unknown one
+  // falls back rather than throwing: a save file is data, and hand-edited data should
+  // land the player in the game rather than in a stack trace.
+  const baseId = speciesForSchool(school) ?? DEFAULT_COMPANION.id;
   const decks: Record<string, SavedDeck> = {};
   for (const companion of COMPANIONS) {
     decks[companion.id] = { companionId: companion.id, cards: [...companion.deck] };
   }
-  // One tamed beast to start, rolled like any other. A character who began with a
-  // guaranteed 40/40 would learn nothing from their second roll.
+  // One tamed beast to start, rolled like any other -- the same three rolls a wild catch
+  // makes, so the animal a player is handed at creation is a real roll rather than a
+  // fixture. A character who began with a guaranteed 40/40 and a fixed knack would learn
+  // nothing from their second beast.
   const rng = makeRng(Math.floor(Math.random() * 1e9) >>> 0);
-  const companions: CompanionInstance[] = [tameCompanion(rng, DEFAULT_COMPANION.id, 1)];
-
+  const companions: CompanionInstance[] = [tameCompanion(rng, baseId, 1)];
   // Seeded once, at creation, so two characters do not stare at the same board forever.
   const overworld = newRun(Math.floor(Math.random() * 1e9) >>> 0);
   // Two cores in the satchel from the start. Contracts pay more from Adept upward, so
@@ -333,13 +375,14 @@ export function newProfile(profileId: string, name = 'Commander'): Profile {
     state: { overworld, combat: null },
     collection: startingCollection(),
     decks,
-    // A warband that spends the ten exactly, so a new player meets the deployment phase
-    // with a real line to place rather than an empty tray and a rule to go and read.
-    roster: [...DEFAULT_ROSTER],
-    // The floor, plus whatever the beast they start beside is worth. Written at creation
-    // rather than left empty, so the very first Vanguard screen already reflects the one
-    // bloodline this character has.
-    rosterUnlocks: unlockFloor(grantsFor(DEFAULT_COMPANION.id)),
+    // A warband of their own colour, spending as much of the ten as their school's shelf
+    // allows -- so a new player meets the deployment phase with a real line to place, and
+    // that line looks like the discipline they picked.
+    roster: startingRosterFor(school),
+    // The floor, plus the bloodline they start beside. Written at creation rather than
+    // left empty, so the very first Vanguard screen already reflects the one school this
+    // character has.
+    rosterUnlocks: unlockFloor(grantsFor(baseId)),
     // Everything they can field, on the books at level 1. Seeded at creation rather than
     // on first deployment so the Assembly screen can show a level beside a body the player
     // has not taken into a fight yet -- an unlocked body with no record would read as a

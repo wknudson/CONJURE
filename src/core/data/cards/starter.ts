@@ -314,13 +314,25 @@ export const STARTER_CARDS: Record<string, CardDef> = {
  * nowhere to grow, and the six empty slots are the first thing the Field Journal asks the
  * player a question about.
  */
+/**
+ * The Hero half a character starts with: **seven**, one of each.
+ *
+ * Seven because the deck a new player is handed is the *fused* one, and the fused deck is
+ * fifteen: seven colourless staples they chose nothing about, and the eight elemental
+ * spells their Companion drafted from the discipline they did choose. `fusedDeckSize`
+ * computes that, and `MAX_DECK` leaves five more Hero slots to grow into.
+ *
+ * It was nine, with a second Shield Bash and a second Grapple Line. The duplicates went
+ * rather than two distinct cards, so a new player still meets every tool the Hero half
+ * has -- a strike, a shove, a wall, a ward, a tithe, a beam and a finisher -- and meets
+ * the copy-limit rule as something they discover in the builder rather than something
+ * they were born holding.
+ */
 export const STARTER_DECK: string[] = [
-  'shield_bash',
   'shield_bash',
   'stone_barricade',
   'dark_tithe',
   'aegis_ward',
-  'grapple_line',
   'grapple_line',
   'aether_beam',
   'cull_the_weak',

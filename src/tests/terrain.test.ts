@@ -7,6 +7,8 @@ import { unitAt, entityAt, coverAt } from '../core/engine/board.js';
 import { CombatSession } from '../core/session.js';
 import { ENCOUNTERS, NOVICE_DUELIST, IGNIS_TRIAL } from '../core/data/encounters/index.js';
 import { territoryDepthFor } from '../core/types/state.js';
+import type { BoardView } from '../contract/query.js';
+import type { Coord } from '../contract/ids.js';
 
 /** Builds a board with one cover tile at (2,2). */
 function withCover() {
@@ -103,8 +105,25 @@ describe('per-encounter arenas', () => {
       const placed = board.obstacles.filter((o) => o.defId !== 'marrow_geode');
       expect(placed.length).toBe((enc.terrain?.length ?? 0) + (enc.props?.length ?? 0));
 
-      // Terrain must never strand a side with nowhere to summon on turn one.
-      expect(session.getPlayableCards().length).toBeGreaterThan(0);
+      // Terrain must never strand a side with nowhere to *put* a body.
+      //
+      // This used to assert `getPlayableCards().length > 0`, which had quietly stopped
+      // meaning what the comment beside it said. Minions left decks in the Vanguard
+      // overhaul, so nothing is summoned from hand any more and the number it measured was
+      // "did the shuffle happen to deal something castable" — a property of the seed, not
+      // of the terrain. It passed for years by luck and went red the day the starter deck
+      // changed size, which is the shuffle moving rather than the ground.
+      //
+      // Ground is what the test is actually about, so ground is what it asks: an encounter
+      // must leave somewhere legal to stand a body, whatever it laid on the board.
+      // No roster means no Anchor Tiles, so the ground to check is the starting zone the
+      // opening line is placed into — the same tiles `placeOpeningUnit` draws from.
+      const zone = board.anchors.length > 0 ? board.anchors : ownGround(board);
+      expect(zone.length, `${enc.id} has no ground at all`).toBeGreaterThan(0);
+      expect(
+        zone.some((at) => session.canDeploy(null, at) || isFree(board, at)),
+        `${enc.id} left nowhere to stand`,
+      ).toBe(true);
       // The enemy's opening body must have made it onto the field. The player has none:
       // their line comes from the Vanguard Roster, and this session brought no roster.
       expect(board.units.filter((u) => u.defId === 'vanguard_footman')).toHaveLength(1);
@@ -136,3 +155,22 @@ describe('per-encounter arenas', () => {
     }
   });
 });
+
+/** Tiles on the player's own side of the board — the zone an opening line is placed into. */
+function ownGround(board: BoardView): Coord[] {
+  const rows = territoryDepthFor(board.height);
+  const out: Coord[] = [];
+  for (let y = board.height - rows; y < board.height; y++) {
+    for (let x = 0; x < board.width; x++) out.push({ x, y });
+  }
+  return out;
+}
+
+/** Nothing standing there and nothing built there. */
+function isFree(board: BoardView, at: Coord): boolean {
+  const taken = (e: { at?: Coord; anchor?: Coord }): boolean => {
+    const c = e.at ?? e.anchor;
+    return !!c && c.x === at.x && c.y === at.y;
+  };
+  return !board.units.some(taken) && !board.obstacles.some(taken);
+}

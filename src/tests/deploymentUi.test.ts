@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { CombatSession } from '../core/session.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
-import { DEFAULT_ROSTER, ROSTER_BUDGET, rosterCost, validateRoster } from '../core/data/roster.js';
+import {
+  DEFAULT_ROSTER,
+  ROSTER_BUDGET,
+  rosterCost,
+  rosterPointsOf,
+  validateRoster,
+} from '../core/data/roster.js';
 import { newProfile } from '../app/save.js';
 import { CARDS } from '../core/data/cards/index.js';
 
@@ -139,10 +145,25 @@ describe('the actions the tray dispatches', () => {
 });
 
 describe('the Vanguard on the profile', () => {
-  it('gives a new character a legal warband that spends the budget', () => {
+  it('gives a new character a legal warband with nothing left it could add', () => {
+    // The invariant, rather than the old exact `=== ROSTER_BUDGET`.
+    //
+    // That number was an artefact of `DEFAULT_ROSTER` being hand-authored to spend the ten
+    // precisely. Enrolment derives the opening warband from the chosen school's shelf, and
+    // no school has a one-point body — so a line that has taken a 3-cost specialist can
+    // finish on nine with nothing that fits the remainder. "As full as it can be" is the
+    // property that was actually meant, and unlike the number it stays true as bodies are
+    // added.
     const p = newProfile('slot-1');
-    expect(validateRoster(p.roster)).toEqual([]);
-    expect(rosterCost(p.roster)).toBe(ROSTER_BUDGET);
+    expect(validateRoster(p.roster, p.rosterUnlocks)).toEqual([]);
+    expect(rosterCost(p.roster)).toBeGreaterThan(ROSTER_BUDGET - 3);
+
+    const cheapest = Math.min(
+      ...p.rosterUnlocks.map((id) => rosterPointsOf(CARDS[id]!)).filter((n) => n > 0),
+    );
+    expect(rosterCost(p.roster) + cheapest, 'nothing else would fit').toBeGreaterThan(
+      ROSTER_BUDGET,
+    );
   });
 
   it('is one warband per character, not one per Companion', () => {

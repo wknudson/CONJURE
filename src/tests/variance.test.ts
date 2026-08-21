@@ -11,7 +11,7 @@ import {
 import { COMPANIONS, GRIMOIRE_SIZE } from '../core/data/companions.js';
 import { COMPANION_TRAITS, traitsFor } from '../core/data/companionTraits.js';
 import { CARDS } from '../core/data/cards/index.js';
-import { DEFAULT_ROSTER, UNIVERSAL_ROSTER, validateRoster } from '../core/data/roster.js';
+import { UNIVERSAL_ROSTER, validateRoster } from '../core/data/roster.js';
 import { tameCompanion } from '../core/overworld/vivarium.js';
 import { draftGrimoire } from '../core/data/grimoire.js';
 import { makeRng } from '../core/util/rng.js';
@@ -156,12 +156,16 @@ describe('claiming a bloodline', () => {
     expect(validateRoster(['ember_moth'], p.rosterUnlocks), 'a Pyre body, day one').toEqual([]);
   });
 
-  it('always leaves a tray to open', () => {
-    const p = newProfile('slot-1');
-    for (const id of [...UNIVERSAL_ROSTER, ...DEFAULT_ROSTER]) {
-      expect(p.rosterUnlocks, id).toContain(id);
-    }
-    expect(validateRoster([...DEFAULT_ROSTER], p.rosterUnlocks), 'the opening warband').toEqual([]);
+  it('always leaves a tray to open, in the character’s own colour', () => {
+    // `DEFAULT_ROSTER` is deliberately no longer in this floor. It carries a Cinder Lobber
+    // and a Longshot Stalker, which was the right default while every character was an
+    // Ignis and is wrong now that a Boreas can exist -- so what is guaranteed is the
+    // universal line plus the school they actually enrolled in.
+    const p = newProfile('slot-1', 'Commander', 'frost');
+    for (const id of UNIVERSAL_ROSTER) expect(p.rosterUnlocks, id).toContain(id);
+    expect(validateRoster(p.roster, p.rosterUnlocks), 'the opening warband').toEqual([]);
+    expect(p.rosterUnlocks, 'their own school').toContain('glacial_stalker');
+    expect(p.rosterUnlocks, 'and nobody else’s').not.toContain('longshot_stalker');
   });
 
   it('survives a round trip, and takes nothing away from an older save', () => {

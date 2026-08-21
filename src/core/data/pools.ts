@@ -24,9 +24,16 @@
 
 import type { School } from '../../contract/ids.js';
 import type { CardDef } from '../types/cards.js';
+import type { GrimoireSource } from './grimoire.js';
 import { CARDS } from './cards/index.js';
 import { isDraftable, isHybrid } from './grimoire.js';
-import { DEFAULT_ROSTER, UNIVERSAL_ROSTER, isRosterEligible } from './roster.js';
+import {
+  DEFAULT_ROSTER,
+  ROSTER_BUDGET,
+  UNIVERSAL_ROSTER,
+  isRosterEligible,
+  rosterCost,
+} from './roster.js';
 import { COMPANIONS, companionById } from './companions.js';
 import { traitsFor } from './companionTraits.js';
 
@@ -155,6 +162,118 @@ export function grantsFor(baseId: string): readonly string[] {
   return MINIONS_BY_SPECIES[baseId] ?? [];
 }
 
+// ------------------------------------------------------------------ enrolment
+
+/**
+ * The six disciplines a character may enrol in, and the bloodline each one starts beside.
+ *
+ * Derived from the roster rather than listed: a school's founding species is the
+ * **mono-element** Companion that speaks it, and there is exactly one of each by
+ * construction. Hybrids are excluded on purpose — a character does not begin holding two
+ * schools, and a starting Chimera would make the whole choice mean half of what it says.
+ *
+ * The inverse of `schoolsOf`, and it has to be a derivation rather than a table for the
+ * same reason: two lists of the same fact drift, and this one would drift silently the day
+ * somebody added a second Frost bloodline.
+ */
+export const SPECIES_BY_SCHOOL: Readonly<Partial<Record<School, string>>> = foundersOf(COMPANIONS);
+
+/**
+ * The founder-picking rule, as a function over a list.
+ *
+ * Exported and taking its input rather than reaching for `COMPANIONS`, so the two guards
+ * inside it can actually be *tested*. Both are currently unobservable against the shipped
+ * roster — every school has exactly one mono bloodline and the monos are listed first — so
+ * a rule written straight against the registry would be defence nobody could prove works,
+ * which is the same as no defence at all.
+ */
+export function foundersOf(
+  companions: readonly { id: string; grimoire: GrimoireSource }[],
+): Partial<Record<School, string>> {
+  const out: Partial<Record<School, string>> = {};
+  for (const c of companions) {
+    const schools = c.grimoire.schools;
+    // Mono only. A hybrid is filed under one school for its Resonance and speaks two, and
+    // a character does not begin holding two.
+    if (schools.length !== 1) continue;
+    const school = schools[0]!;
+    // First wins, so enrolment is stable under a save even if a second bloodline of the
+    // same school is authored later.
+    out[school] ??= c.id;
+  }
+  return out;
+}
+
+/**
+ * Schools a new character may actually choose.
+ *
+ * `SCHOOLS` is the set of elemental colours in the game; this is the subset with a
+ * bloodline behind them, which is what enrolment needs. They are the same six today and
+ * the distinction is not pedantry: a school authored before its founding species exists
+ * would otherwise appear on the selection screen and hand out an undefined Companion.
+ */
+export const PLAYABLE_SCHOOLS: readonly School[] = playableFrom(SPECIES_BY_SCHOOL);
+
+/**
+ * The filter behind `PLAYABLE_SCHOOLS`, over a founder map rather than the shipped one.
+ *
+ * Same reason `foundersOf` takes its input: all six schools have a bloodline today, so a
+ * filter written straight against the registry is a guard nothing can demonstrate. Handing
+ * it a map with a hole in it is the only way to see it hold.
+ */
+export function playableFrom(founders: Partial<Record<School, string>>): School[] {
+  return SCHOOLS.filter((s) => founders[s] !== undefined);
+}
+
+/** The bloodline a given discipline starts beside, or undefined if nothing speaks it. */
+export function speciesForSchool(school: School): string | undefined {
+  return SPECIES_BY_SCHOOL[school];
+}
+
+/**
+ * The warband a character enrolled in this school begins with.
+ *
+ * Universal bodies first — there is always a line to hold — then that school's own, in
+ * the order the pool lists them, until the ten points are spent. Derived rather than
+ * authored per school for the reason everything in this file is: a new Frost body joins
+ * the Boreas starting warband by existing, and nobody has to remember to add it.
+ *
+ * Deliberately **not** `DEFAULT_ROSTER`, which predates enrolment and hands out a Cinder
+ * Lobber and a Longshot Stalker to everybody. That was fine when every character started
+ * as an Ignis; with a discipline to choose it would mean a Boreas opening with a Pyre
+ * body and a Dusk one, which is precisely the identity this screen exists to establish.
+ */
+export function startingRosterFor(school: School): string[] {
+  const roster: string[] = [];
+  const fits = (id: string): boolean => rosterCost([...roster, id]) <= ROSTER_BUDGET;
+  const take = (id: string): void => {
+    if (fits(id)) roster.push(id);
+  };
+
+  const candidates = [...UNIVERSAL_ROSTER, ...minionPool(school).map((d) => d.id)];
+
+  // One of each first, cheapest-first within each half, so the line is as varied as the
+  // school's shelf allows before it starts doubling up.
+  for (const id of candidates) {
+    if (!roster.includes(id)) take(id);
+  }
+
+  // Then repeats, until nothing else fits. A warband holding two Footmen holds two of the
+  // same Footman -- the roster has always allowed that, and `vanguardProgress` is keyed by
+  // def id precisely because they train as one body.
+  //
+  // Without this pass most schools open a point or two short: the shelves are thin enough
+  // that no *distinct* body is left that fits the remainder. Leaving the budget unspent
+  // would teach a new player that the number on the screen is decorative.
+  for (let guard = 0; guard < ROSTER_BUDGET && rosterCost(roster) < ROSTER_BUDGET; guard++) {
+    const next = candidates.find(fits);
+    if (!next) break;
+    roster.push(next);
+  }
+
+  return roster;
+}
+
 // ------------------------------------------------------------------ roster unlocks
 
 /**
@@ -202,6 +321,12 @@ export function rosterUnlocksFor(tamedBaseIds: readonly string[]): string[] {
   // So the gate is about what a player may **add**, not about what they were given. Every
   // school body authored from here on is genuinely locked behind its bloodline; the four
   // the game has always started with stay where they are.
+  // `DEFAULT_ROSTER` is in this floor and deliberately *not* in `save.unlockFloor`, which
+  // is the one a new character is created with. The two answer different questions: this
+  // is the generous reading used when **migrating** a save written before enrolment
+  // existed, where every character was an Ignis and was dealt this exact warband; that one
+  // is what a player who chose a discipline gets, and handing a Boreas a Cinder Lobber
+  // would undo the choice.
   const out = new Set<string>([...UNIVERSAL_ROSTER, ...DEFAULT_ROSTER]);
   for (const def of Object.values(CARDS)) {
     if (!isRosterEligible(def)) continue;
