@@ -4,12 +4,14 @@ import {
   FACE_PRESETS,
   HAIR_PRESETS,
   NICKNAME_MAX,
+  SKIN_TONES,
   clampPreset,
   defaultLook,
   faceOf,
   hairOf,
   isStarterSpecies,
   normalizeLook,
+  skinOf,
   starterSpecies,
   type CharacterLook,
 } from '../core/data/characterLook.js';
@@ -35,7 +37,7 @@ import {
 } from '../render/sprites.js';
 import { PALETTE } from '../render/palette.js';
 import { HAIR_TONES } from '../core/data/characterLook.js';
-import { FOCUS_FAR, FOCUS_NEAR, projectTile } from '../render/Diorama.js';
+import { FOCUS_FAR, FOCUS_NEAR, focusBand, projectTile } from '../render/Diorama.js';
 import {
   BEAST_AT,
   HERO_AT,
@@ -77,7 +79,7 @@ describe('the look', () => {
     const keys = Object.keys(defaultLook());
     for (const slot of RELIC_SLOT_ORDER) expect(keys, slot).not.toContain(slot);
     expect(keys.sort()).toEqual(
-      ['facePreset', 'gender', 'hairPreset', 'nickname', 'starterCompanion'].sort(),
+      ['facePreset', 'gender', 'hairPreset', 'nickname', 'skinPreset', 'starterCompanion'].sort(),
     );
   });
 
@@ -112,6 +114,58 @@ describe('the look', () => {
       expect(FACE_PRESETS[look.facePreset as number], String(raw)).toBeDefined();
       expect(hairOf(look).name).toBeTruthy();
       expect(faceOf(look).name).toBeTruthy();
+    }
+  });
+
+  it('varies skin and expression independently', () => {
+    // The point of the whole change. Skin used to be `SKIN_TONES[facePreset]`, so choosing a
+    // weathered brow also chose a complexion: four expressions times six tones is
+    // twenty-four faces, and multiplexed onto one control it was four.
+    const a = normalizeLook({ facePreset: 0, skinPreset: 5 });
+    const b = normalizeLook({ facePreset: 3, skinPreset: 5 });
+    expect(skinOf(a), 'same skin, different expression').toBe(skinOf(b));
+    expect(a.facePreset).not.toBe(b.facePreset);
+
+    const c = normalizeLook({ facePreset: 0, skinPreset: 0 });
+    expect(skinOf(c), 'same expression, different skin').not.toBe(skinOf(a));
+  });
+
+  it('keeps an older character the complexion they already had', () => {
+    // A save written before the split has no `skinPreset`, and the old rule was
+    // `SKIN_TONES[facePreset]`. Carrying the *index* across would look like a faithful
+    // migration and quietly recolour everybody, because the list has since been reordered
+    // and widened from four tones to six.
+    const legacy = ['#C8A07A', '#8D6242', '#E0BC96', '#5E4030'];
+    for (const [face, was] of legacy.entries()) {
+      const repaired = normalizeLook({ facePreset: face });
+      expect(skinOf(repaired), `facePreset ${face} used to be ${was}`).toBe(was);
+      expect(repaired.facePreset, 'and keeps its expression').toBe(face);
+    }
+  });
+
+  it('defaults the complexion when nothing at all was written', () => {
+    // Not index zero by accident — the fallback chain has to end at the default rather than
+    // at whatever `clampPreset(undefined)` returns.
+    expect(normalizeLook({}).skinPreset).toBe(defaultLook().skinPreset);
+    expect(normalizeLook({ nickname: 'x' }).skinPreset).toBe(defaultLook().skinPreset);
+  });
+
+  it('renders a different face for the same expression on different skin', () => {
+    // And it has to reach the sprite, not just the schema.
+    const pale = transcript({ ...defaultLook(), skinPreset: 0 });
+    const dark = transcript({ ...defaultLook(), skinPreset: 5 });
+    expect(pale).not.toBe(dark);
+    expect(pale, 'the lightest tone').toContain(`fillStyle=${SKIN_TONES[0]}`);
+    expect(dark, 'and the darkest').toContain(`fillStyle=${SKIN_TONES[5]}`);
+  });
+
+  it('shades the neck and the nose off the chosen skin', () => {
+    // A fixed hex was fine while skin was four tones off the face preset and became wrong
+    // the moment it became six on their own axis: a pale neck under a dark jaw is not a
+    // shadow, it is a mistake.
+    for (const [i] of SKIN_TONES.entries()) {
+      const t = transcript({ ...defaultLook(), skinPreset: i });
+      expect(t, `skin ${i} neck`).toContain(`fillStyle=${shadeOf(SKIN_TONES[i]!)}`);
     }
   });
 
@@ -514,7 +568,7 @@ describe('the sprite on the stage', () => {
 
   it('gives the Commander a neck, between the chin and the collar', () => {
     const t = transcript(defaultLook());
-    expect(t, 'skin below the jaw').toContain(`fillStyle=${RAMP.neck}`);
+    expect(t, 'skin below the jaw').toContain(`fillStyle=${shadeOf(skinOf(defaultLook()))}`);
   });
 
   it('keeps every mark at least a pixel wide at art resolution', () => {
@@ -597,7 +651,7 @@ describe('the sprite on the stage', () => {
     const t = transcript(defaultLook());
     expect(t, 'brows and eyes').toContain(`fillStyle=${RAMP.faceInk}`);
     expect(t, 'the catchlight').toContain(`fillStyle=${RAMP.eyeLit}`);
-    expect(t, 'nose and mouth').toContain(`fillStyle=${RAMP.faceShade}`);
+    expect(t, 'nose and mouth').toContain(`fillStyle=${shadeOf(skinOf(defaultLook()))}`);
   });
 
   it('puts a catchlight in both eyes, on the same side', () => {
@@ -740,25 +794,39 @@ describe('the shot', () => {
   const W = 1280;
   const H = 720;
 
-  it('keeps every actor inside the sharp band', () => {
-    // The bug this exists for. The tilt-shift band was 0.34–0.62 — across the middle of the
-    // frame, which is where such a band belongs in the abstract and is nowhere near where
-    // anything in this scene stands. The Commander spans 0.68 to 0.81 and the beast lands
-    // at 0.88, so every actor sat inside the blur: the subject of the shot was the one
-    // thing out of focus, and it was erasing the finest marks on the sprite. The 2px brass
-    // collar measured **zero** pixels on the live canvas against 48 in an unblurred probe.
-    for (const [name, at, cam] of [
-      ['Commander, step I', HERO_AT, SHOT_IDENTITY],
-      ['Commander, step II', HERO_AT, SHOT_VOW],
-      ['the beast', BEAST_AT, SHOT_VOW],
+  it('keeps every actor inside the sharp band, at either framing', () => {
+    // The band is **derived** from the cast now rather than written as constants. Constants
+    // were correct until the camera moved — and pulling Step I in close is exactly that, so
+    // the fixed 0.6–0.93 would have put the Commander straight back into the blur it was
+    // rescued from two passes ago. Asking the same function the renderer asks means the
+    // subject is in focus by construction at any framing.
+    for (const [name, cam, cast] of [
+      ['step I', SHOT_IDENTITY, [{ ...HERO_AT, height: 1.15 }]],
+      ['step II', SHOT_VOW, [{ ...HERO_AT, height: 1.15 }, { ...BEAST_AT, height: 0.7 }]],
     ] as const) {
-      const feet = projectTile(at.x, at.y, cam, W, H).y / H;
-      // The head is up to a figure-height above the feet; both ends have to be sharp.
-      const head = (projectTile(at.x, at.y, cam, W, H).y - (H / 9) * 1.15) / H;
+      const actors = cast.map((a) => ({ ...a, draw: () => {} }));
+      const band = focusBand(actors, cam, W, H);
 
-      expect(feet, `${name}: feet below the band`).toBeLessThanOrEqual(FOCUS_FAR);
-      expect(head, `${name}: head above the band`).toBeGreaterThanOrEqual(FOCUS_NEAR);
+      for (const a of actors) {
+        const at = projectTile(a.x, a.y, cam, W, H);
+        const tall = ((H / 9) * at.scale * a.height) / H;
+        expect(at.y / H, `${name}: feet below the band`).toBeLessThanOrEqual(band.far);
+        expect(at.y / H - tall, `${name}: head above the band`).toBeGreaterThanOrEqual(band.near);
+      }
     }
+  });
+
+  it('gives Step I a figure big enough to read the detail on', () => {
+    // The whole reason the shot moved. A one-pixel eyebrow on a 48-pixel art grid needs the
+    // blit to be well over 2x before it is a mark rather than a smudge.
+    const at = projectTile(HERO_AT.x, HERO_AT.y, SHOT_IDENTITY, W, H);
+    const figure = (H / 9) * at.scale * 1.15;
+    expect(figure, 'Step I figure height').toBeGreaterThan(115);
+    expect(figure / 48, 'blit factor over the art grid').toBeGreaterThan(2.4);
+
+    // And Step II stays wider, because it has a second body to fit in.
+    const wide = projectTile(HERO_AT.x, HERO_AT.y, SHOT_VOW, W, H);
+    expect(at.scale, 'Step I is the closer shot').toBeGreaterThan(wide.scale);
   });
 
   it('still blurs something at both edges', () => {

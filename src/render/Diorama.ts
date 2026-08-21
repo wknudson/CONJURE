@@ -39,6 +39,11 @@ export interface DioramaActor {
   draw: (ctx: CanvasRenderingContext2D, scale: number) => void;
   /** 0 while dropping in, 1 once landed. Drives the arrival hop and its shadow. */
   entry?: number;
+  /**
+   * How tall it stands, in tile units, so the focus band can cover its head as well as its
+   * feet. Defaults to roughly a person; a beast passes something lower.
+   */
+  height?: number;
 }
 
 export interface DioramaScene {
@@ -65,20 +70,62 @@ const TILT = 0.66;
 const EYE = 6.5;
 
 /**
- * The band of the frame that stays sharp, as fractions of its height.
+ * The band of the frame that stays sharp, when there is nothing in it to focus on.
  *
- * These used to be 0.34 and 0.62 — a sharp band across the *middle* of the picture, which
- * is where a tilt-shift band belongs in the abstract and is nowhere near where anything in
- * this scene actually stands. Measured: the Commander spans 0.684 to 0.809 and the beast
- * lands at 0.879, so **every actor was inside the blur**. The subject of the shot was the
- * one thing out of focus, which is precisely backwards, and it was quietly erasing the
- * finest marks on the sprite — the 2px brass collar measured zero pixels on screen against
- * 48 in an unblurred probe.
+ * These were once fixed at 0.34 and 0.62 — a sharp band across the *middle* of the picture,
+ * which is where a tilt-shift band belongs in the abstract and was nowhere near where
+ * anything in this scene stood. Every actor sat inside the blur: the subject of the shot was
+ * the one thing out of focus, and it was quietly erasing the finest marks on the sprite.
  *
- * Exported so a test can assert the actors project into the band rather than beside it.
+ * Constants alone could not survive the camera moving, which is exactly what a closer Step I
+ * framing does — so the band is **derived from the cast** now (see `focusBand`) and these are
+ * the fallback for an empty stage and the clamps that keep some blur at both edges.
  */
 export const FOCUS_NEAR = 0.6;
 export const FOCUS_FAR = 0.93;
+
+/** Sharpness always stops short of the frame edge, or it is not tilt-shift, it is a photo. */
+const FOCUS_MARGIN = 0.06;
+const FOCUS_LIMIT_NEAR = 0.08;
+const FOCUS_LIMIT_FAR = 0.97;
+
+/** A person, in tile units. What an actor is assumed to be if it does not say. */
+const ACTOR_HEIGHT = 1.15;
+
+/**
+ * The sharp band, computed from where the cast actually projects.
+ *
+ * The fix for a whole class of bug rather than for one instance of it. A band written as
+ * constants is correct until somebody moves the camera, and then it is silently wrong in a
+ * way that looks like the sprite being blurry rather than like the focus being in the wrong
+ * place. Deriving it means the subject is in focus by construction, at any framing.
+ *
+ * Padded above the tallest head and below the nearest feet, then clamped so there is always
+ * falloff at both edges.
+ */
+export function focusBand(
+  actors: readonly DioramaActor[],
+  cam: DioramaCamera,
+  w: number,
+  h: number,
+): { near: number; far: number } {
+  if (actors.length === 0) return { near: FOCUS_NEAR, far: FOCUS_FAR };
+
+  let head = 1;
+  let feet = 0;
+  for (const a of actors) {
+    const at = projectTile(a.x, a.y, cam, w, h);
+    const tall = ((h / 9) * at.scale * (a.height ?? ACTOR_HEIGHT)) / h;
+    const f = at.y / h;
+    head = Math.min(head, f - tall);
+    feet = Math.max(feet, f);
+  }
+
+  return {
+    near: Math.max(FOCUS_LIMIT_NEAR, head - FOCUS_MARGIN),
+    far: Math.min(FOCUS_LIMIT_FAR, feet + FOCUS_MARGIN),
+  };
+}
 
 /**
  * The projection, as a free function.
@@ -174,10 +221,11 @@ export class Diorama {
     this.blurCtx.drawImage(this.canvas, 0, 0);
     this.blurCtx.filter = 'none';
 
+    const focus = focusBand(scene.actors, scene.camera, w, h);
     const ramp = ctx.createLinearGradient(0, 0, 0, h);
     ramp.addColorStop(0, 'rgba(0,0,0,1)');
-    ramp.addColorStop(FOCUS_NEAR, 'rgba(0,0,0,0)');
-    ramp.addColorStop(FOCUS_FAR, 'rgba(0,0,0,0)');
+    ramp.addColorStop(focus.near, 'rgba(0,0,0,0)');
+    ramp.addColorStop(focus.far, 'rgba(0,0,0,0)');
     ramp.addColorStop(1, 'rgba(0,0,0,1)');
 
     // Masked composite: paint the blurred copy, then punch the sharp band out of it with

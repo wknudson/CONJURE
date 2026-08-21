@@ -23,6 +23,7 @@ import {
   FACE_PRESETS,
   HAIR_PRESETS,
   NICKNAME_MAX,
+  SKIN_TONES,
   clampPreset,
   defaultLook,
   normalizeLook,
@@ -61,8 +62,21 @@ const DISCIPLINE: Record<string, string> = {
 export const HERO_AT = { x: -0.6, y: 0.4 };
 export const BEAST_AT = { x: 1.4, y: 0.9 };
 
-/** The two camera framings. Step two pulls back and to the right to make room. */
-export const SHOT_IDENTITY = { x: -0.6, y: 0.2 };
+/**
+ * The two camera framings.
+ *
+ * Step I is a **close** shot and that is the point of it: this is the step about who the
+ * Commander is, and at the old distance the figure stood 89 pixels tall against a 48-pixel
+ * art grid — under 2x, at which a one-pixel eyebrow is two screen pixels and a catchlight is
+ * a smudge. Every mark on the sprite exists to be read here. Dollying in to `y = 2.2` puts
+ * the figure at ~128px, a 2.7x blit, where a cuff and a boot sole are three pixels each.
+ *
+ * `x` shifts right of the Commander so they sit left of centre, clear of the panel.
+ *
+ * Step II pulls back out: the Vow is about the pair of them and the ground they stand on,
+ * and it needs room for a beast to land beside a person.
+ */
+export const SHOT_IDENTITY = { x: -0.1, y: 2.2 };
 export const SHOT_VOW = { x: 0.5, y: -0.4 };
 
 export class CharacterCreationScreen implements Screen {
@@ -149,6 +163,7 @@ export class CharacterCreationScreen implements Screen {
       {
         x: HERO_AT.x,
         y: HERO_AT.y,
+        height: 1.15,
         // The cloak takes the vowed school's colour, so the Vow visibly changes what the
         // Commander is wearing rather than only what is written down about them.
         draw: (ctx, scale) =>
@@ -160,6 +175,7 @@ export class CharacterCreationScreen implements Screen {
       actors.push({
         x: BEAST_AT.x,
         y: BEAST_AT.y,
+        height: 0.7,
         entry: ease(this.beastEntry),
         draw: (ctx, scale) => drawCompanion(ctx, scale, school),
       });
@@ -253,6 +269,15 @@ export class CharacterCreationScreen implements Screen {
       this.cycler('Face', FACE_PRESETS.length, () => clampPreset(this.look.facePreset, FACE_PRESETS.length), (i) => {
         this.look.facePreset = i;
         return FACE_PRESETS[i]!.name;
+      }),
+    );
+    // Its own control, because it is its own choice. Skin used to be read off the face
+    // preset, so picking a weathered brow also picked a complexion and there was no way to
+    // have one without the other.
+    cyclers.appendChild(
+      this.cycler('Skin', SKIN_TONES.length, () => clampPreset(this.look.skinPreset, SKIN_TONES.length), (i) => {
+        this.look.skinPreset = i;
+        return `${i + 1} of ${SKIN_TONES.length}`;
       }),
     );
 

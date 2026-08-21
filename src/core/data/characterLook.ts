@@ -24,8 +24,16 @@ export interface CharacterLook {
   gender: Gender;
   /** Index into `HAIR_PRESETS`. Typed loosely because the save schema calls it so. */
   hairPreset: string | number;
-  /** Index into `FACE_PRESETS`. */
+  /** Index into `FACE_PRESETS`. The *expression* — brow, eye and mouth shape. */
   facePreset: string | number;
+  /**
+   * Index into `SKIN_TONES`. Its own axis, and it has to be.
+   *
+   * Skin used to be read off `facePreset`, so choosing a weathered brow also chose a
+   * complexion and there was no way to have one without the other. Four expressions times
+   * four tones is sixteen faces; multiplexed onto one control it was four.
+   */
+  skinPreset: string | number;
   /** The bloodline they take the Vow with, by `CompanionDef.id` — `'ignis'`, `'boreas'`. */
   starterCompanion: string;
 }
@@ -62,10 +70,24 @@ export const FACE_PRESETS = [
 /** Hair tones, by preset index. Warm to cool, so cycling reads as a change. */
 export const HAIR_TONES = ['#3B2C22', '#6B4A2F', '#A8763E', '#8A8F98', '#2A2119', '#C2703F'];
 
-/** Skin tones. Cycled with the face, so one control moves two readable things. */
-export const SKIN_TONES = ['#C8A07A', '#8D6242', '#E0BC96', '#5E4030'];
+/**
+ * Skin tones, on their own control.
+ *
+ * Widened from four to six now that this is a choice rather than a side effect of picking an
+ * expression. Ordered light to dark so cycling reads as a slider rather than as a shuffle.
+ */
+export const SKIN_TONES = ['#E8C49E', '#E0BC96', '#C8A07A', '#A87A52', '#8D6242', '#5E4030'];
 
 /** Longest a nickname may be. A wanted poster has a width. */
+/**
+ * Where each pre-decoupling complexion lives in the widened list.
+ *
+ * The old four were `['#C8A07A', '#8D6242', '#E0BC96', '#5E4030']`, indexed by `facePreset`.
+ * They are all still here — this is which slot each one moved to once the list grew to six
+ * and was reordered light-to-dark.
+ */
+const LEGACY_SKIN_BY_FACE = [2, 4, 1, 5];
+
 export const NICKNAME_MAX = 18;
 
 /** What the Magistracy writes when the applicant would not give a name. */
@@ -83,6 +105,7 @@ export function defaultLook(): CharacterLook {
     gender: 'female',
     hairPreset: 0,
     facePreset: 0,
+    skinPreset: 2,
     starterCompanion: DEFAULT_COMPANION.id,
   };
 }
@@ -114,11 +137,25 @@ export function normalizeLook(raw: unknown): CharacterLook {
       ? o.starterCompanion
       : base.starterCompanion;
 
+  // A look written before skin had its own control keeps the complexion it was rendering.
+  //
+  // Two steps, and the second is the one that is easy to miss. The old rule was
+  // `SKIN_TONES[facePreset]` — but this list has since been reordered and widened from four
+  // tones to six, so carrying the *index* across would hand every returning character a
+  // different complexion while looking exactly like a faithful migration.
+  // `LEGACY_SKIN_BY_FACE` maps the old index to whichever slot now holds the same colour.
+  const skin =
+    o.skinPreset ??
+    (o.facePreset === undefined
+      ? base.skinPreset
+      : LEGACY_SKIN_BY_FACE[clampPreset(o.facePreset, LEGACY_SKIN_BY_FACE.length)]);
+
   return {
     nickname,
     gender,
     hairPreset: clampPreset(o.hairPreset, HAIR_PRESETS.length),
     facePreset: clampPreset(o.facePreset, FACE_PRESETS.length),
+    skinPreset: clampPreset(skin, SKIN_TONES.length),
     starterCompanion: starter,
   };
 }
@@ -166,4 +203,9 @@ export function hairOf(look: CharacterLook): (typeof HAIR_PRESETS)[number] {
 
 export function faceOf(look: CharacterLook): (typeof FACE_PRESETS)[number] {
   return FACE_PRESETS[clampPreset(look.facePreset, FACE_PRESETS.length)]!;
+}
+
+/** The complexion this look wears. */
+export function skinOf(look: CharacterLook): string {
+  return SKIN_TONES[clampPreset(look.skinPreset, SKIN_TONES.length)]!;
 }

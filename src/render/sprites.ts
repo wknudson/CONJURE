@@ -89,8 +89,6 @@ export const RAMP = {
   /** Lighter than the trouser, which is the only reason a boot reads as a separate thing. */
   boot: '#8A6A44',
 
-  /** The gap between chin and collar. Skin, in shadow, and 1-2px of it is a whole neck. */
-  neck: '#B98460',
 
   // -------------------------------------------------------- secondary detail
   //
@@ -110,8 +108,6 @@ export const RAMP = {
   eyeLit: '#FFFDF2',
   /** Eyes, brows, and the mouth line. Warmer than the coat's ink so a face is not machinery. */
   faceInk: '#2A1D1C',
-  /** Under the nose and along the jaw. Skin, one step down. */
-  faceShade: '#9E6B4A',
   /** Seams, cuffs and the boot sole — one value below whatever they divide. */
   seam: '#171E2E',
 } as const;
@@ -222,6 +218,7 @@ function buffer(look: CharacterLook, accent: string | null): HTMLCanvasElement |
     look.gender,
     clampPreset(look.hairPreset, HAIR_PRESETS.length),
     clampPreset(look.facePreset, FACE_PRESETS.length),
+    clampPreset(look.skinPreset, SKIN_TONES.length),
     accent ?? '-',
   ].join('|');
 
@@ -258,7 +255,7 @@ export function paintCommander(
 ): void {
   const hair = HAIR_PRESETS[clampPreset(look.hairPreset, HAIR_PRESETS.length)]!;
   const faceIdx = clampPreset(look.facePreset, FACE_PRESETS.length);
-  const skin = SKIN_TONES[faceIdx % SKIN_TONES.length]!;
+  const skin = SKIN_TONES[clampPreset(look.skinPreset, SKIN_TONES.length)]!;
   const hairTone = HAIR_TONES[clampPreset(look.hairPreset, HAIR_TONES.length)]!;
 
   const H = unit * FIGURE;
@@ -457,7 +454,10 @@ export function paintCommander(
   // neck runs from there to the collar and the two cannot disagree. Writing `yChin + headR`
   // put it a whole radius below the shoulder and gave the rect a negative height, which
   // draws nothing at all and left the hole exactly where it had been.
-  ctx.fillStyle = RAMP.neck;
+  // Derived from the chosen complexion rather than authored against one. A fixed hex was
+  // fine while skin was four tones off the face preset and became wrong the moment it became
+  // six on their own axis — a pale neck under a dark jaw is not a shadow, it is a mistake.
+  ctx.fillStyle = shade(skin);
   ctx.fillRect(-neckW, yChin, neckW * 2, yShoulder - yChin);
 
   // ---------------------------------------------------------------- head, facing forward
@@ -683,7 +683,7 @@ function drawFace(
   //
   // A suggestion, and deliberately no more: at twelve pixels a drawn nose is a blemish. One
   // pixel of shadow where the nose would cast, and a short line for the mouth.
-  ctx.fillStyle = RAMP.faceShade;
+  ctx.fillStyle = shade(skin);
   px(ctx, 0, eyeY + 2, 1, 1);
   px(ctx, -1, eyeY + 4, 3, 1);
 
@@ -692,7 +692,7 @@ function drawFace(
   // The one preset whose identity is not in the brow. Kept as a rect column so it snaps to
   // the grid like everything else — the old diagonal stroke anti-aliased into a grey smear.
   if (idx === 3) {
-    ctx.fillStyle = shade(skin);
+    ctx.fillStyle = shade(shade(skin));
     px(ctx, eyeX, eyeY - 3, 1, Math.max(3, headR * 0.8));
   }
 }

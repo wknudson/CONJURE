@@ -100,13 +100,41 @@ storing a second copy that could disagree with the first.
 
 | Control | Field | Range |
 |---|---|---|
-| Text input | `nickname` | trimmed, capped at `NICKNAME_MAX` = **18** ([characterLook.ts:69](../src/core/data/characterLook.ts#L69)) |
+| Text input | `nickname` | trimmed, capped at `NICKNAME_MAX` = **18** |
 | Two-button toggle | `gender` | `female` \| `male` |
-| ‹ › cycler | `hairPreset` | 6 presets ([characterLook.ts:40](../src/core/data/characterLook.ts#L40)) |
-| ‹ › cycler | `facePreset` | 4 presets ([characterLook.ts:55](../src/core/data/characterLook.ts#L55)) |
+| ‹ › cycler | `hairPreset` | 6 silhouettes |
+| ‹ › cycler | `facePreset` | 4 expressions — brow, eye and mouth shape |
+| ‹ › cycler | `skinPreset` | 6 complexions, light to dark |
+
+**Skin and expression are separate axes**, and that took a change. Skin used to be read as
+`SKIN_TONES[facePreset]`, so choosing a weathered brow also chose a complexion and there was
+no way to have one without the other: four expressions times six tones is twenty-four faces,
+and multiplexed onto one control it was four.
+
+Repairing an older save needed two steps rather than one. The obvious move — carry
+`facePreset` across as the skin index — looks like a faithful migration and quietly
+recolours everybody, because the tone list has since been reordered and widened from four to
+six. `LEGACY_SKIN_BY_FACE` maps each old index to whichever slot now holds the same colour.
 
 Built by `identityPanel()` ([:201](../src/app/CharacterCreationScreen.ts#L201)); the cyclers
 come from one shared `cycler()` helper ([:272](../src/app/CharacterCreationScreen.ts#L272)).
+
+### Step I is a close shot
+
+`SHOT_IDENTITY` dollies the camera in to `y = 2.2`, putting the figure at **127px** against a
+48-pixel art grid — a 2.65× blit, where a one-pixel eyebrow is nearly three screen pixels and
+a catchlight is a mark rather than a smudge. At the old framing the figure stood 89px, under
+2×, and every piece of secondary detail was there and unreadable.
+
+Step II stays wide (82px): the Vow is about the pair of them and the ground they stand on,
+and it needs room for a beast to land beside a person.
+
+Moving the camera is what forced the **focus band to be derived** rather than written down.
+Constants were correct until something moved, and then silently wrong in a way that looks
+like a blurry sprite rather than like misplaced focus — a close Step I would have put the
+Commander straight back into the blur she had been rescued from. `focusBand` projects the
+cast, covers the tallest head and the nearest feet, and clamps so there is always falloff at
+both edges. The subject is in focus by construction, at any framing.
 
 ### The design: the sprite *is* the preview
 
@@ -510,7 +538,7 @@ drift, and the drift is invisible because both look correct in isolation.
 
 ## 8. What is tested, and one thing that nearly was not
 
-[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 50 tests, all 45 deliberate
+[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 56 tests, all 52 deliberate
 mutations of these rules confirmed to fail the suite.
 
 Coverage: look normalisation (trim, cap, blank, wrap, string-form indices, total nonsense);
