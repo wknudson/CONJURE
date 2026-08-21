@@ -34,6 +34,7 @@ import {
   paintCommander,
 } from '../render/sprites.js';
 import { PALETTE } from '../render/palette.js';
+import { HAIR_TONES } from '../core/data/characterLook.js';
 import { FOCUS_FAR, FOCUS_NEAR, projectTile } from '../render/Diorama.js';
 import {
   BEAST_AT,
@@ -363,6 +364,42 @@ function transcript(look: CharacterLook): string {
  * head to `crop` proved exactly that and went unnoticed. This asks the question that
  * actually matters: does the silhouette change?
  */
+/**
+ * Every `fillRect` painted while a given colour was the active fill.
+ *
+ * Canvas fill state is sticky — one `fillStyle` covers every shape until the next one — so
+ * asking "which rects are this colour" means walking the transcript and remembering, not
+ * peeking at the line before.
+ */
+function rectsFilledWith(log: readonly string[], color: string): number[][] {
+  const out: number[][] = [];
+  let current = '';
+  for (const line of log) {
+    if (line.startsWith('fillStyle=')) current = line.slice('fillStyle='.length);
+    else if (line.startsWith('fillRect(') && current === color) {
+      out.push(line.slice('fillRect('.length, -1).split(',').map(Number));
+    }
+  }
+  return out;
+}
+
+/** The two derived-tone rules the sprite uses, mirrored so tests can name what it draws. */
+function shadeOf(hex: string): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  const d = (v: number): number => Math.round(v * 0.62);
+  return `#${(((d((n >> 16) & 255) << 16) | (d((n >> 8) & 255) << 8) | d(n & 255)) >>> 0)
+    .toString(16)
+    .padStart(6, '0')}`;
+}
+
+function liftOf(hex: string): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  const u = (v: number): number => Math.min(255, Math.round(v * 1.35 + 24));
+  return `#${(((u((n >> 16) & 255) << 16) | (u((n >> 8) & 255) << 8) | u(n & 255)) >>> 0)
+    .toString(16)
+    .padStart(6, '0')}`;
+}
+
 /** The buffer scale — the one that decides whether a feature survives the grid. */
 const ART_UNIT = 48 / 1.15;
 
@@ -550,6 +587,61 @@ describe('the sprite on the stage', () => {
           `${an} and ${bn} share a hue (${byHue.toFixed(0)}deg) and a value (${byValue.toFixed(0)})`,
         ).toBe(true);
       }
+    }
+  });
+
+  it('gives the face brows, a catchlight and a nose', () => {
+    // The catchlight is one pixel per eye and is the difference between two dark dots and
+    // something looking back. All of it is `fillRect` — a two-pixel disc is a rect that has
+    // been through anti-aliasing on the way, and the blend is what made these smudges.
+    const t = transcript(defaultLook());
+    expect(t, 'brows and eyes').toContain(`fillStyle=${RAMP.faceInk}`);
+    expect(t, 'the catchlight').toContain(`fillStyle=${RAMP.eyeLit}`);
+    expect(t, 'nose and mouth').toContain(`fillStyle=${RAMP.faceShade}`);
+  });
+
+  it('puts a catchlight in both eyes, on the same side', () => {
+    // Both on the left of their eye, because there is one key light and it is to the left.
+    // Mirroring them would read as two light sources on a twelve-pixel head.
+    // Walks the log tracking the *current* fill, rather than looking at the previous line.
+    // `fillStyle` is set once and both eyes are painted under it, so a look-behind of one
+    // finds the first catchlight and misses the second.
+    const { log } = recordAll(defaultLook(), ART_UNIT);
+    const lit = rectsFilledWith(log, RAMP.eyeLit);
+    expect(lit, 'one per eye').toHaveLength(2);
+    for (const [, , w, h] of lit) expect(Math.max(w!, h!), 'a single pixel').toBe(1);
+    expect(lit[0]![1], 'both on the same row').toBe(lit[1]![1]);
+  });
+
+  it('seams the garment: centre, waist and collar', () => {
+    const t = transcript(defaultLook());
+    expect(t, 'the seams').toContain(`fillStyle=${RAMP.seam}`);
+    // Three horizontal divisions plus the vertical one. Counted rather than named, because
+    // what matters is that the tunic reads as constructed rather than as a painted block.
+    const seamRects = t.split('|').filter((line) => line.startsWith('fillRect('));
+    expect(seamRects.length, 'the sprite is built from rects').toBeGreaterThan(14);
+  });
+
+  it('separates sleeve from hand, and boot from ground', () => {
+    // A cuff and a sole: one dark row each. Without them the sleeve and the hand are two
+    // similar-value blocks touching, and the boot floats a pixel above the floor.
+    const { log } = recordAll(defaultLook(), ART_UNIT);
+    const t = log.join('|');
+    expect(t, 'cuffs').toContain(`fillStyle=${RAMP.seam}`);
+    // The sole is derived from the boot rather than authored, so it tracks any recolour.
+    const sole = shadeOf(RAMP.boot);
+    expect(t, 'soles').toContain(`fillStyle=${sole}`);
+  });
+
+  it('breaks the hair up in every style', () => {
+    // A flat fill is a wig. Both marks are clipped to the cap so they land on hair whatever
+    // shape it is — and drawn *after* the style shapes, because `wild` paints its spikes
+    // over the crown and was overpainting its own highlight.
+    for (const [i, preset] of HAIR_PRESETS.entries()) {
+      const t = transcript({ ...defaultLook(), hairPreset: i });
+      const tone = HAIR_TONES[i]!;
+      expect(t, `${preset.name} has no highlight`).toContain(`fillStyle=${liftOf(tone)}`);
+      expect(t, `${preset.name} has no part-line`).toContain(`fillStyle=${shadeOf(tone)}`);
     }
   });
 

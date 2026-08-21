@@ -373,6 +373,33 @@ the Commander is wearing.
 Measured on a real canvas at 90 units: a 48×104 body, 502px of cloak, 314px of boot, 104px
 of leg, 72px of hand — all of the latter absent before.
 
+### Secondary detail
+
+Every mark below is a **one- or two-pixel `fillRect`**, snapped through one `px()` helper.
+At this resolution that is not a limitation to work around, it is the unit of the medium: an
+eyebrow is one pixel, a cuff is one pixel, a boot sole is one pixel.
+
+| | what it does |
+|---|---|
+| brow, eye, catchlight | the catchlight is a single pixel per eye, and it is the difference between two dark dots and something looking back |
+| nose, mouth | one pixel and a short line — at twelve pixels a *drawn* nose is a blemish |
+| hair highlight + part-line | clipped to the cap, so they land on hair whatever shape it is |
+| centre seam, waist seam | turn a painted block into a garment with construction |
+| cuffs | one dark row between sleeve and skin, or the arm ends in a smudge |
+| boot soles | one darker row, which puts the figure *on* the ground |
+
+Two of these needed their draw order fixed rather than their geometry. The hair marks were
+painted before the style shapes, so `wild` overpainted its own highlight with spikes —
+surface detail goes on last, which is what "surface" means. And the marks are placed near
+the crown rather than out at the temple, because further out they measured zero pixels on
+`shorn`, whose cap is a much tighter arc: the clip did its job and there was no hair under
+them.
+
+The catchlight also had to stop sharing a hex with the rim light. "One key light" was a
+defensible reason for them to match, right up until nothing could tell them apart —
+including a test that measured the arm's rim as an eye. A specular hit on a wet eye is not
+the same light as a warm edge on cloth.
+
 ### One lesson, learned three times
 
 At 44 art-pixels a mark is **axis-aligned and near-opaque, or it does not exist**. Three
@@ -483,7 +510,7 @@ drift, and the drift is invisible because both look correct in isolation.
 
 ## 8. What is tested, and one thing that nearly was not
 
-[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 45 tests, all 36 deliberate
+[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 50 tests, all 45 deliberate
 mutations of these rules confirmed to fail the suite.
 
 Coverage: look normalisation (trim, cap, blank, wrap, string-form indices, total nonsense);

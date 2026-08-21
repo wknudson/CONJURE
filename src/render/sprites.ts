@@ -91,6 +91,29 @@ export const RAMP = {
 
   /** The gap between chin and collar. Skin, in shadow, and 1-2px of it is a whole neck. */
   neck: '#B98460',
+
+  // -------------------------------------------------------- secondary detail
+  //
+  // Every one of these is a **one-pixel mark**. At this resolution that is not a limitation
+  // to work around, it is the unit of the medium: an eyebrow is one pixel, a cuff is one
+  // pixel, a boot sole is one pixel. What they buy is the difference between a shape with
+  // colour blocks on it and a thing that looks made.
+
+  /**
+   * Inside the eye, top-left, where the key light catches a wet surface.
+   *
+   * Brighter and cooler than `rim`, and deliberately its own value: a specular hit on an eye
+   * is not the same light as a warm edge on cloth. They were the same hex to begin with,
+   * which was defensible as "one key light" right up until nothing could tell the catchlight
+   * and the rim apart — including a test that then measured the arm rim as an eye.
+   */
+  eyeLit: '#FFFDF2',
+  /** Eyes, brows, and the mouth line. Warmer than the coat's ink so a face is not machinery. */
+  faceInk: '#2A1D1C',
+  /** Under the nose and along the jaw. Skin, one step down. */
+  faceShade: '#9E6B4A',
+  /** Seams, cuffs and the boot sole — one value below whatever they divide. */
+  seam: '#171E2E',
 } as const;
 
 const COAT_LIGHT = RAMP.coatLight;
@@ -138,6 +161,24 @@ const Y = {
 } as const;
 
 
+
+/**
+ * A rectangle snapped to the pixel grid, never smaller than a pixel.
+ *
+ * Every secondary mark goes through this. The rule the sprite keeps learning is that a
+ * feature which cannot occupy a whole pixel does not exist — the eye dots were 0.6px, the
+ * brass was a 3px triangle that measured zero, the rim light was a translucent stroke worth
+ * 28 pixels on the whole figure. `Math.max(1, ...)` is that lesson, enforced.
+ */
+function px(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
+  ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)));
+}
 
 /** Rasterised sprites, keyed on everything that changes one. */
 const CACHE = new Map<string, HTMLCanvasElement>();
@@ -246,7 +287,10 @@ export function paintCommander(
   // colour region. It takes the vowed school's colour once there is one, so the Vow visibly
   // changes what the Commander is wearing.
   const cloak = accent ?? RAMP.cloak;
-  const cloakBottom = up(Y.boot * 0.8);
+  // Ends above the boots rather than at them. Reaching to `Y.boot * 0.8` left five rows of
+  // leg showing out of forty-eight — the legs were drawn, separated and coloured, and then
+  // almost entirely covered by the garment in front of them.
+  const cloakBottom = up(0.22);
   const cloakW = Math.max(7, p(H * 0.21));
 
   ctx.fillStyle = cloak;
@@ -285,6 +329,12 @@ export function paintCommander(
   ctx.fillStyle = RAMP.boot;
   ctx.fillRect(-gap - legW - 1, yBoot, legW + 2, -yBoot);
   ctx.fillRect(gap - 1, yBoot, legW + 2, -yBoot);
+
+  // The sole: one darker row at the very bottom of each boot. It is what puts the figure
+  // *on* the ground rather than hovering a pixel above it.
+  ctx.fillStyle = shade(RAMP.boot);
+  px(ctx, -gap - legW - 1, -1, legW + 2, 1);
+  px(ctx, gap - 1, -1, legW + 2, 1);
 
   // ---------------------------------------------------------------- the coat, in three bands
   //
@@ -347,16 +397,41 @@ export function paintCommander(
     ctx.fillStyle = lower;
     const fx = x + dir * flare;
     ctx.fillRect(dir < 0 ? fx - armW : fx, yElbow, armW, yWrist - yElbow);
+    // The cuff: one dark row between sleeve and skin. Without it the sleeve and the hand are
+    // two similar-value blocks touching, and the arm ends in a smudge rather than a wrist.
+    ctx.fillStyle = RAMP.seam;
+    px(ctx, dir < 0 ? fx - armW : fx, yWrist, armW, 1);
+
     // The hand.
     ctx.fillStyle = skin;
-    ctx.fillRect(dir < 0 ? fx - armW : fx, yWrist, armW, Math.max(2, p(H * 0.05)));
+    ctx.fillRect(dir < 0 ? fx - armW : fx, yWrist + 1, armW, Math.max(2, p(H * 0.05)));
   };
   arm(-1, COAT_LIGHT, COAT_MID);
   arm(1, COAT_DARK, COAT_DARK);
 
+  // ---------------------------------------------------------------- seams
+  //
+  // Three lines, and between them they turn one painted block into a garment with
+  // construction: a centre seam down the tunic, the waist where the tunic meets the robe,
+  // and the collar line that was already there.
+  ctx.fillStyle = RAMP.seam;
+
+  // The centre seam. Runs from under the collar to the waist, on the band boundary so it
+  // reads as a closure rather than as a stripe.
+  const collarBase = yShoulder + Math.max(2, p(H * 0.04));
+  px(ctx, 0, collarBase, 1, yWaist - collarBase);
+
+  // Where the tunic ends and the robe begins.
+  px(ctx, -shoulder, yWaist, shoulder * 2, 1);
+
+  // And a lighter row directly under it, so the waist reads as an overlap — the tunic
+  // sitting *on* the robe — rather than as a line drawn across a flat panel.
+  ctx.fillStyle = COAT_MID;
+  px(ctx, -shoulder, yWaist + 1, shoulder * 2, 1);
+
   // ---------------------------------------------------------------- belt and brass
   ctx.fillStyle = COAT_INK;
-  ctx.fillRect(-shoulder, yWaist, shoulder * 2, Math.max(1, p(H * 0.028)));
+  ctx.fillRect(-shoulder, yWaist + 2, shoulder * 2, Math.max(1, p(H * 0.028)));
 
   // The Magistracy's brass, at the collar. A **rect**, not the triangle it started as: at
   // this resolution the chest is a handful of pixels tall and a three-pixel triangle
@@ -403,7 +478,7 @@ export function paintCommander(
   ctx.restore();
 
   drawHair(ctx, headY, headR, hair.id, hairTone);
-  drawFace(ctx, headY, headR, faceIdx);
+  drawFace(ctx, headY, headR, faceIdx, skin);
 
   // ---------------------------------------------------------------- rim light
   //
@@ -464,6 +539,7 @@ function drawHair(
   ctx.strokeStyle = 'rgba(0,0,0,0.25)';
   ctx.lineWidth = Math.max(1, headR * 0.22);
   ctx.stroke();
+
   ctx.fillStyle = tone;
 
   switch (id) {
@@ -524,56 +600,100 @@ function drawHair(
       }
       break;
   }
+
+  // A highlight block and a shadow block, so the hair is not one flat fill.
+  //
+  // **After** the style switch, not before it. `wild` draws its spikes over the crown in
+  // flat tone, and painting the surface detail first meant that preset overpainted its own
+  // highlight and part-line — measured at zero pixels of both, where every other style had
+  // them. Surface detail goes on last, which is what "surface" means.
+  //
+  // **Clipped to the cap.** The caps differ per style — `shorn` is a tighter arc than the
+  // rest — so a rect at a fixed offset would hang off the side of the head on some presets
+  // and land on skin. Clipping to the shape that was just filled means the marks are on
+  // hair by construction, whatever shape the hair is.
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, headY, headR * cap.r, Math.PI * cap.from, Math.PI * cap.to);
+  ctx.clip();
+
+  // Both marks hug the crown, near the vertical axis. Placed further out they measured zero
+  // pixels on `shorn`, whose cap is a much tighter arc than the rest — the clip did its job
+  // and there was simply no hair under them. The top of the head is the one place every
+  // preset has material.
+  const capTop = headY - headR * cap.r;
+
+  // Lit side, just off the crown toward the key light.
+  ctx.fillStyle = lift(tone);
+  px(ctx, -headR * 0.55, capTop + headR * 0.15, Math.max(2, headR * 0.35), Math.max(2, headR * 0.3));
+
+  // And the part-line: a darker column just off centre, which is where hair divides and
+  // where the eye looks for the direction it falls.
+  ctx.fillStyle = shade(tone);
+  px(ctx, headR * 0.15, capTop + headR * 0.1, 1, Math.max(2, headR * 0.55));
+  ctx.restore();
+
 }
 
-/** Three marks. Any more would be invisible at diorama scale and noise up close. */
+/**
+ * The face: brows, eyes with a catchlight, and the suggestion of a nose and a mouth.
+ *
+ * Every mark is one or two pixels, placed on the grid, on a head twelve pixels tall. That
+ * sounds like nothing and it is most of what makes a sprite read as a person — the eye
+ * highlight in particular, which is a single pixel and is the difference between two dark
+ * dots and something looking back.
+ *
+ * `idx` still changes the brow and the eye, because that is what the four presets are for.
+ */
 function drawFace(
   ctx: CanvasRenderingContext2D,
   headY: number,
   headR: number,
   idx: number,
+  skin: string,
 ): void {
-  const eyeY = headY + headR * 0.12;
-  const eyeX = headR * 0.42;
-  ctx.fillStyle = '#151A24';
+  const eyeY = Math.round(headY + headR * 0.12);
+  const eyeX = Math.round(headR * 0.42);
+  const eyeW = Math.max(1, Math.round(headR * 0.3));
 
-  // Floored at a whole pixel of radius. This is the lesson the brass and the rim light each
-  // taught separately: at 48 art-pixels the head is twelve across, and an eye asked for at
-  // `headR * 0.15` is 0.9px — a mark the grid rounds away to nothing, which is exactly why
-  // the sprite read as facing away when it has been facing forward the whole time.
-  const dot = (x: number, y: number, r: number): void => {
-    ctx.beginPath();
-    ctx.arc(x, y, Math.max(1, r), 0, Math.PI * 2);
-    ctx.fill();
-  };
+  // ---------------------------------------------------------------- brows
+  //
+  // One row above the eye, and a pixel wider than it. A brow is the cheapest expression
+  // control there is: its height off the eye is the whole difference between the presets.
+  const browLift = idx === 1 ? 3 : idx === 2 ? 1 : 2;
+  const browH = idx === 1 ? 1 : 1;
+  ctx.fillStyle = RAMP.faceInk;
+  px(ctx, -eyeX - eyeW, eyeY - browLift, eyeW + 1, browH);
+  px(ctx, eyeX - 1, eyeY - browLift, eyeW + 1, browH);
 
-  switch (idx) {
-    case 1: // Weathered: a set line, and a heavier brow.
-      ctx.fillRect(-eyeX - headR * 0.16, eyeY - headR * 0.3, headR * 1.16, Math.max(1, headR * 0.2));
-      dot(-eyeX, eyeY, headR * 0.13);
-      dot(eyeX, eyeY, headR * 0.13);
-      break;
+  // ---------------------------------------------------------------- eyes
+  //
+  // Rects, not circles. A two-pixel disc is a rect that has been through anti-aliasing on
+  // the way, and the blend is what made these read as smudges rather than as eyes.
+  const eyeH = idx === 2 ? Math.max(2, eyeW) : Math.max(1, eyeW - 1);
+  px(ctx, -eyeX - eyeW + 1, eyeY, eyeW, eyeH);
+  px(ctx, eyeX - 1, eyeY, eyeW, eyeH);
 
-    case 2: // Young: wider eyes, no brow.
-      dot(-eyeX, eyeY, headR * 0.19);
-      dot(eyeX, eyeY, headR * 0.19);
-      break;
+  // The catchlight. One pixel, top-left of each eye, on the side the key light is on.
+  ctx.fillStyle = RAMP.eyeLit;
+  px(ctx, -eyeX - eyeW + 1, eyeY, 1, 1);
+  px(ctx, eyeX - 1, eyeY, 1, 1);
 
-    case 3: // Scarred.
-      dot(-eyeX, eyeY, headR * 0.14);
-      dot(eyeX, eyeY, headR * 0.14);
-      ctx.strokeStyle = '#8A5A4A';
-      ctx.lineWidth = Math.max(1, headR * 0.14);
-      ctx.beginPath();
-      ctx.moveTo(eyeX - headR * 0.12, eyeY - headR * 0.6);
-      ctx.lineTo(eyeX + headR * 0.34, eyeY + headR * 0.5);
-      ctx.stroke();
-      break;
+  // ---------------------------------------------------------------- nose and mouth
+  //
+  // A suggestion, and deliberately no more: at twelve pixels a drawn nose is a blemish. One
+  // pixel of shadow where the nose would cast, and a short line for the mouth.
+  ctx.fillStyle = RAMP.faceShade;
+  px(ctx, 0, eyeY + 2, 1, 1);
+  px(ctx, -1, eyeY + 4, 3, 1);
 
-    default: // Steady.
-      dot(-eyeX, eyeY, headR * 0.15);
-      dot(eyeX, eyeY, headR * 0.15);
-      break;
+  // ---------------------------------------------------------------- the scar
+  //
+  // The one preset whose identity is not in the brow. Kept as a rect column so it snaps to
+  // the grid like everything else — the old diagonal stroke anti-aliased into a grey smear.
+  if (idx === 3) {
+    ctx.fillStyle = shade(skin);
+    px(ctx, eyeX, eyeY - 3, 1, Math.max(3, headR * 0.8));
   }
 }
 
@@ -639,6 +759,20 @@ export function drawCompanion(
   ctx.strokeStyle = color;
   ctx.lineWidth = Math.max(1, unit * 0.045);
   ctx.stroke();
+}
+
+/**
+ * A colour's lit side. The counterpart to `shade`, and derived the same way so any tone —
+ * including the six school colours and every hair preset — gets a highlight nobody authored.
+ */
+function lift(hex: string): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  if (!Number.isFinite(n)) return hex;
+  const up = (v: number): number => Math.min(255, Math.round(v * 1.35 + 24));
+  const r = up((n >> 16) & 255);
+  const g = up((n >> 8) & 255);
+  const b = up(n & 255);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
 /**
