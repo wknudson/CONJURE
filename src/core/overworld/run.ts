@@ -148,6 +148,7 @@ export function carryFor(
   const spellModifiers =
     companion && 'spellModifiers' in companion ? companion.spellModifiers : undefined;
   const grimoire = companion && 'grimoire' in companion ? companion.grimoire : undefined;
+  const overrides = companion && 'overrides' in companion ? companion.overrides : undefined;
 
   const levels = vanguardLevels(vanguardProgress);
 
@@ -163,6 +164,7 @@ export function carryFor(
     // three; it never learns that XP, a curve, or a Profile exist.
     ...(Object.keys(levels).length > 0 ? { vanguardLevels: levels } : {}),
     ...(grimoire && grimoire.length > 0 ? { grimoire } : {}),
+    ...(overrides && Object.keys(overrides).length > 0 ? { grimoireOverrides: overrides } : {}),
   };
 }
 

@@ -383,6 +383,7 @@ function showBuilder(companionId: string, onDone: () => void): void {
       // eight it drafted when it was caught, and what each of them rolled.
       activeCompanion().grimoire,
       activeCompanion().spellModifiers,
+      activeCompanion().overrides,
       profile().collection,
       profile().bestiary,
       profile().state,
@@ -395,6 +396,9 @@ function showBuilder(companionId: string, onDone: () => void): void {
         // One warband per character, not per Companion — so this is written beside the
         // decks rather than into the one that was open.
         profile().roster = result.roster;
+        // The sockets belong to the beast the player was standing next to when they
+        // edited them, not to the species — two Ignis on the roster socket separately.
+        activeCompanion().overrides = { ...result.overrides };
         // Anything newly enrolled starts a record, at level 1 with nothing earned.
         // Idempotent, so re-saving an unchanged warband demotes nobody — and a body
         // dropped from the roster keeps its record, because a career is not a loadout.

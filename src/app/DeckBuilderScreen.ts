@@ -24,6 +24,7 @@ import {
 } from '../core/data/deckRules.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { GRIMOIRE_SIZE, companionById } from '../core/data/companions.js';
+import { schoolsOfCard, socketRefusal, socketableCards } from '../core/data/grimoire.js';
 import { schoolOf } from '../render/palette.js';
 import { Tooltip } from '../hud/Tooltip.js';
 import { ledgerFor, ledgerProgress } from '../core/data/bestiary.js';
@@ -98,6 +99,14 @@ export interface DeckBuilderResult {
    * keyed by `companionId`.
    */
   roster: string[];
+  /**
+   * The Grimoire sockets, by slot index.
+   *
+   * Rides back beside the deck for the same reason the Vanguard does: the screen edits it
+   * and one caller writes all three at once. Unlike `cards` this belongs to the *beast*
+   * rather than to the species — two Ignis on the roster socket separately.
+   */
+  overrides: Record<number, string>;
 }
 
 /**
@@ -156,6 +165,9 @@ export class DeckBuilderScreen implements Screen {
   /** How the case is being looked at. Screen state; written to nothing. */
   private filters: CollectionFilters = { school: 'all', cost: 'all', kind: 'all' };
 
+  /** The sockets, as edited. Written back only when the player saves. */
+  private overrides: Record<number, string> = {};
+
   constructor(
     private readonly companionId: string,
     startingDeck: string[],
@@ -170,6 +182,8 @@ export class DeckBuilderScreen implements Screen {
      */
     private readonly grimoire: string[],
     private readonly spellModifiers: Record<string, CardModifier>,
+    /** What the beast already has socketed. Edited here and handed back on save. */
+    startingOverrides: Record<number, string>,
     private readonly collection: Collection,
     private readonly bestiary: Bestiary,
     private readonly global: GlobalGameState,
@@ -179,6 +193,7 @@ export class DeckBuilderScreen implements Screen {
   ) {
     this.deck = [...startingDeck];
     this.roster = [...startingRoster];
+    this.overrides = { ...startingOverrides };
   }
 
   mount(root: HTMLElement): void {
@@ -706,63 +721,84 @@ export class DeckBuilderScreen implements Screen {
       .join('');
   }
 
+  /** What this Companion drafted, before any socketing. */
+  private draftedGrimoire(): string[] {
+    const companion = companionById(this.companionId);
+    // The beast's own book, or the species' legacy eight for a character standing next to
+    // a beast caught before the draft existed.
+    return this.grimoire.length > 0 ? this.grimoire : (companion?.legacyGrimoire ?? []);
+  }
+
   /**
-   * The Pact Grimoire: the eight your Companion fuses in, and what they rolled.
+   * The Pact Grimoire: the eight your Companion fuses in, what they rolled, and what you
+   * have put in their place.
    *
-   * Beside the Hero Deck rather than inside it, because it is not editable and showing it
-   * as a list you can click would be promising otherwise. What it *is* for is the second
-   * half of the same question — a player deciding whether nine utility cards is enough
-   * needs to see the eight that arrive with them.
+   * Eight **slots** rather than a grouped list, and the change is the feature. A socket is
+   * keyed by position — replacing one of three Cataclysms has to leave the other two alone
+   * — so a panel that collapsed identical cards into one row could not say which one the
+   * player meant. The grouping was nicer to read and could not express the thing this
+   * screen now exists to do.
    *
-   * The rolls are the reason this panel exists at all. Two Boreas bring the same eight
-   * spells; what makes one worth keeping is the green -1 on a Glacial Spike, and there is
-   * nowhere else in the game that fact is visible.
+   * Two facts share the panel and neither is redundant. The **rolls** are what makes one
+   * caught beast worth keeping over another, and the **sockets** are what a player does
+   * about the beast they actually caught — the only home a spliced Hybrid has, since the
+   * Hero Deck takes neutral and arcane only.
    */
   private renderGrimoire(): void {
     const el = this.el;
     if (!el) return;
 
     const companion = companionById(this.companionId);
-    // The beast's own book, or the species' old fixed eight for a fight with no beast in
-    // it. `fixed` is still the right word on the badge: drafted once when it was caught,
-    // and unchangeable from here.
-    const grimoire = this.grimoire.length > 0 ? this.grimoire : (companion?.legacyGrimoire ?? []);
+    const drafted = this.draftedGrimoire();
     const mods = this.spellModifiers;
+    const socketed = Object.keys(this.overrides).length;
 
     const count = el.querySelector<HTMLElement>('.grimoire__count');
-    if (count) count.textContent = `${grimoire.length} drafted`;
+    if (count) {
+      count.textContent = socketed
+        ? `${drafted.length} slots · ${socketed} socketed`
+        : `${drafted.length} slots`;
+    }
 
     const note = el.querySelector<HTMLElement>('.grimoire__note');
     if (note) {
-      // Distinct *spells*, not copies. The list below is grouped, so counting cards here
-      // would promise five highlighted rows and show three.
-      const rolled = new Set(grimoire.filter((id) => mods[id])).size;
+      // Distinct *spells*, not copies: a beast holding two rolled Cinder Runes rolled one
+      // spell well, and saying "two" would promise a second thing to find.
+      const rolled = new Set(drafted.filter((id) => mods[id])).size;
+      const beast = companion?.name ?? 'Your Companion';
       note.textContent = rolled
-        ? `${companion?.name ?? 'Your Companion'} fuses these in at the bell. ${rolled} of them rolled well.`
-        : `${companion?.name ?? 'Your Companion'} fuses these in at the bell. This one rolled nothing — catch another.`;
+        ? `${beast} fuses these in at the bell. ${rolled} of them rolled well. Click a slot to socket a forged spell over it.`
+        : `${beast} fuses these in at the bell. This one rolled nothing — catch another, or socket over it.`;
     }
 
     const list = el.querySelector<HTMLElement>('.grimoire__list');
     if (!list) return;
     list.replaceChildren();
 
-    // Grouped, because a Grimoire holding three Soul Splinters should read as "three of
-    // this" rather than as three rows a player has to notice are identical.
-    const seen = new Map<string, number>();
-    for (const id of grimoire) seen.set(id, (seen.get(id) ?? 0) + 1);
-
-    for (const [defId, copies] of seen) {
-      const def = CARDS[defId];
+    for (let slot = 0; slot < drafted.length; slot++) {
+      const innate = drafted[slot]!;
+      const swapped = this.overrides[slot];
+      const def = CARDS[swapped ?? innate];
       if (!def) continue;
-      list.appendChild(this.grimoireRow(def, copies, mods[defId]));
+      // A socketed card never carries the beast's roll: the roll belongs to a spell the
+      // beast drafted, and this one was forged at a bench.
+      list.appendChild(this.grimoireRow(slot, def, swapped ? undefined : mods[innate], Boolean(swapped)));
     }
   }
 
-  /** One Grimoire spell, with whatever it rolled worn on its face. */
-  private grimoireRow(def: CardDef, copies: number, mod?: CardModifier): HTMLElement {
-    const row = document.createElement('div');
-    row.className = 'grimoire-row';
+  /** One slot, with whatever it rolled — or what has been socketed over it — worn on its face. */
+  private grimoireRow(
+    slot: number,
+    def: CardDef,
+    mod: CardModifier | undefined,
+    socketed: boolean,
+  ): HTMLElement {
+    const row = document.createElement('button');
+    row.className = 'grimoire-row grimoire-row--slot';
+    row.type = 'button';
     row.classList.toggle('is-rolled', mod !== undefined);
+    row.classList.toggle('is-socketed', socketed);
+    row.addEventListener('click', () => this.openSocketPicker(slot));
 
     const badges: string[] = [];
     if (mod?.pipCostDelta) {
@@ -782,16 +818,122 @@ export class DeckBuilderScreen implements Screen {
       );
     }
 
+    if (socketed) {
+      badges.push(
+        `<span class="grimoire-mod grimoire-mod--socket" data-tip="Socketed|A spell you forged, slotted over what this beast drafted.|Clear the slot to give the beast its own card back.">SOCKET</span>`,
+      );
+    }
+
     const cost = def.xCost ? 'X' : formatCost(def.cost);
     row.innerHTML = `
+      <span class="grimoire-row__slot">${slot + 1}</span>
       <span class="grimoire-row__cost">${cost}</span>
       <span class="grimoire-row__body">
-        <span class="grimoire-row__name">${escapeHtml(def.name)}${copies > 1 ? ` <em>${copies}×</em>` : ''}</span>
-        <span class="grimoire-row__school">${escapeHtml(def.school)}</span>
+        <span class="grimoire-row__name">${escapeHtml(def.name)}</span>
+        <span class="grimoire-row__school">${escapeHtml(schoolsOfCard(def).join(' · '))}</span>
       </span>
       <span class="grimoire-row__mods">${badges.join('')}</span>
     `;
     return row;
+  }
+
+  /**
+   * The socket picker: every forged spell this bloodline will accept.
+   *
+   * A modal rather than an inline list, because the panel it opens from is already the
+   * densest thing on the screen and the choice is a short, deliberate one. Dismissed by
+   * clicking the backdrop, the same as the Artificer's card zoom.
+   *
+   * The list is built from `socketableCards` rather than filtered here, so the picker and
+   * the writer cannot disagree about what is legal — the writer asks the same refusal again
+   * before committing, and a stale modal therefore cannot socket anything the rules refuse.
+   */
+  private openSocketPicker(slot: number): void {
+    this.el?.querySelector('.socket-modal')?.remove();
+
+    const companion = companionById(this.companionId);
+    const source = companion?.grimoire;
+    if (!source) return;
+
+    const innateId = this.draftedGrimoire()[slot];
+    const innate = innateId ? CARDS[innateId] : undefined;
+    const options = socketableCards(source, this.collection.unlocked);
+    const current = this.overrides[slot];
+
+    const modal = document.createElement('div');
+    modal.className = 'socket-modal';
+    modal.innerHTML = `
+      <div class="socket-modal__inner brass-panel">
+        <div class="socket-modal__head">
+          <span class="socket-modal__title">Socket · slot ${slot + 1}</span>
+          <span class="socket-modal__sub">${escapeHtml(companion?.name ?? 'Companion')} casts ${escapeHtml(
+            source.schools.join(' and '),
+          )}. Only spells sharing a school will seat.</span>
+        </div>
+        <div class="socket-modal__options">
+          ${
+            innate
+              ? `<button class="socket-option${current ? '' : ' is-current'}" data-socket-clear="1">
+                   <span class="socket-option__label">Leave it drafted</span>
+                   <span class="socket-option__name">${escapeHtml(innate.name)}</span>
+                 </button>`
+              : ''
+          }
+          ${
+            options.length
+              ? options
+                  .map(
+                    (def) => `
+                <button class="socket-option${current === def.id ? ' is-current' : ''}" data-socket="${def.id}">
+                  <span class="socket-option__label">${escapeHtml(schoolsOfCard(def).join(' · '))}</span>
+                  <span class="socket-option__name">${escapeHtml(def.name)}</span>
+                </button>`,
+                  )
+                  .join('')
+              : `<div class="socket-modal__empty">Nothing forged that ${escapeHtml(
+                  companion?.name ?? 'this beast',
+                )} can cast. Press a Hybrid at the Artificer, or forge a spell of its school.</div>`
+          }
+        </div>
+        <div class="socket-modal__hint">Click outside to close</div>
+      </div>
+    `;
+
+    modal.addEventListener('click', (ev) => {
+      const target = ev.target as HTMLElement;
+      const option = target.closest<HTMLElement>('[data-socket], [data-socket-clear]');
+      if (!option) {
+        // The backdrop. Clicking the panel itself does nothing, so a mis-aimed click does
+        // not throw away a choice the player was still making.
+        if (target.closest('.socket-modal__inner')) return;
+        modal.remove();
+        return;
+      }
+      if (option.dataset.socketClear) this.clearSocket(slot);
+      else this.socket(slot, option.dataset.socket ?? '');
+      modal.remove();
+    });
+
+    this.el?.appendChild(modal);
+    this.tooltip?.attach(modal);
+  }
+
+  /** Writes a socket, after asking the same question the picker asked. */
+  private socket(slot: number, cardId: string): void {
+    const source = companionById(this.companionId)?.grimoire;
+    if (!source) return;
+    if (socketRefusal(source, this.collection.unlocked, slot, cardId) !== null) return;
+    this.overrides = { ...this.overrides, [slot]: cardId };
+    this.render();
+  }
+
+  /** Gives the slot back to whatever the beast drafted into it. */
+  private clearSocket(slot: number): void {
+    if (!(slot in this.overrides)) return;
+    const next = { ...this.overrides };
+    delete next[slot];
+    this.overrides = next;
+    this.render();
   }
 
   private renderStatus(): void {
@@ -949,6 +1091,7 @@ export class DeckBuilderScreen implements Screen {
     if (validateRoster(this.roster).length > 0) return;
     this.onDone({
       companionId: this.companionId,
+      overrides: { ...this.overrides },
       cards: [...this.deck],
       roster: [...this.roster],
     });

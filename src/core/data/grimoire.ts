@@ -178,3 +178,110 @@ export function draftGrimoire(rng: RngState, source: GrimoireSource, size: numbe
 
   return drawn;
 }
+
+// ---------------------------------------------------------------- override sockets
+
+/**
+ * Why this card may not go in that slot, or null if it may.
+ *
+ * The `*Refusal` shape the whole codebase uses: the UI asks it to decide whether a card is
+ * offerable, and the writer asks it again before committing, so a stale picker cannot
+ * socket something the rules refuse.
+ *
+ * Sockets exist to close a gap the Forge left open. A spliced Hybrid is an elemental card,
+ * and a Hero Deck takes neutral and arcane only — so a player could press a Vaporize Blast
+ * at the bench and then have nowhere in the game to put it. The Companion's half is where
+ * elemental magic lives, so that is where a forged one goes.
+ */
+export type SocketRefusal =
+  | 'bad-slot'
+  | 'unknown-card'
+  | 'not-unlocked'
+  | 'not-castable'
+  | 'off-school'
+  | null;
+
+/**
+ * The schools a card actually belongs to.
+ *
+ * A fusion carries **two**, and only one of them is written on it: Vaporize Blast is filed
+ * under frost and pressed from Pyre and Frost. Reading `def.school` alone would tell an
+ * Ignis it cannot hold the fire-and-ice spell that is half made of fire, which is exactly
+ * backwards. The recipe is the authority; the filing is a filing.
+ */
+export function schoolsOfCard(def: CardDef): School[] {
+  const fused = hybridSchools(def.id);
+  return fused.length > 0 ? fused : [def.school];
+}
+
+/**
+ * Whether a Companion's bloodline will accept this card at all.
+ *
+ * One school in common is enough, which is what makes a Hybrid the interesting case: an
+ * Ignis takes a Pyre/Frost fusion because half of it is fire, and refuses a Surge/Bloom one
+ * because none of it is. A beast is not a filing cabinet — it can only cast what it has
+ * some claim to.
+ */
+export function acceptsSchool(source: GrimoireSource, def: CardDef): boolean {
+  return schoolsOfCard(def).some((s) => source.schools.includes(s));
+}
+
+export function socketRefusal(
+  source: GrimoireSource,
+  unlocked: readonly string[],
+  slot: number,
+  cardId: string,
+  size = 8,
+): SocketRefusal {
+  if (!Number.isInteger(slot) || slot < 0 || slot >= size) return 'bad-slot';
+
+  const def = CARDS[cardId];
+  if (!def) return 'unknown-card';
+  // Bodies, Rank 2 printings, and the cards the Trial deals itself. The same predicate the
+  // draft uses, so a card the beast could never have drawn cannot be slotted in either.
+  if (!isDraftable(def)) return 'not-castable';
+  // Forged, not merely printed. This is the half of the gate that makes the Forge matter:
+  // a socket is where a spliced card goes, and you have to have spliced it.
+  if (!unlocked.includes(cardId)) return 'not-unlocked';
+  if (!acceptsSchool(source, def)) return 'off-school';
+  return null;
+}
+
+/**
+ * Everything the player could put in a slot right now.
+ *
+ * Slot-independent: the gate asks about the card and the bloodline, never about which of
+ * the eight is being replaced. Passing a slot would imply there is a rule about position,
+ * and inventing one nobody asked for is how a picker starts lying about why a card is grey.
+ */
+export function socketableCards(
+  source: GrimoireSource,
+  unlocked: readonly string[],
+): CardDef[] {
+  return unlocked
+    .map((id) => CARDS[id])
+    .filter((def): def is CardDef => Boolean(def))
+    .filter((def) => socketRefusal(source, unlocked, 0, def.id) === null)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * The eight a Companion will actually fuse in: what it drafted, with the sockets applied.
+ *
+ * The single definition, shared by the fight and by the screen that edits it. Two readings
+ * of "what is in the Grimoire" is how a Field Journal comes to show one book and the board
+ * to deal another.
+ *
+ * An override naming a card that no longer exists is ignored rather than dealt: a hole in
+ * the draw pile is worse than a card the player forgot they socketed.
+ */
+export function resolveGrimoire(
+  grimoire: readonly string[],
+  overrides: Record<number, string> | undefined,
+): string[] {
+  if (!overrides) return [...grimoire];
+  return grimoire.map((defId, slot) => {
+    const swapped = overrides[slot];
+    return swapped && CARDS[swapped] ? swapped : defId;
+  });
+}

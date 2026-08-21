@@ -1403,6 +1403,139 @@
   background: rgba(74, 222, 128, 0.07);
 }
 
+/*
+ * A slot is a button now, because socketing is what this panel is for. Reset the browser's
+ * button chrome rather than fighting it — everything else about the row is unchanged, so a
+ * socketed Grimoire reads the same as an untouched one.
+ */
+.grimoire-row--slot {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.grimoire-row--slot:hover {
+  border-color: color-mix(in srgb, var(--brass, #c9a227) 55%, transparent);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Socketed, in the Forge's own gold — the same colour an Ascension wears, because both
+   are things the player paid a bench for rather than things a beast rolled. */
+.grimoire-row.is-socketed {
+  border-color: rgba(250, 204, 21, 0.45);
+  background: rgba(250, 204, 21, 0.07);
+}
+
+.grimoire-row__slot {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 16px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.grimoire-mod--socket {
+  border-color: rgba(250, 204, 21, 0.5);
+  background: rgba(250, 204, 21, 0.1);
+  color: #facc15;
+}
+
+/* ------------------------------------------------------------------ the picker */
+
+.socket-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 8, 12, 0.78);
+  backdrop-filter: blur(2px);
+}
+
+.socket-modal__inner {
+  display: grid;
+  gap: 12px;
+  width: min(420px, 90%);
+  max-height: 78%;
+  padding: 16px;
+  cursor: default;
+}
+
+.socket-modal__head {
+  display: grid;
+  gap: 4px;
+}
+
+.socket-modal__title {
+  font: 700 13px var(--font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.socket-modal__sub,
+.socket-modal__empty {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.socket-modal__options {
+  display: grid;
+  gap: 5px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.socket-option {
+  display: grid;
+  gap: 1px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-edge);
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.socket-option:hover {
+  border-color: color-mix(in srgb, var(--brass, #c9a227) 55%, transparent);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* What is in the slot right now, so the modal answers "what did I pick" as well as
+   "what could I pick". */
+.socket-option.is-current {
+  border-color: rgba(250, 204, 21, 0.5);
+  background: rgba(250, 204, 21, 0.08);
+}
+
+.socket-option__label {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.socket-option__name {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.socket-modal__hint {
+  font: 600 10px var(--font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.5);
+  text-align: center;
+}
+
 .grimoire-row__cost {
   display: grid;
   place-items: center;

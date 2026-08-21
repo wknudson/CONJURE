@@ -68,6 +68,23 @@ export interface CompanionInstance extends CompanionProgress {
    */
   grimoire: string[];
   /**
+   * Spells the player has socketed over the drafted ones, by slot index.
+   *
+   * The one part of a Companion that is *edited* rather than rolled, and the reason it
+   * exists is a gap the Forge left: a spliced Hybrid is an elemental card, and the Hero
+   * Deck takes neutral and arcane only. A player could press a Vaporize Blast at the bench
+   * and then had nowhere on earth to put it.
+   *
+   * Keyed by **slot**, not by def id, and that is the whole difference from
+   * `spellModifiers` above. A roll belongs to a spell — both copies of a cheap Glacial
+   * Spike are cheap. A socket belongs to a *position*: replacing one of three Cataclysms
+   * has to leave the other two alone, and a map keyed by card could not say which.
+   *
+   * Sparse. An absent index means the beast's own drafted card, which is the state every
+   * beast starts in and can always be returned to.
+   */
+  overrides: Record<number, string>;
+  /**
    * What this beast's eight Grimoire spells rolled, keyed by card def id.
    *
    * The reason two Boreas are worth comparing. Keyed by def rather than by slot because a
@@ -260,6 +277,9 @@ export function tameCompanion(
     // Which eight, then what each of them rolled — two independent questions, drawn in
     // that order because the second one needs the answer to the first.
     grimoire,
+    // Nothing socketed. A caught beast knows what it knows; the sockets are what the
+    // player does about it afterwards.
+    overrides: {},
     spellModifiers: rollSpellModifiers(rng, grimoire),
   };
 }

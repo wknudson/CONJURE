@@ -60,10 +60,11 @@ import {
 import { APOTHECARY_STOCK } from '../core/data/apothecary.js';
 import { traitById, traitsFor } from '../core/data/companionTraits.js';
 import { makeRng } from '../core/util/rng.js';
+import { socketRefusal } from '../core/data/grimoire.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 
 /**
  * The first version whose health numbers are written at the stretched scale.
@@ -600,7 +601,8 @@ function migrateProfile(
     vanguardProgress = unlockVanguard(vanguardProgress, defId);
   }
 
-  const companions = readRoster(data.companions, base.companions, version);
+  // Read after the collection, because a socket is only legal if its card is unlocked.
+  const companions = readRoster(data.companions, base.companions, version, collection);
 
   // v5 and earlier called this `lastCompanionId`; v8 and earlier held a *species* id.
   // Read any of the three, write an instance id — falling back to whoever is first on the
@@ -941,10 +943,45 @@ function readSpellModifiers(
   return out;
 }
 
+/**
+ * The sockets, rebuilt and **re-validated** against the character who owns them.
+ *
+ * Re-validated rather than trusted, and that is the whole reason this is not two lines.
+ * A socket is the one part of a Companion that points *outward* — at a card in the
+ * collection — so it is the one part that can rot without anything else changing. A card
+ * cut from the game, a slot index past the end of a shorter book, a hand-edited save
+ * putting a Bloom spell in a fire drake: each would otherwise survive to the opening bell
+ * and deal something the rules refuse.
+ *
+ * A socket that no longer validates is dropped, which returns that slot to the beast's own
+ * drafted card. Falling back to what the beast actually knows is always legal.
+ */
+function readOverrides(
+  raw: unknown,
+  baseId: string,
+  size: number,
+  collection: Collection,
+): Record<number, string> {
+  if (!raw || typeof raw !== 'object') return {};
+  const source = companionById(baseId)?.grimoire;
+  if (!source) return {};
+
+  const out: Record<number, string> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    const slot = Number(key);
+    if (typeof value !== 'string') continue;
+    const cardId = rename(value);
+    if (socketRefusal(source, collection.unlocked, slot, cardId, size) !== null) continue;
+    out[slot] = cardId;
+  }
+  return out;
+}
+
 function readRoster(
   raw: unknown,
   base: CompanionInstance[],
   version: number,
+  collection: Collection,
 ): CompanionInstance[] {
   if (!raw || typeof raw !== 'object') return base;
   const known = new Set(COMPANIONS.map((c) => c.id));
@@ -980,6 +1017,7 @@ function readRoster(
       instanceId,
       baseId,
       grimoire,
+      overrides: readOverrides(saved.overrides, baseId, grimoire.length, collection),
       // Clamped to the band it could have been rolled in, so a hand-edited 4000 is a 440.
       // Scaled first: a pre-Stretch roll of 44 clamps to 360 if it is read as-is, which
       // would quietly turn every good constitution into the worst one.

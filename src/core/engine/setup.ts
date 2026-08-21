@@ -19,6 +19,7 @@ import { DEFAULT_COMPANION, companionById } from '../data/companions.js';
 import { HAND_LIMIT, OPENING_HAND, PIP_CAP, drawCards } from './deck.js';
 import { placeOpeningUnit, spawnObstacle } from './spawn.js';
 import { beginTurn } from './turn.js';
+import { resolveGrimoire } from '../data/grimoire.js';
 
 /**
  * Where the Hero and Companion stand: they flank the board, Hero left of centre and
@@ -299,6 +300,14 @@ export interface CombatCarry {
    * beast drafted is a fact about that beast rather than about its species.
    */
   grimoire?: string[];
+  /**
+   * Spells socketed over the drafted ones, by slot index.
+   *
+   * A plain `slot -> defId` record, exactly as `vanguardLevels` is a plain `defId -> level`
+   * one. The reducer is handed the swap already decided and has never heard of a
+   * `CompanionInstance`, a Forge, or the school rule that let the swap happen.
+   */
+  grimoireOverrides?: Record<number, string>;
 }
 
 /**
@@ -430,8 +439,13 @@ export function createCombat(
   // The beast's own drafted eight when a beast is standing there, and the species' legacy
   // list when nothing brought one — a standalone bout, a test, a fight with no character
   // behind it. Both are eight cards; only one of them was rolled for.
-  const grimoire =
+  const drafted =
     carry?.grimoire && carry.grimoire.length > 0 ? carry.grimoire : companion.legacyGrimoire;
+  // The sockets, applied before the two halves are joined. `resolveGrimoire` is the single
+  // definition of "what is actually in this Grimoire", shared with the Field Journal that
+  // edits it -- two readings of that question is how a screen comes to show one book while
+  // the board deals another.
+  const grimoire = resolveGrimoire(drafted, carry?.grimoireOverrides);
 
   const player = buildCommander({
     name: encounter.playerName,
