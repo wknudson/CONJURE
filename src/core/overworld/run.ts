@@ -20,6 +20,7 @@ import { traitById } from '../data/companionTraits.js';
 import { tameCompanion } from './vivarium.js';
 import { makeRng } from '../util/rng.js';
 import { vanguardLevels, type VanguardProgress } from '../data/roster.js';
+import type { MasteryReport } from '../data/mastery.js';
 
 /**
  * What each brew does to a fight.
@@ -146,6 +147,7 @@ export function carryFor(
   // never heard of a CompanionInstance.
   const spellModifiers =
     companion && 'spellModifiers' in companion ? companion.spellModifiers : undefined;
+  const grimoire = companion && 'grimoire' in companion ? companion.grimoire : undefined;
 
   const levels = vanguardLevels(vanguardProgress);
 
@@ -160,6 +162,7 @@ export function carryFor(
     // Flattened to `defId -> level` here. `createCombat` learns that a Footman fights at
     // three; it never learns that XP, a curve, or a Profile exist.
     ...(Object.keys(levels).length > 0 ? { vanguardLevels: levels } : {}),
+    ...(grimoire && grimoire.length > 0 ? { grimoire } : {}),
   };
 }
 
@@ -187,6 +190,23 @@ export interface SubjugationClaim {
 export interface CombatOutcome {
   /** The Pact as it stood when the bell rang. */
   pactHp: number;
+  /**
+   * How well the fight was fought, beyond having been won.
+   *
+   * Optional, and its absence means "nobody was watching" — a standalone bout or a test
+   * closes without one and the capture rolls at affinity zero, which is the same beast the
+   * game handed out before Mastery existed.
+   */
+  mastery?: MasteryReport;
+  /**
+   * Which Vanguard bodies walked out, and which did not, by def id.
+   *
+   * Both lists, rather than survivors alone: a body that fell still fought, and the XP
+   * table pays it something for that. Def ids because progression is keyed by def — two
+   * Footmen are two of the same Footman and train together.
+   */
+  rosterSurvivors?: string[];
+  rosterFallen?: string[];
   /**
    * Enemy stat blocks met and killed during the fight, by **definition** id.
    *
@@ -264,7 +284,12 @@ export function resolveCombat(
   // Rolled *before* the bounty seed moves on, so the animal a given fight yields is fixed
   // by the board that offered the fight rather than by the one that replaces it -- a
   // subjugation replays to the same creature.
-  const tamed = claimSubjugation(overworld.bountySeed, result, claim);
+  const tamed = claimSubjugation(
+    overworld.bountySeed,
+    result,
+    outcome.mastery?.affinity ?? 0,
+    claim,
+  );
 
   overworld.bountySeed = nextBountySeed(overworld.bountySeed);
   global.combat = null;
@@ -287,6 +312,7 @@ export function resolveCombat(
 function claimSubjugation(
   seed: number,
   result: CombatResult,
+  affinity: number,
   claim?: SubjugationClaim,
 ): CompanionInstance | null {
   if (result !== 'bound' || !claim?.prize) return null;
@@ -299,6 +325,9 @@ function claimSubjugation(
     makeRng((seed + sequence * 7919) >>> 0),
     claim.prize,
     sequence,
+    // How cleanly it was taken. The one place mastery is spent, and it moves floors and
+    // odds rather than deciding anything -- see `data/mastery.ts`.
+    affinity,
   );
 
   claim.roster.push(beast);

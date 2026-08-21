@@ -291,6 +291,14 @@ export interface CombatCarry {
    * entirely outside this file.
    */
   vanguardLevels?: Record<string, number>;
+  /**
+   * The eight spells the tethered Companion actually knows.
+   *
+   * Travels on the carry rather than being looked up, for the same reason the rolls do:
+   * the engine has never heard of a `CompanionInstance`, and which cards a *particular*
+   * beast drafted is a fact about that beast rather than about its species.
+   */
+  grimoire?: string[];
 }
 
 /**
@@ -419,7 +427,11 @@ export function createCombat(
    * which is how the instance builder knows which half may carry a roll.
    */
   const heroDeck = deck && deck.length > 0 ? deck : companion.deck;
-  const grimoire = companion.innateGrimoire;
+  // The beast's own drafted eight when a beast is standing there, and the species' legacy
+  // list when nothing brought one — a standalone bout, a test, a fight with no character
+  // behind it. Both are eight cards; only one of them was rolled for.
+  const grimoire =
+    carry?.grimoire && carry.grimoire.length > 0 ? carry.grimoire : companion.legacyGrimoire;
 
   const player = buildCommander({
     name: encounter.playerName,
@@ -522,6 +534,8 @@ export function createCombat(
     causeCounter: 0,
     encountered: [],
     defeated: [],
+    playerDamageTaken: 0,
+    playerRuneDetonations: 0,
   };
 
   const ctx = makeCtx(state);

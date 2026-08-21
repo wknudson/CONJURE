@@ -7,8 +7,12 @@ import {
   HERO_SCHOOLS,
   MAX_DECK,
   MIN_DECK,
+  TIER_COPY_LIMIT,
+  fusedDeckSize,
+  tierOf,
   validateDeck,
 } from '../core/data/deckRules.js';
+import { purePool } from '../core/data/grimoire.js';
 import { STARTER_DECK } from '../core/data/cards/starter.js';
 import { rollSpellModifiers, tameCompanion, MODIFIER_CHANCE } from '../core/overworld/vivarium.js';
 import { makeRng } from '../core/util/rng.js';
@@ -25,23 +29,29 @@ import { addUnit, damageTo, scenario } from './scenario.js';
  * is the utility — what they *catch* is what those eight rolled.
  */
 
-const GRIMOIRE_SIZE = 8;
+import { GRIMOIRE_SIZE } from '../core/data/companions.js';
 
 describe('the sliding scale', () => {
-  it('takes a Hero Deck between five and fifteen', () => {
-    expect(MIN_DECK).toBe(5);
-    expect(MAX_DECK).toBe(15);
+  it('takes a Hero Deck between four and twelve', () => {
+    expect(MIN_DECK).toBe(4);
+    expect(MAX_DECK).toBe(12);
 
-    const five = Array.from({ length: 5 }, () => 'shield_bash').slice(0, 3)
-      .concat(['aegis_ward', 'stone_barricade']);
-    expect(validateDeck(five)).toEqual([]);
+    const four = ['shield_bash', 'shield_bash', 'aegis_ward', 'stone_barricade'];
+    expect(validateDeck(four)).toEqual([]);
   });
 
-  it('refuses four, and refuses sixteen', () => {
+  it('refuses three, and refuses thirteen', () => {
     const filler = (n: number) =>
       Array.from({ length: n }, (_, i) => ['shield_bash', 'aegis_ward', 'stone_barricade', 'grapple_line', 'cull_the_weak'][i % 5]!);
-    expect(validateDeck(filler(4)).map((p) => p.code)).toContain('too_small');
-    expect(validateDeck(filler(16)).map((p) => p.code)).toContain('too_large');
+    expect(validateDeck(filler(3)).map((p) => p.code)).toContain('too_small');
+    expect(validateDeck(filler(13)).map((p) => p.code)).toContain('too_large');
+  });
+
+  it('adds up to a fused deck small enough to know', () => {
+    // The reason the Hero half tightened. Twelve plus the beast's eight is twenty, which
+    // is a deck where every card is one you meet and every cut is one you miss.
+    expect(fusedDeckSize(MAX_DECK)).toBe(20);
+    expect(fusedDeckSize(MIN_DECK)).toBe(12);
   });
 
   it('refuses an elemental card, and says whose job that is', () => {
@@ -77,23 +87,58 @@ describe('the sliding scale', () => {
 });
 
 describe('the Grimoire, as data', () => {
-  it('gives every species exactly eight', () => {
+  it('names, for the record, which bloodlines cannot fill a book on their own', () => {
+    // Not a failure -- a **content gap**, pinned so it is visible rather than discovered.
+    // Bulwark has two spells to its name and Surge three, so neither can reach eight even
+    // taking every copy the Tier limits allow, and both top up from the colourless pool.
+    // The day either school has eight spells' worth of its own, this list shrinks and the
+    // fallback stops firing on its own. Nothing to remove; something to notice.
+    const thin = COMPANIONS.filter((c) => {
+      const capacity = purePool(c.grimoire).reduce((n, def) => n + TIER_COPY_LIMIT[tierOf(def)], 0);
+      return capacity < GRIMOIRE_SIZE;
+    }).map((c) => c.id);
+
+    expect(thin).toEqual(['voltara', 'ferrum']);
+  });
+
+  it('lets the rest fill a book out of their own school alone', () => {
     for (const c of COMPANIONS) {
-      expect(c.innateGrimoire, `${c.name}`).toHaveLength(GRIMOIRE_SIZE);
+      if (['voltara', 'ferrum'].includes(c.id)) continue;
+      const capacity = purePool(c.grimoire).reduce((n, def) => n + TIER_COPY_LIMIT[tierOf(def)], 0);
+      expect(capacity, `${c.name}`).toBeGreaterThanOrEqual(GRIMOIRE_SIZE);
     }
   });
 
-  it('names only cards that exist', () => {
+  it('never drafts the card the Trial deals itself', () => {
+    // Lexis's own school holds the Rite, so a draft that asked only "is it Arcane" would
+    // put the Harpoon Protocol in its opening hand.
     for (const c of COMPANIONS) {
-      for (const id of c.innateGrimoire) {
+      expect(purePool(c.grimoire).map((d) => d.id), c.name).not.toContain('rite_of_subjugation');
+    }
+  });
+
+  it('leaves every species more than one card to draw', () => {
+    // A pool of one is the old fixed list wearing a die.
+    for (const c of COMPANIONS) {
+      expect(purePool(c.grimoire).length, `${c.name}`).toBeGreaterThan(1);
+    }
+  });
+
+  it('keeps the legacy eight, for beasts caught before the draft existed', () => {
+    for (const c of COMPANIONS) {
+      expect(c.legacyGrimoire, `${c.name}`).toHaveLength(GRIMOIRE_SIZE);
+      for (const id of c.legacyGrimoire) {
         expect(CARDS[id], `${c.name} carries an unknown card ${id}`).toBeDefined();
       }
     }
   });
 
-  it('carries no bodies — the Vanguard is bought, not drawn', () => {
+  it('never offers a body — the Vanguard is bought, not drawn', () => {
     for (const c of COMPANIONS) {
-      for (const id of c.innateGrimoire) {
+      for (const def of purePool(c.grimoire)) {
+        expect(def.kind, `${c.name}: ${def.id}`).not.toBe('minion');
+      }
+      for (const id of c.legacyGrimoire) {
         expect(CARDS[id]!.kind, `${c.name}: ${id}`).not.toBe('minion');
       }
     }
@@ -101,10 +146,10 @@ describe('the Grimoire, as data', () => {
 
   it('is where the colour lives, so two species differ by Grimoire and not by deck', () => {
     const decks = new Set(COMPANIONS.map((c) => c.deck.join('|')));
-    const grimoires = new Set(COMPANIONS.map((c) => c.innateGrimoire.join('|')));
+    const pools = new Set(COMPANIONS.map((c) => c.grimoire.schools.join('|')));
 
     expect(decks.size, 'every species hands over the same Hero Deck').toBe(1);
-    expect(grimoires.size, 'and a different Grimoire').toBe(COMPANIONS.length);
+    expect(pools.size, 'and draws from its own shelf').toBe(COMPANIONS.length);
   });
 });
 
@@ -116,24 +161,65 @@ describe('the roll', () => {
     expect(a.baseHpRoll).toBe(b.baseHpRoll);
   });
 
-  it('gives two beasts of one bloodline different rolls', () => {
-    // The whole change. Catching a second Ignis never means different *cards* — it means
-    // a different roll on the same eight.
-    const rolls = new Set(
+  it('gives two beasts of one bloodline different books', () => {
+    // The whole change, and the reason to go and catch a second Ignis: it is not the same
+    // eight cards with a different roll on them, it is a different eight.
+    const books = new Set(
       Array.from({ length: 24 }, (_, i) =>
-        JSON.stringify(tameCompanion(makeRng(i + 1), 'ignis', 1).spellModifiers),
+        tameCompanion(makeRng(i + 1), 'ignis', 1).grimoire.slice().sort().join('|'),
       ),
     );
-    expect(rolls.size, 'twenty-four catches should not all be identical').toBeGreaterThan(1);
+    expect(books.size, 'twenty-four catches should not all know the same spells').toBeGreaterThan(1);
+  });
+
+  it('drafts exactly eight, every time', () => {
+    for (const c of COMPANIONS) {
+      for (let seed = 1; seed <= 12; seed++) {
+        const beast = tameCompanion(makeRng(seed), c.id, 1);
+        expect(beast.grimoire, `${c.name} seed ${seed}`).toHaveLength(GRIMOIRE_SIZE);
+      }
+    }
+  });
+
+  it('drafts almost entirely from its own school', () => {
+    // "Heavily weighted", per the brief. A pool that ignored the weighting would make an
+    // Ignis a random pile of anything, and every bloodline the same pile.
+    let own = 0;
+    let total = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      for (const id of tameCompanion(makeRng(seed), 'ignis', 1).grimoire) {
+        total += 1;
+        if (CARDS[id]!.school === 'pyre') own += 1;
+      }
+    }
+    expect(own / total, 'the overwhelming majority is Pyre').toBeGreaterThan(0.85);
+  });
+
+  it('never drafts more copies than the deck rules allow', () => {
+    // Eight copies of a Power Tier finisher is not a lucky beast, it is a broken one --
+    // and it would be the only beast anybody used.
+    for (const c of COMPANIONS) {
+      for (let seed = 1; seed <= 25; seed++) {
+        const tally = new Map<string, number>();
+        for (const id of tameCompanion(makeRng(seed), c.id, 1).grimoire) {
+          tally.set(id, (tally.get(id) ?? 0) + 1);
+        }
+        for (const [id, n] of tally) {
+          expect(n, `${c.name} seed ${seed}: ${id}`).toBeLessThanOrEqual(
+            TIER_COPY_LIMIT[tierOf(CARDS[id]!)],
+          );
+        }
+      }
+    }
   });
 
   it('only ever rolls spells that beast actually carries', () => {
     // A modifier on a card the fusion never deals is unreachable content.
-    const grimoire = new Set(companionById('boreas')!.innateGrimoire);
     for (let seed = 1; seed <= 30; seed++) {
       const beast = tameCompanion(makeRng(seed), 'boreas', 1);
+      const carried = new Set(beast.grimoire);
       for (const defId of Object.keys(beast.spellModifiers)) {
-        expect(grimoire.has(defId), `${defId} is not in Boreas's Grimoire`).toBe(true);
+        expect(carried.has(defId), `${defId} is not in this Boreas's Grimoire`).toBe(true);
       }
     }
   });
@@ -152,7 +238,7 @@ describe('the roll', () => {
     for (let seed = 1; seed <= 60; seed++) {
       const beast = tameCompanion(makeRng(seed), 'ignis', 1);
       rolled += Object.keys(beast.spellModifiers).length;
-      total += new Set(companionById('ignis')!.innateGrimoire).size;
+      total += new Set(beast.grimoire).size;
     }
     const rate = rolled / total;
     expect(rate, 'roughly the table chance, not everything').toBeLessThan(MODIFIER_CHANCE * 2);
@@ -184,7 +270,7 @@ describe('the fusion', () => {
     const dealt = [...player.hand, ...player.deck].map((id) => player.cards[id]!.defId);
     expect(dealt).toHaveLength(hero.length + GRIMOIRE_SIZE);
 
-    for (const id of companionById('ignis')!.innateGrimoire) {
+    for (const id of companionById('ignis')!.legacyGrimoire) {
       expect(dealt, `the Grimoire's ${id} was not dealt`).toContain(id);
     }
   });
@@ -224,7 +310,7 @@ describe('the fusion', () => {
     });
     const player = state.players.player;
 
-    expect(companionById('lexis')!.innateGrimoire, 'the premise').toContain('grapple_line');
+    expect(companionById('lexis')!.legacyGrimoire, 'the premise').toContain('grapple_line');
 
     const copies = Object.values(player.cards).filter((c) => c.defId === 'grapple_line');
     expect(copies.length, 'one from each half').toBe(2);

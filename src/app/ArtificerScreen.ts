@@ -9,7 +9,8 @@
  * tabs rather than columns:
  *
  *  - **Schematic Forging** cuts a card you have never held, for Ducats.
- *  - **The Ascension Forge** raises one you know to its Rank 2 printing, for Shards.
+ *  - **The Ascension Forge** raises one you know to its Rank 2 printing: +10% to every
+ *    number it deals, for Ducats, Shards and a Core.
  *  - **Aetheric Splicing** presses a card and a reagent into a hybrid.
  *
  * Splicing is scaffolding only — the slots accept a selection and the press stays cold,
@@ -29,7 +30,8 @@ import { schematicCatalogue } from '../core/data/artificer.js';
 import { REAGENTS, recipeFor, spliceableBaseIds } from '../core/data/splicing.js';
 import { spliceRefusal, type SpliceResult } from '../core/overworld/splice.js';
 import {
-  ASCENSION_COST_SHARDS,
+  ASCENSION_COST,
+  reagentForAscension,
   SCHEMATIC_COST_DUCATS,
   ascensionRefusal,
   schematicRefusal,
@@ -43,6 +45,8 @@ import type { School } from '../contract/ids.js';
 import { cardFaceHtml, faceOfDef } from '../hud/cardFace.js';
 import { filterBarHtml, matchesPips, pipPills, wireFilterBar } from '../hud/filterBar.js';
 import { Tooltip } from '../hud/Tooltip.js';
+import { ASCENSION_PERCENT } from '../core/data/ascension.js';
+import { reagentById } from '../core/data/splicing.js';
 
 export interface ArtificerOpts {
   global: GlobalGameState;
@@ -78,9 +82,11 @@ const REFUSAL_COPY: Record<string, string> = {
   'not-owned': 'You have never held this card',
   'already-ascended': 'Already raised',
   'no-rank-2': 'This card has no Rank 2',
-  'too-poor': 'Not enough Shards',
+  'too-poor': 'Not enough Ducats or Shards',
   'no-recipe': 'The bench knows no such pressing',
-  'no-reagent': 'You hold none of that core',
+  // Shared by both trades: the bench spends a Core to press a fusion, and the Forge spends
+  // one to raise a card. Either way the errand is the same, so the wording is too.
+  'no-reagent': 'No Core to spend — Master contracts pay them',
   'missing-prerequisite': 'You have not learned the other half of this fusion',
 };
 
@@ -434,15 +440,16 @@ export class ArtificerScreen implements Screen {
   /**
    * Rank 1 beside Rank 2, printed from the same data the fight will use.
    *
-   * Both panes read out of `CARDS`, and the Rank 2 entry there was merged from the card's
-   * own `rank2` block at load. So this is not a preview of what Ascension would do — it
-   * is the card, shown early. A hand-written "after" pane is how the shop and the fight
-   * end up disagreeing.
+   * Both panes read out of `CARDS`, and the Rank 2 entry there was derived from the Rank 1
+   * at load — +10% to every number it deals, and nothing else. So this is not a preview of
+   * what Ascension would do; it is the card, shown early. A hand-written "after" pane is
+   * how the shop and the fight end up disagreeing.
    */
   private comparison(cardId: string): HTMLElement {
     const before = CARDS[cardId]!;
     const after = CARDS[ascendedId(cardId)];
-    const shards = this.opts.global.overworld.economy.marrowShards;
+    const economy = this.opts.global.overworld.economy;
+    const core = reagentForAscension(economy.reagents);
     const refusal = ascensionRefusal(this.opts.global, this.opts.collection(), cardId);
 
     const host = document.createElement('div');
@@ -456,9 +463,11 @@ export class ArtificerScreen implements Screen {
 
       <div class="forge-till brass-panel">
         <div class="forge-till__cost">
-          <span class="forge-till__label">Ascension</span>
-          <span class="forge-till__shards">${ASCENSION_COST_SHARDS} Aether Shards</span>
-          <span class="forge-till__held">You hold ${shards}</span>
+          <span class="forge-till__label">Ascension · +${ASCENSION_PERCENT}%</span>
+          <span class="forge-till__shards">${ASCENSION_COST.ducats} d · ${ASCENSION_COST.shards} Aether Shards · ${ASCENSION_COST.reagents} Core</span>
+          <span class="forge-till__held">You hold ${economy.ducats} d, ${economy.marrowShards} Shards, ${
+            core ? `${ASCENSION_COST.reagents}× ${reagentById(core)?.name ?? core}` : 'no Core'
+          }</span>
         </div>
         <button class="brass-btn forge-till__go">Ascend Card</button>
         <div class="forge-till__refusal">${REFUSAL_COPY[refusal ?? 'none']}</div>

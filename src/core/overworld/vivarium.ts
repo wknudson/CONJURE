@@ -19,7 +19,9 @@ import type { GlobalGameState, OverworldState } from './state.js';
 import type { RngState } from '../util/rng.js';
 import { nextInt } from '../util/rng.js';
 import { traitsFor } from '../data/companionTraits.js';
-import { companionById } from '../data/companions.js';
+import { companionById, GRIMOIRE_SIZE } from '../data/companions.js';
+import { AFFINITY_CEILING } from '../data/mastery.js';
+import { draftGrimoire } from '../data/grimoire.js';
 import type { CardModifier } from '../types/cards.js';
 
 /**
@@ -57,6 +59,15 @@ export interface CompanionInstance extends CompanionProgress {
   baseHpRoll: number;
   traitId: string;
   /**
+   * The eight spells this particular beast turned out to know.
+   *
+   * Drafted from its bloodline's pool when it was caught, and then **stored**. Storing it
+   * rather than re-drawing from the seed is the same discipline `baseHpRoll` keeps: what a
+   * beast knows is a fact about the beast, and a list re-rolled on load would hand the
+   * player a different Companion every time they opened the game.
+   */
+  grimoire: string[];
+  /**
    * What this beast's eight Grimoire spells rolled, keyed by card def id.
    *
    * The reason two Boreas are worth comparing. Keyed by def rather than by slot because a
@@ -71,6 +82,82 @@ export interface CompanionInstance extends CompanionProgress {
 
 export function newCompanion(): CompanionProgress {
   return { level: 1, bonusMaxHp: 0, startingArmor: 0, bonusPips: 0 };
+}
+
+// ---------------------------------------------------------------- the variance engine
+
+/**
+ * The most a subjugation can be mastered by.
+ *
+ * Mastery Objectives are counted, not weighted, so this is simply how many there are — see
+ * `data/mastery.ts`. Named here because every roll below scales against it, and a table
+ * tuned to a maximum of three that quietly became four would drift without anything saying
+ * so.
+ */
+export const AFFINITY_MAX = AFFINITY_CEILING;
+
+/**
+ * Health the constitution's *floor* rises by, per point of affinity.
+ *
+ * The floor, never the ceiling. A clean capture cannot roll you a better beast than a
+ * lucky messy one — it narrows the range of beast you might get, which is a real reward
+ * for playing well and still leaves something to find out.
+ */
+export const AFFINITY_HP_FLOOR_STEP = 10;
+
+/**
+ * A wild beast's second gift, beyond its constitution.
+ *
+ * Deliberately not a third stat roll bolted onto the first two. A beast rolls **one** of
+ * these or none at all, so the answer to "what did it come out with" is a sentence rather
+ * than a spreadsheet — and so the good rolls stay legible: an Ignis that opens every fight
+ * with plate is a thing a player can want, where "+7 HP, +1 armour, +0 Pips" is noise.
+ *
+ * Armour and Pips only. Max HP is already the constitution roll, and a second source
+ * moving the same number would make two rolls fight over one gauge.
+ */
+export interface WildModifier {
+  startingArmor: number;
+  bonusPips: number;
+}
+
+/** What each wild roll is worth, and how often it comes up. Weighted, not uniform. */
+const WILD_TABLE: { weight: number; mod: WildModifier }[] = [
+  // Plate. The common one, and the one that reads immediately at the opening bell.
+  { weight: 5, mod: { startingArmor: 20, bonusPips: 0 } },
+  { weight: 3, mod: { startingArmor: 40, bonusPips: 0 } },
+  // A Pip is worth far more than twenty armour and is priced accordingly: turn one with
+  // an extra Pip is a turn that can open on a card nobody expects that early.
+  { weight: 2, mod: { startingArmor: 0, bonusPips: 1 } },
+];
+
+const WILD_WEIGHT = WILD_TABLE.reduce((n, e) => n + e.weight, 0);
+
+/** Chance in a hundred of rolling anything at all, before affinity is counted. */
+export const WILD_MODIFIER_CHANCE = 30;
+
+/** How much cleaner the capture makes that chance, per point of affinity. */
+export const AFFINITY_WILD_STEP = 15;
+
+/**
+ * Rolls the beast's one wild modifier, or nothing.
+ *
+ * Always consumes exactly two integers from the stream whatever it decides, so that a
+ * beast which rolled nothing and a beast which rolled plate leave the Grimoire draft after
+ * them looking at the same position. A roll that spent a variable number of draws would
+ * make every downstream result depend on an upstream coin flip, which is how a seeded
+ * system stops being reproducible in any useful way.
+ */
+export function rollWildModifier(rng: RngState, affinity = 0): WildModifier {
+  const chance = WILD_MODIFIER_CHANCE + affinity * AFFINITY_WILD_STEP;
+  const got = nextInt(rng, 100) < chance;
+
+  let pick = nextInt(rng, WILD_WEIGHT);
+  for (const entry of WILD_TABLE) {
+    pick -= entry.weight;
+    if (pick < 0) return got ? { ...entry.mod } : { startingArmor: 0, bonusPips: 0 };
+  }
+  return { startingArmor: 0, bonusPips: 0 };
 }
 
 /** The band a wild Companion's constitution falls in. Tight on purpose. */
@@ -139,19 +226,41 @@ export function tameCompanion(
   rng: RngState,
   baseId: string,
   sequence: number,
+  /**
+   * How well the subjugation went, 0 upward. See `AFFINITY_MAX`.
+   *
+   * Every roll below reads it, and none of them is *decided* by it: affinity moves floors
+   * and odds, never outcomes. A flawless capture that rolled a poor constitution is still
+   * a poor constitution — a mastery system that guaranteed the good beast would turn the
+   * Variance Engine into a checklist, which is exactly what it replaced.
+   */
+  affinity = 0,
 ): CompanionInstance {
+  const def = companionById(baseId);
   const pool = traitsFor(baseId);
   const traitId = pool.length > 0 ? pool[nextInt(rng, pool.length)]!.id : '';
+
+  // The constitution, with its floor raised by how cleanly the beast was taken. The
+  // ceiling does not move: a perfect capture improves the worst case it can hand you,
+  // never the best.
+  const floor = Math.min(HP_ROLL_MIN + affinity * AFFINITY_HP_FLOOR_STEP, HP_ROLL_MAX);
+  const baseHpRoll = floor + nextInt(rng, HP_ROLL_MAX - floor + 1);
+
+  // Which eight, then what each of them rolled — two independent questions, drawn in that
+  // order because the second one needs the answer to the first.
+  const grimoire = def ? draftGrimoire(rng, def.grimoire, GRIMOIRE_SIZE) : [];
 
   return {
     ...newCompanion(),
     instanceId: `${baseId}-${sequence}`,
     baseId,
-    baseHpRoll: HP_ROLL_MIN + nextInt(rng, HP_ROLL_MAX - HP_ROLL_MIN + 1),
+    baseHpRoll,
     traitId,
-    // Rolled last, so adding it did not move the constitution or the knack in any existing
-    // seed. Every prior taming still produces the beast it always did.
-    spellModifiers: rollSpellModifiers(rng, companionById(baseId)?.innateGrimoire ?? []),
+    ...rollWildModifier(rng, affinity),
+    // Which eight, then what each of them rolled — two independent questions, drawn in
+    // that order because the second one needs the answer to the first.
+    grimoire,
+    spellModifiers: rollSpellModifiers(rng, grimoire),
   };
 }
 

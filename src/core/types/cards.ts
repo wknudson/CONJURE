@@ -390,41 +390,17 @@ export interface CardDef {
    * `omni` — free aim within range.
    */
   vector?: 'omni' | 'linear';
-  /**
-   * What this card becomes when it is Ascended.
-   *
-   * Only what a Rank 2 is allowed to change. `id`, `school`, `source`, `kind` and
-   * `target` are deliberately absent: a Rank 2 that picked its targets differently, or
-   * moved from Hero to Companion, would be a different card wearing the same name — and
-   * since both ranks share one copy cap through `baseIdOf`, it would be a different card
-   * smuggled past the deck rules.
-   *
-   * Authored as overrides rather than as a whole second `CardDef` so a change to the
-   * Rank 1 printing — a nerf, a keyword, a re-cost — carries into Rank 2 automatically
-   * instead of quietly leaving the upgraded copy on last season's numbers.
-   */
-  rank2?: Rank2Overrides;
 }
 
-/**
- * The Rank 2 printing, as a diff against Rank 1.
+/*
+ * There is no `rank2` field, and its absence is the design.
  *
- * `unit` is a partial: most ascensions raise one or two stats, and restating a whole
- * block to change `atk` is how the other five drift.
+ * A Rank 2 printing used to be a hand-written diff hanging off the card — a cheaper cost
+ * here, a longer reach there — and five cards in the whole game had one. It is now derived
+ * arithmetic: +10% to every number the card deals, and nothing else moves. See
+ * `data/ascension.ts`. Nothing to author means nothing to forget, and nothing a Rank 2
+ * can change that a player would have to re-learn.
  */
-export interface Rank2Overrides {
-  name?: string;
-  cost?: CardCost;
-  text?: string;
-  effect?: EffectNode;
-  keywords?: Keyword[];
-  unit?: Partial<UnitStatBlock>;
-  obstacleHp?: number;
-  range?: number;
-  minRange?: number;
-  needsLoS?: boolean;
-  vector?: 'omni' | 'linear';
-}
 
 /**
  * What a Grimoire spell rolled on the beast that carries it.

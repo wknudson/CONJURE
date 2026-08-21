@@ -240,18 +240,9 @@ export const STARTER_CARDS: Record<string, CardDef> = {
       ],
     },
     keywords: [],
-    // A staple ascension: the same shape, harder. Two tiles of shove is what turns this
-    // from a tempo card into a wall-kill, which is worth three Shards on a Tier 1 card.
-    rank2: {
-      text: 'Deals 30 damage to an enemy and shoves it 2 tiles away. Triggers standard Collision Damage (30 / 20).',
-      effect: {
-        op: 'seq',
-        effects: [
-          { op: 'damage', amount: 30, dtype: 'physical', area: { shape: 'target' } },
-          { op: 'push', distance: 2 },
-        ],
-      },
-    },
+    // The staple Ascension, and now the derived one: 22 damage instead of 20, the same one
+    // tile of shove. The old Rank 2 bought a second tile, which turned a tempo card into a
+    // wall-kill — a different card, at the same name and price.
   },
 
   stone_barricade: {

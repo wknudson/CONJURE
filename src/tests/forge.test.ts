@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ASCENSION_COST,
   ASCENSION_COST_SHARDS,
   SCHEMATIC_COST_DUCATS,
   ascendCard,
@@ -23,7 +24,8 @@ import type { Collection } from '../core/data/deckRules.js';
 
 const rich = (): GlobalGameState => {
   const overworld = newRun(1);
-  overworld.economy = { ducats: 500, marrowShards: 9, reagents: {} };
+  // An Ascension takes all three now: money, Shards and a Core.
+  overworld.economy = { ducats: 500, marrowShards: 9, reagents: { core_frost: 4 } };
   return { overworld, combat: null };
 };
 
@@ -79,7 +81,10 @@ describe('ascension', () => {
         { ...holding(['shield_bash']), ascended: ['shield_bash'] },
         'shield_bash',
       ],
-      ['no-rank-2', 9, holding(['aegis_ward']), 'aegis_ward'],
+      // A card made entirely of quantities Ascension refuses to touch: the tithe wounds
+      // your own body, the cap is Marrow, the payoff is cards. Nothing to raise, so there
+      // is no Rank 2 to sell.
+      ['no-rank-2', 9, holding(['harvest_the_weak']), 'harvest_the_weak'],
     ];
 
     for (const [why, purse, collection, id] of cases) {
@@ -90,6 +95,51 @@ describe('ascension', () => {
       expect(ascendCard(g, collection, id), why ?? '').toBeNull();
       expect(g.overworld.economy.marrowShards, `${why} cost nothing`).toBe(purse);
     }
+  });
+
+  it('refuses a player with the money but no Core, and says which', () => {
+    // Named apart from `too-poor` because it is a different errand. Ducats and Shards come
+    // from taking any contract; a Core does not, and telling a player they are "too poor"
+    // when their purse is full would send them to earn the wrong thing.
+    const g = rich();
+    g.overworld.economy.reagents = {};
+
+    expect(ascensionRefusal(g, holding(['shield_bash']), 'shield_bash')).toBe('no-reagent');
+    expect(ascendCard(g, holding(['shield_bash']), 'shield_bash')).toBeNull();
+  });
+
+  it('takes one Core, the Ducats and the Shards together', () => {
+    const g = rich();
+    const before = {
+      ducats: g.overworld.economy.ducats,
+      shards: g.overworld.economy.marrowShards,
+      cores: g.overworld.economy.reagents.core_frost,
+    };
+
+    expect(ascendCard(g, holding(['shield_bash']), 'shield_bash')).not.toBeNull();
+
+    expect(g.overworld.economy.ducats).toBe(before.ducats - ASCENSION_COST.ducats);
+    expect(g.overworld.economy.marrowShards).toBe(before.shards - ASCENSION_COST.shards);
+    expect(g.overworld.economy.reagents.core_frost).toBe(before.cores! - ASCENSION_COST.reagents);
+  });
+
+  it('spends from the deepest stack, so a thin one is not emptied first', () => {
+    const g = rich();
+    g.overworld.economy.reagents = { core_pyre: 1, core_surge: 5 };
+
+    ascendCard(g, holding(['shield_bash']), 'shield_bash');
+
+    expect(g.overworld.economy.reagents.core_surge, 'the deep one paid').toBe(4);
+    expect(g.overworld.economy.reagents.core_pyre, 'the thin one is untouched').toBe(1);
+  });
+
+  it('clears an emptied stack rather than leaving a zero', () => {
+    const g = rich();
+    g.overworld.economy.reagents = { core_pyre: 1 };
+
+    ascendCard(g, holding(['shield_bash']), 'shield_bash');
+
+    expect(g.overworld.economy.reagents.core_pyre, 'a bag of none is no bag').toBeUndefined();
   });
 
   it('is barred once a contract is open', () => {
@@ -157,16 +207,21 @@ describe('schematic forging', () => {
 });
 
 describe('the two sinks', () => {
-  it('do not compete for the same coin', () => {
-    // Ducats acquire, Shards master. If either could pay for the other, one of the two
-    // reasons to fight would stop mattering.
+  it('cannot be reduced to one another, even sharing a coin', () => {
+    // The two sinks share Ducats now, and are still not interchangeable: acquiring a card
+    // costs money and *only* money, while mastering one also demands Shards and a Core.
+    // A player rich in coin can always learn something new; mastering what they already
+    // know needs them to have taken hard contracts and broken open scenery as well.
     const g = rich();
     const shardsBefore = g.overworld.economy.marrowShards;
     forgeSchematic(g, holding([]), 'scout_imp');
-    expect(g.overworld.economy.marrowShards, 'forging spent no Shards').toBe(shardsBefore);
+    expect(g.overworld.economy.marrowShards, 'forging spends no Shards').toBe(shardsBefore);
+    expect(g.overworld.economy.reagents.core_frost, 'and no Cores').toBe(4);
 
-    const ducatsBefore = g.overworld.economy.ducats;
-    ascendCard(g, holding(['shield_bash']), 'shield_bash');
-    expect(g.overworld.economy.ducats, 'ascending spent no Ducats').toBe(ducatsBefore);
+    // Money alone is never enough for an Ascension, however much of it there is.
+    const flush = rich();
+    flush.overworld.economy.marrowShards = 0;
+    flush.overworld.economy.ducats = 99_999;
+    expect(ascensionRefusal(flush, holding(['shield_bash']), 'shield_bash')).toBe('too-poor');
   });
 });

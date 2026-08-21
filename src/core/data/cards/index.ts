@@ -7,6 +7,7 @@
  */
 
 import type { CardDef } from '../../types/cards.js';
+import { ascendCardDef } from '../ascension.js';
 import { STARTER_CARDS, STARTER_DECK } from './starter.js';
 import { ARCANE_CARDS } from './arcane.js';
 import { FROST_CARDS } from './frost.js';
@@ -57,35 +58,24 @@ export function isAscendedId(cardId: string): boolean {
 }
 
 /**
- * Applies a `rank2` block to its Rank 1 printing.
+ * Every Rank 2 printing, derived once at module load.
  *
- * Done once here, at module load, rather than in the engine when a card is drawn. The
- * combat reducer therefore never learns what "ascended" means — a Rank 2 card is simply
- * a card, exactly as a fight with an Ironbrew is simply a fight that started with armour.
- * One less thing the pure engine has to be told about, and one less place for a merge to
- * happen differently than it did last time.
+ * Derived, not authored. `ascendCardDef` raises the card's numbers by a fixed 10% and
+ * changes nothing else, so a Rank 2 is not a second card to design — it is the same card
+ * hitting harder. See `data/ascension.ts` for what that covers and, more importantly, for
+ * the four things it deliberately refuses to touch.
+ *
+ * Built here rather than looked up when a card is drawn, so the combat reducer never
+ * learns that "ascended" is a thing at all: a Rank 2 card is simply a card, exactly as a
+ * fight with an Ironbrew is simply a fight that started with armour.
+ *
+ * A card with no number to raise gets no entry. That absence is what the Forge reads to
+ * decide it has nothing to sell you.
  */
-function ascend(base: CardDef): CardDef {
-  // `unit` is pulled out of the spread deliberately: it is the one override that is a
-  // partial, so letting it land whole would replace a full stat block with a fragment.
-  const { unit: unitOverride, ...flat } = base.rank2!;
-  const merged: CardDef = {
-    ...base,
-    ...flat,
-    id: ascendedId(base.id),
-    name: flat.name ?? `${base.name} +`,
-    ...(base.unit ? { unit: { ...base.unit, ...(unitOverride ?? {}) } } : {}),
-  };
-  // The upgraded printing has no upgrade of its own. Rank 3 would be a new field rather
-  // than a chain — and without this, an ascended card would claim it could be ascended
-  // again, and the forge would offer it.
-  delete merged.rank2;
-  return merged;
-}
-
 const RANK2: Record<string, CardDef> = {};
 for (const base of Object.values(RANK1)) {
-  if (base.rank2) RANK2[ascendedId(base.id)] = ascend(base);
+  const raised = ascendCardDef(base, ascendedId(base.id));
+  if (raised) RANK2[raised.id] = raised;
 }
 
 /**
@@ -97,10 +87,16 @@ for (const base of Object.values(RANK1)) {
  */
 export const CARDS: Record<string, CardDef> = { ...RANK1, ...RANK2 };
 
-/** Card ids that have a Rank 2 printing to buy. Base ids only. */
+/**
+ * Card ids that have a Rank 2 printing to buy. Base ids only.
+ *
+ * Asks the registry rather than a flag on the card: whether a card can be ascended is now
+ * a fact about whether it deals a number, and deriving it means a new card joins the Forge
+ * by existing rather than by somebody remembering to mark it.
+ */
 export function ascendableIds(): string[] {
   return Object.values(RANK1)
-    .filter((c) => c.rank2 && !c.setupOnly)
+    .filter((c) => !c.setupOnly && RANK2[ascendedId(c.id)])
     .map((c) => c.id)
     .sort();
 }

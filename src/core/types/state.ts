@@ -297,6 +297,20 @@ export interface GameState {
    */
   encountered: string[];
   defeated: string[];
+  /**
+   * Health the player's Pact has lost over the whole fight, and Runes of theirs that went
+   * off in it. The raw material of the Mastery Objectives.
+   *
+   * Kept here beside `encountered` rather than tallied by the session, and for the same
+   * reason: **undo**. `snapshot`/`restore` deep-clone the state, so rewinding the turn
+   * that lost you a flawless run gives it back for free. A counter living outside the
+   * state would have to remember to, and would not.
+   *
+   * Player-side only, deliberately. An objective about how badly the *enemy* was hurt is
+   * an objective about winning, and winning is already the thing being rewarded.
+   */
+  playerDamageTaken: number;
+  playerRuneDetonations: number;
 }
 
 export interface StepResult {

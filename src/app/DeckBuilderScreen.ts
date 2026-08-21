@@ -23,7 +23,7 @@ import {
   validateDeck,
 } from '../core/data/deckRules.js';
 import { CARDS } from '../core/data/cards/index.js';
-import { companionById } from '../core/data/companions.js';
+import { GRIMOIRE_SIZE, companionById } from '../core/data/companions.js';
 import { schoolOf } from '../render/palette.js';
 import { Tooltip } from '../hud/Tooltip.js';
 import { ledgerFor, ledgerProgress } from '../core/data/bestiary.js';
@@ -161,12 +161,14 @@ export class DeckBuilderScreen implements Screen {
     startingDeck: string[],
     startingRoster: string[],
     /**
-     * What the *equipped beast's* Grimoire rolled.
+     * The eight the *equipped beast* actually drafted, and what each of them rolled.
      *
-     * Passed in rather than looked up, because the screen is handed a species id and the
-     * rolls belong to one animal of that species — two Ignis on the roster have different
-     * ones, and only the caller knows which is standing beside the player.
+     * Both passed in rather than looked up, because the screen is handed a species id and
+     * both facts belong to one animal of that species — two Ignis on the roster know
+     * different cards *and* rolled differently on them, and only the caller knows which is
+     * standing beside the player.
      */
+    private readonly grimoire: string[],
     private readonly spellModifiers: Record<string, CardModifier>,
     private readonly collection: Collection,
     private readonly bestiary: Bestiary,
@@ -210,7 +212,7 @@ export class DeckBuilderScreen implements Screen {
             <span class="builder__count"></span>
           </div>
           <div class="builder__pane-note">
-            Five to fifteen, neutral and arcane only. Click a card to strike it out.
+            ${MIN_DECK} to ${MAX_DECK}, neutral and arcane only. Your Companion fuses ${GRIMOIRE_SIZE} more in at the bell. Click a card to strike it out.
           </div>
           <div class="builder__curve"></div>
           <div class="builder__deck"></div>
@@ -721,11 +723,14 @@ export class DeckBuilderScreen implements Screen {
     if (!el) return;
 
     const companion = companionById(this.companionId);
-    const grimoire = companion?.innateGrimoire ?? [];
+    // The beast's own book, or the species' old fixed eight for a fight with no beast in
+    // it. `fixed` is still the right word on the badge: drafted once when it was caught,
+    // and unchangeable from here.
+    const grimoire = this.grimoire.length > 0 ? this.grimoire : (companion?.legacyGrimoire ?? []);
     const mods = this.spellModifiers;
 
     const count = el.querySelector<HTMLElement>('.grimoire__count');
-    if (count) count.textContent = `${grimoire.length} fixed`;
+    if (count) count.textContent = `${grimoire.length} drafted`;
 
     const note = el.querySelector<HTMLElement>('.grimoire__note');
     if (note) {

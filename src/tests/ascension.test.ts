@@ -67,22 +67,24 @@ describe('the Rank 2 printing', () => {
   });
 
   it('cannot be ascended again', () => {
+    // Rank 3 would be a new rule, not a second application of this one. The Forge offers
+    // base ids only, and nothing in the registry hangs a Rank 2 off a Rank 2.
     for (const id of ascendableIds()) {
-      expect(CARDS[ascendedId(id)]!.rank2, id).toBeUndefined();
+      expect(CARDS[`${ascendedId(id)}_r2`], id).toBeUndefined();
     }
     expect(ascendableIds().every((id) => !isAscendedId(id))).toBe(true);
   });
 
-  it('merges a partial stat block over the printed one', () => {
-    // The mortar raises atk, hp and reach and says nothing about its archetype. Losing
-    // the archetype would quietly turn a Lobber into an ordinary melee body.
-    const base = CARDS.scrap_metal_mortar!;
-    const up = CARDS[ascendedId('scrap_metal_mortar')]!;
+  it('never ascends a body, because bodies are levelled instead', () => {
+    // The Scrap-Metal Mortar used to have a hand-written Rank 2 that raised its attack,
+    // its health and its reach. It is a *unit*, and a unit earns those by surviving fights
+    // -- two systems raising one stat block would be two systems arguing about it.
+    expect(CARDS.scrap_metal_mortar!.unit, 'still a body').toBeDefined();
+    expect(CARDS[ascendedId('scrap_metal_mortar')]).toBeUndefined();
 
-    expect(up.unit!.atk).toBeGreaterThan(base.unit!.atk);
-    expect(up.unit!.archetype, 'kept from Rank 1').toBe(base.unit!.archetype);
-    expect(up.unit!.attackProfile).toBe(base.unit!.attackProfile);
-    expect(up.unit!.rangeMin, 'the blind spot survives the upgrade').toBe(base.unit!.rangeMin);
+    for (const id of ascendableIds()) {
+      expect(CARDS[id]!.kind, id).not.toBe('minion');
+    }
   });
 
   it('takes a name that reads as an upgrade of the same card', () => {

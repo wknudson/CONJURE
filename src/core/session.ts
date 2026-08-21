@@ -35,6 +35,7 @@ import { legalMoves } from './engine/movement.js';
 import { occludedTiles } from './engine/los.js';
 import { threatMap } from './engine/threat.js';
 import { getEntity } from './engine/board.js';
+import { masteryOf, type MasteryReport } from './data/mastery.js';
 import {
   COLLISION_BLOCKER_DAMAGE,
   COLLISION_OBSTACLE_DAMAGE,
@@ -399,6 +400,31 @@ export class CombatSession implements RulesQuery {
   }
 
   /** Enemy stat blocks killed on this board, by definition id. Duplicates kept. */
+  /**
+   * The Vanguard, split by who is still standing.
+   *
+   * Def ids rather than unit ids, because progression is keyed by def -- and duplicated,
+   * because two Footmen who both survived earned two Footmen's worth of experience.
+   * Bodies still in reserve are in neither list: a body that never left the tray did not
+   * fight, and paying it would make holding your warband back the efficient way to train it.
+   */
+  get rosterOutcome(): { survivors: string[]; fallen: string[] } {
+    const roster = this.state.players.player.roster;
+    return {
+      survivors: roster.filter((r) => r.status === 'fielded').map((r) => r.defId),
+      fallen: roster.filter((r) => r.status === 'fallen').map((r) => r.defId),
+    };
+  }
+
+  /** What the fight is worth as a subjugation, beyond simply having been won. */
+  get mastery(): MasteryReport {
+    return masteryOf({
+      damageTaken: this.state.playerDamageTaken,
+      runeDetonations: this.state.playerRuneDetonations,
+      rosterFallen: this.state.players.player.roster.filter((r) => r.status === 'fallen').length,
+    });
+  }
+
   get defeatedEnemies(): string[] {
     return [...this.state.defeated];
   }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { STAT_SCALE, unscaleStat } from '../core/scale.js';
-import { CARDS } from '../core/data/cards/index.js';
+import { CARDS, isAscendedId } from '../core/data/cards/index.js';
 import { ALL_AURAS } from '../core/data/auras.js';
 import { RUNES } from '../core/data/runes.js';
 import { TITHE_DAMAGE, TITHE_MARROW } from '../core/engine/effects.js';
@@ -87,6 +87,10 @@ describe('the data layer', () => {
   it('stretched obstacles too, so a wall is not paper', () => {
     for (const def of Object.values(CARDS)) {
       if (def.obstacleHp === undefined) continue;
+      // Rank 2 printings are exempt, and have to be: Ascension adds 10% rounded up, which
+      // is deliberately *not* a multiple of ten. A 60 HP pillar ascends to 66, and a guard
+      // that demanded round numbers would be a guard against the uplift working.
+      if (isAscendedId(def.id)) continue;
       expect(def.obstacleHp % STAT_SCALE, `${def.id}`).toBe(0);
     }
   });

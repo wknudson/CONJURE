@@ -59,7 +59,7 @@ import { makeRng } from './core/util/rng.js';
 import { NOVICE_AI, profileByName } from './core/ai/controller.js';
 import type { EncounterDef } from './core/data/encounters/registry.js';
 import type { CombatResult } from './contract/events.js';
-import { unlockVanguard } from './core/data/roster.js';
+import { awardVanguardXp, unlockVanguard } from './core/data/roster.js';
 
 const root = document.getElementById('app');
 if (!root) throw new Error('#app root element is missing');
@@ -379,7 +379,9 @@ function showBuilder(companionId: string, onDone: () => void): void {
       companionId,
       deckFor(companionId),
       profile().roster,
-      // The rolls belong to the beast standing beside the player, not to the species.
+      // Both belong to the beast standing beside the player, not to the species: which
+      // eight it drafted when it was caught, and what each of them rolled.
+      activeCompanion().grimoire,
       activeCompanion().spellModifiers,
       profile().collection,
       profile().bestiary,
@@ -536,6 +538,15 @@ function finishCombat(
   if (result === 'victory') p.record.wins += 1;
   else if (result === 'bound') p.record.bound += 1;
   else p.record.losses += 1;
+
+  // Survival XP. Written here rather than inside `resolveCombat` because progression
+  // belongs to the *character* and the run does not own one -- the same reason the
+  // bestiary and the Companion roster are handed in rather than reached for.
+  p.vanguardProgress = awardVanguardXp(p.vanguardProgress, {
+    survivors: outcome.rosterSurvivors ?? [],
+    fallen: outcome.rosterFallen ?? [],
+    won: result === 'victory' || result === 'bound',
+  });
 
   // A win offers a card. Seeded off the running record so the same win does not reroll
   // into a different offer if the screen is rebuilt.

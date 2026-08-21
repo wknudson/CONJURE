@@ -152,6 +152,7 @@ export function grantCard(collection: Collection, cardId: string): Collection {
  * last time the rule lived in two places, a rename left one of them offering the Rite.
  */
 export function isObtainable(def: CardDef): boolean {
+  if (isEngineDealt(def)) return false;
   // A Rank 2 printing is not something you obtain — it is something you upgrade into, at
   // the forge, for Shards. Letting one into this predicate would put ascended cards in
   // reward rolls and on the Artificer's shelf, handing out for free the exact thing the
@@ -164,7 +165,19 @@ export function isObtainable(def: CardDef): boolean {
   // Roster, which is a point-buy over what you have *unlocked* — so a minion in a reward
   // roll or on the Artificer's shelf would be selling something the deck cannot hold.
   if (def.kind === 'minion') return false;
-  return !def.setupOnly && def.id !== 'rite_of_subjugation';
+  return true;
+}
+
+/**
+ * Cards the engine deals for itself, which nobody may otherwise come by.
+ *
+ * Split out of `isObtainable` because the Grimoire draft needs the same exclusion for a
+ * different reason: a Companion may draft a *Hybrid*, which `isObtainable` refuses, but it
+ * must never draft the Rite. The last time this rule lived in two places a rename left one
+ * of them offering the Rite, so it lives in one and is asked twice.
+ */
+export function isEngineDealt(def: CardDef): boolean {
+  return Boolean(def.setupOnly) || def.id === 'rite_of_subjugation';
 }
 
 /**

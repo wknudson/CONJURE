@@ -148,6 +148,28 @@
   white-space: nowrap;
 }
 
+/*
+ * Ascension, in gold, because the uplift is otherwise invisible.
+ *
+ * A Rank 2 card reads 33 where its Rank 1 read 30, and a player would have to hold both
+ * side by side to notice. The badge is what the Shards actually bought, and the edge
+ * treatment below is what lets a Rank 2 be picked out of a full binder at a glance.
+ */
+.card__ascended {
+  font: 800 6px var(--font);
+  letter-spacing: 0.5px;
+  padding: 1.5px 3px;
+  border-radius: 3px;
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  background: rgba(250, 204, 21, 0.1);
+  color: #facc15;
+  white-space: nowrap;
+}
+
+.card--ascended {
+  box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.35);
+}
+
 /* Companion cards get a school-tinted source tag; Hero cards stay neutral grey. */
 .card--src-companion .card__source {
   color: color-mix(in srgb, var(--school, #94a3b8) 80%, white);

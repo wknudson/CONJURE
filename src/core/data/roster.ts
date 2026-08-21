@@ -226,6 +226,92 @@ export function unlockVanguard(
  * same translation `carryFor` performs on relics and knacks. It is also what keeps the
  * levelling curve -- whenever there is one -- entirely outside the reducer.
  */
+// ---------------------------------------------------------------- survival XP
+
+/**
+ * What a body earns for walking off the field alive.
+ *
+ * Survival, not kills. A Vanguard unit is a soldier rather than a scoreboard, and paying
+ * for kills would make the Behemoth that finishes everything the only body worth levelling
+ * while the Guardian that spent four turns keeping it alive earned nothing.
+ */
+export const VANGUARD_XP_SURVIVED = 30;
+
+/**
+ * What it earns for having been there at all, having fallen.
+ *
+ * Not zero, deliberately. A body that dies has still fought, and a warband that only ever
+ * levels when nothing goes wrong is a warband a player stops committing. Small enough that
+ * losing bodies is never the *efficient* way to train them.
+ */
+export const VANGUARD_XP_FELL = 10;
+
+/** Paid to every body that was on the field, on top of the above, when the fight is won. */
+export const VANGUARD_XP_VICTORY = 20;
+
+/**
+ * XP to leave a given level behind.
+ *
+ * Linear in the level rather than exponential. A Vanguard unit is not the long campaign
+ * sink -- the Companion is -- and a curve that doubled would mean a body that reached
+ * level 5 could never realistically reach 6, which is a progression bar that stops meaning
+ * anything the moment a player can see the end of it.
+ */
+export const VANGUARD_XP_PER_LEVEL = 100;
+
+export function xpForNextLevel(level: number): number {
+  return Math.max(1, level) * VANGUARD_XP_PER_LEVEL;
+}
+
+/** What one fight was worth to the bodies that fought it. */
+export interface FightRecord {
+  /** Def ids still standing at the bell. */
+  survivors: readonly string[];
+  /** Def ids that fell. Duplicated ids are counted twice: two Footmen fell, not one. */
+  fallen: readonly string[];
+  won: boolean;
+}
+
+/**
+ * Folds a fight into a character's Vanguard record.
+ *
+ * Pure, and returns a new map: progression lives in the save, and the save is written by
+ * one caller that knows when to persist. Rolling a level over is done in a loop rather
+ * than by division, so a body that earned three levels' worth in one fight gets all three
+ * and its leftover XP -- the alternative silently caps a good night at one level.
+ *
+ * A body with no record is *not* enrolled here. Earning XP is not how a unit joins the
+ * roster; unlocking it is (`unlockVanguard`), and a fight that quietly created records
+ * would let a body the player never bought start accumulating a career.
+ */
+export function awardVanguardXp(
+  progress: Record<string, VanguardProgress>,
+  fight: FightRecord,
+): Record<string, VanguardProgress> {
+  const earned = new Map<string, number>();
+  const add = (defId: string, xp: number): void => {
+    earned.set(defId, (earned.get(defId) ?? 0) + xp + (fight.won ? VANGUARD_XP_VICTORY : 0));
+  };
+
+  for (const defId of fight.survivors) add(defId, VANGUARD_XP_SURVIVED);
+  for (const defId of fight.fallen) add(defId, VANGUARD_XP_FELL);
+  if (earned.size === 0) return progress;
+
+  const out = { ...progress };
+  for (const [defId, xp] of earned) {
+    const before = out[defId];
+    if (!before) continue;
+
+    let { level, xp: total } = { level: before.level, xp: before.xp + xp };
+    while (total >= xpForNextLevel(level)) {
+      total -= xpForNextLevel(level);
+      level += 1;
+    }
+    out[defId] = { level, xp: total };
+  }
+  return out;
+}
+
 export function vanguardLevels(
   progress: Record<string, VanguardProgress> | undefined,
 ): Record<string, number> {

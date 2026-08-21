@@ -9,18 +9,29 @@
 import type { CardDef } from '../types/cards.js';
 import { cardCostTotal } from '../types/cards.js';
 import { CARDS } from './cards/index.js';
+import { GRIMOIRE_SIZE } from './companions.js';
 
 /**
  * The Hero Deck: small, and yours.
  *
- * It was 12-30 when the deck was the whole spellbook. It is 5-15 now because it is only
- * *half* of one — the equipped Companion fuses eight fixed elemental spells in at the
- * bell (`GRIMOIRE_SIZE`), so a 15-card Hero Deck is really a 23-card deck by the time it
- * is shuffled. A small hand-built half beside a fixed elemental half is the whole point:
- * what you choose is the utility, and what you *catch* is the magic.
+ * It was 12-30 when the deck was the whole spellbook, and 5-15 when the Companion first
+ * started fusing its own half in. It is **4-12** now, and the tightening is the point: a
+ * 12-card Hero half plus the beast's eight is a 20-card deck, small enough that every
+ * card in it is a card you meet, and every card you cut is a card you miss.
+ *
+ * What you choose is the utility. What you *catch* is the magic.
  */
-export const MIN_DECK = 5;
-export const MAX_DECK = 15;
+export const MIN_DECK = 4;
+export const MAX_DECK = 12;
+
+/**
+ * What the fused deck actually holds, once the beast has shuffled its eight in.
+ *
+ * Derived rather than restated, so the two halves can never disagree about the whole.
+ */
+export function fusedDeckSize(heroCards: number): number {
+  return heroCards + GRIMOIRE_SIZE;
+}
 
 /**
  * Schools a Hero Deck may hold.
@@ -61,11 +72,15 @@ export function tierOf(def: CardDef): CardTier {
  * two or three answers that shape needs, not rebuilding into a different deck once the
  * terrain is known — which would make the deck you built beforehand irrelevant.
  *
- * Cut from five to two when the Hero Deck shrank to 5-15. Five swaps against a thirty-card
- * deck was an adjustment; against a five-card one it was a rebuild, and the guard below
- * would have started failing rather than the design quietly going wrong.
+ * Cut from five to two when the Hero Deck shrank to 5-15, and from two to **one** when it
+ * shrank again to 4-12. Five swaps against a thirty-card deck was an adjustment; two
+ * against a four-card one is half the deck, which is not adapting to a narrow ruin — it is
+ * building a second deck once the ruin is known.
+ *
+ * One answer, brought for the terrain. That is a real decision and it cannot rebuild
+ * anything.
  */
-export const MAX_SWAPS = 2;
+export const MAX_SWAPS = 1;
 
 /**
  * How many cards differ between a deck and the one it started as.

@@ -36,21 +36,11 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     keywords: [],
     range: 3,
     needsLoS: true,
-    // Ascension buys depth, not damage. A four-deep cone clears the whole doorway and the
-    // room behind it, which changes where the card can be aimed from rather than how hard
-    // it hits — the same reason the shove goes to 2 instead of the damage going to 4.
-    rank2: {
-      cost: { pips: 2, marrow: 0 },
-      text: 'Vent a widening blast: 30 fire damage in a 4-deep cone, then shove everything caught 2 tiles away.',
-      effect: {
-        op: 'seq',
-        effects: [
-          { op: 'damage', amount: 30, dtype: 'fire', area: { shape: 'cone', depth: 4 } },
-          { op: 'shoveArea', distance: 2, area: { shape: 'cone', depth: 4 } },
-        ],
-      },
-      range: 4,
-    },
+    // Its Ascension used to buy a deeper cone and a longer shove, and cost a Pip more for
+    // them. All three are things Ascension may no longer touch: a Rank 2 that re-priced a
+    // card or re-shaped its blast was a second card wearing the first one's name. The
+    // ascended printing is now derived — 33 fire in the same 3-deep cone, same shove, same
+    // price. See `data/ascension.ts`.
   },
 
   /**
@@ -83,13 +73,10 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
       escalationBonus: { atk: 10, hp: 0 },
       attackProfile: 'arcing',
     },
-    // A bigger gun on the same carriage. The blind spot stays — a mortar that could
-    // depress its aim would stop being a mortar, and the card is priced around having to
-    // be screened.
-    rank2: {
-      text: 'Lobber. Fires 2-5 tiles, arcing over cover, and cannot depress its aim onto anything adjacent. Leaves rubble when it breaks.',
-      unit: { atk: 30, hp: 80, rangeMax: 5 },
-    },
+    // No Ascension at all now, and this is the card that shows why the rule is right: it
+    // is a *body*, and bodies are levelled rather than ascended. A Vanguard Mortar earns
+    // its attack and its health by surviving fights (`vanguardBonus`), and two systems
+    // raising one stat block would be two systems arguing about it.
   },
 
   /**
@@ -116,14 +103,10 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     keywords: [],
     range: 5,
     needsLoS: true,
-    // Reach, and one more ring of victims. The diagonals were the whole restraint on this
-    // card, so giving them up is the ascension.
-    rank2: {
-      cost: { pips: 1, marrow: 1 },
-      text: 'Drag every unit beside the target tile onto it, diagonals included. They collide with whatever arrives first.',
-      effect: { op: 'pullArea', distance: 1, area: { shape: 'adjacent8' } },
-      range: 6,
-    },
+    // Its Ascension used to buy the diagonals and a tile of reach. Both are geometry, and
+    // geometry is exactly what vertical progression leaves alone — a spell that catches a
+    // different set of tiles at Rank 2 is a spell nobody can play around. This card deals
+    // no damage of its own, so it has no Rank 2 at all, and the Forge says so.
   },
 
   /**
@@ -154,17 +137,9 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
       ],
     },
     keywords: [],
-    // The cap is the card, so the cap is what moves. Still free, still paid for in bodies.
-    rank2: {
-      text: 'Bleed an un-exhausted friendly minion for 60. Extract Marrow equal to the health actually taken, up to 6, and draw two cards.',
-      effect: {
-        op: 'seq',
-        effects: [
-          { op: 'tithe', damage: 60, marrow: 0 },
-          { op: 'extractMarrow', amount: { from: 'titheDamage', max: 6 } },
-          { op: 'drawCards', amount: 2 },
-        ],
-      },
-    },
+    // No Ascension. Every number on this card is one Ascension refuses: the tithe wounds
+    // your own body, so raising it is a *downgrade*; the cap is Marrow; the draw is cards.
+    // A card made entirely of excluded quantities has no Rank 2, which is the honest
+    // answer rather than a printing that charges Shards to change nothing.
   },
 };

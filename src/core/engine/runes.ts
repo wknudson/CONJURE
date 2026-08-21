@@ -125,6 +125,11 @@ export function detonate(ctx: Ctx, host: Entity, chainDepth: number, bonusDamage
   // Consume before resolving, so a rune can never re-trigger itself.
   host.rune = undefined;
 
+  // Counted for the Mastery Objectives. Whose trap it was, not whose body it was on: a
+  // Cinder Rune the player branded an enemy with is the player's detonation, and that is
+  // the whole shape of the objective.
+  if (ownerSide === 'player') ctx.state.playerRuneDetonations += 1;
+
   const origin = { ...host.anchor };
   const affected = blastTiles(ctx, host, def.blast);
 

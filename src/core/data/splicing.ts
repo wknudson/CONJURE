@@ -10,6 +10,7 @@
  */
 
 import type { School } from '../../contract/ids.js';
+import { CARDS } from './cards/index.js';
 
 /**
  * A material the bench consumes.
@@ -146,6 +147,26 @@ export function recipeFor(baseCardId: string, catalystId: string): SpliceRecipe 
   return SPLICE_RECIPES.find(
     (r) => r.baseCardId === baseCardId && r.catalystId === catalystId,
   );
+}
+
+/**
+ * The two schools a fusion is pressed from, by result id.
+ *
+ * A Hybrid card is filed under *one* school — Vaporize Blast is frost — because a card has
+ * to be filed somewhere. That filing is not the same fact as what it is made of, and the
+ * two come apart exactly where it matters: a Pyre bloodline can reach Vaporize Blast,
+ * because its own school is half the recipe, and asking `def.school` would say otherwise.
+ *
+ * Read off the recipe book, so a new pairing needs no second list kept in step with it.
+ * Empty for anything the book has never pressed.
+ */
+export function hybridSchools(resultId: string): School[] {
+  const recipe = SPLICE_RECIPES.find((r) => r.resultId === resultId);
+  if (!recipe) return [];
+  const catalyst = reagentById(recipe.catalystId)?.school;
+  const base = CARDS[recipe.baseCardId]?.school;
+  const both = [base, catalyst].filter((s): s is School => Boolean(s));
+  return [...new Set(both)];
 }
 
 /** Every base card the book knows how to press, for filtering what to offer. */

@@ -170,6 +170,10 @@ function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side, at?: Coord): D
   const hpLoss = Math.min(cmd.hp, Math.max(0, amount));
   cmd.hp -= hpLoss;
   if (hpLoss > 0) ctx.state.commanderDamagedThisRound = true;
+  // What the Pact actually lost, over the whole fight. Armour absorbing a blow entirely
+  // leaves this untouched, which is the right reading of "took no damage": plate doing its
+  // job is not the same as being hit.
+  if (side === 'player') ctx.state.playerDamageTaken += hpLoss;
 
   emit(ctx, {
     t: 'damageDealt',

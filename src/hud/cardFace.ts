@@ -15,6 +15,8 @@
 
 import { formatCost } from './cost.js';
 import { schoolOf } from '../render/palette.js';
+import { isAscendedId } from '../core/data/cards/index.js';
+import { ASCENSION_PERCENT } from '../core/data/ascension.js';
 import type { CardCost } from '../core/types/cards.js';
 import type { CardDef } from '../core/types/cards.js';
 import type { CardSnapshot } from '../contract/snapshots.js';
@@ -41,6 +43,14 @@ export interface CardFace {
   ephemeral?: boolean;
   /** A variable price. The badge shows X rather than the printed zero. */
   xCost?: { max: number };
+  /**
+   * This is the Rank 2 printing.
+   *
+   * Shown as a badge rather than left to the name's trailing `+`, because the uplift is
+   * uniform and invisible: a card reading 33 instead of 30 is a card a player has to hold
+   * two of, side by side, to notice. The badge is what makes the Shards feel spent.
+   */
+  ascended?: boolean;
 }
 
 /** What the card does with the board, in one word. */
@@ -79,6 +89,7 @@ export function faceOfDef(def: CardDef): CardFace {
       : {}),
     ...(def.range !== undefined ? { range: def.range } : {}),
     ...(def.xCost ? { xCost: { max: def.xCost.max } } : {}),
+    ...(isAscendedId(def.id) ? { ascended: true } : {}),
   };
 }
 
@@ -96,6 +107,7 @@ export function faceOfSnapshot(s: CardSnapshot): CardFace {
     ...(s.range !== undefined ? { range: s.range } : {}),
     ...(s.ephemeral ? { ephemeral: true } : {}),
     ...(s.xCost ? { xCost: { max: s.xCost.max } } : {}),
+    ...(isAscendedId(s.defId) ? { ascended: true } : {}),
   };
 }
 
@@ -119,6 +131,7 @@ export function cardFaceHtml(
     'card',
     `card--${face.kind}`,
     `card--src-${face.source}`,
+    face.ascended ? 'card--ascended' : '',
     face.ephemeral ? 'card--ephemeral' : '',
     opts.extraClass ?? '',
   ]
@@ -150,6 +163,12 @@ export function cardFaceHtml(
       ? ''
       : `<span class="card__range" data-tip="companionRange">RANGE ${face.range}</span>`;
 
+  // The whole of what Ascension shows. One badge, one number, and it means the same thing
+  // on every card in the game -- which is the point of having made the uplift uniform.
+  const ascendedChip = face.ascended
+    ? `<span class="card__ascended" data-tip="Ascended|Rank 2. Every number this card deals is ${ASCENSION_PERCENT}% higher, rounded up.|Its cost, its reach and its targeting are untouched -- an Ascension never changes how a card is played.">+${ASCENSION_PERCENT}%</span>`
+    : '';
+
   return `
     <div class="${cls}" style="--school:${colors.main};--school-deep:${colors.deep}">
       <div class="card__cost${face.xCost ? ' card__cost--x' : ''}">${
@@ -159,6 +178,7 @@ export function cardFaceHtml(
       <div class="card__type">
         <span class="card__kind">${KIND_LABEL[face.kind]}</span>
         ${rangeChip}
+        ${ascendedChip}
         <span class="card__source">${face.source === 'companion' ? 'COMPANION' : 'HERO'}</span>
       </div>
       <div class="card__body">

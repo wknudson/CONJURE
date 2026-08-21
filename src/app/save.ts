@@ -63,7 +63,7 @@ import { makeRng } from '../core/util/rng.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 
 /**
  * The first version whose health numbers are written at the stretched scale.
@@ -74,6 +74,16 @@ export const SAVE_VERSION = 14;
  * contract until they had paid a Clinic bill for damage they never took.
  */
 const FIRST_STRETCHED_SAVE = 14;
+
+/**
+ * The first version whose Companions carry a drafted Grimoire of their own.
+ *
+ * Anything older stored no card list, because the eight were fixed by species. Those beasts
+ * keep the eight they were caught with rather than drawing fresh ones -- re-rolling would
+ * hand the player a different Companion than the one they went out and caught, and would
+ * do it again on every load.
+ */
+const FIRST_DRAFTED_GRIMOIRE = 15;
 
 /** Posters on the wall. Three, and the wall is the reason it is three. */
 export const PROFILE_SLOTS = 3;
@@ -641,6 +651,12 @@ function migrateProfile(
   if (version < FIRST_STRETCHED_SAVE) {
     notes.push('Health numbers are ten times larger now. Yours were scaled to match.');
   }
+  if (version < FIRST_DRAFTED_GRIMOIRE && companions.length > 0) {
+    // Said out loud because it is a *non*-event, and a player who reads the patch notes
+    // and then finds their Ignis unchanged should know that was the intent: the draft
+    // applies to beasts caught from here on, not retroactively to the one beside you.
+    notes.push('Companions draft their own spells now. The ones you already have keep theirs.');
+  }
 
   const profile: Profile = {
     profileId: slot,
@@ -889,7 +905,7 @@ function hashId(id: string): number {
 
 function readSpellModifiers(
   raw: unknown,
-  baseId: string,
+  grimoire: string[],
   instanceId: string,
 ): Record<string, CardModifier> {
   // A beast caught before the Fused Grimoire has no rolls stored. It gets some — but
@@ -897,15 +913,14 @@ function readSpellModifiers(
   // `Math.random()` here would make every reload a different animal, which is exactly what
   // storing `baseHpRoll` rather than deriving it exists to prevent.
   if (!raw || typeof raw !== 'object') {
-    const grimoire = companionById(baseId)?.innateGrimoire ?? [];
     if (grimoire.length === 0) return {};
     return rollSpellModifiers(makeRng(hashId(instanceId)), grimoire);
   }
-  const grimoire = new Set(companionById(baseId)?.innateGrimoire ?? []);
+  const known = new Set(grimoire);
   const out: Record<string, CardModifier> = {};
 
   for (const [defId, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (!grimoire.has(defId) || !value || typeof value !== 'object') continue;
+    if (!known.has(defId) || !value || typeof value !== 'object') continue;
     const v = value as Partial<CardModifier>;
     const mod: CardModifier = {};
     // Clamped to what the table can actually roll, so a hand-edited -9 is a -1.
@@ -941,6 +956,20 @@ function readRoster(
     fallbackId: string,
   ): CompanionInstance => {
     const level = Math.max(1, Math.round(numberOr(saved.level, 1)));
+    const instanceId =
+      typeof saved.instanceId === 'string' && saved.instanceId ? saved.instanceId : fallbackId;
+
+    // What this beast knows, as it was written down. A beast caught before the draft
+    // existed has none, and gets its species' old fixed eight rather than a fresh draw:
+    // re-rolling here would hand the player a different Companion than the one they went
+    // out and caught, every time they opened the game.
+    const savedBook = Array.isArray(saved.grimoire)
+      ? saved.grimoire.filter((c): c is string => typeof c === 'string').map(rename)
+      : [];
+    const grimoire = (savedBook.length > 0 ? savedBook : (companionById(baseId)?.legacyGrimoire ?? []))
+      // A card that has since left the game would deal a hole in the deck.
+      .filter((id) => CARDS[id]);
+
     const pool = traitsFor(baseId);
     const traitId =
       typeof saved.traitId === 'string' && traitById(saved.traitId)?.baseId === baseId
@@ -948,8 +977,9 @@ function readRoster(
         : (pool[0]?.id ?? '');
 
     return {
-      instanceId: typeof saved.instanceId === 'string' && saved.instanceId ? saved.instanceId : fallbackId,
+      instanceId,
       baseId,
+      grimoire,
       // Clamped to the band it could have been rolled in, so a hand-edited 4000 is a 440.
       // Scaled first: a pre-Stretch roll of 44 clamps to 360 if it is read as-is, which
       // would quietly turn every good constitution into the worst one.
@@ -969,11 +999,7 @@ function readRoster(
       startingArmor: Math.max(0, Math.round(numberOr(saved.startingArmor, 0))),
       bonusPips: Math.max(0, Math.round(numberOr(saved.bonusPips, 0))),
       traitId,
-      spellModifiers: readSpellModifiers(
-        saved.spellModifiers,
-        baseId,
-        typeof saved.instanceId === 'string' && saved.instanceId ? saved.instanceId : fallbackId,
-      ),
+      spellModifiers: readSpellModifiers(saved.spellModifiers, grimoire, instanceId),
     };
   };
 

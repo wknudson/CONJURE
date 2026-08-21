@@ -9,6 +9,18 @@
 
 import type { School } from '../../contract/ids.js';
 import { STARTER_DECK } from './cards/index.js';
+import type { GrimoireSource } from './grimoire.js';
+import { MONO_HYBRID_CHANCE } from './grimoire.js';
+
+/**
+ * Cards a Companion fuses into the deck at the opening bell. Exactly eight, always.
+ *
+ * A constant rather than "whatever the species happens to carry", because the Hero Deck's
+ * bounds are written *against* it: a 12-card Hero half is a 20-card deck once the beast
+ * has shuffled its own in, and a species that quietly brought seven would make every deck
+ * size in the game one short without anything saying so.
+ */
+export const GRIMOIRE_SIZE = 8;
 
 export interface CompanionDef {
   id: string;
@@ -26,17 +38,30 @@ export interface CompanionDef {
    */
   deck: string[];
   /**
-   * The eight spells this species always brings, fused into the deck at the bell.
+   * The pool this bloodline drafts its eight from, and how it is weighted.
    *
-   * Fixed by species, so catching a second Boreas never means catching different *cards* —
-   * what differs between two beasts of the same bloodline is what those eight spells
-   * **rolled** (`CompanionInstance.spellModifiers`). That split is the whole point of the
-   * change: the deck is knowable, the beast is not.
+   * A *pool*, not a list, and that is the change. Every Ignis used to carry the same eight
+   * cards, so the second one you caught was worth nothing — the beast was a checkbox. Two
+   * Ignis are now two different books drawn from the same shelf: one heavy on runes, one
+   * that rolled a Cataclysm it has no business knowing.
    *
-   * Exactly `GRIMOIRE_SIZE`, checked by a test rather than by the type, so a species that
-   * shipped with seven is caught at the door instead of dealing a short deck.
+   * `schools` is a list because a hybrid bloodline draws from two at once. Every species
+   * shipped so far is mono-element, so every entry holds one — the second slot is what a
+   * Chimera would use, and the draft has no separate case for it.
+   *
+   * What each of the eight *rolled* is a second, independent question
+   * (`CompanionInstance.spellModifiers`). Which cards, and what those cards came out at.
    */
-  innateGrimoire: string[];
+  grimoire: GrimoireSource;
+
+  /**
+   * The eight this species used to always bring.
+   *
+   * Kept as the **fallback** for a beast tamed before the draft existed, and for nothing
+   * else. A save from before this change holds no drafted list, and re-rolling one on load
+   * would hand every player a different Companion than the one they went and caught.
+   */
+  legacyGrimoire: string[];
   /** The setup-only stat block placed on the board as its Bound Form. */
   unitCardId: string;
 }
@@ -51,7 +76,8 @@ export const COMPANIONS: CompanionDef[] = [
       'Runes and cascades. Brand your enemies, then set the whole board off at once. Ember Watch ignites anything standing in its lane.',
     // The Draft 7 deck exactly as specced.
     deck: [...STARTER_DECK],
-    innateGrimoire: [
+    grimoire: { schools: ['pyre'], hybridChance: MONO_HYBRID_CHANCE },
+    legacyGrimoire: [
       'flame_surge',
       'flame_surge',
       'cinder_rune',
@@ -71,7 +97,8 @@ export const COMPANIONS: CompanionDef[] = [
     blurb:
       'Control. Chill an enemy three times and it freezes solid — then break it. Rime Guard armours your Hero each turn.',
     deck: [...STARTER_DECK],
-    innateGrimoire: [
+    grimoire: { schools: ['frost'], hybridChance: MONO_HYBRID_CHANCE },
+    legacyGrimoire: [
       'glacial_spike',
       'glacial_spike',
       'frost_nova',
@@ -94,7 +121,8 @@ export const COMPANIONS: CompanionDef[] = [
     // plan a coincidence. Arc Lash and the Hound are Hero cards and would be legal in any
     // deck; they are here because this is the deck that wants them.
     deck: [...STARTER_DECK],
-    innateGrimoire: [
+    grimoire: { schools: ['surge'], hybridChance: MONO_HYBRID_CHANCE },
+    legacyGrimoire: [
       'static_arc',
       'static_arc',
       'static_arc',
@@ -116,7 +144,8 @@ export const COMPANIONS: CompanionDef[] = [
     // Its own school has exactly two cards a deck can hold three of, so the six are those
     // at their caps. A Dusk deck is short on options by design: it spends what it has.
     deck: [...STARTER_DECK],
-    innateGrimoire: [
+    grimoire: { schools: ['dusk'], hybridChance: MONO_HYBRID_CHANCE },
+    legacyGrimoire: [
       'soul_splinter_rune',
       'soul_splinter_rune',
       'soul_splinter_rune',
@@ -136,7 +165,8 @@ export const COMPANIONS: CompanionDef[] = [
     blurb:
       'Patience. Poison, roots, and a body that grows where you plant it. Verdant Growth gives 2 HP back for the first card each turn.',
     deck: [...STARTER_DECK],
-    innateGrimoire: [
+    grimoire: { schools: ['bloom'], hybridChance: MONO_HYBRID_CHANCE },
+    legacyGrimoire: [
       'spore_cloud',
       'spore_cloud',
       'rot_root_snare',
@@ -156,7 +186,8 @@ export const COMPANIONS: CompanionDef[] = [
     blurb:
       'Ground. Walls, shoves, and a body that will not be moved. Shield Oath armours everything standing in its lane.',
     deck: [...STARTER_DECK],
-    innateGrimoire: [
+    grimoire: { schools: ['bulwark'], hybridChance: MONO_HYBRID_CHANCE },
+    legacyGrimoire: [
       'seismic_slam',
       'seismic_slam',
       'petrifying_mantle',
@@ -176,7 +207,8 @@ export const COMPANIONS: CompanionDef[] = [
     blurb:
       'Cards. Beams, hooks, and a hand that keeps refilling. Marginalia draws you one more every turn you cast.',
     deck: [...STARTER_DECK],
-    innateGrimoire: [
+    grimoire: { schools: ['arcane'], hybridChance: MONO_HYBRID_CHANCE },
+    legacyGrimoire: [
       'aether_beam',
       'aether_beam',
       'volatile_cask',
