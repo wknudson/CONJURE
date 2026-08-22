@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addUnit, atTile, damageTo, eventsOf, handCard, play, run, scenario } from './scenario.js';
+import { addUnit, atTile, damageTo, eventsOf, giveCard, handCard, play, run, scenario } from './scenario.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { MARKS } from '../core/data/marks.js';
 import { tierOf } from '../core/data/deckRules.js';
@@ -40,6 +40,118 @@ describe('the set as data', () => {
     for (const def of Object.values(CARDS)) {
       if (def.effect.op !== 'attachMark') continue;
       expect(MARKS[def.effect.mark], `${def.name} names a mark that does not exist`).toBeDefined();
+    }
+  });
+});
+
+describe('the three Marks the set was missing', () => {
+  /**
+   * A branded host, a bystander beside it, and something able to hit it.
+   *
+   * `dtype` decides which trap springs, so every test below picks the striker's damage to
+   * match the trigger it is proving — that is the whole of what a Mark's alignment does.
+   */
+  const wired = (mark: string, hostAt = { x: 2, y: 3 }) => {
+    const state = scenario({ width: 6, height: 8 });
+    const host = addUnit(state, {
+      def: 'grave_sentinel',
+      side: 'enemy',
+      at: hostAt,
+      hp: 200,
+      mark,
+    });
+    // Orthogonally adjacent, so it is caught by a cross as well as by a ring.
+    const beside = addUnit(state, {
+      def: 'scout_imp',
+      side: 'enemy',
+      at: { x: hostAt.x + 1, y: hostAt.y },
+      hp: 200,
+    });
+    const striker = addUnit(state, {
+      def: 'scout_imp',
+      side: 'player',
+      at: { x: hostAt.x, y: hostAt.y + 1 },
+      hp: 200,
+      fresh: false,
+    });
+    return { state, host, beside, striker };
+  };
+
+  const struck = (mark: string) => {
+    const { state, host, beside, striker } = wired(mark);
+    const res = run(state, {
+      type: 'attack',
+      attacker: striker.id,
+      target: { kind: 'unit', id: host.id },
+    });
+    return { res, host, beside };
+  };
+
+  it('springs the Rime Mark on a physical blow? No — it wants frost or spell', () => {
+    // The alignment rule, stated as a negative first because it is the half that fails
+    // silently: a trap that goes off on everything is not a trap, it is a bomb.
+    const { res } = struck('rime_mark');
+    expect(eventsOf(res.events, 'markDetonated')).toHaveLength(0);
+  });
+
+  /** Sets a mark off with a real card of the right damage type, from the player's hand. */
+  const cast = (mark: string, spell: string) => {
+    const { state, host, beside } = wired(mark);
+    state.players.player.pips = 8;
+    const card = giveCard(state, 'player', spell);
+    const res = run(state, play(card, { kind: 'entity', ref: { kind: 'unit', id: host.id } }));
+    return { res, host, beside };
+  };
+
+  it('freezes the ground when frost sets the Rime Mark off', () => {
+    const { res, beside } = cast('rime_mark', 'glacial_spike');
+
+    expect(eventsOf(res.events, 'markDetonated')).toHaveLength(1);
+    // The bystander is hit by the blast alone -- the Spike was aimed at the host.
+    expect(damageTo(res.events, beside.id), 'and it hits for its 20').toBe(20);
+    expect(res.state.units[beside.id]!.statuses.chill, 'two Chill, one short of a Freeze').toBe(2);
+  });
+
+  it('leaves everything around the Arc Mark Charged, exactly once', () => {
+    // Charged does nothing on its own, which is exactly the point: this Mark is a setup
+    // piece, and a test that only checked the damage would not notice the setup vanishing.
+    //
+    // **Exactly one**, and the number is the test. `dealDamage` already charges anything a
+    // shock hit survives, so the first draft of this Mark also carried an `applies` entry
+    // and the blast landed two stacks -- the card paying for what the engine gives free.
+    // A `toBeGreaterThan(0)` here would have shrugged that off.
+    const { res, beside } = cast('arc_mark', 'arc_lash');
+
+    expect(eventsOf(res.events, 'markDetonated')).toHaveLength(1);
+    expect(damageTo(res.events, beside.id)).toBe(30);
+    expect(res.state.units[beside.id]!.statuses.charged).toBe(1);
+  });
+
+  it('breaks the ground under the Tremor Mark, and leaves nothing behind', () => {
+    const { res, beside } = struck('tremor_mark');
+
+    expect(eventsOf(res.events, 'markDetonated')).toHaveLength(1);
+    expect(damageTo(res.events, beside.id)).toBe(40);
+    // No status at all. It buys its identity with a damage type instead.
+    expect(res.state.units[beside.id]!.statuses.chill).toBeUndefined();
+    expect(res.state.units[beside.id]!.statuses.charged).toBeUndefined();
+  });
+
+  it('spares its own host, like every other Mark', () => {
+    for (const mark of ['tremor_mark']) {
+      const { res, host } = struck(mark);
+      const dealt = eventsOf(res.events, 'damageDealt').filter(
+        (e) => e.cause === 'mark' && e.target.kind === 'unit' && e.target.id === host.id,
+      );
+      expect(dealt, `${mark} caught its own host`).toEqual([]);
+    }
+  });
+
+  it('is priced and obtainable exactly like the three that already existed', () => {
+    for (const id of ['rime_mark', 'arc_mark', 'tremor_mark']) {
+      expect(tierOf(CARDS[id]!), id).toBe(1);
+      expect(isObtainable(CARDS[id]!), id).toBe(true);
+      expect(CARDS[id]!.target.kind, id).toBe('entity');
     }
   });
 });

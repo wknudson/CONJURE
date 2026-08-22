@@ -166,8 +166,12 @@ describe('grantSchematic', () => {
  *
  * This is the cost of the change, and it is not small. Making the plan the only door means
  * a card is reachable exactly when some encounter's deck carries it. Four encounters ship,
- * between them they play five schools' worth of cards, and **29 of the 50 obtainable cards
- * are currently behind no door at all**.
+ * and **28 of the 53 obtainable cards are currently behind no door at all** — every Bloom,
+ * Surge and Bulwark spell among them.
+ *
+ * What is *not* on the list is worth as much as what is. All six Marks are reachable,
+ * because the Novice Duelist was rebuilt to hold a Hero Deck and lays every one of them —
+ * which is the whole reason that rebuild was worth doing.
  *
  * That is a content gap, not a bug: it closes as encounters are added, and every card on
  * the list below becomes reachable the day a fight plays it. But a gap nobody can see is a
@@ -185,12 +189,14 @@ describe('what the loop can actually reach', () => {
     'pyre_pillar',
     'ashen_wake',
     'pressure_valve_release',
-    // The Hero's own arcane tools, which no enemy has ever cast at anybody.
+    // The Hero's own arcane tools. No enemy has ever cast one at anybody -- the Duelist
+    // carries Grapple Line and Aether Beam, but not the two Rallies or the Tether, because
+    // a revive wants a fallen roster to aim at and the AI has no use for one.
     'aetheric_tether',
     'aetheric_resurgence',
     'anchor_rally',
-    // The Bloom trap, and Bloom generally: no encounter is fought against it.
-    'rot_root_snare',
+    // Bloom: no encounter is fought against it. (The Rot-Root Snare *is* reachable now --
+    // the Duelist lays it, because a Mark is Hero kit whatever its blast is made of.)
     'spore_cloud',
     'noxious_cloud',
     'root_snare',
@@ -207,7 +213,7 @@ describe('what the loop can actually reach', () => {
     'tectonic_plate',
     'avalanche_slam',
     'petrifying_mantle',
-    // Dusk: the Trial is Pyre and the Duelist plays neutral, so none of this is on offer.
+    // Dusk: the Trial is Pyre and the Duelist plays colourless, so none of this is on offer.
     'smoke_bomb',
     'shadow_siphon',
     'grave_call',

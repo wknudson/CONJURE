@@ -653,10 +653,38 @@ a cascade running out of budget must not leave a body standing at zero health.
 > mark` restarted at one and was bounded by nothing. A death mark was worse: it was
 > hardcoded to depth 1, so every death in a chain began a fresh one.
 
-Shipped: **Cinder Mark** (pyre; fire or spell; 4 fire to adjacent8), **Rot-Root Snare**
-(bloom; entangle and toxin, `damage: 0`), **Cask Blast** (the Volatile Cask's detonation,
-attached by no card) and **Soul Splinter Mark** (dusk; on death; 5 to the lowest-HP
-enemy).
+### The set: one per element, and exactly one
+
+A Mark is the Hero's only way to put an element on the board — the Companion casts the
+Spells — so while three of the six existed, the Hero's half of the pairing was a different
+size depending on who the player had tamed. All six ship now.
+
+| Mark | Detonates | Trigger | Blast | Leaves |
+|---|---|---|---|---|
+| **Cinder Mark** | pyre · `fire` 40 | fire or spell | adjacent8 | — |
+| **Rime Mark** | frost · `frost` 20 | frost or spell | adjacent8 | Chill 2 |
+| **Arc Mark** | surge · `shock` 30 | shock or spell | plus 1 | Charged (from the damage) |
+| **Tremor Mark** | bulwark · `impact` 40 | physical or impact | plus 1 | — |
+| **Soul Splinter Mark** | dusk · `spell` 50 | on death | lowest-HP enemy | — |
+| **Rot-Root Snare** | bloom · none (`damage: 0`) | physical or impact | adjacent8 | Entangle 1 + Toxin 1 |
+
+Plus **Cask Blast** (arcane; the Volatile Cask's own detonation, attached by no card).
+
+Three things about that table are load-bearing:
+
+- **No two share a (trigger, damage type, leaves-behind).** Six traps that all read "damage
+  in a ring" would be one trap printed six times, and `duelist.test.ts` asserts the triple is
+  unique.
+- **The Arc Mark carries no `applies` entry.** `dealDamage` already leaves 1 Charged on any
+  unit a shock hit survives ([damage.ts:247](src/core/engine/damage.ts:247)), so a rider
+  would be the card paying for what the engine gives free — the first draft did exactly
+  that and landed two stacks.
+- **Rime and Tremor are a pair.** Chill 2 is one short of a Freeze, and `impact` is what
+  Shatters a Frozen body. The only deliberate combination in the set.
+
+**No hybrid Marks, ever.** A fusion is the splicing bench's product and lives in a Grimoire
+socket; a two-school Mark would be a Hybrid the Hero could deck, which is the thing that
+sink exists to charge for.
 
 ### The card and the brand are two different things
 
@@ -668,6 +696,9 @@ the Hero may.
 | | card `school` | `MarkDef` school | detonates as |
 |---|---|---|---|
 | Cinder Mark | arcane | pyre | `fire` |
+| Rime Mark | arcane | frost | `frost` |
+| Arc Mark | arcane | surge | `shock` |
+| Tremor Mark | arcane | bulwark | `impact` |
 | Soul Splinter Mark | arcane | dusk | `spell` |
 | Rot-Root Snare | arcane | bloom | no damage — `entangle` + `toxin` |
 

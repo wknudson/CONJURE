@@ -140,36 +140,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   },
 
   // ------------------------------------------------------------------ marks
-  cinder_mark: {
-    id: 'cinder_mark',
-    name: 'Cinder Mark',
-    cost: { pips: 1, marrow: 0 },
-    school: 'arcane',
-    source: 'companion',
-    kind: 'mark',
-    text: 'Attach to a unit or obstacle (max 1 per target). Detonates for 40 fire damage to all adjacent when the host loses HP to fire or spell damage.',
-    target: { kind: 'entity', side: 'any', includeObstacles: true },
-    effect: { op: 'attachMark', mark: 'cinder_mark' },
-    keywords: [],
-    // Branding an enemy means getting a clear look at it.
-    range: 4,
-    needsLoS: true,
-  },
 
-  soul_splinter_mark: {
-    id: 'soul_splinter_mark',
-    name: 'Soul Splinter Mark',
-    cost: { pips: 1, marrow: 0 },
-    school: 'arcane',
-    source: 'companion',
-    kind: 'mark',
-    text: 'Attach to a friendly unit. When it dies — including bled dry by a tithe — deals 50 damage to the lowest-HP enemy.',
-    target: { kind: 'entity', side: 'ally', includeObstacles: false },
-    effect: { op: 'attachMark', mark: 'soul_splinter_mark' },
-    keywords: [],
-    // Marking your own needs closeness, not sight: no line required.
-    range: 4,
-  },
 
   // ----------------------------------------------------------------- spells
   flame_surge: {

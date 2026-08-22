@@ -124,16 +124,21 @@ export interface DeckBuilderResult {
  * Screen state, saved nowhere: a filter is a way of looking at the shelf rather than a
  * fact about the character.
  *
- * There is deliberately no `skill` type. The engine's `kind` union is minion, spell,
- * ability, mark and obstacle — a pill matching nothing would be a filter that always
- * returns an empty shelf, which reads as a broken collection rather than as a category the
- * game does not have. "Construct" is the label for `obstacle`, because that is what the
- * game has always called the thing standing on the board.
+ * The pills are the Hero Deck's three roles and nothing else: **Ability, Mark, Construct**.
+ * That is not the whole `kind` union, and the two omissions are deliberate.
  *
- * `spell` has no pill here and that is the one deliberate omission. This case is the shelf
- * a Hero Deck is built out of, and a Spell can never go in one — a pill whose entire
- * result set is greyed out is a filter for looking at what you cannot use. The Artificer's
- * catalogue keeps its Spells pill, because the bench sells and Ascends them.
+ * `minion` is gone because bodies are gone — the case does not carry them. A warband is
+ * point-buy over unlocks and is built on the Vanguard tab, so a Minion pill here could only
+ * ever filter to an empty shelf.
+ *
+ * `spell` is gone for the neighbouring reason: this case is the shelf a Hero Deck is built
+ * out of, and a Spell can never go in one. A pill whose entire result set is unclickable is
+ * a filter for looking at what you cannot use. The Artificer's catalogue keeps its Spells
+ * pill, because the bench sells and Ascends them.
+ *
+ * There is deliberately no `skill` type either — a pill matching nothing reads as a broken
+ * collection rather than as a category the game does not have. "Construct" is the label for
+ * `obstacle`, because that is what the game has always called the thing on the board.
  */
 interface CollectionFilters {
   school: School | 'all';
@@ -141,11 +146,31 @@ interface CollectionFilters {
   kind: 'all' | CardDef['kind'];
 }
 
-const VARIANT_PILLS: { key: 'all' | CardDef['kind']; label: string }[] = [
+/**
+ * Whether a card belongs on the Deck tab's shelf at all.
+ *
+ * A body is not a card you shuffle. Bodies are point-buy over unlocks and are assembled on
+ * the Vanguard tab one click away, so showing them here — greyed, tagged "Vanguard",
+ * unclickable — spent a third of the grid telling the player about a screen that already
+ * does the job properly.
+ *
+ * A function rather than an inline `.filter`, and the reason is that the inline version was
+ * a rule nothing could test: it lived inside a DOM render, so deleting it broke no build
+ * and failed no suite. It is one line either way; only one of them can be asked a question.
+ *
+ * Deliberately **not** `deckRoleRefusal(def) === null`. Spells and elemental Constructs stay
+ * on the shelf, barred and labelled with where they *do* go, because the player owns them
+ * and a shelf that hides what you own reads as a card having been taken away. Bodies are the
+ * one exclusion, because they have somewhere else to be.
+ */
+export function belongsInCase(def: CardDef): boolean {
+  return def.kind !== 'minion';
+}
+
+export const VARIANT_PILLS: { key: 'all' | CardDef['kind']; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'ability', label: 'Ability' },
   { key: 'mark', label: 'Mark' },
-  { key: 'minion', label: 'Minion' },
   { key: 'obstacle', label: 'Construct' },
 ];
 
@@ -163,7 +188,14 @@ const DECK_SECTIONS: { kind: CardDef['kind']; label: string }[] = [
   { kind: 'obstacle', label: 'Constructs' },
 ];
 
-/** What replaces the copy tally on a card this deck can never hold: where it *does* go. */
+/**
+ * What replaces the copy tally on a card this deck can never hold: where it *does* go.
+ *
+ * Exhaustive over the union rather than over what the case can currently show. The
+ * `minion` arm is unreachable today because bodies are filtered off this shelf entirely --
+ * but that filter is one line, and a map that only covered the reachable arms would fail
+ * to compile the day somebody changed it, which is the point of writing it exhaustively.
+ */
 const BARRED_TALLY: Record<Exclude<RoleRefusal, null>, string> = {
   minion: 'Vanguard',
   spell: 'Grimoire',
@@ -612,6 +644,7 @@ export class DeckBuilderScreen implements Screen {
     const owned = [...this.collection.unlocked]
       .filter((id) => CARDS[id])
       .map((id) => CARDS[id]!)
+      .filter(belongsInCase)
       .filter((d) => f.school === 'all' || d.school === f.school)
       .filter((d) => f.kind === 'all' || d.kind === f.kind)
       .filter((d) => matchesPips(d.cost.pips, f.cost))

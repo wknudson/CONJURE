@@ -229,4 +229,155 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
     obstacleHp: 80,
     leavesRubble: true,
   },
+
+  // ------------------------------------------------------------------- the Marks
+  //
+  // All six live here, and the file they are in is the point: a Mark is **Hero property**,
+  // arcane is the Hero's colour, and `deckRoleRefusal` lets a Mark into a Hero Deck
+  // whatever its blast is made of. The elemental half is on the `MarkDef` in
+  // `data/marks.ts`, which is the colour of what goes off rather than of the hand that set
+  // it -- so a Cinder Mark is an arcane card that detonates pyre.
+  //
+  // `source: 'companion'` on every one of them, and it is not a mistake. That field means
+  // "cast from the beast's tile", which is what gates the range check in `targeting.ts`:
+  // laying a trap means getting close enough to lay it, and the range 4 below is most of
+  // what each of these costs. Flipping it to 'hero' would make every Mark castable across
+  // the whole board. Whose card it is comes off `kind` -- see `ownerOfKind`.
+  //
+  // **No hybrid Marks, ever.** A fusion belongs to the splicing bench and lives in a
+  // Grimoire socket; a two-school Mark would be a Hybrid the Hero could deck, which is the
+  // thing that sink exists to charge for.
+
+  /**
+   * Frost's brand. The one Mark that is worth laying before anything is hurt.
+   *
+   * Two Chill is one short of a Freeze, which is the whole card: it does not win the
+   * exchange, it hands the next one to whatever your Companion casts. Pair it with a
+   * Tremor Mark and the impact Shatters what this froze.
+   */
+  rime_mark: {
+    id: 'rime_mark',
+    name: 'Rime Mark',
+    cost: { pips: 1, marrow: 0 },
+    school: 'arcane',
+    source: 'companion',
+    kind: 'mark',
+    text: 'Attach to a unit or obstacle (max 1 per target). When it loses health to frost or spell damage, deals 20 frost damage and 2 Chill to everything adjacent.',
+    target: { kind: 'entity', side: 'any', includeObstacles: true },
+    effect: { op: 'attachMark', mark: 'rime_mark' },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * Surge's brand: a trap that is mostly a setup.
+   *
+   * Charged does nothing by itself. What it does is make the *next* thing land harder —
+   * fire on a Charged body Overloads, frost Superconducts — so this is the Mark you lay
+   * when you already know what you are casting after it.
+   *
+   * The Charged comes off the **shock damage**, not off a rider on the mark: any shock hit
+   * a unit survives leaves one. Saying so on the face is teaching the player an engine rule
+   * they will meet again on every Surge card.
+   */
+  arc_mark: {
+    id: 'arc_mark',
+    name: 'Arc Mark',
+    cost: { pips: 1, marrow: 0 },
+    school: 'arcane',
+    source: 'companion',
+    kind: 'mark',
+    text: 'Attach to a unit or obstacle (max 1 per target). When it loses health to shock or spell damage, deals 30 shock damage in a cross around it — and shock leaves everything it touches Charged.',
+    target: { kind: 'entity', side: 'any', includeObstacles: true },
+    effect: { op: 'attachMark', mark: 'arc_mark' },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * Bulwark's brand: all weight, nothing left behind.
+   *
+   * It applies no status, which is why it is allowed to hit as hard as the Cinder Mark off
+   * a narrower blast — every other Mark is buying part of its price in a condition. What it
+   * buys instead is a **damage type**: impact is what breaks a Frozen body, so this is the
+   * answer to the Rime Mark two tiles over, whoever laid it.
+   *
+   * Set off by a blow rather than by magic, so it is the trap that answers a melee line
+   * walking into you.
+   */
+  tremor_mark: {
+    id: 'tremor_mark',
+    name: 'Tremor Mark',
+    cost: { pips: 1, marrow: 0 },
+    school: 'arcane',
+    source: 'companion',
+    kind: 'mark',
+    text: 'Attach to a unit or obstacle (max 1 per target). When it loses health to a physical or impact blow, deals 40 impact damage in a cross around it.',
+    target: { kind: 'entity', side: 'any', includeObstacles: true },
+    effect: { op: 'attachMark', mark: 'tremor_mark' },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  cinder_mark: {
+    id: 'cinder_mark',
+    name: 'Cinder Mark',
+    cost: { pips: 1, marrow: 0 },
+    school: 'arcane',
+    source: 'companion',
+    kind: 'mark',
+    text: 'Attach to a unit or obstacle (max 1 per target). Detonates for 40 fire damage to all adjacent when the host loses HP to fire or spell damage.',
+    target: { kind: 'entity', side: 'any', includeObstacles: true },
+    effect: { op: 'attachMark', mark: 'cinder_mark' },
+    keywords: [],
+    // Branding an enemy means getting a clear look at it.
+    range: 4,
+    needsLoS: true,
+  },
+
+  soul_splinter_mark: {
+    id: 'soul_splinter_mark',
+    name: 'Soul Splinter Mark',
+    cost: { pips: 1, marrow: 0 },
+    school: 'arcane',
+    source: 'companion',
+    kind: 'mark',
+    text: 'Attach to a friendly unit. When it dies — including bled dry by a tithe — deals 50 damage to the lowest-HP enemy.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: { op: 'attachMark', mark: 'soul_splinter_mark' },
+    keywords: [],
+    // Marking your own needs closeness, not sight: no line required.
+    range: 4,
+  },
+
+  /**
+   * The trap, and Bloom's first mark.
+   *
+   * Attaches to a body on either side, exactly as the Cinder Mark does — the interesting
+   * play is branding an *enemy* and letting their own front line spring it, but wiring
+   * your own wall is a legitimate defensive read and the card does not judge.
+   *
+   * The blast spares its host, which is a property of every ringed mark in the game
+   * (`applyBlast` skips the thing the mark was attached to). So this is a trap on a body
+   * that catches whatever is standing *around* that body when it is struck — not a
+   * shackle on the body itself.
+   */
+  rot_root_snare: {
+    id: 'rot_root_snare',
+    name: 'Rot-Root Snare',
+    cost: { pips: 1, marrow: 0 },
+    school: 'arcane',
+    source: 'companion',
+    kind: 'mark',
+    text: 'Attach to a unit or obstacle (max 1 per target). When it loses health to a physical or impact blow, everything adjacent is Entangled and takes 1 Toxin.',
+    target: { kind: 'entity', side: 'any', includeObstacles: true },
+    effect: { op: 'attachMark', mark: 'rot_root_snare' },
+    keywords: [],
+    // Laying a trap means getting close enough to lay it, and seeing where it goes.
+    range: 4,
+    needsLoS: true,
+  },
 };
