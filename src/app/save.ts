@@ -25,7 +25,7 @@ import type { Collection } from '../core/data/deckRules.js';
 import type { School } from '../contract/ids.js';
 import type { CharacterLook } from '../core/data/characterLook.js';
 import { defaultLook, normalizeLook } from '../core/data/characterLook.js';
-import { reconcileCollection, startingCollection } from '../core/data/collection.js';
+import { isObtainable, reconcileCollection, startingCollection } from '../core/data/collection.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { RELICS, slotOf } from '../core/data/relics.js';
 import { deckRoleRefusal, validateDeck } from '../core/data/deckRules.js';
@@ -78,7 +78,7 @@ import { draftGrimoire, isDraftable, socketRefusal } from '../core/data/grimoire
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
 
 /**
  * The first version whose health numbers are written at the stretched scale.
@@ -219,6 +219,24 @@ export interface Profile {
    * which keeps "what does taming a Boreas give me" answerable without a save in hand.
    */
   rosterUnlocks: string[];
+  /**
+   * Card plans this character has taken off something, by card id (v19).
+   *
+   * The gate on the Artificer's first trade, and the only thing standing between a rich
+   * player and the whole catalogue. A win offers a choice of these; the bench charges
+   * Ducats to cut one into an actual card.
+   *
+   * A **ledger**, like `rosterUnlocks` and for the same reason: it records a thing that
+   * happened. Nothing removes from it -- not forging the card, not a loss, not a wager.
+   * Forging reads it and writes to `collection.unlocked`, so a Schematic you have spent is
+   * still a Schematic you found, and `rollSchematicOffer` can tell the difference between
+   * a plan you never had and one you already used.
+   *
+   * Absent on a v18 save and **left empty** rather than backfilled. Handing an existing
+   * character a plan for every card they had not got would be handing them the old
+   * free-rewards economy one last time, on the way out of it.
+   */
+  schematics: string[];
   /**
    * Who the player said they were, at the desk (v18).
    *
@@ -426,6 +444,11 @@ export function initializeNewProfile(profileId: string, rawLook: CharacterLook):
     level: 1,
     state: { overworld, combat: null },
     collection: startingCollection(),
+    // No plans in hand. The first one comes off the first thing they beat, which is the
+    // whole point of the trade: a card is something you saw somebody use and then paid to
+    // have cut. Seeding even one would make the Artificer's door useful before the player
+    // has any idea what is behind it.
+    schematics: [],
     decks,
     // A warband of their own colour, spending as much of the ten as their school's shelf
     // allows -- so a new player meets the deployment phase with a real line to place, and
@@ -866,6 +889,14 @@ function migrateProfile(
     level: 1,
     state: { overworld, combat: null },
     collection,
+    // Read, cleaned, and never backfilled. A v18 save arrives with none, which is correct:
+    // that character earned their collection under the old free-rewards economy and does
+    // not also get a plan for everything they missed.
+    //
+    // Ids that no longer name an obtainable card are dropped, for the same reason
+    // `reconcileCollection` drops them -- a plan for a card that has left the game is a row
+    // on the bench that can never be cut.
+    schematics: readSchematics(data.schematics),
     decks,
     roster,
     rosterUnlocks: unlocks,
@@ -1134,6 +1165,26 @@ function repairGrimoire(book: string[], baseId: string, instanceId: string): str
     const replacement = draftGrimoire(rng, source, 1);
     return replacement.length > 0 ? replacement : [];
   });
+}
+
+/**
+ * The Schematics a save claims to hold, cleaned on the way in.
+ *
+ * Renamed through the same table the decks and collections use, so the Rune-to-Mark sweep
+ * does not quietly confiscate a plan somebody earned. Filtered by `isObtainable` rather
+ * than merely by "is a card", because a plan for the Rite or for a Rank 2 printing is a
+ * row the bench would draw and then refuse to cut.
+ */
+function readSchematics(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out = new Set<string>();
+  for (const value of raw) {
+    if (typeof value !== 'string') continue;
+    const id = rename(value);
+    const def = CARDS[id];
+    if (def && isObtainable(def)) out.add(id);
+  }
+  return [...out].sort();
 }
 
 /** A stable seed from a beast's own id, so a migrated roll never changes. */

@@ -470,6 +470,47 @@ describe('one character on disk', () => {
     expect(first.spellModifiers).toEqual(second.spellModifiers);
   });
 
+  it('starts a character with no plans at all', () => {
+    // The first Schematic comes off the first thing they beat. Seeding even one would make
+    // the Artificer's door useful before the player has any idea what is behind it.
+    expect(newProfile('slot-1').schematics).toEqual([]);
+  });
+
+  it('leaves a save written before Schematics with none, rather than backfilling', () => {
+    // The tempting migration is "grant a plan for everything they had not got", and it is
+    // wrong: that character earned their collection under the old free-rewards economy and
+    // handing them the whole catalogue on the way out of it is paying them twice.
+    const file = fileWith('slot-1');
+    writeSave(file);
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    raw.version = 18;
+    delete raw.profiles['slot-1'].schematics;
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const p = loadSave().save.profiles['slot-1']!;
+    expect(p.schematics).toEqual([]);
+    expect(p.collection.unlocked.length, 'and what they had forged is untouched').toBeGreaterThan(0);
+  });
+
+  it('carries plans across a rename, and drops ones that name nothing', () => {
+    // Same rule the decks and the collection keep. A Schematic is a thing the player went
+    // and earned, so a card being renamed must not quietly confiscate it.
+    const file = fileWith('slot-1');
+    writeSave(file);
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    raw.profiles['slot-1'].schematics = [
+      'cinder_rune',
+      'shield_bash',
+      'a_card_from_a_past_patch',
+      'rite_of_subjugation',
+      42,
+    ];
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const p = loadSave().save.profiles['slot-1']!;
+    expect(p.schematics, 'renamed, kept, and the junk gone').toEqual(['cinder_mark', 'shield_bash']);
+  });
+
   it('takes the Marks out of a Grimoire caught before the role overhaul', () => {
     // Every beast tamed before today has Marks in its book: Ignis drafted Cinder Marks,
     // Mortis drafted Soul Splinters. A Mark is the Hero's trap now, and leaving them would

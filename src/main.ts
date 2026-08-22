@@ -48,7 +48,8 @@ import { forfeitIfAbandoned, isDown, rescuePlayer } from './core/overworld/state
 import { encounterForBounty, rollBounties, type Bounty } from './core/data/bounties.js';
 import { carryFor, openContract, resolveCombat, type CombatOutcome } from './core/overworld/run.js';
 import { companionById, DEFAULT_COMPANION } from './core/data/companions.js';
-import { grantCard, printedDeck, rollRewards } from './core/data/collection.js';
+import { printedDeck } from './core/data/collection.js';
+import { grantSchematic, rollSchematicOffer } from './core/data/schematics.js';
 import { ascendCard, forgeSchematic } from './core/overworld/forge.js';
 import { spliceCard } from './core/overworld/splice.js';
 import { socketRefusal } from './core/data/grimoire.js';
@@ -59,7 +60,7 @@ import {
   type CompanionInstance,
 } from './core/overworld/vivarium.js';
 import { VivariumScreen } from './app/VivariumScreen.js';
-import { makeRng } from './core/util/rng.js';
+import { hashText, makeRng } from './core/util/rng.js';
 import { NOVICE_AI, profileByName } from './core/ai/controller.js';
 import type { EncounterDef } from './core/data/encounters/registry.js';
 import type { CombatResult } from './contract/events.js';
@@ -304,6 +305,7 @@ function showSafehouse(companionId: string): void {
           new ArtificerScreen({
             global,
             collection: () => profile().collection,
+            schematics: () => profile().schematics,
             // Both tills return whether they fired. The collection is replaced rather
             // than mutated — it is the save's, not the character's — so a refusal simply
             // leaves the old one in place and nothing has been charged.
@@ -314,7 +316,11 @@ function showSafehouse(companionId: string): void {
               return true;
             },
             onForgeSchematic: (cardId) => {
-              const next = forgeSchematic(global, profile().collection, cardId);
+              // The ledger goes to the till as well as to the shelf. A screen that only
+              // gated the button would let a stale render cut a card the character holds no
+              // plan for -- the same `*Refusal`-asked-twice discipline every other trade
+              // here keeps.
+              const next = forgeSchematic(global, profile().collection, cardId, profile().schematics);
               if (!next) return false;
               profile().collection = next;
               return true;
@@ -603,11 +609,22 @@ function finishCombat(
     won: result === 'victory' || result === 'bound',
   });
 
-  // A win offers a card. Seeded off the running record so the same win does not reroll
-  // into a different offer if the screen is rebuilt.
+  // A win offers **plans**, not cards. Nothing here grants a card any more: the only way
+  // into a collection is to take a Schematic off something and then pay the Artificer to
+  // cut it, and this is the first half of that.
+  //
+  // Drawn from the deck this fight just played, so what a win teaches is what beat you
+  // with it. Seeded off the running record so the same win does not reroll into a
+  // different offer if the screen is rebuilt -- and salted with the encounter id, because
+  // the record alone would hand two different fights won at the same tally the same seed.
   const won = result === 'victory' || result === 'bound';
-  const rewards = won
-    ? rollRewards(makeRng(p.record.wins * 7919 + p.record.bound * 31 + 5), 3)
+  const offer = won
+    ? rollSchematicOffer(
+        makeRng(p.record.wins * 7919 + p.record.bound * 31 + hashText(played.id) + 5),
+        played,
+        p.collection,
+        p.schematics,
+      )
     : [];
   persist();
 
@@ -621,10 +638,10 @@ function finishCombat(
         // anything is rendered — a tab shut on an uncommitted victory screen would boot
         // into a forfeit of the fight the player just won.
         spoils: paid,
-        rewards,
+        offer,
         tamed,
         onClaim: (cardId) => {
-          p.collection = grantCard(p.collection, cardId);
+          p.schematics = grantSchematic(p.schematics, cardId);
           persist();
         },
         onLeave: () => {
@@ -640,11 +657,6 @@ function finishCombat(
     new ResultsScreen({
       result,
       encounter: played,
-      rewards,
-      onClaim: (cardId) => {
-        p.collection = grantCard(p.collection, cardId);
-        persist();
-      },
       // No rematch. In a hub-based RPG the way back to a fight is through the Bounty
       // Board, and a button that re-ran the same contract for the same pay was a money
       // printer sitting on the results screen.

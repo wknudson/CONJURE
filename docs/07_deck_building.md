@@ -616,20 +616,73 @@ sheet ([DeckBuilderScreen.ts:54](src/app/DeckBuilderScreen.ts:54)).
 
 ## 7. Where new cards come from
 
-The builder can only arrange what you own. The collection itself changes in exactly three
-places, all at the Ironworks Artificer — see
-[05_ironworks_artificer.md](docs/05_ironworks_artificer.md).
+The builder can only arrange what you own, and **winning a fight no longer gives you a
+card.** It gives you a *plan*.
 
-| Trade | Price | Effect on deck building |
+### The one door, in two halves
+
+```
+beat something  →  take a Schematic off its deck  →  pay the Artificer 100 Ducats  →  card
+```
+
+Neither half is enough on its own. A rich character with no Schematics can buy nothing; a
+character holding every plan in the game and no Ducats owns nothing new. `rollSchematicOffer`
+([schematics.ts](src/core/data/schematics.ts)) is the first half; `forgeSchematic`
+([forge.ts](src/core/overworld/forge.ts)) is the second.
+
+This replaced a post-victory roll that drew three cards from the **whole catalogue** and
+handed one over free. That made the Artificer's first trade a formality — it would cut
+anything you had not already got, so the shelf was the catalogue and Ducats were the only
+gate. Two routes to the same place, and the free one was strictly better.
+
+### What a fight teaches
+
+Its own deck. `schematicPool(encounter)`
+([schematics.ts](src/core/data/schematics.ts)) is derived from `EncounterDef.enemyDeck`,
+filtered through the same `isObtainable` the bench's shelf uses:
+
+| | Offer | Pool it draws from |
 |---|---|---|
-| **Schematic Forging** | 100 Ducats | Adds a base id to `unlocked`. Owning one copy takes the card off the shelf entirely — extra copies are what winning is for, which is what stops a rich player buying a finished deck outright |
-| **Ascension** | 60 Ducats + 3 Shards + 1 Core | Adds a base id to `ascended`. Every copy in every deck upgrades at once; the copy limit does **not** change |
-| **Aetheric Splicing** | 1 Core | Adds a Hybrid to `unlocked`. It is elemental, so it can never enter a Hero Deck — a Grimoire socket is its only home |
+| Novice | pick 1 of **2** | its own deck |
+| Adept | pick 1 of **3** | its own deck |
+| Master | pick 1 of **4** | its own deck |
+
+You take **one**. The tier widens the *choice*, not the payout — a Master contract is a
+decision with four ways to go wrong, which is the thing a boss should be selling.
+
+Derived rather than authored, and the alternative is worth naming: a `blueprintPool` field
+on `EncounterDef` would be a second list of what an encounter contains, correct on the day
+it was written and wrong the first time somebody retuned an enemy deck without scrolling
+down. Reading `enemyDeck` means a fight teaches what it actually beat you with, and a new
+encounter has a pool by existing.
+
+An offer never includes a card you have already forged **or** already hold a plan for. A
+duplicate plan is a reward that does nothing, and the second time it happens it reads as
+the game being broken rather than as a run of bad luck. A fight you have wrung dry offers
+nothing and draws no panel — it still pays Ducats and Cores, it simply has no more to
+teach.
+
+**A loss offers nothing.** `ResultsScreen` hands out nothing at all now, and the reward
+picker that used to live in it was already dead code: every win goes to `VictoryScreen`,
+so the loss screen's offer was unconditionally empty. What a loss costs is still money and
+time, never possessions.
+
+### The three trades, unchanged in shape
+
+| Trade | Price | Gate | Effect on deck building |
+|---|---|---|---|
+| **Schematic Forging** | 100 Ducats | **a Schematic in hand** | Adds a base id to `unlocked` |
+| **Ascension** | 60 Ducats + 3 Shards + 1 Core | Unlocked, has a Rank 2 | Adds a base id to `ascended`. Every copy upgrades at once; the copy limit does **not** change |
+| **Aetheric Splicing** | 1 Core | A recipe and both schools | Adds a Hybrid to `unlocked`. It is elemental, so a Grimoire socket is its only home |
 
 Splicing deliberately does **not** consume the base card
 ([splice.ts:109](src/core/overworld/splice.ts:109)): an unlock cannot be spent, because
 that is what makes it an unlock. A recipe that ate its base would be the one place in the
 game where knowing something could be taken away from you.
+
+**Forging does not consume the Schematic either**, and for a related reason. The ledger is
+a record of a thing that happened — like `rosterUnlocks` — so keeping a spent plan is what
+lets a later offer tell "you never had this" apart from "you already used it".
 
 ---
 
@@ -701,6 +754,13 @@ Stated plainly rather than left for someone to find:
   a Tier 3 finisher does. The Ascension uplift is also a flat 10%, so a flat price is the
   honest matching shape until the uplift stops being flat
   ([forge.ts:47](src/core/overworld/forge.ts:47)).
+- **29 of the 50 obtainable cards are taught by no shipped fight.** Making the plan the only
+  door means a card is reachable exactly when some encounter's deck carries it, and four
+  encounters between them play five schools' worth. Bloom, Surge and Bulwark are entirely
+  unreachable; so are the Hero's own arcane tools, because no enemy has ever cast one at
+  anybody. This closes as encounters are added, and the list is pinned in
+  `schematics.test.ts` as an `UNREACHABLE` ledger that fails in **both** directions — a card
+  joining it breaks the build, and so does a card leaving it.
 - **Cores have no region.** `reagentForAscension`
   ([forge.ts:71](src/core/overworld/forge.ts:71)) takes one Core off your deepest stack,
   because "Regional Reagents" needs a geography the game does not model yet. That function

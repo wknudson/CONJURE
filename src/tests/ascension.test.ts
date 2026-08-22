@@ -13,11 +13,12 @@ import {
   printedDeck,
   printedId,
   reconcileCollection,
-  rollRewards,
   startingCollection,
 } from '../core/data/collection.js';
 import { baseIdOf, tierOf, validateDeck, type Collection } from '../core/data/deckRules.js';
 import { makeRng } from '../core/util/rng.js';
+import { rollSchematicOffer } from '../core/data/schematics.js';
+import { ENCOUNTERS } from '../core/data/encounters/index.js';
 import { createCombat } from '../core/engine/setup.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
 
@@ -95,12 +96,16 @@ describe('the Rank 2 printing', () => {
 });
 
 describe('what Ascension must not give away', () => {
-  it('never offers a Rank 2 as a post-victory reward', () => {
-    // Rank 2 cards live in `CARDS` now, so the reward roller would happily hand one out
-    // for free — which is the Ascension sink paying itself.
-    for (let seed = 1; seed < 120; seed++) {
-      for (const id of rollRewards(makeRng(seed), 3)) {
-        expect(isAscendedId(id), `reward roll ${seed} offered ${id}`).toBe(false);
+  it('never offers a Rank 2 as a post-victory Schematic', () => {
+    // Rank 2 cards live in `CARDS`, so a fight's offer would happily lay one out — which
+    // is the Ascension sink paying itself. The giveaway changed shape (a plan you then buy,
+    // rather than the card free) and the rule did not, so this follows it across.
+    for (const encounter of ENCOUNTERS) {
+      for (let seed = 1; seed < 40; seed++) {
+        const offer = rollSchematicOffer(makeRng(seed), encounter, { unlocked: [] }, []);
+        for (const id of offer) {
+          expect(isAscendedId(id), `${encounter.id} seed ${seed} offered ${id}`).toBe(false);
+        }
       }
     }
   });

@@ -11,8 +11,6 @@ import type { Collection } from './deckRules.js';
 import type { CardDef } from '../types/cards.js';
 import { CARDS, ascendableIds, ascendedId, isAscendedId } from './cards/index.js';
 import { COMPANIONS } from './companions.js';
-import type { RngState } from '../util/rng.js';
-import { nextInt } from '../util/rng.js';
 
 /**
  * The Hero's arcane baseline, handed to every new character.
@@ -194,27 +192,15 @@ export function isEngineDealt(def: CardDef): boolean {
   return Boolean(def.setupOnly) || def.id === 'rite_of_subjugation';
 }
 
-/**
- * A win offers a choice of cards. Drawn from what exists rather than what is owned, so
- * rewards can introduce a school the player has never played.
+/*
+ * `rollRewards` used to live here: a win drew three cards from the whole catalogue and
+ * handed one over free. It is gone, and its absence is the point.
+ *
+ * A card enters a collection through exactly one door now — a Schematic taken off
+ * something you beat, then Ducats paid at the Artificer to cut it. See `data/schematics.ts`
+ * for the first half and `overworld/forge.ts` for the second. Two routes to the same place,
+ * where one of them was free, is the shape this removed.
  */
-export function rollRewards(rng: RngState, count = 3): string[] {
-  const pool = Object.values(CARDS)
-    .filter(isObtainable)
-    .map((c) => c.id)
-    .sort();
-
-  const picks: string[] = [];
-  const taken = new Set<string>();
-  // Bounded so a shrinking pool cannot spin here.
-  for (let guard = 0; guard < 200 && picks.length < count && taken.size < pool.length; guard++) {
-    const id = pool[nextInt(rng, pool.length)]!;
-    if (taken.has(id)) continue;
-    taken.add(id);
-    picks.push(id);
-  }
-  return picks;
-}
 
 /**
  * Repairs a collection loaded from disk: drops cards that no longer exist and restores

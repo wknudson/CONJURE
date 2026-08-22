@@ -3,7 +3,9 @@ import { missingPrerequisites, spliceCard, spliceRefusal } from '../core/overwor
 import { newRun, type GlobalGameState } from '../core/overworld/state.js';
 import { recipeFor, spliceableBaseIds, SPLICE_RECIPES } from '../core/data/splicing.js';
 import { CARDS } from '../core/data/cards/index.js';
-import { isObtainable, isUnlocked, rollRewards } from '../core/data/collection.js';
+import { isObtainable, isUnlocked } from '../core/data/collection.js';
+import { rollSchematicOffer } from '../core/data/schematics.js';
+import { ENCOUNTERS } from '../core/data/encounters/index.js';
 import { validateDeck, type Collection } from '../core/data/deckRules.js';
 import { schematicsFor } from '../core/data/artificer.js';
 import { makeRng } from '../core/util/rng.js';
@@ -58,15 +60,20 @@ describe('the recipe book', () => {
   });
 
   it('keeps hybrids out of every giveaway', () => {
-    // The same leak Rank 2 printings had: hybrids live in `CARDS`, so a reward roll or the
-    // Schematic shelf would hand out for free the thing this sink charges for.
+    // The same leak Rank 2 printings had: hybrids live in `CARDS`, so a fight's offer or
+    // the Schematic shelf would hand out the thing this sink charges for.
     for (const recipe of SPLICE_RECIPES) {
       expect(isObtainable(CARDS[recipe.resultId]!), recipe.resultId).toBe(false);
     }
     const shelf = schematicsFor({ unlocked: [] }).map((d) => d.id);
-    for (let seed = 1; seed < 80; seed++) {
-      for (const id of rollRewards(makeRng(seed), 3)) {
-        expect(SPLICE_RECIPES.some((r) => r.resultId === id), `roll ${seed}`).toBe(false);
+    for (const encounter of ENCOUNTERS) {
+      for (let seed = 1; seed < 30; seed++) {
+        for (const id of rollSchematicOffer(makeRng(seed), encounter, { unlocked: [] }, [])) {
+          expect(
+            SPLICE_RECIPES.some((r) => r.resultId === id),
+            `${encounter.id} seed ${seed}`,
+          ).toBe(false);
+        }
       }
     }
     for (const recipe of SPLICE_RECIPES) expect(shelf).not.toContain(recipe.resultId);

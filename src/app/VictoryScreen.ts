@@ -23,14 +23,21 @@ import { traitById } from '../core/data/companionTraits.js';
 import { reagentById } from '../core/data/splicing.js';
 import { formatCost } from '../hud/cost.js';
 import { schoolOf } from '../render/palette.js';
+import { SCHEMATIC_COST_DUCATS } from '../core/overworld/forge.js';
 
 export interface VictoryOptions {
   result: CombatResult;
   encounter: EncounterDef;
   /** What the accepted contract paid. Already in the purse.  */
   spoils: CombatSpoils;
-  /** Cards offered as a reward, if any. */
-  rewards: string[];
+  /**
+   * Schematics laid out to choose between, if this fight had any left to teach.
+   *
+   * Not cards. Claiming one puts a *plan* in the character's hands; the card itself still
+   * costs Ducats at the Artificer. A fight the player has already wrung dry offers an
+   * empty list and this section is not drawn at all.
+   */
+  offer: string[];
   /** The beast a subjugation added to the roster, if this was a binding. */
   tamed?: CompanionInstance | null;
   onClaim: (cardId: string) => void;
@@ -124,34 +131,40 @@ export class VictoryScreen implements Screen {
   }
 
   /**
-   * The card on offer, if a win earned one.
+   * The plans on offer, if this fight had any left to teach.
    *
    * One pick, and the rest of the row goes dim rather than disappearing — seeing what was
    * passed over is most of what makes the choice feel like one.
+   *
+   * The copy is doing real work here. What the player takes is **not the card**, and a
+   * screen that said "one card from the wreckage" while handing over a plan would be
+   * lying about the one thing that changed: they now have to go and pay for it. So the
+   * title names the thing, and a note underneath names the price and where it is paid.
    */
   private renderRewards(): void {
     const host = this.el?.querySelector('.victory__rewards');
-    if (!host || this.opts.rewards.length === 0) return;
+    if (!host || this.opts.offer.length === 0) return;
 
     const title = document.createElement('div');
     title.className = 'victory__rewards-title';
-    title.textContent = 'One card from the wreckage';
+    title.textContent = 'One schematic, off what it fought you with';
     host.appendChild(title);
 
     const row = document.createElement('div');
     row.className = 'victory__reward-row';
 
-    for (const id of this.opts.rewards) {
+    for (const id of this.opts.offer) {
       const def = CARDS[id];
       if (!def) continue;
 
       const card = document.createElement('button');
-      card.className = 'reward-card';
+      card.className = 'reward-card reward-card--schematic';
       card.style.setProperty('--school', schoolOf(def.school as never).main);
       card.innerHTML = `
         <span class="reward-card__cost">${formatCost(def.cost)}</span>
         <span class="reward-card__name">${def.name}</span>
         <span class="reward-card__text">${def.text}</span>
+        <span class="reward-card__plan">SCHEMATIC</span>
       `;
       card.addEventListener('click', () => {
         if (this.claimed) return;
@@ -160,11 +173,17 @@ export class VictoryScreen implements Screen {
         row.classList.add('is-claimed');
         card.classList.add('is-taken');
         for (const other of row.querySelectorAll('button')) other.disabled = true;
+        note.textContent = `${def.name} — the plan is yours. The Artificer cuts it for ${SCHEMATIC_COST_DUCATS} Ducats.`;
       });
       row.appendChild(card);
     }
 
     host.appendChild(row);
+
+    const note = document.createElement('div');
+    note.className = 'victory__rewards-note';
+    note.textContent = `A plan, not the card. Take one to the Artificer and pay ${SCHEMATIC_COST_DUCATS} Ducats to have it cut.`;
+    host.appendChild(note);
   }
 
   unmount(): void {

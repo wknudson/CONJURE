@@ -72,6 +72,28 @@ const TIER_ENCOUNTERS: Record<BountyDifficulty, string[]> = {
 };
 
 /**
+ * Which tier a fight belongs to, asked of the fight rather than of the contract.
+ *
+ * The Bounty knows its own difficulty, and for a contract that is the right place to read
+ * it. But a fight can be reached without one — a standalone bout, a test, the Trial taken
+ * off the Vivarium — and the Schematics a win offers must not depend on how the player got
+ * there. So the tier is a property of the encounter, read out of the table that already
+ * decides which posters a fight can appear on.
+ *
+ * Derived from `TIER_ENCOUNTERS` rather than stamped on `EncounterDef`, so a fight cannot
+ * be promoted to Master on the board and still pay Novice at the desk.
+ *
+ * An encounter on no poster is Novice: unknown work is the cheapest work, and the
+ * alternative is a fight that pays the top tier because nobody filed it.
+ */
+export function tierOfEncounter(encounterId: string): BountyDifficulty {
+  for (const tier of DIFFICULTIES) {
+    if (TIER_ENCOUNTERS[tier].includes(encounterId)) return tier;
+  }
+  return 'novice';
+}
+
+/**
  * Base pay per tier, before the roll.
  *
  * Shards only start at Adept — they are the currency the Artificer wants, so the bench

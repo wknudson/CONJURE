@@ -34,3 +34,20 @@ export function shuffle<T>(rng: RngState, items: T[]): T[] {
   }
   return items;
 }
+
+/**
+ * A stable 32-bit number from a string, for salting a seed with an id.
+ *
+ * FNV-1a, and the only property that matters is that it is *the same every time*: a seed
+ * built from `Date.now()` or from a hash that varied by platform would make a replay a
+ * different fight. `save.ts` grew its own copy of this to keep a migrated Grimoire roll
+ * stable; this is that function, in the module the rest of the seeding already lives in.
+ */
+export function hashText(text: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}

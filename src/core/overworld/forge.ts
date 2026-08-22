@@ -145,12 +145,27 @@ export function ascendCard(
 
 // ------------------------------------------------------------- schematics
 
-export type SchematicRefusal = 'in-combat' | 'already-forged' | 'unknown-card' | 'too-poor' | null;
+export type SchematicRefusal =
+  | 'in-combat'
+  | 'already-forged'
+  | 'unknown-card'
+  /** No plan for it. You have not beaten anything that was carrying one. */
+  | 'no-schematic'
+  | 'too-poor'
+  | null;
 
 export function schematicRefusal(
   state: GlobalGameState,
   collection: Collection,
   cardId: string,
+  /**
+   * The Schematics this character has taken off something.
+   *
+   * Optional so every existing caller keeps working, and so the callers that are not
+   * gating a purchase -- the catalogue view, the tests -- need not invent a ledger to ask
+   * a question about prices. A screen that is about to charge somebody passes it.
+   */
+  held?: readonly string[],
 ): SchematicRefusal {
   if (state.combat !== null || state.overworld.activeEncounter !== null) return 'in-combat';
   if (!CARDS[cardId]) return 'unknown-card';
@@ -158,6 +173,11 @@ export function schematicRefusal(
   // is permanent and how many go in a deck is the Tier limit's business, so paying twice
   // would buy exactly nothing.
   if (isUnlocked(collection, cardId)) return 'already-forged';
+  // The plan, before the price. Asked in this order because it is the order the answers
+  // are useful in: "you have not found that yet" is a different errand from "you cannot
+  // afford it", and telling a broke player to go and earn Ducats for a card they could not
+  // cut at any price is sending them to do the wrong thing.
+  if (held !== undefined && !held.includes(cardId)) return 'no-schematic';
   if (state.overworld.economy.ducats < SCHEMATIC_COST_DUCATS) return 'too-poor';
   return null;
 }
@@ -167,8 +187,9 @@ export function forgeSchematic(
   state: GlobalGameState,
   collection: Collection,
   cardId: string,
+  held?: readonly string[],
 ): Collection | null {
-  if (schematicRefusal(state, collection, cardId) !== null) return null;
+  if (schematicRefusal(state, collection, cardId, held) !== null) return null;
 
   state.overworld.economy.ducats -= SCHEMATIC_COST_DUCATS;
   // `grantCard` spreads the whole collection, so any Ascensions come through untouched.

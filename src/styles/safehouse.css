@@ -2639,3 +2639,53 @@
   letter-spacing: 0.04em;
   color: var(--text-dim);
 }
+
+/* --- the shelf's three states ------------------------------------------------
+   Forged is done, ready is waiting for money, and unknown is waiting for you to go and
+   beat something. `is-owned` already dims the first; the third has to look *different
+   from* the second rather than merely darker, or "locked" and "expensive" read the same. */
+.sch-cell--unknown .card {
+  filter: grayscale(0.85) brightness(0.55);
+}
+
+.sch-cell--unknown .sch-cell__price {
+  color: rgba(190, 150, 120, 0.75);
+  letter-spacing: 0.03em;
+}
+
+.sch-cell--ready {
+  outline: 1px solid color-mix(in srgb, var(--lamp, #d6c4a0) 45%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.sch-cell--ready .sch-cell__price {
+  color: var(--lamp, #d6c4a0);
+}
+
+/* --- a plan on the victory screen -------------------------------------------
+   The card face is the same; the corner tag is what says you are taking the drawing and
+   not the thing. Without it the screen reads exactly as the old free-card reward did. */
+.reward-card--schematic {
+  position: relative;
+}
+
+.reward-card__plan {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 1px 5px;
+  border: 1px solid rgba(176, 148, 106, 0.6);
+  border-radius: 2px;
+  font: 800 8px var(--font);
+  letter-spacing: 0.12em;
+  color: rgba(214, 196, 160, 0.85);
+  background: rgba(10, 8, 6, 0.85);
+}
+
+.victory__rewards-note {
+  margin-top: 8px;
+  font: italic 600 11px var(--font);
+  color: var(--text-dim);
+  text-align: center;
+}

@@ -16,12 +16,14 @@ import {
   SOULBOUND,
   grantCard,
   reconcileCollection,
-  rollRewards,
   startingCollection,
 } from '../core/data/collection.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { COMPANIONS } from '../core/data/companions.js';
 import { makeRng } from '../core/util/rng.js';
+import { SCHEMATIC_PICKS, rollSchematicOffer, schematicPool } from '../core/data/schematics.js';
+import { tierOfEncounter } from '../core/data/bounties.js';
+import { ENCOUNTERS, encounterById } from '../core/data/encounters/index.js';
 
 /**
  * A legal filler deck of N copies drawn from cheap Tier 1 staples.
@@ -190,14 +192,71 @@ describe('collection', () => {
     expect(grantCard(before, 'not_a_card')).toBe(before);
   });
 
-  it('offers distinct, real rewards deterministically from a seed', () => {
-    const a = rollRewards(makeRng(7), 3);
-    const b = rollRewards(makeRng(7), 3);
+  it('offers distinct, real Schematics deterministically from a seed', () => {
+    const trial = encounterById('ignis_trial')!;
+    const a = rollSchematicOffer(makeRng(7), trial, { unlocked: [] }, []);
+    const b = rollSchematicOffer(makeRng(7), trial, { unlocked: [] }, []);
     expect(a).toEqual(b);
     expect(new Set(a).size).toBe(a.length);
     for (const id of a) expect(CARDS[id], id).toBeDefined();
-    // The Rite is encounter-generated and must never be a reward.
+    // The Rite is encounter-generated and must never be offered.
     expect(a).not.toContain('rite_of_subjugation');
+  });
+
+  it('offers only what the fight actually fought you with', () => {
+    // The whole reason the pool is derived from `enemyDeck` rather than authored. A card
+    // the encounter never played turning up here means the pool has drifted from the
+    // fight, which is the failure an authored `blueprintPool` field would have made silent.
+    for (const encounter of ENCOUNTERS) {
+      const played = new Set(encounter.enemyDeck);
+      for (let seed = 1; seed < 30; seed++) {
+        for (const id of rollSchematicOffer(makeRng(seed), encounter, { unlocked: [] }, [])) {
+          expect(played.has(id), `${encounter.id} offered ${id}, which it never played`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('never offers a plan the player already owns or already holds', () => {
+    // A duplicate plan is a reward that does nothing, and the second time it happens it
+    // reads as the game being broken rather than as a run of bad luck.
+    const trial = encounterById('ignis_trial')!;
+    const pool = schematicPool(trial).map((d) => d.id);
+    expect(pool.length, 'the Trial has a pool to draw on').toBeGreaterThan(2);
+
+    const owned = { unlocked: [pool[0]!] };
+    const held = [pool[1]!];
+    for (let seed = 1; seed < 60; seed++) {
+      const offer = rollSchematicOffer(makeRng(seed), trial, owned, held);
+      expect(offer, `seed ${seed}`).not.toContain(pool[0]);
+      expect(offer, `seed ${seed}`).not.toContain(pool[1]);
+    }
+  });
+
+  it('runs a fight dry rather than repeating itself', () => {
+    // The correct end state for a fight wrung out: it still pays Ducats and Cores, it
+    // simply has nothing left to teach. An empty offer is a drawn-nothing, not an error.
+    const ruin = encounterById('narrow_ruin')!;
+    const everything = schematicPool(ruin).map((d) => d.id);
+    expect(rollSchematicOffer(makeRng(3), ruin, { unlocked: everything }, [])).toEqual([]);
+    expect(rollSchematicOffer(makeRng(3), ruin, { unlocked: [] }, everything)).toEqual([]);
+  });
+
+  it('widens the choice with the tier, without paying more of them', () => {
+    // A Master contract is not four times the reward. It is a decision with four ways to
+    // go wrong, and the player still takes exactly one.
+    expect(SCHEMATIC_PICKS.novice).toBeLessThan(SCHEMATIC_PICKS.adept);
+    expect(SCHEMATIC_PICKS.adept).toBeLessThan(SCHEMATIC_PICKS.master);
+    expect(tierOfEncounter('ignis_trial')).toBe('master');
+    expect(tierOfEncounter('novice_duelist')).toBe('novice');
+    // An encounter on no poster is the cheapest work, not the dearest.
+    expect(tierOfEncounter('no_such_fight')).toBe('novice');
+
+    for (const encounter of ENCOUNTERS) {
+      const cap = SCHEMATIC_PICKS[tierOfEncounter(encounter.id)];
+      const offer = rollSchematicOffer(makeRng(11), encounter, { unlocked: [] }, []);
+      expect(offer.length, encounter.id).toBeLessThanOrEqual(cap);
+    }
   });
 });
 

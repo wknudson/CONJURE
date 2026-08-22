@@ -50,6 +50,42 @@ import { Tooltip } from '../hud/Tooltip.js';
 import { ASCENSION_PERCENT } from '../core/data/ascension.js';
 import { reagentById } from '../core/data/splicing.js';
 
+/**
+ * Where a card stands, from this bench's point of view.
+ *
+ * Three states, and the middle one is new. Before Schematics were things you found there
+ * were only two — forged or not — and "not forged" meant "buy it". Now the shelf has to
+ * separate *the bench cannot cut this for you* from *the bench is waiting for your money*,
+ * because those send the player to two completely different places.
+ */
+type SchematicState = 'forged' | 'ready' | 'unknown';
+
+function stateOf(def: CardDef, collection: Collection, held: readonly string[]): SchematicState {
+  if (collection.unlocked.includes(def.id)) return 'forged';
+  return held.includes(def.id) ? 'ready' : 'unknown';
+}
+
+/** Sort weight: what you can act on, then what you might, then what is done. */
+function rank(def: CardDef, collection: Collection, held: readonly string[]): number {
+  return { ready: 0, unknown: 1, forged: 2 }[stateOf(def, collection, held)];
+}
+
+/**
+ * Why the button is dark, in the player's words.
+ *
+ * `no-schematic` is the one that had to be written carefully: it is not a price problem and
+ * it is not a permanent no, so it has to point somewhere. "Beat something carrying it" is
+ * the whole loop in four words.
+ */
+const REFUSAL_LINE: Record<string, string> = {
+  none: '',
+  'too-poor': 'Not enough Ducats',
+  'no-schematic': 'No schematic — beat something carrying it',
+  'in-combat': 'Not while a contract is open',
+  'already-forged': '',
+  'unknown-card': '',
+};
+
 export interface ArtificerOpts {
   global: GlobalGameState;
   /**
@@ -59,6 +95,13 @@ export interface ArtificerOpts {
    * object it was handed at mount would show a card it had just forged as still unowned.
    */
   collection: () => Collection;
+  /**
+   * Card plans this character has taken off something, read as a function for the same
+   * reason the collection is: forging one does not spend it, but the shelf beside it
+   * changes state, and a bench holding the array it was handed at mount would keep drawing
+   * the old answer.
+   */
+  schematics: () => readonly string[];
   /**
    * Performs the transaction and reports whether it happened.
    *
@@ -358,6 +401,7 @@ export class ArtificerScreen implements Screen {
     if (!grid) return;
 
     const collection = this.opts.collection();
+    const held = this.opts.schematics();
     const f = this.filters;
 
     const shown = schematicCatalogue()
@@ -366,24 +410,30 @@ export class ArtificerScreen implements Screen {
       .filter((d) => f.kind === 'all' || d.kind === f.kind)
       .filter((d) => matchesPips(d.cost.pips, f.cost))
       .sort((a, b) => {
-        const ownedA = collection.unlocked.includes(a.id) ? 1 : 0;
-        const ownedB = collection.unlocked.includes(b.id) ? 1 : 0;
         switch (f.sort) {
           case 'cost':
             return a.cost.pips - b.cost.pips || a.name.localeCompare(b.name);
           case 'school':
             return a.school.localeCompare(b.school) || a.name.localeCompare(b.name);
           case 'unlock':
-            return ownedA - ownedB || a.name.localeCompare(b.name);
+            // Cuttable first, then what the bench merely knows about, then what is already
+            // yours. The old ordering was owned-last over two states; there are three now,
+            // and the one the player came here to act on has to be the one at the top.
+            return (
+              rank(a, collection, held) - rank(b, collection, held) || a.name.localeCompare(b.name)
+            );
           default:
             return a.name.localeCompare(b.name);
         }
       });
 
     if (count) {
-      const unforged = shown.filter((d) => !collection.unlocked.includes(d.id)).length;
+      // What the player can *act on*, not what exists. "38 unforged" was true and useless
+      // the moment a Schematic became something you have to go and find -- it counted the
+      // catalogue rather than the shelf.
+      const ready = shown.filter((d) => stateOf(d, collection, held) === 'ready').length;
       count.textContent = shown.length
-        ? `${shown.length} schematic${shown.length === 1 ? '' : 's'} · ${unforged} unforged`
+        ? `${shown.length} card${shown.length === 1 ? '' : 's'} · ${ready} you hold the plan for`
         : '';
     }
 
@@ -395,25 +445,35 @@ export class ArtificerScreen implements Screen {
       return;
     }
 
-    for (const def of shown) grid.appendChild(this.schematicCard(def, collection));
+    for (const def of shown) grid.appendChild(this.schematicCard(def, collection, held));
   }
 
-  /** One blueprint: the card, its price, and the one button that cuts it. */
-  private schematicCard(def: CardDef, collection: Collection): HTMLElement {
-    const refusal = schematicRefusal(this.opts.global, collection, def.id);
-    const owned = collection.unlocked.includes(def.id);
+  /** One entry: the card, what stands between you and it, and the button that cuts it. */
+  private schematicCard(def: CardDef, collection: Collection, held: readonly string[]): HTMLElement {
+    const refusal = schematicRefusal(this.opts.global, collection, def.id, held);
+    const state = stateOf(def, collection, held);
+
+    const foot: Record<SchematicState, { price: string; button: string }> = {
+      forged: { price: 'Forged', button: 'Forged' },
+      ready: { price: `${SCHEMATIC_COST_DUCATS} d`, button: 'Forge' },
+      unknown: { price: 'No schematic', button: 'Locked' },
+    };
 
     const cell = document.createElement('div');
-    cell.className = `sch-cell${owned ? ' is-owned' : ''}`;
+    cell.className = `sch-cell sch-cell--${state}${state === 'forged' ? ' is-owned' : ''}`;
     cell.innerHTML = `
       ${cardFaceHtml(faceOfDef(def), { extraClass: 'card--mini', showReach: true })}
       <div class="sch-cell__foot">
-        <span class="sch-cell__price">${owned ? 'Held' : `${SCHEMATIC_COST_DUCATS} d`}</span>
-        <button class="brass-btn sch-cell__cut">${owned ? 'Held' : 'Forge'}</button>
+        <span class="sch-cell__price">${foot[state].price}</span>
+        <button class="brass-btn sch-cell__cut">${foot[state].button}</button>
       </div>
-      <div class="sch-cell__refusal">${refusal === 'too-poor' ? 'Not enough Ducats' : ''}</div>
+      <div class="sch-cell__refusal">${REFUSAL_LINE[refusal ?? 'none']}</div>
     `;
 
+    // The catalogue still shows everything, including what you cannot cut. That was already
+    // deliberate -- a shelf that hid unowned cards answers "can this bench make a Cinder
+    // Mark" with silence -- and it matters more now that most of it is locked: the lock is
+    // the game telling you there is something out there still carrying the plan.
     const btn = cell.querySelector<HTMLButtonElement>('.sch-cell__cut')!;
     btn.disabled = refusal !== null;
     btn.addEventListener('click', () => this.cut(def.id));

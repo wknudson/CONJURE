@@ -1,9 +1,6 @@
-import { formatCost } from '../hud/cost.js';
 import type { Screen } from './ScreenManager.js';
 import type { CombatResult } from '../contract/events.js';
 import type { EncounterDef } from '../core/data/encounters/registry.js';
-import { CARDS } from '../core/data/cards/index.js';
-import { schoolOf } from '../render/palette.js';
 
 const COPY: Record<CombatResult, { title: string; blurb: string; kind: string }> = {
   victory: {
@@ -24,18 +21,28 @@ const COPY: Record<CombatResult, { title: string; blurb: string; kind: string }>
   },
 };
 
+/**
+ * How a contract ended, when it did not end well.
+ *
+ * **This screen hands out nothing**, and the absence is the design rather than an
+ * omission. Cards used to be a choice offered here; they are Schematics now, they come off
+ * things you *beat*, and a fight you lost taught you nothing you can take to the bench.
+ *
+ * The reward apparatus that used to live here was already dead before it was removed:
+ * `main.ts` sends every win to `VictoryScreen` and reaches this one only on a loss, where
+ * the offer was unconditionally empty. Forty lines of picker that could not run.
+ *
+ * What a loss costs is still money and time, never possessions — nothing is taken here
+ * either.
+ */
 export interface ResultsOptions {
   result: CombatResult;
   encounter: EncounterDef;
-  /** Cards offered as a reward. Empty on a loss. */
-  rewards: string[];
-  onClaim: (cardId: string) => void;
   onTitle: () => void;
 }
 
 export class ResultsScreen implements Screen {
   private el: HTMLElement | null = null;
-  private claimed = false;
 
   constructor(private readonly opts: ResultsOptions) {}
 
@@ -47,7 +54,6 @@ export class ResultsScreen implements Screen {
       <div class="results__title">${copy.title}</div>
       <div class="results__blurb">${copy.blurb}</div>
       <div class="results__meta">${this.opts.encounter.name}</div>
-      <div class="results__rewards"></div>
       <div class="results__buttons">
         <button class="results__btn results__menu">Back to Safehouse</button>
       </div>
@@ -55,55 +61,8 @@ export class ResultsScreen implements Screen {
 
     el.querySelector('.results__menu')!.addEventListener('click', () => this.opts.onTitle());
 
-    this.renderRewards(el);
     root.appendChild(el);
     this.el = el;
-  }
-
-  /**
-   * A win offers a choice of one card. Picking is one-way and ends the offer, so the
-   * player cannot rebuild the screen to claim all three.
-   */
-  private renderRewards(el: HTMLElement): void {
-    const host = el.querySelector('.results__rewards');
-    if (!host) return;
-
-    const offers = this.opts.rewards.filter((id) => CARDS[id]);
-    if (offers.length === 0) {
-      host.innerHTML = '';
-      return;
-    }
-
-    host.innerHTML = `
-      <div class="results__rewards-title">Choose a card for your collection</div>
-      <div class="results__reward-row"></div>
-    `;
-    const row = host.querySelector('.results__reward-row')!;
-
-    for (const id of offers) {
-      const def = CARDS[id]!;
-      const colors = schoolOf(def.school as never);
-      const btn = document.createElement('button');
-      btn.className = 'reward';
-      btn.style.setProperty('--school', colors.main);
-      btn.innerHTML = `
-        <span class="reward__cost">${formatCost(def.cost)}</span>
-        <span class="reward__name">${def.name}</span>
-        <span class="reward__kind">${def.kind} · ${def.school}</span>
-        <span class="reward__text">${def.text}</span>
-      `;
-      btn.addEventListener('click', () => this.claim(id, host as HTMLElement));
-      row.appendChild(btn);
-    }
-  }
-
-  private claim(cardId: string, host: HTMLElement): void {
-    if (this.claimed) return;
-    this.claimed = true;
-    this.opts.onClaim(cardId);
-
-    const def = CARDS[cardId];
-    host.innerHTML = `<div class="results__claimed">${def?.name ?? cardId} added to your collection.</div>`;
   }
 
   unmount(): void {

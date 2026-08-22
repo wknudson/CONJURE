@@ -10,7 +10,7 @@ price, and is gated on a different thing.
 
 | Trade | Question | Price | Gate |
 |---|---|---|---|
-| **Schematic Forging** | "I have never held this card." | 100 Ducats | Not already unlocked |
+| **Schematic Forging** | "I have never held this card." | 100 Ducats | A **Schematic in hand**, and not already forged |
 | **Ascension Forge** | "I want this card to hit harder." | 60 Ducats + 3 Shards + 1 Core | Unlocked, has a Rank 2, not already ascended |
 | **Aetheric Splicing** | "I want a card that does not exist yet." | 1 Core | A recipe, the base card, and both prerequisite schools |
 
@@ -88,23 +88,45 @@ understands ([splicing.ts:29](src/core/data/splicing.ts:29)):
 
 ## 1. Schematic Forging
 
-**Buys a card you have never held, for 100 Ducats.**
+**Cuts a card you hold the plan for, for 100 Ducats.**
 
-The shelf is every obtainable card the player does not already have
-([artificer.ts:39](src/core/data/artificer.ts:39)), sorted by Tier and then by name. Owning
-one copy takes a card off the list **entirely** rather than offering a second and a third —
-the bench sells *access*, and there is no such thing as a second copy any more. How many go
-in a deck is the Tier limit's business, not the collection's.
+This is now the **only** door into a collection. A win used to hand the card over free,
+which made this trade a formality — the bench would cut anything you had not already got,
+so the shelf was the whole catalogue and Ducats were the only gate. Two routes to the same
+place, and the free one was strictly better.
 
-The workspace shows the whole catalogue rather than just the unforged
-([artificer.ts:56](src/core/data/artificer.ts:56)), because a player scanning for a card
-wants to find it and see that they hold it, rather than conclude the bench has never heard
-of it.
+There is one route now, and it has two halves that are **not interchangeable**:
+
+| | Where it comes from | What it costs |
+|---|---|---|
+| The **Schematic** | Won off a fight, out of the deck that fight played | A fight |
+| The **card** | Cut here, from that Schematic | 100 Ducats |
+
+Neither half is enough alone. `schematicsFor(collection, held)`
+([artificer.ts](src/core/data/artificer.ts)) is the shelf, and `held` is the ledger the
+character carries. Owning a card takes it off the list **entirely** rather than offering a
+second and a third — the bench sells *access*, and there is no such thing as a second copy.
+How many go in a deck is the Tier limit's business, not the collection's.
+
+The workspace still shows the whole catalogue rather than just what is cuttable, and that
+matters more now than it did: most of it is locked, and the lock is the game telling you
+there is something out there still carrying the plan. Three states, three sentences:
+
+| State | Foot reads | Why |
+|---|---|---|
+| **forged** | `Forged` | You have it. Nothing to buy |
+| **ready** | `100 d` · Forge | Plan in hand, money owed |
+| **unknown** | `No schematic` | *Beat something carrying it* |
+
+The middle state is the new one. Before Schematics were things you found there were only
+two — forged or not — and "not forged" meant "buy it". The shelf now has to separate *the
+bench cannot cut this for you* from *the bench is waiting for your money*, because those
+send the player to two completely different places.
 
 ### What is kept off the shelf
 
-`isObtainable` ([collection.ts:154](src/core/data/collection.ts:154)) is the single gate,
-shared with the post-victory reward roller so the two can never disagree:
+`isObtainable` ([collection.ts](src/core/data/collection.ts)) is the single gate, shared
+with the post-victory Schematic offer so the two can never disagree:
 
 - **Rank 2 printings.** Not something you obtain — something you upgrade into. Selling one
   would hand out for free the exact thing the Ascension sink charges for.
@@ -123,7 +145,19 @@ shared with the post-victory reward roller so the two can never disagree:
 | `in-combat` | A contract is open |
 | `unknown-card` | No such card |
 | `already-forged` | You have it. There is no second copy to buy |
+| `no-schematic` | You have not beaten anything carrying the plan |
 | `too-poor` | Under 100 Ducats |
+
+`no-schematic` is asked **before** `too-poor`, and the order is the message: "you have not
+found that yet" is a different errand from "you cannot afford it", and telling a broke
+player to go and earn Ducats for a card they could not cut at any price sends them to do
+the wrong thing.
+
+`held` is optional on both `schematicRefusal` and `forgeSchematic`. Omitting it means *no
+Schematic gate*, which is deliberately the old behaviour — a caller asking a question about
+prices (the catalogue view, a tooltip, a test) should not have to invent a ledger. Every
+caller that is about to charge somebody passes one, and `main.ts` passes it to the till as
+well as to the screen, so a stale render cannot cut a card the character has no plan for.
 
 ---
 
@@ -335,6 +369,14 @@ Two honest gaps, both visible in the code rather than hidden:
 1. **Cores have no region.** "Regional Reagents" is the design word; the implementation
    spends whichever stack is deepest, because there is no geography to match against.
 
-2. **Every Schematic is assumed available.** The shelf offers every unowned obtainable card.
-   When Schematics become things a player *finds*, `schematicsFor` grows a second argument
-   and nothing else changes.
+2. ~~**Every Schematic is assumed available.**~~ **Done.** Schematics are things a player
+   finds; `schematicsFor` grew its second argument and, as predicted, nothing else about
+   the trade changed. What did change is everything around it — see
+   [07_deck_building.md](docs/07_deck_building.md) for where a plan comes from.
+
+3. **Most of the catalogue is behind no door.** Making the plan the only way in means a
+   card is reachable exactly when some encounter's deck carries it. Four encounters ship,
+   and **29 of the 50 obtainable cards are currently taught by none of them.** That closes
+   as encounters are added, and the list is pinned in `schematics.test.ts` as an
+   `UNREACHABLE` ledger that fails in *both* directions — a card joining it breaks the
+   build, and so does a card leaving it.
