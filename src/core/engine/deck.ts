@@ -1,9 +1,9 @@
 /**
  * Deck, hand, and resource management.
  *
- * Adjudications used here (docs conflict; see the plan's rule table):
- *  - An empty deck reshuffles the discard pile for free, with no fatigue (Draft 7).
- *  - Hand size is 7. Overdrawing BURNS the drawn card and grants 1 Marrow (Module 4).
+ * Adjudications used here. See `docs/02_combat_lexicon.md`:
+ *  - An empty deck reshuffles the discard pile for free, with no fatigue.
+ *  - Hand size is 7. Overdrawing BURNS the drawn card and grants 1 Marrow.
  *  - Pips bank up to 8, but the cap is enforced only during end-of-turn cleanup, so
  *    in-turn Pip + Marrow totals may freely exceed 8.
  */

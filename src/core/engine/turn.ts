@@ -134,7 +134,7 @@ function runCurrents(ctx: Ctx): void {
 }
 
 /**
- * Rounds of stalling before the lockout fires (Module 5 §failsafes). Set high enough
+ * Rounds of stalling before the lockout fires. Set high enough
  * that competent play will never see it — it exists only so a game cannot literally run
  * forever if both sides refuse to engage.
  */

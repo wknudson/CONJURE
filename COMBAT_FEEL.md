@@ -7,7 +7,7 @@ the fight itself worth playing twice.*
 
 ## The honest diagnosis
 
-The combat **rules** are deep: collisions, line of sight, rune cascades, three elemental
+The combat **rules** are deep: collisions, line of sight, Mark cascades, three elemental
 reactions, 2×2 Behemoths, Escalation, two AI tiers. The combat **experience** does not yet
 use that depth, for three reasons:
 
@@ -20,7 +20,7 @@ use that depth, for three reasons:
    forward, attack if something is in reach, end turn. There is rarely a moment where two
    options are both good and you have to choose.
 
-3. **Nothing lands.** A rune cascade that wipes three units and a plain 2-damage poke get
+3. **Nothing lands.** A Mark cascade that wipes three units and a plain chip hit get
    nearly the same presentation. The systems with the most design behind them are the
    least celebrated on screen.
 
@@ -48,108 +48,13 @@ empty ground, which emits a visible MISS.
   of the enemy's turn.
 
 **Trust gap: closed 2026-08-17.** The cause turned out not to be status ticks — statuses
-live on units and never on a Commander in this engine. It was **Escalation**: an intent
-records the attacker's ATK when declared, but Escalate fires at the start of the enemy's
+live on units and never on a Commander in this engine. It was **Growth**: an intent
+records the attacker's ATK when declared, but Growth fires at the start of the enemy's
 turn, *before* the blow lands, so a growing unit hit harder than it promised. The HUD now
 projects that growth and itemises the total ("Incoming: 7 damage (5 attack, 2
 escalation)"). It is an upper bound — an attacker that dies before swinging makes it read
 high — which is the safe direction to err.
 
-<details>
-<summary>Original E1 plan (kept for reference)</summary>
-
-## E1 — Enemy intent: the centrepiece (~1 week)
-
-**The change.** At the end of its turn, the enemy *commits* to what each of its units will
-do next turn, and that commitment is drawn on the board. Your turn is then spent playing
-against a known threat rather than guessing at a probability.
-
-This is Into the Breach's core mechanic, and its designers are explicit that without it
-"it would be impossible for the players to make the decisions the game is built around."
-It is also the thing that turns every existing system into a tool:
-
-| System | What it does today | What it does with intent shown |
-| :-- | :-- | :-- |
-| Shield Bash / collisions | Chip damage and a shove | *Move the attacker off its firing line* |
-| Stone Barricade / Ice Barricade | Blocks a lane | *Body-block a declared attack* |
-| Guardian | Blocks ranged sight | *Invalidate a declared shot* |
-| Freeze / Entangle | Skips a turn | *Cancel a specific declared attack* |
-| The danger zone | "Most tiles are risky" | *These four tiles, this much damage, from that unit* |
-
-Every one of those becomes a puzzle answer instead of a stat.
-
-### How it works
-
-- Each enemy unit that intends to act declares an **Intent**: a kind (attack / move+attack
-  / summon), a target tile, and the damage it will deal.
-- Intents render as a coloured arrow from the unit to the tile, with the number on it.
-- On the enemy turn, intents **execute in declaration order**.
-- An intent whose premise is gone still fires at the *tile*. Move the target away and the
-  attack whiffs into empty ground. That is what makes displacement and blocking matter.
-- Killing or hard-disabling (Freeze, Stun) the unit cancels its intent entirely.
-
-### Decided: declare by difficulty
-
-**Novice telegraphs everything** — attacks, moves and summons. It is the teaching tier, and
-total clarity is what teaches.
-
-**Adept telegraphs attacks only**, keeping its cards and summons hidden. Difficulty then
-scales along *information* as well as skill, which is a cleaner distinction than "the same
-opponent, but sharper".
-
-Cost to be aware of: two telegraphing modes doubles the tuning and testing surface, and the
-threat display must handle a partially-known turn without implying it is complete. The HUD
-should show explicitly that Adept has undeclared cards in hand.
-
-> **Status: ✅ built 2026-08-17**, exactly as decided — Novice declares its whole turn,
-> Adept declares only its blows.
-
-### Implementation sketch
-
-New in the core (`src/core/engine/intents.ts`):
-
-```ts
-export interface Intent {
-  unitId: UnitId;
-  kind: 'attack' | 'moveAttack' | 'summon';
-  /** Where the blow lands, whether or not anything is still standing there. */
-  at: Coord;
-  /** Movement committed to before the strike, for the arrow's path. */
-  path?: Coord[];
-  damage: number;
-  /** Cleared when the unit dies or is disabled. */
-  cancelled?: boolean;
-}
-```
-
-- `GameState.intents: Intent[]`, cleared and re-declared at the end of each enemy turn.
-- The AI already produces a full command list from `planTurn`; declaring is *reading that
-  plan* rather than new search — cheap, and it reuses the tier system so Adept telegraphs
-  smarter intents than Novice.
-- Execution replays the declared commands, skipping any whose unit is dead or disabled and
-  re-resolving the target from the tile rather than the entity.
-
-### Edge cases
-
-- **The declared target moved.** The attack resolves on the tile: it hits whatever is
-  standing there *now*, including one of the enemy's own units. That is the reward for
-  clever play and it must be allowed.
-- **The declaring unit was displaced.** Its intent should either follow (it re-paths) or
-  cancel. Recommend: cancel if it can no longer reach, so shoving an archer out of position
-  is a real answer.
-- **A summon intent's tile is occupied** by the player's turn. Crush per Module 5's
-  failsafe, or cancel — pick one and test it.
-- **Boss phase transitions** mid-turn invalidate every intent; re-declare after the shift.
-- **The danger zone overlay** must become "declared damage per tile", not "reachable".
-  Both can exist: declared in solid red, potential in a faint outline behind it.
-- **Determinism.** Declaring must not consume RNG from the shared stream, or the replay
-  harness breaks. Declare on a clone.
-- **Novice tier** should telegraph *honestly but badly* — its intents are as flawed as its
-  play, which is exactly what makes it the easy tier.
-
----
-
-</details>
 
 ## ~~E2 — Turn flow~~ ✅ DONE (2026-08-17)
 
@@ -170,29 +75,11 @@ than a decision.
 **Not done:** hover-a-card-to-preview, and a tick on spent units. Both are cosmetic
 against the three that remove real friction.
 
-<details>
-<summary>Original E2 plan (kept for reference)</summary>
 
-## E2 — Turn flow (~2 days, do alongside E1)
+## ~~E3 — HUD refinement~~ ✅ MOSTLY DONE (2026-08-17)
 
-Small frictions, each cheap, that together decide whether a turn feels smooth.
-
-1. **Undo a move.** Movement before an attack is committed should be reversible; the engine
-   is a pure reducer over cloned state, so undo is keeping the previous `GameState` on a
-   stack, not writing an inverse operation. Attacks and card plays stay final.
-2. **Cycle units with Tab.** Jumps to the next unit with an action remaining and centres it.
-3. **Smart End Turn.** The button reads "End Turn (2 units can still act)" and asks for a
-   second click when actions are unspent. Removes the most common self-inflicted loss.
-4. **Hover a card to see its preview** without clicking. The preview pipeline already
-   exists; this just wires hover to it.
-5. **A visible "acted" state.** Spent units already dim; add a small tick so it reads as
-   *done* rather than *disabled*.
-
----
-
-</details>
-
-## E3 — HUD refinement (~3 days)
+*The dial, the enemy read, the inspection panel and the Pact gauge shipped — see
+"Current scope" below. The itemised threat panel is the one piece still open.*
 
 Do this *after* E1, because intent changes what the HUD must communicate.
 
@@ -204,20 +91,24 @@ on the board; and there is no single place that answers "what should I be worrie
 
 1. **Threat panel.** A compact list of declared intents: which unit, how much, where. This
    is the HUD's new centre of gravity, and it is what E1 makes possible.
-2. **Proper Dual-Ring dial** per Module 6 — metallic sockets for banked Pips, ephemeral
-   beads for Sparks that visibly burn away at end of turn.
+2. **Proper Dual-Ring dial** (see `docs/10_presentation.md`) — metallic sockets for banked
+   Pips, ephemeral beads for Marrow that visibly burn away at end of turn.
 3. **Enemy read.** Hand count and banked Pips, so a Cataclysmic Core turn is foreseeable
    rather than a surprise.
 4. **Selected-unit panel.** Stats, keywords, statuses and remaining actions in one place,
    rather than only in a hover tooltip.
-5. **Pact gauge with segments.** 40 HP as eight readable segments, so "two hits from death"
+5. **Pact gauge with segments.** The Pact pool as eight readable segments, so "two hits from death"
    is legible at a glance instead of arithmetic.
 
 ---
 
-## E4 — Camera rotation (~1 day, explicitly requested)
+## ~~E4 — Camera rotation~~ ✅ DONE (2026-08-17)
 
-The seam is already there and clean: `rot()`/`unrot()` exist in `IsoCamera` and nothing
+*Shipped in full. The plan below is kept because its "one real snag" and its verification
+list are exactly what the implementation had to solve — including the projection bug
+recorded under "Current scope".*
+
+The seam was already there and clean: `rot()`/`unrot()` exist in `IsoCamera` and nothing
 else in the codebase reads `rotationStep`. Every orientation assumption (`forward`,
 `homeRows`, push directions) lives in the logic core, which rotation never touches — the
 board is rotated for the *viewer*, not for the rules.
@@ -264,26 +155,6 @@ rather than invisible.
 Supporting work, all presentation-layer: particles gained size, orientation, per-particle
 gravity and decay, and a colour ramp; rings gained a filled soft-edged mode.
 
-<details>
-<summary>Original E5 plan (kept for reference)</summary>
-
-## E5 — Making things land (~2 days)
-
-The systems with the most design behind them currently get the least presentation.
-
-1. **Cascade crescendo.** Each detonation in a chain hits harder than the last: rising
-   pitch, growing shake, and a counter — "CASCADE ×3". Right now a three-rune chain looks
-   like three separate pops.
-2. **Kill emphasis.** A brief hit-stop on a kill, longer for a Behemoth. Tactics games live
-   on the moment a unit comes off the board.
-3. **Reaction identity.** Vaporize, Shatter and Wildfire currently share one flash. Each
-   should look like itself — steam bloom, ice shards, a green-to-orange bloom.
-4. **Escalation made visible.** A unit that has grown three times should *look* grown.
-5. **Last Stand.** The rule exists and is dramatic; nothing on screen says so. Music cut,
-   desaturation, heartbeat — the docs already specify it.
-
----
-
 ## Current scope
 
 **This pass: E4 (rotation) and E3 (HUD).** ✅ Done 2026-08-17.
@@ -307,17 +178,19 @@ becomes affordable); a selected-unit inspection panel; and a segmented Pact gaug
    strength rather than guessed at.
 
 E3 was written assuming intent existed, with a declared-threat panel as its centre of
-gravity. Without E1 that panel becomes a *potential*-threat readout instead, built on the
-threat projection that already drives the danger zone — less pointed, still the answer to
-"what should I be worried about". The rest of the HUD work is unaffected.
+gravity. E1 shipped, so that panel can be what it was meant to be — a readout of *declared*
+intent rather than potential threat.
 
-Deferred, in the order I would pick them back up:
+**What is actually left.** E1, E2, E4 and E5 all shipped; the struck-through headings above
+carry the retrospectives. Three items from this plan did not land:
 
 | # | Work | Why it is worth returning to |
 | :-- | :-- | :-- |
-| 1 | **E2 turn flow** | Cheapest thing on the list; undo alone changes how a turn feels |
-| 2 | **E1 enemy intent** | The engagement centrepiece — the fix for "you play blind" |
-| 3 | **E5 juice** | Polish lands best on a game that already plays well |
+| 1 | **The threat panel itself** | A toggle and a one-line warning exist. The itemised list — which unit, how much, where — is the piece E3 was actually about |
+| 2 | **Hover a card to preview it** | E2's cheapest remaining idea; reading a card should not cost a click |
+| 3 | **A tick, not a dim, on spent units** | Dimming reads as "disabled"; a tick reads as "done" |
+
+All three are tracked in `ROADMAP.md` so they do not live only here.
 
 ## Deliberately not here
 

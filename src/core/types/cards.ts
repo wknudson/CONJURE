@@ -170,7 +170,7 @@ export type EffectNode =
    * Strips a status off whatever the area covers.
    *
    * The first cleanse in the game, and it exists because the reaction table has been
-   * spending statuses since Module 1 while no *card* could. A card that consumes its own
+   * spending statuses from the start while no *card* could. A card that consumes its own
    * setup -- Plasma Arc eats two Burn to pay for its blast -- needs the same verb the
    * engine already uses internally.
    *

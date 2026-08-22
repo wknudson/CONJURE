@@ -222,8 +222,8 @@ trait id ────────┘
 | `immuneToToxin` | Toxin stops ticking on this side |
 | `revealIntents` | the opposition declares its card plays as well as its blows |
 | `bonusObstacleHp` | added to every wall this side raises from a card |
-| `bonusSacrificeMarrow` | added to what each of this side's sacrifices pays out |
-| `healOnSacrifice` | health returned to the Pact each time this side gives a body up |
+| `bonusTitheMarrow` | added to what each of this side's blood tithes pays out |
+| `healOnTithe` | health returned to the Pact each time this side bleeds a body |
 | `bonusToxinStacks` | extra stacks folded into every Toxin this side applies |
 | `boundFormIgnoresHazards` | the Bound Form crosses rubble freely and rides no current |
 | `boundFormGrounded` | the Bound Form cannot be shoved, pulled, or carried |
@@ -231,7 +231,7 @@ trait id ────────┘
 The last four are worth a note. Two of them describe a *moment* rather than a state — a
 body being given up, a status being applied — and the obvious way to build those is an
 event listener. This codebase has none and does not want one: each is a number the engine
-reads **at the chokepoint the moment already passes through**, so a sacrifice is still one
+reads **at the chokepoint the moment already passes through**, so a tithe is still one
 straight line of code and a trait is still a row in a data table.
 
 The two `boundForm*` flags are deliberately scoped to that one body. A Companion's own
@@ -321,7 +321,7 @@ export function forfeitIfAbandoned(state: OverworldState): boolean {
 
 A still-open contract on boot is a fight the player walked out of. It resolves as a
 knockout: the Pact drops to 0, and the player is met by the rescue flow — the same 20%
-purse fee (`RESCUE_FEE_RATE`) and revival at 1 HP that losing honestly would have cost.
+purse fee (`RESCUE_FEE_RATE`) and the same revival that losing honestly would have cost.
 
 ### Why the payload carries the spoils
 

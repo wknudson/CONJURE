@@ -10,7 +10,7 @@ import {
 } from './scenario.js';
 
 /**
- * Draft 7 §5.1: wall = 3 to the pushed unit; unit blocker = 3 pushed / 2 blocker;
+ * The rule: wall = full damage to the pushed unit; unit blocker = target / blocker split;
  * obstacle = 3 / 3. Mass Invariance means a 2x2 changes none of those numbers.
  *
  * Shield Bash deals 2 damage first, then shoves 1 tile — so a bashed unit that hits

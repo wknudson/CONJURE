@@ -194,7 +194,7 @@ export function findMove(state: GameState, unit: Unit, to: Coord): MoveOption | 
  * Independent actions, as in Mewgenics: a unit gets one move and one attack per turn and
  * may take them in either order, so striking and then withdrawing is a real option.
  *
- * This deliberately replaces Draft 7 §4.3's Strict Commitment rule, which exhausted a
+ * This deliberately replaces the original Strict Commitment rule, which exhausted a
  * unit the moment it declared an attack. Each action is still once per turn — a unit
  * cannot split its movement around an attack.
  */

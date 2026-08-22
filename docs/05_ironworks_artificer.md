@@ -1,4 +1,4 @@
-# The Ironworks Artificer
+# 05 — The Ironworks Artificer
 
 **Status:** Description of what the code does today, verified against the source. Every
 claim carries a `file:line`.

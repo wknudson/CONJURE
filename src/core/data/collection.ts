@@ -1,7 +1,7 @@
 /**
  * What the player owns, and how it grows.
  *
- * Module 4 resolves the bankruptcy soft-lock by making the baseline Hero cards
+ * The bankruptcy soft-lock is resolved by making the baseline Hero cards
  * **permanent soulbound assets** — they can never leave the collection. That rule is
  * enforced here in the model rather than by hiding a button, so no future wager, sale,
  * or corrupted save can strand a player without a legal deck.

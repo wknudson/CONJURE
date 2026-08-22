@@ -1,12 +1,12 @@
 /**
- * Displacement and collision physics (Draft 7 §5.1).
+ * Displacement and collision physics. See `docs/02_combat_lexicon.md`.
  *
  *   Hits wall / arena border   -> pushed unit takes 30
  *   Hits obstructing unit      -> pushed unit takes 30, blocker takes 20 collateral
  *   Hits destructible obstacle -> pushed unit takes 30, obstacle takes 30
  *
  * Mass Invariance: the numbers do not change when a 2x2 is involved, in either role.
- * Draft 7 states this explicitly and Module 8's competing mass-crush rule is not used.
+ * This is explicit, and the competing mass-crush rule from an early draft is not used.
  */
 
 import type { Coord } from '../../contract/ids.js';

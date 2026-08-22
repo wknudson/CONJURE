@@ -231,7 +231,7 @@ describe('Shatter', () => {
   });
 
   it('is not set off by a spell', () => {
-    // Module 1 pairs Shatter with Bulwark: it takes a physical blow, not a fireball.
+    // Shatter is paired with Bulwark: it takes a physical blow, not a fireball.
     const state = scenario({
       units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['flame_surge'],

@@ -74,7 +74,7 @@ export const COMPANIONS: CompanionDef[] = [
     school: 'pyre',
     blurb:
       'Marks and cascades. Brand your enemies, then set the whole board off at once. Ember Watch ignites anything standing in its lane.',
-    // The Draft 7 deck exactly as specced.
+    // The founding deck, exactly as specced.
     deck: [...STARTER_DECK],
     grimoire: { schools: ['pyre'], hybridChance: MONO_HYBRID_CHANCE },
     legacyGrimoire: [

@@ -69,7 +69,7 @@ export interface DamageOutcome {
  * Applies damage to a unit, obstacle, or commander portrait.
  * Returns what actually landed, because mark triggers depend on real HP loss.
  */
-/** Brittle (Module 1): a frozen-through target takes this much extra from every hit. */
+/** Brittle: a frozen-through target takes this much extra from every hit. */
 export const BRITTLE_BONUS = 20;
 
 /** The depth a secondary effect of this hit should carry. */

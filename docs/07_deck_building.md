@@ -1,4 +1,4 @@
-# Deck Building
+# 07 — Deck Building
 
 **Status:** Description of what the code does today, verified against the source. Every
 claim carries a `file:line`.

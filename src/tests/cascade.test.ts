@@ -11,7 +11,7 @@ import {
 } from './scenario.js';
 
 /**
- * Mark rules (Draft 7 §7):
+ * Mark rules (see `docs/02_combat_lexicon.md`):
  *  - Damage-based triggers need at least 1 point of ACTUAL HP loss. Damage fully
  *    absorbed by armor does not detonate — this is what makes armor a cascade brake.
  *  - A detonation that penetrates an adjacent mark-holder's armor chains in the same step.

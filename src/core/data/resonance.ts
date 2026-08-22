@@ -1,5 +1,5 @@
 /**
- * Companion Resonance (Module 1 §3).
+ * Companion Resonance. See `docs/03_rpg_sandbox.md`.
  *
  * A Companion is more than a card-pool label: playing a Companion card each turn fires
  * its school passive. Because the Companion now stands at a fixed column beside the

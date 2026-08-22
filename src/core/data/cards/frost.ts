@@ -1,5 +1,5 @@
 /**
- * The Frost mini-set (Module 1 §2).
+ * The Frost mini-set.
  *
  * Frost is the control school: it does not out-damage Pyre, it takes away the enemy's
  * turn. Chill stacks toward a Freeze, Brittle makes the next blow land harder, and Ice

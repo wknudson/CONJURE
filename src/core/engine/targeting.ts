@@ -428,7 +428,7 @@ export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): 
   const cells = cellsOf(unit);
 
   if (unit.rangeMax <= 2 && unit.attackProfile === undefined) {
-    // Melee (Draft 7 §5.2): reaching the enemy's front or back row is the whole
+    // Melee: reaching the enemy's front or back row is the whole
     // requirement — standing in their territory is what puts the portrait in reach.
     const homeRows = startingZone(state, targetSide);
     return cells.some((c) => homeRows.includes(c.y));

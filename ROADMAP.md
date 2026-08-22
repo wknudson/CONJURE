@@ -58,13 +58,13 @@ the audit below are now history rather than plan.
 | Phase | What landed |
 | :-- | :-- |
 | **Dynamic grid** | Territory depth derived rather than hardcoded in five places (one row on boards ≤5 tall, so a 4×4 keeps neutral ground); `createCombat` validates arena size and furniture placement; 4×4/4×7 and non-square camera-rotation coverage added |
-| **Bound Form** | The Companion is a unit on the board. All damage to it — strike, spell, burn tick, wall collision — is dealt to the Pact; it cannot be sacrificed, runed, or Escalated. Sudden death restores it. HUD counts blows on it as incoming Pact damage |
+| **Bound Form** | The Companion is a unit on the board. All damage to it — strike, spell, burn tick, wall collision — is dealt to the Pact; it cannot be tithed, marked, or grown. Sudden death restores it. HUD counts blows on it as incoming Pact damage |
 | **Origin casting** | Hero cards reach the whole board; Companion cards are cast from the Companion's tile with range and line of sight. A side with no body still casts globally, which is what keeps the enemy AI's deck intact |
 | **Pre-combat** | An overhead plan of the arena before the fight, with up to five card swaps; **Ready** fixes the deck and generates a recorded seed, so Rematch is the same battle |
 
 Two pre-existing bugs fell out of this work: the threat map flagged *every* ranged enemy
 as a Commander threat regardless of sightlines (the check asked only whether the unit was
-on the board), and the raw `sacrifice` command validated neither protection nor whether
+on the board), and the raw blood-tithe command validated neither protection nor whether
 the offering was worth any Marrow.
 
 **Opened, not closed, by the pivot:**
@@ -75,7 +75,7 @@ the offering was worth any Marrow.
   at trigger time is a one-line change and a real balance shift — deliberately not taken.
 - **`magma_brute`** is a Pyre summon marked `source: 'hero'`, so it never triggers
   Resonance. Moving it is thematically right and a buff; left as a balance decision.
-- **`hud/projection.ts` hardcodes the Escalation cap** rather than reading
+- **`hud/projection.ts` hardcodes the Growth cap** rather than reading the stat block's
   `escalationCap` — harmless today, wrong the day a card changes a cap.
 - **Arena variety.** The engine now supports 4×4 through 12×12, but both shipped
   encounters are still 6×8 and 8×8. Nothing exercises the new shapes in play.
@@ -84,33 +84,40 @@ the offering was worth any Marrow.
 
 ## 1. Where the project stands
 
-### Done and verified (107 tests, clean build, playable at localhost:5173)
+### Done and verified (1591 tests across 88 files, clean build, playable at localhost:5173)
 
-| System | State |
-| :-- | :-- |
-| Rules engine | Complete for the Draft 7 set: pips/marrow, overdraw burn, free reshuffle, Retain, movement (BFS, 2×2 footprints), **independent move + attack per turn**, collisions 3/2 with Mass Invariance, supercover LoS, Guardian occlusion, runes/cascades/armor-gating/fizzle, Escalation caps, status ticks in Module 1 order, Last Stand double-KO |
-| Cards | 15-card Draft 7 starter deck + Vanguard Footman, all data-driven through ~12 effect primitives |
-| Encounters | Novice Duelist (6×8 lane, terrain), Ignis Trial (8×8 arena, 50% damage-gate with chain nullification, Rite of Binding at 25%, Forced Eviction) |
-| AI | Novice tier: greedy utility scoring per Module 5 weights, Lethal Veto, deterministic tie-breaks, seeded 20% suboptimality; 32–64ms/turn |
-| Companion | Resonance passives (Pyre live; Frost/Dusk written but unused), Companion lane, commanders rendered as board models |
-| Terrain | Rubble walls (block move+sight) and bramble cover (blocks sight only), per-encounter maps |
-| Onboarding | 6-step first-run tutorial, glossary tooltips on everything, H rules reference, T danger-zone overlay (Fire Emblem-style edge outline), contextual refusal messages, spent-unit dimming |
-| Presentation | Canvas iso board + DOM HUD, animation sequencer over typed event FIFO, trajectory ghosting, Shift expand-prediction, WebAudio cues |
+| System | State | Reference |
+| :-- | :-- | :-- |
+| Rules engine | Pips and Marrow, overdraw burn, free reshuffle, Retain, movement (BFS, 2×2 footprints), **independent move + attack per turn**, collisions 30/20 with Mass Invariance, supercover LoS, Guardian occlusion, Marks with cascades and armor gating and fizzle, Growth caps, the status tick order, sudden-death double-KO | `docs/02_combat_lexicon.md` |
+| Cards | 122 base cards across the six elemental schools plus Arcane and neutral, all data-driven through shared effect primitives. Rank 2 printings are derived, not authored | `docs/08_card_catalog.md` |
+| Deck building | Hero Deck of 4–12, tier-derived copy limits, Behemoth cap, the Grimoire draft, one swap after seeing the arena | `docs/07_deck_building.md` |
+| Encounters | Novice Duelist, Ignis Trial (damage gate with chain nullification, Rite of Subjugation at 25%, Forced Eviction), Glacial Field, Narrow Ruin, Wildlife | `docs/09_ai_and_encounters.md` |
+| AI | Novice and Adept tiers — utility scoring, Lethal Veto, deterministic tie-breaks, seeded suboptimality, collision awareness at Adept | `docs/09_ai_and_encounters.md` |
+| Reactions | Six shipped: Vaporize, Shatter, Overload, Superconduct, Arc, Wildfire | `docs/02_combat_lexicon.md` |
+| Companions | 17 companions with Bound Forms, Resonance passives, the taming roll and trait bloodlines | `docs/03_rpg_sandbox.md` |
+| Roster and revival | The Vanguard Roster on a point budget, a deployment phase onto Anchor Tiles, Auras that climax, three revival routes | `docs/07_deck_building.md` |
+| Sandbox | Safehouse hub, Bounty Board, the Artificer's Forge (schematics, ascension, splicing), 11 relics | `docs/05_ironworks_artificer.md` |
+| Terrain and weather | Rubble, cover, volatile crystals, conveyor currents, hazard tiles, fog, a directional gale, rain | `docs/02_combat_lexicon.md` |
+| Saves | Versioned localStorage with migration, a backup copy, corruption recovery, soulbound staples | `docs/01_system_architecture.md` |
+| Onboarding | First-run tutorial, glossary tooltips on everything, rules reference, danger-zone overlay, contextual refusal messages | `docs/10_presentation.md` |
+| Presentation | Canvas iso board with manual rotation, DOM HUD, animation sequencer over a typed event FIFO, trajectory ghosting, expand-prediction, WebAudio cues | `docs/10_presentation.md` |
 
-### Partial — exists but stubbed or shallow
+### Partial — exists but shallow
 
 | Item | Gap |
 | :-- | :-- |
-| **Chill status** | Stacks and decays but has no effect. Module 1: Freeze at 3 stacks, Brittle (+2 damage taken). Blocker for any Frost content. |
-| **AI vs. new action economy** | The AI *can* attack-then-move (it re-enumerates each step) but nothing scores a retreat, so it never deliberately hits and runs. The player has a tool the AI ignores. |
-| **Frost/Dusk Resonance** | Implemented in `resonance.ts`, unreachable — no companion selection exists. |
-| **Hazard tiles** | Engine has a hazard slot in the status tick order; nothing creates or renders hazards. |
-| **Camera rotation** | `rotationStep` seam exists, fixed at 0. Fine to leave. |
-| **Determinism harness** | The original plan called for a replay-from-seed CI invariant and a fuzz soak test. Never built. The engine is designed for it (seeded PRNG, pure reducer) — it's cheap insurance that gets more valuable with every feature added. |
+| **Frost and Arcane Auras** | The other five schools each have an Aura with a Climax trait. These two are designed and unbuilt (`src/core/data/auras.ts`). |
+| **AI kiting** | Retreats stay pruned from enumeration for everything except a Bound Form, so the ranged archetypes get played as static shooters rather than kited. |
+| **The AI is blind to Geodes** | No obstacle-kill scoring, so the enemy never crosses the board to break one. Deliberate — it keeps enumeration flat — but it is free value declined. |
+| **Threat panel** | A toggle and a one-line warning exist; the itemised list of declared intents — which unit, how much, where — does not. `COMBAT_FEEL.md` §E3 |
+| **Card hover preview** | Reading a card costs a click. Hovering should preview it. `COMBAT_FEEL.md` §E2 |
+| **Spent-unit tick** | Spent units dim, which reads as "disabled" rather than "done". A tick would say it properly. `COMBAT_FEEL.md` §E2 |
 
-### Not started (from the GDD, in rough demo-relevance order)
+### Not started, in rough demo-relevance order
 
-Deck builder · companion selection · cross-school reactions (Module 1's 15-entry matrix) · more cards (Modules 1–2 spec ~136) · Adept/Master AI tiers · overworld slice (sidewalk immunity, aggro, combat circle) · economy/ascension/renown/ante · save system · flanking/facing.
+Master AI tier (2-turn lookahead) · the nine unbuilt cross-school reactions (§6) ·
+the card backlog (§6) · overworld slice (sidewalk immunity, aggro, combat circle) ·
+flanking and facing · per-unit initiative.
 
 ---
 
@@ -128,46 +135,10 @@ Shipped: determinism replay harness + fuzz soak (`src/tests/replay.ts`,
 small-screen clamp. Suite is now **123 tests**. Two latent bugs surfaced and were fixed
 along the way — see §"What Phase A turned up" below.
 
-<details>
-<summary>Original Phase A plan (kept for reference)</summary>
-
-### Phase A — Hardening & feel (do first; ~2–3 days)
-
-**Why first:** every later phase adds rules. The safety net has to exist before the
-rule-count doubles, and small feel problems compound with every feature that inherits them.
-
-**Tasks**
-1. **Determinism replay harness**: record `(seed, command log)` in every test teardown,
-   replay, assert identical event stream + final state hash. Add a fuzz soak test:
-   random legal commands for N turns × 50 seeds — no throws, no negative HP, no
-   orphaned entities, pips ≤ 8 after cleanup.
-2. **Teach the AI to retreat**: score `moveUnit` away from danger for units that have
-   already attacked (bonus scaled by threat map damage on current vs. destination tile).
-   One new scoring term, no new architecture.
-3. **Feel pass on the enemy turn**: cap total enemy-turn animation time (~6s budget,
-   auto-compressing delays when the AI takes many actions), so big turns don't drag.
-4. **Small-screen guard**: below ~700px canvas width, clamp zoom and warn; tutorial
-   bubbles already clamp but anchors can sit under the hand — verify each step at 1024×640.
-5. **Notice queue**: notices currently overwrite each other and linger; make them a
-   small queue with consistent fade so refusal messages never get eaten.
-
-**Edge cases to cover**
-- Replay across a Last Stand board wipe and a boss phase transition (both mutate state
-  outside normal action flow).
-- Fuzz discovering summon-with-no-space and empty-deck-empty-discard together.
-- AI retreat scoring must not cause oscillation (move out, move back next turn, repeat) —
-  cap the retreat bonus below the face-damage term so aggression still dominates.
-- localStorage unavailable (private browsing): tutorial and mute settings already
-  try/catch; fuzz the same for anything Phase C adds.
-
-**Done when:** CI runs replay + fuzz green across 50 seeds; enemy turns never exceed the
-animation budget; AI demonstrably retreats a wounded archer in a scripted test.
-
-</details>
 
 ### What Phase A turned up
 
-- **The AI had no incentive for chip damage.** Only kills, face damage and rune setups
+- **The AI had no incentive for chip damage.** Only kills, face damage and Mark setups
   scored — a hit that failed to kill was worth exactly zero, so the AI declined free
   swings and softened enemies only by accident. Added a `unitDamage` weight.
 - **Greedy ordering wastes swings.** Because advancing outscores chip damage, a Novice
@@ -178,7 +149,8 @@ animation budget; AI demonstrably retreats a wounded archer in a scripted test.
   a 2 HP unit is worth the unit's life, not 2 points. Priced at a fraction of `kill`.
 - Test-budget note: the deeper Pirate101-style arenas make full playouts genuinely
   slower; several suites now carry explicit 30s timeouts. Runtime AI is unaffected
-  (32–64ms median per turn, well inside Module 5's 1.2s cap).
+  (32–64ms median per turn, well inside the 1.2s thinking cap — see
+  `docs/09_ai_and_encounters.md`).
 
 ---
 
@@ -191,64 +163,16 @@ feedback; a glossary-coverage test that fails the build when a card gains an une
 keyword. Suite is now **141 tests**.
 
 **Design decision worth recording:** Shatter is exempt from the reaction armor gate.
-Every other reaction needs the hit to reach health, as a rune does — but requiring that
+Every other reaction needs the hit to reach health, as a Mark does — but requiring that
 of Shatter would mean armor prevented the one reaction whose whole purpose is stripping
 armor, making a heavily armoured frozen target unbreakable. It is a `requiresHpLoss` flag
 on the reaction data, not a special case in the engine.
 
-**Deferred:** Superconduct. Module 1 pairs it with Surge, and there is no Surge content
-yet; implementing it as frost-on-burning would have meant inventing a reaction the docs
-do not describe. Three faithful reactions beat four with one made up.
+**Deferred at the time:** Superconduct, because it pairs Frost with Surge and no Surge
+content existed yet; implementing it as frost-on-burning would have meant inventing a
+reaction nothing described. Three faithful reactions beat four with one made up. *Surge
+landed later and Superconduct ships now.*
 
-<details>
-<summary>Original Phase B plan (kept for reference)</summary>
-
-### Phase B — Frost mini-set + the reaction engine (~1 week)
-
-**Why:** cross-school reactions are the design's most distinctive asset, and they are
-the demo's missing "wow". One new school is the smallest slice that proves the system.
-
-**Tasks**
-1. **Finish Frost statuses**: Chill freezes at 3 stacks (consume stacks → Freeze 1);
-   **Brittle** (+2 damage taken, 2 turns). Both tick/decay in the Module 1 order.
-2. **Reaction engine**: a data-driven matrix keyed by `(incoming damage school, status
-   present on target)` evaluated inside `dealDamage` — same choke-point pattern as rune
-   triggers, so no card can bypass it. Ship 4 reactions:
-   - **Vaporize** (fire on Chilled): consume Chill, spawn **Steam Fog** hazard (2 turns,
-     blocks ranged LoS through the tile — reuses the cover occlusion path).
-   - **Shatter** (physical/impact on Frozen): break Freeze, strip 100% armor, 4 to adjacent.
-   - **Superconduct** (frost on Burning or fire on Chilled variant per Module 1): +3 and
-     chain down the column.
-   - **Wildfire** (fire on Toxined): consume Toxin stacks → AoE 2× stacks. (Uses existing
-     Toxin; makes Dusk/Bloom future content slot in free.)
-3. **~6 Frost cards** from Module 1's blueprint (Frost Nova, Glacial Spike, Ice Barricade
-   as a wall-type obstacle, Frost Rune, one Frost minion with Guardian, one Chill spell).
-4. **Steam Fog + hazard rendering**: first real tile hazard; render as a soft animated
-   patch, add to threat/LoS calculations and the tick order slot that already exists.
-5. **Companion selection screen** (minimal): pick Ignis (Pyre) or **Boreas** (Frost) before
-   an encounter. Boreas swaps the Resonance (already written), tints the Companion model,
-   and gates nothing else — Frost cards go into the shared deck for now.
-
-**Edge cases**
-- **Reaction vs. armor gate**: Module 1 rules runes need ≥1 HP loss — decide and test
-  whether reactions trigger on fully-absorbed hits (recommend: statuses apply, reactions
-  require HP loss, consistent with runes).
-- **Reaction from a rune detonation** (fire rune detonates onto a Chilled unit → Vaporize
-  inside a cascade): must resolve in the same worklist without reentrancy bugs; cap chain
-  depth and test a Vaporize→Shatter→rune chain.
-- **Freeze vs. Escalation**: frozen units still escalate (Draft 7) — already true, add a
-  reaction-era regression test.
-- **Fog on cover / fog on a wall tile**: occlusion sources must union, not conflict.
-- **Frozen unit shoved into a wall**: Shatter triggers off impact? (Recommend yes — it's
-  the fun answer and Module 1's Frost/Bulwark entry says so.) Test the double-dip damage.
-- **Reaction killing the Commander mid-chain** during a boss damage-gate: gate clamps and
-  nullifies the rest — reactions must respect `chainCancelled`.
-- Threat overlay with fog: fog blocks enemy ranged threat — the danger zone must recompute.
-
-**Done when:** a Boreas run can Chill → Vaporize → fog a lane, and a Frozen enemy shoved
-into a wall Shatters, all animated in sequence, with table-driven tests over the matrix.
-
-</details>
 
 ---
 
@@ -268,41 +192,6 @@ in-play deck matched card for card, then won and claimed a reward that persisted
 so both the companion highlight and the deck summary looked themselves up through a null
 reference and silently no-opped. Nothing threw — the screen just rendered empty.
 
-<details>
-<summary>Original Phase C plan (kept for reference)</summary>
-
-### Phase C — Deck builder + collection (~1 week)
-
-**Why:** it's a *deck builder* — the demo currently never lets you touch the deck. This
-is also where playtesters start expressing skill.
-
-**Tasks**
-1. **Collection model**: player owns starter 15 + Vanguard + the Frost set; win rewards
-   grant 1–2 card picks from a small pool (the first real meta-loop hook).
-2. **Deck rules from the docs**: 12–30 cards; duplicate caps **T1=3, T2=2, T3=1** tracked
-   by base card id; **max 2 Behemoths per deck**; Power Tier floor (cost never below 1).
-3. **Builder screen**: list + deck panel, school/color coding, capped duplicates grey out,
-   cost-curve bar, validate-on-confirm with specific errors ("13 cards — minimum is 12").
-4. **Persistence**: localStorage save `{version, collection, decks, tutorialSeen, results}`
-   with a version number and a migration function from day one (Module 8's rule).
-
-**Edge cases**
-- Deck invalidated by data changes (a card's def removed/renamed): flag deck invalid on
-  load, force edit, never crash (Module 8's binder-validation rule).
-- Duplicate cap across future ranks (Ascension): track by base id now so Rank 2 doesn't
-  double the cap later.
-- Deleting the active deck / editing mid-run: lock the deck once an encounter starts.
-- Sub-minimum collection (impossible now, possible after future "wager" mechanics): the
-  soulbound starter 15 can never be removed — enforce in the model, not the UI.
-- localStorage full or corrupted JSON: fall back to defaults, keep a `.bak` copy of the
-  last good save before every write.
-- Tutorial interaction: a brand-new player must be routed into a playable default deck
-  without seeing the builder first.
-
-**Done when:** you can win cards, build a legal 12–30 deck mixing Pyre/Frost, get precise
-errors for every illegal deck, and it all survives a reload and a simulated corrupt save.
-
-</details>
 
 ---
 
@@ -329,51 +218,21 @@ not detect improvement — the first three ablations all read as noise. Speed-to
 remaining HP were the sensitive metrics, and AI-vs-AI isolated tier quality from player-script
 quality.
 
-<details>
-<summary>Original Phase D plan (kept for reference)</summary>
-
-### Phase D — Adept AI + difficulty select (~3–4 days)
-
-**Why:** Novice is beatable 8/10 by a naive scripted player. Anyone who likes the demo
-will exhaust it in an evening without a second difficulty.
-
-**Tasks**
-1. **Adept profile** per Module 5: 1-turn lookahead (simulate the player's best single
-   reply with a cheap version of its own scorer), 5% suboptimality, collision-aware
-   (`w_pos` collision term on), deliberately pushes into walls, uses Shatter setups once
-   Phase B lands.
-2. **Compute budget**: hard 150-iteration / 1.2s cap from Module 5 with a graceful
-   fall-back to greedy when exceeded; assert in tests on the 8×8 board.
-3. **Difficulty picker** on the encounter cards; persist choice.
-
-**Edge cases**
-- Lookahead must clone through encounter script hooks (damage gates) without firing
-  side effects twice — preview-style clone/discard, same as `previewAction`.
-- Determinism: lookahead uses the same seeded RNG stream — replay harness (Phase A) must
-  stay green with Adept enabled.
-- Lethal Veto inside lookahead: don't veto a line just because the *player's reply* could
-  be lethal — that's Master-tier caution, not Adept.
-- Time cap on low-end machines: budget by iteration count, not wall clock alone.
-
-**Done when:** Adept beats the Phase A scripted player ≥6/10 where Novice loses 8/10,
-within budget, fully deterministic under seed.
-
-</details>
 
 ---
 
-### Phase E — Overworld alleyway slice (GDD demo Phase 3; ~1–1.5 weeks, optional)
+### Phase E — Overworld alleyway slice (~1–1.5 weeks, optional)
 
-**Why last of the big items:** it's the GDD's connective tissue, but it proves *scope*
-rather than *fun* — combat already carries the demo. Build it when the combat loop is
-worth wrapping.
+**Why last of the big items:** it is the connective tissue between fights, but it proves
+*scope* rather than *fun* — combat already carries the demo. Build it when the combat loop
+is worth wrapping.
 
 **Tasks**
 1. One hand-authored alleyway zone (same iso renderer, bigger grid, camera follow):
    sidewalk tiles (safe) vs. street tiles (danger) — the Sidewalk Immunity rule.
 2. 2–3 roaming duelists with vision cones; aggro on street, never from sidewalk.
 3. **Combat Circle**: on contact, expanding ring for 2.5s; any second mob touched joins
-   as Wave 2 on round 2, player compensated +1 pip +1 draw (Module 3).
+   as Wave 2 on round 2, player compensated +1 Pip and +1 draw.
 4. Contact advantage: frontal = neutral; player rear-ambush = +1 pip, draw 6.
 5. Transition: snapshot the overworld position, run the encounter, return with results
    (defeated duelists stay down for the session).
@@ -417,19 +276,87 @@ and walk back — twice in a row without a reload.
 
 ## 4. Known issues (small, tracked, not blocking)
 
-- Tiny embedded-preview canvases (~350px) render at zoom 0.31 — unreadable but functional;
-  Phase A adds the clamp/warning.
 - Threat projection is deliberately optimistic (ignores friendly-unit traffic jams) —
   documented behavior, revisit only if playtesters call tiles "wrongly red".
-- Enemy hand is fully hidden (no count-based tell); consider showing enemy hand count.
-- `escalation` HP cap test asserts max-HP consistency but Behemoth uncapped growth has no
-  dedicated long-game test — add one in Phase A's fuzz pass.
+- Enemy hand shows a count but no card-level tell. Deliberate; revisit if the enemy turn
+  reads as arbitrary.
+- Behemoth Growth caps at `GROWTH_CAP_BEHEMOTH` (99) rather than being unbounded, but there
+  is no dedicated long-game test that a Behemoth actually reaches and stops at the cap.
+- Two companion traits describe mechanics the engine does not have and are marked `pending`
+  in `src/core/data/companionTraits.ts`: `echo_chamber` (names a resource that never
+  existed) and `death_rattle`. Each needs either an implementation or a rewrite.
+- **The player sees two words for one mechanic.** The keyword is `Growth`, but the HUD still
+  says "Escalation stacks" (`hud/glossary.ts`), "escalated ×N" (`hud/Hud.ts`) and "N
+  escalation" (`hud/projection.ts`), and the stat fields are still `escalationBonus` /
+  `escalationCap`. The field names are fine to leave — renaming them buys nothing — but the
+  three player-facing strings and the second glossary entry are worth settling one way or
+  the other. A vocabulary decision, not a bug.
 
 ## 5. Explicitly deferred (post-demo)
 
-Renown/ante wagering and the Black Market reclaim economy · Ascension crafting ·
-full 7-school card catalog · Master AI (2-turn lookahead, chain collisions) ·
-save-scum protection (`pending_combat_state`) · per-unit Speed initiative (the one
-Mewgenics idea consciously not adopted — revisit only if side-based turns feel flat
-after Phase B) · engine port (Godot/Unity) — the renderer-agnostic core was built for
-this, but not before the design is proven in the browser.
+Wagering and a reclaim economy on the Bounty Board · Master AI (2-turn lookahead, chain
+collisions) · save-scum protection (`pending_combat_state`) · per-unit Speed initiative
+(the one Mewgenics idea consciously not adopted — revisit only if side-based turns feel
+flat) · engine port (Godot/Unity) — the renderer-agnostic core was built for this, but not
+before the design is proven in the browser.
+
+---
+
+## 6. The design backlog
+
+Consolidated here in 2026-08-21, when the original root-level design modules were retired.
+These are the parts of that material that had **not** been built and were still wanted; the
+numbers have been restated at the current stat scale (the old documents were written before
+the Stat Stretch and ran a factor of ten low). Everything else in those documents was either
+shipped, superseded by `docs/`, or deliberately declined.
+
+### 6.1 Cross-school reactions not yet built
+
+Six reactions ship today — Vaporize, Shatter, Overload, Superconduct, Arc and Wildfire
+(`src/core/data/reactions.ts`). The original matrix paired every school with every other.
+These are the pairings still open:
+
+| Pairing | Name | Trigger | Effect |
+| :-- | :-- | :-- | :-- |
+| Pyre + Surge | **Plasma Burst** | A Surge hit on a target carrying 3+ Burn | Consume 2 Burn to deal 40 bonus shock, arcing to the target's whole row |
+| Pyre + Bulwark | **Magma Surge** | A shove drives an enemy onto a burning tile | Collision damage, then double the enemy's remaining Burn stacks |
+| Pyre + Dusk | **Soulfire** | A friendly unit carrying Burn is tithed | Detonates around it for fire damage equal to the health the tithe took |
+| Frost + Dusk | **Black Ice** | A Frozen enemy dies | The tile keeps a lasting chill; the next enemy to enter it freezes |
+| Frost + Bloom | **Permafrost** | Toxin applied to a Chilled or Frozen target | Entangles it, and Toxin stops decaying while the chill holds |
+| Surge + Bulwark | **Kinetic Arc** | A Charged enemy is shoved into a wall or a body | The impact releases a shock blast to everything within one tile |
+| Surge + Bloom | **Bio-Pulse** | Toxin ticks on a target carrying an Arc Mark | The tick discharges shock to adjacent enemies without spending the Mark |
+| Bulwark + Dusk | **Bone Bastion** | A unit wearing Persistent Armor is tithed | Its armor converts into permanent Max HP on the body that took the tithe |
+| Bulwark + Bloom | **Iron Briar** | A Bulwark card is cast onto a tile holding brambles | The brambles fortify into a real obstacle and reflect damage to attackers |
+| Dusk + Bloom | **Blight Siphon** | A Dusk strike on a target carrying 3+ Toxin | Drains health through armor and spreads it as healing across your units |
+
+One further pairing, **Volatile Spark** (Surge + Dusk), was deliberately *declined* as a
+reaction — its payout ships instead as a card effect, and the reasoning is recorded in
+`src/core/data/cards/hybrid.ts`. It is not pending work.
+
+Two structural notes carried over: a reaction fired from inside a Mark cascade must resolve
+in the same worklist without reentrancy, and a reaction that would kill a Pact mid-chain
+has to respect the boss damage gate's `chainCancelled`. Both are already true of the six
+shipped reactions and are the pattern any new one should follow.
+
+### 6.2 Card backlog
+
+The original catalog specified roughly 136 cards against the 122 that ship. `pools.ts`
+states the real target — `CATALOG_TARGET` of 10–15 spells per school — and `catalogGaps()`
+reports which schools fall short, asserted by `src/tests/catalog.test.ts`. **That function,
+not a list in a document, is the backlog**: it cannot go stale. Add cards to the thin
+schools it names, following `docs/08_card_catalog.md` for where each shelf lives.
+
+The specific card names in the retired catalog are not worth preserving — they were written
+against different resources, a different scale and a card taxonomy that no longer exists.
+
+### 6.3 Sandbox ideas not yet designed into `docs/03`
+
+- **Mastery objectives.** Optional combat sub-objectives that raise the taming roll —
+  winning without taking Pact damage, tithing three or more of your own, finishing by
+  Mark cascade. The taming roll exists (`docs/03_rpg_sandbox.md`); nothing yet lets play
+  quality feed it.
+- **Reagent harvesting with variance.** Harvesting a hazard as a reagent, where the node
+  rolls on what it yields and can bite back. `docs/03` notes only that Overworld reagent
+  harvesting does not exist.
+- **School academies.** A curriculum-and-mastery-trial route to new cards, parallel to the
+  Forge rather than replacing it.

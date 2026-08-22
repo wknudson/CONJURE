@@ -2,7 +2,7 @@
  * The AI turn loop: enumerate -> simulate -> score -> pick, one action at a time, until
  * nothing is worth doing or the action cap is reached.
  *
- * Two tiers, per Module 5 §3:
+ * Two tiers. See `docs/09_ai_and_encounters.md`:
  *
  *   Novice  greedy, current action only. Cheap, and visibly imperfect — it will move a
  *           unit out of range before remembering it could have swung first.
@@ -44,11 +44,11 @@ export interface AiProfile {
   /** How many further actions the rollout plays out when valuing an opener. */
   rolloutDepth: number;
   /**
-   * Ceiling on simulated actions per turn, and the *only* limit that shapes play. Module 5
+   * Ceiling on simulated actions per turn, and the *only* limit that shapes play. The spec
    * states 150 iterations; that reads as per decision, so the per-turn budget is a
    * multiple of it. Reaching it drops the rest of the turn to greedy.
    *
-   * Tuned so a turn lands inside Module 5's 1.2s thinking cap on typical hardware, and
+   * Tuned so a turn lands inside the 1.2s thinking cap on typical hardware, and
    * degrades in quality rather than in time on slower machines.
    */
   simulationBudget: number;
@@ -84,7 +84,7 @@ export const NOVICE_AI: AiProfile = {
 
 export const ADEPT_AI: AiProfile = {
   name: 'Adept',
-  // Collision awareness is the other half of Module 5's Adept tier: unlike a Novice it
+  // Collision awareness is the other half of the Adept tier: unlike a Novice it
   // will deliberately shove a unit into a wall.
   weights: ADEPT_WEIGHTS,
   suboptimalChance: 0.05,
@@ -310,7 +310,7 @@ function beamFor(candidates: ScoredAction[], width: number): ScoredAction[] {
 }
 
 /**
- * Deterministic ordering: higher utility first, then Module 5's tie-break — the action
+ * Deterministic ordering: higher utility first, then the documented tie-break — the action
  * whose target sits closest to the enemy's back row, then leftmost. Never random.
  */
 function compareActions(a: ScoredAction, b: ScoredAction, state: GameState): number {
