@@ -11,7 +11,7 @@
  * inside `state`, so the title wall can paint three posters without deserialising three
  * engine states. Those fields are a cache, refreshed on every write by `stampProfile`.
  *
- * Module 8's rule, adopted from the first save rather than retrofitted: every save
+ * The rule, adopted from the first save rather than retrofitted: every save
  * carries a `version`, and loading an older one runs a migration that re-reads static
  * card data from the master database instead of trusting what the save recorded. Card
  * definitions change; a save must never pin stale numbers.
@@ -736,7 +736,7 @@ function migrateProfile(
       companionId: companion.id,
       cards,
       // Flagged rather than silently repaired: the player should see what changed and
-      // choose the fix themselves (Module 8's binder-validation rule).
+      // choose the fix themselves. See `docs/01_system_architecture.md`.
       ...(problems.length > 0 ? { invalid: true } : {}),
     };
     if (problems.length > 0) {

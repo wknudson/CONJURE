@@ -19,7 +19,7 @@ export interface EncounterDef {
   playerHp: number;
   enemyHp: number;
   /**
-   * Banked Pips both sides open with. Module 3's contact table sets frontal (neutral)
+   * Banked Pips both sides open with. The contact table sets frontal (neutral)
    * engagement at 3 Pips and 5 cards; without it turn one is a dead turn.
    */
   startingPips?: number;

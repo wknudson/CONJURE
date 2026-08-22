@@ -1,5 +1,6 @@
 /**
- * Draft 7 §10's 15-card prototype starter deck, plus the unit stat blocks it summons.
+ * The opening shelf: the Hero's seven starting cards, the Pyre cards the game was founded
+ * on, and the unit stat blocks they summon.
  *
  * Cards are typed TS data rather than JSON so every effect node is validated at compile
  * time. They serialise to JSON unchanged if a data-driven editor is ever wanted.
@@ -134,7 +135,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 2,
       archetype: 'behemoth',
-      // Behemoth escalation is uncapped per Module 2; the cap is applied in status.ts.
+      // Behemoth Growth caps at GROWTH_CAP_BEHEMOTH rather than at the 1x1 cap; see growth.ts.
       escalationBonus: { atk: 10, hp: 10 },
     },
   },
@@ -262,31 +263,12 @@ export const STARTER_CARDS: Record<string, CardDef> = {
 };
 
 /**
- * The 15-card starter deck as a list of card ids. Duplicates are intentional and match
- * Draft 7's table: 2x Grave Sentinel, 2x Cinder Mark, 2x Flame Surge.
- */
-/**
- * The deck a new player starts with.
- *
- * Five bodies used to sit at the top of this list. They are a Vanguard Roster now — bought
- * once before the dungeon and deployed onto Anchor Tiles, rather than drawn and paid for
- * again every fight. What replaced them is the Aura line: something to *do* with the board
- * the roster gives you for free.
- */
-/**
- * The Hero Deck a new player starts with.
- *
- * Nine cards of utility and nothing elemental, because the elements are not the Hero's to
- * bring any more — the equipped Companion fuses eight fixed spells in at the bell. What is
- * left here is the half a player actually *builds*: a shove, a wall, a ward, a bleed, and
- * the arcane tools that work whatever colour of magic is standing next to them.
- *
- * Nine rather than the full fifteen deliberately. A deck at its ceiling on day one has
- * nowhere to grow, and the six empty slots are the first thing the Field Journal asks the
- * player a question about.
- */
-/**
  * The Hero half a character starts with: **seven**, one of each.
+ *
+ * Nothing elemental, because the elements are not the Hero's to bring any more — the
+ * equipped Companion fuses eight fixed spells in at the bell. What is left here is the half
+ * a player actually *builds*: a strike, a shove, a wall, a ward, a tithe, a beam and a
+ * finisher, all of which work whatever colour of magic is standing next to them.
  *
  * Seven because the deck a new player is handed is the *fused* one, and the fused deck is
  * fifteen: seven colourless staples they chose nothing about, and the eight elemental

@@ -1,9 +1,9 @@
 /**
- * Deck construction rules (Draft 7 §10, Module 2 §7).
+ * Deck construction rules. See `docs/07_deck_building.md`.
  *
- * A deck is 12–30 cards. How many copies of a card you may run depends on its **Tier**,
- * and the cap is tracked by *base card id* rather than by printed card, so a future
- * Ascension that upgrades a card to Rank 2 cannot double the cap by the back door.
+ * How many copies of a card you may run depends on its **Tier**, and the cap is tracked by
+ * *base card id* rather than by printed card, so an Ascension that upgrades a card to
+ * Rank 2 cannot double the cap by the back door.
  */
 
 import type { CardDef, CardKind } from '../types/cards.js';
@@ -57,7 +57,7 @@ export const HERO_KINDS: readonly CardKind[] = ['ability', 'mark', 'obstacle'];
  * Hero their own trap.
  */
 export const HERO_SCHOOLS: readonly string[] = ['neutral', 'arcane'];
-/** Module 2: no more than two Behemoths in a deck, at any size. */
+/** No more than two Behemoths in a deck, at any size. See `docs/07_deck_building.md`. */
 export const MAX_BEHEMOTHS = 2;
 
 /** Copies permitted, by Tier. */

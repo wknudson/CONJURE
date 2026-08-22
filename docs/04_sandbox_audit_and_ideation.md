@@ -7,7 +7,15 @@ written in the engine's own words, so nothing here needs an engine change unless
 Every claim in Part 1 carries a `file:line`. Terms are spelled exactly as
 [`02_combat_lexicon.md`](02_combat_lexicon.md) spells them, so the two grep together.
 
-Audited at `0d8a189`, against a green suite (843 tests, 58 files).
+Audited at `0d8a189`, against a green suite (843 tests, 58 files) — the suite has grown a
+great deal since, and that figure is part of the record rather than a current count.
+
+> **On the line numbers.** Every `file:line` and every `02_combat_lexicon.md:NNN` below was
+> accurate at `0d8a189`. Both files have moved on — the Lexicon in particular was rewritten
+> when the design docs were consolidated — so the line numbers no longer land. Read them as
+> pointers to a *claim*, and find the claim by its section in the current Lexicon. They are
+> deliberately not renumbered: an audit that keeps re-pointing its own citations stops being
+> a record of what was found.
 
 > **Status.** The Game Director has ruled on Part 1 and the rulings are implemented:
 > §5.1 (dangling attacker), §5.2 (the pipeline gates), the Bound Form hole in §1, §5.4

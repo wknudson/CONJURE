@@ -1,0 +1,15 @@
+/*
+ * Build-time scripts, typechecked separately from the game.
+ *
+ * A separate project rather than adding `scripts` to the main `include`, because these
+ * files need Node's globals and `src` must not have them: the game runs in a browser, and
+ * putting `process` and `fs` in scope there would make an import that cannot possibly work
+ * at runtime typecheck cleanly.
+ */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["scripts"]
+}

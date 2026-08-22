@@ -541,7 +541,7 @@ export function createCombat(
   player.commander.deck = shuffle(rng, player.commander.deck);
   enemy.commander.deck = shuffle(rng, enemy.commander.deck);
 
-  // Frontal contact opens symmetric at 3 Pips (Module 3). beginTurn adds the first
+  // Frontal contact opens symmetric at 3 Pips. beginTurn adds the first
   // turn's +1 on top, so the player acts meaningfully from turn one.
   const opening = encounter.startingPips ?? 3;
   player.commander.pips = opening + (carry?.boons?.pips ?? 0);

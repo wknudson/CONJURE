@@ -1,7 +1,7 @@
 /**
  * Marks: attachment, trigger evaluation, cascades, and fizzling.
  *
- * The three rules that matter (Draft 7 §7):
+ * The three rules that matter (see `docs/02_combat_lexicon.md`):
  *  1. Max 1 mark per entity (enforced by the `mark?` field being singular).
  *  2. Damage-based triggers need at least 1 point of ACTUAL HP loss — damage fully
  *     absorbed by armor does not detonate. This is what makes armor a real cascade brake.

@@ -30,7 +30,7 @@ animation: the core resolves instantly, so its state is already ahead of what is
 screen. Events therefore embed **snapshots** — frozen copies of the unit, card, or
 obstacle as it was at that moment.
 
-### The nine Commands
+### The eleven Commands
 
 | Command | Effect |
 |---|---|
@@ -38,8 +38,11 @@ obstacle as it was at that moment.
 | `moveUnit` | spend a unit's move |
 | `attack` | strike a unit, obstacle, or commander portrait |
 | `attackTile` | a declared attack landing on a now-empty tile — costs the action, deals nothing |
-| `sacrifice` | destroy your own unit to extract Marrow |
+| `bloodTithe` | open one of your own units for Marrow. The body **stays on the board**, wounded and Exhausted |
 | `channel` | spend a unit's **attack** to extract Marrow instead of swinging |
+| `deployUnit` | put one rostered body on an Anchor Tile, before turn one. Free and reversible |
+| `recallUnit` | pick a deployed body back up, returning it to the tray |
+| `finishDeployment` | set the line; ends deployment and begins turn one |
 | `declareIntents` | record the enemy's commitment for next turn |
 | `endTurn` | end the turn |
 
@@ -86,14 +89,14 @@ value somebody can hold.
 
 ### Marrow — volatile magic
 
-Extracted during a turn by sacrifice, devouring, or elemental reactions. **All unspent
-Marrow is lost at end of turn.** Use it or lose it.
+Extracted during a turn by the blood tithe, by channelling, or by opening something up.
+**All unspent Marrow is lost at end of turn.** Use it or lose it.
 
 Sources:
 
 | Source | Amount |
 |---|---|
-| Sacrificing a unit | its `sacrificeValue` |
+| Tithing a unit | 2 (`TITHE_MARROW`), plus that body's `titheBonus` |
 | Channelling | 1 (`CHANNEL_MARROW`) |
 | Overdrawing past the hand limit | 1, and the drawn card burns |
 | Breaking a Marrow Geode | its `onDestroyReward.marrow` |
@@ -111,7 +114,7 @@ Two genuinely different demands:
 
 - **`pips` is generic energy.** Marrow substitutes for it freely, and does so **first**,
   because Marrow evaporates while Pips bank. A card priced purely in Pips is still fully
-  payable out of a sacrifice, which is what keeps the ramp economy intact.
+  payable out of a tithe, which is what keeps the ramp economy intact.
 - **`marrow` is a strict requirement.** Pips cannot cover it at any price. A card asking
   for Marrow is asking you to have opened something up *this turn*, and no amount of
   patient banking substitutes for that.
@@ -151,11 +154,12 @@ player, `-1` for the enemy — used for melee reach and ranged LoS vectors.
 The Companion's body **on the grid**.
 
 - Keeps **no health of its own** — every wound is dealt straight to the Pact.
-- Cannot be sacrificed (`sacrificeValue: 0`, and the command refuses `BoundForm` outright).
-- **Never Escalates.** Its power is the Pact's, and the Pact does not grow. This is
-  belt-and-braces: the card carries no Escalate keyword *and* `escalate()` returns early
-  for `BoundForm`, so a future effect granting Escalate to everything you control still
-  cannot grow it.
+- Cannot be tithed — `applyTithe` returns zero for a `BoundForm`, and `bloodTitheRefusal`
+  turns the command away outright.
+- **Never grows.** Its power is the Pact's, and the Pact does not grow. This is
+  belt-and-braces: the card carries no Growth keyword *and* `growUnit()` returns early
+  for `BoundForm` — as does `attachAura` — so a future effect granting Growth to
+  everything you control still cannot grow it.
 - Its `hp` field is cosmetic, set to the Pact's total so anything reading a health
   fraction reads full rather than a misleading sliver.
 
@@ -171,11 +175,11 @@ turn dumps several cards.
 | School | Name | Effect |
 |---|---|---|
 | pyre | **Ember Watch** | Ignites (1 Burn) every enemy in the Companion's column |
-| frost | **Rime Guard** | +2 Persistent Armor to your Hero |
+| frost | **Rime Guard** | +20 Persistent Armor to your Hero |
 | surge | **Storm Tithe** | Pays 1 Pip back |
-| dusk | **Grave Tithe** | Drains 2 HP from the lowest-HP enemy |
-| bloom | **Verdant Growth** | Returns 2 HP to the Pact (`VERDANT_GROWTH_HEAL`) |
-| bulwark | **Shield Oath** | +1 Persistent Armor to your units in the Companion's column |
+| dusk | **Grave Tithe** | Drains 20 HP from the lowest-HP enemy |
+| bloom | **Verdant Growth** | Returns 20 HP to the Pact (`VERDANT_GROWTH_HEAL`) |
+| bulwark | **Shield Oath** | +10 Persistent Armor to your units in the Companion's column |
 | arcane | **Marginalia** | Draws a card |
 
 Every school a Companion can belong to has one. A species whose school had no entry would
@@ -235,7 +239,7 @@ away.
 
 | Kind | Effect |
 |---|---|
-| `rain` | fire damage −1 (`RAIN_FIRE_PENALTY`); arcing shots splash 1 (`RAIN_ARC_DAMAGE`) |
+| `rain` | fire damage −10 (`RAIN_FIRE_PENALTY`); shock earths itself through whatever it hits — the **Arc** reaction, §9 |
 | `fog` | nothing sees past 3 tiles (`FOG_VISION`), anyone, any direction |
 | `gale` | ranged reach +1 downwind, −1 into it. Melee untouched |
 
@@ -255,26 +259,43 @@ spells — it bends arrows, not sorcery.
 | **Impact** | triggers an effect the moment it lands, but cannot act that turn |
 | **Counter** | strikes back for full Attack whenever hit in melee — **and survives**. A blow that kills it outright takes no counter-damage |
 | **Guardian** | blocks line of sight |
-| **Escalate** | grows at the start of your turn, if it survived the enemy round |
+| **Growth** | grows at the start of its owner's turn, if it survived the opposing round. **Enemy-side only** — see below |
 | **Retain** | stays in hand at end of turn instead of being discarded |
 | **PowerTier** | a high-cost finisher |
-| **Sacrifice** | glossary text only — see below |
 | **BoundForm** | the Companion's body; its wounds are the Pact's |
 | **Feral** | wild; belongs to no one, fights everyone, everyone may fight it. What it goes *after* is set by `hunts` |
 
-> **Sacrifice is not a gate.** The `sacrifice` command checks `sacrificeValue > 0` and
-> never looks at the keyword. Any unit worth Marrow can be offered; the keyword is
-> documentation. Set `sacrificeValue: 0` to make something un-sacrificeable.
+> **The blood tithe is not a gate.** `bloodTitheRefusal` never looks at a keyword, and
+> there is no keyword left to look at. Every body bleeds at the same base rate — **30**
+> health (`TITHE_DAMAGE`) for **2** Marrow (`TITHE_MARROW`), plus whatever that stat block's
+> `titheBonus` adds — so the old `sacrificeValue > 0` test has no successor. Exhaustion is
+> what caps a body at one tithe a turn, not the resource. The only refusals are a Bound
+> Form, a unit already carrying `exhaust`, and one that cannot act. "Would die" is
+> deliberately *not* a refusal — a lethal tithe is a legal play and occasionally the right
+> one, and the Marrow is credited *before* the wound lands, so it still pays.
 
-### Escalation
+### Growth
 
-Fires at the start of your turn for units that lived through the enemy round. **Never on
-the deploy turn** — `freshlySummoned` absorbs the first tick and clears.
+The enemy's clock, and only the enemy's. Fires at the start of the owner's turn for units
+that lived through the opposing round. **Never on the deploy turn** — `freshlySummoned`
+absorbs the first tick and clears.
 
-1×1 units cap at **+3** stacks; **Behemoths are uncapped** (`escalationCap`). It fires
-even on Frozen or Stunned units — being held down does not stop something growing.
+**Enemy-side only.** `growUnit` refuses anything whose `side` is not `enemy`, because the
+player's bodies grow through **Auras** instead, and those hard-stop at three stacks. A
+player unit carrying both would be growing on two clocks at once and the looser one would
+win. The gate is on the side rather than on the card data, so an enemy fielding a body the
+player can also field still gets its clock.
 
-The per-unit growth is `escalationBonus: { atk, hp }` on the stat block.
+1×1 units cap at **+3** stacks (`GROWTH_CAP`); Behemoths at **99**
+(`GROWTH_CAP_BEHEMOTH`) — near-endless, but not uncapped. It was `Infinity`, which was
+both a balance claim nobody meant literally and a real bug: `Infinity` is not JSON, so a
+saved fight reloaded with the ceiling replaced by `null`. Either ceiling is held per-unit
+as `escalationCap`. It fires even on Frozen or Stunned units — being held down does not
+stop something growing.
+
+The per-unit growth is still spelled `escalationBonus: { atk, hp }` on the stat block, and
+the event is still `escalated`. The mechanic was renamed and fenced; the field names were
+not.
 
 ### Attack profiles
 
@@ -310,7 +331,7 @@ a living body**:
 |---|---|
 | a corpse | a status on something already removed is bookkeeping nobody reads |
 | *from* a corpse | the attacker is re-read after the blow; Counter and mark blasts resolve first, so an attacker can be dead by the time its own rider would land |
-| a blow armour ate whole | `hpLoss > 0`, the same test marks and three of the five reactions use. Plate is a real answer to a Plague-Bearer |
+| a blow armour ate whole | `hpLoss > 0`, the same test marks and four of the six reactions use. Plate is a real answer to a Plague-Bearer |
 | an obstacle or a portrait | neither carries a status field |
 | a **Bound Form** | it keeps no health of its own, so every tick would be redirected to the Pact — a melee rider would be the one thing in the game that poisons a portrait |
 
@@ -367,8 +388,14 @@ cone with no facing is a circle.
 ### Effect ops
 
 `seq` · `damage` · `summon` · `spawnObstacle` · `spawnConstruct` · `attachMark` · `push` ·
-`grantArmor` · `applyStatus` · `sacrificeTarget` · `extractMarrow` · `drawCards` ·
-`shoveArea` · `pullArea` · `detonateAllMarks` · `cleaveFront` · `anchorTether`
+`grantArmor` · `applyStatus` · `consumeTarget` · `tithe` · `attachAura` · `detonateAura` ·
+`heal` · `revive` · `extractMarrow` · `drawCards` · `shoveArea` · `pullArea` ·
+`detonateAllMarks` · `cleaveFront` · `anchorTether` · `ifMet` · `gainPips` ·
+`spawnHazard` · `clearStatus`
+
+`tithe` and the `bloodTithe` command both resolve through the single `applyTithe`, so a
+card cannot invent a tithe that skips the Exhaustion or pays on a different curve — the
+only thing a card gets to choose is the two numbers.
 
 Cards are **data, not closures**, so the AI can read a card's shape to enumerate targets
 and new cards need no engine changes.
@@ -408,7 +435,11 @@ Derived so a new card cannot be added *without* a tier, which would silently gra
 unlimited copy count. Copy limits: `{ 1: 3, 2: 2, 3: 1 }` (`TIER_COPY_LIMIT`), tracked by
 **base id** so a Rank 2 printing cannot double the cap by the back door.
 
-Decks are 12–30 cards, at most 2 Behemoths, at most 5 swaps after seeing the arena.
+A Hero Deck is **4–12** cards (`MIN_DECK` / `MAX_DECK`), at most 2 Behemoths
+(`MAX_BEHEMOTHS`), and **one** swap after seeing the arena (`MAX_SWAPS`). It was 12–30 when
+the deck was the whole spellbook; the Companion's Grimoire now brings the other eight, and
+one swap against a twelve-card half is an answer brought for the terrain rather than a
+second deck built once the terrain is known.
 
 ---
 
@@ -431,9 +462,10 @@ encounter Damage Gate → armor absorption → HP loss → mark triggers → dea
 | `impact` | collisions and slams. Shatters |
 | `true` | **ignores armor entirely** |
 
-**Collision:** a shoved unit that hits something takes 3 (`COLLISION_TARGET_DAMAGE`);
-whatever it hit takes 2 (`COLLISION_BLOCKER_DAMAGE`); an obstacle takes 3. Walls hurt just
-as much as bodies — shoving into a wall is free damage.
+**Collision:** a shoved unit that hits something takes 30 (`COLLISION_TARGET_DAMAGE`);
+whatever it hit takes 20 (`COLLISION_BLOCKER_DAMAGE`); an obstacle takes 30
+(`COLLISION_OBSTACLE_DAMAGE`). Walls hurt just as much as bodies — shoving into a wall is
+free damage.
 
 ---
 
@@ -441,13 +473,15 @@ as much as bodies — shoving into a wall is free damage.
 
 | Status | Rule |
 |---|---|
-| **Burn** | 1 fire per stack at the start of the affected side's turn, then loses a stack |
-| **Toxin** | 1 per stack at turn start, **as `true` damage** — armor is bypassed, not spent. `bonusToxinStacks` is resolved from the **source's** side when the poison is applied and stored amplified, so the tick never asks whose it was — and a trap collects for whoever laid it, not for whoever's turn sprang it |
+| **Burn** | 10 fire per stack (`STAT_SCALE`) at the start of the affected side's turn, then loses a stack |
+| **Toxin** | 10 per stack at turn start, **as `true` damage** — armor is bypassed, not spent. `bonusToxinStacks` is resolved from the **source's** side when the poison is applied and stored amplified, so the tick never asks whose it was — and a trap collects for whoever laid it, not for whoever's turn sprang it |
 | **Chill** | stacks toward freezing; the third stack (`CHILL_TO_FREEZE`) freezes instead of stacking |
-| **Freeze** | cannot move or attack. Still Escalates. A physical blow Shatters it |
+| **Freeze** | cannot move or attack. Still grows. A physical blow Shatters it |
 | **Entangle** | cannot move, but **can** attack |
 | **Stun** | cannot move or attack. Applied by **Concussive Blow**'s rider — the first and only source |
-| **Brittle** | +2 damage from every hit (`BRITTLE_BONUS`) until it wears off |
+| **Exhaust** | bled for Marrow: cannot move, strike or channel until the start of its owner's next turn. Deliberately **not** `stun` — Stun is what an enemy does to you, Exhaustion is what you do to your own body |
+| **Fleet** | quickened: +1 MOV per stack, this turn only |
+| **Brittle** | +20 damage from every hit (`BRITTLE_BONUS`) until it wears off |
 | **Charged** | residual Surge energy. Does nothing alone — it is what fire and frost react to |
 | **aetherPlated** | the seal on a cornered Alpha. Nothing reduces its health. Never ticks |
 | **anchor** | tethered; cannot move, strike, or channel — only endure. Never ticks |
@@ -460,9 +494,9 @@ stronger thing.
 
 1. **Toxin**, across all units
 2. **Burn**, across all units
-3. **Freeze / Entangle / Stun / Chill / Brittle / Charged** decay
+3. **Freeze / Entangle / Stun / Exhaust / Fleet / Chill / Brittle / Charged** decay
 4. **Tile hazards** age
-5. **Escalation** — fires even on Frozen or Stunned units
+5. **Growth, then Auras** — both fire even on Frozen or Stunned units
 
 ---
 
@@ -474,12 +508,16 @@ in.
 
 | Reaction | Trigger | Requires | Needs HP loss? | Effect |
 |---|---|---|---|---|
-| **Vaporize** | fire | chill | **yes** | 2 `true` damage; the tile fogs for a turn |
-| **Shatter** | physical, impact | freeze | **no** | strips **all** Armor; 4 splash to adjacent |
-| **Overload** | fire | charged | **yes** | 1 `true` damage; everything adjacent thrown a tile clear |
+| **Vaporize** | fire | chill | **yes** | 20 `true` damage; the tile fogs for a turn |
+| **Shatter** | physical, impact | freeze | **no** | strips **all** Armor; 40 splash to adjacent |
+| **Overload** | fire | charged | **yes** | 10 `true` damage; everything adjacent thrown a tile clear |
 | **Superconduct** | frost | charged | **no** | strips **all** Armor, leaves Brittle 2 |
-| **Wildfire** | fire | toxin | **yes** | consumes **every** Toxin stack for 2 fire each to adjacent |
-| **Arc** | shock | *rain* (weather) | **yes** | 1 `physical` to every adjacent unit, either side |
+| **Wildfire** | fire | toxin | **yes** | consumes **every** Toxin stack for 20 fire each to adjacent |
+| **Arc** | shock | *rain* (weather) | **yes** | 10 `physical` to every adjacent unit, either side |
+
+Six of them, and `findReaction` walks the table in that order — first match wins, so a
+target carrying chill *and* charged *and* toxin, hit by fire, Vaporizes and does nothing
+else.
 
 ### How they interact with Armor
 
@@ -487,7 +525,8 @@ This is the part most worth reading twice.
 
 **A reaction needs the hit to *land*.** Damage entirely absorbed by armor applies its
 status but triggers **nothing** — exactly as a mark would not detonate. A Flame Surge
-dealing 3 into a target with 5 armor charges nothing, burns nothing, and sets nothing off.
+dealing 30 into a target with 50 armor charges nothing, burns nothing, and sets nothing
+off.
 
 `requiresHpLoss` is what governs this, and **two reactions deliberately set it to
 `false`**:
@@ -506,7 +545,7 @@ Two distinct fields, and the distinction matters:
   entirely. A reaction meant to bite through plate has to be typed `true`, or a
   well-armoured target simply shrugs off the thing the reaction exists to do.
 
-Vaporize's 2 and Overload's 1 are both `trueDamage`. Overload's is deliberately small on
+Vaporize's 20 and Overload's 10 are both `trueDamage`. Overload's is deliberately small on
 the target and violent around it — the point is the shove, not the number.
 
 ### Consumption
@@ -514,8 +553,8 @@ the target and violent around it — the point is the shove, not the number.
 All but Arc set `consumes: true` — the status is spent when it fires. Arc gates on the
 **sky** rather than on a status (`requiresWeather`), and the rain does not run out, so it
 fires every time the conditions are met rather than once. Wildfire consumes
-*every* stack at once and scales its area damage by how many it took (`perStack: 2`), so a
-tile dosed twice is a four-stack detonation waiting for somebody's torch.
+*every* stack at once and scales its area damage by how many it took (`perStack: 20`), so a
+tile dosed twice is a 40-damage detonation waiting for somebody's torch.
 
 Reactions also respect `chainCancelled`, so a boss Damage Gate stops one mid-chain.
 
@@ -564,7 +603,7 @@ Attach to a unit or obstacle and wait. **One mark per target.**
 | Trigger | Fires when |
 |---|---|
 | `hpLoss` | the host loses ≥ 1 **actual** HP to an aligned damage type |
-| `death` | the host dies or is sacrificed |
+| `death` | the host dies — including bled dry by a tithe |
 
 An unaligned killing blow **fizzles** it (`markFizzled`, reason `unaligned` / `devour` /
 `gate`). Alignment is data, so rebalancing needs no engine change.
@@ -689,7 +728,7 @@ sink exists to charge for.
 ### The card and the brand are two different things
 
 The schools above are the **`MarkDef`** schools — the colour of the payload. Each of the
-three attachable Marks also has a **card**, and since the role overhaul those cards are
+six attachable Marks also has a **card**, and since the role overhaul those cards are
 filed as `arcane`, because a Mark is Hero kit: the Hero lays it, the Hero decks it, and only
 the Hero may.
 
@@ -718,7 +757,8 @@ current ids so an existing collection keeps the cards it paid for.
 
 `CombatResult` is `victory`, `defeat`, or `bound`.
 
-**Sudden Death** — both commanders reduced to 0 at once. Both revive at **1 HP, 0 armor**;
+**Sudden Death** — both commanders reduced to 0 at once. Both revive at **10 HP
+(`STAT_SCALE`), 0 armor**;
 every unit is wiped and every mark cleared; Bound Forms are then **restored**, because the
 Pact did not end and a player with no Companion could not cast. A *second* mutual KO
 during sudden death resolves to the instigator.

@@ -1,5 +1,6 @@
 /**
- * Cross-school elemental reactions (Module 1 §4).
+ * Cross-school elemental reactions. See `docs/02_combat_lexicon.md`; the pairings that are
+ * designed but not yet built are listed in `ROADMAP.md` §6.1.
  *
  * A reaction fires when damage of one school lands on a target already carrying the
  * status of another — fire onto ice becomes steam, impact onto frozen flesh shatters it.

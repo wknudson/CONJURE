@@ -47,7 +47,7 @@ export type StatusKind =
    * is the one place in the engine that reliably takes things away.
    */
   | 'fleet'
-  /** Frost: the target takes +2 from every hit until it wears off. */
+  /** Frost: the target takes `BRITTLE_BONUS` extra from every hit until it wears off. */
   | 'brittle'
   /**
    * Surge: residual charge, left behind by a shock hit.

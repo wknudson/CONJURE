@@ -21,7 +21,7 @@ import { STAT_SCALE } from '../scale.js';
 
 /**
  * Removes an entity from the board. `devoured` routes to the fizzle path: a devoured
- * host's mark is discarded without detonating, per Draft 7 §4.2.
+ * host's mark is discarded without detonating.
  */
 /**
  * Marks a fallen Vanguard body in the roster it came from.
@@ -242,9 +242,9 @@ function payTo(
 }
 
 /**
- * Win/loss evaluation, including Draft 7 §9's mutual-KO rule: if both commanders hit 0
+ * Win/loss evaluation, including the mutual-KO rule: if both commanders hit 0
  * in the same step, both revive at 1 HP, the board is wiped of non-obstacle units and
- * marks, all armor is purged (Module 5), and combat continues in sudden death.
+ * marks, all armor is purged, and combat continues in sudden death.
  */
 export function checkLethal(ctx: Ctx): void {
   if (ctx.state.result) return;
@@ -258,7 +258,7 @@ export function checkLethal(ctx: Ctx): void {
 
   if (playerDead && enemyDead) {
     if (ctx.state.suddenDeath) {
-      // A second mutual KO during sudden death resolves to the instigator (Module 8).
+      // A second mutual KO during sudden death resolves to the instigator.
       player.hp = STAT_SCALE;
       enemy.hp = 0;
       finish(ctx, 'victory');

@@ -1,7 +1,7 @@
 /**
  * Status ticks and growth, resolved at the start of the active side's turn.
  *
- * Module 1 pins the order exactly: Toxin -> Burn -> Freeze/Entangle check -> tile
+ * The order is pinned exactly: Toxin -> Burn -> Freeze/Entangle check -> tile
  * hazards -> growth. The last step fires even while a unit is Frozen or Stunned, and it
  * covers both clocks: the enemy's `Growth` keyword and the player's Elemental Auras. Both
  * live in `growth.ts`.
@@ -43,7 +43,7 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
   // Snapshot the unit list: ticks can kill, and cascades can remove others.
   const ids = unitsOf(ctx.state, side).map((u) => u.id);
 
-  // 1. Toxin, then 2. Burn — in that order across all units, per Module 1.
+  // 1. Toxin, then 2. Burn — in that order across all units.
   for (const status of ['toxin', 'burn'] as const) {
     for (const id of ids) {
       const unit = ctx.state.units[id];
@@ -96,7 +96,7 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
     decay(unit, 'charged');
   }
 
-  // 4. Tile hazards age here, per Module 1's order.
+  // 4. Tile hazards age here, in the documented order.
   tickHazards(ctx);
 
   // 5. Growth and Auras — both fire even on Frozen or Stunned units. Being held down
@@ -234,7 +234,7 @@ function decay(unit: Unit, status: StatusKind): void {
 
 /** Clears per-turn action flags for the side about to act. */
 /**
- * Chill stacking (Module 1): the third stack does not tick — it freezes the unit solid.
+ * Chill stacking: the third stack does not tick — it freezes the unit solid.
  * Called wherever Chill is applied, so no card has to remember the threshold.
  */
 export function applyChill(ctx: Ctx, unit: Unit, stacks: number, source?: Side): void {

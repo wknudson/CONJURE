@@ -14,7 +14,7 @@
  * card is Hero property and arcane is the Hero's colour — the school below is the colour of
  * the blast, not of the hand that set it. See `docs/02_combat_lexicon.md` §10.
  *
- * Note on Cinder Mark's trigger: Draft 7's card table says "Detonation (Fire/Spell):
+ * Note on Cinder Mark's trigger: the founding card table said "Detonation (Fire/Spell):
  * triggers on partial HP loss", while §7 states damage-based triggers generally require
  * armor penetration. Both are modelled here: `alignedTypes` gates WHICH damage can set it
  * off, and the engine separately requires >= 1 real HP loss. An unaligned killing blow

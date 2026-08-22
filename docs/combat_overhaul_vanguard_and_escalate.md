@@ -1,14 +1,21 @@
 # Combat Overhaul — The Vanguard Roster and the Rule of 3
 
-**Status:** Design baseline. Nothing here is implemented yet.
+**Status: shipped.** All four phases in §6.3 landed — the blood tithe, the Aura/Growth
+split, the Vanguard Roster with its deployment phase, and revival. This document is kept
+as the **record of why** the change was made and what it replaced, not as a plan.
 
-This document replaces the summoning economy described in `docs/02_combat_lexicon.md` §6
-and the Escalation rule in §5. Where the two disagree, this one is the intent and the
-Lexicon is the record of what the code does today.
+That inverts its original relationship with the Lexicon. When this was written it was the
+intent and `docs/02_combat_lexicon.md` was the record of shipped behaviour; now
+**`docs/02_combat_lexicon.md` is authoritative** and this document is the reasoning behind
+it. Where the two disagree, the Lexicon wins — and so does the code.
 
-Every claim about current behaviour carries a `file:line`. Every number the Game Director
-fixed is reproduced exactly; everything layered on top is marked **[proposal]** so a reader
-can tell the ruling from the reasoning.
+Two things are still genuinely open, and they are marked in place: the **Frost** and
+**Arcane** Auras (§7) are designed and unbuilt. Everything else once marked `[proposal]`
+has since shipped.
+
+Every claim about pre-overhaul behaviour carries a `file:line` as it stood at the time.
+Some of those lines have since moved or the code they pointed at is gone — that is expected
+of a historical record and is not a defect to repair.
 
 ---
 
@@ -112,7 +119,7 @@ ROSTER_BUDGET = 10
   Behemoth       6 points
 ```
 
-**[proposal] A fourth class at 4 points — "elite".** Two shipped units (`slag_iron_golem`,
+**A fourth class at 4 points — "elite"** *(shipped; the ladder is in `src/core/data/roster.ts`)*. Two shipped units (`slag_iron_golem`,
 4 Pips, Guardian + Counter, 8 HP; `arc_turret`, 4 Pips, 5 ATK) are plainly not 3-point
 ranged bodies and are equally plainly not Behemoths. Pricing them at 3 makes the ranged
 class the only class worth buying; pricing them at 6 makes them Behemoths that cannot
@@ -538,7 +545,7 @@ turn — the punishment is already in the position.
 
 ### 3.3 Exhaustion
 
-**[proposal] A new `StatusKind: 'exhaust'`** — cannot move, attack, or channel; applied at
+**A new `StatusKind: 'exhaust'`** *(shipped; see `src/contract/ids.ts`)* — cannot move, attack, or channel; applied at
 one stack; decays in the ordinary status tick at the start of the owner's turn.
 
 Deliberately **not** `stun`. `stun` is typed, gated in `canAct`, decayed, threat-modelled,
@@ -686,9 +693,9 @@ it. One rule that falls out of the implementation is worth more than three rules
 agree.
 
 A revived unit **may act** (the `placeOpeningUnit` flag treatment). It came back to do
-something. The Anchor Rally's "+1 MOV for the turn" is **[proposal]** a new one-stack
-decaying status `'fleet'`, read additively by the movement layer — the same shape as every
-other temporary modifier in the game.
+something. The Anchor Rally's "+1 MOV for the turn" is a one-stack decaying status
+`'fleet'`, read additively by the movement layer — the same shape as every other temporary
+modifier in the game. *(Shipped; `'fleet'` is a real `StatusKind`.)*
 
 ### 4.5 Death across a dungeon
 
@@ -722,7 +729,7 @@ dangerous trait at the cap and a detonation to cash it in.
 
 ```ts
 // spawn.ts:56-57
-// 1x1 units cap at +3 growth; Behemoths are uncapped (Module 2).
+// 1x1 units cap at +3 growth (`GROWTH_CAP`); Behemoths at 99 (`GROWTH_CAP_BEHEMOTH`).
 escalationCap: stats.footprint === 2 ? Infinity : 3,
 ```
 
@@ -797,8 +804,8 @@ this turn.
 
 | School | Aura | Stacks 1 & 2 | Climax trait |
 |---|---|---|---|
-| **pyre** | *Ember Coat* | **+1 ATK** per stack | `conflagration` **[proposal]** |
-| **bloom** | *Verdant Swell* | **+2 Max HP** per stack | `overgrowth` **[proposal]** |
+| **pyre** | *Ember Coat* | **+1 ATK** per stack | `conflagration` — shipped |
+| **bloom** | *Verdant Swell* | **+2 Max HP** per stack | `overgrowth` — shipped |
 | **surge** | **Static Charge** | **+1 MOV** per stack | **`overload`** |
 | **bulwark** | **Petrifying Mantle** | **+1 Persistent Armor** per stack | **`heavyFootprint`** |
 | **dusk** | **Marrow Siphon** | Host takes **1 True damage** at turn start and generates **1 Marrow** | **`hollow`** |
@@ -829,7 +836,7 @@ implies without executing anything:
 | **`overload`** | surge | **Ignores unit-collision when moving**, and deals **1 unblockable damage** to every enemy passed through | The host can no longer be *walled*. It also can no longer be positioned safely: a unit that ignores collision will happily end its move somewhere nothing can screen it, and the damage is dealt whether you wanted the engagement or not. |
 | **`heavyFootprint`** | bulwark | **Immune to Shove and Pull**, and **instantly shatters destructible obstacles** by moving into them | Immunity to displacement cuts both ways — your own repositioning tools stop working on it, so a Petrifying Mantle host is where it is until it walks. And it demolishes your own cover as readily as theirs. |
 | **`hollow`** | dusk | Grants **Frail-Strike**: enemies it damages take **+1 damage from all subsequent attacks that turn** | It is still bleeding 1 True damage a turn from its own upkeep. Hollow is the aura at its most valuable and its host at its most nearly dead. |
-| `conflagration` **[proposal]** | pyre | Host's attacks apply `burn 1`, and it takes 1 fire damage each turn | It is burning too. |
+| `conflagration` — shipped | pyre | Host's attacks apply `burn 1`, and it takes 1 fire damage each turn | It is burning too. |
 | `rimeShell` **[proposal]** | frost | Host gains armour each turn, but its MOV drops to 0 | A wall that cannot be repositioned. |
 
 The Rule of 3 is therefore not merely a ceiling — it is a **timer**. The aura stops paying
@@ -898,7 +905,7 @@ Everything the five pillars break or orphan, with one ruling each.
 |---|---|---|
 | 6.1 | **The 33 minion defs** | Three fates. The 10 `*_bound` Companion forms: untouched. The 7 `setupOnly` threats and wildlife: untouched — never deck cards. The 16 draftable: gain `rosterPoints`, lose deckability, keep `kind: 'minion'` and their full `CardDef` (the summon path is reused by deployment and by spell-summons). **No definition is deleted.** |
 | 6.2 | **Can Blood Magic kill?** | **Yes.** `TITHE_DAMAGE` is real damage through `dealDamage`; a 2-HP unit dies, the Marrow is still paid, and a pyre lights. Clamping at 1 HP would need a special-case damage path and would sever the deliberate bridge to Blood & Bone. The UI shows a lethal warning; the refusal list does not include it. |
-| 6.3 | **Starter deck (15, incl. 5 minions)** | Minions out, backfilled to 13 with Aetheric Resurgence ×1, the Pyre aura ×1, and Cataclysm ×1. `MIN_DECK` stays 12. |
+| 6.3 | **Starter deck (15, incl. 5 minions)** | Minions out, backfilled with Aetheric Resurgence ×1, the Pyre aura ×1, and Cataclysm ×1. *The deck kept shrinking after this ruling: the Hero half is **7** cards now and `MIN_DECK` is **4**, because the Companion fuses its own eight in. See `docs/07_deck_building.md`.* |
 | 6.4 | **Bound Forms** | One sentence, four refusals: *the Bound Form is the Pact, and the Pact is not a Vanguard.* It cannot be deployed (it is auto-placed), tithed (extends the existing sacrifice block at `engine.ts:416`), revived (it leaves no pyre; sudden death already restores it), or enchanted with an aura (extends the existing belt-and-braces at `status.ts:118`). |
 | 6.5 | **Companion species decks** | Rebuilt without minions; the vacated slots become that school's aura and Detonation, which keeps each species' identity readable. Those minions move to `MINIONS_BY_SPECIES`. |
 | 6.6 | **`enemyOpeningBoard`** | Unchanged. |
@@ -935,8 +942,9 @@ the `exhaust` status, the `tithe` op; retire `sacrifice`, `sacrificeTarget`, and
 `Sacrifice` keyword; rename the two commander fields; re-template three spells; retarget the
 AI's sacrifice enumeration.
 
-**Interim state:** minions are still deck cards summoned into territory. They simply get
-tithed instead of sacrificed. Ships alone as a playable balance change.
+**Interim state at the time:** minions were still deck cards summoned into territory, and
+simply got tithed instead of sacrificed. This shipped alone as a playable balance change,
+before Phase 3 moved the bodies onto the Vanguard Roster.
 
 ### Phase 2 — Auras and the `Growth` split
 
@@ -990,9 +998,12 @@ dungeon-persistent Graveyard in the overworld carry.
 
 ## 8. What is still open
 
-Nothing structural. Five of the seven schools now have finalised auras and Climax traits
-(§5.4, §5.5); the remaining two — **pyre** and **bloom** — need Climax traits only, since
-their per-stack growth was fixed by the original directive. Both are marked **[proposal]**
-in place. Frost and arcane remain proposals end to end.
+Nothing structural. At the time of writing, five of the seven schools had finalised auras
+and Climax traits (§5.4, §5.5) and the remaining two — **pyre** and **bloom** — needed
+Climax traits only.
 
-Everything else in this document is a ruling.
+*Since shipped:* pyre's `conflagration` and bloom's `overgrowth` both exist in
+`src/core/data/auras.ts`. **Frost and arcane remain proposals end to end** — they are the
+only open items in this document, and they are tracked in `ROADMAP.md` §1.
+
+Everything else here is a ruling, and every one of them shipped.

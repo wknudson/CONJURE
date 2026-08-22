@@ -1,9 +1,31 @@
 # CONJURE — Playable Combat Demo
 
 A browser-playable vertical slice of **CONJURE**, the tactical grid card battler specced
-in the design documents in this folder. It covers the Master GDD's demo Phases 1–3:
-the combat sandbox, collision physics / line of sight / runes, and a full encounter loop
-against an AI opponent — including the Ignis Subjugation Trial.
+in `docs/`. It covers the demo's first three phases: the combat sandbox, collision
+physics / line of sight / marks, and a full encounter loop against an AI opponent —
+including the Ignis Subjugation Trial.
+
+## The documentation
+
+`docs/` is the design record, and it is the only one — where it and this README disagree,
+`docs/` wins; where either disagrees with `src/`, **the code wins**.
+
+| Doc | What it settles |
+| :-- | :-- |
+| [01 — System Architecture](docs/01_system_architecture.md) | The logic/visual seam, the save schema and its migrations, determinism |
+| [02 — Combat Lexicon](docs/02_combat_lexicon.md) | Every rule, keyword, status, damage type and reaction. The canonical rules reference |
+| [03 — The RPG Sandbox](docs/03_rpg_sandbox.md) | The Safehouse, the Bounty Board, taming and trait bloodlines |
+| [04 — Sandbox Audit & Ideation](docs/04_sandbox_audit_and_ideation.md) | A closed audit, kept as a record, plus a live design backlog |
+| [05 — The Ironworks Artificer](docs/05_ironworks_artificer.md) | The Forge: schematics, ascension, splicing, the Clinic |
+| [06 — Character Creation](docs/06_character_creation.md) | The Applicant, the Vow, and what a new character is handed |
+| [07 — Deck Building](docs/07_deck_building.md) | Hero Deck size, tiers and copy limits, the Grimoire draft, the roster budget |
+| [08 — Card Catalog](docs/08_card_catalog.md) | Every card in the game. **Generated** — run `npm run cards:catalog` |
+| [09 — Enemy AI and Encounters](docs/09_ai_and_encounters.md) | The utility matrix and its weights, difficulty tiers, failsafes, the encounters |
+| [10 — Presentation](docs/10_presentation.md) | Board and camera, readability, the HUD, art direction, sound |
+| [Combat Overhaul](docs/combat_overhaul_vanguard_and_escalate.md) | Why the Vanguard Roster and the Aura/Growth split happened. Shipped; kept as the record |
+
+Alongside them, [`ROADMAP.md`](ROADMAP.md) is where the project stands and what is next,
+and [`COMBAT_FEEL.md`](COMBAT_FEEL.md) is the combat-experience plan.
 
 ## Running it
 
@@ -32,10 +54,13 @@ npx tsc -p src/core --noEmit
 
 ## How to play
 
-Two encounters are available from the title screen: the **Wandering Novice Duelist**
-(a straight fight) and the **Subjugation Trial: Ignis** (a two-phase boss you can bind
-rather than kill). Each has its own arena — a narrow 6×8 lane and an open 8×8 boss
-floor — and both sides open with a free Vanguard Footman already on the field.
+Four encounters ship (`core/data/encounters/index.ts`), taken on as contracts from the
+Safehouse's Bounty Board rather than picked off the title screen: the **Wandering Novice
+Duelist** (a straight fight), the **Narrow Ruin** (a corridor that punishes standing
+still), the **Glacial Field** (an open board where nothing can see far), and the
+**Subjugation Trial: Ignis** (a two-phase boss you can bind rather than kill). Each brings
+its own arena and furniture, and both sides open with a free Vanguard Footman already on
+the field.
 
 - **Click a card**, then **click a highlighted tile** to play it.
 - **Click your own unit** to see its legal moves (cyan) and attacks (red), then click a
@@ -68,19 +93,21 @@ it. Pirate101 — which splits its turn into a planning phase and an execution p
 informed the decision to let you preview a shove's full outcome before committing to it.
 
 Each card's type line tells you what it does with the board — **MINION**, **SPELL**,
-**RUNE**, or **OBSTACLE** — and who casts it, **HERO** or **COMPANION**.
+**ABILITY**, **MARK**, or **OBSTACLE** — and who casts it, **HERO** or **COMPANION**.
 
 Your Companion stands in a marked lane beside the board. The first **Companion** card you
 play each turn fires its **Resonance**: Ignis (Pyre) ignites every enemy standing in that
 lane. The lane glows while the passive is still available.
 
-You win by reducing the enemy Commander's shared 40 HP Pact pool to zero — or, in the
-Ignis trial, by playing the Rite of Binding that appears once the boss drops below 25%.
+You win by reducing the enemy Commander's shared 400 HP Pact pool to zero — or, in the
+Ignis trial, by playing the Rite of Subjugation that appears once the boss drops below
+25%.
 
 ## Architecture
 
-The single most important structural decision, taken from Module 8, is that **game logic
-and presentation are strictly separated**:
+The single most important structural decision, recorded in
+`docs/01_system_architecture.md` §1, is that **game logic and presentation are strictly
+separated**:
 
 ```
 Command ──▶ applyCommand(state, cmd) ──▶ { state, events[] }
@@ -101,8 +128,8 @@ src/
 ├─ core/        PURE LOGIC — no DOM imports, enforced by its own tsconfig (no DOM lib)
 │  ├─ types/    GameState, Unit, CardDef, Command
 │  ├─ engine/   applyCommand reducer, turn machine, effects interpreter, damage
-│  │            pipeline, movement, displacement, LoS, runes, status, targeting
-│  ├─ data/     Card and rune definitions, encounter scripts
+│  │            pipeline, movement, displacement, LoS, marks, status, targeting
+│  ├─ data/     Card and Mark definitions, encounter scripts
 │  ├─ ai/       Enumerate → simulate → score → pick
 │  └─ session.ts  CombatSession: the façade the UI drives
 ├─ render/      IsoCamera, BoardRenderer, placeholder art, effects
@@ -115,14 +142,14 @@ src/
 
 ### Key design choices
 
-**Cards are data, not code.** Every card compiles to a tree of ~12 effect primitives
-(`damage`, `summon`, `attachRune`, `push`, `sacrificeTarget`, …) interpreted by one
+**Cards are data, not code.** Every card compiles to a tree of 25 effect primitives
+(`damage`, `summon`, `attachMark`, `push`, `tithe`, …) interpreted by one
 recursive function. The AI reads the same data to enumerate its options, so the UI, the
 AI, and the rules can never disagree about what is legal.
 
 **All mutation funnels through a few choke points.** `dealDamage`, `killEntity`,
 `moveEntity` and friends are the only emitters of events, which is what guarantees a new
-card cannot accidentally bypass rune triggers, armor gating, Counter, or the lethal check.
+card cannot accidentally bypass Mark triggers, armor gating, Counter, or the lethal check.
 
 **Everything is deterministic.** All randomness flows through a seeded PRNG stored in the
 state; the core never calls `Math.random()`. The same seed and command sequence always
@@ -140,7 +167,7 @@ the movement BFS simply finds no legal step.
 
 ### Rendering
 
-A hybrid: **Canvas 2D** draws the isometric world (tiles, units, runes, ghosts, particles)
+A hybrid: **Canvas 2D** draws the isometric world (tiles, units, marks, ghosts, particles)
 with hand-rolled 2:1 diamond projection, while **DOM/CSS** draws all interface chrome, so
 card text stays crisp when it scales on hover. There are no image assets — every visual is
 a canvas path, and units are extruded prisms on team-coloured base plates.
@@ -158,39 +185,40 @@ mirror about the last index. Using one constant for both put every pick one tile
 
 ## Rules adjudications
 
-The source documents contradict each other in several places. This demo resolves them as
+The design record contradicted itself in several places. This demo resolves them as
 follows, and each is asserted by a test:
 
 | Question | Ruling | Source |
 | :-- | :-- | :-- |
-| Empty deck | Free reshuffle, no fatigue | Draft 7 |
-| Collision damage | 3 to the displaced unit, 2 to the blocker, 3/3 vs. obstacles; Mass Invariance | Draft 7 §5.1 |
-| Hand size | 7; overdraw burns the card for +1 Marrow | Draft 7 + Module 4 |
-| Double KO | Both revive at 1 HP, board wiped, armor purged, sudden death | Draft 7 §9 |
-| Pip cap | 8, enforced only during end-of-turn cleanup | Draft 7 |
-| Opening hand | 5 cards and 3 banked Pips (frontal contact), then draw 4/turn | Module 3 |
-| Status tick order | Toxin → Burn → Freeze/Entangle → hazards → Escalation | Module 1 |
-| Melee Commander reach | Standing in the enemy's two home rows is the whole requirement | Draft 7 §5.2 |
+| Empty deck | Free reshuffle, no fatigue | `docs/02_combat_lexicon.md` §6 |
+| Collision damage | 30 to the displaced unit, 20 to the blocker, 30/30 vs. obstacles; Mass Invariance | `docs/02_combat_lexicon.md` §7 + `core/engine/displacement.ts` |
+| Hand size | 7; overdraw burns the card for +1 Marrow | `docs/02_combat_lexicon.md` §6 + `core/engine/deck.ts` |
+| Double KO | Both revive at 10 HP, board wiped, armor purged, sudden death | `docs/02_combat_lexicon.md` §11 + `core/engine/death.ts` |
+| Pip cap | 8, enforced only during end-of-turn cleanup | `docs/02_combat_lexicon.md` §2 + `core/engine/deck.ts` |
+| Opening hand | 5 cards and 3 banked Pips (frontal contact), then draw 4/turn | `core/engine/setup.ts` + `core/engine/deck.ts` |
+| Status tick order | Toxin → Burn → Freeze/Entangle → hazards → Growth | `docs/02_combat_lexicon.md` §8 |
+| Melee Commander reach | Standing in the enemy's two home rows is the whole requirement | `docs/02_combat_lexicon.md` §3 |
 | Obstacles | Terrain, not allies — either side may break a pillar to open a lane | Adapted |
 | Action economy | One move and one attack per turn, in either order | Mewgenics |
 | Arena shape | Set per encounter, with its own terrain | Pirate101 |
-| Rite of Binding | Pushes the hand limit 7→8 as an undiscardable overlay | Adapted |
+| Rite of Subjugation | Dealt on top of the draw pile, not smuggled into a full hand as an over-limit overlay | `docs/02_combat_lexicon.md` §11 + `core/engine/subjugation.ts` |
 
 Three rules were implemented because their absence caused real problems. All three are
-documented in the source material, and all three are verified by tests:
+documented in the design record, and all three are verified by tests:
 
-- **Starting Pips (Module 3).** Without the specified 3 banked Pips, turn one was a dead
-  turn with nothing affordable.
+- **Starting Pips (`core/engine/setup.ts`).** Without the specified 3 banked Pips, turn
+  one was a dead turn with nothing affordable.
 - **Opening Vanguard.** Both sides begin with a free Vanguard Footman on their front
   line, so the first turn is a tactical decision rather than a setup step and the board
   is never empty.
-- **Pacifist Lockout (Module 5).** Without it, two cautious sides could trade board
-  presence indefinitely and a game would never resolve. Set to six idle rounds — high
-  enough that competent play will never see it, but a game can never run forever.
+- **Pacifist Lockout (`docs/09_ai_and_encounters.md` §5).** Without it, two cautious
+  sides could trade board presence indefinitely and a game would never resolve. Set to
+  six idle rounds — high enough that competent play will never see it, but a game can
+  never run forever.
 
 ### Independent actions
 
-Draft 7 §4.3's Strict Commitment rule exhausted a unit the moment it declared an attack.
+The original Strict Commitment rule exhausted a unit the moment it declared an attack.
 That has been replaced with the Mewgenics model: **one move and one attack per turn, in
 either order**. Striking and then withdrawing is now a real option, which is the single
 biggest change to how a turn feels. Each action is still once per turn — movement cannot
@@ -233,7 +261,7 @@ turn the game did not ask you anything.
 **Channel** (`C`) spends a unit's attack to extract Marrow. It keeps its move, so this is a
 use for the swing rather than exhaustion. **Reactions pay a Pip back** — capped at two a
 turn, which is the whole design: without the cap a three-reaction cascade funds the card
-that caused it. **Marrow Geodes** are 1 HP and worth two Marrow, scattered only on neutral
+that caused it. **Marrow Geodes** are 10 HP and worth two Marrow, scattered only on neutral
 ground, so taking one means walking somewhere you would rather not stand yet.
 
 If play still feels starved, the fail-safe is one token: `gainPips(ctx, side, 1)` in
@@ -283,7 +311,7 @@ the edge, and leaves with its purse if ignored long enough; it departs by escapi
 than dying, because nothing killed it and nobody is owed the kill.
 
 They are filed under the enemy for bookkeeping only. Nothing treats them as allies: not
-targeting, not sacrifice, not the AI, not the threat map.
+targeting, not the blood tithe, not the AI, not the threat map.
 
 ### Before the fight
 
@@ -291,9 +319,9 @@ Choosing an encounter opens a plan of the ground before combat starts: a flat ov
 map — not the isometric view, because from directly above the distances are honest and the
 shape is obvious — with both territories, terrain, and the enemy's opening position.
 
-Up to five cards may then be swapped from your collection. The budget is small
-deliberately: adapting should mean bringing two or three answers to a shape, not
-rebuilding into a different deck once the terrain is known. Pressing **Ready** fixes the
+One card may then be swapped from your collection. The budget is small deliberately:
+adapting should mean bringing the one answer a shape needs, not rebuilding into a
+different deck once the terrain is known. Pressing **Ready** fixes the
 deck and generates the combat seed, which is recorded alongside the encounter and the
 adapted deck so the same battle can be replayed or reported later — and so **Rematch**
 means the same fight rather than a new one.
@@ -349,8 +377,11 @@ that normal play never reaches. Typical enemy turn ~220ms, worst case ~2s on the
 arena, with the turn banner up throughout.
 
 Adept is measurably harder where the matchup has headroom — against a fixed scripted
-opponent on the Ignis trial it wins **18/20** against Novice's 12/20, and leaves that
-opponent on 3.5 HP rather than 10.9.
+opponent on the Ignis trial it won **18/20** against Novice's 12/20.
+
+> The margin that accompanied those win rates ("leaves the opponent on 3.5 HP rather than
+> 10.9") was measured before the Stat Stretch and is not restated here, because nothing
+> asserts it. It wants re-running rather than multiplying by ten.
 
 ### Deck building
 
@@ -359,9 +390,9 @@ built per companion and persist between sessions.
 
 | Rule | Value | Source |
 | :-- | :-- | :-- |
-| Deck size | 12–30 cards | Draft 7 §10 |
-| Copies allowed | Tier 1 → 3, Tier 2 → 2, Tier 3 → 1 | Draft 7 §10 |
-| Behemoths | At most 2 per deck | Module 2 |
+| Hero Deck size | 4–12 cards | `docs/07_deck_building.md` §1 |
+| Copies allowed | Tier 1 → 3, Tier 2 → 2, Tier 3 → 1 | `docs/07_deck_building.md` §1 |
+| Behemoths | At most 2 per deck | `core/data/deckRules.ts` |
 
 Copy limits are tracked by **base card id**, so a future Ascension printing a Rank 2
 variant cannot double the allowance through the back door. Tier is *derived* from what a
@@ -370,51 +401,74 @@ card cannot be added without one and silently gain an unlimited copy count.
 
 The builder enforces rules as affordances: a card you cannot add more of is visibly spent
 before you click it, and the Save button explains exactly what is wrong when it refuses
-("10 cards — the minimum is 12. Add 2 more.").
+("3 cards — the minimum is 4. Add 1 more.").
 
 Saves are versioned from the first write, with a migration that re-reads card data from
-the master registry rather than trusting the save (Module 8). A deck invalidated by a
-patch is **flagged, not silently repaired** — you see what changed and fix it yourself.
-The baseline Hero cards are permanent soulbound assets (Module 4), enforced in the
-collection model, so no corrupted save can strand you without a legal deck.
+the master registry rather than trusting the save (`docs/01_system_architecture.md` §2).
+A deck invalidated by a patch is **flagged, not silently repaired** — you see what changed
+and fix it yourself. The baseline Hero cards are permanent soulbound assets
+(`docs/05_ironworks_artificer.md`), enforced in the collection model, so no corrupted save
+can strand you without a legal deck.
 
 ### Elemental reactions
 
 Damage of one school landing on the status of another produces something neither would
-alone (Module 1 §4). The table lives in `core/data/reactions.ts` and is evaluated inside
-`dealDamage`, the same choke point runes pass through, so no card can bypass it:
+alone (`docs/02_combat_lexicon.md` §9). The table lives in `core/data/reactions.ts` and is
+evaluated inside `dealDamage`, the same choke point Marks pass through, so no card can
+bypass it:
+
+All six:
 
 | Reaction | Trigger | Result |
 | :-- | :-- | :-- |
-| **Vaporize** | Fire on a **Chilled** target | Fog fills the tile for 2 turns, blocking ranged sight |
-| **Shatter** | A physical hit or collision on a **Frozen** target | Strips 100% Armor, 4 shrapnel to adjacent |
-| **Wildfire** | Fire on a **Toxined** target | Consumes every stack for 2 damage per stack, all around |
+| **Vaporize** | Fire on a **Chilled** target | 20 damage through armor, and the tile fogs for a turn, blocking ranged sight |
+| **Shatter** | A physical hit or collision on a **Frozen** target | Strips all Armor, 40 shrapnel to adjacent |
+| **Overload** | Fire into a **Charged** target | 10 damage through armor, and everything adjacent is thrown a tile away, taking collision damage if it lands on something |
+| **Superconduct** | Frost through a **Charged** target | Conducts past the plate: all Armor stripped, and the target is left Brittle |
+| **Arc** | Surge damage **in the rain** | Earths itself through everything touching the target: 10 damage to every adjacent unit, whoever it belongs to |
+| **Wildfire** | Fire on a **Toxined** target | Consumes every stack for 20 fire damage per stack, all around |
 
 Each reads differently on the board without needing its label: Shatter throws oriented ice
 slivers under a sharp shake, Vaporize blooms a lingering cloud with no shake at all, and
 Wildfire's embers cross from green to orange as the fire front outruns them.
 
-Reactions inherit the rune armor gate — a blow entirely absorbed changes nothing — with
+Arc is the odd one out — it gates on the **weather** rather than on a status, and no
+shipped encounter is fought in rain, so it is tested and currently unreachable in play.
+`elements.test.ts` holds that in a `KNOWN_UNREACHABLE` ledger rather than leaving it to be
+rediscovered.
+
+Reactions inherit the Mark armor gate — a blow entirely absorbed changes nothing — with
 one deliberate exception. **Shatter ignores it**, because requiring HP loss would mean
 armor prevented the one reaction whose entire purpose is removing armor, and a heavily
 armoured frozen target could never be broken. That exception is a `requiresHpLoss` flag
 on the reaction, not a special case in the engine.
 
 Frost supplies the setup half: **Chill** stacks toward a Freeze on the third stack, and
-**Brittle** makes the target take +2 from everything.
+**Brittle** makes the target take +20 from everything.
 
 ### Companions
 
-Two are playable, chosen before a run. The Hero half of the deck is shared; the Companion
-decides the other half, the Resonance passive, and the body that stands on the board.
+**Six bloodlines are playable** — one per elemental school — and you vow to one at
+character creation (`starterSpecies()`, asserted at six by `creation.test.ts`). The Hero
+half of the deck is shared; the Companion decides the other half, the Resonance passive,
+and the body that stands on the board.
 
-| Companion | School | On the board | Plays like |
+| Companion | School | On the board | Resonance |
 | :-- | :-- | :-- | :-- |
-| **Ignis**, Ember Drake | Pyre | 3 ATK, melee | Runes and cascades. *Ember Watch* ignites its lane. |
-| **Boreas**, Frost Bear | Frost | 2 ATK, reach 3 | Control — chill, freeze, break. *Rime Guard* armours your Hero. |
+| **Ignis**, Ember Drake | Pyre | 30 ATK, melee, MOV 2 | *Ember Watch* — ignites its lane |
+| **Boreas**, Frost Bear | Frost | 20 ATK, reach 3, MOV 2 | *Rime Guard* — armours your Hero |
+| **Voltara**, Storm Lynx | Surge | 20 ATK, reach 2, MOV 3 | *Storm Tithe* — refunds a Pip |
+| **Mortis**, Carrion Stag | Dusk | 20 ATK, melee, MOV 2 | *Grave Tithe* — drains the weakest enemy |
+| **Sylva**, Thorn Warden | Bloom | 10 ATK, reach 3, MOV 2 | *Verdant Growth* — returns health to the Pact |
+| **Ferrum**, Vault Boar | Bulwark | 20 ATK, melee, MOV 1 | *Shield Oath* — plates your units |
 
 Their stat lines follow their magic: Ignis fights at arm's length, where its shorter spells
-want it anyway; Boreas holds a longer sightline, which is what Frost's reach is for.
+want it anyway; Boreas and Sylva hold a longer sightline, which is what reach is for; and
+Ferrum trades all its movement for being immovable.
+
+**Lexis**, the Ink Owl, exists and is not on that list. Its school is arcane — the Hero
+Deck's own colour, which is not a discipline anybody enrols in — so it is a Companion you
+can meet rather than one you can start beside.
 
 ### The Companion on the board
 
@@ -423,8 +477,8 @@ attacking like any other. The Hero remains off-grid as the Architect.
 
 It carries **Bound Form**, which makes it the Pact's body: it keeps no health of its own,
 and every wound it takes — a strike, a spell, a burn tick, a shove into a wall — is dealt
-straight to your shared 40 HP pool. It cannot be sacrificed, cannot be given a rune (one
-attached to it could never detonate), and never Escalates. Cards that would do those
+straight to your shared 400 HP pool. It cannot be bled for a blood tithe, cannot be given
+a Mark (one attached to it could never detonate), and never Grows. Cards that would do those
 things simply do not offer it as a target rather than being wasted on it.
 
 That gives the enemy a second, on-grid route to your Pact, and the HUD treats it as one:
@@ -457,11 +511,11 @@ only as far as it can stretch and see from where it stands:
 | :-- | :-- | :-- |
 | Rime Touch | 2 | yes |
 | Frost Nova | 3 | yes |
-| Cinder Rune, Flame Surge, Flash Freeze | 4 | yes |
-| Soul Splinter Rune | 4 | no — marking your own is closeness, not aim |
+| Cinder Mark, Flame Surge, Flash Freeze | 4 | yes |
+| Soul Splinter Mark | 4 | no — marking your own is closeness, not aim |
 | Glacial Spike | 5 | yes |
 
-Cataclysmic Core stays board-wide, and the Rite of Binding is never range-gated: it is a
+Cataclysmic Core stays board-wide, and the Rite of Subjugation is never range-gated: it is a
 win condition, not a spell.
 
 Aiming a Companion card marks the tile it is cast from and shades what that origin cannot
@@ -475,7 +529,8 @@ A side that has no Bound Form — every enemy today — casts globally, exactly 
 ### Companion Resonance
 
 The Hero/Companion split is more than a card-pool label. The first Companion card played
-each turn fires that school's passive in the Companion's lane (Module 1 §3). Pyre ignites,
+each turn fires that school's passive in the Companion's lane
+(`docs/02_combat_lexicon.md` §3). Pyre ignites,
 Frost armors, Dusk drains. Once per turn, so a multi-card turn cannot spiral.
 
 ## Testing
@@ -484,15 +539,15 @@ Frost armors, Dusk drains. Once per turn, so a multi-card turn cannot spiral.
 npm test
 ```
 
-385 tests covering collision splits and Mass Invariance, rune cascades and the armor
-gate that stops them, fizzle rules, line of sight and Guardian occlusion, the turn and
-resource machine, escalation caps, movement commitment, boss phase gates and the Rite of
-Binding, Resonance firing once per turn in the right lane, AI lethal-taking and the
-Lethal Veto, isometric projection round-trips, balance sanity (every encounter reaches a
-decision across many seeds), and an edge-case suite: Behemoths with nowhere legal to
-land, a full territory, Cataclysmic Core with no runes to detonate, corner shoves,
-Counter killing its attacker, an empty deck *and* discard, runes on destroyed obstacles,
-and a unit killed by its own cascade. Threat projection has its own suite: reach scales
+1,591 tests across 88 files, covering collision splits and Mass Invariance, Mark cascades
+and the armor gate that stops them, fizzle rules, line of sight and Guardian occlusion,
+the turn and resource machine, Growth caps, movement commitment, boss phase gates and the
+Rite of Subjugation, Resonance firing once per turn in the right lane, AI lethal-taking
+and the Lethal Veto, isometric projection round-trips, balance sanity (every encounter
+reaches a decision across many seeds), and an edge-case suite: Behemoths with nowhere
+legal to land, a full territory, Cataclysmic Core with no Marks to detonate, corner
+shoves, Counter killing its attacker, an empty deck *and* discard, Marks on destroyed
+obstacles, and a unit killed by its own cascade. Threat projection has its own suite: reach scales
 with movement, held units project nothing, converging attackers stack their damage, and
 walls stop ranged projection. A **determinism harness** replays recorded games from
 their seed and asserts an identical event stream and state hash — including through boss
@@ -502,8 +557,8 @@ tiles, no orphaned cards, no pip overflow after cleanup, at most one Bound Form 
 and never one that lost health of its own).
 
 Three suites guard the pivot specifically. **Bound Form** proves every route to the Pact —
-strikes, burn ticks, shoves into walls — and every refusal: sacrifice, rune attachment,
-warding, Escalation. **Spell origin** pins range boundaries at exactly N and N+1, walls
+strikes, burn ticks, shoves into walls — and every refusal: the blood tithe, Mark
+attachment, warding, Growth. **Spell origin** pins range boundaries at exactly N and N+1, walls
 breaking a Companion's line while a Hero card ignores the same wall, and the case that
 would quietly break the enemy AI: a side with no body must still cast. **Grid bounds**
 opens 4×4 and 4×7 arenas, runs AI turns in them, and checks that the camera's rotation
@@ -512,8 +567,16 @@ and about the last tile index differ, which is invisible until a click lands a t
 
 ## What is deliberately not here
 
-The overworld, economy, crafting, ascension, the other three continents,
-and five of the seven elemental schools. The demo ships the Pyre / Dusk / Arcane starter
-deck from Draft 7 §10 — fifteen cards that between them exercise every core system:
-summoning, a 2×2 Behemoth, displacement and collisions, rune attachment, cascading
-detonations, sacrifice economy, obstacles, persistent armor, and a global finisher.
+The continent system, and the three continents that would hang off it: `ignis_trial` is
+the only boss, with an `EncounterScript` seam where the rest would go
+(`docs/09_ai_and_encounters.md` §6).
+
+Most of the rest of this list has since arrived — the overworld and its Vivarium roster,
+the Ironworks forge with Ascension and Splicing (`docs/05_ironworks_artificer.md`), and
+cards in all seven schools. A new character is handed a **seven-card** Hero Deck of
+colourless staples — a strike, a shove, a wall, a ward, a tithe, a beam and a finisher —
+which the Companion's eight-spell Grimoire fuses to fifteen at the bell
+(`core/data/cards/starter.ts`, `docs/07_deck_building.md` §4). The catalog behind it is
+122 base cards (`docs/08_card_catalog.md`), and between them they exercise every core
+system: summoning, a 2×2 Behemoth, displacement and collisions, Mark attachment, cascading
+detonations, the blood tithe economy, obstacles, persistent armor, and a global finisher.

@@ -204,7 +204,7 @@ export function checkInvariants(state: GameState, where: string): string[] {
 /**
  * Invariants that only hold for a side whose cleanup has just run.
  *
- * Checked against the *inactive* side only. Draft 7 allows the Pip bank to overflow
+ * Checked against the *inactive* side only. The rules allow the Pip bank to overflow
  * freely during a turn and caps it during end-of-turn cleanup, so the side that has just
  * started — and already taken its +1 — is legitimately allowed to be sitting on nine.
  */

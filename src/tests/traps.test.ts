@@ -375,7 +375,7 @@ describe('Volatile Munitions Cask', () => {
 
 describe('Soul Splinter Mark', () => {
   it('was already in the game, and matches the brief but for its damage type', () => {
-    // Shipped since the Draft 7 starter deck: 1 Pip, death trigger, lowest-HP-enemy blast,
+    // Shipped since the founding starter deck: 1 Pip, death trigger, lowest-HP-enemy blast,
     // 5 damage. The one difference from the brief is `spell` rather than `true` — see the
     // report. Left as shipped because `spell` is an aligned type for Cinder Mark, so
     // changing it would quietly remove a cascade interaction as well as re-balancing a card

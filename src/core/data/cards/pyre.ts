@@ -32,7 +32,7 @@ export const PYRE_CARDS: Record<string, CardDef> = {
    * finisher.
    *
    * **Frail is `brittle`.** The engine has had "takes extra damage from every hit until it
-   * wears off" since Module 1 and calls it Brittle; a second status meaning the same thing
+   * wears off" from the beginning and calls it Brittle; a second status meaning the same thing
    * at a different name would be indistinguishable on the board.
    */
   ashen_wake: {

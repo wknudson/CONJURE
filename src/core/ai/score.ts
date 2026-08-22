@@ -1,5 +1,6 @@
 /**
- * Utility scoring, per Module 5's function:
+ * Utility scoring. The composite, and every weight below, is documented in
+ * `docs/09_ai_and_encounters.md`:
  *
  *   U(a) = w_kill*S_kill + w_face*S_face + w_threat*S_threat
  *        + w_pos*S_pos + w_eff*S_eff - w_risk*S_risk
@@ -112,7 +113,7 @@ export const NOVICE_WEIGHTS: UtilityWeights = {
 };
 
 /**
- * Adept (Module 5 §3): the same value system, but it sees collisions.
+ * Adept: the same value system, but it sees collisions.
  *
  * A Novice "ignores collision damage"; an Adept deliberately shoves units into walls and
  * into each other, which on a board with a Runic Boundary is a whole extra damage source

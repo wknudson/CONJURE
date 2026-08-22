@@ -130,7 +130,7 @@ describe('compute budget', () => {
     session.runAiTurn();
     const elapsed = Date.now() - started;
 
-    // Module 5 caps AI thinking at 1.2s, and a turn measures around that in isolation.
+    // AI thinking is capped at 1.2s, and a turn measures around that in isolation.
     //
     // This is the weakest guard in the suite and the bound is deliberately loose: it runs
     // alongside every other AI-heavy file, so it reads contention as much as code, and a
