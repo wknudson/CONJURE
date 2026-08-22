@@ -147,7 +147,7 @@ describe('what the picker offers', () => {
 });
 
 describe('resolving the eight', () => {
-  const drafted = ['flame_surge', 'flame_surge', 'cinder_rune', 'cataclysm'];
+  const drafted = ['flame_surge', 'flame_surge', 'cinder_mark', 'cataclysm'];
 
   it('hands back the drafted book when nothing is socketed', () => {
     expect(resolveGrimoire(drafted, {})).toEqual(drafted);
@@ -161,7 +161,7 @@ describe('resolving the eight', () => {
     expect(resolveGrimoire(drafted, { 0: 'vaporize_blast' })).toEqual([
       'vaporize_blast',
       'flame_surge',
-      'cinder_rune',
+      'cinder_mark',
       'cataclysm',
     ]);
   });
@@ -253,8 +253,8 @@ describe('an Ascension the Companion actually brings', () => {
   const book = [
     'flame_surge',
     'flame_surge',
-    'cinder_rune',
-    'cinder_rune',
+    'cinder_mark',
+    'cinder_mark',
     'ember_coat',
     'ember_coat',
     'cataclysm',
@@ -284,7 +284,7 @@ describe('an Ascension the Companion actually brings', () => {
 
   it('leaves an unraised card exactly where it was', () => {
     const after = dealt({ ascended: ['flame_surge'] });
-    expect(after.filter((id) => id === 'cinder_rune')).toHaveLength(2);
+    expect(after.filter((id) => id === 'cinder_mark')).toHaveLength(2);
   });
 
   it('raises a socketed card too, because a socketed card is a card', () => {
@@ -313,14 +313,14 @@ describe('an Ascension the Companion actually brings', () => {
   });
 
   it('ignores an Ascension of a card with no Rank 2 printing', () => {
-    // Cinder Rune is *in this book* and has no Rank 2 — attaching a rune moves no number
-    // Ascension may touch, so the registry holds no `cinder_rune_r2`. A hand-edited save
+    // Cinder Mark is *in this book* and has no Rank 2 — attaching a mark moves no number
+    // Ascension may touch, so the registry holds no `cinder_mark_r2`. A hand-edited save
     // claiming one must not deal a card that does not exist.
-    expect(book, 'the premise').toContain('cinder_rune');
-    expect(CARDS[ascendedId('cinder_rune')], 'and it genuinely has no Rank 2').toBeUndefined();
+    expect(book, 'the premise').toContain('cinder_mark');
+    expect(CARDS[ascendedId('cinder_mark')], 'and it genuinely has no Rank 2').toBeUndefined();
 
-    const after = dealt({ ascended: ['cinder_rune'] });
-    expect(after.filter((id) => id === 'cinder_rune'), 'dealt at Rank 1').toHaveLength(2);
+    const after = dealt({ ascended: ['cinder_mark'] });
+    expect(after.filter((id) => id === 'cinder_mark'), 'dealt at Rank 1').toHaveLength(2);
     for (const id of after) expect(CARDS[id], `${id} is a real card`).toBeDefined();
   });
 });

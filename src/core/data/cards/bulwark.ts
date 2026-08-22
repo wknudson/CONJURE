@@ -24,7 +24,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
    * built — `canAct` gates move and attack on it, the tick decays it, the threat
    * projection skips a stunned foe, the renderer has an icon, the glossary has an entry,
    * and the targeting layer has a refusal that names it. Every one of those was writing
-   * about something no card, rune, or rider could produce. This is the missing half, and
+   * about something no card, mark, or rider could produce. This is the missing half, and
    * it is one line of data.
    *
    * Delivered as a **rider** rather than as a spell, deliberately. Hard CC that arrives

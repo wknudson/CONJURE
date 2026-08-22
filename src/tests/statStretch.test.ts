@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { STAT_SCALE, unscaleStat } from '../core/scale.js';
 import { CARDS, isAscendedId } from '../core/data/cards/index.js';
 import { ALL_AURAS } from '../core/data/auras.js';
-import { RUNES } from '../core/data/runes.js';
+import { MARKS } from '../core/data/marks.js';
 import { TITHE_DAMAGE, TITHE_MARROW } from '../core/engine/effects.js';
 import {
   COLLISION_BLOCKER_DAMAGE,
@@ -112,9 +112,9 @@ describe('the data layer', () => {
     }
   });
 
-  it('stretched rune payloads', () => {
-    for (const rune of Object.values(RUNES)) {
-      expect(rune.damage % STAT_SCALE, rune.id).toBe(0);
+  it('stretched mark payloads', () => {
+    for (const mark of Object.values(MARKS)) {
+      expect(mark.damage % STAT_SCALE, mark.id).toBe(0);
     }
   });
 });

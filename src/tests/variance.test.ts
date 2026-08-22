@@ -13,7 +13,7 @@ import { COMPANION_TRAITS, traitsFor } from '../core/data/companionTraits.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { UNIVERSAL_ROSTER, validateRoster } from '../core/data/roster.js';
 import { tameCompanion } from '../core/overworld/vivarium.js';
-import { draftGrimoire } from '../core/data/grimoire.js';
+import { draftGrimoire, purePool } from '../core/data/grimoire.js';
 import { makeRng } from '../core/util/rng.js';
 import {
   emptySave,
@@ -341,4 +341,19 @@ describe('a claim, end to end', () => {
     expect(p.rosterUnlocks.length, 'and bodies, stamped').toBeGreaterThan(before);
     expect(validateRoster(['stone_heart_golem', 'slag_iron_golem'], p.rosterUnlocks)).toEqual([]);
   });
+  it('advertises the same shelf the draft actually draws from', () => {
+    // `spellPool` and `purePool` are two answers to "what may a beast of this school
+    // draw", and they drifted the moment the role overhaul taught one of them about Marks
+    // and not the other. The Vow screen counts the first and the fight deals from the
+    // second, so the drift surfaced as a card reading "8 of 7 spells".
+    //
+    // Set equality, not a count. Two lists of the same length that disagree about a card
+    // is the same bug wearing a better disguise.
+    for (const c of COMPANIONS) {
+      expect(new Set(SPELL_POOLS_BY_SPECIES[c.id]), c.name).toEqual(
+        new Set(purePool(c.grimoire).map((d) => d.id)),
+      );
+    }
+  });
+
 });

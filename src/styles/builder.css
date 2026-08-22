@@ -1091,6 +1091,21 @@
   filter: grayscale(0.55) brightness(0.62);
 }
 
+/* A card this deck can never hold -- a Spell, a body, an elemental Construct. Barred
+   rather than merely spent: the copy ceiling is not what is stopping you, so it must not
+   look like the cards that are one short. Colour drains and the corner tag names the place
+   the card actually belongs. */
+.collcell.is-barred {
+  cursor: not-allowed;
+  filter: grayscale(0.9) brightness(0.5);
+}
+
+.collcell.is-barred .collcell__tally {
+  border-color: rgba(190, 120, 90, 0.55);
+  color: rgba(214, 150, 120, 0.9);
+  letter-spacing: 0.04em;
+}
+
 /* Copies in the deck, over the corner of the card. */
 .collcell__tally {
   position: absolute;
@@ -1605,4 +1620,38 @@
   background: rgba(103, 232, 249, 0.16);
   border: 1px solid rgba(103, 232, 249, 0.45);
   color: #a5f3fc;
+}
+
+/* --- the Hero Deck, split by role -------------------------------------------
+   Abilities, Marks and Constructs are three lists sharing one slot budget, and the
+   headings are what make that legible. Sticky, because the deck panel scrolls and a
+   heading that scrolls away leaves the rows under it unlabelled. */
+.deckgroup {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0 2px;
+  padding: 3px 8px 3px 0;
+  border-bottom: 1px solid rgba(176, 148, 106, 0.22);
+  background: var(--panel, #16120d);
+}
+
+.deckgroup:first-child {
+  margin-top: 0;
+}
+
+.deckgroup__name {
+  font: 800 10px var(--font);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(214, 196, 160, 0.72);
+}
+
+.deckgroup__n {
+  font: 800 10px var(--font);
+  color: var(--text-dim);
 }

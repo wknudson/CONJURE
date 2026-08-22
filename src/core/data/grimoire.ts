@@ -6,8 +6,8 @@
  * health roll and a knack. Catching one was a checkbox.
  *
  * A Companion now **drafts** its eight from its bloodline's pool. Two Ignis are two
- * different decks — one heavy on runes, one that happened to roll three Cataclysms — and
- * that is the reason to go and catch a second one.
+ * different decks — one heavy on Ashen Wakes, one that happened to roll three Cataclysms —
+ * and that is the reason to go and catch a second one.
  *
  * ## What the weighting is for
  *
@@ -76,8 +76,30 @@ export function isDraftable(def: CardDef): boolean {
   // exactly the bug that rule exists to stop.
   if (isEngineDealt(def)) return false;
   if (def.kind === 'minion') return false;
+  // A Mark is the Hero's trap. A beast that drafted one would be holding a card its own
+  // half of the deck is not allowed to contain, and the Field Journal would show a Grimoire
+  // slot no socket could legally replace.
+  if (def.kind === 'mark') return false;
   if (isAscendedId(def.id)) return false;
   return true;
+}
+
+/**
+ * What a Companion's own shelves may hand it.
+ *
+ * The Grimoire is **elemental magic and the ground it stands on**: Spells, and the
+ * Constructs a beast raises out of its own school. Abilities are excluded because they are
+ * the colourless half the Hero builds — a Grimoire dealing a Shield Bash would be dealing
+ * the player a card they already chose not to run.
+ *
+ * Constructs are deliberately still here, and it is the one place this rule reads looser
+ * than "exclusively Spells". Pyre Pillar, Coolant Pillar, Ice Barricade and Smoke Bank are
+ * elemental, so no Hero Deck may hold them either; dropping them from the draft as well
+ * would leave four cards in the registry that nothing in the game can ever deal. Orphaning
+ * content is a worse outcome than a Grimoire that occasionally raises a wall.
+ */
+export function isBloodlineCard(def: CardDef): boolean {
+  return def.kind === 'spell' || def.kind === 'obstacle';
 }
 
 /** Whether this card is a fusion of two schools — the rare roll. */
@@ -93,7 +115,7 @@ export function isHybrid(def: CardDef): boolean {
  */
 export function purePool(source: GrimoireSource): CardDef[] {
   return Object.values(CARDS)
-    .filter((c) => isDraftable(c) && !isHybrid(c) && source.schools.includes(c.school))
+    .filter((c) => isDraftable(c) && isBloodlineCard(c) && !isHybrid(c) && source.schools.includes(c.school))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -107,7 +129,7 @@ export function purePool(source: GrimoireSource): CardDef[] {
  */
 export function hybridPool(source: GrimoireSource): CardDef[] {
   return Object.values(CARDS)
-    .filter((c) => isDraftable(c) && isHybrid(c))
+    .filter((c) => isDraftable(c) && isBloodlineCard(c) && isHybrid(c))
     .filter((c) => hybridSchools(c.id).some((s) => source.schools.includes(s)))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
@@ -115,15 +137,25 @@ export function hybridPool(source: GrimoireSource): CardDef[] {
 /**
  * The last resort: colourless utility, for a bloodline whose own shelf is too short.
  *
- * Bulwark has two spells to its name and Surge has three, so neither can fill eight out of
- * its own school even with every copy the Tier limits allow. Rather than deal a short book
- * — silently, forever — a thin bloodline tops up from `neutral`, which is the same
- * colourless pool a Hero Deck draws on.
+ * Rather than deal a short book — silently, forever — a thin bloodline tops up from the
+ * colourless shelves, which is the same pool a Hero Deck draws on.
  *
- * **This is a content gap wearing a rule.** It fires only when a bloodline runs out, so the
- * day Bulwark has eight spells' worth of its own is the day this stops happening, with
- * nothing to remove. Until then a Vault Boar knows two Bulwark spells very well and pads
- * the rest with a hammer, which is at least an honest description of a Vault Boar.
+ * Marks are excluded even here. Everything else about this pool is a compromise; that one
+ * is a rule, and it is the whole point of Phase 3: a beast must never end up holding the
+ * Hero's trap, least of all by the back door of a shelf that ran dry.
+ *
+ * **This is a content gap wearing a rule**, and the overhaul made it a permanent one for
+ * exactly one bloodline. It used to fire only for the thin elemental schools, and those are
+ * now comfortably clear of it — every elemental species can fill eight out of its own
+ * Spells and fusions. **Lexis cannot, and never will.** Its school is `arcane`, "Spell" now
+ * means *elemental* magic, and arcane is by definition not elemental — so an Ink Owl's own
+ * shelf holds two Constructs and nothing else, and the other six slots come from here.
+ *
+ * That is a real question for the Director rather than something to hide behind a
+ * fallback: either arcane gets Spells of its own, or Lexis stops being a drafting
+ * bloodline, or an Ink Owl is *defined* as the beast that lends the Hero its own tools.
+ * The code does the third, because it is the only one of the three that is not a content
+ * decision to make on somebody else's behalf.
  */
 function neutralPool(): CardDef[] {
   return Object.values(CARDS)

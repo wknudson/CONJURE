@@ -186,8 +186,8 @@ describe('what origin does not change', () => {
     // Pinned deliberately: these numbers are the balance decision, and a silent edit to
     // one of them changes how far forward the Companion has to walk to be useful.
     const expected: Record<string, number | undefined> = {
-      cinder_rune: 4,
-      soul_splinter_rune: 4,
+      cinder_mark: 4,
+      soul_splinter_mark: 4,
       flame_surge: 4,
       glacial_spike: 5,
       frost_nova: 3,

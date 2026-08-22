@@ -35,7 +35,7 @@ const STEPS: TutorialStep[] = [
   {
     anchor: '.hand',
     title: 'Your hand',
-    body: 'Each card says what it is — MINION puts a body on the board, SPELL resolves and is gone, RUNE waits for a trigger. Click one, then click a highlighted tile to play it.',
+    body: 'Each card says what it is — MINION puts a body on the board, SPELL resolves and is gone, MARK waits for a trigger. Click one, then click a highlighted tile to play it.',
     place: 'above',
   },
   {

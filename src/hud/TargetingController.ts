@@ -218,7 +218,7 @@ export class TargetingController {
     switch (card.kind) {
       case 'minion':
         return `Nowhere to deploy ${card.name} — your two home rows have no free space for it`;
-      case 'rune':
+      case 'mark':
         return `${card.name} has nothing to attach to right now`;
       case 'obstacle':
         return `No empty tile for ${card.name}`;

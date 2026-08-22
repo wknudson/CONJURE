@@ -205,20 +205,20 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     }
   });
 
-  // ---------------------------------------------------------------- runes
+  // ---------------------------------------------------------------- marks
 
-  seq.on('runeAttached', (e, { view }) => {
+  seq.on('markAttached', (e, { view }) => {
     const v = view.views.get(e.hostId);
-    if (v) v.rune = { school: e.rune.school };
+    if (v) v.mark = { school: e.mark.school };
   });
 
-  seq.on('runeDetonated', async (e, { view, t }) => {
+  seq.on('markDetonated', async (e, { view, t }) => {
     const v = view.views.get(e.hostId);
-    if (v) v.rune = null;
+    if (v) v.mark = null;
 
-    // Cascade crescendo. A three-rune chain currently looks like three separate pops;
+    // Cascade crescendo. A three-mark chain currently looks like three separate pops;
     // escalating each link turns it into the single loudest thing the game can do.
-    // `chainDepth` comes from the engine and is 0 for the rune that starts the chain.
+    // `chainDepth` comes from the engine and is 0 for the mark that starts the chain.
     const link = e.chainDepth + 1;
     view.sfx.play('detonate', { pitch: 1 + Math.min(e.chainDepth, 4) * 0.12 });
     view.fx.screenShake(9 + Math.min(e.chainDepth, 4) * 3, t(300));
@@ -230,10 +230,10 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     await view.fx.detonation(e.at, e.school, t(420));
   });
 
-  seq.on('runeFizzled', (e, { view }) => {
+  seq.on('markFizzled', (e, { view }) => {
     const v = view.views.get(e.hostId);
     if (v) {
-      v.rune = null;
+      v.mark = null;
       view.fx.label(roundOf(v.pos), 'FIZZLE', 'fizzle');
     }
   });

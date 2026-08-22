@@ -28,7 +28,7 @@ import { defaultLook, normalizeLook } from '../core/data/characterLook.js';
 import { reconcileCollection, startingCollection } from '../core/data/collection.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { RELICS, slotOf } from '../core/data/relics.js';
-import { HERO_SCHOOLS, validateDeck } from '../core/data/deckRules.js';
+import { deckRoleRefusal, validateDeck } from '../core/data/deckRules.js';
 import type { CardModifier } from '../core/types/cards.js';
 import { rollSpellModifiers } from '../core/overworld/vivarium.js';
 import {
@@ -74,7 +74,7 @@ import {
 import { APOTHECARY_STOCK } from '../core/data/apothecary.js';
 import { traitsFor } from '../core/data/companionTraits.js';
 import { makeRng } from '../core/util/rng.js';
-import { socketRefusal } from '../core/data/grimoire.js';
+import { draftGrimoire, isDraftable, socketRefusal } from '../core/data/grimoire.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
@@ -137,6 +137,10 @@ const RENAMED_CARDS: Record<string, string> = {
   // saves on an id that no longer exists.
   spell_superconduct_strike: 'overload_strike',
   superconduct_strike: 'overload_strike',
+  // "Rune" retired in favour of "Mark" (v19). The cards are the same traps at the same
+  // prices; only the word changed, so a save holding one keeps holding it.
+  cinder_rune: 'cinder_mark',
+  soul_splinter_rune: 'soul_splinter_mark',
 };
 
 function rename(id: string): string {
@@ -670,29 +674,38 @@ function migrateProfile(
 
     const renamed = saved.cards.filter((c): c is string => typeof c === 'string').map(rename);
 
-    // The Vanguard overhaul took bodies out of decks entirely. Stripped rather than
-    // flagged, because "your deck is illegal" is not something the player can act on when
-    // the illegal cards are no longer cards — there is nothing to remove them *to*. What
+    // Cards whose *role* this deck may no longer hold. Stripped rather than flagged,
+    // because "your deck is illegal" is not something the player can act on when the
+    // illegal cards can never be legal again — there is nothing to remove them *to*. What
     // is left may well be under the minimum, and that is flagged in the ordinary way:
     // topping it up is a real choice, and the builder is where it should be made.
-    const cards = renamed.filter(
-      (id) => CARDS[id]?.kind !== 'minion' && HERO_SCHOOLS.includes(CARDS[id]?.school ?? ''),
-    );
-    const bodies = renamed.filter((id) => CARDS[id]?.kind === 'minion').length;
-    const elemental = renamed.length - cards.length - bodies;
+    //
+    // Asked through `deckRoleRefusal`, which is the same function the builder disables a
+    // card with and the validator refuses a deck with. This used to re-derive the rule as
+    // `kind !== 'minion' && HERO_SCHOOLS.includes(school)` — a fourth copy that has now
+    // been wrong twice: it would confiscate an elemental Mark the Hero is allowed to lay,
+    // and it would keep a colourless Spell if anybody ever printed one.
+    const shed = new Map<string, number>();
+    const cards = renamed.filter((id) => {
+      const def = CARDS[id];
+      if (!def) return false;
+      const why = deckRoleRefusal(def);
+      if (!why) return true;
+      shed.set(why, (shed.get(why) ?? 0) + 1);
+      return false;
+    });
 
-    if (bodies > 0) {
-      notes.push(
-        `${bodies} minion(s) left your ${companion.name} deck — they are Vanguard Roster kit now.`,
-      );
-    }
-    // Stripped rather than flagged, for the same reason the bodies were: "your deck is
-    // illegal" is not actionable when the illegal cards can never be legal again. The
-    // elements belong to the Companion now, and it brings its own eight.
-    if (elemental > 0) {
-      notes.push(
-        `${elemental} elemental card(s) left your ${companion.name} deck — ${companion.name} fuses its own eight in now.`,
-      );
+    const SHED_NOTE: Record<string, (n: number) => string> = {
+      minion: (n) =>
+        `${n} minion(s) left your ${companion.name} deck — they are Vanguard Roster kit now.`,
+      spell: (n) =>
+        `${n} Spell(s) left your ${companion.name} deck — ${companion.name} casts those, and fuses its own eight in now.`,
+      off_school: (n) =>
+        `${n} elemental card(s) left your ${companion.name} deck — that colour is ${companion.name}'s to bring.`,
+    };
+    for (const [why, n] of shed) {
+      const note = SHED_NOTE[why];
+      if (note) notes.push(note(n));
     }
 
     const problems = validateDeck(cards, collection);
@@ -1084,6 +1097,45 @@ function isConsumable(value: unknown): value is Consumable {
  * does not carry is unreachable, and keeping it would let a hand-edited save smuggle a roll
  * onto a card the fusion never deals.
  */
+/**
+ * A stored Grimoire, with anything a Companion may no longer know swapped out.
+ *
+ * Written for one migration and shaped for every one after it. Every beast caught before
+ * the role overhaul has Marks in its book — Ignis drafted Cinder Marks, Mortis drafted Soul
+ * Splinters — and a Mark is now the Hero's trap, which a Companion must never hold. Leaving
+ * them would make "the Companion never drafts a Hero's Mark" false for every existing save
+ * while being true for every new one, which is the worst of both: a rule that holds only
+ * for players who started today.
+ *
+ * **Slot by slot, not a re-draft.** Redrawing the whole book would hand the player a
+ * different animal than the one they went out and caught — the same thing storing
+ * `baseHpRoll` rather than deriving it exists to prevent. Only the illegal slots move.
+ *
+ * Seeded off the beast's own `instanceId`, so the replacement is identical on every load
+ * and a save that has been opened twice is not two different beasts.
+ *
+ * A slot with nothing legal to replace it is dropped rather than left illegal. That can
+ * only shorten a book, never hole it, and a short Grimoire is a thing the fight already
+ * copes with.
+ */
+function repairGrimoire(book: string[], baseId: string, instanceId: string): string[] {
+  const illegal = book.filter((id) => CARDS[id] && !isDraftable(CARDS[id]!));
+  if (illegal.length === 0) return book;
+
+  const source = companionById(baseId)?.grimoire;
+  if (!source) return book.filter((id) => isDraftable(CARDS[id]!));
+
+  // One stream for the whole repair, so two bad slots do not both draw the same card
+  // merely because they were both seeded off the same beast.
+  const rng = makeRng(hashId(`${instanceId}:mark-retirement`));
+  return book.flatMap((id) => {
+    const def = CARDS[id];
+    if (!def || isDraftable(def)) return [id];
+    const replacement = draftGrimoire(rng, source, 1);
+    return replacement.length > 0 ? replacement : [];
+  });
+}
+
 /** A stable seed from a beast's own id, so a migrated roll never changes. */
 function hashId(id: string): number {
   let h = 0x811c9dc5;
@@ -1192,9 +1244,13 @@ function readRoster(
     const savedBook = Array.isArray(saved.grimoire)
       ? saved.grimoire.filter((c): c is string => typeof c === 'string').map(rename)
       : [];
-    const grimoire = (savedBook.length > 0 ? savedBook : (companionById(baseId)?.legacyGrimoire ?? []))
-      // A card that has since left the game would deal a hole in the deck.
-      .filter((id) => CARDS[id]);
+    const grimoire = repairGrimoire(
+      (savedBook.length > 0 ? savedBook : (companionById(baseId)?.legacyGrimoire ?? []))
+        // A card that has since left the game would deal a hole in the deck.
+        .filter((id) => CARDS[id]),
+      baseId,
+      instanceId,
+    );
 
     // Membership in the *rollable* pool, not `trait.baseId === baseId`.
     //

@@ -29,8 +29,8 @@ export const SURGE_CARDS: Record<string, CardDef> = {
    * restraint.
    *
    * The damage is `spell`, per the brief, and that has one consequence worth knowing: it
-   * is an aligned type for Cinder Rune, so a Static Arc into a branded cluster detonates
-   * the runes as well as charging the survivors. `shock` would not have.
+   * is an aligned type for Cinder Mark, so a Static Arc into a branded cluster detonates
+   * the marks as well as charging the survivors. `shock` would not have.
    */
   static_arc: {
     id: 'static_arc',

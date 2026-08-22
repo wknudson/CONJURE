@@ -28,7 +28,7 @@ describe('novice AI', () => {
   });
 
   it('never chooses an action that hands the player the win (Lethal Veto)', () => {
-    // The enemy commander is at 1 HP. Its own Cinder Rune host sits adjacent to nothing
+    // The enemy commander is at 1 HP. Its own Cinder Mark host sits adjacent to nothing
     // that would help; any self-destructive line must be rejected.
     const state = enemyTurn(
       scenario({

@@ -296,7 +296,7 @@ existing deck rules go with them:
 
 - `tierOf`'s `footprint === 2 → 3` branch (`deckRules.ts:31`) and `MAX_BEHEMOTHS = 2`
   become dead for decks and are **reborn as roster rules**.
-- Tier copy limits `{1:3, 2:2, 3:1}` continue to govern spells, runes and obstacles
+- Tier copy limits `{1:3, 2:2, 3:1}` continue to govern spells, marks and obstacles
   unchanged.
 
 `MIN_DECK` stays **12**. The roster is not deck thinning — it is deck *refocusing*, and a
@@ -513,7 +513,7 @@ Resolution order, and it matters: **Marrow is credited first, then the damage la
 Exhaustion applies.** A tithe that kills the unit still pays — you took the blood, and the
 body failing afterward does not un-take it.
 
-Damage routes through `dealDamage` like everything else, so armour, statuses, runes, and
+Damage routes through `dealDamage` like everything else, so armour, statuses, marks, and
 the encounter Damage Gate all behave normally. It is `true` damage specifically so plate
 does not make a unit un-bleedable: `true` "ignores armor entirely"
 (`02_combat_lexicon.md` §7), and a Bulwark roster that cannot use Blood Magic would be a
@@ -657,7 +657,7 @@ and one new op:
 
 | Card | Cost | Where it lands | Comes back with |
 |---|---|---|---|
-| **Aetheric Resurgence** | X Pips, up to 5 | its **exact Soul Pyre** — refused if occupied by an enemy | **20% of Max HP per Pip spent**; stripped of all runes and buffs |
+| **Aetheric Resurgence** | X Pips, up to 5 | its **exact Soul Pyre** — refused if occupied by an enemy | **20% of Max HP per Pip spent**; stripped of all marks and buffs |
 | **The "Anchor" Rally** | 3 Pips (flat) | any starting **Anchor Tile** | **50% HP** and **+1 MOV** for the turn |
 | **The "Blood & Bone" Rally** | **0 Pips + 3 Marrow** | anywhere in the **starting zone** | **1 HP**, and **Persistent Armor equal to its missing Health** |
 
@@ -673,11 +673,11 @@ dead one as a near-unkillable armour wall. Zero Pips, and the whole cost paid in
 > anything dealing `true` damage, which ignores armour entirely (`02_combat_lexicon.md` §7).
 > The counterplay is already in the game.
 
-### 4.4 "Stripped of all runes and buffs"
+### 4.4 "Stripped of all marks and buffs"
 
 **Ruling: revival constructs a fresh unit from the definition and copies nothing.**
 
-Runes, statuses, Escalate stacks, aura stacks (§5), and accumulated armour are gone by
+Marks, statuses, Escalate stacks, aura stacks (§5), and accumulated armour are gone by
 construction rather than by five removal rules. Then HP is overridden per the card, the
 roster entry flips back to `'fielded'`, `fellAt` clears, and `unitRevived` fires.
 
@@ -747,7 +747,7 @@ the pressure that makes a long fight dangerous, and it should keep ticking. Its 
 
 ### 5.3 The Aura
 
-Auras mirror the rune system deliberately — same slot discipline, same attach-op shape,
+Auras mirror the mark system deliberately — same slot discipline, same attach-op shape,
 same data-not-closures rule:
 
 ```ts
@@ -778,12 +778,12 @@ as a stat bonus.
 
 ```ts
 interface Unit {
-  aura?: { defId: AuraDefId; stacks: number };   // [new] one slot, like `rune`
+  aura?: { defId: AuraDefId; stacks: number };   // [new] one slot, like `mark`
 }
 ```
 
 **One aura per unit.** Casting a second replaces the first and refunds nothing — the same
-rule runes already keep, for the same reason: a unit wearing three auras is a spreadsheet.
+rule marks already keep, for the same reason: a unit wearing three auras is a spreadsheet.
 
 New op `{ op: 'attachAura'; aura: AuraDefId }`, targeting an allied unit, refused on Bound
 Forms (§6.4).
@@ -905,7 +905,7 @@ Everything the five pillars break or orphan, with one ruling each.
 | 6.7 | **Free `vanguard_footman`** (`setup.ts:407-412`) | Removed for both sides; the `EncounterDef.vanguard` field is retired. The footman becomes the universal 2-point roster basic. Authored boards that relied on the freebie get it written in. |
 | 6.8 | **Sudden death** (`death.ts:205-243`) | The wipe routes fielded roster units through pyre marking, recording pre-wipe positions. Sudden death becomes revival's showcase: both commanders at 1 HP, and the player holding a Rally is the intended drama. Bound Form re-placement unchanged. |
 | 6.9 | **Subjugation** | Mechanically untouched, and worth strictly more: `'bound'` now also stamps `rosterUnlocks`. |
-| 6.10 | **Tier / copy / Behemoth deck rules** | `tierOf`'s footprint branch and `MAX_BEHEMOTHS` leave `validateDeck` and are reborn as roster rules. Tier copy limits `{1:3, 2:2, 3:1}` continue governing spells, runes and obstacles unchanged. |
+| 6.10 | **Tier / copy / Behemoth deck rules** | `tierOf`'s footprint branch and `MAX_BEHEMOTHS` leave `validateDeck` and are reborn as roster rules. Tier copy limits `{1:3, 2:2, 3:1}` continue governing spells, marks and obstacles unchanged. |
 | 6.11 | **AI enumeration and scoring** | `sacrificeCandidates` → `titheCandidates` (own roster unit, unexhausted, un-attacked); the existing "only if it unlocks a purchase" gate (`enumerate.ts:87-118`) transfers verbatim, and now also weighs whether the unit would die — allowed, but scored negatively unless the purchase is lethal-swingy. `channel` unchanged. Aura, Detonation and revival plays fall out of data-driven targeting; the only new enumerator work is the `fallen` cross-product and picking X. **No deployment AI is needed** (§2.4). |
 | 6.12 | **Overdraw burn, Geodes, bounties** | All kept, all more load-bearing — see §3.5. |
 | 6.13 | **Minion ownership in `Collection`** | Minions leave the collection; they are unlocks, not copies (§1.5). **Ascension still applies** — `collection.ascended` on a minion base id means the roster deploys its Rank 2 stat block. Splice recipes producing minions are re-pointed at spell outputs. |

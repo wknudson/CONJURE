@@ -6,11 +6,11 @@
  * This is the design's most distinctive system and the reason the status layer exists.
  *
  * Reactions are data. The engine evaluates this table inside `dealDamage`, the same
- * choke point runes go through, so no card can bypass them and none has to opt in.
+ * choke point marks go through, so no card can bypass them and none has to opt in.
  *
- * Two rules borrowed deliberately from the rune system, for consistency:
+ * Two rules borrowed deliberately from the mark system, for consistency:
  *   - A reaction needs the hit to *land*. Damage entirely absorbed by armor applies its
- *     status but triggers nothing, exactly as a rune would not detonate.
+ *     status but triggers nothing, exactly as a mark would not detonate.
  *   - A reaction respects `chainCancelled`, so a boss Damage Gate stops it mid-chain.
  */
 
@@ -58,7 +58,7 @@ export interface ReactionDef {
    */
   consumes: boolean;
   /**
-   * Whether the hit must actually reach health, as a rune must.
+   * Whether the hit must actually reach health, as a mark must.
    *
    * True for reactions that represent something happening *to the unit*. False for
    * Shatter, which is something happening to the ice encasing it — requiring HP loss

@@ -485,8 +485,8 @@ export function drawCover(ctx: Ctx2D, cam: IsoCamera, centre: { x: number; y: nu
   ctx.restore();
 }
 
-/** A rune sigil branded onto the host's top face, pulsing on a slow cycle. */
-export function drawRune(
+/** A mark sigil branded onto the host's top face, pulsing on a slow cycle. */
+export function drawMark(
   ctx: Ctx2D,
   centre: { x: number; y: number },
   school: string,

@@ -34,7 +34,7 @@ export const sub = (a: Coord, b: Coord): Coord => ({ x: a.x - b.x, y: a.y - b.y 
 export const chebyshev = (a: Coord, b: Coord): number =>
   Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
-/** Manhattan distance, used for the `+` shaped rune blast patterns. */
+/** Manhattan distance, used for the `+` shaped mark blast patterns. */
 export const manhattan = (a: Coord, b: Coord): number =>
   Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 

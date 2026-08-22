@@ -10,7 +10,7 @@ import { makeCtx } from '../core/engine/context.js';
 import { applyStatusTo } from '../core/engine/status.js';
 import { pushUnit } from '../core/engine/displacement.js';
 import { hasLoS } from '../core/engine/los.js';
-import { detonate } from '../core/engine/runes.js';
+import { detonate } from '../core/engine/marks.js';
 import { isRosterEligible } from '../core/data/roster.js';
 
 /**
@@ -31,7 +31,7 @@ describe('poison is credited to whoever laid it', () => {
       side: 'player',
       at: { x: 2, y: 2 },
       hp: 200,
-      rune: 'rot_root_snare',
+      mark: 'rot_root_snare',
     });
     addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 200 });
 
@@ -54,7 +54,7 @@ describe('poison is credited to whoever laid it', () => {
       side: 'player',
       at: { x: 2, y: 2 },
       hp: 200,
-      rune: 'rot_root_snare',
+      mark: 'rot_root_snare',
     });
     addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 200 });
 

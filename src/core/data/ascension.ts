@@ -80,7 +80,7 @@ export function ascendEffect(node: EffectNode): EffectNode {
     case 'cleaveFront':
       // The amount, never the `width`: a wider cleave is a different shape.
       return { ...node, amount: ascendValue(node.amount) };
-    case 'detonateAllRunes':
+    case 'detonateAllMarks':
       return { ...node, bonusDamage: ascendValue(node.bonusDamage) };
 
     // --- armour, and only in its flat form. `{ from: 'titheDamage' }` is already
@@ -121,7 +121,7 @@ export function ascendEffect(node: EffectNode): EffectNode {
     //     op cannot join the game and silently inherit an answer nobody chose for it.
     case 'summon':
     case 'spawnObstacle':
-    case 'attachRune':
+    case 'attachMark':
     case 'push':
     case 'applyStatus':
     case 'consumeTarget':

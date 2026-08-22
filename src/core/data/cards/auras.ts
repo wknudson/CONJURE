@@ -117,7 +117,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
     xCost: { max: 5 },
     school: 'arcane',
     source: 'hero',
-    kind: 'spell',
+    kind: 'ability',
     text: 'X Pips, up to 5. Raises a fallen Vanguard on the exact tile it fell, at 20% of its health per Pip spent. Nothing may be standing there.',
     target: { kind: 'fallen', site: 'pyre' },
     effect: {
@@ -142,7 +142,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
     cost: { pips: 3, marrow: 0 },
     school: 'arcane',
     source: 'hero',
-    kind: 'spell',
+    kind: 'ability',
     text: 'Raises a fallen Vanguard on an Anchor Tile at half health, quickened: +1 MOV this turn.',
     target: { kind: 'fallen', site: 'anchor' },
     effect: {

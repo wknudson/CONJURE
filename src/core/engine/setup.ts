@@ -634,7 +634,7 @@ export function createCombat(
     encountered: [],
     defeated: [],
     playerDamageTaken: 0,
-    playerRuneDetonations: 0,
+    playerMarkDetonations: 0,
   };
 
   const ctx = makeCtx(state);

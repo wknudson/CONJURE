@@ -26,7 +26,7 @@ import type { School } from '../../contract/ids.js';
 import type { CardDef } from '../types/cards.js';
 import type { GrimoireSource } from './grimoire.js';
 import { CARDS } from './cards/index.js';
-import { isDraftable, isHybrid } from './grimoire.js';
+import { isBloodlineCard, isDraftable, isHybrid } from './grimoire.js';
 import {
   DEFAULT_ROSTER,
   ROSTER_BUDGET,
@@ -46,10 +46,22 @@ import { traitsFor } from './companionTraits.js';
  */
 export const SCHOOLS: readonly School[] = ['pyre', 'frost', 'surge', 'bulwark', 'dusk', 'bloom'];
 
-/** Spells a school can call its own: its colour, no fusions, nothing engine-dealt. */
+/**
+ * What a school can call its own: its colour, no fusions, nothing engine-dealt.
+ *
+ * Gated by `isBloodlineCard` — the same predicate `purePool` uses — and that is not
+ * decoration. This function is a second answer to "what may a beast of this school draw",
+ * and the two had already drifted once: the role overhaul taught `purePool` to refuse
+ * Marks and Abilities and left this one taking whatever `isDraftable` allowed. The Vow
+ * screen counts *this* list, so the drift surfaced as a card reading **"8 of 7 spells"** —
+ * a screen promising the player less than the game deals.
+ *
+ * The two are one rule now. If they ever need to differ, that is a new function with a new
+ * name and a reason, not a filter quietly missing from one of them.
+ */
 export function spellPool(school: School): CardDef[] {
   return Object.values(CARDS)
-    .filter((c) => isDraftable(c) && !isHybrid(c) && c.school === school)
+    .filter((c) => isDraftable(c) && isBloodlineCard(c) && !isHybrid(c) && c.school === school)
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 

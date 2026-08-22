@@ -42,8 +42,8 @@ export interface CompanionDef {
    *
    * A *pool*, not a list, and that is the change. Every Ignis used to carry the same eight
    * cards, so the second one you caught was worth nothing — the beast was a checkbox. Two
-   * Ignis are now two different books drawn from the same shelf: one heavy on runes, one
-   * that rolled a Cataclysm it has no business knowing.
+   * Ignis are now two different books drawn from the same shelf: one heavy on Ashen Wakes,
+   * one that rolled a Cataclysm it has no business knowing.
    *
    * `schools` is a list because a hybrid bloodline draws from two at once. Every species
    * shipped so far is mono-element, so every entry holds one — the second slot is what a
@@ -73,15 +73,15 @@ export const COMPANIONS: CompanionDef[] = [
     title: 'Ember Drake',
     school: 'pyre',
     blurb:
-      'Runes and cascades. Brand your enemies, then set the whole board off at once. Ember Watch ignites anything standing in its lane.',
+      'Marks and cascades. Brand your enemies, then set the whole board off at once. Ember Watch ignites anything standing in its lane.',
     // The Draft 7 deck exactly as specced.
     deck: [...STARTER_DECK],
     grimoire: { schools: ['pyre'], hybridChance: MONO_HYBRID_CHANCE },
     legacyGrimoire: [
       'flame_surge',
       'flame_surge',
-      'cinder_rune',
-      'cinder_rune',
+      'ashen_wake',
+      'ashen_wake',
       'ember_coat',
       'ember_coat',
       'cataclysm',
@@ -146,9 +146,9 @@ export const COMPANIONS: CompanionDef[] = [
     deck: [...STARTER_DECK],
     grimoire: { schools: ['dusk'], hybridChance: MONO_HYBRID_CHANCE },
     legacyGrimoire: [
-      'soul_splinter_rune',
-      'soul_splinter_rune',
-      'soul_splinter_rune',
+      'shadow_siphon',
+      'shadow_siphon',
+      'shadow_siphon',
       'marrow_siphon',
       'marrow_siphon',
       'marrow_siphon',
@@ -169,9 +169,9 @@ export const COMPANIONS: CompanionDef[] = [
     legacyGrimoire: [
       'spore_cloud',
       'spore_cloud',
-      'rot_root_snare',
-      'rot_root_snare',
-      'rot_root_snare',
+      'root_snare',
+      'root_snare',
+      'root_snare',
       'verdant_swell',
       'verdant_swell',
       'verdant_collapse',
@@ -281,7 +281,7 @@ export const COMPANIONS: CompanionDef[] = [
       'arc_lash',
       'flame_surge',
       'flame_surge',
-      'cinder_rune',
+      'ashen_wake',
       'ember_coat',
       'static_charge',
     ],
@@ -302,7 +302,7 @@ export const COMPANIONS: CompanionDef[] = [
       'petrifying_mantle',
       'petrifying_mantle',
       'flame_surge',
-      'cinder_rune',
+      'ashen_wake',
       'ember_coat',
       'smoke_bomb',
     ],
@@ -320,10 +320,10 @@ export const COMPANIONS: CompanionDef[] = [
     legacyGrimoire: [
       'spore_cloud',
       'spore_cloud',
-      'rot_root_snare',
-      'rot_root_snare',
+      'root_snare',
+      'root_snare',
       'flame_surge',
-      'cinder_rune',
+      'ashen_wake',
       'verdant_swell',
       'ember_coat',
     ],
@@ -384,8 +384,8 @@ export const COMPANIONS: CompanionDef[] = [
       'glacial_spike',
       'frost_nova',
       'brittle_touch',
-      'soul_splinter_rune',
-      'soul_splinter_rune',
+      'shadow_siphon',
+      'shadow_siphon',
       'marrow_siphon',
       'marrow_burst',
       'flash_freeze',
@@ -427,7 +427,7 @@ export const COMPANIONS: CompanionDef[] = [
       'arc_lash',
       'marrow_siphon',
       'marrow_siphon',
-      'soul_splinter_rune',
+      'shadow_siphon',
       'harvest_the_weak',
       'marrow_burst',
       'static_charge',
@@ -448,7 +448,7 @@ export const COMPANIONS: CompanionDef[] = [
       'petrifying_mantle',
       'seismic_slam',
       'marrow_siphon',
-      'soul_splinter_rune',
+      'shadow_siphon',
       'harvest_the_weak',
       'smoke_bomb',
       'marrow_burst',

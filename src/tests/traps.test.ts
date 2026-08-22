@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { addUnit, atTile, damageTo, eventsOf, handCard, play, run, scenario } from './scenario.js';
 import { CARDS } from '../core/data/cards/index.js';
-import { RUNES } from '../core/data/runes.js';
+import { MARKS } from '../core/data/marks.js';
 import { tierOf } from '../core/data/deckRules.js';
 import { isObtainable } from '../core/data/collection.js';
 
 /**
  * Traps and constructs.
  *
- * Two runes and a cask, and between them they lean on two capabilities the engine gained
- * for them: a rune that leaves a **status** rather than a number, and a card that raises
+ * Two marks and a cask, and between them they lean on two capabilities the engine gained
+ * for them: a mark that leaves a **status** rather than a number, and a card that raises
  * an obstacle and then wires it in the same `seq`. Both are the kind of thing that fails
- * silently — a rune that applies nothing, a cask that goes up unarmed — so most of what
+ * silently — a mark that applies nothing, a cask that goes up unarmed — so most of what
  * follows is about proving they actually did something.
  */
 
@@ -19,27 +19,27 @@ describe('the set as data', () => {
   it('derives the tiers rather than declaring them', () => {
     expect(tierOf(CARDS.rot_root_snare!)).toBe(1);
     expect(tierOf(CARDS.volatile_cask!)).toBe(2);
-    expect(tierOf(CARDS.soul_splinter_rune!)).toBe(1);
+    expect(tierOf(CARDS.soul_splinter_mark!)).toBe(1);
   });
 
   it('can all be obtained', () => {
-    for (const id of ['rot_root_snare', 'volatile_cask', 'soul_splinter_rune']) {
+    for (const id of ['rot_root_snare', 'volatile_cask', 'soul_splinter_mark']) {
       expect(isObtainable(CARDS[id]!), id).toBe(true);
     }
   });
 
-  it('attaches runes to entities, never to tiles', () => {
-    // The Lexicon's rule, and the engine's: `AttachedRune` lives on a Unit or an Obstacle,
-    // and there is nowhere on a tile to put one. A rune card must therefore pick an entity.
-    for (const id of ['rot_root_snare', 'soul_splinter_rune', 'cinder_rune']) {
+  it('attaches marks to entities, never to tiles', () => {
+    // The Lexicon's rule, and the engine's: `AttachedMark` lives on a Unit or an Obstacle,
+    // and there is nowhere on a tile to put one. A mark card must therefore pick an entity.
+    for (const id of ['rot_root_snare', 'soul_splinter_mark', 'cinder_mark']) {
       expect(CARDS[id]!.target.kind, id).toBe('entity');
     }
   });
 
-  it('keeps every rune a card can attach in the registry', () => {
+  it('keeps every mark a card can attach in the registry', () => {
     for (const def of Object.values(CARDS)) {
-      if (def.effect.op !== 'attachRune') continue;
-      expect(RUNES[def.effect.rune], `${def.name} names a rune that does not exist`).toBeDefined();
+      if (def.effect.op !== 'attachMark') continue;
+      expect(MARKS[def.effect.mark], `${def.name} names a mark that does not exist`).toBeDefined();
     }
   });
 });
@@ -53,7 +53,7 @@ describe('Rot-Root Snare', () => {
       side: 'enemy',
       at: { x: 2, y: 3 },
       hp: 120,
-      rune: 'rot_root_snare',
+      mark: 'rot_root_snare',
     });
     const beside = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 3 }, hp: 90 });
     const striker = addUnit(state, {
@@ -75,7 +75,7 @@ describe('Rot-Root Snare', () => {
       target: { kind: 'unit', id: host.id },
     });
 
-    expect(eventsOf(res.events, 'runeDetonated').length).toBe(1);
+    expect(eventsOf(res.events, 'markDetonated').length).toBe(1);
     expect(res.state.units[beside.id]!.statuses.entangle).toBe(1);
     expect(res.state.units[beside.id]!.statuses.toxin).toBe(1);
   });
@@ -93,12 +93,12 @@ describe('Rot-Root Snare', () => {
     expect(damageTo(res.events, beside.id), 'the bystander is snared, not hurt').toBe(0);
     // And no empty `damageDealt` for a blow that never landed.
     expect(
-      eventsOf(res.events, 'damageDealt').filter((e) => e.cause === 'rune'),
-      'a 0-damage rune does not fake a hit',
+      eventsOf(res.events, 'damageDealt').filter((e) => e.cause === 'mark'),
+      'a 0-damage mark does not fake a hit',
     ).toEqual([]);
   });
 
-  it('spares its own host, like every ringed rune', () => {
+  it('spares its own host, like every ringed mark', () => {
     const { state, host, striker } = trapped();
 
     const res = run(state, {
@@ -127,13 +127,13 @@ describe('Rot-Root Snare', () => {
     expect(() => run(after, { type: 'moveUnit', unit: snared.id, to: { x: 4, y: 3 } })).toThrow();
   });
 
-  it('does not spring on a spell, which is the Cinder Rune’s job', () => {
-    // Aligned to physical and impact. A board carrying both runes answers two threats.
-    expect(RUNES.rot_root_snare!.trigger).toEqual({
+  it('does not spring on a spell, which is the Cinder Mark’s job', () => {
+    // Aligned to physical and impact. A board carrying both marks answers two threats.
+    expect(MARKS.rot_root_snare!.trigger).toEqual({
       kind: 'hpLoss',
       alignedTypes: ['physical', 'impact'],
     });
-    expect(RUNES.cinder_rune!.trigger).toEqual({
+    expect(MARKS.cinder_mark!.trigger).toEqual({
       kind: 'hpLoss',
       alignedTypes: ['fire', 'spell'],
     });
@@ -165,12 +165,12 @@ describe('Volatile Munitions Cask', () => {
 
   it('goes up **armed** — the seq wires what it just built', () => {
     // The whole reason `spawnedObstacleId` exists. A tile-targeted card has no entity in
-    // `chosen`, so without the handoff `attachRune` would find no host and the cask would
+    // `chosen`, so without the handoff `attachMark` would find no host and the cask would
     // be an ordinary crate.
     const { state, events, caskId } = withCask();
 
-    expect(eventsOf(events, 'runeAttached').length, 'the rune was wired').toBe(1);
-    expect(state.obstacles[caskId]!.rune?.defId).toBe('cask_blast');
+    expect(eventsOf(events, 'markAttached').length, 'the mark was wired').toBe(1);
+    expect(state.obstacles[caskId]!.mark?.defId).toBe('cask_blast');
   });
 
   it('does nothing when merely chipped', () => {
@@ -190,8 +190,8 @@ describe('Volatile Munitions Cask', () => {
       target: { kind: 'obstacle', id: caskId },
     });
 
-    expect(eventsOf(res.events, 'runeDetonated')).toEqual([]);
-    expect(res.state.obstacles[caskId]!.rune, 'still armed').toBeDefined();
+    expect(eventsOf(res.events, 'markDetonated')).toEqual([]);
+    expect(res.state.obstacles[caskId]!.mark, 'still armed').toBeDefined();
   });
 
   it('detonates in a cross when it is broken', () => {
@@ -213,7 +213,7 @@ describe('Volatile Munitions Cask', () => {
       target: { kind: 'obstacle', id: caskId },
     });
 
-    expect(eventsOf(res.events, 'runeDetonated').length).toBe(1);
+    expect(eventsOf(res.events, 'markDetonated').length).toBe(1);
     expect(damageTo(res.events, orthogonal.id)).toBe(30);
     expect(damageTo(res.events, diagonal.id), 'the diagonal is the safe place').toBe(0);
   });
@@ -261,23 +261,29 @@ describe('Volatile Munitions Cask', () => {
   });
 });
 
-describe('Soul Splinter Rune', () => {
+describe('Soul Splinter Mark', () => {
   it('was already in the game, and matches the brief but for its damage type', () => {
-    // Shipped since the Draft 7 starter deck: dusk, Companion, 1 Pip, death trigger,
-    // lowest-HP-enemy blast, 5 damage. The one difference from the brief is `spell` rather
-    // than `true` — see the report. Left as shipped because it is in every starter deck
-    // and `spell` is an aligned type for Cinder Rune, so changing it would quietly remove
-    // a cascade interaction as well as re-balancing a card players already own.
-    const card = CARDS.soul_splinter_rune!;
-    expect(card.school).toBe('dusk');
-    expect(card.source).toBe('companion');
+    // Shipped since the Draft 7 starter deck: 1 Pip, death trigger, lowest-HP-enemy blast,
+    // 5 damage. The one difference from the brief is `spell` rather than `true` — see the
+    // report. Left as shipped because `spell` is an aligned type for Cinder Mark, so
+    // changing it would quietly remove a cascade interaction as well as re-balancing a card
+    // players already own.
+    //
+    // The **card** used to be dusk. It is arcane now, and the two assertions below are the
+    // whole shape of the role overhaul in one card: a Mark is the Hero's tool, filed in the
+    // Hero's colour, and the elemental thing about it is the brand it leaves. Reading one
+    // number for both is what the split exists to stop.
+    const card = CARDS.soul_splinter_mark!;
+    expect(card.kind, 'a Mark, not a Spell').toBe('mark');
+    expect(card.school, "the Hero's colour, because the Hero lays it").toBe('arcane');
     expect(card.cost).toEqual({ pips: 1, marrow: 0 });
 
-    const rune = RUNES.soul_splinter_rune!;
-    expect(rune.trigger).toEqual({ kind: 'death' });
-    expect(rune.blast).toEqual({ shape: 'lowestHpEnemy' });
-    expect(rune.damage).toBe(50);
-    expect(rune.dtype, 'the one delta from the brief').toBe('spell');
+    const mark = MARKS.soul_splinter_mark!;
+    expect(mark.school, 'the payload keeps the colour it detonates in').toBe('dusk');
+    expect(mark.trigger).toEqual({ kind: 'death' });
+    expect(mark.blast).toEqual({ shape: 'lowestHpEnemy' });
+    expect(mark.damage).toBe(50);
+    expect(mark.dtype, 'the one delta from the brief').toBe('spell');
   });
 
   it('fires when its host is bled to death, not only when an enemy kills it', () => {
@@ -286,33 +292,33 @@ describe('Soul Splinter Rune', () => {
       def: 'marrow_wisp',
       side: 'player',
       at: { x: 2, y: 5 },
-      rune: 'soul_splinter_rune',
+      mark: 'soul_splinter_mark',
       fresh: false,
     });
     const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 90 });
 
-    // A Marrow Wisp has exactly 30 health, and a tithe takes exactly 30. The rune's
+    // A Marrow Wisp has exactly 30 health, and a tithe takes exactly 30. The mark's
     // trigger is `death`, so what matters is that a self-inflicted death is still a death.
     const res = run(state, { type: 'bloodTithe', unit: host.id });
 
-    expect(eventsOf(res.events, 'runeDetonated').length).toBe(1);
+    expect(eventsOf(res.events, 'markDetonated').length).toBe(1);
     expect(damageTo(res.events, victim.id)).toBe(50);
   });
 });
 
-describe('a rune that applies statuses, generally', () => {
-  it('is opt-in — an ordinary rune leaves nothing behind', () => {
-    expect(RUNES.cinder_rune!.applies).toBeUndefined();
-    expect(RUNES.soul_splinter_rune!.applies).toBeUndefined();
-    expect(RUNES.cask_blast!.applies).toBeUndefined();
+describe('a mark that applies statuses, generally', () => {
+  it('is opt-in — an ordinary mark leaves nothing behind', () => {
+    expect(MARKS.cinder_mark!.applies).toBeUndefined();
+    expect(MARKS.soul_splinter_mark!.applies).toBeUndefined();
+    expect(MARKS.cask_blast!.applies).toBeUndefined();
   });
 
   it('never names a damage number in its status list', () => {
     // `damage` is already the field for that. Two ways to say the same thing is how the
     // two drift apart.
-    for (const rune of Object.values(RUNES)) {
-      for (const rider of rune.applies ?? []) {
-        expect(Object.keys(rider).sort(), rune.name).toEqual(['stacks', 'status']);
+    for (const mark of Object.values(MARKS)) {
+      for (const rider of mark.applies ?? []) {
+        expect(Object.keys(rider).sort(), mark.name).toEqual(['stacks', 'status']);
       }
     }
   });

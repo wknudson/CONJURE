@@ -2564,3 +2564,78 @@
 .bounty-card__coin--reagent {
   color: #7dd3fc;
 }
+
+/* --- the tank's two lists ---------------------------------------------------
+   What this animal knows, and what catching its bloodline opened up. Both are read-only:
+   the Vivarium is where a player *compares* beasts, and every edit to a Grimoire happens
+   at the bench or in the Field Journal. */
+.vivarium__book,
+.vivarium__vanguard {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(176, 148, 106, 0.2);
+}
+
+.vivarium__book-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vivarium__book-count {
+  font: 800 10px var(--font);
+  color: var(--text-dim);
+}
+
+.vivarium__book-note {
+  margin: 2px 0 7px;
+  font: italic 500 10px var(--font);
+  color: var(--text-dim);
+}
+
+.vivarium__book-list,
+.vivarium__body-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vivarium__spell,
+.vivarium__body {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-left: 2px solid var(--school, #94a3b8);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.025);
+  font: 600 11px var(--font);
+  color: var(--text);
+}
+
+.vivarium__spell {
+  grid-template-columns: 20px 1fr auto;
+}
+
+.vivarium__body {
+  grid-template-columns: 1fr auto;
+}
+
+/* A socketed slot is not this animal's own. Marked rather than hidden, so a player can
+   see at a glance how much of the book they replaced. */
+.vivarium__spell.is-socketed {
+  border-left-style: dashed;
+}
+
+.vivarium__spell-cost {
+  font: 800 10px var(--font);
+  color: var(--lamp, #d6c4a0);
+}
+
+.vivarium__spell-note,
+.vivarium__body-stats {
+  font: 700 9px var(--font);
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}

@@ -46,13 +46,37 @@ export interface CharacterLook {
  * differently across a room; "layered bob" and "textured bob" would not.
  */
 export const HAIR_PRESETS = [
-  { id: 'crop', name: 'Cropped' },
-  { id: 'mane', name: 'Mane' },
-  { id: 'braid', name: 'Braided' },
-  { id: 'topknot', name: 'Topknot' },
-  { id: 'shorn', name: 'Shorn' },
-  { id: 'wild', name: 'Unkempt' },
+  { id: 'crop', name: 'Cropped', genders: ['male'] as Gender[] },
+  { id: 'mane', name: 'Mane', genders: ['male', 'female'] as Gender[] },
+  { id: 'braid', name: 'Braided', genders: ['female'] as Gender[] },
+  { id: 'topknot', name: 'Topknot', genders: ['male', 'female'] as Gender[] },
+  { id: 'shorn', name: 'Shorn', genders: ['male'] as Gender[] },
+  { id: 'wild', name: 'Unkempt', genders: ['male', 'female'] as Gender[] },
+  { id: 'undercut', name: 'Undercut', genders: ['male'] as Gender[] },
+  { id: 'ponytail', name: 'Ponytail', genders: ['female'] as Gender[] },
+  { id: 'curls', name: 'Curled', genders: ['female'] as Gender[] },
+  { id: 'pigtails', name: 'Pigtails', genders: ['female'] as Gender[] },
+  { id: 'longBangs', name: 'Long Bangs', genders: ['female'] as Gender[] },
 ] as const;
+
+/**
+ * Which `HAIR_PRESETS` indices this bearing offers, in list order.
+ *
+ * The cycler steps through *this*, not through `0..HAIR_PRESETS.length`, so switching
+ * gender never lands on a style that was never offered for it — the alternative is an
+ * index that happens to still be in range but points at the wrong bearing's hairstyle.
+ */
+export function hairIndexesFor(gender: Gender): number[] {
+  return HAIR_PRESETS.reduce<number[]>((acc, preset, i) => {
+    if ((preset.genders as readonly Gender[]).includes(gender)) acc.push(i);
+    return acc;
+  }, []);
+}
+
+/** The style a bearing opens on when first chosen — `defaultLook()` and the gender toggle both use this. */
+export function defaultHairFor(gender: Gender): number {
+  return hairIndexesFor(gender)[0] ?? 0;
+}
 
 /**
  * The faces.
@@ -65,10 +89,25 @@ export const FACE_PRESETS = [
   { id: 'weathered', name: 'Weathered' },
   { id: 'young', name: 'Young' },
   { id: 'scarred', name: 'Scarred' },
+  { id: 'stern', name: 'Stern' },
+  { id: 'gentle', name: 'Gentle' },
+  { id: 'sly', name: 'Sly' },
 ] as const;
 
 /** Hair tones, by preset index. Warm to cool, so cycling reads as a change. */
-export const HAIR_TONES = ['#3B2C22', '#6B4A2F', '#A8763E', '#8A8F98', '#2A2119', '#C2703F'];
+export const HAIR_TONES = [
+  '#3B2C22', // crop
+  '#6B4A2F', // mane
+  '#A8763E', // braid
+  '#8A8F98', // topknot
+  '#2A2119', // shorn
+  '#C2703F', // wild
+  '#1C1712', // undercut
+  '#5A3A24', // ponytail
+  '#7A5230', // curls
+  '#4A2E1E', // pigtails
+  '#8F5A2E', // longBangs
+];
 
 /**
  * Skin tones, on their own control.
@@ -103,7 +142,7 @@ export function defaultLook(): CharacterLook {
   return {
     nickname: DEFAULT_NICKNAME,
     gender: 'female',
-    hairPreset: 0,
+    hairPreset: defaultHairFor('female'),
     facePreset: 0,
     skinPreset: 2,
     starterCompanion: DEFAULT_COMPANION.id,
@@ -150,10 +189,12 @@ export function normalizeLook(raw: unknown): CharacterLook {
       ? base.skinPreset
       : LEGACY_SKIN_BY_FACE[clampPreset(o.facePreset, LEGACY_SKIN_BY_FACE.length)]);
 
+  const hair = clampPreset(o.hairPreset, HAIR_PRESETS.length);
+
   return {
     nickname,
     gender,
-    hairPreset: clampPreset(o.hairPreset, HAIR_PRESETS.length),
+    hairPreset: hairIndexesFor(gender).includes(hair) ? hair : defaultHairFor(gender),
     facePreset: clampPreset(o.facePreset, FACE_PRESETS.length),
     skinPreset: clampPreset(skin, SKIN_TONES.length),
     starterCompanion: starter,

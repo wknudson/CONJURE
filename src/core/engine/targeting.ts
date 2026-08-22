@@ -171,7 +171,7 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
     case 'global':
       // A board-wide detonation with nothing to detonate would silently burn its whole
       // cost, so treat it as having no legal target rather than letting it be wasted.
-      if (def.effect.op === 'detonateAllRunes' && !allEntities(state).some((e) => e.rune)) {
+      if (def.effect.op === 'detonateAllMarks' && !allEntities(state).some((e) => e.mark)) {
         return [];
       }
       // The same hole, for the same reason: a global card that picks its own victim has
@@ -198,13 +198,13 @@ export function legalCardTargets(state: GameState, side: Side, defId: string): C
       const spec = def.target;
       // Three things can never be done to a Bound Form, and offering them would waste the
       // card: it cannot be spent whole, it cannot be tithed — it keeps no health of its
-      // own, so the wound would land on the Pact — and a rune attached to it could never
-      // detonate, because its damage is redirected before runes are ever evaluated.
+      // own, so the wound would land on the Pact — and a mark attached to it could never
+      // detonate, because its damage is redirected before marks are ever evaluated.
       const barred =
         effectContainsOp(def.effect, 'consumeTarget') ||
         effectContainsOp(def.effect, 'tithe') ||
         effectContainsOp(def.effect, 'attachAura') ||
-        effectContainsOp(def.effect, 'attachRune');
+        effectContainsOp(def.effect, 'attachMark');
       const out: ChosenTarget[] = [];
       for (const e of allEntities(state)) {
         const isUnitEntity = 'atk' in e;

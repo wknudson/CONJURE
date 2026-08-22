@@ -131,13 +131,20 @@ interface SchematicFilters {
  *
  * `obstacle` is the field; "Construct" is what the game has always called the thing on the
  * board, and the filter bar is read by somebody looking at their board.
+ *
+ * The bench keeps a **Spells** pill where the Field Journal drops it, and the difference is
+ * the point: the Journal's case is a shelf you build a Hero Deck out of, and a Spell can
+ * never go in one. The bench sells and Ascends every card in the game, including the eight
+ * a beast will draft and the fusions that can only ever live in a Grimoire socket. A
+ * catalogue that could not filter to them would be hiding half its own stock.
  */
 const KIND_PILLS: { key: 'all' | CardDef['kind']; label: string }[] = [
   { key: 'all', label: 'All Types' },
+  { key: 'ability', label: 'Abilities' },
+  { key: 'mark', label: 'Marks' },
   { key: 'spell', label: 'Spells' },
   { key: 'minion', label: 'Minions' },
   { key: 'obstacle', label: 'Constructs' },
-  { key: 'rune', label: 'Runes' },
 ];
 
 const SORT_PILLS: { key: SchematicFilters['sort']; label: string }[] = [

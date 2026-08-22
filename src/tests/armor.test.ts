@@ -158,7 +158,7 @@ describe('lethal and sudden death', () => {
   });
 
   it('revives both commanders at 1 HP and wipes the board on a mutual KO', () => {
-    // Both sides are at 3 HP. A rune cascade will finish both in the same step.
+    // Both sides are at 3 HP. A mark cascade will finish both in the same step.
     const state = scenario({ playerHp: 30, enemyHp: 30 });
     // Force the mutual case directly through the lethal checker.
     state.players.player.hp = 0;

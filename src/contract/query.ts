@@ -9,7 +9,7 @@
  */
 
 import type { CardInstanceId, Coord, TargetRef, UnitId } from './ids.js';
-import type { CardSnapshot, ObstacleSnapshot, RuneSnapshot, UnitSnapshot } from './snapshots.js';
+import type { CardSnapshot, ObstacleSnapshot, MarkSnapshot, UnitSnapshot } from './snapshots.js';
 import type { Phase } from './events.js';
 
 /** A player intent. Same shape the engine consumes. */
@@ -142,7 +142,7 @@ export interface BoardView {
     damage: number;
     label?: string;
   }[];
-  runes: { hostId: UnitId; at: Coord; rune: RuneSnapshot }[];
+  marks: { hostId: UnitId; at: Coord; mark: MarkSnapshot }[];
   statuses: { unitId: UnitId; kind: string; stacks: number }[];
   escalation: { unitId: UnitId; stacks: number }[];
   /**

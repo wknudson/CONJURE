@@ -25,7 +25,7 @@ function toxinOn(state: ReturnType<typeof scenario>, id: string): number {
 describe('a rider needs a wound', () => {
   it('does not poison through armor that soaked the whole blow', () => {
     // Armor that stops the hit stops what rode in on it. This is the same `hpLoss` test
-    // runes and three of the five reactions already used; the rider was the one secondary
+    // marks and three of the five reactions already used; the rider was the one secondary
     // effect in the engine that ignored it.
     const state = scenario({
       units: [

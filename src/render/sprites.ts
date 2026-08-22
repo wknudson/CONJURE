@@ -77,6 +77,15 @@ export const RAMP = {
   cloak: '#8E2F3F',
 
   /**
+   * The sash at the waist. One saturated accent that is neither the coat's blue nor the
+   * cloak's crimson — every reference sprite carries a single piece like this, worn on top
+   * of the belt line rather than replacing it, and it is what keeps the eye from reading
+   * the whole waist as one dark seam.
+   */
+  sash: '#D94F3A',
+  sashLit: '#F07858',
+
+  /**
    * Legs, in a **warm** dark — deliberately a different hue family from the blue coat above
    * them and the tan boots below, so all three read as separate blocks rather than as one
    * tonal slide.
@@ -262,11 +271,16 @@ export function paintCommander(
   const p = (v: number): number => Math.round(v);
   const up = (f: number): number => p(-H * f);
 
-  // The two bearings differ in shoulder width and coat flare and in nothing else — enough to
-  // read at this size, and not a claim the art cannot keep.
+  // The two bearings now differ in more than shoulder width and coat flare: a waist taper
+  // is added for the narrower bearing, which is the actual silhouette cue reference sprites
+  // use — a straight-sided coat reads as the same body regardless of shoulder width, since
+  // shoulders alone are only visible for two or three rows before the coat begins.
   const broad = look.gender === 'male';
-  const shoulder = Math.max(4, p(H * (broad ? 0.125 : 0.105)));
-  const hemW = Math.max(5, p(H * (broad ? 0.16 : 0.185)));
+  const shoulder = Math.max(4, p(H * (broad ? 0.10 : 0.095)));
+  const hemW = Math.max(5, p(H * (broad ? 0.175 : 0.195)));
+  // How far the waist band pulls in from a straight line between shoulder and hem. Zero for
+  // the broad bearing (a straight coat side), pulled in for the narrow one (a fitted waist).
+  const waistPull = broad ? 0 : Math.max(1, p(H * 0.03));
 
   // Hoisted, because the neck below is measured off the head rather than off a landmark.
   const headR = Math.max(5, p(H * 0.13));
@@ -312,14 +326,46 @@ export function paintCommander(
 
   // ---------------------------------------------------------------- legs, separated
   //
-  // Two of them, with a gap of bare pixels down the middle. One leg-shaped block is a robe;
-  // two with daylight between them is a person standing.
+  // Two bearings, two different lower-body silhouettes rather than one shape reused with a
+  // taper. The male bearing keeps the separated trouser legs — two blocks with daylight
+  // between them read as a person standing. The female bearing wears a flared skirt instead:
+  // one triangular shape reaching most of the way to the boots, no gap, which is the actual
+  // silhouette difference reference sprites use rather than a narrower version of the same
+  // trousers.
   const legW = Math.max(3, p(H * 0.075));
   const gap = Math.max(2, p(H * 0.03));
-  ctx.fillStyle = RAMP.trouser;
-  ctx.fillRect(-gap - legW, yHem, legW, yBoot - yHem);
-  ctx.fillStyle = RAMP.trouserDark;
-  ctx.fillRect(gap, yHem, legW, yBoot - yHem);
+
+  if (broad) {
+    ctx.fillStyle = RAMP.trouser;
+    ctx.fillRect(-gap - legW, yHem, legW, yBoot - yHem);
+    ctx.fillStyle = RAMP.trouserDark;
+    ctx.fillRect(gap, yHem, legW, yBoot - yHem);
+  } else {
+    // The skirt flares wider than the coat's hem and stops just above the boots, so ankles
+    // and boots stay visible below it rather than the shape swallowing the feet.
+    const skirtHem = up(0.2);
+    const skirtW = Math.max(hemW + 2, p(H * 0.22));
+    ctx.fillStyle = RAMP.trouser;
+    ctx.beginPath();
+    ctx.moveTo(-hemW, yHem);
+    ctx.lineTo(0, yHem);
+    ctx.lineTo(0, skirtHem);
+    ctx.lineTo(-skirtW, skirtHem);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = RAMP.trouserDark;
+    ctx.beginPath();
+    ctx.moveTo(0, yHem);
+    ctx.lineTo(hemW, yHem);
+    ctx.lineTo(skirtW, skirtHem);
+    ctx.lineTo(0, skirtHem);
+    ctx.closePath();
+    ctx.fill();
+    // The centre fold — one line down the skirt, echoing the coat's own centre seam so the
+    // two garments read as a matching set rather than as two unrelated shapes.
+    ctx.fillStyle = RAMP.seam;
+    px(ctx, 0, yHem, 1, skirtHem - yHem);
+  }
 
   // Boots, wider than the leg and *lighter* than it. Both differences matter: the width is
   // what makes a boot a boot, and the value jump is what stops it merging into the trouser.
@@ -332,6 +378,13 @@ export function paintCommander(
   ctx.fillStyle = shade(RAMP.boot);
   px(ctx, -gap - legW - 1, -1, legW + 2, 1);
   px(ctx, gap - 1, -1, legW + 2, 1);
+
+  // The cuff: one lighter row at the top of each boot, where it folds over the trouser.
+  // Without it the boot is one flat block between two seams; this is the second value step
+  // the reference boots carry.
+  ctx.fillStyle = lift(RAMP.boot);
+  px(ctx, -gap - legW - 1, yBoot, legW + 2, 1);
+  px(ctx, gap - 1, yBoot, legW + 2, 1);
 
   // ---------------------------------------------------------------- the coat, in three bands
   //
@@ -346,41 +399,104 @@ export function paintCommander(
   ctx.beginPath();
   ctx.moveTo(-shoulder, yShoulder);
   ctx.lineTo(bandL, yShoulder);
+  ctx.lineTo(bandL + waistPull, yWaist);
   ctx.lineTo(bandL, yHem);
+  ctx.lineTo(-hemW + waistPull, yWaist);
   ctx.lineTo(-hemW, yHem);
   ctx.closePath();
   ctx.fill();
 
   ctx.fillStyle = COAT_MID;
-  ctx.fillRect(bandL, yShoulder, bandR - bandL, yHem - yShoulder);
+  ctx.beginPath();
+  ctx.moveTo(bandL, yShoulder);
+  ctx.lineTo(bandR, yShoulder);
+  ctx.lineTo(bandR - waistPull, yWaist);
+  ctx.lineTo(bandL + waistPull, yWaist);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(bandL + waistPull, yWaist);
+  ctx.lineTo(bandR - waistPull, yWaist);
+  ctx.lineTo(bandR, yHem);
+  ctx.lineTo(bandL, yHem);
+  ctx.closePath();
+  ctx.fill();
 
   ctx.fillStyle = COAT_DARK;
   ctx.beginPath();
   ctx.moveTo(bandR, yShoulder);
   ctx.lineTo(shoulder, yShoulder);
+  ctx.lineTo(hemW - waistPull, yWaist);
   ctx.lineTo(hemW, yHem);
   ctx.lineTo(bandR, yHem);
+  ctx.lineTo(bandR - waistPull, yWaist);
   ctx.closePath();
   ctx.fill();
 
   // The outline goes around the whole garment, and is deliberately *not* pure black: an ink
-  // line darker than the shadow band flattens the value break it is drawn around.
+  // line darker than the shadow band flattens the value break it is drawn around. Routed
+  // through the waist point too, so the fitted bearing's outer silhouette actually curves —
+  // without this the taper only existed in the internal band colours and the figure's true
+  // outer edge stayed a straight line regardless of `waistPull`.
   ctx.strokeStyle = COAT_INK;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(-shoulder, yShoulder);
   ctx.lineTo(shoulder, yShoulder);
+  ctx.lineTo(hemW - waistPull, yWaist);
   ctx.lineTo(hemW, yHem);
   ctx.lineTo(-hemW, yHem);
+  ctx.lineTo(-hemW + waistPull, yWaist);
   ctx.closePath();
   ctx.stroke();
+
+  // ---------------------------------------------------------------- bust
+  //
+  // Female bearing only, and drawn as two small bumps just below the shoulder line rather
+  // than folded into the coat's own polygons — the coat's fill already carries the waist
+  // taper and doing a second silhouette feature in the same shape risked the two fighting
+  // over the same vertices. A pixel or two of outward curve at chest height, echoed by the
+  // outline, is the actual cue reference sprites use to distinguish a fitted bodice from a
+  // straight tunic — the waist taper alone reads as "narrower", not as "a different build".
+  if (!broad) {
+    const bustY = yShoulder + Math.max(2, p((yWaist - yShoulder) * 0.4));
+    const bustH = Math.max(2, p(H * 0.035));
+    const bustPush = Math.max(1, p(H * 0.018));
+
+    ctx.fillStyle = COAT_LIGHT;
+    ctx.beginPath();
+    ctx.moveTo(-shoulder, bustY);
+    ctx.quadraticCurveTo(-shoulder - bustPush, bustY + bustH / 2, -shoulder, bustY + bustH);
+    ctx.lineTo(bandL, bustY + bustH);
+    ctx.lineTo(bandL, bustY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = COAT_DARK;
+    ctx.beginPath();
+    ctx.moveTo(shoulder, bustY);
+    ctx.quadraticCurveTo(shoulder + bustPush, bustY + bustH / 2, shoulder, bustY + bustH);
+    ctx.lineTo(bandR, bustY + bustH);
+    ctx.lineTo(bandR, bustY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = COAT_INK;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-shoulder, bustY);
+    ctx.quadraticCurveTo(-shoulder - bustPush, bustY + bustH / 2, -shoulder, bustY + bustH);
+    ctx.moveTo(shoulder, bustY);
+    ctx.quadraticCurveTo(shoulder + bustPush, bustY + bustH / 2, shoulder, bustY + bustH);
+    ctx.stroke();
+  }
 
   // ---------------------------------------------------------------- arms, off the torso
   //
   // Held a pixel clear of the body and angled outward, which is the entire difference
   // between "arms" and "a slightly wider coat". They used to be drawn at `-shoulder - armW +
   // 1` — overlapping the torso by a pixel, so the silhouette never actually broke.
-  const armW = Math.max(3, p(H * 0.06));
+  const armW = Math.max(3, p(H * (broad ? 0.07 : 0.05)));
   const yElbow = up(0.5);
   const yWrist = up(0.42);
   const armGap = 1;
@@ -429,6 +545,15 @@ export function paintCommander(
   // ---------------------------------------------------------------- belt and brass
   ctx.fillStyle = COAT_INK;
   ctx.fillRect(-shoulder, yWaist + 2, shoulder * 2, Math.max(1, p(H * 0.028)));
+
+  // The sash, worn over the belt line rather than instead of it. A single saturated band
+  // is what a reference sprite spends its one bright accent on — everything else on the
+  // figure is doing structure (coat, cloak, skin); this is the piece doing colour.
+  const sashH = Math.max(2, p(H * 0.05));
+  ctx.fillStyle = RAMP.sash;
+  ctx.fillRect(-shoulder, yWaist - 1, shoulder * 2, sashH);
+  ctx.fillStyle = RAMP.sashLit;
+  ctx.fillRect(-shoulder, yWaist - 1, shoulder * 2, 1);
 
   // The Magistracy's brass, at the collar. A **rect**, not the triangle it started as: at
   // this resolution the chest is a handful of pixels tall and a three-pixel triangle
@@ -490,6 +615,12 @@ export function paintCommander(
   ctx.fillStyle = RIM;
   ctx.fillRect(-shoulder - armGap - armW, yShoulder, 1, yElbow - yShoulder);
   ctx.fillRect(-headR, headY - p(headR * 0.5), 1, headR);
+  // The lit-side coat edge and the lit-side leg, so the highlight runs the whole silhouette
+  // rather than stopping at the arm. This is most of the difference between "one rim-lit
+  // limb" and a figure that reads as lit as a whole.
+  ctx.globalAlpha = 0.6;
+  ctx.fillRect(-shoulder, yShoulder, 1, yHem - yShoulder);
+  ctx.fillRect(-gap - legW - 1, yHem, 1, yBoot - yHem);
   ctx.restore();
 }
 
@@ -507,6 +638,11 @@ export function paintCommander(
  */
 const HAIR_CAP: Record<string, { r: number; from: number; to: number }> = {
   shorn: { r: 1.02, from: 1.2, to: 1.8 },
+  undercut: { r: 1.02, from: 1.2, to: 1.8 },
+  ponytail: { r: 1.1, from: 1.02, to: 1.98 },
+  curls: { r: 1.22, from: 0.98, to: 2.02 },
+  pigtails: { r: 1.1, from: 1.02, to: 1.98 },
+  longBangs: { r: 1.14, from: 0.96, to: 2.04 },
   default: { r: 1.12, from: 1.02, to: 1.98 },
 };
 
@@ -589,6 +725,67 @@ function drawHair(
       // deliberately no second shape here — and, crucially, nothing erased.
       break;
 
+    case 'undercut':
+      // A thin cap on the sides, then a taller block on top — the two-length silhouette
+      // reads distinct from `shorn` even though both use the tight cap.
+      ctx.fillRect(-headR * 0.35, headY - headR * 1.35, headR * 0.7, headR * 0.45);
+      break;
+
+    case 'ponytail':
+      // The same cap as `mane`'s crown, but gathered into one trailing shape off the back
+      // rather than spread wide — reads as "pulled back" rather than "loose".
+      ctx.beginPath();
+      ctx.ellipse(
+        headR * 0.15,
+        headY + headR * 1.15,
+        headR * 0.32,
+        headR * 1.5,
+        0.12,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+      break;
+
+    case 'curls':
+      // Several overlapping discs along the cap rather than one smooth arc — the only style
+      // whose *edge* is irregular, which is the whole distinction at silhouette scale.
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath();
+        ctx.arc(i * headR * 0.42, headY - headR * 0.85 - Math.abs(i) * headR * 0.08, headR * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+
+    case 'pigtails':
+      // Two bunches, one each side — the only style symmetric about the vertical axis in a
+      // way that reads at a glance, since every other style breaks left/right.
+      for (const dir of [-1, 1] as const) {
+        ctx.beginPath();
+        ctx.ellipse(
+          dir * headR * 1.1,
+          headY + headR * 0.55,
+          headR * 0.3,
+          headR * 0.85,
+          dir * 0.3,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+      }
+      break;
+
+    case 'longBangs':
+      // A fringe hanging past the brow line in front, plus length down the back — the one
+      // style that reads differently from the front vs. `mane`, since the fringe sits over
+      // where the face's brow marks go.
+      ctx.beginPath();
+      ctx.ellipse(0, headY + headR * 0.5, headR * 1.3, headR * 1.0, 0, 0, Math.PI);
+      ctx.fill();
+      ctx.fillRect(-headR * 0.85, headY - headR * 0.1, headR * 0.35, headR * 0.55);
+      ctx.fillRect(headR * 0.5, headY - headR * 0.1, headR * 0.35, headR * 0.55);
+      break;
+
     case 'wild':
       for (let i = -2; i <= 2; i++) {
         ctx.beginPath();
@@ -660,8 +857,8 @@ function drawFace(
   //
   // One row above the eye, and a pixel wider than it. A brow is the cheapest expression
   // control there is: its height off the eye is the whole difference between the presets.
-  const browLift = idx === 1 ? 3 : idx === 2 ? 1 : 2;
-  const browH = idx === 1 ? 1 : 1;
+  const browLift = [2, 3, 1, 2, 4, 1, 2][idx] ?? 2;
+  const browH = idx === 4 ? 2 : 1;
   ctx.fillStyle = RAMP.faceInk;
   px(ctx, -eyeX - eyeW, eyeY - browLift, eyeW + 1, browH);
   px(ctx, eyeX - 1, eyeY - browLift, eyeW + 1, browH);
@@ -670,7 +867,7 @@ function drawFace(
   //
   // Rects, not circles. A two-pixel disc is a rect that has been through anti-aliasing on
   // the way, and the blend is what made these read as smudges rather than as eyes.
-  const eyeH = idx === 2 ? Math.max(2, eyeW) : Math.max(1, eyeW - 1);
+  const eyeH = idx === 2 ? Math.max(2, eyeW) : idx === 5 ? Math.max(1, eyeW - 2) : Math.max(1, eyeW - 1);
   px(ctx, -eyeX - eyeW + 1, eyeY, eyeW, eyeH);
   px(ctx, eyeX - 1, eyeY, eyeW, eyeH);
 
@@ -685,7 +882,15 @@ function drawFace(
   // pixel of shadow where the nose would cast, and a short line for the mouth.
   ctx.fillStyle = shade(skin);
   px(ctx, 0, eyeY + 2, 1, 1);
-  px(ctx, -1, eyeY + 4, 3, 1);
+  // Idx 6 (sly) gets an asymmetric mouth — one corner lifted — rather than the level line
+  // every other preset uses. It is the one expression that is not readable from the brow
+  // or the eyes alone, so the mouth has to carry it.
+  if (idx === 6) {
+    px(ctx, -1, eyeY + 4, 2, 1);
+    px(ctx, 1, eyeY + 3, 1, 1);
+  } else {
+    px(ctx, -1, eyeY + 4, 3, 1);
+  }
 
   // ---------------------------------------------------------------- the scar
   //

@@ -4,7 +4,7 @@ import type {
   Coord,
   DamageType,
   Keyword,
-  RuneDefId,
+  MarkDefId,
   School,
   Side,
   StatusKind,
@@ -51,7 +51,7 @@ export type EffectNode =
    * strengths, and neither should have to be its own card definition to do so.
    */
   | { op: 'spawnConstruct'; obstacleDef: CardDefId; hp: number }
-  | { op: 'attachRune'; rune: RuneDefId }
+  | { op: 'attachMark'; mark: MarkDefId }
   | { op: 'push'; distance: number }
   | { op: 'grantArmor'; amount: number | { from: 'titheDamage' } }
   | { op: 'applyStatus'; status: StatusKind; stacks: number; area: AreaSpec }
@@ -98,7 +98,7 @@ export type EffectNode =
   /**
    * Stands a fallen Vanguard body back up.
    *
-   * The raised unit is built **fresh from its definition** — a new instance with no runes,
+   * The raised unit is built **fresh from its definition** — a new instance with no marks,
    * no statuses, no Aura and no growth. That is what "stripped of everything" means here,
    * and implementing it as *not copying anything* is one rule rather than five.
    */
@@ -127,7 +127,7 @@ export type EffectNode =
    * arrivals collide with whoever got there first.
    */
   | { op: 'pullArea'; distance: number; area: AreaSpec }
-  | { op: 'detonateAllRunes'; bonusDamage: number }
+  | { op: 'detonateAllMarks'; bonusDamage: number }
   /** Magma Brute's on-deploy 2-tile cleave. */
   | { op: 'cleaveFront'; amount: number; dtype: DamageType; width: number }
   /**
@@ -432,13 +432,42 @@ export function cardCostTotal(cost: CardCost): number {
   return cost.pips + cost.marrow;
 }
 
+/**
+ * The five things a card can be.
+ *
+ * | | Whose | Where it goes |
+ * |---|---|---|
+ * | `spell` | Companion | drafted into a Grimoire |
+ * | `ability` | Hero | the Hero Deck |
+ * | `mark` | Hero | the Hero Deck |
+ * | `obstacle` | Hero | the Hero Deck (shown as a Construct) |
+ * | `minion` | Hero | the Vanguard Roster, never a deck |
+ *
+ * A union rather than a boolean pair because these are exclusive and always have been;
+ * naming it makes the exhaustiveness checks in the UI and the AI fail the build when a
+ * sixth kind arrives, instead of silently rendering nothing.
+ */
+export type CardKind = 'minion' | 'spell' | 'ability' | 'mark' | 'obstacle';
+
 export interface CardDef {
   id: CardDefId;
   name: string;
   cost: CardCost;
   school: School;
   source: 'hero' | 'companion';
-  kind: 'minion' | 'spell' | 'rune' | 'obstacle';
+  /**
+   * What the card *is*, and — for three of the five — whose half of the deck it lives in.
+   *
+   * `spell` is now strictly the Companion's elemental magic. A colourless utility card the
+   * Hero holds is an **`ability`**, and the split is not cosmetic: `validateDeck` refuses a
+   * Spell in a Hero Deck and `draftGrimoire` refuses everything *but* a Spell, so one word
+   * decides which half of the fused deck a card can ever reach.
+   *
+   * The old union called both of them `spell`, which meant the only thing separating the
+   * Hero's Shield Bash from a Companion's Flame Surge was the `school` field — a fact about
+   * colour being asked to answer a question about ownership. Two facts, two fields.
+   */
+  kind: CardKind;
   text: string;
   target: TargetSpec;
   effect: EffectNode;
@@ -632,7 +661,7 @@ export interface CardPlayContext {
    *
    * The counterpart to `summonedUnitId`, and needed for the same reason: a card aimed at
    * an *empty tile* has no entity in `chosen`, so anything downstream that wants to touch
-   * what was just built — attaching a rune to it, most obviously — has no other way to
+   * what was just built — attaching a mark to it, most obviously — has no other way to
    * name it. Without this a `seq` of "raise a cask, then wire it" silently raises an
    * unwired cask.
    */

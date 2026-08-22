@@ -309,8 +309,8 @@ a living body**:
 | It will not brand | Because |
 |---|---|
 | a corpse | a status on something already removed is bookkeeping nobody reads |
-| *from* a corpse | the attacker is re-read after the blow; Counter and rune blasts resolve first, so an attacker can be dead by the time its own rider would land |
-| a blow armour ate whole | `hpLoss > 0`, the same test runes and three of the five reactions use. Plate is a real answer to a Plague-Bearer |
+| *from* a corpse | the attacker is re-read after the blow; Counter and mark blasts resolve first, so an attacker can be dead by the time its own rider would land |
+| a blow armour ate whole | `hpLoss > 0`, the same test marks and three of the five reactions use. Plate is a real answer to a Plague-Bearer |
 | an obstacle or a portrait | neither carries a status field |
 | a **Bound Form** | it keeps no health of its own, so every tick would be redirected to the Pact — a melee rider would be the one thing in the game that poisons a portrait |
 
@@ -320,7 +320,7 @@ the wound rule turns the rider away first. Kept because the two say different th
 the day the wound rule is loosened the seal must not loosen with it.
 
 > The rider is bound to the **`attack` command**, not to the damage pipeline. Counter
-> retaliation, `cleaveFront`, collisions, spells and rune blasts all deal damage without
+> retaliation, `cleaveFront`, collisions, spells and mark blasts all deal damage without
 > one. It also still ignores `chainCancelled` — deliberately: a Damage Gate stops a
 > *cascade*, and venom is not a cascade.
 
@@ -366,9 +366,9 @@ cone with no facing is a circle.
 
 ### Effect ops
 
-`seq` · `damage` · `summon` · `spawnObstacle` · `spawnConstruct` · `attachRune` · `push` ·
+`seq` · `damage` · `summon` · `spawnObstacle` · `spawnConstruct` · `attachMark` · `push` ·
 `grantArmor` · `applyStatus` · `sacrificeTarget` · `extractMarrow` · `drawCards` ·
-`shoveArea` · `pullArea` · `detonateAllRunes` · `cleaveFront` · `anchorTether`
+`shoveArea` · `pullArea` · `detonateAllMarks` · `cleaveFront` · `anchorTether`
 
 Cards are **data, not closures**, so the AI can read a card's shape to enumerate targets
 and new cards need no engine changes.
@@ -378,9 +378,9 @@ definition's — but `spawnObstacle` still refuses any def without an `obstacleH
 construct card must carry one anyway.
 
 Both spawn ops record what they built into `CardPlayContext.spawnedObstacleId`, the
-counterpart to `summonedUnitId`. `attachRune` falls back to it when nothing was picked,
+counterpart to `summonedUnitId`. `attachMark` falls back to it when nothing was picked,
 which is what lets a single `seq` **raise a thing and then wire it** — a card aimed at an
-empty tile has no entity in `chosen`, so without the handoff the rune finds no host and
+empty tile has no entity in `chosen`, so without the handoff the mark finds no host and
 vanishes silently.
 
 ### Hand and deck
@@ -418,7 +418,7 @@ Decks are 12–30 cards, at most 2 Behemoths, at most 5 swaps after seeing the a
 writes `hp` directly:
 
 ```
-encounter Damage Gate → armor absorption → HP loss → rune triggers → death → lethal check
+encounter Damage Gate → armor absorption → HP loss → mark triggers → death → lethal check
 ```
 
 | Type | Notes |
@@ -427,7 +427,7 @@ encounter Damage Gate → armor absorption → HP loss → rune triggers → dea
 | `fire` | reduced by rain. Triggers Vaporize, Overload, Wildfire |
 | `frost` | triggers Superconduct |
 | `shock` | leaves `charged` |
-| `spell` | magic. Does **not** shatter ice. Aligned for Cinder Rune |
+| `spell` | magic. Does **not** shatter ice. Aligned for Cinder Mark |
 | `impact` | collisions and slams. Shatters |
 | `true` | **ignores armor entirely** |
 
@@ -469,7 +469,7 @@ stronger thing.
 ## 9. The Elemental Matrix
 
 Damage of one school landing on the status of another. Evaluated inside `dealDamage` — the
-same choke point runes go through — so no card can bypass a reaction and none has to opt
+same choke point marks go through — so no card can bypass a reaction and none has to opt
 in.
 
 | Reaction | Trigger | Requires | Needs HP loss? | Effect |
@@ -486,7 +486,7 @@ in.
 This is the part most worth reading twice.
 
 **A reaction needs the hit to *land*.** Damage entirely absorbed by armor applies its
-status but triggers **nothing** — exactly as a rune would not detonate. A Flame Surge
+status but triggers **nothing** — exactly as a mark would not detonate. A Flame Surge
 dealing 3 into a target with 5 armor charges nothing, burns nothing, and sets nothing off.
 
 `requiresHpLoss` is what governs this, and **two reactions deliberately set it to
@@ -557,40 +557,40 @@ gap cannot be forgotten and closing it cannot go unrecorded.
 
 ---
 
-## 10. Runes
+## 10. Marks
 
-Attach to a unit or obstacle and wait. **One rune per target.**
+Attach to a unit or obstacle and wait. **One mark per target.**
 
 | Trigger | Fires when |
 |---|---|
 | `hpLoss` | the host loses ≥ 1 **actual** HP to an aligned damage type |
 | `death` | the host dies or is sacrificed |
 
-An unaligned killing blow **fizzles** it (`runeFizzled`, reason `unaligned` / `devour` /
+An unaligned killing blow **fizzles** it (`markFizzled`, reason `unaligned` / `devour` /
 `gate`). Alignment is data, so rebalancing needs no engine change.
 
 Blast patterns: `self` · `adjacent8` · `plus` · `lowestHpEnemy`.
 
-**A blast always spares its own host.** `applyBlast` skips the entity the rune was attached
-to, so a ringed rune catches what is standing *around* the host, never the host itself.
+**A blast always spares its own host.** `applyBlast` skips the entity the mark was attached
+to, so a ringed mark catches what is standing *around* the host, never the host itself.
 
 > `self` is therefore currently inert for damage: `blastTiles` returns the host's own cells
 > and `applyBlast` then skips them. Nothing ships with it.
 
-### Runes that leave a status
+### Marks that leave a status
 
 ```ts
 applies?: { status: StatusKind; stacks: number }[];
 ```
 
-A rune may leave statuses on the units its blast catches, as well as (or instead of)
+A mark may leave statuses on the units its blast catches, as well as (or instead of)
 damage. A list, because one trap can do two things at once — roots that hold *and* poison —
-and modelling that as two runes would need two attachments on a target that may hold one.
+and modelling that as two marks would need two attachments on a target that may hold one.
 
 Statuses only, never a damage number: `damage` is already that field, and a second one is
-how the two drift apart. A rune with `damage: 0` and an `applies` list is a pure control
+how the two drift apart. A mark with `damage: 0` and an `applies` list is a pure control
 trap — **`strike` skips `dealDamage` entirely at zero**, so an empty blow never emits a
-`damageDealt` the HUD would draw as a "0", and never runs the reaction and rune-trigger
+`damageDealt` the HUD would draw as a "0", and never runs the reaction and mark-trigger
 pipeline for a hit that did not land.
 
 Riders land after the damage and only on a survivor, the same discipline `onHit` keeps.
@@ -631,11 +631,11 @@ takes that opening bite when the thing it has decided on is already in front of 
 Both break ties by health, then row, then column, so a replay sends the beast after the
 same body.
 
-**Cascade:** a detonation reaching another rune-holder's *health* sets theirs off too.
+**Cascade:** a detonation reaching another mark-holder's *health* sets theirs off too.
 Armor can stop a chain reaction cold.
 
 `chainDepth` counts how deep in a cascade a hit is, and **every** secondary carries it:
-a rune blast, a reaction's splash or shove, a Counter, a collision, a death. Absent means
+a mark blast, a reaction's splash or shove, a Counter, a collision, a death. Absent means
 depth zero — a card, a swing, a status tick, or a current, all of which genuinely start a
 chain. `MAX_CHAIN_DEPTH` is **8**.
 
@@ -649,14 +649,37 @@ a cascade running out of budget must not leave a body standing at zero health.
 > **death removal**, for the reason above; what a death then *causes* inherits the depth
 > and meets the same ceiling one level down.
 >
-> The count lived in `runes.ts` while only runes read it, which meant `rune → collision →
-> rune` restarted at one and was bounded by nothing. A death rune was worse: it was
+> The count lived in `marks.ts` while only marks read it, which meant `mark → collision →
+> mark` restarted at one and was bounded by nothing. A death mark was worse: it was
 > hardcoded to depth 1, so every death in a chain began a fresh one.
 
-Shipped: **Cinder Rune** (pyre; fire or spell; 4 fire to adjacent8), **Rot-Root Snare**
+Shipped: **Cinder Mark** (pyre; fire or spell; 4 fire to adjacent8), **Rot-Root Snare**
 (bloom; entangle and toxin, `damage: 0`), **Cask Blast** (the Volatile Cask's detonation,
-attached by no card) and **Soul Splinter Rune** (dusk; on death; 5 to the lowest-HP
+attached by no card) and **Soul Splinter Mark** (dusk; on death; 5 to the lowest-HP
 enemy).
+
+### The card and the brand are two different things
+
+The schools above are the **`MarkDef`** schools — the colour of the payload. Each of the
+three attachable Marks also has a **card**, and since the role overhaul those cards are
+filed as `arcane`, because a Mark is Hero kit: the Hero lays it, the Hero decks it, and only
+the Hero may.
+
+| | card `school` | `MarkDef` school | detonates as |
+|---|---|---|---|
+| Cinder Mark | arcane | pyre | `fire` |
+| Soul Splinter Mark | arcane | dusk | `spell` |
+| Rot-Root Snare | arcane | bloom | no damage — `entangle` + `toxin` |
+
+Two fields answering two questions, and the split is load-bearing in both directions.
+`validateDeck` reads the card's school and would refuse the Hero their own trap if a Mark's
+colour were its payload's; the board renderer reads the `MarkDef`'s and would draw every
+brand the same grey if it were the card's. `deckRoleRefusal` exempts `kind: 'mark'` from the
+colour gate for exactly this reason — see `docs/07_deck_building.md`.
+
+`Rune` was the old word for all of this. It survives in exactly one place: the save
+loader's rename table, which maps `cinder_rune` and `soul_splinter_rune` onto their
+current ids so an existing collection keeps the cards it paid for.
 
 ---
 
@@ -665,7 +688,7 @@ enemy).
 `CombatResult` is `victory`, `defeat`, or `bound`.
 
 **Sudden Death** — both commanders reduced to 0 at once. Both revive at **1 HP, 0 armor**;
-every unit is wiped and every rune cleared; Bound Forms are then **restored**, because the
+every unit is wiped and every mark cleared; Bound Forms are then **restored**, because the
 Pact did not end and a player with no Companion could not cast. A *second* mutual KO
 during sudden death resolves to the instigator.
 

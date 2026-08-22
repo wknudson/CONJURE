@@ -26,7 +26,7 @@ export interface UnitSpec {
   hp?: number;
   armor?: number;
   atk?: number;
-  rune?: string;
+  mark?: string;
   keywords?: string[];
   rangeMax?: number;
   fresh?: boolean;
@@ -44,7 +44,7 @@ export function scenario(opts: {
   pips?: number;
   marrow?: number;
   units?: UnitSpec[];
-  obstacles?: { at: Coord; hp?: number; rune?: string; side?: Side }[];
+  obstacles?: { at: Coord; hp?: number; mark?: string; side?: Side }[];
   hand?: string[];
   deck?: string[];
   seed?: number;
@@ -92,7 +92,7 @@ export function scenario(opts: {
     encountered: [],
     defeated: [],
     playerDamageTaken: 0,
-    playerRuneDetonations: 0,
+    playerMarkDetonations: 0,
   };
 
   for (const spec of opts.units ?? []) addUnit(state, spec);
@@ -109,7 +109,7 @@ export function scenario(opts: {
       hp: o.hp ?? 60,
       maxHp: o.hp ?? 60,
       destructible: true,
-      ...(o.rune ? { rune: { defId: o.rune, ownerSide: (o.side ?? 'player') as Side } } : {}),
+      ...(o.mark ? { mark: { defId: o.mark, ownerSide: (o.side ?? 'player') as Side } } : {}),
     };
   }
 
@@ -219,7 +219,7 @@ export function addUnit(state: GameState, spec: UnitSpec): Unit {
     attackedThisTurn: false,
     summonedThisTurn: false,
     freshlySummoned: spec.fresh ?? false,
-    ...(spec.rune ? { rune: { defId: spec.rune, ownerSide: spec.side } } : {}),
+    ...(spec.mark ? { mark: { defId: spec.mark, ownerSide: spec.side } } : {}),
   };
 
   state.units[id] = unit;

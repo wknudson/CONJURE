@@ -3,7 +3,7 @@
  *
  * Every primitive delegates to an engine helper (dealDamage, pushUnit, killEntity, ...)
  * which owns the event emission and the rule checks. Adding a card means adding data;
- * it cannot bypass rune triggers, armor gating, or the lethal check.
+ * it cannot bypass mark triggers, armor gating, or the lethal check.
  */
 
 import { drawCards } from './deck.js';
@@ -25,7 +25,7 @@ import { dealDamage, grantArmor, healCommander } from './damage.js';
 import { unscaleStat } from '../scale.js';
 import { killEntity } from './death.js';
 import { setAnchor } from './subjugation.js';
-import { attachRune, detonateAllRunes } from './runes.js';
+import { attachMark, detonateAllMarks } from './marks.js';
 import { pushUnit } from './displacement.js';
 import { spawnHazard } from './reactions.js';
 import { canAct } from './movement.js';
@@ -161,17 +161,17 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       return;
     }
 
-    case 'attachRune': {
+    case 'attachMark': {
       // Whatever was picked, or — for a card aimed at an empty tile — whatever this same
       // play just raised there. That fallback is what lets one card build a thing and
-      // wire it in a single `seq`; without it the rune would have no host and vanish.
+      // wire it in a single `seq`; without it the mark would have no host and vanish.
       const ref = chosenRef(play);
       const hostId = ref && ref.kind !== 'portrait' ? ref.id : play.spawnedObstacleId;
       if (!hostId) return;
 
       const host = getEntity(ctx.state, hostId);
       if (!host) return;
-      attachRune(ctx, host, node.rune);
+      attachMark(ctx, host, node.mark);
       return;
     }
 
@@ -296,9 +296,9 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       if (!at) return;
 
       // Built fresh from the definition rather than restored: a new instance carries no
-      // runes, no statuses, no Aura and no growth. "Stripped of everything" is implemented
+      // marks, no statuses, no Aura and no growth. "Stripped of everything" is implemented
       // as *copying nothing*, which is one rule instead of five.
-      // Raised at the level it trained to. Stripped of runes, statuses and growth --
+      // Raised at the level it trained to. Stripped of marks, statuses and growth --
       // but not of its career. A revival that came back at the printed card would
       // make every death a demotion nothing in the game could undo.
       const id = summonUnit(ctx, entry.defId, play.side, at, entry.level);
@@ -408,8 +408,8 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       return;
     }
 
-    case 'detonateAllRunes': {
-      detonateAllRunes(ctx, node.bonusDamage);
+    case 'detonateAllMarks': {
+      detonateAllMarks(ctx, node.bonusDamage);
       return;
     }
 

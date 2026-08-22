@@ -1,19 +1,19 @@
 /**
- * Rune definitions for the demo.
+ * Mark definitions for the demo.
  *
- * Note on Cinder Rune's trigger: Draft 7's card table says "Detonation (Fire/Spell):
+ * Note on Cinder Mark's trigger: Draft 7's card table says "Detonation (Fire/Spell):
  * triggers on partial HP loss", while §7 states damage-based triggers generally require
  * armor penetration. Both are modelled here: `alignedTypes` gates WHICH damage can set it
  * off, and the engine separately requires >= 1 real HP loss. An unaligned killing blow
  * fizzles it. Keeping alignment as data means rebalancing needs no engine change.
  */
 
-import type { RuneDef } from '../types/units.js';
+import type { MarkDef } from '../types/units.js';
 
-export const RUNES: Record<string, RuneDef> = {
-  cinder_rune: {
-    id: 'cinder_rune',
-    name: 'Cinder Rune',
+export const MARKS: Record<string, MarkDef> = {
+  cinder_mark: {
+    id: 'cinder_mark',
+    name: 'Cinder Mark',
     school: 'pyre',
     trigger: { kind: 'hpLoss', alignedTypes: ['fire', 'spell'] },
     damage: 40,
@@ -25,7 +25,7 @@ export const RUNES: Record<string, RuneDef> = {
    * The control trap. No damage at all — everything it does is a status.
    *
    * Triggered by violence rather than by magic, which is what separates it from the Cinder
-   * Rune sitting beside it: fire and spell set that one off, a bodily blow sets this one
+   * Mark sitting beside it: fire and spell set that one off, a bodily blow sets this one
    * off. A board carrying both answers two different threats.
    *
    * Entangle holds a unit where it stands without stopping it swinging, and the Toxin
@@ -57,7 +57,7 @@ export const RUNES: Record<string, RuneDef> = {
    * `impact` damage, so it Shatters anything Frozen caught in it.
    *
    * Not attachable by any card: it exists only as the second half of the Cask's own `seq`,
-   * which is why no rune card names it.
+   * which is why no mark card names it.
    */
   cask_blast: {
     id: 'cask_blast',
@@ -72,9 +72,9 @@ export const RUNES: Record<string, RuneDef> = {
     text: 'When the cask is destroyed, it goes up: 30 impact damage in a cross around it.',
   },
 
-  soul_splinter_rune: {
-    id: 'soul_splinter_rune',
-    name: 'Soul Splinter Rune',
+  soul_splinter_mark: {
+    id: 'soul_splinter_mark',
+    name: 'Soul Splinter Mark',
     school: 'dusk',
     trigger: { kind: 'death' },
     damage: 50,

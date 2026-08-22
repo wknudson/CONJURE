@@ -12,9 +12,9 @@ import { pushUnit } from '../core/engine/displacement.js';
 
 // ============================================================ §5.5 — the chain ceiling
 
-describe('the cascade ceiling is one budget, not the runes’ own', () => {
-  it('counts a depth for every kind of secondary, not just a rune', () => {
-    // The bug: `chainDepth` was written by exactly one caller and read by one, so a rune
+describe('the cascade ceiling is one budget, not the marks’ own', () => {
+  it('counts a depth for every kind of secondary, not just a mark', () => {
+    // The bug: `chainDepth` was written by exactly one caller and read by one, so a mark
     // detonated by a collision restarted the count at one and `MAX_CHAIN_DEPTH` bounded
     // nothing. These two helpers are the shared vocabulary that replaced that.
     expect(nextDepth({})).toBe(1);
@@ -49,8 +49,8 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
   });
 
   it('refuses a reaction reached at the ceiling', () => {
-    // Reactions were bounded by *nothing* before this: only runes counted depth, so a
-    // Shatter splash could be link twenty of a chain and still fire. Note the rune path
+    // Reactions were bounded by *nothing* before this: only marks counted depth, so a
+    // Shatter splash could be link twenty of a chain and still fire. Note the mark path
     // cannot demonstrate the new gate — `detonate` has always had its own internal check —
     // so the reaction and Counter paths are where this rule is actually observable.
     const state = scenario({ width: 7, height: 7 });
@@ -142,7 +142,7 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
   it('carries the count through a shove, which is where it used to reset', () => {
     // The specific hole §5.5 named. A collision omitted `chainDepth` entirely, so whatever
     // it slammed a body into began a brand new chain at depth one — `MAX_CHAIN_DEPTH`
-    // bounded rune-to-rune and nothing else. A shove issued at the ceiling must not be
+    // bounded mark-to-mark and nothing else. A shove issued at the ceiling must not be
     // able to launder a detonation through a wall.
     const state = scenario({ width: 6, height: 6 });
     const shoved = addUnit(state, {
@@ -150,9 +150,9 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       side: 'enemy',
       at: { x: 2, y: 2 },
       hp: 200,
-      // Aligned to `impact`, so a collision actually sets it off. A Cinder Rune would
+      // Aligned to `impact`, so a collision actually sets it off. A Cinder Mark would
       // fizzle on an unaligned blow and the test would prove nothing.
-      rune: 'rot_root_snare',
+      mark: 'rot_root_snare',
     });
     // Something solid directly behind it, so the shove is guaranteed to collide.
     addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 300 });
@@ -161,7 +161,7 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
     pushUnit(ctx, ctx.state.units[shoved.id]!, { x: 0, y: 1 }, 1, MAX_CHAIN_DEPTH);
 
     expect(
-      eventsOf(ctx.events, 'runeDetonated'),
+      eventsOf(ctx.events, 'markDetonated'),
       'the collision restarted the chain',
     ).toHaveLength(0);
   });
@@ -173,14 +173,14 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       side: 'enemy',
       at: { x: 2, y: 2 },
       hp: 200,
-      rune: 'rot_root_snare',
+      mark: 'rot_root_snare',
     });
     addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 }, hp: 300 });
 
     const ctx = makeCtx(state);
     pushUnit(ctx, ctx.state.units[shoved.id]!, { x: 0, y: 1 }, 1, 0);
 
-    expect(eventsOf(ctx.events, 'runeDetonated')).toHaveLength(1);
+    expect(eventsOf(ctx.events, 'markDetonated')).toHaveLength(1);
   });
 
   it('passes the count on through a reaction’s own splash', () => {
@@ -200,7 +200,7 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       at: { x: 4, y: 3 },
       hp: 300,
       // Impact-aligned, and Shatter splashes `impact`.
-      rune: 'rot_root_snare',
+      mark: 'rot_root_snare',
     });
     state.units[frozen.id]!.statuses.freeze = 1;
 
@@ -217,13 +217,13 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
     expect(eventsOf(ctx.events, 'reactionTriggered'), 'Shatter still fires').toHaveLength(1);
     expect(ctx.state.units[bystander.id]!.hp, 'and the splash still lands').toBeLessThan(300);
     expect(
-      eventsOf(ctx.events, 'runeDetonated'),
+      eventsOf(ctx.events, 'markDetonated'),
       'but the splash must not start a fresh chain',
     ).toHaveLength(0);
   });
 
   it('passes the count on through a death', () => {
-    // A death rune restarted the count at one, hardcoded, so a chain of dying rune-holders
+    // A death mark restarted the count at one, hardcoded, so a chain of dying mark-holders
     // was bounded by nothing at all.
     const state = scenario({ width: 7, height: 7 });
     const doomed = addUnit(state, {
@@ -232,7 +232,7 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
       at: { x: 3, y: 3 },
       hp: 20,
       // Fires when the host dies.
-      rune: 'soul_splinter_rune',
+      mark: 'soul_splinter_mark',
     });
     addUnit(state, { def: 'vanguard_footman', side: 'player', at: { x: 5, y: 5 }, hp: 200 });
 
@@ -247,13 +247,13 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
 
     expect(ctx.state.units[doomed.id], 'the body is still removed').toBeUndefined();
     expect(
-      eventsOf(ctx.events, 'runeDetonated'),
-      'but its death rune is past the ceiling',
+      eventsOf(ctx.events, 'markDetonated'),
+      'but its death mark is past the ceiling',
     ).toHaveLength(0);
   });
 
   it('terminates on a board built to cascade', () => {
-    // The real guarantee: whatever the arrangement, the reducer returns. Four rune-holders
+    // The real guarantee: whatever the arrangement, the reducer returns. Four mark-holders
     // packed together so each detonation reaches the next.
     const state = scenario({ width: 7, height: 7 });
     for (const [x, y] of [[2, 2], [3, 2], [2, 3], [3, 3]] as const) {
@@ -262,14 +262,14 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
         side: 'enemy',
         at: { x, y },
         hp: 40,
-        rune: 'cinder_rune',
+        mark: 'cinder_mark',
       });
     }
 
     const first = Object.values(state.units)[0]!;
     const ctx = makeCtx(state);
 
-    // Light the first one. Each blast reaches the others, whose runes reach back.
+    // Light the first one. Each blast reaches the others, whose marks reach back.
     dealDamage(ctx, {
       target: { kind: 'unit', id: first.id },
       amount: 30,
@@ -278,7 +278,7 @@ describe('the cascade ceiling is one budget, not the runes’ own', () => {
     });
 
     // It resolved rather than hanging, and every link was inside the budget.
-    const dets = eventsOf(ctx.events, 'runeDetonated');
+    const dets = eventsOf(ctx.events, 'markDetonated');
     expect(dets.length).toBeGreaterThan(0);
     for (const d of dets) expect(d.chainDepth).toBeLessThanOrEqual(MAX_CHAIN_DEPTH);
   });

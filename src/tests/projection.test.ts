@@ -21,7 +21,7 @@ function board(over: Partial<BoardView> = {}): BoardView {
     obstacles: [],
     hazards: [],
     intents: [],
-    runes: [],
+    marks: [],
     statuses: [],
     escalation: [],
     player: {} as BoardView['player'],

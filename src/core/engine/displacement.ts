@@ -77,7 +77,7 @@ export function pushUnit(
    *
    * Zero for the ordinary cases — a card's shove, a current at the round boundary — which
    * genuinely are the start of a chain. Overload passes its own depth, because a reaction
-   * throwing a body into a wall that kills a rune-holder is the exact shape the ceiling
+   * throwing a body into a wall that kills a mark-holder is the exact shape the ceiling
    * exists to bound.
    */
   chainDepth = 0,
@@ -132,7 +132,7 @@ export function pushUnit(
         chainDepth,
       });
 
-      // The blocker may already be gone if the pushed unit's rune detonated.
+      // The blocker may already be gone if the pushed unit's mark detonated.
       const stillThere = ctx.state.units[blocker.id] ?? ctx.state.obstacles[blocker.id];
       if (stillThere) {
         dealDamage(ctx, {
@@ -161,7 +161,7 @@ export function pushUnit(
     path.push({ ...nextAnchor });
     emit(ctx, { t: 'unitDisplaced', unitId: unit.id, from, to: { ...nextAnchor } });
 
-    // A unit can die mid-push (e.g. its own rune cascaded); stop moving a corpse.
+    // A unit can die mid-push (e.g. its own mark cascaded); stop moving a corpse.
     if (!ctx.state.units[unit.id]) return { path };
   }
 

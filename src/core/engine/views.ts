@@ -11,7 +11,7 @@ import { territoryDepthFor } from '../types/state.js';
 import type { Obstacle, Unit } from '../types/units.js';
 import { CARDS } from '../data/cards/index.js';
 import { effectiveCost } from './deck.js';
-import { RUNES } from '../data/runes.js';
+import { MARKS } from '../data/marks.js';
 import { resonanceFor } from '../data/resonance.js';
 import { rosterPointsOf } from '../data/roster.js';
 import { allObstacles, allUnits } from './board.js';
@@ -132,15 +132,15 @@ export function toBoardView(state: GameState): BoardView {
   const units = allUnits(state);
   const obstacles = allObstacles(state);
 
-  const runes: BoardView['runes'] = [];
+  const marks: BoardView['marks'] = [];
   for (const e of [...units, ...obstacles]) {
-    if (!e.rune) continue;
-    const def = RUNES[e.rune.defId];
+    if (!e.mark) continue;
+    const def = MARKS[e.mark.defId];
     if (!def) continue;
-    runes.push({
+    marks.push({
       hostId: e.id,
       at: { ...e.anchor },
-      rune: { defId: def.id, name: def.name, school: def.school, ownerSide: e.rune.ownerSide },
+      mark: { defId: def.id, name: def.name, school: def.school, ownerSide: e.mark.ownerSide },
     });
   }
 
@@ -173,7 +173,7 @@ export function toBoardView(state: GameState): BoardView {
       damage: i.damage,
       ...(i.label ? { label: i.label } : {}),
     })),
-    runes,
+    marks,
     statuses,
     escalation: units
       .filter((u) => u.escalation > 0)

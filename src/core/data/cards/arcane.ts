@@ -41,7 +41,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
    *
    * It hits **everything** on the line, allies included, because a beam does not check
    * sides on the way past. `spell` damage, so it does not shatter ice — and so it is
-   * aligned for the Cinder Rune, which makes it an opener for a cascade rather than a
+   * aligned for the Cinder Mark, which makes it an opener for a cascade rather than a
    * finisher.
    */
   aether_beam: {
@@ -50,7 +50,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
     cost: { pips: 2, marrow: 0 },
     school: 'arcane',
     source: 'companion',
-    kind: 'spell',
+    kind: 'ability',
     text: 'A line of light drawn through the arena. 30 damage to everything standing in it, yours included.',
     target: { kind: 'line', length: 4 },
     effect: {
@@ -84,7 +84,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
     cost: { pips: 1, marrow: 0 },
     school: 'arcane',
     source: 'hero',
-    kind: 'spell',
+    kind: 'ability',
     text: 'Deals 10 physical damage down a 4-tile line, then drags everything caught 2 tiles back toward the near end. Triggers standard Collision Damage (30 / 20).',
     target: { kind: 'line', length: GRAPPLE_REACH },
     effect: {
@@ -158,7 +158,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
     cost: { pips: 0, marrow: 1 },
     school: 'arcane',
     source: 'hero',
-    kind: 'spell',
+    kind: 'ability',
     text: 'Costs 1 Marrow, which no amount of banked Pips will cover. Deals 40 damage through any armor to the enemy with the least health.',
     target: { kind: 'global' },
     effect: { op: 'damage', amount: 40, dtype: 'true', area: { shape: 'lowestHpEnemy' } },
@@ -170,10 +170,10 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
    *
    * Two ops in one `seq`: raise the cask, then wire it. The second half only works because
    * `spawnConstruct` records what it built into the play context — a card aimed at an
-   * *empty tile* has no entity in `chosen`, so without that handoff the rune would find no
+   * *empty tile* has no entity in `chosen`, so without that handoff the mark would find no
    * host and the cask would go up unwired, silently.
    *
-   * The rune's trigger is `death`, not `hpLoss`, which is the whole decision the card
+   * The mark's trigger is `death`, not `hpLoss`, which is the whole decision the card
    * asks. Chipping the cask does nothing. Somebody has to actually break it — and whoever
    * breaks it is standing next to it when it goes.
    *
@@ -193,7 +193,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
       op: 'seq',
       effects: [
         { op: 'spawnConstruct', obstacleDef: 'volatile_cask', hp: 40 },
-        { op: 'attachRune', rune: 'cask_blast' },
+        { op: 'attachMark', mark: 'cask_blast' },
       ],
     },
     keywords: [],

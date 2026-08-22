@@ -2,7 +2,7 @@
  * The damage pipeline — the choke point every rule passes through.
  *
  * Order of operations: encounter Damage Gate -> armor absorption -> HP loss ->
- * rune trigger evaluation -> death -> lethal check. Nothing else in the engine is
+ * mark trigger evaluation -> death -> lethal check. Nothing else in the engine is
  * allowed to write `hp` directly.
  */
 
@@ -15,19 +15,19 @@ import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import { getEntity, opposite } from './board.js';
 import { getEncounterScript } from '../data/encounters/registry.js';
-// Circular by design: runes/death call back into dealDamage. ESM hoists function
+// Circular by design: marks/death call back into dealDamage. ESM hoists function
 // declarations, so these resolve correctly at call time.
-import { evaluateRuneOnDamage } from './runes.js';
+import { evaluateMarkOnDamage } from './marks.js';
 import { killEntity } from './death.js';
 import { isSealed } from './subjugation.js';
 
 /**
  * How many links a single cascade may run before the engine stops following it.
  *
- * Lives here, beside the pipeline, because **every** secondary effect is a link: a rune
+ * Lives here, beside the pipeline, because **every** secondary effect is a link: a mark
  * detonating, a reaction splashing, a Counter answering, an Overload shoving a body into
- * a wall, a crystal bursting as it dies. It sat in `runes.ts` while only runes counted it,
- * and the consequence was that `rune -> collision -> rune` restarted the count at one and
+ * a wall, a crystal bursting as it dies. It sat in `marks.ts` while only marks counted it,
+ * and the consequence was that `mark -> collision -> mark` restarted the count at one and
  * was bounded by nothing at all.
  *
  * Eight is far above anything a real board produces. It is a backstop against a cycle
@@ -45,8 +45,8 @@ export interface DamageRequest {
    * what a card, a swing, a status tick, or a current is.
    *
    * Every secondary hit the pipeline produces carries `nextDepth(req)`, so a chain is
-   * counted the same however it is spelled: `MAX_CHAIN_DEPTH` bounds a rune detonating a
-   * rune exactly as it bounds a rune shoving a body into a wall that kills a crystal.
+   * counted the same however it is spelled: `MAX_CHAIN_DEPTH` bounds a mark detonating a
+   * mark exactly as it bounds a mark shoving a body into a wall that kills a crystal.
    */
   chainDepth?: number;
   /** Attacker, for Counter resolution. */
@@ -67,7 +67,7 @@ export interface DamageOutcome {
 
 /**
  * Applies damage to a unit, obstacle, or commander portrait.
- * Returns what actually landed, because rune triggers depend on real HP loss.
+ * Returns what actually landed, because mark triggers depend on real HP loss.
  */
 /** Brittle (Module 1): a frozen-through target takes this much extra from every hit. */
 export const BRITTLE_BONUS = 20;
@@ -116,7 +116,7 @@ export function dealDamage(ctx: Ctx, req: DamageRequest): DamageOutcome {
   // be drawn where it happened rather than only on the portrait.
   //
   // This deliberately bypasses damageEntity, and therefore armor on the unit, Counter,
-  // Brittle, elemental reactions, and rune-on-damage. A Bound Form can host none of
+  // Brittle, elemental reactions, and mark-on-damage. A Bound Form can host none of
   // those meaningfully, so targeting refuses to attach them (see legalCardTargets)
   // rather than letting a card be spent on an effect that would never fire.
   //
@@ -135,7 +135,7 @@ export function dealDamage(ctx: Ctx, req: DamageRequest): DamageOutcome {
 /**
  * Fire gutters in the rain.
  *
- * Applied before armor and before anything else looks at the number, so a Cinder Rune in
+ * Applied before armor and before anything else looks at the number, so a Cinder Mark in
  * a downpour is genuinely weaker rather than merely absorbed differently. It can be
  * damped to nothing, which is the point: bringing a Pyre deck to a storm is a decision
  * with a price, and the pre-combat screen exists so it is an informed one.
@@ -282,21 +282,21 @@ function damageEntity(ctx: Ctx, entity: Entity, req: DamageRequest): DamageOutco
       }
     }
 
-    // Reactions and runes both resolve after the HP write, so the "at least 1 point of
+    // Reactions and marks both resolve after the HP write, so the "at least 1 point of
     // actual HP loss" penetration rule is checked against reality rather than intent.
-    // The reaction goes first: Shatter stripping armor should be able to expose a rune.
+    // The reaction goes first: Shatter stripping armor should be able to expose a mark.
     if (pending) {
       resolveReaction(ctx, pending, hpLoss, dealDamage as never, nextDepth(req));
     }
 
-    if (entity.rune) {
-      evaluateRuneOnDamage(ctx, entity, req, hpLoss, died);
+    if (entity.mark) {
+      evaluateMarkOnDamage(ctx, entity, req, hpLoss, died);
     }
   }
 
   // Removal is **never** gated. A cascade running out of budget must not leave a body
   // standing at zero health: death is bookkeeping the board cannot be correct without,
-  // not a link in a chain. What the death then *causes* — a crystal bursting, a rune on
+  // not a link in a chain. What the death then *causes* — a crystal bursting, a mark on
   // a corpse — inherits the depth and meets the same ceiling one level down.
   if (died && entity.hp <= 0) {
     // The death is a link too: a crystal that bursts as it dies can set off the next.

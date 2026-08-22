@@ -327,7 +327,7 @@ export interface GameState {
   encountered: string[];
   defeated: string[];
   /**
-   * Health the player's Pact has lost over the whole fight, and Runes of theirs that went
+   * Health the player's Pact has lost over the whole fight, and Marks of theirs that went
    * off in it. The raw material of the Mastery Objectives.
    *
    * Kept here beside `encountered` rather than tallied by the session, and for the same
@@ -339,7 +339,7 @@ export interface GameState {
    * an objective about winning, and winning is already the thing being rewarded.
    */
   playerDamageTaken: number;
-  playerRuneDetonations: number;
+  playerMarkDetonations: number;
 }
 
 export interface StepResult {

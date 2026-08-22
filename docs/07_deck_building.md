@@ -27,6 +27,30 @@ The design rule underneath all of it:
 The Hero Deck is colourless. Every elemental card in your fused deck came from the animal
 standing beside you. That is why catching a second Ignis is worth doing.
 
+### The five roles
+
+Since the role overhaul, a card's `kind` is the axis that decides which half it can reach —
+not its colour. There are five, and three of them are the Hero's:
+
+| `kind` | Whose | Where it goes |
+|---|---|---|
+| `spell` | Companion | drafted into a Grimoire |
+| `ability` | Hero | the Hero Deck |
+| `mark` | Hero | the Hero Deck |
+| `obstacle` | Hero | the Hero Deck (a **Construct** to the player) |
+| `minion` | Hero | the Vanguard Roster, never a deck |
+
+— [cards.ts](src/core/types/cards.ts)
+
+**"Spell" now means the Companion's elemental magic and nothing else.** The colourless
+utility the Hero holds — Shield Bash, Aegis Ward, Grapple Line — is an **Ability**. Before
+the split both were `kind: 'spell'`, which meant the only thing separating the Hero's Shield
+Bash from a Companion's Flame Surge was the `school` field: a fact about colour being asked
+to answer a question about ownership. Two facts, two fields.
+
+A **Mark** is what a Rune used to be. Attach it to a body, and it detonates when its trigger
+is met.
+
 ---
 
 ## 1. The Hero Deck
@@ -62,14 +86,23 @@ readers.
 ### Colour
 
 ```ts
+export const HERO_KINDS: readonly CardKind[] = ['ability', 'mark', 'obstacle'];
 export const HERO_SCHOOLS: readonly string[] = ['neutral', 'arcane'];
 ```
-— [deckRules.ts:43](src/core/data/deckRules.ts:43)
+— [deckRules.ts](src/core/data/deckRules.ts)
 
-A Pyre card in a Hero Deck is refused with `off_school`. The reason is not flavour: the
-elemental colour comes from the Companion, so a Hero Deck holding Pyre would be competing
-with the Grimoire for the same job — and would let a player carry a second school their
-Companion cannot support with a Resonance.
+Two gates, and the role one is asked first. A Pyre card in a Hero Deck is refused with
+`off_school`; a Flame Surge is refused with `spell_in_deck` before the colour is ever
+looked at. The reason is not flavour: the elemental colour comes from the Companion, so a
+Hero Deck holding Pyre would be competing with the Grimoire for the same job — and would
+let a player carry a second school their Companion cannot support with a Resonance.
+
+**Marks skip the colour gate entirely.** A Mark's `school` describes the *payload* it
+detonates for, not whose half of the deck it belongs to. The Cinder Mark is filed as arcane
+today and its brand still goes off for fire damage — `CARDS.cinder_mark.school` is `arcane`
+and `MARKS.cinder_mark.school` is `pyre`, and the two are answering different questions.
+Judging the card by the second one would refuse the Hero their own trap the moment anybody
+gave it back the red it detonates in.
 
 ### Copies, by Tier
 
@@ -125,6 +158,28 @@ Ascension is stored the same way — as a set of base ids, account-wide — rath
 rewriting deck lists to `_r2`. A deck built before an Ascension keeps working, and nothing
 has to be migrated when the Forge is used.
 
+### One rule, four readers
+
+The role gate lives in exactly one function:
+
+```ts
+export function deckRoleRefusal(def: CardDef): RoleRefusal   // 'minion' | 'spell' | 'off_school' | null
+```
+— [deckRules.ts](src/core/data/deckRules.ts)
+
+Four things read it, and before it existed the first two disagreed:
+
+| Reader | What it does with the answer |
+|---|---|
+| `validateDeck` | turns it into a `DeckProblem` |
+| `remainingCopies` | returns 0, so the shelf greys the card out before it is clicked |
+| the Field Journal | prints `roleRefusalMessage` on the tooltip |
+| `loadProfile` | strips the card out of a save written under the old rules |
+
+The builder used to let you click a Scrap Phalanx — `remainingCopies` said two — and then
+refuse the deck you had just built with it, because `validateDeck` knew it was a body. That
+is one rule held twice, and the two copies had already drifted.
+
 ### Validation
 
 `validateDeck(deck, collection?)` returns **every** problem rather than the first
@@ -135,18 +190,27 @@ list instead of making the player fix them one at a time.
 |---|---|
 | `too_small` / `too_large` | Outside 4–12 |
 | `minion_in_deck` | A body. It belongs in your Vanguard Roster |
-| `off_school` | An elemental card. Your Companion brings the elements |
+| `spell_in_deck` | Elemental magic. Your Companion casts those |
+| `off_school` | An elemental card that is *not* a Spell — in practice, a Construct |
 | `unknown_card` | The card no longer exists in this version |
 | `over_copy_limit` | More copies than the Tier allows |
 | `not_unlocked` | Not forged yet |
 | `too_many_behemoths` | See the note below |
 
-The **order the checks are asked in is load-bearing.** `minion_in_deck` is asked before
-`off_school` because a minion is very nearly always elemental too, and "this belongs in
-your Vanguard" is the useful half of that answer — being told a Grave Sentinel is the wrong
-*colour* would send the player looking for a neutral one that does not exist. `off_school`
-in turn is asked before the copy limits, so a deck full of Pyre is told the one thing that
-matters rather than a list of tier violations.
+The **order the checks are asked in is load-bearing**, and it is the same order the answers
+are useful in: what the card *is*, then what colour it is, then how many of it you have.
+
+A minion is very nearly always elemental too, so asking the colour first would tell the
+player their Grave Sentinel is the wrong *colour* and send them looking for a neutral one
+that does not exist. A Spell is elemental **by construction** now, so the same objection
+applies twice over — "your Flame Surge is Pyre" is true, useless, and points at an arcane
+Flame Surge that can never be printed. The role is the reason; the colour is only how you
+can tell. And role comes before the copy limits, so a deck full of Spells is told the one
+thing that matters rather than a list of tier violations underneath it.
+
+That leaves `off_school` reachable by exactly one route: an elemental **Construct**. Pyre
+Pillar is not a Spell, not a body and not a Mark, so nothing above catches it and the
+colour rule is the only thing that does.
 
 **A note on `too_many_behemoths`.** `MAX_BEHEMOTHS = 2`
 ([deckRules.ts:45](src/core/data/deckRules.ts:45)) is currently **unreachable**. Only
@@ -196,9 +260,38 @@ eight cards, so a second Ignis was worth nothing — the only thing that differe
 health roll and a knack. Catching one was a checkbox.
 
 A Companion now **drafts** its eight from its bloodline's pool
-([grimoire.ts](src/core/data/grimoire.ts)). Two Ignis are two different decks — one heavy
-on runes, one that happened to roll three Cataclysms — and that is the reason to go and
+([grimoire.ts](src/core/data/grimoire.ts)). Two Ignis are two different decks — one heavy on
+Ashen Wakes, one that happened to roll three Cataclysms — and that is the reason to go and
 catch a second one.
+
+### What a bloodline may draw
+
+Since the role overhaul, a Companion drafts **Spells and the ground they stand on**:
+
+```ts
+function isBloodlineCard(def: CardDef): boolean {
+  return def.kind === 'spell' || def.kind === 'obstacle';
+}
+```
+— [grimoire.ts](src/core/data/grimoire.ts)
+
+Marks are refused outright, in `isDraftable`, which is the stricter of the two gates: a
+beast that drafted one would be holding a card its own half of the deck cannot contain, and
+the Field Journal would show a Grimoire slot no socket could legally replace. That gate is
+also what keeps Marks out of the **fallback** pool below, which matters more than it looks:
+Marks are filed as arcane now, so the colourless shelves are exactly where one would sneak
+back in.
+
+Abilities are refused because they are the half the Hero builds. A Grimoire dealing a Shield
+Bash would be handing the player a card they already chose not to run.
+
+**Constructs are deliberately still in**, and this is the one place the rule reads looser
+than "exclusively Spells". Pyre Pillar, Coolant Pillar, Ice Barricade and Smoke Bank are
+elemental, so no Hero Deck may hold them either — dropping them from the draft as well would
+leave four cards in the registry that nothing in the game can ever deal. Orphaning content
+is a worse outcome than a Grimoire that occasionally raises a wall. In practice it is a thin
+tail: measured across every bloodline and 200 seeds each, drafted books run 86–100% Spell,
+with Constructs taking 4–14% of slots for the six bloodlines that have any.
 
 ### The weighting
 
@@ -247,16 +340,27 @@ arithmetic is eight passes over a list of a dozen.
 Pools are sorted by id, because a pool ordered by `Object.values` would reshuffle every
 Grimoire in every save the day somebody added a card to the wrong file.
 
-### The neutral fallback is a content gap wearing a rule
+### The colourless fallback, and the one bloodline that lives on it
 
-Bulwark has two spells to its name and Surge has three, so neither can fill eight out of
-its own school even with every copy the Tier limits allow. Rather than deal a short book —
-silently, forever — a thin bloodline tops up from `neutral` and `arcane`
-([grimoire.ts:146](src/core/data/grimoire.ts:146)).
+Rather than deal a short book — silently, forever — a bloodline whose own shelf runs out
+tops up from `neutral` and `arcane` ([grimoire.ts](src/core/data/grimoire.ts)). This used to
+be a pure safety net: it was written when Bulwark had two spells and Surge three, and the
+catalog expansion closed that. Every *elemental* bloodline now fills eight out of its own
+Spells and fusions with room to spare — Ferrum, the thinnest, has capacity for 14.
 
-This is stated in the source as a known gap, not as a design: it fires only when a
-bloodline runs out, so the day Bulwark has eight spells' worth of its own is the day this
-stops happening, with nothing to remove.
+**Lexis lives on it permanently, and that is a consequence of the overhaul rather than an
+accident of content.** "Spell" now means *elemental* magic. Lexis's school is `arcane`, and
+arcane is by definition not elemental — so an Ink Owl's own shelf holds two Constructs and
+no Spells at all. Six of its eight slots come out of the fallback every single time, and its
+Grimoire measures ~45% Ability / ~55% Construct.
+
+The code does the only thing it can do without making a content decision on the Director's
+behalf: it deals the beast a full eight. The three real options are the Director's to pick —
+give arcane Spells of its own, stop Lexis being a drafting bloodline, or define an Ink Owl
+as *the beast that lends the Hero its own tools*, which is what the code currently describes.
+
+The test that guards this pins Lexis **by name**, so the day a second bloodline joins it,
+that is a content bug and the suite says so rather than relaxing to "some may be thin".
 
 ### Per-copy rolls
 
@@ -298,7 +402,7 @@ lives, so that is where a forged one goes.
 |---|---|
 | `bad-slot` | Not an integer in `[0, 8)` |
 | `unknown-card` | No such card |
-| `not-castable` | A body, a Rank 2 printing, or engine furniture (`isDraftable`) |
+| `not-castable` | A body, a **Mark**, a Rank 2 printing, or engine furniture (`isDraftable`) |
 | `not-unlocked` | Printed but not forged — this is the half that makes the Forge matter |
 | `off-school` | The bloodline has no claim to either of its schools |
 
@@ -535,6 +639,9 @@ Almost every number above is **derived from what a thing does**, never authored 
 
 | Fact | Derived by |
 |---|---|
+| Whether a Hero Deck may hold a card | `deckRoleRefusal` — [deckRules.ts](src/core/data/deckRules.ts) |
+| Whether a bloodline may draft one | `isDraftable` + `isBloodlineCard` — [grimoire.ts](src/core/data/grimoire.ts) |
+| Whose card the face says it is | `ownerOfKind` — [cardFace.ts](src/hud/cardFace.ts) |
 | A card's Tier, and so its copy limit | `tierOf` — [deckRules.ts:60](src/core/data/deckRules.ts:60) |
 | A body's roster price | `rosterPointsOf` — [roster.ts:40](src/core/data/roster.ts:40) |
 | The fused deck's size | `fusedDeckSize` — [deckRules.ts:32](src/core/data/deckRules.ts:32) |
@@ -554,6 +661,21 @@ would let a new body ship free. A second definition of "what is in the Grimoire"
 Field Journal comes to show one book while the board deals another — a bug that already
 happened once.
 
+The role overhaul added a fourth instance, and it had already gone wrong twice by the time
+it was found. The rule "may a Hero Deck hold this" existed in three places: `validateDeck`,
+`remainingCopies`, and the save loader's strip pass. The loader's copy read
+`kind !== 'minion' && HERO_SCHOOLS.includes(school)`, which would have confiscated an
+elemental Mark the Hero is now allowed to lay and kept a colourless Spell if anybody ever
+printed one. `remainingCopies` did not ask about role at all, so the shelf offered bodies
+the validator then refused. All three now call `deckRoleRefusal`.
+
+**`ownerOfKind` is the same story on the card face.** The HERO / COMPANION badge printed
+`CardDef.source`, which looks like it answers "whose card is this" and does not — it means
+"cast from the beast's tile", which is why it gates the range check in `targeting.ts`. It is
+`'companion'` on the Cinder Mark, so the badge read COMPANION on a card the rules call the
+Hero's. The badge is derived from `kind` now; `source` was left alone, because changing it
+would have made all three Marks global-range.
+
 ---
 
 ## 9. Known gaps
@@ -562,9 +684,19 @@ Stated plainly rather than left for someone to find:
 
 - **`too_many_behemoths` in `validateDeck` is unreachable.** Minions cannot be deck cards,
   and nothing else in the catalogue carries `unit.footprint === 2`. Vestigial, harmless.
-- **The `neutral`/`arcane` Grimoire fallback is a content gap wearing a rule.** Bulwark has
-  two spells and Surge three; neither can fill eight out of its own school. Write the
-  content and the rule stops firing on its own, with nothing to remove.
+- **Lexis has no Spells and never will.** Its school is arcane, "Spell" means elemental, and
+  the two cannot both be true. Its whole Grimoire comes out of the colourless fallback. See
+  §2 — this is a Director's decision, not a bug to fix in code.
+- **`CardDef.source` no longer means what its name suggests.** It is the *casting origin* —
+  it gates the range check and fires Resonance — and it still reads `'companion'` on the
+  three Mark cards, which are now Hero property by `kind`. Flipping it would be the honest
+  rename and would silently make every Mark global-range, because
+  [targeting.ts:41](src/core/engine/targeting.ts:41) discards `range` on Hero cards. Left
+  as-is deliberately; the display reads `ownerOfKind` instead.
+- **The Aura line is Hero-owned and Hero-undeckable.** Ember Coat, Cataclysm, Marrow Siphon
+  and Marrow Burst are `source: 'hero'` and elemental, so they are Spells that no Hero Deck
+  may hold. They reach the board only by being drafted into a Grimoire or pressed at the
+  splicing bench. This predates the overhaul and the overhaul did not fix it.
 - **Schematic and Ascension prices are flat across every Tier.** A Tier 1 staple costs what
   a Tier 3 finisher does. The Ascension uplift is also a flat 10%, so a flat price is the
   honest matching shape until the uplift stops being flat

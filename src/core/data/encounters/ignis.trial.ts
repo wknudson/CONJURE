@@ -204,8 +204,8 @@ export const IGNIS_TRIAL: EncounterDef = registerEncounter({
   enemyName: 'Ignis, Ember Drake',
   enemySchool: 'pyre',
   enemyDeck: [
-    'cinder_rune',
-    'cinder_rune',
+    'cinder_mark',
+    'cinder_mark',
     'flame_surge',
     'flame_surge',
     'magma_brute',
@@ -217,7 +217,7 @@ export const IGNIS_TRIAL: EncounterDef = registerEncounter({
     'aegis_ward',
     'stone_barricade',
     'dark_tithe',
-    'soul_splinter_rune',
+    'soul_splinter_mark',
     'cataclysmic_core',
   ],
   enemyOpeningBoard: [

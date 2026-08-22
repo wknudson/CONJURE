@@ -85,7 +85,7 @@ export class Fx {
     });
   }
 
-  /** The signature rune-detonation beat: white flash, expanding ring, shrapnel. */
+  /** The signature mark-detonation beat: white flash, expanding ring, shrapnel. */
   detonation(at: Coord, school: string, duration: number): Promise<void> {
     const colors = schoolOf(school as never);
     const centre = this.cam.tileCenter(at);

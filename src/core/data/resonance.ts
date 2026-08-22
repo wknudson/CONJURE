@@ -47,7 +47,7 @@ export const VERDANT_GROWTH_HEAL = 20;
  *  - Ash Fertilizer (Treant)     — when Wildfire goes off, Leech (1) to allies in the blast.
  *  - Flash Freeze (Mantis)       — when Superconduct chains, Chill (1) to the collateral.
  *  - Icebreaker (Juggernaut)     — when Shatter triggers, Fortify the nearest ally 30 Armor.
- *  - Winter's Grasp (Gargoyle)   — when a Soul Rune detonates, bank a Pip.
+ *  - Winter's Grasp (Gargoyle)   — when a Soul Mark detonates, bank a Pip.
  *  - Momentum Transfer (Dynamo)  — when a Kinetic Arc triggers, Haste the lowest-HP ally.
  *  - Aether Siphon (Geist)       — when an Overloaded unit is tithed, draw 1 and make 1 Echo.
  *  - Marrow Shield (Sovereign)   — when a Devour triggers, Fortify the Pact 20 Armor.
@@ -59,7 +59,7 @@ export const VERDANT_GROWTH_HEAL = 20;
  *     fits this codebase is the boon shape — a capability read at the chokepoint the
  *     moment already passes through — not a listener registry.
  *  2. **Four of them name resources or mechanics that do not exist**: Echo (twice),
- *     Leech, Haste, and Devour. Plasma Burst, Kinetic Arc, Black Ice and Soul Runes are
+ *     Leech, Haste, and Devour. Plasma Burst, Kinetic Arc, Black Ice and Soul Marks are
  *     likewise not reactions this engine has; the real table is in `data/reactions.ts`.
  *  3. **`RESONANCE` is keyed by school.** Ten more entries need a key that is not a
  *     `School` — a Companion-level override, most likely, resolved in `resonanceFor`

@@ -15,6 +15,7 @@ import {
 import { COMPANIONS } from '../core/data/companions.js';
 import { traitsFor } from '../core/data/companionTraits.js';
 import { validateDeck } from '../core/data/deckRules.js';
+import { CARDS } from '../core/data/cards/index.js';
 import {
   INVENTORY_LIMIT,
   addConsumable,
@@ -406,10 +407,11 @@ describe('one character on disk', () => {
     writeSave(file);
     const raw = JSON.parse(localStorage.getItem('conjure.save')!);
     raw.profiles['slot-1'].collection = { unlocked: ['spark_wisp'], ascended: ['spark_wisp'] };
-    // Every id the rename table knows about is now un-deckable — the Wisp is a body and
-    // both hybrids are elemental — so the deck half is observed through the *note* rather
-    // than through what survives. An id that failed to rename would be an unknown card and
-    // would be dropped silently; being counted as elemental proves it was recognised.
+    // The deck half is observed through the *note* rather than through what survives,
+    // because Vaporize Blast is a Spell and a Spell cannot stay in a Hero Deck. That is the
+    // point: an id that failed to rename would be an unknown card and would be dropped in
+    // silence, so being *counted* — as a Spell rather than merely as debris — is the proof
+    // the rename table recognised it.
     raw.profiles['slot-1'].decks.ignis = {
       companionId: 'ignis',
       cards: ['spell_vaporize_blast', 'shield_bash'],
@@ -424,13 +426,18 @@ describe('one character on disk', () => {
     expect(p.decks.ignis!.cards, 'the Hero-legal card is kept').toEqual(['shield_bash']);
     expect(
       loaded.notes.join(' '),
-      'and the renamed hybrid was recognised, then stripped as elemental',
-    ).toMatch(/1 elemental card/);
+      'and the renamed hybrid was recognised, then stripped as a Spell',
+    ).toMatch(/1 Spell\(s\) left your/);
   });
 
-  it('takes the elements out of a deck saved before the Fused Grimoire', () => {
-    // The Companion brings its own eight now, so a Hero Deck full of Pyre is not a deck
-    // the player can fix — those cards can never be legal in it again.
+  it('takes the Spells out of a deck saved before the Fused Grimoire, and leaves the Mark', () => {
+    // Two rules in one deck, and the second one is new. The Companion casts the Spells, so
+    // Flame Surge can never be legal here again and is stripped rather than flagged.
+    //
+    // The Cinder Rune in the same list is the other half. It is written to disk under its
+    // old id, arrives as `cinder_mark` through the rename map, and **stays** — because a
+    // Mark is the Hero's trap now. A migration that confiscated it would be taking a card
+    // away from a player at the exact moment the rules started letting them keep it.
     const file = fileWith('slot-1');
     writeSave(file);
     const raw = JSON.parse(localStorage.getItem('conjure.save')!);
@@ -443,9 +450,9 @@ describe('one character on disk', () => {
     const loaded = loadSave();
     const p = loaded.save.profiles['slot-1']!;
 
-    expect(p.decks.ignis!.cards).toEqual(['shield_bash', 'aegis_ward']);
+    expect(p.decks.ignis!.cards).toEqual(['cinder_mark', 'shield_bash', 'aegis_ward']);
     expect(p.decks.ignis!.invalid, 'and it is now too short, so it is flagged').toBe(true);
-    expect(loaded.notes.join(' ')).toMatch(/fuses its own eight/);
+    expect(loaded.notes.join(' ')).toMatch(/Spell\(s\) left your/);
   });
 
   it('gives a beast caught before the Grimoire the same roll on every load', () => {
@@ -461,6 +468,58 @@ describe('one character on disk', () => {
     const second = loadSave().save.profiles['slot-1']!.companions[0]!;
 
     expect(first.spellModifiers).toEqual(second.spellModifiers);
+  });
+
+  it('takes the Marks out of a Grimoire caught before the role overhaul', () => {
+    // Every beast tamed before today has Marks in its book: Ignis drafted Cinder Marks,
+    // Mortis drafted Soul Splinters. A Mark is the Hero's trap now, and leaving them would
+    // make "a Companion never holds a Mark" true only for players who started this week.
+    const file = fileWith('slot-1');
+    writeSave(file);
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    raw.profiles['slot-1'].companions[0].baseId = 'ignis';
+    raw.profiles['slot-1'].companions[0].grimoire = [
+      'flame_surge',
+      'cinder_rune',
+      'cinder_rune',
+      'ashen_wake',
+      'ember_coat',
+      'cataclysm',
+      'flame_surge',
+      'cataclysmic_core',
+    ];
+    delete raw.profiles['slot-1'].companions[0].spellModifiers;
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const beast = loadSave().save.profiles['slot-1']!.companions[0]!;
+
+    expect(beast.grimoire, 'the book is still eight').toHaveLength(8);
+    for (const id of beast.grimoire) {
+      expect(CARDS[id], id).toBeDefined();
+      expect(CARDS[id]!.kind, `${id} is still a Mark`).not.toBe('mark');
+    }
+    // Slot by slot, not a re-draft. Everything that was legal is exactly where it was --
+    // redrawing the whole book would hand the player a different animal than the one they
+    // went out and caught.
+    expect(beast.grimoire[0]).toBe('flame_surge');
+    expect(beast.grimoire[3]).toBe('ashen_wake');
+    expect(beast.grimoire[7]).toBe('cataclysmic_core');
+  });
+
+  it('repairs that Grimoire the same way on every load', () => {
+    // Seeded off the beast's own id, for the same reason the roll is: a repair that used
+    // `Math.random` would make every reload a different Companion, which is precisely what
+    // storing `baseHpRoll` rather than deriving it exists to prevent.
+    const file = fileWith('slot-1');
+    writeSave(file);
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    raw.profiles['slot-1'].companions[0].baseId = 'ignis';
+    raw.profiles['slot-1'].companions[0].grimoire = ['cinder_rune', 'cinder_rune', 'flame_surge'];
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const first = loadSave().save.profiles['slot-1']!.companions[0]!.grimoire;
+    const second = loadSave().save.profiles['slot-1']!.companions[0]!.grimoire;
+    expect(first).toEqual(second);
   });
 
   it('takes the bodies out of a deck saved before the Vanguard overhaul', () => {

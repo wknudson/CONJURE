@@ -13,7 +13,7 @@ import {
 import { legalCardTargets } from '../core/engine/targeting.js';
 import { hasLoS } from '../core/engine/los.js';
 import { CARDS } from '../core/data/cards/index.js';
-import { remainingCopies } from '../core/data/deckRules.js';
+import { deckRoleRefusal, remainingCopies } from '../core/data/deckRules.js';
 import { ARCANE_CARDS } from '../core/data/cards/arcane.js';
 import { tierOf, TIER_COPY_LIMIT } from '../core/data/deckRules.js';
 import { ARCANE_BASELINE, isObtainable, SOULBOUND, startingCollection } from '../core/data/collection.js';
@@ -359,15 +359,32 @@ describe('the baseline a new character opens with', () => {
     // The check this replaced guarded against seeding *above* the Tier cap — a collection
     // the player could not legally spend. That cannot happen now: nothing seeds a count,
     // so one unlock is exactly the Tier's allowance and never more.
+    //
+    // "Only thing capping copies" is now true of the cards a deck can actually hold, and
+    // the exception is the interesting half. The baseline includes Scrap Phalanx, which is
+    // a **body** — the Vanguard's, never a deck's. It used to report two copies remaining
+    // while `validateDeck` refused the deck built with them, which is the builder holding
+    // one rule twice and disagreeing with itself.
     const collection = startingCollection();
     for (const id of ARCANE_BASELINE) {
-      const limit = TIER_COPY_LIMIT[tierOf(CARDS[id]!)];
+      const def = CARDS[id]!;
+      const limit = TIER_COPY_LIMIT[tierOf(def)];
+
+      if (deckRoleRefusal(def)) {
+        expect(remainingCopies([], id, collection), `${id} cannot be decked at all`).toBe(0);
+        continue;
+      }
+
       expect(remainingCopies([], id, collection), id).toBe(limit);
       expect(
         remainingCopies(Array.from({ length: limit }, () => id), id, collection),
         `${id} at its cap`,
       ).toBe(0);
     }
+
+    // Named rather than left to the branch above, so the day Scrap Phalanx stops being a
+    // body this test says so instead of quietly testing nothing.
+    expect(deckRoleRefusal(CARDS.scrap_phalanx!)).toBe('minion');
   });
 
   it('leaves them losable', () => {

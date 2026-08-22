@@ -12,7 +12,7 @@ import type {
   CardInstanceId,
   Coord,
   Keyword,
-  RuneDefId,
+  MarkDefId,
   School,
   Side,
   UnitId,
@@ -60,8 +60,8 @@ export interface ObstacleSnapshot {
   cover?: boolean;
 }
 
-export interface RuneSnapshot {
-  defId: RuneDefId;
+export interface MarkSnapshot {
+  defId: MarkDefId;
   name: string;
   school: School;
   ownerSide: Side;
@@ -74,7 +74,7 @@ export interface CardSnapshot {
   cost: CardCost;
   school: School;
   source: 'hero' | 'companion';
-  kind: 'minion' | 'spell' | 'rune' | 'obstacle';
+  kind: 'minion' | 'spell' | 'ability' | 'mark' | 'obstacle';
   text: string;
   keywords: Keyword[];
   /** Present for minion/behemoth cards, for the stat footer. */

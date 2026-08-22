@@ -9,7 +9,7 @@ import { emit, newCause } from './context.js';
 import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import { entityAt, getEntity, unitAt } from './board.js';
-import { evaluateRuneOnDeath } from './runes.js';
+import { evaluateMarkOnDeath } from './marks.js';
 import { placeOpeningUnit } from './spawn.js';
 import { CARDS } from '../data/cards/index.js';
 import { creditRefund, spawnHazard } from './reactions.js';
@@ -21,7 +21,7 @@ import { STAT_SCALE } from '../scale.js';
 
 /**
  * Removes an entity from the board. `devoured` routes to the fizzle path: a devoured
- * host's rune is discarded without detonating, per Draft 7 §4.2.
+ * host's mark is discarded without detonating, per Draft 7 §4.2.
  */
 /**
  * Marks a fallen Vanguard body in the roster it came from.
@@ -100,10 +100,10 @@ export function killEntity(
     burstObstacle(ctx, live.defId, at, chainDepth);
   }
 
-  // Rune resolution happens after removal so a death-triggered blast cannot hit its
+  // Mark resolution happens after removal so a death-triggered blast cannot hit its
   // own dead host, and so the board state the blast sees is already correct.
-  if (live.rune) {
-    evaluateRuneOnDeath(ctx, live, devoured, Math.max(1, chainDepth));
+  if (live.mark) {
+    evaluateMarkOnDeath(ctx, live, devoured, Math.max(1, chainDepth));
   }
 
   checkLethal(ctx);
@@ -153,7 +153,7 @@ function payDeathRefund(ctx: Ctx, dead: Unit): void {
  * design: the blast does not know whose army is standing in it, so shooting one is a
  * decision about where your own units are, not a free removal spell.
  *
- * Runs inside the death cascade, so it respects a cancelled chain the same way a rune
+ * Runs inside the death cascade, so it respects a cancelled chain the same way a mark
  * blast does — a boss Damage Gate that stops a chain stops this with it.
  */
 function burstObstacle(ctx: Ctx, defId: string, at: Coord, chainDepth: number): void {
@@ -244,7 +244,7 @@ function payTo(
 /**
  * Win/loss evaluation, including Draft 7 §9's mutual-KO rule: if both commanders hit 0
  * in the same step, both revive at 1 HP, the board is wiped of non-obstacle units and
- * runes, all armor is purged (Module 5), and combat continues in sudden death.
+ * marks, all armor is purged (Module 5), and combat continues in sudden death.
  */
 export function checkLethal(ctx: Ctx): void {
   if (ctx.state.result) return;
@@ -280,7 +280,7 @@ function enterSuddenDeath(ctx: Ctx): void {
     cmd.armor = 0;
   }
 
-  // Wipe every non-obstacle unit and every rune.
+  // Wipe every non-obstacle unit and every mark.
   for (const unit of Object.values(ctx.state.units)) {
     delete ctx.state.units[unit.id];
     emit(ctx, {
@@ -292,7 +292,7 @@ function enterSuddenDeath(ctx: Ctx): void {
     });
   }
   for (const obs of Object.values(ctx.state.obstacles)) {
-    obs.rune = undefined;
+    obs.mark = undefined;
   }
 
   // The wipe took the Bound Form with it, but the Pact did not end — it was revived at

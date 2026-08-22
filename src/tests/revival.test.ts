@@ -304,7 +304,7 @@ describe('the two Rallies', () => {
 });
 
 describe('what a raised body carries', () => {
-  it('comes back stripped: no rune, no status, no Aura, no growth', () => {
+  it('comes back stripped: no mark, no status, no Aura, no growth', () => {
     const { state, unit } = withVanguard('grave_sentinel', {
       hand: ['aetheric_resurgence'],
       pips: 8,
@@ -323,7 +323,7 @@ describe('what a raised body carries', () => {
     expect(body.statuses.burn).toBeUndefined();
     expect(body.aura).toBeUndefined();
     expect(body.escalation).toBe(0);
-    expect(body.rune).toBeUndefined();
+    expect(body.mark).toBeUndefined();
     expect(body.atk, 'and its printed attack, not the one it died with').toBe(
       CARDS.grave_sentinel!.unit!.atk,
     );

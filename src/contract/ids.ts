@@ -3,7 +3,7 @@
 export type UnitId = string;
 export type CardInstanceId = string;
 export type CardDefId = string;
-export type RuneDefId = string;
+export type MarkDefId = string;
 export type EntityId = UnitId;
 
 export type Side = 'player' | 'enemy';
@@ -17,11 +17,11 @@ export interface Coord {
 /** Elemental schools. The demo uses pyre / dusk / arcane; the rest are reserved. */
 export type School = 'pyre' | 'frost' | 'surge' | 'bulwark' | 'dusk' | 'bloom' | 'arcane' | 'neutral';
 
-/** Damage typing drives rune alignment (which triggers detonate vs. fizzle). */
+/** Damage typing drives mark alignment (which triggers detonate vs. fizzle). */
 export type DamageType = 'physical' | 'fire' | 'frost' | 'shock' | 'spell' | 'impact' | 'true';
 
 /** What caused a damage instance — the renderer picks animations from this. */
-export type DamageCause = 'attack' | 'spell' | 'collision' | 'rune' | 'status' | 'counter' | 'impact' | 'reaction';
+export type DamageCause = 'attack' | 'spell' | 'collision' | 'mark' | 'status' | 'counter' | 'impact' | 'reaction';
 
 export type StatusKind =
   | 'burn'

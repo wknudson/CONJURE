@@ -210,7 +210,7 @@ describe('torrential rain conducting a shock', () => {
    * Drives `dealDamage` directly rather than through Arc Lash.
    *
    * Conduction is a property of the damage, not of the card: a Surge unit's swing or a
-   * future Surge rune would arc identically, and testing through one caller would tie
+   * future Surge mark would arc identically, and testing through one caller would tie
    * the rule to that caller.
    */
   const strike = (state: GameState, targetId: string, dtype: DamageType) => {

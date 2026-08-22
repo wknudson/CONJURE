@@ -145,11 +145,11 @@ describe('what cannot be done to it', () => {
     expect(ids.filter(Boolean).length).toBeGreaterThan(0);
   });
 
-  it('hides it from rune attachment, which could never detonate', () => {
+  it('hides it from mark attachment, which could never detonate', () => {
     const { state, boundId } = withBound();
     addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 1, y: 6 } });
 
-    const targets = legalCardTargets(state, 'player', 'soul_splinter_rune');
+    const targets = legalCardTargets(state, 'player', 'soul_splinter_mark');
     const ids = targets.map((t) => (t.kind === 'entity' && t.ref.kind === 'unit' ? t.ref.id : ''));
 
     expect(ids).not.toContain(boundId);

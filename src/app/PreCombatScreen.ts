@@ -30,6 +30,7 @@ import { printedId } from '../core/data/collection.js';
 import { companionById } from '../core/data/companions.js';
 import { territoryDepthFor } from '../core/types/state.js';
 import { schoolOf } from '../render/palette.js';
+import { KIND_WORD } from '../hud/cardFace.js';
 import { Tooltip } from '../hud/Tooltip.js';
 
 export interface PreCombatOpts {
@@ -252,7 +253,9 @@ export class PreCombatScreen implements Screen {
     row.innerHTML = `
       <span class="deckrow__cost">${formatCost(def.cost)}</span>
       <span class="deckrow__name">${def.name}</span>
-      <span class="deckrow__kind">${def.range === undefined ? def.kind : `${def.kind} ${def.range}`}</span>
+      <span class="deckrow__kind">${
+        def.range === undefined ? KIND_WORD[def.kind] : `${KIND_WORD[def.kind]} ${def.range}`
+      }</span>
       <span class="deckrow__n">${count > 0 ? `${count}×` : ''}</span>
       <span class="deckrow__op">${isDeckSide ? '−' : '+'}</span>
     `;

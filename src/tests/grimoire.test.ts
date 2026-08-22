@@ -2,17 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { createCombat } from '../core/engine/setup.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
 import { COMPANIONS, companionById } from '../core/data/companions.js';
-import { CARDS } from '../core/data/cards/index.js';
+import { CARDS, isAscendedId } from '../core/data/cards/index.js';
 import {
+  HERO_KINDS,
   HERO_SCHOOLS,
   MAX_DECK,
   MIN_DECK,
   TIER_COPY_LIMIT,
+  deckRoleRefusal,
   fusedDeckSize,
+  remainingCopies,
   tierOf,
   validateDeck,
 } from '../core/data/deckRules.js';
-import { purePool } from '../core/data/grimoire.js';
+import { draftGrimoire, hybridPool, isDraftable, purePool } from '../core/data/grimoire.js';
 import { STARTER_DECK } from '../core/data/cards/starter.js';
 import { rollSpellModifiers, tameCompanion, MODIFIER_CHANCE } from '../core/overworld/vivarium.js';
 import { makeRng } from '../core/util/rng.js';
@@ -54,13 +57,57 @@ describe('the sliding scale', () => {
     expect(fusedDeckSize(MIN_DECK)).toBe(12);
   });
 
-  it('refuses an elemental card, and says whose job that is', () => {
-    const deck = [...STARTER_DECK, 'flame_surge'];
-    const problem = validateDeck(deck).find((p) => p.code === 'off_school');
+  it('names a Spell as a Spell, not as the wrong colour', () => {
+    // This used to expect `off_school`, and the change is the whole point of the overhaul.
+    // A Spell is elemental *by construction* now, so "your Flame Surge is Pyre" is true,
+    // useless, and sends the player hunting for an arcane one that cannot exist. What is
+    // wrong with it is its role, and the colour is only how you can tell.
+    const problems = validateDeck([...STARTER_DECK, 'flame_surge']);
+    const problem = problems.find((p) => p.code === 'spell_in_deck');
+
+    expect(problem, 'a Spell has no place in a Hero Deck').toBeDefined();
+    expect(problem!.cardId).toBe('flame_surge');
+    expect(problem!.message).toMatch(/your Companion casts those/);
+    expect(problems.map((p) => p.code)).not.toContain('off_school');
+  });
+
+  it('still refuses an elemental card that is not a Spell, and says whose job that is', () => {
+    // `off_school` survives the overhaul with exactly one way to reach it: a Construct in
+    // a school the Hero does not hold. Pyre Pillar is not a Spell, not a body and not a
+    // Mark, so nothing above catches it — the colour rule is the only thing that does.
+    expect(CARDS['pyre_pillar']!.kind).toBe('obstacle');
+    const problem = validateDeck([...STARTER_DECK, 'pyre_pillar']).find(
+      (p) => p.code === 'off_school',
+    );
 
     expect(problem, 'Pyre has no place in a Hero Deck').toBeDefined();
-    expect(problem!.cardId).toBe('flame_surge');
+    expect(problem!.cardId).toBe('pyre_pillar');
     expect(problem!.message).toMatch(/Companion brings the elements/);
+  });
+
+  it('lets a Mark in whatever it detonates for', () => {
+    // The exemption, and the reason it is not decoration. A Mark's `school` describes the
+    // payload it goes off with, not whose half of the deck it belongs to. Judge it by the
+    // colour and the day somebody gives the Cinder Mark its red back is the day the Hero
+    // can no longer deck their own trap.
+    const mark = CARDS['cinder_mark']!;
+    expect(mark.kind).toBe('mark');
+    expect(validateDeck([...STARTER_DECK, 'cinder_mark'])).toEqual([]);
+
+    // Not because it happens to be arcane today: prove the *rule* by asking the refusal
+    // about a Mark wearing a colour no Hero Deck would otherwise take.
+    expect(deckRoleRefusal({ ...mark, school: 'pyre' })).toBeNull();
+    expect(deckRoleRefusal({ ...mark, kind: 'obstacle', school: 'pyre' })).toBe('off_school');
+  });
+
+  it('offers no copies of a card the deck can never hold', () => {
+    // The affordance and the validator read one rule. When they read two, the case lets you
+    // click a Spell and the validator then refuses the deck you just built with it.
+    expect(remainingCopies([], 'flame_surge', undefined)).toBe(0);
+    expect(remainingCopies([], 'grave_sentinel', undefined)).toBe(0);
+    expect(remainingCopies([], 'pyre_pillar', undefined)).toBe(0);
+    expect(remainingCopies([], 'cinder_mark', undefined)).toBeGreaterThan(0);
+    expect(remainingCopies([], 'shield_bash', undefined)).toBeGreaterThan(0);
   });
 
   it('names a body as a body, not as the wrong colour', () => {
@@ -87,28 +134,111 @@ describe('the sliding scale', () => {
 });
 
 describe('the Grimoire, as data', () => {
-  it('no longer has a bloodline that cannot fill a book on its own', () => {
+  it('has exactly one bloodline that cannot fill a book on its own, and it is Lexis', () => {
     // This test used to name Voltara and Ferrum, because Surge had three spells to its
-    // name and Bulwark two -- neither could reach eight even taking every copy the Tier
-    // limits allow, so both quietly topped up from the colourless pool. The catalog
-    // expansion closed it: Surge and Bulwark now carry enough of their own.
+    // name and Bulwark two. The catalog expansion closed that, and the test was inverted to
+    // assert nobody needed the colourless fallback any more.
     //
-    // Kept, inverted, as the thing that stops it reopening. The neutral fallback in
-    // `draftGrimoire` is still there and still correct -- it is the answer for whatever
-    // thin school gets added next -- but nothing shipped today needs it.
+    // The role overhaul reopened it for exactly one bloodline, and not by accident.
+    // "Spell" now means *elemental* magic; Lexis's school is `arcane`, which is by
+    // definition not elemental. An Ink Owl's own shelf holds two Constructs and no Spells
+    // at all, so six of its eight come from the fallback every single time.
+    //
+    // Pinned to Lexis by name rather than relaxed to "some may be thin", because the day a
+    // second bloodline joins it, that is a content bug and this has to say so.
     const thin = COMPANIONS.filter((c) => {
       const capacity = purePool(c.grimoire).reduce((n, def) => n + TIER_COPY_LIMIT[tierOf(def)], 0);
       return capacity < GRIMOIRE_SIZE;
     }).map((c) => c.id);
 
-    expect(thin, 'a school has gone thin again').toEqual([]);
+    expect(thin, 'a second school has gone thin').toEqual(['lexis']);
   });
 
-  it('lets the rest fill a book out of their own school alone', () => {
+  it('lets every elemental bloodline fill a book out of its own school alone', () => {
     for (const c of COMPANIONS) {
-      if (['voltara', 'ferrum'].includes(c.id)) continue;
+      if (c.id === 'lexis') continue;
       const capacity = purePool(c.grimoire).reduce((n, def) => n + TIER_COPY_LIMIT[tierOf(def)], 0);
       expect(capacity, `${c.name}`).toBeGreaterThanOrEqual(GRIMOIRE_SIZE);
+    }
+  });
+
+  it('still deals Lexis a full eight, out of the fallback', () => {
+    // The fallback is doing real work now rather than standing by, so it gets a test that
+    // would notice if it stopped. A short book is the failure mode this catches.
+    const lexis = companionById('lexis')!;
+    for (let seed = 0; seed < 40; seed++) {
+      const book = draftGrimoire(makeRng(seed), lexis.grimoire, GRIMOIRE_SIZE);
+      expect(book.length, `seed ${seed}`).toBe(GRIMOIRE_SIZE);
+    }
+  });
+
+  it('never drafts the Hero half: no Marks, no Abilities, no bodies', () => {
+    // Phase 3, as the thing that would notice it being undone. Asked over every bloodline
+    // and over a wide spread of seeds rather than over the pools, because the pools are
+    // only two of the three chains a slot can fall down -- the colourless fallback is the
+    // third, and it is the one a Mark would sneak back in through now that Marks are
+    // filed as arcane.
+    for (const c of COMPANIONS) {
+      for (let seed = 0; seed < 60; seed++) {
+        const book = draftGrimoire(makeRng(seed), c.grimoire, GRIMOIRE_SIZE);
+        for (const id of book) {
+          const def = CARDS[id]!;
+          expect(def.kind, `${c.id} drafted ${id}`).not.toBe('mark');
+          expect(def.kind, `${c.id} drafted ${id}`).not.toBe('minion');
+          expect(isDraftable(def), `${c.id} drafted ${id}`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('draws its own shelves for Spells and the ground they stand on, nothing else', () => {
+    // The pools proper, separately from the fallback. A bloodline's *own* answer to a slot
+    // is a Spell or one of its Constructs -- an Ability turning up here would mean a beast
+    // had started dealing the player the colourless half they build themselves.
+    for (const c of COMPANIONS) {
+      for (const def of [...purePool(c.grimoire), ...hybridPool(c.grimoire)]) {
+        expect(['spell', 'obstacle'], `${c.id} pool holds ${def.id} (${def.kind})`).toContain(
+          def.kind,
+        );
+      }
+    }
+  });
+
+  it('agrees with the Hero Deck about who owns every coloured card', () => {
+    // The two halves checked against each other rather than each against a list.
+    //
+    // The claim is deliberately about **coloured** cards, and the first draft of this test
+    // got it wrong by asserting no card at all could be in both. Stone Barricade is: it is
+    // neutral, so the Hero may deck it, and the colourless fallback may deal it to a beast
+    // whose own shelf ran dry. Lexis makes it worse — its school *is* arcane, so the Ink
+    // Owl's own pool is cards the Hero can also hold.
+    //
+    // That overlap is the fallback working, not a leak. What must never overlap is anything
+    // wearing a colour: a Pyre card is the Companion's or it is nothing, and the day an
+    // elemental Spell becomes Hero-legal this is what says so.
+    const colourless = ['neutral', 'arcane'];
+    for (const def of Object.values(CARDS)) {
+      if (isAscendedId(def.id) || def.setupOnly || def.kind === 'minion') continue;
+      if (colourless.includes(def.school)) continue;
+      const heroCanHold = deckRoleRefusal(def) === null;
+      const beastCanDraft = isDraftable(def) && (def.kind === 'spell' || def.kind === 'obstacle');
+      expect(heroCanHold && beastCanDraft, `${def.id} belongs to both halves`).toBe(false);
+      expect(heroCanHold || beastCanDraft, `${def.id} belongs to neither half`).toBe(true);
+    }
+  });
+
+  it('enforces exactly the three roles it advertises', () => {
+    // `HERO_KINDS` is the sentence the refusal message promises the player. A list that
+    // said one thing while the validator did another would be a rule nobody could learn.
+    expect([...HERO_KINDS].sort()).toEqual(['ability', 'mark', 'obstacle']);
+    for (const kind of ['ability', 'mark', 'obstacle', 'spell', 'minion'] as const) {
+      const sample = Object.values(CARDS).find(
+        (d) => d.kind === kind && !isAscendedId(d.id) && HERO_SCHOOLS.includes(d.school),
+      );
+      if (!sample) continue;
+      expect(deckRoleRefusal(sample) === null, `${sample.id} (${kind})`).toBe(
+        HERO_KINDS.includes(kind),
+      );
     }
   });
 
@@ -230,7 +360,7 @@ describe('the roll', () => {
   it('gives a duplicated spell one shared roll, not two', () => {
     // Ignis carries Flame Surge twice. A roll belongs to the spell, so both copies are the
     // same — which is the version a player can reason about.
-    const mods = rollSpellModifiers(makeRng(4), ['flame_surge', 'flame_surge', 'cinder_rune']);
+    const mods = rollSpellModifiers(makeRng(4), ['flame_surge', 'flame_surge', 'cinder_mark']);
     expect(Object.keys(mods).length).toBeLessThanOrEqual(2);
   });
 

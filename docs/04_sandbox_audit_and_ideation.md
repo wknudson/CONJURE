@@ -45,7 +45,7 @@ Every damage-producing path, and whether the rider goes with it:
 | Counter / riposte | `damage.ts:260` | `counter` | no |
 | Spell damage (`op:'damage'`) | `effects.ts:42` | `spell` | no |
 | `cleaveFront` | `effects.ts:217` | `spell` | no |
-| Rune blast | `runes.ts:150` | `rune` | no — has its own rider loop at `:157` |
+| Mark blast | `marks.ts:150` | `mark` | no — has its own rider loop at `:157` |
 | Burn / Toxin tick | `status.ts:85` | `status` | no |
 | Collision (3 sites) | `displacement.ts:86,96,131` | `collision` | no |
 | Rain shock conduction | `damage.ts:156` | `reaction` | no |
@@ -60,12 +60,12 @@ Feral and AI attacks **do** carry it, because both route through the same reduce
 Four consequences follow from where the call sits, and all four are live today.
 
 **1.1 — The rider does not require the blow to land.** It runs unconditionally after
-`dealDamage` returns, never reading `hpLoss`. Runes require real HP loss (`runes.ts:58`)
+`dealDamage` returns, never reading `hpLoss`. Marks require real HP loss (`marks.ts:58`)
 and so do three of the five reactions (`reactions.ts:66`). A Plague-Bearer swinging into
 5 armour poisons through it.
 
 **1.2 — The rider ignores `chainCancelled`.** Every other secondary effect checks it —
-`damage.ts:132`, `reactions.ts:68`, `runes.ts:108`, `death.ts:87`. A boss Damage Gate that
+`damage.ts:132`, `reactions.ts:68`, `marks.ts:108`, `death.ts:87`. A boss Damage Gate that
 stops a chain mid-flight does not stop the rider.
 
 **1.3 — A dead attacker still brands its killer.** `attack()` captures the attacker once
@@ -87,7 +87,7 @@ never happens.
 
 `damage.ts:80-84` enumerates, in a comment, everything the Bound Form's portrait redirect
 deliberately bypasses: *armor on the unit, Counter, Brittle, elemental reactions, and
-rune-on-damage.* **`onHit` is not in that list, and not in the targeting refusal either.**
+mark-on-damage.* **`onHit` is not in that list, and not in the targeting refusal either.**
 `applyOnHit` only asks `target.kind === 'unit'` (`engine.ts:297`), and a Bound Form is a unit.
 
 So: a Plague-Bearer hits the enemy Companion's body and applies real Toxin. Next tick,
@@ -157,7 +157,7 @@ hud/TargetingController.ts:265     "held in place" refusal
 render/BoardRenderer.ts:804        the 💫 icon
 ```
 
-Zero cards, zero runes, zero riders, zero engine calls apply it. It is a complete hard-CC
+Zero cards, zero marks, zero riders, zero engine calls apply it. It is a complete hard-CC
 primitive — gating, decay, threat model, icon, tooltip — with no way to reach it, and the
 lexicon (`02:420`) and glossary (`glossary.ts:151`) both describe it as a live rule.
 **§10.4 ships the first source.**
@@ -299,8 +299,8 @@ least-used feature in the codebase.
 - The coverage table (`02:494-499`) misses: the implicit shock→charged rule and the
   Bombardier's rider under `charged`; Rot-Root Snare under `toxin`; Cryo-Crystal under
   `freeze`; every splice-reachable applier; and it has no `burn` row at all.
-- "Shipped: **Cinder Rune** and **Soul Splinter Rune**" (`02:588`) — there are four
-  (`data/runes.ts` also ships `rot_root_snare` and `cask_blast`), and the same document
+- "Shipped: **Cinder Mark** and **Soul Splinter Mark**" (`02:588`) — there are four
+  (`data/marks.ts` also ships `rot_root_snare` and `cask_blast`), and the same document
   describes Rot-Root's mechanic in detail at `02:533-548`. Summary line only.
 - Burn immunity is documented one-sided (`02:427`); `immuneToToxin` behaves identically
   (`status.ts:71-77`).
@@ -314,7 +314,7 @@ Five, ordered by how likely they are to bite.
 **What happens.** A Plague-Bearer killed by its target's Counter still poisons that target,
 via a dangling object reference (`engine.ts:250` captured, `death.ts:36` deletes from the
 map without mutating, `:283` reads it anyway). Same for an attacker killed mid-swing by a
-rune blast (`damage.ts:287`) or a rain arc.
+mark blast (`damage.ts:287`) or a rain arc.
 
 **Fix.** Re-read the attacker inside `applyOnHit`, mirroring the victim check that is
 already there. Pass `attackerId` instead of the rider:
@@ -327,8 +327,8 @@ function applyOnHit(ctx: Ctx, attackerId: string, target: TargetRef): void {
 }
 ```
 
-One line, and it makes the two liveness checks symmetric. Note the rune path already uses a
-stricter test (`runes.ts:221` checks `hp <= 0` as well as existence) — worth aligning on the
+One line, and it makes the two liveness checks symmetric. Note the mark path already uses a
+stricter test (`marks.ts:221` checks `hp <= 0` as well as existence) — worth aligning on the
 stricter one.
 
 ### 5.2 The rider pierces the Seal and the Damage Gate
@@ -370,12 +370,12 @@ is the better card, and Superconduct already has a Frost-damage route through Gl
 
 Either way, both cards need a test. Their absence is why this went a full sprint unnoticed.
 
-### 5.5 Chain depth only bounds rune→rune
+### 5.5 Chain depth only bounds mark→mark
 
-`DamageRequest.chainDepth` is written by exactly one caller (`runes.ts:150`) and read by one
-(`runes.ts:54`). Every other damage source omits it, so a rune detonated by a collision, a
-reaction, or a spell restarts the counter at depth 1. `MAX_CHAIN_DEPTH` (`runes.ts:24`)
-therefore does not bound a rune→collision→rune cascade at all.
+`DamageRequest.chainDepth` is written by exactly one caller (`marks.ts:150`) and read by one
+(`marks.ts:54`). Every other damage source omits it, so a mark detonated by a collision, a
+reaction, or a spell restarts the counter at depth 1. `MAX_CHAIN_DEPTH` (`marks.ts:24`)
+therefore does not bound a mark→collision→mark cascade at all.
 
 **Fix.** Thread `chainDepth` through the collision and reaction paths so the guard bounds
 real cascades rather than one shape of them. Nothing currently exploits this, which is the
@@ -414,7 +414,7 @@ slot — several become Part 2 material.
 | Capability | State | Where |
 |---|---|---|
 | `AreaSpec {shape:'all'}` | implemented, **0 cards** | `effects.ts:392` |
-| `BlastPattern {shape:'self'}` | implemented, **0 runes**, documented inert | `runes.ts:165`, `02:528` |
+| `BlastPattern {shape:'self'}` | implemented, **0 marks**, documented inert | `marks.ts:165`, `02:528` |
 | `CardDef.vector:'linear'` | implemented, **0 cards** | `targeting.ts:77` |
 | `CardDef.minRange` | implemented, **0 cards** | `targeting.ts:64,72` |
 | `StatusKind 'stun'` | fully gated, **0 appliers** | §3.1 |
@@ -586,7 +586,7 @@ given exactly, because §6 is largely a list of what happens when they are guess
 
 **The first card in the game to use `vector: 'linear'`** (`targeting.ts:77`, zero uses).
 A beam that hits everything down the rank — friend included, because a beam does not check
-sides. `spell` damage, so it does not shatter ice; it is aligned for the Cinder Rune, which
+sides. `spell` damage, so it does not shatter ice; it is aligned for the Cinder Mark, which
 makes it a cascade opener rather than a finisher.
 
 ### 10.2 Sunken Mortar — spell, `bulwark`, companion
@@ -656,12 +656,12 @@ spell, and the caster's `bonusObstacleHp` still applies on top.
 
 `target: { kind: 'emptyTile', zone: 'any' }` ·
 `seq`: `{ op: 'spawnConstruct', obstacleDef: 'thorn_cairn', hp: 4 }` then
-`{ op: 'attachRune', rune: 'rot_root_snare' }`
+`{ op: 'attachMark', mark: 'rot_root_snare' }`
 
 **Raise a thing and then wire it, in one card.** This is the `spawnedObstacleId` handoff
 (`02:352-356`) doing exactly what it was built for: the card targets an empty tile, so
-`chosen` holds no entity, and `attachRune` falls back to what the previous node just built.
-Without that handoff the rune would find no host and vanish silently.
+`chosen` holds no entity, and `attachMark` falls back to what the previous node just built.
+Without that handoff the mark would find no host and vanish silently.
 
 The result is a wall that roots and poisons whatever is standing around it when it breaks —
 and, per `02:526`, the blast spares its own host, which for an obstacle host is exactly
@@ -737,7 +737,7 @@ being a countdown you wait out and becomes three rounds you have to *hold*.
 
 `atk: 5, hp: 22, mov: 2, rangeMax: 3, footprint: 2, attackProfile: 'arcing', rangeMin: 2`
 
-**Passive — Threnody.** A rune-bearer: it enters with a `soul_splinter_rune` already
+**Passive — Threnody.** A mark-bearer: it enters with a `soul_splinter_mark` already
 attached, so killing it detonates 5 into your lowest-HP body. Killing it is a cost.
 
 **Phase shift.** At 50%, `dockIntoForm` swaps it for a larger stat block (`spawn.ts:126-171`)

@@ -17,7 +17,7 @@ import { formatCost } from './cost.js';
 import { schoolOf } from '../render/palette.js';
 import { isAscendedId } from '../core/data/cards/index.js';
 import { ASCENSION_PERCENT } from '../core/data/ascension.js';
-import type { CardCost } from '../core/types/cards.js';
+import type { CardCost, CardKind } from '../core/types/cards.js';
 import type { CardDef } from '../core/types/cards.js';
 import type { CardSnapshot } from '../contract/snapshots.js';
 import type { Keyword, School } from '../contract/ids.js';
@@ -33,8 +33,7 @@ export interface CardFace {
   name: string;
   cost: CardCost;
   school: School;
-  source: 'hero' | 'companion';
-  kind: 'minion' | 'spell' | 'rune' | 'obstacle';
+  kind: CardKind;
   text: string;
   keywords: Keyword[];
   stats?: { atk: number; hp: number; mov: number; rangeMin: number; rangeMax: number };
@@ -53,13 +52,45 @@ export interface CardFace {
   ascended?: boolean;
 }
 
-/** What the card does with the board, in one word. */
-const KIND_LABEL: Record<CardFace['kind'], string> = {
-  minion: 'MINION',
-  spell: 'SPELL',
-  rune: 'RUNE',
-  obstacle: 'OBSTACLE',
+/**
+ * What the card does with the board, in one word — the player's word, not the schema's.
+ *
+ * `obstacle` is the field and **construct** is what the game has called the thing standing
+ * on the board since long before this file existed. Shipping the field name is how a debug
+ * view escapes into a shelf.
+ *
+ * Exported because three shelves print it: the card face in caps, and the deck rows in the
+ * Field Journal and the Pre-Combat screen in lower case. Those two used to print
+ * `def.kind` raw, so the same card read "construct" on the face and "obstacle" one panel
+ * over.
+ */
+export const KIND_WORD: Record<CardKind, string> = {
+  minion: 'minion',
+  spell: 'spell',
+  ability: 'ability',
+  mark: 'mark',
+  obstacle: 'construct',
 };
+
+/** The face's badge: the same word, shouted. Derived, so the two can never disagree. */
+const KIND_LABEL: Record<CardKind, string> = Object.fromEntries(
+  Object.entries(KIND_WORD).map(([kind, word]) => [kind, word.toUpperCase()]),
+) as Record<CardKind, string>;
+
+/**
+ * Whose card this is — read off what it *is*, not off where it is cast from.
+ *
+ * `CardDef.source` looks like it answers this and does not. It means "cast from the beast's
+ * tile", which is why it gates the range check in `targeting.ts` — and it is `'companion'`
+ * on the Cinder Mark, a trap the Hero lays and only the Hero may deck. Printing that field
+ * on the face put COMPANION on a card the rules call the Hero's.
+ *
+ * `kind` is the ownership axis now: Spells are the Companion's, everything else is the
+ * Hero's. One fact, derived in the one place that shows it.
+ */
+export function ownerOfKind(kind: CardKind): 'hero' | 'companion' {
+  return kind === 'spell' ? 'companion' : 'hero';
+}
 
 /**
  * A face from a definition — what the Safehouse holds.
@@ -72,7 +103,6 @@ export function faceOfDef(def: CardDef): CardFace {
     name: def.name,
     cost: def.cost,
     school: def.school,
-    source: def.source,
     kind: def.kind,
     text: def.text,
     keywords: def.keywords,
@@ -99,7 +129,6 @@ export function faceOfSnapshot(s: CardSnapshot): CardFace {
     name: s.name,
     cost: s.cost,
     school: s.school,
-    source: s.source,
     kind: s.kind,
     text: s.text,
     keywords: s.keywords,
@@ -127,10 +156,11 @@ export function cardFaceHtml(
   opts: { extraClass?: string; showReach?: boolean } = {},
 ): string {
   const colors = schoolOf(face.school);
+  const owner = ownerOfKind(face.kind);
   const cls = [
     'card',
     `card--${face.kind}`,
-    `card--src-${face.source}`,
+    `card--src-${owner}`,
     face.ascended ? 'card--ascended' : '',
     face.ephemeral ? 'card--ephemeral' : '',
     opts.extraClass ?? '',
@@ -179,7 +209,7 @@ export function cardFaceHtml(
         <span class="card__kind">${KIND_LABEL[face.kind]}</span>
         ${rangeChip}
         ${ascendedChip}
-        <span class="card__source">${face.source === 'companion' ? 'COMPANION' : 'HERO'}</span>
+        <span class="card__source">${owner === 'companion' ? 'COMPANION' : 'HERO'}</span>
       </div>
       <div class="card__body">
         <div class="card__text">${escapeHtml(face.text)}</div>

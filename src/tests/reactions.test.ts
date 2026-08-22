@@ -364,7 +364,7 @@ describe('Surge reactions', () => {
 
 describe('armor gating', () => {
   it('does not fire a reaction when armor absorbs the whole hit', () => {
-    // Same rule as runes: a blow that never reaches health changes nothing.
+    // Same rule as marks: a blow that never reaches health changes nothing.
     const state = scenario({
       units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, armor: 300, keywords: [] }],
       hand: ['flame_surge'],

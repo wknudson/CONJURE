@@ -197,25 +197,25 @@ describe('mastery objectives', () => {
   });
 
   it('scores a flawless fight at the ceiling', () => {
-    const report = masteryOf({ damageTaken: 0, runeDetonations: DETONATION_TARGET, rosterFallen: 0 });
+    const report = masteryOf({ damageTaken: 0, markDetonations: DETONATION_TARGET, rosterFallen: 0 });
     expect(report.affinity).toBe(AFFINITY_CEILING);
     expect(report.met).toEqual(['untouched', 'detonation', 'unbroken']);
   });
 
   it('scores a scrape at nothing', () => {
-    const report = masteryOf({ damageTaken: 120, runeDetonations: 1, rosterFallen: 2 });
+    const report = masteryOf({ damageTaken: 120, markDetonations: 1, rosterFallen: 2 });
     expect(report).toEqual({ met: [], affinity: 0 });
   });
 
   it('counts armour soaking a blow as untouched', () => {
     // The reading the engine actually implements: `playerDamageTaken` is health lost, and
     // plate doing its job is not the same as being hit.
-    expect(masteryOf({ damageTaken: 0, runeDetonations: 0, rosterFallen: 0 }).met).toContain('untouched');
+    expect(masteryOf({ damageTaken: 0, markDetonations: 0, rosterFallen: 0 }).met).toContain('untouched');
   });
 
   it('rewards three different ways of being good, so no one style sweeps', () => {
-    const turtle = masteryOf({ damageTaken: 0, runeDetonations: 0, rosterFallen: 0 });
-    const combo = masteryOf({ damageTaken: 90, runeDetonations: 5, rosterFallen: 1 });
+    const turtle = masteryOf({ damageTaken: 0, markDetonations: 0, rosterFallen: 0 });
+    const combo = masteryOf({ damageTaken: 90, markDetonations: 5, rosterFallen: 1 });
     expect(turtle.met).not.toEqual(combo.met);
     expect(turtle.affinity).toBeGreaterThan(0);
     expect(combo.affinity).toBeGreaterThan(0);
@@ -463,7 +463,7 @@ describe('what a fight actually reports', () => {
     });
     expect(masteryOf({
       damageTaken: state.playerDamageTaken,
-      runeDetonations: state.playerRuneDetonations,
+      markDetonations: state.playerMarkDetonations,
       rosterFallen: 0,
     }).met).not.toContain('untouched');
   });

@@ -788,7 +788,7 @@ export class CombatScreen implements Screen {
     // would read as another move rather than as the removal of one.
     const board = this.session.getBoard();
     this.views.syncFrom(board.units, board.obstacles);
-    this.syncRunesAndStatuses(board);
+    this.syncMarksAndStatuses(board);
     this.syncCommanders(board);
     this.hud?.syncFromBoard(board, this.session.getHand(), this.session.getPlayableCards());
     this.refreshTurnUi();
@@ -1097,7 +1097,7 @@ export class CombatScreen implements Screen {
     // drift introduced by a skipped animation.
     const board = this.session.getBoard();
     this.views.syncFrom(board.units, board.obstacles);
-    this.syncRunesAndStatuses(board);
+    this.syncMarksAndStatuses(board);
 
     if (this.session.activeSide === 'enemy') {
       this.hud?.setInteractive(false);
@@ -1161,15 +1161,15 @@ export class CombatScreen implements Screen {
     this.sequencer?.setMotion(normal ? NORMAL_MOTION : 1);
   }
 
-  private syncRunesAndStatuses(board: ReturnType<CombatSession['getBoard']>): void {
+  private syncMarksAndStatuses(board: ReturnType<CombatSession['getBoard']>): void {
     for (const view of this.views.all()) {
-      view.rune = null;
+      view.mark = null;
       view.statuses = [];
       view.escalation = 0;
     }
-    for (const r of board.runes) {
+    for (const r of board.marks) {
       const v = this.views.get(r.hostId);
-      if (v) v.rune = { school: r.rune.school };
+      if (v) v.mark = { school: r.mark.school };
     }
     for (const s of board.statuses) {
       const v = this.views.get(s.unitId);

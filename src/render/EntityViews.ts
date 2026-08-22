@@ -34,7 +34,7 @@ export interface EntityView {
   maxHp: number;
   armor: number;
   atk: number;
-  rune: { school: string } | null;
+  mark: { school: string } | null;
   statuses: { kind: string; stacks: number }[];
   escalation: number;
   /** Already acted this turn — drawn dimmed so it reads as unavailable. */
@@ -83,7 +83,7 @@ export class EntityViewMap {
       maxHp: s.maxHp,
       armor: s.armor,
       atk: s.atk,
-      rune: null,
+      mark: null,
       statuses: [],
       escalation: 0,
       spent: false,
@@ -107,7 +107,7 @@ export class EntityViewMap {
       maxHp: o.maxHp,
       armor: 0,
       atk: 0,
-      rune: null,
+      mark: null,
       statuses: [],
       escalation: 0,
       spent: false,

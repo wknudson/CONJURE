@@ -3,7 +3,7 @@ import type {
   Coord,
   DamageType,
   Keyword,
-  RuneDefId,
+  MarkDefId,
   School,
   Side,
   StatusKind,
@@ -13,18 +13,18 @@ import type { UnitArchetype } from '../../contract/snapshots.js';
 import type { AttackProfile, OnHitRider } from './cards.js';
 import type { HazardKind } from './state.js';
 
-/** How a rune decides to detonate. */
-export type RuneTrigger =
+/** How a mark decides to detonate. */
+export type MarkTrigger =
   /** Detonates when the host loses at least 1 actual HP to an aligned damage type. */
   | { kind: 'hpLoss'; alignedTypes: DamageType[] }
   /** Detonates when the host dies or is sacrificed. */
   | { kind: 'death' };
 
-export interface RuneDef {
-  id: RuneDefId;
+export interface MarkDef {
+  id: MarkDefId;
   name: string;
   school: School;
-  trigger: RuneTrigger;
+  trigger: MarkTrigger;
   /** Damage dealt to everything in the blast when it detonates. */
   damage: number;
   dtype: DamageType;
@@ -34,10 +34,10 @@ export interface RuneDef {
    * Statuses the blast leaves on the units it catches.
    *
    * A list, because a trap can do two things at once — roots that hold *and* poison — and
-   * modelling that as two runes would mean two attachments on a target that may hold one.
+   * modelling that as two marks would mean two attachments on a target that may hold one.
    *
    * Statuses only, never a damage number: `damage` is already the field for that, and a
-   * second one would be two ways to say the same thing. A rune with `damage: 0` and an
+   * second one would be two ways to say the same thing. A mark with `damage: 0` and an
    * entry here is a pure control trap, which is a real card and not a broken one.
    */
   applies?: { status: StatusKind; stacks: number }[];
@@ -50,8 +50,8 @@ export type BlastPattern =
   | { shape: 'plus'; radius: number }
   | { shape: 'lowestHpEnemy' };
 
-export interface AttachedRune {
-  defId: RuneDefId;
+export interface AttachedMark {
+  defId: MarkDefId;
   ownerSide: Side;
 }
 
@@ -81,14 +81,14 @@ export interface Unit {
   archetype: UnitArchetype;
   keywords: Keyword[];
   statuses: Partial<Record<StatusKind, number>>;
-  rune?: AttachedRune;
+  mark?: AttachedMark;
   /** Extra Marrow this body yields when tithed, above the flat rate. Usually 0. */
   titheBonus: number;
   /** Stacks of enemy `Growth` taken. Player units grow through Auras instead. */
   escalation: number;
   escalationCap: number;
   /**
-   * The Elemental Aura riding this unit, if any. One slot, like `rune`.
+   * The Elemental Aura riding this unit, if any. One slot, like `mark`.
    *
    * `stacks` counts from 1 on the turn it is cast; at `AURA_MAX_STACKS` it has Climaxed
    * and stops growing. See `src/core/data/auras.ts`.
@@ -111,7 +111,7 @@ export interface Obstacle {
   footprint: 1;
   hp: number;
   maxHp: number;
-  rune?: AttachedRune;
+  mark?: AttachedMark;
   destructible: boolean;
   /**
    * Low terrain: blocks line of sight but not movement, so a unit may stand on it.

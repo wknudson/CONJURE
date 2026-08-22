@@ -139,33 +139,33 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     },
   },
 
-  // ------------------------------------------------------------------ runes
-  cinder_rune: {
-    id: 'cinder_rune',
-    name: 'Cinder Rune',
+  // ------------------------------------------------------------------ marks
+  cinder_mark: {
+    id: 'cinder_mark',
+    name: 'Cinder Mark',
     cost: { pips: 1, marrow: 0 },
-    school: 'pyre',
+    school: 'arcane',
     source: 'companion',
-    kind: 'rune',
+    kind: 'mark',
     text: 'Attach to a unit or obstacle (max 1 per target). Detonates for 40 fire damage to all adjacent when the host loses HP to fire or spell damage.',
     target: { kind: 'entity', side: 'any', includeObstacles: true },
-    effect: { op: 'attachRune', rune: 'cinder_rune' },
+    effect: { op: 'attachMark', mark: 'cinder_mark' },
     keywords: [],
     // Branding an enemy means getting a clear look at it.
     range: 4,
     needsLoS: true,
   },
 
-  soul_splinter_rune: {
-    id: 'soul_splinter_rune',
-    name: 'Soul Splinter Rune',
+  soul_splinter_mark: {
+    id: 'soul_splinter_mark',
+    name: 'Soul Splinter Mark',
     cost: { pips: 1, marrow: 0 },
-    school: 'dusk',
+    school: 'arcane',
     source: 'companion',
-    kind: 'rune',
+    kind: 'mark',
     text: 'Attach to a friendly unit. When it dies — including bled dry by a tithe — deals 50 damage to the lowest-HP enemy.',
     target: { kind: 'entity', side: 'ally', includeObstacles: false },
-    effect: { op: 'attachRune', rune: 'soul_splinter_rune' },
+    effect: { op: 'attachMark', mark: 'soul_splinter_mark' },
     keywords: [],
     // Marking your own needs closeness, not sight: no line required.
     range: 4,
@@ -179,7 +179,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
-    text: 'Deals 30 fire damage in a 2-tile line or diagonal. Detonates any Cinder Runes whose armor is penetrated.',
+    text: 'Deals 30 fire damage in a 2-tile line or diagonal. Detonates any Cinder Marks whose armor is penetrated.',
     target: { kind: 'line', length: 2 },
     effect: { op: 'damage', amount: 30, dtype: 'fire', area: { shape: 'line', length: 2 } },
     keywords: [],
@@ -195,9 +195,9 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
-    text: 'Power Tier. Retain. Detonates every active Rune on the board immediately with +20 bonus damage.',
+    text: 'Power Tier. Retain. Detonates every active Mark on the board immediately with +20 bonus damage.',
     target: { kind: 'global' },
-    effect: { op: 'detonateAllRunes', bonusDamage: 20 },
+    effect: { op: 'detonateAllMarks', bonusDamage: 20 },
     keywords: ['PowerTier', 'Retain'],
   },
 
@@ -207,7 +207,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     cost: { pips: 0, marrow: 0 },
     school: 'neutral',
     source: 'hero',
-    kind: 'spell',
+    kind: 'ability',
     text: 'Bleed an un-exhausted friendly minion for 40: extracts 3 Marrow and grants Persistent Armor equal to the health taken.',
     target: { kind: 'entity', side: 'ally', includeObstacles: false, requireUnexhausted: true },
     // Above the free command's rate on both axes — 4 damage for 3 Marrow against the
@@ -229,7 +229,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     cost: { pips: 1, marrow: 0 },
     school: 'neutral',
     source: 'hero',
-    kind: 'spell',
+    kind: 'ability',
     text: 'Deals 20 damage to an enemy and shoves it 1 tile away. Triggers standard Collision Damage (30 / 20).',
     target: { kind: 'entity', side: 'enemy', includeObstacles: false },
     effect: {
@@ -266,7 +266,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     cost: { pips: 1, marrow: 0 },
     school: 'arcane',
     source: 'hero',
-    kind: 'spell',
+    kind: 'ability',
     text: 'Retain. Grants a friendly unit or your Hero +40 Persistent Armor.',
     target: { kind: 'unitOrPortrait', side: 'ally' },
     effect: { op: 'grantArmor', amount: 40 },
@@ -280,7 +280,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     cost: { pips: 0, marrow: 0 },
     school: 'arcane',
     source: 'companion',
-    kind: 'spell',
+    kind: 'ability',
     text: 'Tether a friendly unit to the sealed beast. It cannot move or act. Hold it there for three rounds to claim the companion.',
     // An ally, not the board: the Rite is a harpoon fired from one of your own, and which
     // one you can afford to immobilise for three rounds is the decision it asks.
@@ -292,7 +292,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
 
 /**
  * The 15-card starter deck as a list of card ids. Duplicates are intentional and match
- * Draft 7's table: 2x Grave Sentinel, 2x Cinder Rune, 2x Flame Surge.
+ * Draft 7's table: 2x Grave Sentinel, 2x Cinder Mark, 2x Flame Surge.
  */
 /**
  * The deck a new player starts with.

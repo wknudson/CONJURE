@@ -125,7 +125,7 @@ function recallUnit(ctx: Ctx, unitId: string): void {
   const unit = ctx.state.units[unitId];
   const at = unit ? { ...unit.anchor } : { x: 0, y: 0 };
   // Removed directly rather than through `killEntity`: nothing died, and a death would fire
-  // runes, pay bounties and trip the lethal check for a body that was never in the fight.
+  // marks, pay bounties and trip the lethal check for a body that was never in the fight.
   delete ctx.state.units[unitId];
 
   entry.status = 'reserve';
@@ -386,7 +386,7 @@ function moveUnit(ctx: Ctx, unitId: string, to: { x: number; y: number }): void 
     if (obstacle) killEntity(ctx, obstacle, 'impact');
   }
 
-  // A rune on a shattered wall can kill the thing that broke it. Nothing below is safe to
+  // A mark on a shattered wall can kill the thing that broke it. Nothing below is safe to
   // run for a body that is no longer on the board.
   if (!ctx.state.units[unitId] || ctx.state.result) return;
 
@@ -548,11 +548,11 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
  * - It does not brand a corpse. A status on something already removed is bookkeeping
  *   nobody reads, and the kill is the better outcome anyway.
  * - It does not swing from one. The attacker is re-read here rather than captured before
- *   the blow, because `dealDamage` resolves Counter, rune blasts and the lethal check
+ *   the blow, because `dealDamage` resolves Counter, mark blasts and the lethal check
  *   before returning: an attacker can be dead by the time its own rider would land, and
  *   `killEntity` removes a unit from the map without mutating the object a caller still
  *   holds. Reading `onHit` off that reference is reading a corpse's intentions.
- * - It does not land on a blow that was entirely soaked. `hpLoss` is the same test runes
+ * - It does not land on a blow that was entirely soaked. `hpLoss` is the same test marks
  *   and three of the five reactions use: armor that stops the hit stops what rode in on
  *   it. Venom still needs a wound.
  * - It does not touch obstacles or portraits, neither of which carries a status field.
@@ -570,7 +570,7 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
  *   damaging status on it is not an affliction of the body at all -- every tick would be
  *   redirected straight to the Pact, turning a melee rider into the one thing in the game
  *   that poisons a portrait. It joins armor, Counter, Brittle, reactions and
- *   rune-on-damage on the list of things a Bound Form cannot host meaningfully.
+ *   mark-on-damage on the list of things a Bound Form cannot host meaningfully.
  */
 function applyOnHit(ctx: Ctx, attackerId: string, target: TargetRef, hpLoss: number): void {
   if (target.kind !== 'unit') return;

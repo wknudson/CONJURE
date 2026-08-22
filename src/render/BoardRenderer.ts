@@ -17,7 +17,7 @@ import {
   drawBoundary,
   drawCommander,
   drawCover,
-  drawRune,
+  drawMark,
   drawStatBar,
   drawTile,
   drawUnitBody,
@@ -1006,9 +1006,9 @@ export class BoardRenderer {
       });
     }
 
-    if (view.rune) {
+    if (view.mark) {
       const brandY = centre.y - (footprint === 2 ? 70 : 30) * cam.zoom;
-      drawRune(ctx, { x: centre.x, y: brandY }, view.rune.school, pulse, cam.zoom);
+      drawMark(ctx, { x: centre.x, y: brandY }, view.mark.school, pulse, cam.zoom);
     }
 
     // The Bound Form's health is the Pact's, shown on the gauge above. A bar here

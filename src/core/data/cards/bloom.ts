@@ -45,14 +45,14 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   },
 
   /**
-   * The trap, and Bloom's first rune.
+   * The trap, and Bloom's first mark.
    *
-   * Attaches to a body on either side, exactly as the Cinder Rune does — the interesting
+   * Attaches to a body on either side, exactly as the Cinder Mark does — the interesting
    * play is branding an *enemy* and letting their own front line spring it, but wiring
    * your own wall is a legitimate defensive read and the card does not judge.
    *
-   * The blast spares its host, which is a property of every ringed rune in the game
-   * (`applyBlast` skips the thing the rune was attached to). So this is a trap on a body
+   * The blast spares its host, which is a property of every ringed mark in the game
+   * (`applyBlast` skips the thing the mark was attached to). So this is a trap on a body
    * that catches whatever is standing *around* that body when it is struck — not a
    * shackle on the body itself.
    */
@@ -60,12 +60,12 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
     id: 'rot_root_snare',
     name: 'Rot-Root Snare',
     cost: { pips: 1, marrow: 0 },
-    school: 'bloom',
+    school: 'arcane',
     source: 'companion',
-    kind: 'rune',
+    kind: 'mark',
     text: 'Attach to a unit or obstacle (max 1 per target). When it loses health to a physical or impact blow, everything adjacent is Entangled and takes 1 Toxin.',
     target: { kind: 'entity', side: 'any', includeObstacles: true },
-    effect: { op: 'attachRune', rune: 'rot_root_snare' },
+    effect: { op: 'attachMark', mark: 'rot_root_snare' },
     keywords: [],
     // Laying a trap means getting close enough to lay it, and seeing where it goes.
     range: 4,

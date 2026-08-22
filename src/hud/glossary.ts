@@ -91,7 +91,7 @@ export const TERMS: Record<string, GlossaryEntry> = {
   armor: {
     title: 'Persistent Armor',
     body: 'Soaks damage before health, and never expires until it is stripped away.',
-    detail: 'Runes need damage to actually reach health — armor can stop a chain reaction cold.',
+    detail: 'Marks need damage to actually reach health — armor can stop a chain reaction cold.',
   },
   rubble: {
     title: 'Rubble — broken ground',
@@ -190,10 +190,10 @@ export const TERMS: Record<string, GlossaryEntry> = {
     body: 'A shoved unit that hits something takes 3 damage; whatever it hit takes 2.',
     detail: 'Walls hurt just as much as bodies. Shoving into a wall is free damage.',
   },
-  runes: {
-    title: 'Runes',
-    body: 'Attach to a unit and detonate when their trigger is met. One rune per target.',
-    detail: 'A detonation that reaches another rune-holder\'s health sets theirs off too — that is a cascade.',
+  marks: {
+    title: 'Marks',
+    body: 'Attach to a unit and detonate when their trigger is met. One mark per target.',
+    detail: 'A detonation that reaches another mark-holder\'s health sets theirs off too — that is a cascade.',
   },
 };
 
@@ -206,8 +206,8 @@ export const CARD_KINDS: Record<string, GlossaryEntry> = {
     title: 'Spell',
     body: 'Resolves immediately, then goes to your discard pile.',
   },
-  rune: {
-    title: 'Rune',
+  mark: {
+    title: 'Mark',
     body: 'Attaches to a unit or obstacle and waits for its trigger.',
   },
   obstacle: {

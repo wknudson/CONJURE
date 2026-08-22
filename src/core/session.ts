@@ -375,7 +375,7 @@ export class CombatSession implements RulesQuery {
           });
           break;
         }
-        case 'runeDetonated': {
+        case 'markDetonated': {
           preview.detonations.push({
             hostId: e.hostId,
             at: e.at,
@@ -474,7 +474,7 @@ export class CombatSession implements RulesQuery {
   get mastery(): MasteryReport {
     return masteryOf({
       damageTaken: this.state.playerDamageTaken,
-      runeDetonations: this.state.playerRuneDetonations,
+      markDetonations: this.state.playerMarkDetonations,
       rosterFallen: this.state.players.player.roster.filter((r) => r.status === 'fallen').length,
     });
   }

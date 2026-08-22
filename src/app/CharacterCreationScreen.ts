@@ -25,7 +25,9 @@ import {
   NICKNAME_MAX,
   SKIN_TONES,
   clampPreset,
+  defaultHairFor,
   defaultLook,
+  hairIndexesFor,
   normalizeLook,
   starterSpecies,
 } from '../core/data/characterLook.js';
@@ -76,8 +78,16 @@ export const BEAST_AT = { x: 1.4, y: 0.9 };
  * Step II pulls back out: the Vow is about the pair of them and the ground they stand on,
  * and it needs room for a beast to land beside a person.
  */
-export const SHOT_IDENTITY = { x: -0.1, y: 2.2 };
-export const SHOT_VOW = { x: 0.5, y: -0.4 };
+/**
+ * `x` shifts right of the Commander so they sit left of centre, clear of the panel — but the
+ * screen offset that produces is `(HERO_AT.x - cam.x) * zoom`, and `zoom` now multiplies it.
+ * At `zoom: 1` this gap was tuned to `-0.5` tiles; left alone at `zoom: 1.8` it would render
+ * `1.8x` wider and push the figure noticeably further left than intended. Held here at
+ * `HERO_AT.x + 0.5 / zoom` so raising or lowering `zoom` changes size without re-drifting the
+ * figure sideways — if `zoom` above changes, this constant needs recomputing to match.
+ */
+export const SHOT_IDENTITY = { x: -0.322, y: 0.4, zoom: 3 };
+export const SHOT_VOW = { x: 0.5, y: -0.4, zoom: 1 };
 
 export class CharacterCreationScreen implements Screen {
   private el: HTMLElement | null = null;
@@ -156,6 +166,7 @@ export class CharacterCreationScreen implements Screen {
     const k = 1 - Math.exp(-dt / 260);
     this.cam.x += (shot.x - this.cam.x) * k;
     this.cam.y += (shot.y - this.cam.y) * k;
+    this.cam.zoom = (this.cam.zoom ?? 1) + ((shot.zoom ?? 1) - (this.cam.zoom ?? 1)) * k;
 
     if (this.vowed) this.beastEntry = Math.min(1, this.beastEntry + dt / 420);
 
@@ -251,16 +262,22 @@ export class CharacterCreationScreen implements Screen {
       const g = btn.dataset.gender === 'male' ? 'male' : 'female';
       btn.classList.toggle('is-on', this.look.gender === g);
       btn.addEventListener('click', () => {
+        if (this.look.gender === g) return;
         this.look.gender = g;
-        for (const other of wrap.querySelectorAll('[data-gender]')) {
-          other.classList.toggle('is-on', other === btn);
-        }
+        // The hairstyles are offered per bearing, so switching gender lands on that
+        // bearing's own default (crop for male, ponytail for female) rather than on
+        // whatever raw index the previous bearing happened to be cycled to — carrying the
+        // index across would either point at a style this bearing does not offer, or land
+        // on some other style in the new list by coincidence of position.
+        this.look.hairPreset = defaultHairFor(g);
+        this.renderStep();
       });
     }
 
     const cyclers = wrap.querySelector('.creation__cyclers')!;
+    const hairChoices = hairIndexesFor(this.look.gender);
     cyclers.appendChild(
-      this.cycler('Hair', HAIR_PRESETS.length, () => clampPreset(this.look.hairPreset, HAIR_PRESETS.length), (i) => {
+      this.presetCycler('Hair', hairChoices, () => clampPreset(this.look.hairPreset, HAIR_PRESETS.length), (i) => {
         this.look.hairPreset = i;
         return HAIR_PRESETS[i]!.name;
       }),
@@ -289,6 +306,44 @@ export class CharacterCreationScreen implements Screen {
     });
 
     return wrap;
+  }
+
+  /**
+   * Like `cycler`, but for a control whose *offered* values are a subset of a shared
+   * preset list — hair, filtered to the current bearing. `get`/`set` still deal in real
+   * `HAIR_PRESETS` indices; only the stepping wraps through `indices` instead of `0..count`,
+   * so ‹ › never lands on a style this bearing does not offer.
+   */
+  private presetCycler(
+    label: string,
+    indices: number[],
+    get: () => number,
+    set: (index: number) => string,
+  ): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'creation__cycler';
+    row.innerHTML = `
+      <span class="creation__label">${label}</span>
+      <div class="creation__cycle">
+        <button type="button" class="creation__arrow" data-step="-1" aria-label="Previous ${label}">‹</button>
+        <span class="creation__value"></span>
+        <button type="button" class="creation__arrow" data-step="1" aria-label="Next ${label}">›</button>
+      </div>
+    `;
+    const value = row.querySelector('.creation__value')!;
+    // Where the current value sits in the offered list. -1 (not found — a stale index from
+    // before a gender switch) falls back to the first offered style rather than throwing.
+    const posOf = (): number => Math.max(0, indices.indexOf(get()));
+    value.textContent = set(indices[posOf()] ?? indices[0] ?? 0);
+
+    for (const btn of row.querySelectorAll<HTMLButtonElement>('.creation__arrow')) {
+      btn.addEventListener('click', () => {
+        const delta = Number(btn.dataset.step);
+        const next = (posOf() + delta + indices.length) % indices.length;
+        value.textContent = set(indices[next]!);
+      });
+    }
+    return row;
   }
 
   /**
@@ -361,6 +416,12 @@ export class CharacterCreationScreen implements Screen {
    * promised eleven spells and handed nine. What is deliberately *not* shown is which eight
    * of the pool this beast will know — that is the roll, and spoiling it would make the
    * first tank in the Vivarium a formality.
+   *
+   * **"drawn from", not "of".** The eight is a count of *slots* and the pool is a count of
+   * *distinct cards*, and the Tier limits mean a slot may repeat a card — so a pool of
+   * seven fills eight slots perfectly well. Phrased as "8 of 7 spells" it read as a
+   * miscount, which is exactly what it looked like on the Vow screen the moment Marks
+   * stopped being pyre cards and Ignis's shelf went from eight distinct to seven.
    */
   private vowCard(baseId: string): HTMLElement {
     const species = companionById(baseId)!;
@@ -379,7 +440,7 @@ export class CharacterCreationScreen implements Screen {
       <span class="vow-card__name">${escapeHtml(species.name)}</span>
       <span class="vow-card__blurb">${escapeHtml(DISCIPLINE[school] ?? '')}</span>
       <span class="vow-card__facts">
-        <span>${GRIMOIRE_SIZE} of ${spells} spells</span>
+        <span>${GRIMOIRE_SIZE} drawn from ${spells}</span>
         <span>${bodies} ${bodies === 1 ? 'body' : 'bodies'}</span>
         <span>${fusedDeckSize(STARTER_DECK.length)}-card deck</span>
       </span>

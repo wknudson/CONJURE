@@ -27,7 +27,7 @@ export interface UtilityWeights {
   killPerEscalation: number;
   face: number;
   faceDampenedByEscalation: number;
-  runeHolderKill: number;
+  markHolderKill: number;
   guardianKill: number;
   collision: number;
   marrowEfficiency: number;
@@ -48,7 +48,7 @@ export interface UtilityWeights {
   developAtk: number;
   developHp: number;
   armorValue: number;
-  runeSetup: number;
+  markSetup: number;
   /**
    * Per point of incoming damage dodged when a unit that has already attacked steps out
    * of reach. Keep it well under `face` so pressing an advantage still wins out.
@@ -87,7 +87,7 @@ export const NOVICE_WEIGHTS: UtilityWeights = {
   killPerEscalation: 10,
   face: 15,
   faceDampenedByEscalation: 0.2,
-  runeHolderKill: 40,
+  markHolderKill: 40,
   guardianKill: 60,
   // A Novice duelist "ignores collision damage" — it does not seek out shoves.
   collision: 0,
@@ -104,7 +104,7 @@ export const NOVICE_WEIGHTS: UtilityWeights = {
   developAtk: 4,
   developHp: 1.5,
   armorValue: 1.5,
-  runeSetup: 12,
+  markSetup: 12,
   // Modest for a Novice: it will pull a wounded attacker back, but will not turtle.
   retreat: 2.5,
   retreatSurvival: 0.5,
@@ -266,7 +266,7 @@ export function scoreAction(
     if (victim.side === foe) {
       utility += weights.kill;
       utility += weights.killPerEscalation * victim.escalation;
-      if (victim.rune) utility += weights.runeHolderKill;
+      if (victim.mark) utility += weights.markHolderKill;
       if (victim.keywords.includes('Guardian')) utility += weights.guardianKill;
     } else {
       // Losing our own units is a cost, not a benefit — unless we bled it on purpose.
@@ -370,10 +370,10 @@ export function scoreAction(
         (e.target.kind === 'unit' && next.units[e.target.id]?.side === side);
       if (mine) utility += weights.armorValue * hpPoints(e.amount);
     }
-    if (e.t === 'runeAttached') {
+    if (e.t === 'markAttached') {
       const host = next.units[e.hostId] ?? next.obstacles[e.hostId];
-      // Offensive runes go on enemies; Soul Splinter is set up on our own units.
-      utility += weights.runeSetup * (host && host.side !== side ? 1 : 0.5);
+      // Offensive marks go on enemies; Soul Splinter is set up on our own units.
+      utility += weights.markSetup * (host && host.side !== side ? 1 : 0.5);
     }
   }
 

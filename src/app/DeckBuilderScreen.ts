@@ -18,9 +18,12 @@ import {
   TIER_COPY_LIMIT,
   baseIdOf,
   costCurve,
+  deckRoleRefusal,
   remainingCopies,
+  roleRefusalMessage,
   tierOf,
   validateDeck,
+  type RoleRefusal,
 } from '../core/data/deckRules.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { GRIMOIRE_SIZE, companionById } from '../core/data/companions.js';
@@ -40,7 +43,7 @@ import {
 } from '../core/data/relics.js';
 import type { CombatBoons } from '../core/engine/setup.js';
 import type { School } from '../contract/ids.js';
-import { cardFaceHtml, faceOfDef } from '../hud/cardFace.js';
+import { KIND_WORD, cardFaceHtml, faceOfDef } from '../hud/cardFace.js';
 import { filterBarHtml, matchesPips, pipPills, wireFilterBar } from '../hud/filterBar.js';
 
 /**
@@ -121,11 +124,16 @@ export interface DeckBuilderResult {
  * Screen state, saved nowhere: a filter is a way of looking at the shelf rather than a
  * fact about the character.
  *
- * There is deliberately no `skill` type. The engine's `kind` union is minion, spell, rune
- * and obstacle — a fifth pill matching nothing would be a filter that always returns an
- * empty shelf, which reads as a broken collection rather than as a category the game does
- * not have. "Construct" is the label for `obstacle`, because that is what the game has
- * always called the thing standing on the board.
+ * There is deliberately no `skill` type. The engine's `kind` union is minion, spell,
+ * ability, mark and obstacle — a pill matching nothing would be a filter that always
+ * returns an empty shelf, which reads as a broken collection rather than as a category the
+ * game does not have. "Construct" is the label for `obstacle`, because that is what the
+ * game has always called the thing standing on the board.
+ *
+ * `spell` has no pill here and that is the one deliberate omission. This case is the shelf
+ * a Hero Deck is built out of, and a Spell can never go in one — a pill whose entire
+ * result set is greyed out is a filter for looking at what you cannot use. The Artificer's
+ * catalogue keeps its Spells pill, because the bench sells and Ascends them.
  */
 interface CollectionFilters {
   school: School | 'all';
@@ -135,11 +143,32 @@ interface CollectionFilters {
 
 const VARIANT_PILLS: { key: 'all' | CardDef['kind']; label: string }[] = [
   { key: 'all', label: 'All' },
-  { key: 'spell', label: 'Spell' },
+  { key: 'ability', label: 'Ability' },
+  { key: 'mark', label: 'Mark' },
   { key: 'minion', label: 'Minion' },
   { key: 'obstacle', label: 'Construct' },
-  { key: 'rune', label: 'Rune' },
 ];
+
+/**
+ * The three roles a Hero Deck sorts into, in the order the panel stacks them.
+ *
+ * The order is deliberate: Abilities are what most of a deck is, Marks are what the player
+ * came to this screen to lay, and Constructs are the two or three walls at the bottom.
+ * Every kind here is one `HERO_KINDS` admits -- a section the validator refuses would be a
+ * heading the player can never fill.
+ */
+const DECK_SECTIONS: { kind: CardDef['kind']; label: string }[] = [
+  { kind: 'ability', label: 'Abilities' },
+  { kind: 'mark', label: 'Marks' },
+  { kind: 'obstacle', label: 'Constructs' },
+];
+
+/** What replaces the copy tally on a card this deck can never hold: where it *does* go. */
+const BARRED_TALLY: Record<Exclude<RoleRefusal, null>, string> = {
+  minion: 'Vanguard',
+  spell: 'Grimoire',
+  off_school: 'elemental',
+};
 
 type Tab = 'deck' | 'ledger' | 'loadout' | 'vanguard';
 
@@ -613,12 +642,30 @@ export class DeckBuilderScreen implements Screen {
   private collectionCell(def: CardDef, inDeck: number, canAdd: boolean): HTMLElement {
     const tier = tierOf(def);
     const cell = document.createElement('button');
-    cell.className = `collcell${canAdd ? '' : ' is-full'}${inDeck > 0 ? ' is-in-deck' : ''}`;
+    // Two reasons a card is unclickable, and they are not interchangeable. At the copy
+    // ceiling means you may run this and already have enough; barred means this deck can
+    // never hold it at all. Printing "3/3" over a Spell would name a limit that is not the
+    // thing stopping you, and send the player looking for a fourth copy.
+    const refusal = deckRoleRefusal(def);
+    cell.className = [
+      'collcell',
+      canAdd ? '' : 'is-full',
+      refusal ? 'is-barred' : '',
+      inDeck > 0 ? 'is-in-deck' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
     cell.disabled = !canAdd;
-    cell.dataset.tip = `${def.name}|${def.text}|Tier ${tier} · max ${TIER_COPY_LIMIT[tier]} per deck`;
+    cell.dataset.tip = refusal
+      ? `${def.name}|${def.text}|${roleRefusalMessage(def, refusal)}`
+      : `${def.name}|${def.text}|Tier ${tier} · max ${TIER_COPY_LIMIT[tier]} per deck${
+          inDeck >= TIER_COPY_LIMIT[tier] ? ` — you already run ${inDeck}` : ''
+        }`;
     cell.innerHTML = `
       ${cardFaceHtml(faceOfDef(def), { extraClass: 'card--mini', showReach: true })}
-      <span class="collcell__tally">${inDeck}/${TIER_COPY_LIMIT[tier]}</span>
+      <span class="collcell__tally">${
+        refusal ? BARRED_TALLY[refusal] : `${inDeck}/${TIER_COPY_LIMIT[tier]}`
+      }</span>
     `;
     cell.addEventListener('click', () => this.add(def.id));
     return cell;
@@ -680,17 +727,47 @@ export class DeckBuilderScreen implements Screen {
       .sort((a, b) => (a.def ? cardCostTotal(a.def.cost) : 0) - (b.def ? cardCostTotal(b.def.cost) : 0));
 
     host.innerHTML = '';
-    for (const { def, id, n } of rows) {
-      if (!def) {
-        // A card removed by a patch: show it so the player can see what to delete.
-        const stale = document.createElement('button');
-        stale.className = 'deckrow deckrow--stale';
-        stale.innerHTML = `<span class="deckrow__name">${id} (no longer exists)</span><span class="deckrow__n">${n}×</span>`;
-        stale.addEventListener('click', () => this.removeAll(id));
-        host.appendChild(stale);
-        continue;
+
+    // Grouped by role, because the deck is now three lists sharing one slot budget: what
+    // you cast, what you lay, and what you raise. A flat cost-ordered list reads as one
+    // pile and hides the shape of the thing being built.
+    //
+    // An empty section is not drawn. A "Marks" heading over nothing is a promise the deck
+    // is not currently keeping.
+    for (const section of DECK_SECTIONS) {
+      const inSection = rows.filter((r) => r.def?.kind === section.kind);
+      if (inSection.length === 0) continue;
+
+      const head = document.createElement('div');
+      head.className = 'deckgroup';
+      const cards = inSection.reduce((t, r) => t + r.n, 0);
+      head.innerHTML =
+        `<span class="deckgroup__name">${section.label}</span>` +
+        `<span class="deckgroup__n">${cards}</span>`;
+      host.appendChild(head);
+
+      for (const { def, id, n } of inSection) {
+        host.appendChild(this.cardRow(def!, n, true, () => this.remove(id), true));
       }
-      host.appendChild(this.cardRow(def, n, true, () => this.remove(id), true));
+    }
+
+    // Whatever no section could claim: a card a patch removed, or one whose role this deck
+    // is no longer allowed to hold. Both have to stay visible, because a card the player
+    // cannot see is a card they cannot take out -- and after the overhaul the second case
+    // is a real one, since a save written yesterday may hold a Spell.
+    for (const { def, id, n } of rows) {
+      if (def && DECK_SECTIONS.some((sec) => sec.kind === def.kind)) continue;
+      const stale = document.createElement('button');
+      stale.className = 'deckrow deckrow--stale';
+      const label = def ? def.name : `${id} (no longer exists)`;
+      const why = def
+        ? roleRefusalMessage(def, deckRoleRefusal(def) ?? 'minion')
+        : 'This card was removed from the game. Take it out to make the deck legal again.';
+      stale.dataset.tip = `Cannot stay in this deck|${why}`;
+      stale.innerHTML =
+        `<span class="deckrow__name">${label}</span><span class="deckrow__n">${n}×</span>`;
+      stale.addEventListener('click', () => this.removeAll(id));
+      host.appendChild(stale);
     }
   }
 
@@ -711,7 +788,7 @@ export class DeckBuilderScreen implements Screen {
     row.innerHTML = `
       <span class="deckrow__cost">${formatCost(def.cost)}</span>
       <span class="deckrow__name">${def.name}</span>
-      <span class="deckrow__kind">${def.kind}</span>
+      <span class="deckrow__kind">${KIND_WORD[def.kind]}</span>
       <span class="deckrow__n">${count > 0 ? `${count}×` : ''}</span>
       <span class="deckrow__op">${isDeckSide ? '−' : '+'}</span>
     `;
@@ -776,7 +853,7 @@ export class DeckBuilderScreen implements Screen {
 
     const note = el.querySelector<HTMLElement>('.grimoire__note');
     if (note) {
-      // Distinct *spells*, not copies: a beast holding two rolled Cinder Runes rolled one
+      // Distinct *spells*, not copies: a beast holding two rolled Cinder Marks rolled one
       // spell well, and saying "two" would promise a second thing to find.
       const rolled = new Set(drafted.filter((id) => mods[id])).size;
       const beast = companion?.name ?? 'Your Companion';

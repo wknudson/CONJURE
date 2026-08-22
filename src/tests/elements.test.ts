@@ -135,7 +135,7 @@ describe('the handoff Surge exists for', () => {
 
   it('Overloads when fire meets the charge, and throws the neighbours clear', () => {
     // No armor, deliberately. Overload is `requiresHpLoss: true` — a blow entirely
-    // absorbed applies its status but sets nothing off, exactly as a rune would not
+    // absorbed applies its status but sets nothing off, exactly as a mark would not
     // detonate. Five armor here would swallow Flame Surge's 3 and the charge would hold.
     const { state, foe, bystander } = charged(['flame_surge']);
     const card = handCard(state, 'player', 'flame_surge');
@@ -200,7 +200,7 @@ describe('Spore Cloud', () => {
   });
 
   it('does nothing at all on the way in', () => {
-    // No damage, so no reaction and no rune. Bloom's whole cost is the turn it spends.
+    // No damage, so no reaction and no mark. Bloom's whole cost is the turn it spends.
     const { state, foe } = dosed();
     const card = handCard(state, 'player', 'spore_cloud');
 

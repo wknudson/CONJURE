@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cardFaceHtml, faceOfDef, faceOfSnapshot } from '../hud/cardFace.js';
+import { cardFaceHtml, faceOfDef, faceOfSnapshot, ownerOfKind } from '../hud/cardFace.js';
 import { CARDS } from '../core/data/cards/index.js';
 import { isObtainable } from '../core/data/collection.js';
 import type { CardSnapshot } from '../contract/snapshots.js';
@@ -99,6 +99,45 @@ describe('the face is safe to build from any card in the game', () => {
     for (const def of Object.values(CARDS)) {
       if (!isObtainable(def)) continue;
       expect(() => cardFaceHtml(faceOfDef(def), { showReach: true }), def.id).not.toThrow();
+    }
+  });
+
+  it('names the owner off the role, not off where the card is cast from', () => {
+    // The badge used to print `CardDef.source`, which looks like it answers "whose card is
+    // this" and does not -- it means "cast from the beast's tile", which is why it gates
+    // the range check in `targeting.ts`. It is `'companion'` on the Cinder Mark, so the
+    // face said COMPANION on a card only the Hero may deck.
+    expect(ownerOfKind('spell')).toBe('companion');
+    for (const kind of ['ability', 'mark', 'obstacle', 'minion'] as const) {
+      expect(ownerOfKind(kind), kind).toBe('hero');
+    }
+  });
+
+  it('puts HERO on a Mark, whatever its `source` still says', () => {
+    // The regression, named. Cinder Mark is `source: 'companion'` on purpose -- flipping it
+    // would discard the card's range and make the trap castable across the whole board --
+    // so the face has to get the answer from somewhere else, and this is what proves it
+    // does rather than merely happening to agree.
+    const mark = CARDS.cinder_mark!;
+    expect(mark.source, 'still cast from the beast, for range').toBe('companion');
+    expect(mark.kind).toBe('mark');
+
+    const html = cardFaceHtml(faceOfDef(mark));
+    expect(html).toContain('>HERO<');
+    expect(html).not.toContain('>COMPANION<');
+    expect(html, 'and the class agrees with the word').toContain('card--src-hero');
+  });
+
+  it('gives every role its own word on the face', () => {
+    const labels: Record<string, string> = {
+      flame_surge: 'SPELL',
+      shield_bash: 'ABILITY',
+      cinder_mark: 'MARK',
+      stone_barricade: 'CONSTRUCT',
+      grave_sentinel: 'MINION',
+    };
+    for (const [id, label] of Object.entries(labels)) {
+      expect(cardFaceHtml(faceOfDef(CARDS[id]!)), id).toContain(`>${label}<`);
     }
   });
 

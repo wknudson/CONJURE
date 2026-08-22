@@ -1,7 +1,7 @@
 /**
  * The Gaslamp set: industrial occultism.
  *
- * Where the starter deck is soldiers and runes, these are machinery and butchery — a
+ * Where the starter deck is soldiers and marks, these are machinery and butchery — a
  * pressure valve vented into a crowd, a mortar bolted together from scrap, a tithe taken
  * in bone. Each one leans on a piece of vocabulary the engine gained for it, so the set
  * doubles as the proof that the vocabulary is real.
@@ -96,7 +96,7 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     cost: { pips: 1, marrow: 1 },
     school: 'arcane',
     source: 'companion',
-    kind: 'spell',
+    kind: 'ability',
     text: 'Drag every unit orthogonally beside the target tile onto it. They collide with whatever arrives first.',
     target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
     effect: { op: 'pullArea', distance: 1, area: { shape: 'adjacentCross' } },

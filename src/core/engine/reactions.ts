@@ -72,7 +72,7 @@ export function prepareReaction(
 
 /**
  * Called after the damage is written. Most reactions need the hit to have drawn blood,
- * so armor that soaks a blow entirely stops them just as it stops a rune. Shatter opts
+ * so armor that soaks a blow entirely stops them just as it stops a mark. Shatter opts
  * out: see `requiresHpLoss`.
  */
 export function resolveReaction(

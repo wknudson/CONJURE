@@ -240,7 +240,7 @@ describe('Plague-Bearer', () => {
     // This assertion used to run the other way: six armour ate the whole attack and the
     // Toxin landed regardless, because the rider was the one secondary effect in the
     // engine that never asked whether the hit connected. It asks now, on the same
-    // `hpLoss` test runes and reactions already used — so plate is a real answer to a
+    // `hpLoss` test marks and reactions already used — so plate is a real answer to a
     // Plague-Bearer, and the creature has to be let through before it can poison.
     const { state, carrier, victim } = bearer();
     const hit = run(state, {

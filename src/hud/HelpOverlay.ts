@@ -66,12 +66,12 @@ const SECTIONS: { heading: string; rows: [string, string][] }[] = [
     ],
   },
   {
-    heading: 'Runes and cascades',
+    heading: 'Marks and cascades',
     rows: [
-      ['Attaching', 'One rune per target, on either side\'s units.'],
+      ['Attaching', 'One mark per target, on either side\'s units.'],
       ['Detonating', 'Damage must reach actual health. Armor absorbing it all means nothing happens.'],
-      ['Cascades', 'A detonation that draws blood from another rune-holder sets theirs off too.'],
-      ['Fizzling', 'Kill a rune-holder with the wrong damage type and the rune is simply lost.'],
+      ['Cascades', 'A detonation that draws blood from another mark-holder sets theirs off too.'],
+      ['Fizzling', 'Kill a mark-holder with the wrong damage type and the mark is simply lost.'],
     ],
   },
 ];

@@ -2,7 +2,7 @@
  * The resolution context threaded through every mutation.
  *
  * All state changes go through helpers that take a Ctx, and those helpers are the ONLY
- * emitters of events. That is what guarantees a new card cannot accidentally bypass rune
+ * emitters of events. That is what guarantees a new card cannot accidentally bypass mark
  * triggers, Counter, fizzle checks, or the lethal check.
  */
 

@@ -14,14 +14,14 @@ import type {
   Coord,
   DamageCause,
   DamageType,
-  RuneDefId,
+  MarkDefId,
   School,
   Side,
   StatusKind,
   TargetRef,
   UnitId,
 } from './ids.js';
-import type { CardSnapshot, ObstacleSnapshot, RuneSnapshot, UnitSnapshot } from './snapshots.js';
+import type { CardSnapshot, ObstacleSnapshot, MarkSnapshot, UnitSnapshot } from './snapshots.js';
 
 /**
  * `deployment` runs once, before turn one, and only when the player brought a Vanguard.
@@ -98,17 +98,17 @@ export type GameEvent = EventBase &
     | { t: 'healed'; target: TargetRef; amount: number; remainingHp: number }
     | { t: 'statusApplied'; unitId: UnitId; status: StatusKind; stacks: number }
     | { t: 'statusTicked'; unitId: UnitId; status: StatusKind; damage: number; remaining: number }
-    | { t: 'runeAttached'; hostId: UnitId; at: Coord; rune: RuneSnapshot }
+    | { t: 'markAttached'; hostId: UnitId; at: Coord; mark: MarkSnapshot }
     | {
-        t: 'runeDetonated';
+        t: 'markDetonated';
         hostId: UnitId;
         at: Coord;
-        rune: RuneDefId;
+        mark: MarkDefId;
         school: School;
         affected: Coord[];
         chainDepth: number;
       }
-    | { t: 'runeFizzled'; hostId: UnitId; rune: RuneDefId; reason: 'unaligned' | 'devour' | 'gate' }
+    | { t: 'markFizzled'; hostId: UnitId; mark: MarkDefId; reason: 'unaligned' | 'devour' | 'gate' }
     | { t: 'escalated'; unitId: UnitId; stacks: number; atk: number; hp: number }
     /**
      * Marrow paid out by something that died — a shattered geode, a scavenger's purse.

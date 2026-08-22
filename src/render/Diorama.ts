@@ -28,6 +28,15 @@ export interface DioramaCamera {
   /** Tile the camera centres on. Fractional, so a pan is smooth. */
   x: number;
   y: number;
+  /**
+   * Independent scale multiplier, decoupled from camera depth. Defaults to 1.
+   *
+   * `y` alone conflates "how close the camera is" with "where on screen the subject lands" —
+   * push it too far and the actor's projected position slides out of frame before it has
+   * grown as big as you wanted. `zoom` scales the projected size only, so a step's framing
+   * can make the cast bigger without moving them.
+   */
+  zoom?: number;
 }
 
 /** An actor standing on the diorama: a 2D sprite at a tile position. */
@@ -145,7 +154,8 @@ export function projectTile(
   // Depth away from the camera, kept clear of the eye plane so nothing divides by zero as
   // the field passes behind the viewer.
   const dz = Math.max(0.35, ty - cam.y + EYE);
-  const f = EYE / dz;
+  const zoom = cam.zoom ?? 1;
+  const f = (EYE / dz) * zoom;
 
   const unit = h / 9;
   return {

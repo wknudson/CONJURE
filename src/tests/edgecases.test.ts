@@ -56,16 +56,16 @@ describe('deployment edges', () => {
 });
 
 describe('resource and card edges', () => {
-  it('treats Cataclysmic Core as untargetable when no runes are on the board', () => {
+  it('treats Cataclysmic Core as untargetable when no marks are on the board', () => {
     const bare = scenario({ pips: 8, hand: ['cataclysmic_core'] });
     expect(legalCardTargets(bare, 'player', 'cataclysmic_core')).toHaveLength(0);
 
-    const withRune = scenario({
+    const withMark = scenario({
       pips: 8,
-      units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, rune: 'cinder_rune' }],
+      units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, mark: 'cinder_mark' }],
       hand: ['cataclysmic_core'],
     });
-    expect(legalCardTargets(withRune, 'player', 'cataclysmic_core')).toHaveLength(1);
+    expect(legalCardTargets(withMark, 'player', 'cataclysmic_core')).toHaveLength(1);
   });
 
   it('does not crash or damage anyone when deck and discard are both empty', () => {
@@ -130,9 +130,9 @@ describe('combat resolution edges', () => {
     expect(res.state.units[foe.id]!.hp).toBe(100 - 20 - 30);
   });
 
-  it('fizzles a rune attached to an obstacle when the obstacle is destroyed', () => {
+  it('fizzles a mark attached to an obstacle when the obstacle is destroyed', () => {
     const state = scenario({
-      obstacles: [{ at: { x: 2, y: 2 }, hp: 20, rune: 'cinder_rune' }],
+      obstacles: [{ at: { x: 2, y: 2 }, hp: 20, mark: 'cinder_mark' }],
       units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 3 }, atk: 90 }],
     });
     const attacker = findUnit(state, 'scout_imp', 'player');
@@ -144,19 +144,19 @@ describe('combat resolution edges', () => {
       target: { kind: 'obstacle', id: obstacleId },
     });
 
-    // Physical damage is unaligned with a fire rune, so it is lost rather than detonating.
-    expect(eventsOf(res.events, 'runeFizzled')).toHaveLength(1);
-    expect(eventsOf(res.events, 'runeDetonated')).toHaveLength(0);
+    // Physical damage is unaligned with a fire mark, so it is lost rather than detonating.
+    expect(eventsOf(res.events, 'markFizzled')).toHaveLength(1);
+    expect(eventsOf(res.events, 'markDetonated')).toHaveLength(0);
     expect(res.state.obstacles[obstacleId]).toBeUndefined();
   });
 
-  it('survives a unit being killed by its own rune cascade', () => {
-    // Two adjacent runed units at 1 HP: the first detonation kills the second, whose
-    // own rune then detonates back into the now-empty tile.
+  it('survives a unit being killed by its own mark cascade', () => {
+    // Two adjacent markd units at 1 HP: the first detonation kills the second, whose
+    // own mark then detonates back into the now-empty tile.
     const state = scenario({
       units: [
-        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 10, rune: 'cinder_rune' },
-        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 10, rune: 'cinder_rune' },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 10, mark: 'cinder_mark' },
+        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 10, mark: 'cinder_mark' },
       ],
       hand: ['flame_surge'],
     });
@@ -170,7 +170,7 @@ describe('combat resolution edges', () => {
       }),
     );
 
-    expect(eventsOf(res.events, 'runeDetonated').length).toBeGreaterThanOrEqual(1);
+    expect(eventsOf(res.events, 'markDetonated').length).toBeGreaterThanOrEqual(1);
     expect(Object.keys(res.state.units)).toHaveLength(0);
     expect(res.state.result).toBeUndefined();
   });
@@ -303,7 +303,7 @@ describe('resonance', () => {
         { def: 'scout_imp', side: 'enemy', at: { x: 0, y: 1 } },
         { def: 'marrow_wisp', side: 'player', at: { x: 2, y: 4 } },
       ],
-      hand: ['soul_splinter_rune'],
+      hand: ['soul_splinter_mark'],
     });
     const inLane = state.units[findUnit(state, 'scout_imp', 'enemy').id]!;
     const wisp = findUnit(state, 'marrow_wisp', 'player');
@@ -313,7 +313,7 @@ describe('resonance', () => {
 
     expect(state.players.player.companionColumn).toBe(4);
 
-    const res = run(state, play(handCard(state, 'player', 'soul_splinter_rune'), atUnit(wisp.id)));
+    const res = run(state, play(handCard(state, 'player', 'soul_splinter_mark'), atUnit(wisp.id)));
 
     expect(res.state.units[inLane.id]!.statuses.burn).toBe(1);
     expect(res.state.units[outOfLane.id]!.statuses.burn).toBeUndefined();

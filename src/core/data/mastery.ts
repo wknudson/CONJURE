@@ -24,7 +24,7 @@
  *  - **Detonation** rewards the player who set something up and cashed it. Combo.
  *  - **Unbroken** rewards the player whose warband all walked out. Attrition.
  *
- * A cautious turtle takes the first and probably the third; a rune player takes the second
+ * A cautious turtle takes the first and probably the third; a mark player takes the second
  * and rarely the first. Three at once is a genuinely good fight.
  *
  * Data and arithmetic only. Nothing here reaches into the reducer — the engine keeps two
@@ -41,7 +41,7 @@ export const MASTERY_OBJECTIVES = [
   {
     id: 'detonation',
     name: 'Detonation',
-    text: 'Three or more of your own Runes went off. Whose trap it was, not whose body it was on.',
+    text: 'Three or more of your own Marks went off. Whose trap it was, not whose body it was on.',
   },
   {
     id: 'unbroken',
@@ -52,7 +52,7 @@ export const MASTERY_OBJECTIVES = [
 
 export type MasteryObjectiveId = (typeof MASTERY_OBJECTIVES)[number]['id'];
 
-/** Runes of your own that have to go off to claim Detonation. */
+/** Marks of your own that have to go off to claim Detonation. */
 export const DETONATION_TARGET = 3;
 
 /** The most affinity a capture can carry, which is simply how many objectives there are. */
@@ -61,7 +61,7 @@ export const AFFINITY_CEILING = MASTERY_OBJECTIVES.length;
 /** What the engine noticed, in the plainest possible terms. */
 export interface MasteryFacts {
   damageTaken: number;
-  runeDetonations: number;
+  markDetonations: number;
   rosterFallen: number;
 }
 
@@ -82,7 +82,7 @@ export interface MasteryReport {
 export function masteryOf(facts: MasteryFacts): MasteryReport {
   const met: MasteryObjectiveId[] = [];
   if (facts.damageTaken <= 0) met.push('untouched');
-  if (facts.runeDetonations >= DETONATION_TARGET) met.push('detonation');
+  if (facts.markDetonations >= DETONATION_TARGET) met.push('detonation');
   if (facts.rosterFallen <= 0) met.push('unbroken');
   return { met, affinity: met.length };
 }

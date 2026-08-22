@@ -19,8 +19,104 @@ import type { CompanionInstance } from '../core/overworld/vivarium.js';
 import { HP_ROLL_MAX, HP_ROLL_MIN, levelCost, levelRefusal } from '../core/overworld/vivarium.js';
 import { COMPANIONS, companionById } from '../core/data/companions.js';
 import { traitById } from '../core/data/companionTraits.js';
+import { CARDS } from '../core/data/cards/index.js';
+import { resolveGrimoire } from '../core/data/grimoire.js';
+import { grantsFor } from '../core/data/pools.js';
+import { formatCost } from '../hud/cost.js';
 import { schoolOf } from '../render/palette.js';
 import { Tooltip } from '../hud/Tooltip.js';
+
+/**
+ * The eight this animal actually turned out to know.
+ *
+ * Titled **Grimoire Spells** rather than "cards", because after the role overhaul that is
+ * a rule and not a flourish: a Companion drafts Spells, the Hero holds Abilities, Marks and
+ * Constructs, and neither half can contain the other's. A player looking at a tank is
+ * looking at the half they did *not* build, and the heading is what says so.
+ *
+ * Read through `resolveGrimoire`, which is the single definition of what is in a Grimoire —
+ * the same function the fight reads. Deriving it a second time here is exactly how a
+ * Vivarium comes to show one book while the board deals another.
+ */
+function grimoireHtml(beast: CompanionInstance): string {
+  const book = resolveGrimoire(beast.grimoire, beast.overrides);
+  if (book.length === 0) return '';
+
+  const rows = book
+    .map((defId, slot) => {
+      const def = CARDS[defId];
+      if (!def) return '';
+      const socketed = beast.overrides[slot] !== undefined;
+      // A socketed card never carries the beast's roll: the roll belongs to a spell this
+      // animal drafted, and a socketed one was forged at a bench.
+      const mod = socketed ? undefined : beast.spellModifiers?.[defId];
+      const notes: string[] = [];
+      if (mod?.pipCostDelta) notes.push(`${mod.pipCostDelta > 0 ? '+' : ''}${mod.pipCostDelta} Pip`);
+      if (mod?.bonusDamage) notes.push(`+${mod.bonusDamage} dmg`);
+      if (mod?.grantRetain) notes.push('Retain');
+      return `
+        <div class="vivarium__spell${socketed ? ' is-socketed' : ''}">
+          <span class="vivarium__spell-cost">${formatCost(def.cost)}</span>
+          <span class="vivarium__spell-name">${def.name}</span>
+          <span class="vivarium__spell-note">${
+            socketed ? 'socketed' : notes.join(' · ')
+          }</span>
+        </div>`;
+    })
+    .join('');
+
+  // Distinct *spells*, not copies: a beast holding two rolled Glacial Spikes rolled one
+  // spell well, and saying "two" would promise a second thing to go and find.
+  const rolled = new Set(book.filter((id, i) => beast.overrides[i] === undefined && beast.spellModifiers?.[id])).size;
+
+  return `
+    <div class="vivarium__book">
+      <div class="vivarium__book-head">
+        <span class="vivarium__stat-label">Grimoire Spells</span>
+        <span class="vivarium__book-count">${book.length} · ${rolled} rolled</span>
+      </div>
+      <div class="vivarium__book-note">Fused into your deck at the bell. Yours to socket, never to build.</div>
+      <div class="vivarium__book-list">${rows}</div>
+    </div>`;
+}
+
+/**
+ * The bodies this bloodline unlocked, permanently.
+ *
+ * `grantsFor` rather than the character's saved ledger, and the difference is the sentence
+ * under the list: this panel answers "what did catching one of *these* give me", which is a
+ * fact about the species and true whether or not this particular animal is still on the
+ * roster. The ledger answers "what may my warband field", which is the Field Journal's
+ * question and is asked on the Vanguard tab.
+ */
+function vanguardHtml(beast: CompanionInstance): string {
+  const bodies = grantsFor(beast.baseId);
+  if (bodies.length === 0) return '';
+
+  const rows = bodies
+    .map((id) => CARDS[id])
+    .filter((def): def is NonNullable<typeof def> => Boolean(def))
+    .map(
+      (def) => `
+      <div class="vivarium__body">
+        <span class="vivarium__body-name">${def.name}</span>
+        <span class="vivarium__body-stats">${
+          def.unit ? `ATK ${def.unit.atk} · HP ${def.unit.hp}` : ''
+        }</span>
+      </div>`,
+    )
+    .join('');
+
+  return `
+    <div class="vivarium__vanguard">
+      <div class="vivarium__book-head">
+        <span class="vivarium__stat-label">Vanguard Unlocks</span>
+        <span class="vivarium__book-count">${bodies.length}</span>
+      </div>
+      <div class="vivarium__book-note">Taming this bloodline opened these for your warband. Releasing it does not close them.</div>
+      <div class="vivarium__body-list">${rows}</div>
+    </div>`;
+}
 
 export interface VivariumOpts {
   global: GlobalGameState;
@@ -234,6 +330,9 @@ export class VivariumScreen implements Screen {
           <span class="vivarium__trait-name">${trait?.name ?? 'None'}</span>
           <span class="vivarium__trait-text">${trait?.text ?? 'Nothing remarkable about this one.'}</span>
         </div>
+
+        ${grimoireHtml(beast)}
+        ${vanguardHtml(beast)}
 
         <div class="vivarium__actions">
           <button class="brass-btn vivarium__pick" ${active ? 'disabled' : ''}>
