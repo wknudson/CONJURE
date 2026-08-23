@@ -335,8 +335,16 @@ export class DistrictScreen implements Screen {
     this.player.position.set(start.x, 0, start.z);
     this.world.scene.add(this.player.sprite);
     this.world.billboards.push(this.player.sprite);
-    this.lastSafePos.copy(this.player.position);
     this.playerSafe = isSafeAt(start.x, start.z);
+    // Seeded from the spawn unless the restored spot is genuinely pavement. Copying the
+    // start position blind would make an alley the Commander logged out in count as
+    // sanctuary — and the Warden's catch teleports you here, so the first thing it would
+    // do is drop you back into the cone that caught you.
+    this.lastSafePos.set(
+      this.playerSafe ? start.x : SPAWN.x,
+      0,
+      this.playerSafe ? start.z : SPAWN.z,
+    );
 
     this.follower = new CompanionFollower(
       beastArt,
@@ -463,10 +471,14 @@ export class DistrictScreen implements Screen {
    * A stored position is only trusted if it came from this ward and still names somewhere
    * you can stand — the map is data and data drifts, and a spawn inside a wall is worse
    * than a spawn in the wrong place.
+   *
+   * "Can stand" and not "is pavement", deliberately. Standing on cobbles is legal; it is
+   * the whole point of the danger zone. Asking for a safe tile here would quietly move
+   * anyone who closed the tab in an alley back to the plaza.
    */
   private restorePosition(): { x: number; z: number } {
     const saved = this.opts.global.overworld.playerPos;
-    if (saved && saved.mapId === MAP_ID && isSafeAt(saved.x, saved.y)) {
+    if (saved && saved.mapId === MAP_ID && !this.colliderSet?.blocked(saved.x, saved.y)) {
       return { x: saved.x, z: saved.y };
     }
     return { x: SPAWN.x, z: SPAWN.z };

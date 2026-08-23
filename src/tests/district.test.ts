@@ -126,6 +126,22 @@ describe('the ward grid', () => {
     }
   });
 
+  it('has somewhere legal to stand that is not pavement', () => {
+    // The restore path asks "can you stand here", not "is this safe", because logging out
+    // in an alley is legal and being quietly moved back to the plaza for it is not. This
+    // guards the distinction the two questions rest on.
+    const alley = { x: 22, z: -2 };
+    expect(isWalkable(alley.x, alley.z)).toBe(true);
+    expect(isSafeAt(alley.x, alley.z)).toBe(false);
+  });
+
+  it('keeps a guaranteed-safe fallback for the Warden to return you to', () => {
+    // `lastSafePos` is seeded from the spawn whenever the restored spot is not pavement.
+    // If the spawn itself were ever unsafe, a catch would drop the player straight back
+    // into the cone that caught them.
+    expect(isSafeAt(SPAWN.x, SPAWN.z)).toBe(true);
+  });
+
   it('bounds itself: the canal and everything off the edge are impassable', () => {
     expect(isWalkable(0, -38)).toBe(false); // the canal
     expect(isWalkable(0, 999)).toBe(false); // off the south edge
