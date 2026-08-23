@@ -16,10 +16,15 @@ grid projected onto: battle without a load, a ruined wall in the overworld becom
 obstacle on the tiles beneath it, snow settling on a barricade's actual mesh.
 
 **None of that is the game.** CONJURE is HD-2D on a single 2D canvas, with zero runtime
-dependencies and no art assets — every body on the board is canvas shapes out of
-`palette.ts`. There is no world mesh for a grid to land on, no cel-shader, and no camera
-that can look at a wall from two sides. A brief that assumes a 3D engine cannot be
-"adapted"; it has to be re-decided in the medium that exists.
+dependencies — every body on the *board* is canvas shapes out of `palette.ts`. There is no
+world mesh for a grid to land on, no cel-shader, and no camera that can look at a wall from
+two sides. A brief that assumes a 3D engine cannot be "adapted"; it has to be re-decided in
+the medium that exists.
+
+There **are** image assets now, and they are confined to one screen: the Commander and the six
+Companions stand on the creation diorama as authored PNGs under `public/assets/sprites/`. The
+combat board is still entirely procedural, which means the two currently disagree about what a
+body looks like — see `docs/06_character_creation.md` §9, where that gap is the open question.
 
 What survived the medium change is the part that was never about polygons:
 
@@ -397,9 +402,16 @@ is that HD-2D turned out to be **three tricks, all reachable from a 2D canvas**
 
 Three rulings from that work generalise to everything drawn in this game:
 
-**Pixel, not vector.** Figures are painted into a small buffer and blitted up with
-`imageSmoothingEnabled = false`. Smooth anti-aliased curves at final size read as vector
-illustration however well they are lit, and **quantisation is most of the HD-2D look**.
+**Match the interpolation to the art.** This began as *pixel, not vector* — figures painted into
+a small buffer and blitted up with `imageSmoothingEnabled = false`, on the reasoning that smooth
+anti-aliased curves at final size read as vector illustration however well they are lit, and that
+quantisation is most of the HD-2D look. That still holds for anything drawn on a small grid, and
+the board's procedural bodies are paths, which do not interpolate at all.
+
+It does **not** hold for the creation screen's authored PNGs, and the rule had to be split rather
+than kept. That art is anti-aliased painted work 250–330px tall, upscaled two to three times once
+the pixel ratio is counted: nearest-neighbour has no pixel edges to preserve there and instead
+stair-steps the gradients the artist did draw, so those blits run smoothing **on**.
 
 **Value, not detail.** At sprite scale a mark is axis-aligned and near-opaque or it does not
 exist. The three marks that carry a figure are a lit/shadow split down the form, an ink line
@@ -407,9 +419,15 @@ that is *not* black (an outline darker than the form reads as a void and flatten
 break it surrounds), and a rim light down the lit edge — which is the single mark separating
 "a lit form standing in a place" from "a sticker on a background".
 
-**Silhouette over ornament.** Hair is authored as six silhouettes because a silhouette is
-what survives being drawn 40px tall and tilted back into a diorama. The same reasoning gives
-each unit archetype its outline on the board ([`shapes.ts:139`](../src/render/shapes.ts#L139)).
+These three were properties the procedural painter enforced in code and are now **authoring
+guidance** for whoever draws the next sprite: nothing checks them, because nothing can check a
+PNG for having a rim light.
+
+**Silhouette over ornament.** What survives being drawn 40px tall and tilted back into a diorama
+is the outline, which is why each unit archetype on the board is distinguished by its shape
+([`shapes.ts:139`](../src/render/shapes.ts#L139)) rather than by its detail. The same rule decided
+the six Companion sprites: they are told apart at rail-thumbnail size by silhouette — a wide
+winged lynx against a tall antlered stag — before any of their colour reads at all.
 
 ### Weather on the board — SHIPPED
 
@@ -542,6 +560,6 @@ Everything below was checked against the tree and is absent or incomplete.
   zoom ([`src/tests/presentation.test.ts`](../src/tests/presentation.test.ts)), which proves
   the maths and says nothing about how the 260ms spin *feels*.
 - **No audio test.** `Sfx` is untested by construction: there is no `AudioContext` in the
-  test environment, and a recording-context approach of the kind the sprite tests use would
-  assert the shape of a graph rather than the sound of a cue. `isLooping` is exposed partly
+  test environment, and a recording-context approach of the kind `drawCompanion` is tested with
+  would assert the shape of a graph rather than the sound of a cue. `isLooping` is exposed partly
   so that a future test has something to hold.

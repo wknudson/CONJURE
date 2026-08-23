@@ -1,17 +1,11 @@
+import { readdirSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_NICKNAME,
-  FACE_PRESETS,
-  HAIR_PRESETS,
   NICKNAME_MAX,
-  SKIN_TONES,
-  clampPreset,
   defaultLook,
-  faceOf,
-  hairOf,
   isStarterSpecies,
   normalizeLook,
-  skinOf,
   starterSpecies,
   type CharacterLook,
 } from '../core/data/characterLook.js';
@@ -30,13 +24,12 @@ import {
   type SaveFile,
 } from '../app/save.js';
 import {
-  RAMP,
-  SCHOOL_COLOR,
+  COMMANDER_HEIGHT_TILES,
+  COMPANION_HEIGHT_TILES,
+  commanderSpriteSrc,
+  companionSpriteSrc,
   drawCompanion,
-  paintCommander,
 } from '../render/sprites.js';
-import { PALETTE } from '../render/palette.js';
-import { HAIR_TONES } from '../core/data/characterLook.js';
 import { FOCUS_FAR, FOCUS_NEAR, focusBand, projectTile } from '../render/Diorama.js';
 import {
   BEAST_AT,
@@ -48,10 +41,16 @@ import {
 /**
  * Character creation: the desk, and what walks away from it.
  *
- * The sprite tests are the unusual ones. There is no DOM here and no canvas, so they hand
- * the drawing code a context that writes down what it was asked to do — which turns out to
- * be a better assertion than a pixel diff anyway: "a topknot draws a different shape than a
- * crop" is the actual claim, and it survives somebody nudging a colour.
+ * The sprite half of this suite used to be its largest part — some twenty-eight tests
+ * asserting that a procedural painter gave every haircut its own silhouette, put a catchlight
+ * in both eyes, and shaded a coat in three discrete bands. That painter is gone; the Commander
+ * and the beast are authored PNGs now, and there is no honest bitmap equivalent of those
+ * claims. A `drawImage` transcript can only say that one image was blitted at one size, which
+ * is not worth twenty-eight tests.
+ *
+ * What replaces them is the pair of questions that *can* go wrong now and could not before:
+ * **is the file the loader asks for actually on disk**, and **is the figure it draws inside
+ * the frame**. The second one already had a real bug in it.
  */
 
 function installStorage(): void {
@@ -67,7 +66,7 @@ function installStorage(): void {
 describe('the look', () => {
   it('opens on something, not on a random roll', () => {
     // The first thing a player sees has to be the thing their first click changes. A
-    // randomised opening state makes "next hair" read as "reroll".
+    // randomised opening state makes a deliberate choice read as a reroll.
     expect(defaultLook()).toEqual(defaultLook());
     expect(defaultLook().nickname).toBe(DEFAULT_NICKNAME);
   });
@@ -78,9 +77,26 @@ describe('the look', () => {
     // would be spending the reward before the first contract.
     const keys = Object.keys(defaultLook());
     for (const slot of RELIC_SLOT_ORDER) expect(keys, slot).not.toContain(slot);
-    expect(keys.sort()).toEqual(
-      ['facePreset', 'gender', 'hairPreset', 'nickname', 'skinPreset', 'starterCompanion'].sort(),
-    );
+    expect(keys.sort()).toEqual(['gender', 'nickname', 'starterCompanion']);
+  });
+
+  it('drops the presets an older save still carries', () => {
+    // Hair, face and skin were three cycler-driven indices and are now not fields at all.
+    // The contract for a save still holding them is *ignore*, not migrate — there is no
+    // sheet to pick a haircut out of by index, so the honest answer to `hairPreset: 3` is
+    // that the question stopped existing rather than that it resolves to something.
+    const look = normalizeLook({
+      nickname: 'Vessa Kade',
+      gender: 'male',
+      hairPreset: 3,
+      facePreset: 2,
+      skinPreset: 5,
+      starterCompanion: 'mortis',
+    });
+    expect(Object.keys(look).sort()).toEqual(['gender', 'nickname', 'starterCompanion']);
+    expect(look.nickname, 'while keeping what does still exist').toBe('Vessa Kade');
+    expect(look.gender).toBe('male');
+    expect(look.starterCompanion).toBe('mortis');
   });
 
   it('trims and caps a nickname, and never accepts a blank one', () => {
@@ -91,82 +107,10 @@ describe('the look', () => {
   });
 
   it('takes only the two bearings it offers', () => {
+    // Two, and exactly two, because there are two sprite sheets. This is the one look field
+    // that still changes what is drawn, so an unknown value has to land on a real file.
     expect(normalizeLook({ gender: 'male' }).gender).toBe('male');
     expect(normalizeLook({ gender: 'wyvern' }).gender).toBe(defaultLook().gender);
-  });
-
-  it('wraps a preset index rather than rejecting it', () => {
-    // Cycling is modular everywhere in the creator, and an out-of-range index is the same
-    // arithmetic — so a hand-edited `hairPreset: 900` lands on a real haircut.
-    expect(clampPreset(0, 6)).toBe(0);
-    expect(clampPreset(7, 6)).toBe(1);
-    expect(clampPreset(-1, 6)).toBe(5);
-    expect(clampPreset('3', 6), 'the string form the schema permits').toBe(3);
-    expect(clampPreset('nonsense', 6)).toBe(0);
-    expect(clampPreset(undefined, 6)).toBe(0);
-    expect(clampPreset(3, 0), 'no presets, no crash').toBe(0);
-  });
-
-  it('always resolves to a preset that exists', () => {
-    for (const raw of [900, -900, '2', null, undefined, {}, Number.NaN]) {
-      const look = normalizeLook({ hairPreset: raw, facePreset: raw });
-      expect(HAIR_PRESETS[look.hairPreset as number], String(raw)).toBeDefined();
-      expect(FACE_PRESETS[look.facePreset as number], String(raw)).toBeDefined();
-      expect(hairOf(look).name).toBeTruthy();
-      expect(faceOf(look).name).toBeTruthy();
-    }
-  });
-
-  it('varies skin and expression independently', () => {
-    // The point of the whole change. Skin used to be `SKIN_TONES[facePreset]`, so choosing a
-    // weathered brow also chose a complexion: four expressions times six tones is
-    // twenty-four faces, and multiplexed onto one control it was four.
-    const a = normalizeLook({ facePreset: 0, skinPreset: 5 });
-    const b = normalizeLook({ facePreset: 3, skinPreset: 5 });
-    expect(skinOf(a), 'same skin, different expression').toBe(skinOf(b));
-    expect(a.facePreset).not.toBe(b.facePreset);
-
-    const c = normalizeLook({ facePreset: 0, skinPreset: 0 });
-    expect(skinOf(c), 'same expression, different skin').not.toBe(skinOf(a));
-  });
-
-  it('keeps an older character the complexion they already had', () => {
-    // A save written before the split has no `skinPreset`, and the old rule was
-    // `SKIN_TONES[facePreset]`. Carrying the *index* across would look like a faithful
-    // migration and quietly recolour everybody, because the list has since been reordered
-    // and widened from four tones to six.
-    const legacy = ['#C8A07A', '#8D6242', '#E0BC96', '#5E4030'];
-    for (const [face, was] of legacy.entries()) {
-      const repaired = normalizeLook({ facePreset: face });
-      expect(skinOf(repaired), `facePreset ${face} used to be ${was}`).toBe(was);
-      expect(repaired.facePreset, 'and keeps its expression').toBe(face);
-    }
-  });
-
-  it('defaults the complexion when nothing at all was written', () => {
-    // Not index zero by accident — the fallback chain has to end at the default rather than
-    // at whatever `clampPreset(undefined)` returns.
-    expect(normalizeLook({}).skinPreset).toBe(defaultLook().skinPreset);
-    expect(normalizeLook({ nickname: 'x' }).skinPreset).toBe(defaultLook().skinPreset);
-  });
-
-  it('renders a different face for the same expression on different skin', () => {
-    // And it has to reach the sprite, not just the schema.
-    const pale = transcript({ ...defaultLook(), skinPreset: 0 });
-    const dark = transcript({ ...defaultLook(), skinPreset: 5 });
-    expect(pale).not.toBe(dark);
-    expect(pale, 'the lightest tone').toContain(`fillStyle=${SKIN_TONES[0]}`);
-    expect(dark, 'and the darkest').toContain(`fillStyle=${SKIN_TONES[5]}`);
-  });
-
-  it('shades the neck and the nose off the chosen skin', () => {
-    // A fixed hex was fine while skin was four tones off the face preset and became wrong
-    // the moment it became six on their own axis: a pale neck under a dark jaw is not a
-    // shadow, it is a mistake.
-    for (const [i] of SKIN_TONES.entries()) {
-      const t = transcript({ ...defaultLook(), skinPreset: i });
-      expect(t, `skin ${i} neck`).toContain(`fillStyle=${shadeOf(SKIN_TONES[i]!)}`);
-    }
   });
 
   it('survives being handed nonsense entirely', () => {
@@ -212,6 +156,135 @@ describe('who may be vowed to', () => {
   });
 });
 
+/**
+ * The art the screen asks for, against the art that exists.
+ *
+ * The whole class of failure the bitmap rewrite introduced and the procedural version could
+ * not have: a path is a string, a filename is a fact, and nothing but a test compares them.
+ * A miss here is a body that silently does not render — `drawCommander` treats a null image
+ * as "skip this frame", so a typo'd path is an empty stage rather than an error.
+ */
+describe('the art on disk', () => {
+  const PUBLIC = new URL('../../public/', import.meta.url);
+
+  /**
+   * Whether a path the loader will request exists, matching case **exactly**.
+   *
+   * Compared against a directory listing rather than asked with `existsSync`, because
+   * `existsSync` answers case-insensitively on Windows and macOS. The art arrived as
+   * capitalised exports and was renamed down; a leftover `Ignis-front.png` would pass on
+   * every developer machine here and 404 the moment it is served from Linux.
+   */
+  function isShipped(src: string): boolean {
+    const cut = src.lastIndexOf('/');
+    const dir = new URL(src.slice(1, cut + 1), PUBLIC);
+    return readdirSync(dir).includes(src.slice(cut + 1));
+  }
+
+  it('has a front sprite for every bloodline that may be vowed to', () => {
+    for (const baseId of starterSpecies()) {
+      expect(isShipped(companionSpriteSrc(baseId)), companionSpriteSrc(baseId)).toBe(true);
+    }
+  });
+
+  it('has a front sprite for both bearings', () => {
+    for (const gender of ['female', 'male'] as const) {
+      expect(isShipped(commanderSpriteSrc(gender)), commanderSpriteSrc(gender)).toBe(true);
+    }
+  });
+
+  it('ships no raw export alongside the sprites it actually uses', () => {
+    // The background-removal exports are 250KB each and referenced by nothing, and
+    // everything under `public/` is served. They live in `art-source/` at the repo root
+    // instead — kept, versioned, and not downloaded by a player.
+    const dirs = ['assets/sprites/', 'assets/sprites/companions/'];
+    for (const dir of dirs) {
+      const raw = readdirSync(new URL(dir, PUBLIC)).filter((f) => f.includes('removebg'));
+      expect(raw, dir).toEqual([]);
+    }
+  });
+
+  it('names every facing it does not yet draw, so the set stays complete', () => {
+    // Side and back frames exist for all six beasts and both bearings. Nothing loads them
+    // today — the creation stage is front-on — but they are the art a facing change on the
+    // combat board would need, and a half-delivered set is worth knowing about before then.
+    for (const baseId of starterSpecies()) {
+      for (const facing of ['front', 'side', 'back'] as const) {
+        const src = companionSpriteSrc(baseId, facing);
+        expect(isShipped(src), src).toBe(true);
+      }
+    }
+  });
+});
+
+describe('the beast fallback', () => {
+  /**
+   * A canvas context that writes down what it was told to do.
+   *
+   * All that survives of the old sprite-transcript approach, and it is still the right tool
+   * for the one thing left that draws shapes rather than blitting a file: `drawCompanion`,
+   * the silhouette a species with no art yet falls back to.
+   */
+  function recordingContext(): { ctx: CanvasRenderingContext2D; log: string[] } {
+    const log: string[] = [];
+    const round = (n: unknown): string => (typeof n === 'number' ? n.toFixed(2) : String(n));
+    const note =
+      (name: string) =>
+      (...args: unknown[]): void => {
+        log.push(`${name}(${args.map(round).join(',')})`);
+      };
+
+    const ctx = {
+      beginPath: note('beginPath'),
+      closePath: note('closePath'),
+      moveTo: note('moveTo'),
+      lineTo: note('lineTo'),
+      quadraticCurveTo: note('quadraticCurveTo'),
+      arc: note('arc'),
+      fill: note('fill'),
+      stroke: note('stroke'),
+      fillRect: note('fillRect'),
+      save: note('save'),
+      restore: note('restore'),
+      set fillStyle(v: string) {
+        log.push(`fillStyle=${v}`);
+      },
+      set strokeStyle(v: string) {
+        log.push(`strokeStyle=${v}`);
+      },
+      set lineWidth(v: number) {
+        log.push(`lineWidth=${round(v)}`);
+      },
+      set shadowColor(v: string) {
+        log.push(`shadowColor=${v}`);
+      },
+      set shadowBlur(v: number) {
+        log.push(`shadowBlur=${round(v)}`);
+      },
+    } as unknown as CanvasRenderingContext2D;
+
+    return { ctx, log };
+  }
+
+  it('lights the beast’s eye rather than dotting it', () => {
+    const { ctx, log } = recordingContext();
+    drawCompanion(ctx, 80, 'frost');
+    const t = log.join('|');
+    expect(t, 'a source').toContain('shadowColor=#6FB6D8');
+    expect(t.match(/shadowBlur=/g), 'blurred once, and turned off again').toHaveLength(1);
+    expect(t, 'and restored, so nothing downstream inherits it').toContain('restore()');
+  });
+
+  it('gives each school its own beast colour', () => {
+    const drawn = PLAYABLE_SCHOOLS.map((school) => {
+      const { ctx, log } = recordingContext();
+      drawCompanion(ctx, 80, school);
+      return log.join('|');
+    });
+    expect(new Set(drawn).size, 'six distinct beasts').toBe(PLAYABLE_SCHOOLS.length);
+  });
+});
+
 describe('initializeNewProfile', () => {
   beforeEach(() => installStorage());
 
@@ -224,12 +297,10 @@ describe('initializeNewProfile', () => {
     const p = initializeNewProfile('slot-1', look({
       nickname: '  Vessa Kade ',
       gender: 'male',
-      hairPreset: 99,
       starterCompanion: 'sylva',
     }));
     expect(p.characterLook.nickname).toBe('Vessa Kade');
     expect(p.characterLook.gender).toBe('male');
-    expect(p.characterLook.hairPreset).toBe(clampPreset(99, HAIR_PRESETS.length));
     expect(p.characterLook.starterCompanion).toBe('sylva');
   });
 
@@ -314,7 +385,7 @@ describe('an older save at the desk', () => {
     const back = loadSave().save.profiles['slot-1']!;
     expect(back.characterLook.nickname, 'their name').toBe('Old Hand');
     expect(back.characterLook.starterCompanion, 'the beast beside them').toBe('boreas');
-    expect(back.characterLook.gender, 'and the default silhouette').toBe(defaultLook().gender);
+    expect(back.characterLook.gender, 'and the default bearing').toBe(defaultLook().gender);
   });
 
   it('round-trips a look it does have', () => {
@@ -322,8 +393,6 @@ describe('an older save at the desk', () => {
       ...defaultLook(),
       nickname: 'Vessa Kade',
       gender: 'male',
-      hairPreset: 3,
-      facePreset: 2,
       starterCompanion: 'mortis',
     });
     const file: SaveFile = { ...emptySave(), profiles: { 'slot-1': p } };
@@ -332,461 +401,38 @@ describe('an older save at the desk', () => {
     expect(loadSave().save.profiles['slot-1']!.characterLook).toEqual(p.characterLook);
   });
 
+  it('loads a save still carrying the retired presets, without them', () => {
+    // The migration that deliberately is not one. A save written before the bitmaps holds
+    // three keys nothing reads; loading it must produce a clean three-field look rather
+    // than either carrying the dead weight forward or failing on it.
+    const p = initializeNewProfile('slot-1', defaultLook());
+    const raw = JSON.parse(JSON.stringify({ ...emptySave(), profiles: { 'slot-1': p } }));
+    raw.profiles['slot-1'].characterLook = {
+      nickname: 'Old Hand',
+      gender: 'male',
+      hairPreset: 3,
+      facePreset: 2,
+      skinPreset: 5,
+      starterCompanion: 'mortis',
+    };
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const look = loadSave().save.profiles['slot-1']!.characterLook;
+    expect(Object.keys(look).sort()).toEqual(['gender', 'nickname', 'starterCompanion']);
+    expect(look.nickname).toBe('Old Hand');
+    expect(look.starterCompanion).toBe('mortis');
+  });
+
   it('repairs a hand-edited look on the way in', () => {
     const p = initializeNewProfile('slot-1', defaultLook());
     const raw = JSON.parse(JSON.stringify({ ...emptySave(), profiles: { 'slot-1': p } }));
-    raw.profiles['slot-1'].characterLook = { nickname: '', hairPreset: 900, starterCompanion: 'lexis' };
+    raw.profiles['slot-1'].characterLook = { nickname: '', starterCompanion: 'lexis' };
     localStorage.setItem('conjure.save', JSON.stringify(raw));
 
     const look = loadSave().save.profiles['slot-1']!.characterLook;
     expect(look.nickname).toBe(DEFAULT_NICKNAME);
-    expect(HAIR_PRESETS[look.hairPreset as number]).toBeDefined();
     expect(look.starterCompanion, 'not a discipline').not.toBe('lexis');
-  });
-});
-
-/**
- * A canvas context that writes down what it was told to do.
- *
- * Enough of the 2D API for the sprite code to run, and nothing else. The transcript it
- * builds is what the assertions compare — which is a better test than a pixel diff, because
- * it fails when the *shape* changes and not when somebody adjusts a hair colour.
- */
-function recordingContext(): { ctx: CanvasRenderingContext2D; log: string[] } {
-  const log: string[] = [];
-  const round = (n: unknown): string => (typeof n === 'number' ? n.toFixed(2) : String(n));
-  const note =
-    (name: string) =>
-    (...args: unknown[]): void => {
-      log.push(`${name}(${args.map(round).join(',')})`);
-    };
-
-  const ctx = {
-    beginPath: note('beginPath'),
-    closePath: note('closePath'),
-    clip: note('clip'),
-    moveTo: note('moveTo'),
-    lineTo: note('lineTo'),
-    quadraticCurveTo: note('quadraticCurveTo'),
-    arc: note('arc'),
-    ellipse: note('ellipse'),
-    fill: note('fill'),
-    stroke: note('stroke'),
-    fillRect: note('fillRect'),
-    save: note('save'),
-    restore: note('restore'),
-    translate: note('translate'),
-    scale: note('scale'),
-    set fillStyle(v: string) {
-      log.push(`fillStyle=${v}`);
-    },
-    set strokeStyle(v: string) {
-      log.push(`strokeStyle=${v}`);
-    },
-    set lineWidth(v: number) {
-      log.push(`lineWidth=${round(v)}`);
-    },
-    set globalCompositeOperation(v: string) {
-      log.push(`gco=${v}`);
-    },
-    set globalAlpha(v: number) {
-      log.push(`alpha=${round(v)}`);
-    },
-    set shadowColor(v: string) {
-      log.push(`shadowColor=${v}`);
-    },
-    set shadowBlur(v: number) {
-      log.push(`shadowBlur=${round(v)}`);
-    },
-  } as unknown as CanvasRenderingContext2D;
-
-  return { ctx, log };
-}
-
-function transcript(look: CharacterLook): string {
-  const { ctx, log } = recordingContext();
-  paintCommander(ctx, 80, look);
-  return log.join('|');
-}
-
-/**
- * The same transcript with every colour stripped out — geometry only.
- *
- * Needed because the full transcript is too easy to satisfy. Hair tone and skin tone are
- * indexed by the same preset, so six haircuts could collapse to *one shape in six colours*
- * and the colours alone would keep the transcripts distinct. A mutation that pinned every
- * head to `crop` proved exactly that and went unnoticed. This asks the question that
- * actually matters: does the silhouette change?
- */
-/**
- * Every `fillRect` painted while a given colour was the active fill.
- *
- * Canvas fill state is sticky — one `fillStyle` covers every shape until the next one — so
- * asking "which rects are this colour" means walking the transcript and remembering, not
- * peeking at the line before.
- */
-function rectsFilledWith(log: readonly string[], color: string): number[][] {
-  const out: number[][] = [];
-  let current = '';
-  for (const line of log) {
-    if (line.startsWith('fillStyle=')) current = line.slice('fillStyle='.length);
-    else if (line.startsWith('fillRect(') && current === color) {
-      out.push(line.slice('fillRect('.length, -1).split(',').map(Number));
-    }
-  }
-  return out;
-}
-
-/** The two derived-tone rules the sprite uses, mirrored so tests can name what it draws. */
-function shadeOf(hex: string): string {
-  const n = Number.parseInt(hex.slice(1), 16);
-  const d = (v: number): number => Math.round(v * 0.62);
-  return `#${(((d((n >> 16) & 255) << 16) | (d((n >> 8) & 255) << 8) | d(n & 255)) >>> 0)
-    .toString(16)
-    .padStart(6, '0')}`;
-}
-
-function liftOf(hex: string): string {
-  const n = Number.parseInt(hex.slice(1), 16);
-  const u = (v: number): number => Math.min(255, Math.round(v * 1.35 + 24));
-  return `#${(((u((n >> 16) & 255) << 16) | (u((n >> 8) & 255) << 8) | u(n & 255)) >>> 0)
-    .toString(16)
-    .padStart(6, '0')}`;
-}
-
-/** The buffer scale — the one that decides whether a feature survives the grid. */
-const ART_UNIT = 48 / 1.15;
-
-/** The raw transcript, for the assertions that need to read arguments back. */
-function recordAll(look: CharacterLook, unit = 80): { log: string[] } {
-  const { ctx, log } = recordingContext();
-  paintCommander(ctx, unit, look);
-  return { log };
-}
-
-function shapeOf(look: CharacterLook): string {
-  const { ctx, log } = recordingContext();
-  paintCommander(ctx, 80, look);
-  return log
-    .filter((line) => !/^(fillStyle|strokeStyle|lineWidth|alpha|shadow\w+)=/.test(line))
-    .join('|');
-}
-
-describe('the sprite on the stage', () => {
-  it('draws a different silhouette for every hair', () => {
-    // The claim Step 1 is built on: the figure on the diorama *is* the character, so
-    // cycling a preset has to change what is drawn. Two presets that rendered identically
-    // would be a choice the player cannot see themselves making.
-    //
-    // Asserted on geometry, not on the full transcript — see `shapeOf`. Six haircuts in
-    // six colours that are all the same shape is the failure worth catching.
-    const shapes = HAIR_PRESETS.map((_, i) => shapeOf({ ...defaultLook(), hairPreset: i }));
-    expect(new Set(shapes).size, 'six distinct heads').toBe(HAIR_PRESETS.length);
-  });
-
-  it('draws a different face for every face', () => {
-    const shapes = FACE_PRESETS.map((_, i) => shapeOf({ ...defaultLook(), facePreset: i }));
-    expect(new Set(shapes).size, 'four distinct faces').toBe(FACE_PRESETS.length);
-  });
-
-  it('gives each preset its own colour as well as its own shape', () => {
-    // Both halves matter, and they are separate claims: the shape is what reads across the
-    // room, the tone is what makes two silhouettes feel like different people.
-    const hairTones = HAIR_PRESETS.map((_, i) => transcript({ ...defaultLook(), hairPreset: i }));
-    expect(new Set(hairTones).size).toBe(HAIR_PRESETS.length);
-    const skinTones = FACE_PRESETS.map((_, i) => transcript({ ...defaultLook(), facePreset: i }));
-    expect(new Set(skinTones).size).toBe(FACE_PRESETS.length);
-  });
-
-  it('draws the two bearings differently', () => {
-    expect(shapeOf({ ...defaultLook(), gender: 'male' }), 'a silhouette, not a palette').not.toBe(
-      shapeOf({ ...defaultLook(), gender: 'female' }),
-    );
-  });
-
-  it('draws the same look the same way twice', () => {
-    // No randomness in the sprite. A figure that shimmered between frames would read as a
-    // bug rather than as a character.
-    expect(transcript(defaultLook())).toBe(transcript(defaultLook()));
-  });
-
-  it('draws something for a look that has been tampered with', () => {
-    const wild = { ...defaultLook(), hairPreset: 900, facePreset: -7 } as CharacterLook;
-    expect(transcript(wild).length, 'no crash, and not an empty canvas').toBeGreaterThan(50);
-  });
-
-  it('keeps the Commander off the colour of the ground', () => {
-    // The legs were `#2A2F3A` — byte-identical to `PALETTE.tileA`, the floor they stand on.
-    // At diorama distance the figure would have ended at the coat hem with two boots
-    // floating under it. A sprite has to be pickable out of its own background first.
-    const ground = [PALETTE.tileA, PALETTE.tileB, PALETTE.bg].map((c) => c.toLowerCase());
-    for (const [name, hex] of Object.entries(RAMP)) {
-      expect(ground, `${name} is the ground`).not.toContain(hex.toLowerCase());
-    }
-  });
-
-  it('has a body: arms, hands, legs and boots', () => {
-    // What the reference silhouettes have that this sprite did not. It was a trapezoid with
-    // a head on it; arms are what make a shape a person, and they are two rects and two
-    // squares. Measured on a real canvas at 90 units: 104px of leg, 314px of boot, 72px of
-    // hand — all of it absent before.
-    const t = transcript(defaultLook());
-    expect(t, 'trousers').toContain(`fillStyle=${RAMP.trouser}`);
-    expect(t, 'and their shadow side').toContain(`fillStyle=${RAMP.trouserDark}`);
-    expect(t, 'boots').toContain(`fillStyle=${RAMP.boot}`);
-    // Four limb rects plus two boots plus two hands. `fillRect` count is the cheap proxy,
-    // and it is the one that goes to zero if somebody deletes the arms.
-    expect((t.match(/fillRect\(/g) ?? []).length, 'limbs drawn').toBeGreaterThanOrEqual(8);
-  });
-
-  it('wears the Magistracy until a discipline is vowed to, then wears that', () => {
-    // The cloak is the largest colour region on the figure — 502px against a 48x104 body —
-    // so this is the most visible thing the Vow changes.
-    const plain = transcript(defaultLook());
-    expect(plain, 'indigo by default').toContain(`fillStyle=${RAMP.cloak}`);
-
-    const { ctx, log } = recordingContext();
-    paintCommander(ctx, 80, defaultLook(), SCHOOL_COLOR.frost!);
-    const vowed = log.join('|');
-    expect(vowed, 'and the school once there is one').toContain(`fillStyle=${SCHOOL_COLOR.frost}`);
-    expect(vowed, 'the Magistracy indigo is gone').not.toContain(`fillStyle=${RAMP.cloak}`);
-  });
-
-  it('never draws a rect with no height', () => {
-    // The neck was anchored to `yChin + headR` — a whole radius *below* the shoulder — which
-    // gives the rect a negative height, draws nothing, and leaves a two-pixel hole punched
-    // clean through the figure between the chin and the collar. Every preset had it.
-    const { log } = recordAll(defaultLook());
-    const rects = log.filter((line) => line.startsWith('fillRect('));
-    expect(rects.length, 'the body is rects').toBeGreaterThan(8);
-    for (const line of rects) {
-      const [, , w, h] = line.slice(9, -1).split(',').map(Number);
-      expect(w!, `${line} has no width`).toBeGreaterThan(0);
-      expect(h!, `${line} has no height`).toBeGreaterThan(0);
-    }
-  });
-
-  it('gives the Commander a neck, between the chin and the collar', () => {
-    const t = transcript(defaultLook());
-    expect(t, 'skin below the jaw').toContain(`fillStyle=${shadeOf(skinOf(defaultLook()))}`);
-  });
-
-  it('keeps every mark at least a pixel wide at art resolution', () => {
-    // `paintCommander` is called at the *buffer* scale here, which is the one that decides
-    // whether a feature survives. Anything asked for at less than a pixel is a feature that
-    // does not exist — three separate marks on this sprite learned that the hard way.
-    const { log } = recordAll(defaultLook(), ART_UNIT);
-    for (const line of log) {
-      const arc = /^arc\(([-\d.]+),([-\d.]+),([\d.]+)/.exec(line);
-      if (arc) expect(Number(arc[3]), line).toBeGreaterThanOrEqual(1);
-      if (line.startsWith('fillRect(')) {
-        const [, , w, h] = line.slice(9, -1).split(',').map(Number);
-        expect(Math.min(w!, h!), line).toBeGreaterThanOrEqual(1);
-      }
-    }
-  });
-
-  it('shades the coat in three discrete bands, not a gradient', () => {
-    // Pixel-art shading is banded because a smooth ramp turns to mud once quantised. The
-    // middle value is what carries the turn of the form when there are only a few pixels.
-    const t = transcript(defaultLook());
-    for (const band of [RAMP.coatLight, RAMP.coatMid, RAMP.coatDark]) {
-      expect(t, `band ${band}`).toContain(`fillStyle=${band}`);
-    }
-    expect(t, 'and no gradients on the figure').not.toContain('Gradient');
-  });
-
-  it('separates every big garment block from its neighbours', () => {
-    // The palette used to sit inside a narrow navy-slate spread — coat, cloak and legs all
-    // in one hue family, which reads as a monochrome silhouette however carefully each piece
-    // is shaded.
-    //
-    // The rule is **hue or value**, not hue alone. A first pass demanded 45 degrees between
-    // every pair and failed on crimson-against-brown at 40 — which is a real adjacency in
-    // hue and a perfectly legible pair on screen, because the two are far apart in value.
-    // Either separation does the job; demanding the wrong one moves colours to satisfy a
-    // number rather than to be read.
-    const rgb = (hex: string): [number, number, number] => [
-      Number.parseInt(hex.slice(1, 3), 16),
-      Number.parseInt(hex.slice(3, 5), 16),
-      Number.parseInt(hex.slice(5, 7), 16),
-    ];
-    const value = (hex: string): number => rgb(hex).reduce((a, b) => a + b, 0) / 3;
-    const hue = (hex: string): number => {
-      const [r, g, b] = rgb(hex).map((v) => v / 255) as [number, number, number];
-      const mx = Math.max(r, g, b);
-      const mn = Math.min(r, g, b);
-      if (mx === mn) return -1;
-      const d = mx - mn;
-      const h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
-      return (((h * 60) % 360) + 360) % 360;
-    };
-
-    const blocks: [string, string][] = [
-      ['coat', RAMP.coatLight],
-      ['cloak', RAMP.cloak],
-      ['legs', RAMP.trouser],
-      ['boots', RAMP.boot],
-    ];
-
-    for (let i = 0; i < blocks.length; i++) {
-      for (let j = i + 1; j < blocks.length; j++) {
-        const [an, a] = blocks[i]!;
-        const [bn, b] = blocks[j]!;
-        const apart = Math.abs(hue(a) - hue(b));
-        const byHue = Math.min(apart, 360 - apart);
-        const byValue = Math.abs(value(a) - value(b));
-        expect(
-          byHue > 40 || byValue > 30,
-          `${an} and ${bn} share a hue (${byHue.toFixed(0)}deg) and a value (${byValue.toFixed(0)})`,
-        ).toBe(true);
-      }
-    }
-  });
-
-  it('gives the face brows, a catchlight and a nose', () => {
-    // The catchlight is one pixel per eye and is the difference between two dark dots and
-    // something looking back. All of it is `fillRect` — a two-pixel disc is a rect that has
-    // been through anti-aliasing on the way, and the blend is what made these smudges.
-    const t = transcript(defaultLook());
-    expect(t, 'brows and eyes').toContain(`fillStyle=${RAMP.faceInk}`);
-    expect(t, 'the catchlight').toContain(`fillStyle=${RAMP.eyeLit}`);
-    expect(t, 'nose and mouth').toContain(`fillStyle=${shadeOf(skinOf(defaultLook()))}`);
-  });
-
-  it('puts a catchlight in both eyes, on the same side', () => {
-    // Both on the left of their eye, because there is one key light and it is to the left.
-    // Mirroring them would read as two light sources on a twelve-pixel head.
-    // Walks the log tracking the *current* fill, rather than looking at the previous line.
-    // `fillStyle` is set once and both eyes are painted under it, so a look-behind of one
-    // finds the first catchlight and misses the second.
-    const { log } = recordAll(defaultLook(), ART_UNIT);
-    const lit = rectsFilledWith(log, RAMP.eyeLit);
-    expect(lit, 'one per eye').toHaveLength(2);
-    for (const [, , w, h] of lit) expect(Math.max(w!, h!), 'a single pixel').toBe(1);
-    expect(lit[0]![1], 'both on the same row').toBe(lit[1]![1]);
-  });
-
-  it('seams the garment: centre, waist and collar', () => {
-    const t = transcript(defaultLook());
-    expect(t, 'the seams').toContain(`fillStyle=${RAMP.seam}`);
-    // Three horizontal divisions plus the vertical one. Counted rather than named, because
-    // what matters is that the tunic reads as constructed rather than as a painted block.
-    const seamRects = t.split('|').filter((line) => line.startsWith('fillRect('));
-    expect(seamRects.length, 'the sprite is built from rects').toBeGreaterThan(14);
-  });
-
-  it('separates sleeve from hand, and boot from ground', () => {
-    // A cuff and a sole: one dark row each. Without them the sleeve and the hand are two
-    // similar-value blocks touching, and the boot floats a pixel above the floor.
-    const { log } = recordAll(defaultLook(), ART_UNIT);
-    const t = log.join('|');
-    expect(t, 'cuffs').toContain(`fillStyle=${RAMP.seam}`);
-    // The sole is derived from the boot rather than authored, so it tracks any recolour.
-    const sole = shadeOf(RAMP.boot);
-    expect(t, 'soles').toContain(`fillStyle=${sole}`);
-  });
-
-  it('breaks the hair up in every style', () => {
-    // A flat fill is a wig. Both marks are clipped to the cap so they land on hair whatever
-    // shape it is — and drawn *after* the style shapes, because `wild` paints its spikes
-    // over the crown and was overpainting its own highlight.
-    for (const [i, preset] of HAIR_PRESETS.entries()) {
-      const t = transcript({ ...defaultLook(), hairPreset: i });
-      const tone = HAIR_TONES[i]!;
-      expect(t, `${preset.name} has no highlight`).toContain(`fillStyle=${liftOf(tone)}`);
-      expect(t, `${preset.name} has no part-line`).toContain(`fillStyle=${shadeOf(tone)}`);
-    }
-  });
-
-  it('never erases, in any style', () => {
-    // The bug this guards. `shorn` used to cut its shape with `destination-out`, which does
-    // not remove "the hair" — it removes pixels, and the sprite is drawn straight onto a
-    // diorama that already has sky and ground on it. A Shorn Commander arrived with a hole
-    // bitten through their skull and the landscape behind it: 782 transparent pixels on a
-    // 200x200 probe, against zero for every other preset.
-    //
-    // Asserted on the transcript rather than on pixels so it holds without a canvas, and so
-    // it catches the *next* style that reaches for the same trick.
-    for (const [i, preset] of HAIR_PRESETS.entries()) {
-      const t = transcript({ ...defaultLook(), hairPreset: i });
-      expect(t, `${preset.name} erases`).not.toContain('gco=destination-out');
-    }
-  });
-
-  it('shades the coat rather than filling it flat', () => {
-    // Two panels, two values, one break down the centre line. A single fill is a garment
-    // with no body under it.
-    const t = transcript(defaultLook());
-    const fills = [...t.matchAll(/fillStyle=(#[0-9A-Fa-f]{6})/g)].map((m) => m[1]!);
-    expect(new Set(fills).size, 'more than one tone on the figure').toBeGreaterThan(3);
-    expect(t, 'a lit panel').toContain(`fillStyle=${RAMP.coatLight}`);
-    expect(t, 'and a shadow panel').toContain(`fillStyle=${RAMP.coatDark}`);
-  });
-
-  it('keeps the value ramp in order', () => {
-    // Read off `RAMP` itself, not off hex literals pasted in here — a test that compares two
-    // strings it typed proves only that the test author can subtract, and this one was
-    // exactly that until a mutation walked straight through it.
-    //
-    // The rule: the ink line must sit *below* the shadow panel, or an outline darker than
-    // the form flattens the very break it is drawn around; and the shadow must sit below
-    // the lit side, or there is no break at all.
-    const value = (hex: string): number =>
-      Number.parseInt(hex.slice(1, 3), 16) +
-      Number.parseInt(hex.slice(3, 5), 16) +
-      Number.parseInt(hex.slice(5, 7), 16);
-
-    expect(value(RAMP.coatInk), 'ink under shadow').toBeLessThan(value(RAMP.coatDark));
-    // And *not far* under it. "Below the shadow panel" alone permits pure black, which is
-    // the failure the ink line was lightened to avoid: an outline that reads as a void
-    // rather than as an edge flattens the form it surrounds. So the ink has to sit nearer
-    // its own shadow panel than it does to black.
-    expect(
-      value(RAMP.coatDark) - value(RAMP.coatInk),
-      'an edge, not a void',
-    ).toBeLessThan(value(RAMP.coatInk));
-    expect(value(RAMP.coatDark), 'shadow under lit').toBeLessThan(value(RAMP.coatLight));
-    expect(value(RAMP.brass), 'brass under its own highlight').toBeLessThan(value(RAMP.brassLit));
-    expect(value(RAMP.rim), 'and the key light is the brightest thing on the figure')
-      .toBeGreaterThan(value(RAMP.coatLight));
-  });
-
-  it('highlights the brass rather than filling it flat', () => {
-    // Both marks are `fillRect` now, not a triangle and a stroke. At 44 art-pixels the whole
-    // chest is four pixels tall, and the old three-pixel triangle anti-aliased into mud —
-    // measured at literally zero pixels within tolerance of the brass colour on a real
-    // canvas. Anything meant to read at this resolution is axis-aligned and >= 2px thick.
-    const t = transcript(defaultLook());
-    expect(t, 'the metal').toContain(`fillStyle=${RAMP.brass}`);
-    expect(t, 'and the catch of light along its top row').toContain(`fillStyle=${RAMP.brassLit}`);
-  });
-
-  it('catches a rim light down the lit side', () => {
-    const t = transcript(defaultLook());
-    expect(t, 'the key light').toContain(`fillStyle=${RAMP.rim}`);
-    // Near-opaque, not 0.55. A translucent 1px stroke measured 28 pixels on the whole figure
-    // — in the transcript and not on the screen. Still under 1, so it reads as light rather
-    // than as a drawn outline.
-    expect(t, 'as light, not as an outline').toContain('alpha=0.85');
-  });
-
-  it('lights the beast’s eye rather than dotting it', () => {
-    const { ctx, log } = recordingContext();
-    drawCompanion(ctx, 80, 'frost');
-    const t = log.join('|');
-    expect(t, 'a source').toContain('shadowColor=#6FB6D8');
-    expect(t.match(/shadowBlur=/g), 'blurred once, and turned off again').toHaveLength(1);
-    expect(t, 'and restored, so nothing downstream inherits it').toContain('restore()');
-  });
-
-  it('gives each school its own beast colour', () => {
-    const drawn = PLAYABLE_SCHOOLS.map((school) => {
-      const { ctx, log } = recordingContext();
-      drawCompanion(ctx, 80, school);
-      return log.join('|');
-    });
-    expect(new Set(drawn).size, 'six distinct beasts').toBe(PLAYABLE_SCHOOLS.length);
+    expect(look.gender, 'and a bearing that has a sprite').toBe(defaultLook().gender);
   });
 });
 
@@ -794,16 +440,32 @@ describe('the shot', () => {
   const W = 1280;
   const H = 720;
 
+  /**
+   * The cast at each framing, with the heights the draw code actually uses.
+   *
+   * Imported rather than written as literals, and that is the point of exporting them: this
+   * block used to say `height: 1.15` while `drawCommander` blitted `1.7`, so every assertion
+   * below was checking a figure a fifth shorter than the one on screen — which is exactly how
+   * a clipped head passed a test suite that contained a test for the head being in the band.
+   */
+  const framings = [
+    ['step I', SHOT_IDENTITY, [{ ...HERO_AT, height: COMMANDER_HEIGHT_TILES }]],
+    [
+      'step II',
+      SHOT_VOW,
+      [
+        { ...HERO_AT, height: COMMANDER_HEIGHT_TILES },
+        { ...BEAST_AT, height: COMPANION_HEIGHT_TILES },
+      ],
+    ],
+  ] as const;
+
   it('keeps every actor inside the sharp band, at either framing', () => {
-    // The band is **derived** from the cast now rather than written as constants. Constants
-    // were correct until the camera moved — and pulling Step I in close is exactly that, so
-    // the fixed 0.6–0.93 would have put the Commander straight back into the blur it was
-    // rescued from two passes ago. Asking the same function the renderer asks means the
-    // subject is in focus by construction at any framing.
-    for (const [name, cam, cast] of [
-      ['step I', SHOT_IDENTITY, [{ ...HERO_AT, height: 1.15 }]],
-      ['step II', SHOT_VOW, [{ ...HERO_AT, height: 1.15 }, { ...BEAST_AT, height: 0.7 }]],
-    ] as const) {
+    // The band is **derived** from the cast rather than written as constants. Constants were
+    // correct until somebody moved the camera, and then silently wrong in a way that looks
+    // like a blurry sprite rather than a misplaced focus. Asking the same function the
+    // renderer asks means the subject is sharp by construction, at any framing.
+    for (const [name, cam, cast] of framings) {
       const actors = cast.map((a) => ({ ...a, draw: () => {} }));
       const band = focusBand(actors, cam, W, H);
 
@@ -816,17 +478,80 @@ describe('the shot', () => {
     }
   });
 
-  it('gives Step I a figure big enough to read the detail on', () => {
-    // The whole reason the shot moved. A one-pixel eyebrow on a 48-pixel art grid needs the
-    // blit to be well over 2x before it is a mark rather than a smudge.
+  it('keeps every actor inside the frame, at either framing', () => {
+    // The regression test for a bug that shipped. At the old `zoom: 1.8` the Commander's feet
+    // landed at 0.410 of frame height and the sprite blitted 0.470 tall, putting the top of
+    // their head 44 pixels *above* the frame — the figure was decapitated at every window
+    // size, and nothing asked. Feet on screen is not the same claim as body on screen.
+    for (const [name, cam, cast] of framings) {
+      for (const a of cast) {
+        const at = projectTile(a.x, a.y, cam, W, H);
+        const tall = (H / 9) * at.scale * a.height;
+        expect(at.y - tall, `${name}: crown inside the frame`).toBeGreaterThan(H * 0.02);
+        expect(at.y, `${name}: feet inside the frame`).toBeLessThan(H * 0.98);
+      }
+    }
+  });
+
+  it('stands the Commander in the exact middle at Step I', () => {
+    // Exact, not approximate, and it stays exact if the zoom is ever retuned: the camera
+    // sits on the Commander's own tile, so `dx` is zero and the projection cannot drift.
+    // The framing this replaced offset the camera to clear a panel and needed a hand-derived
+    // constant (`HERO_AT.x + 0.5 / zoom`) recomputed on every zoom change to stay put.
+    expect(SHOT_IDENTITY.x).toBe(HERO_AT.x);
+    expect(projectTile(HERO_AT.x, HERO_AT.y, SHOT_IDENTITY, W, H).x).toBe(W / 2);
+
+    // And the scale is the zoom, because the camera is exactly `EYE` from the subject.
+    expect(projectTile(HERO_AT.x, HERO_AT.y, SHOT_IDENTITY, W, H).scale).toBeCloseTo(
+      SHOT_IDENTITY.zoom,
+      10,
+    );
+  });
+
+  it('gives Step I a figure big enough to read, and room under it for the form', () => {
     const at = projectTile(HERO_AT.x, HERO_AT.y, SHOT_IDENTITY, W, H);
-    const figure = (H / 9) * at.scale * 1.15;
-    expect(figure, 'Step I figure height').toBeGreaterThan(115);
-    expect(figure / 48, 'blit factor over the art grid').toBeGreaterThan(2.4);
+    const figure = (H / 9) * at.scale * COMMANDER_HEIGHT_TILES;
+    expect(figure, 'over half the frame tall').toBeGreaterThan(H / 2);
+
+    // The composition the stylesheet depends on: the feet land high enough that the docked
+    // form bar has a strip of empty stage to sit in rather than covering the boots.
+    expect(at.y / H, 'feet clear of the bottom quarter').toBeLessThan(0.78);
 
     // And Step II stays wider, because it has a second body to fit in.
     const wide = projectTile(HERO_AT.x, HERO_AT.y, SHOT_VOW, W, H);
     expect(at.scale, 'Step I is the closer shot').toBeGreaterThan(wide.scale);
+  });
+
+  it('leaves the middle of the frame to the cast at Step II', () => {
+    // The rail goes left and the card goes right specifically so the pair are visible between
+    // them. Both bodies have to land in that channel or the pan that reveals them is showing
+    // the player a panel. These bounds are the channel the stylesheet actually leaves at this
+    // width — they are what caps `SHOT_VOW.zoom`, so a wider panel should fail here.
+    for (const at of [BEAST_AT, HERO_AT]) {
+      const p = projectTile(at.x, at.y, SHOT_VOW, W, H);
+      expect(p.x, 'right of the rail').toBeGreaterThan(W * 0.2);
+      expect(p.x, 'left of the card').toBeLessThan(W * 0.68);
+    }
+  });
+
+  it('draws the Step II pair big enough to be the subject', () => {
+    // The point of the two-shot. At `zoom: 1` the Commander was 121px on a 720p frame and the
+    // beast 73px — both on screen, neither worth looking at, staging the one irreversible
+    // choice in the game as a wide establishing shot.
+    const hero = projectTile(HERO_AT.x, HERO_AT.y, SHOT_VOW, W, H);
+    const beast = projectTile(BEAST_AT.x, BEAST_AT.y, SHOT_VOW, W, H);
+    const heroTall = (H / 9) * hero.scale * COMMANDER_HEIGHT_TILES;
+    const beastTall = (H / 9) * beast.scale * COMPANION_HEIGHT_TILES;
+
+    expect(heroTall, 'the Commander').toBeGreaterThan(H * 0.35);
+    expect(beastTall, 'the beast').toBeGreaterThan(H * 0.2);
+
+    // And they stand apart rather than overlapping. The gap has to survive the *widest* beast
+    // art — Voltara is 276x211, so at a shared height it is nearly three times Sylva's width,
+    // and a framing tuned on a narrow beast puts a wide one through the Commander.
+    const gap =
+      beast.x - (beastTall * (276 / 211)) / 2 - (hero.x + (heroTall * (125 / 288)) / 2);
+    expect(gap, 'clear of each other, even at the widest').toBeGreaterThan(0);
   });
 
   it('still blurs something at both edges', () => {

@@ -17,16 +17,16 @@ Title wall
   ▼
 CharacterCreationScreen                      src/app/CharacterCreationScreen.ts
   │
-  ├─ Step I — The Applicant                  identityPanel()          :201
-  │    nickname · bearing · hair · face
+  ├─ Step I — The Applicant                  identityPanel()          :277
+  │    nickname · bearing
   │    (nothing written; fully reversible)
   │        │  "Take the Vow"
   │        ▼
-  ├─ Step II — The Vow                       vowPanel()               :301
+  ├─ Step II — The Vow                       vowPanel()               :349
   │    six bloodlines; camera pans; beast drops in
-  │        │  "Bind <name>"                  onCreate(look)           :322
+  │        │  "Bind <name>"                  onCreate(look)           :380
   ▼
-initializeNewProfile(slot, look)             src/app/save.ts:385
+initializeNewProfile(slot, look)             src/app/save.ts:407
   │
   ▼
 Safehouse
@@ -53,20 +53,26 @@ blank as it was. That is what makes the title wall safe to poke at.
 
 ## 1. The data the whole flow exists to produce
 
-One object, five fields, defined in [`core/data/characterLook.ts:21`](../src/core/data/characterLook.ts#L21):
+One object, three fields, defined in [`core/data/characterLook.ts:22`](../src/core/data/characterLook.ts#L22):
 
 ```ts
 export interface CharacterLook {
   nickname: string;
   gender: 'male' | 'female';
-  hairPreset: string | number;
-  facePreset: string | number;
   starterCompanion: string;   // a CompanionDef.id — 'ignis', 'boreas', …
 }
 ```
 
-It hangs off `Profile.characterLook` ([save.ts:230](../src/app/save.ts#L230)) and is the reason
-`SAVE_VERSION` is **18** ([save.ts:81](../src/app/save.ts#L81)).
+It hangs off `Profile.characterLook` ([save.ts:252](../src/app/save.ts#L252)) and is the reason
+`SAVE_VERSION` is **19** ([save.ts:81](../src/app/save.ts#L81)).
+
+**It used to be five.** `hairPreset`, `facePreset` and `skinPreset` drove a procedural painter
+that no longer exists — the Commander is authored art now, and there is no sheet to index a
+haircut out of. Those keys are **ignored** on load rather than migrated
+([characterLook.ts:53-56](../src/core/data/characterLook.ts#L53)): a save that still carries
+them loads as a clean three-field look. That is the honest outcome, because the question they
+answered stopped existing rather than changing its answer. See §4 for what replaced the painter
+and §6 for what an older save gets.
 
 ### Why it lives in `core/data` and not beside the save schema
 
@@ -102,32 +108,51 @@ storing a second copy that could disagree with the first.
 |---|---|---|
 | Text input | `nickname` | trimmed, capped at `NICKNAME_MAX` = **18** |
 | Two-button toggle | `gender` | `female` \| `male` |
-| ‹ › cycler | `hairPreset` | 6 silhouettes |
-| ‹ › cycler | `facePreset` | 4 expressions — brow, eye and mouth shape |
-| ‹ › cycler | `skinPreset` | 6 complexions, light to dark |
 
-**Skin and expression are separate axes**, and that took a change. Skin used to be read as
-`SKIN_TONES[facePreset]`, so choosing a weathered brow also chose a complexion and there was
-no way to have one without the other: four expressions times six tones is twenty-four faces,
-and multiplexed onto one control it was four.
+Two controls, because two is what the art supports: there are two sprite sheets, and `gender`
+is the only look field that still changes what is drawn. The three cyclers that used to sit
+here drove the procedural painter and went with it.
 
-Repairing an older save needed two steps rather than one. The obvious move — carry
-`facePreset` across as the skin index — looks like a faithful migration and quietly
-recolours everybody, because the tone list has since been reordered and widened from four to
-six. `LEGACY_SKIN_BY_FACE` maps each old index to whichever slot now holds the same colour.
+Built by `identityPanel()` ([:277](../src/app/CharacterCreationScreen.ts#L277)), laid out as a
+**bar docked along the bottom** rather than the column that used to sit in the bottom-right
+corner. The corner existed to clear the figure, which stood left of centre; now that the figure
+stands *in* the centre, a panel on one side would put the composition back off-balance for no
+reason. Two fields and two buttons is short enough to lie down.
 
-Built by `identityPanel()` ([:201](../src/app/CharacterCreationScreen.ts#L201)); the cyclers
-come from one shared `cycler()` helper ([:272](../src/app/CharacterCreationScreen.ts#L272)).
+**The bearing toggle does not blank the figure.** Both sheets are preloaded when the screen is
+constructed ([:113-121](../src/app/CharacterCreationScreen.ts#L113)), so the swap resolves on a
+microtask and the old figure is replaced before the next frame draws. It used to null the image
+first and let `drawCommander` skip a frame, which opened a guaranteed hole in the middle of the
+stage — a figure that vanishes reads as a bug, where a figure that changes reads as the toggle
+working. The stale-load guard in `loadHeroSprite` is what makes holding the old bitmap safe:
+a slow load that lands after a second click is discarded.
 
-### Step I is a close shot
+### Step I is a close shot, dead centre
 
-`SHOT_IDENTITY` dollies the camera in to `y = 2.2`, putting the figure at **127px** against a
-48-pixel art grid — a 2.65× blit, where a one-pixel eyebrow is nearly three screen pixels and
-a catchlight is a mark rather than a smudge. At the old framing the figure stood 89px, under
-2×, and every piece of secondary detail was there and unreadable.
+`SHOT_IDENTITY` puts the camera **on the Commander's own tile** — `x` and `y` are literally
+`HERO_AT` ([:91](../src/app/CharacterCreationScreen.ts#L91)) — and two useful things fall out
+of that arithmetic rather than out of tuning:
 
-Step II stays wide (82px): the Vow is about the pair of them and the ground they stand on,
-and it needs room for a beast to land beside a person.
+- `dx = 0`, so the figure projects to the exact centre of the frame at *any* zoom. The previous
+  framing pushed them left to clear the panel and paid for it with a hand-derived constant
+  (`HERO_AT.x + 0.5 / zoom`) that had to be recomputed every time the zoom moved, because zoom
+  multiplies the offset. A centred subject cannot drift.
+- `ty - cam.y = 0`, so `dz` is exactly `EYE` and the projected scale is exactly `zoom`. One
+  knob now sets how big the figure is *and* where its feet land, monotonically.
+
+At `zoom: 3.2` the feet land at **0.713** of frame height and the figure stands **0.604** of it
+— three-fifths of the frame, sky above, and the bottom quarter left clear for the form bar.
+
+**The old framing was cutting the head off.** At `zoom: 1.8` the feet landed at 0.410 and the
+sprite blitted 0.470 tall, which put the crown **44 pixels above the frame** at 720p, at every
+window size. The suite contained a test for the Commander being inside the *focus band* and it
+passed, because the cast was declared 1.15 tiles tall while the draw code blitted 1.7 — so
+every assertion was about a figure a fifth shorter than the one on screen. Both numbers now
+come from `COMMANDER_HEIGHT_TILES` ([sprites.ts:96](../src/render/sprites.ts#L96)), and a test
+asserts the crown is inside the *frame*, which is a different claim from being inside the band.
+
+Step II pulls back to `zoom: 2.2` — still a close shot, because it has a second body to fit in
+rather than because the Vow wants distance. See §3.
 
 Moving the camera is what forced the **focus band to be derived** rather than written down.
 Constants were correct until something moved, and then silently wrong in a way that looks
@@ -138,45 +163,32 @@ both edges. The subject is in focus by construction, at any framing.
 
 ### The design: the sprite *is* the preview
 
-The single most important decision on this screen is that there is **no preview box**. The
-Commander stands on the diorama from the first frame, at `HERO_AT`
-([:61](../src/app/CharacterCreationScreen.ts#L61)), and `drawCommander` reads the look at draw
-time rather than from a cached bitmap ([sprites.ts:42](../src/render/sprites.ts#L42)). Clicking
-"next hair" changes the figure on the map on the very next frame.
+The single most important decision on this screen is that there is **no preview box**, and it
+survived the art change. The Commander stands on the diorama from the first frame, at `HERO_AT`
+([:63](../src/app/CharacterCreationScreen.ts#L63)) — not in a bordered portrait pane beside a
+form. Centring and zooming the shot is that decision taken further, not walked back: the figure
+is now the largest thing on the screen, which is what a preview box would have been trying to
+achieve by other means.
 
 That is why the step is called *The Applicant* rather than *Appearance*: the player is
 looking at a person standing in a place, not at a form with a portrait beside it.
 
-### Why six hairs and only four faces
+What did change is *when* the bitmap is resolved. `drawCommander` blits a **cached image**
+([sprites.ts:131](../src/render/sprites.ts#L131)) rather than re-painting from the look every
+frame, so the figure changes when the file for the new bearing has decoded rather than on the
+very next frame. With both sheets preloaded that distinction is invisible, which is the point of
+preloading them.
 
-Both counts are chosen against the size the sprite actually renders at. Hair is authored as
-**silhouettes** — `crop`, `mane`, `braid`, `topknot`, `shorn`, `wild` — because a silhouette
-is what survives being drawn ~40px tall and then tilted back into a diorama. "Layered bob"
-and "textured bob" would not read across a room; a topknot does.
+### One small rule worth knowing
 
-A face at that scale is three marks, so there are four of them. Six would be a choice the
-player cannot see themselves having made.
-
-Each preset also moves a **tone**: hair colour by `HAIR_TONES`
-([:63](../src/core/data/characterLook.ts#L63)), skin by `SKIN_TONES`
-([:66](../src/core/data/characterLook.ts#L66)), indexed off the same number. Shape is what
-reads at distance; tone is what makes two silhouettes feel like different people.
-
-### Two small rules worth knowing
-
-**The default look is fixed, not rolled** ([`defaultLook()`:80](../src/core/data/characterLook.ts#L80)).
+**The default look is fixed, not rolled** ([`defaultLook()`:39](../src/core/data/characterLook.ts#L39)).
 The first thing a player sees has to be the thing their first click changes. A randomised
-opening state makes "next hair" read as "reroll".
-
-**Cycling wraps in both directions** (`clampPreset`, [:134](../src/core/data/characterLook.ts#L134)).
-A player who overshoots the hair they wanted should be able to go back one rather than around
-five. The same modular arithmetic is what makes a hand-edited `hairPreset: 900` land on a real
-haircut instead of an undefined sprite.
+opening state makes a deliberate choice read as a reroll.
 
 ### The nickname is held raw and normalised on commit
 
 The input handler stores what was typed, capped at length, and nothing else
-([:224-229](../src/app/CharacterCreationScreen.ts#L224)). Trimming happens when the player
+([:303](../src/app/CharacterCreationScreen.ts#L303)). Trimming happens when the player
 leaves the step. If the field trimmed on every keystroke it would fight a player over a
 trailing space they are about to type a word after.
 
@@ -196,8 +208,8 @@ screen saying so without a modal warning.
 
 ### What is on offer, and the rule behind it
 
-Six cards, one per discipline, from `starterSpecies()`
-([characterLook.ts:154](../src/core/data/characterLook.ts#L154)):
+Six bloodlines, one per discipline, from `starterSpecies()`
+([characterLook.ts:93](../src/core/data/characterLook.ts#L93)):
 
 | Discipline | Bloodline |
 |---|---|
@@ -209,27 +221,80 @@ Six cards, one per discipline, from `starterSpecies()`
 | Bloom | Sylva |
 
 `starterSpecies()` defers to `SPECIES_BY_SCHOOL`
-([pools.ts:179](../src/core/data/pools.ts#L179)) rather than deriving its own answer. That
+([pools.ts:202](../src/core/data/pools.ts#L202)) rather than deriving its own answer. That
 deferral is load-bearing and was learned the hard way — see §7.
 
-### Each card shows what enrolling actually buys
+### A rail of six, and one card
 
-`vowCard()` ([:337](../src/app/CharacterCreationScreen.ts#L337)) reads every number from the
-same place the profile will read it, so nobody is promised eleven spells and handed nine:
+The layout is a **rail** down the left (`vowTab()`, [:389](../src/app/CharacterCreationScreen.ts#L389))
+and one **featured card** on the right (`renderFeatured()`, [:424](../src/app/CharacterCreationScreen.ts#L424)),
+with the channel between them left empty for the pair of bodies.
+
+It was six equal cards in a horizontal scroller. Each had to carry everything about a bloodline
+inside a 13rem column, so all six were a wall of 0.66rem prose nobody reads — and the one thing
+that distinguishes an Ember Drake from a Vault Boar at a glance, the beast's own art, was an
+`<img>` with **no CSS rule anywhere in the project**, rendering at its intrinsic 169×274 and
+blowing the card apart.
+
+Splitting the question splits the layout. The rail answers *which six are there* with a name, a
+school and a face; the card answers *what is this one* at a size where the answer is legible.
+
+### Step II is a two-shot, not an establishing shot
+
+`SHOT_VOW` was `zoom: 1` looking from `y = -0.4`, which drew the Commander **121px** tall and the
+beast **73px** on a 720p frame. Both were on screen and neither was worth looking at, which is a
+strange way to stage the one irreversible choice in the game.
+
+The camera now sits just behind and between them — `{ x: 0.75, y: 0.6, zoom: 2.2 }` — for
+**309px and 188px** on the same frame, about two and a half times the size. `BEAST_AT` moved in
+with it, from `x: 1.4` to `x: 1.0`: a two-tile gap reads fine in a wide shot and throws the pair
+to opposite edges of a close one, at which point they stop being a pair.
+
+`x: 0.75` is deliberately *not* the midpoint between them. It is offset so the pair lands inside
+the empty middle column of the layout above, and **that column, not the frame, is what bounds the
+zoom.** Two things set the ceiling and both were measured rather than eyeballed:
+
+- The Commander's crown has to stay clear of the header. This is why the Step II lede is one
+  short line — what it used to say about spells, bodies and the deck moved into the card, which
+  has room for it and is where the player is looking anyway.
+- The **widest** beast has to stay clear of the card. Voltara is 276×211 and Sylva is 177×332, so
+  at a shared height Voltara is nearly two and a half times the width — 246px against 100px on a
+  1280 frame. A framing tuned on a narrow beast puts a wide one half-behind a panel, so the
+  ceiling is set by the worst case or one bloodline in six is drawn wrong.
+
+Verified by intercepting the real `drawImage` calls and mapping them through the live transform:
+at 1280×720 the Commander paints at x 328–462 and Voltara at 560–806, inside a channel running
+216–864, with a 98px gap between them.
+
+### The card shows what enrolling actually buys
+
+Every number is read from the same place the profile will read it, so nobody is promised eleven
+spells and handed nine:
 
 - **`8 of N spells`** — `GRIMOIRE_SIZE` drawn from `SPELL_POOLS_BY_SPECIES`
 - **`N bodies`** — `MINIONS_BY_SPECIES`, the Vanguard unlock this Vow grants
 - **`15-card deck`** — `fusedDeckSize(STARTER_DECK.length)`
-- **the opening warband, named** — `startingRosterFor(school)` ([pools.ts:246](../src/core/data/pools.ts#L246))
+- **the opening warband, named** — `startingRosterFor(school)` ([pools.ts:271](../src/core/data/pools.ts#L271))
+
+It also carries **two lines of copy rather than one**, because they answer different questions
+and the old card had room to ask only one of them: `CompanionDef.blurb` is what this *beast*
+does — authored on the def, with a comment reading "shown on the selection screen", which until
+now it was not — and `DISCIPLINE` is what its *school* is for, which is the half that outlives
+this one animal.
 
 What is deliberately **not** shown is *which* eight spells this beast will know. That is the
 roll, and spoiling it would make the first tank in the Vivarium a formality.
 
 ### Picking is not signing
 
-`vow()` ([:371](../src/app/CharacterCreationScreen.ts#L371)) drops the beast onto the stage,
-tints the ground, and enables the button. It does **not** create anything. Signing does
-([:322](../src/app/CharacterCreationScreen.ts#L322)).
+`vow()` ([:471](../src/app/CharacterCreationScreen.ts#L471)) drops the beast onto the stage,
+tints the ground, fills the card, and enables the button. It does **not** create anything.
+Signing does ([:380](../src/app/CharacterCreationScreen.ts#L380)).
+
+Nothing about the rail changes that. A tab click is a free, reversible act — which is why the
+rail is not a `tablist` and the tabs are not radios: they are toggle buttons carrying
+`aria-pressed`, reached by Tab and activated by Enter, and claiming `role="tab"` would promise
+arrow-key navigation that nothing here implements.
 
 Separating them is the whole point of the step: a player can try all six, watch each one
 arrive in its own colour, and change their mind. Re-picking resets `beastEntry` to 0 so the
@@ -243,9 +308,12 @@ stuck with is the last thing you read before you commit.
 ## 4. The HD-2D staging
 
 The aesthetic target was Octopath/Triangle Strategy: 2D sprites on a tilt-shifted 3D
-diorama. This project has **zero runtime dependencies** and no art assets, so none of that
-could come from an engine. It turns out not to need one — the look is three specific tricks,
-all reachable from a 2D canvas ([`src/render/Diorama.ts`](../src/render/Diorama.ts)).
+diorama. This project has **zero runtime dependencies**, so none of that could come from an
+engine. It turns out not to need one — the look is three specific tricks, all reachable from a
+2D canvas ([`src/render/Diorama.ts`](../src/render/Diorama.ts)).
+
+The *stage* is entirely code. The two **actors** standing on it are authored PNGs, which is the
+one part of this screen that is not procedural; see "The sprites are authored art" below.
 
 ### 1. The ground is tilted; the actors are not
 
@@ -281,191 +349,157 @@ A vignette closes the frame last, over everything.
 
 **The band has to be where the actors are.** It was first written as 0.34–0.62 — across the
 middle of the frame, which is where a tilt-shift band belongs in the abstract and is nowhere
-near where anything in this scene stands. The Commander spans **0.68 to 0.81** and the beast
-lands at **0.88**, so every actor sat inside the blur: the subject of the shot was the one
-thing out of focus, and it was erasing the sprite's finest marks — the brass collar measured
-zero pixels on the live canvas against 48 in an unblurred probe. `FOCUS_NEAR`/`FOCUS_FAR` are
-0.6/0.93 now, and a test projects the actors and asserts they land inside.
+near where anything in this scene stands. At Step II the Commander spans **0.285 to 0.714** of
+frame height and the beast's feet land at **0.783**, so a fixed mid-frame band put every actor
+inside the blur: the subject of the shot was the one thing out of focus.
+
+`FOCUS_NEAR`/`FOCUS_FAR` are 0.6/0.93 now, but only as the fallback for an empty stage and the
+clamps that keep some falloff at both edges — the band itself is **derived from the cast** by
+`focusBand` ([Diorama.ts:115](../src/render/Diorama.ts#L115)), which is what let Step I dolly in
+to `zoom: 3.2` without putting the Commander straight back into the blur. A test projects the
+actors at both framings and asserts each one lands inside.
 
 ### The camera
 
-Two framings — `SHOT_IDENTITY` and `SHOT_VOW` ([:65-66](../src/app/CharacterCreationScreen.ts#L65)) —
+Two framings — `SHOT_IDENTITY` and `SHOT_VOW` ([:91-92](../src/app/CharacterCreationScreen.ts#L91)) —
 and the camera is always *arriving* at the current one via a framerate-independent
-exponential ease ([:141-144](../src/app/CharacterCreationScreen.ts#L141)):
+exponential ease ([:199](../src/app/CharacterCreationScreen.ts#L199)):
 
 ```ts
 const k = 1 - Math.exp(-dt / 260);
 this.cam.x += (shot.x - this.cam.x) * k;
 ```
 
-Step II pulls back and to the right to make room for the beast. Because it eases rather than
-cuts, changing step reads as a move. `dt` is clamped to 64ms so a backgrounded tab that
-resumes after a minute eases in rather than snapping.
+Step II pulls back and to the right to make room for the beast — from `zoom: 3.2` to `2.2`, so
+it is a widening rather than a retreat. Because it eases rather than cuts, changing step reads
+as a move. `dt` is clamped to 64ms so a backgrounded tab that resumes after a minute eases in
+rather than snapping.
 
-The beast's arrival uses ease-out-back ([`ease()`:395](../src/app/CharacterCreationScreen.ts#L395))
+The beast's arrival uses ease-out-back ([`ease()`:513](../src/app/CharacterCreationScreen.ts#L513))
 so it overshoots slightly as it lands, and its shadow tightens as it comes down
-([Diorama.ts:200-210](../src/render/Diorama.ts#L200)).
+([Diorama.ts:290-303](../src/render/Diorama.ts#L290)).
 
-### The sprites are lit, not flat
+`zoom` is a third channel alongside `x`/`y` and exists because `y` alone conflates *how close
+the camera is* with *where on screen the subject lands* — push `y` far enough to make the figure
+big and its feet slide out of frame before it gets there. `zoom` scales the projection without
+moving the subject, which is what lets Step I be both centred and close.
 
-Three marks do the work, and all three are value rather than detail — which is the only
-thing that survives at this size:
+### The sprites are authored art
 
-- **The coat is two panels, not one fill.** A lit side and a shadow side split down the
-  centre line ([sprites.ts:60-88](../src/render/sprites.ts#L60)). One value break tells the
-  eye there is a body under the cloth turning away from the light.
-- **The ink line is not black.** `RAMP.coatInk` sits *below* the shadow panel but near it.
-  An outline darker than the form reads as a void and flattens the very break it surrounds.
-- **A rim light down the lit edge**, head to shoulder, at 55% alpha
-  ([:112-124](../src/render/sprites.ts#L112)). This is the single highest-value mark on the
-  figure: a bright edge is what separates "a lit form standing in a place" from "a sticker
-  on a background", and it is two strokes.
+The two actors on the stage are PNGs, loaded from `public/assets/sprites/` and blitted by
+`blit()` ([sprites.ts:112](../src/render/sprites.ts#L112)). Everything else on this screen —
+ground, sky, haze, shadows, vignette — is still canvas paths.
 
-Plus a hairline shadow under the cap — two tones of similar value sit flat against each
-other whatever their hue, and one arc separates hair from head better than the colour
-difference does — and a highlight along the top edge of the brass, because metal is a value
-gradient or it is a triangle painted gold.
+| What | Files | Size on disk |
+|---|---|---|
+| Commander | `hero-{male,female}-{front,side,side-alt,back}.png` | 110×253 to 125×288 |
+| Companions | `companions/{id}-{front,side,back}.png`, six species | 101×324 to 308×214 |
 
-The beast's eye is the one lit thing on the Companion: `shadowBlur` in its own element
-colour makes it a *source* rather than a dot, which sells the silhouette as a creature with
-something burning inside it.
+Naming is a convention, not a manifest: `commanderSpriteSrc(gender)`
+([sprites.ts:50](../src/render/sprites.ts#L50)) and `companionSpriteSrc(id, facing)`
+([:152](../src/render/sprites.ts#L152)) build the paths, and the `id` half is a `CompanionDef.id`
+verbatim. Both are exported so a **test can compare the path against a directory listing** —
+which is the whole class of failure this rewrite introduced and the procedural version could not
+have had. A path is a string, a filename is a fact, and nothing but a test compares them; and
+because `drawCommander` treats a missing image as "skip this frame", a typo'd path is a silently
+empty stage rather than an error.
 
-Measured on a 200×200 probe: the figure's luminance now spans **22 → 202**, where the flat
-coat topped out around 148 with no mid-tone break in the garment at all.
+That test reads the directory rather than calling `existsSync`, because `existsSync` answers
+case-insensitively on Windows and macOS. The art arrived as capitalised exports and was renamed
+down to lowercase, so a leftover `Ignis-front.png` would pass on every machine here and 404 the
+first time it is served from Linux.
 
-The ramp is exported as `RAMP` ([sprites.ts:26](../src/render/sprites.ts#L26)) so the
-ordering rule — ink under shadow under lit, rim brightest — is tested against the real
-values rather than against a copy pasted into an assertion.
+**Only the `front` facings are wired up.** Side and back exist for all six beasts and both
+bearings; nothing loads them, because both figures stand still and face camera. They are the art
+a facing change on the combat board would need, and a test asserts the set stays complete so a
+half-delivered species is known about before then.
 
-### They are pixel sprites, not vector art
+### Smoothing is on, and that reverses the old rule
 
-The largest single change, and it is not about the drawing. The figure is painted into a
-**34×44 buffer and blitted up with `imageSmoothingEnabled = false`**
-([sprites.ts:128](../src/render/sprites.ts#L128)). Smooth anti-aliased curves at final size
-read as vector illustration however well they are lit, and no amount of extra shape detail
-fixes that; quantisation is most of the HD-2D look. Most of the body is axis-aligned
-`fillRect` on integer coordinates, which is the pixel-art idiom and the reason a 2px forearm
-stays a crisp 2px forearm.
+The procedural sprite was painted into a small buffer of hand-placed pixels and blown up whole
+numbers of times with `imageSmoothingEnabled = false`. That was right for what it governed:
+interpolating those marks could only soften something already exact.
 
-Buffers are cached on the look, since they are identical every frame until the player clicks
-something.
+This art is not that. It is anti-aliased painted work 250–330px tall, with soft gradients and
+sub-pixel linework, and a centred Step I blows it up two to three times once the display's pixel
+ratio is counted. In that range nearest-neighbour has no pixel edges to preserve — there are
+none in the source — and instead stair-steps every gradient the artist did draw. Bilinear keeps
+the drawing and loses nothing that was there, and the diorama's own tilt-shift and haze are
+softer than either.
 
-### The figure has a body
+So the rule is now: **match the interpolation to the art, not to the aesthetic.** Pixel art gets
+nearest-neighbour; painted art gets bilinear. The board's procedural bodies are unaffected —
+they are paths, and paths do not interpolate.
 
-Proportions are **1:4**, head to height. An earlier pass pushed them to 1:5.3 chasing
-anatomical realism, and that is the wrong idiom: the reference sprites — and every 16-bit
-RPG sprite — carry big heads precisely because the head is where the identity lives and a
-realistic one has no room for a face. At 44 art-pixels the head came out 4px across and the
-eye dots were **0.6px**: drawn, sub-pixel, and invisible, which is why the sprite read as
-facing away when it had been facing forward all along.
+### Both figures agree about their own height
 
-The body now breaks into parts rather than being one continuous shape:
+`COMMANDER_HEIGHT_TILES = 1.7` and `COMPANION_HEIGHT_TILES = 1.1`
+([sprites.ts:96-97](../src/render/sprites.ts#L96)) are exported because two files have to agree
+about them: the blit, and the `height` the creation screen hands its diorama actor so `focusBand`
+knows where the head is.
 
-- **A neck** — skin between the chin and the collar, measured off the *head* rather than a
-  landmark of its own. A landmark looked right and drew a hole (see below).
-- **Arms held a pixel clear of the torso**, with a forearm that steps outward so the limb
-  has a bend. They were previously drawn at `-shoulder - armW + 1` — overlapping the body by
-  a pixel, so the silhouette never actually broke.
-- **Two legs with a gap between them**, in a warm dark that is a different hue family from
-  the blue coat, under **boots that are lighter than the trousers** — both the width and the
-  value jump are what make a boot read as a separate thing.
+They were separate literals — 1.7 drawn against a declared 1.15 — and the disagreement was
+invisible until Step I pulled in close, at which point the sharp band stopped a fifth of a figure
+short of the head it exists to keep sharp, and the head itself left the frame entirely. One
+constant per body, read by both, is the fix; the tests import them rather than restating them,
+which is what stops the same drift recurring.
 
-### The palette
+Each species' art also keeps **its own aspect ratio** rather than being fitted to a box — Voltara
+is wider than tall, Sylva the reverse — so a lynx does not end up as tall as a stag.
 
-Four hue families carry real area now, where the whole ramp used to sit inside a narrow
-navy-slate spread — coat `#3D4A60`, cloak `#3B3A6B`, trousers `#3A3550`, which is four
-garments in one hue and reads as a monochrome silhouette however carefully each is shaded.
+### The beast fallback is still procedural
 
-The coat is shaded in **three discrete bands**, not two and not a gradient: pixel-art shading
-is banded because a smooth ramp turns to mud once quantised, and the middle value is what
-carries the turn of the form when there are only a few pixels to say it in.
+`drawCompanion` ([sprites.ts:218](../src/render/sprites.ts#L218)) — one silhouette recoloured per
+school, with a lit eye rather than a dotted one — survives as the fallback for a species with no
+art yet. Every founder has art, so nothing reaches it today; it exists so that adding a seventh
+bloodline renders as *something arrived* rather than as nothing at all.
 
-A test asserts every pair of big garment blocks separates by **hue or by value**. That rule
-took two attempts — the first demanded 45° of hue between every pair and failed on
-crimson-against-brown at 40°, which is a real adjacency in hue and a perfectly legible pair
-on screen because the two are far apart in value. Demanding the wrong separation moves
-colours to satisfy a number rather than to be read.
-
-### The old body notes
-
-Proportions were rebuilt against the reference: roughly **one head to five**, where the
-sprite had been nearer one to three and a half. A stubby figure reads as a mascot no matter
-what is drawn on it. The landmarks live in one table (`Y`) so they can be argued about.
-
-It also has arms, hands, legs and boots, which it previously did not — it was a trapezoid
-with a head on it, and arms are what make a silhouette a person. And a **cloak** behind the
-body in a contrasting hue, which every figure in the reference has: it is the largest colour
-region on the sprite, and it takes the vowed school's colour, so the Vow visibly changes what
-the Commander is wearing.
-
-Measured on a real canvas at 90 units: a 48×104 body, 502px of cloak, 314px of boot, 104px
-of leg, 72px of hand — all of the latter absent before.
-
-### Secondary detail
-
-Every mark below is a **one- or two-pixel `fillRect`**, snapped through one `px()` helper.
-At this resolution that is not a limitation to work around, it is the unit of the medium: an
-eyebrow is one pixel, a cuff is one pixel, a boot sole is one pixel.
-
-| | what it does |
-|---|---|
-| brow, eye, catchlight | the catchlight is a single pixel per eye, and it is the difference between two dark dots and something looking back |
-| nose, mouth | one pixel and a short line — at twelve pixels a *drawn* nose is a blemish |
-| hair highlight + part-line | clipped to the cap, so they land on hair whatever shape it is |
-| centre seam, waist seam | turn a painted block into a garment with construction |
-| cuffs | one dark row between sleeve and skin, or the arm ends in a smudge |
-| boot soles | one darker row, which puts the figure *on* the ground |
-
-Two of these needed their draw order fixed rather than their geometry. The hair marks were
-painted before the style shapes, so `wild` overpainted its own highlight with spikes —
-surface detail goes on last, which is what "surface" means. And the marks are placed near
-the crown rather than out at the temple, because further out they measured zero pixels on
-`shorn`, whose cap is a much tighter arc: the clip did its job and there was no hair under
-them.
-
-The catchlight also had to stop sharing a hex with the rim light. "One key light" was a
-defensible reason for them to match, right up until nothing could tell them apart —
-including a test that measured the arm's rim as an eye. A specular hit on a wet eye is not
-the same light as a warm edge on cloth.
-
-### One lesson, learned three times
-
-At 44 art-pixels a mark is **axis-aligned and near-opaque, or it does not exist**. Three
-separate marks had to relearn this:
-
-| mark | as first written | measured | fixed to |
-|---|---|---|---|
-| brass collar | 3px triangle | **0 px** | 2px `fillRect` bar → 48 px |
-| rim light | 1px stroke @ 55% alpha | **28 px** on a 48×104 body | 1px `fillRect` @ 85% → 613 px |
-| `shorn` hair | `destination-out` erase | 782 px *hole* | tighter cap → 0 |
-| eye dots | `headR * 0.15` | **0.6 px** | floored at 1px radius |
-| the neck | `yChin + headR` | negative height, **2px hole** through the figure | anchored to `yChin` |
-| the mane | `headR * 2.2` below the crown | buried neck **and** collar | pulled to `1.45` |
-
-### Why the sprites are canvas shapes
-
-Every body on the combat board is canvas shapes out of `palette.ts`. The creator draws its
-actors the same way rather than inventing a second visual language the game would then fail
-to live up to. A player who builds a topknot here sees the same topknot in a fight.
-
-The **companion** is one silhouette for all six bloodlines, recoloured by school
-([sprites.ts:208](../src/render/sprites.ts#L208)). This is deliberate: what the Vow moment
-communicates is *that something arrived, in a colour you just chose*. Six hand-drawn creatures
-would be six promises the combat board would then have to keep.
+This is the remains of a deliberate earlier decision, recorded here because the reasoning
+changed rather than being wrong: one shape in six colours was enough while what the Vow moment
+communicated was *that something arrived, in a colour you just chose*. Six hand-drawn creatures
+were called "six promises the combat board would then have to keep" — and the promises have now
+been made, so the board owes them.
 
 ### Layout
 
 The stage is a full-bleed canvas; the UI floats on it
-([`creation.css`](../src/styles/creation.css)). The Commander stands slightly left of centre,
-so the panel lives on the right and the lower third stays clear. The scrim is two directional
-gradients rather than a flat dim, so body text stays legible without darkening the stage the
-screen exists to show.
+([`creation.css`](../src/styles/creation.css)). The scrim is two gradients rather than a flat
+dim, so body text stays legible without darkening the stage the screen exists to show.
+
+**The one hard rule is that the middle of the frame belongs to the cast.** Step I stands the
+Commander dead centre, so the form docks along the bottom under their feet; Step II lands the
+beast beside them, so the rail goes left, the card goes right, and the channel between them
+stays empty. Both steps leave the sky clear.
+
+That channel is not decoration — **it is what caps `SHOT_VOW.zoom`** (see §3), so widening either
+flank crops a beast. The relationship runs the wrong way round for CSS to express: the cast is
+sized off frame *height* while the panels are sized off *width*, so as a window narrows the
+bodies hold their size and the channel closes on them. Hence a ladder of three breakpoints for
+the vow columns (68rem, 56rem, 44rem) rather than one, each measured against where the widest
+beast actually lands.
+
+This replaced the previous rule — *figure left of centre, panel on the right* — which is why
+nothing in the stylesheet is anchored to a corner any more. Both scrim gradients run vertically
+now; the old pair washed the top and the **left**, the left one existing purely to seat that
+right-hand panel, and a one-sided wash under a centred figure reads as weather.
+
+Two smaller consequences worth knowing:
+
+- **The header is capped against the viewport** (`min(44rem, 42vw)`), not just in rems. At 44rem
+  of prose on a 1280-wide frame the lede would run under the Commander's head.
+- **The six school colours are a `--school` custom property** set from `data-school`, read by the
+  rail tabs and the featured card for their edge, glow and selected fill. It is a deliberate
+  mirror of `SCHOOL_COLOR` in `sprites.ts` — CSS cannot import it — and it replaced six
+  near-identical crest rules. Change them together.
+
+Below `44rem` both steps stack: the stage keeps the top of the frame, and the controls become
+sheets under it rather than full-screen panels over it.
 
 ---
 
 ## 5. What signing produces
 
-`initializeNewProfile(slot, look)` ([save.ts:385](../src/app/save.ts#L385)) is the single
+`initializeNewProfile(slot, look)` ([save.ts:407](../src/app/save.ts#L407)) is the single
 writer of a new `Profile`. Everything it decides follows from the look:
 
 | | |
@@ -507,11 +541,18 @@ A v17 profile has no `characterLook`. The migration synthesises one
 on the commission, and the beast currently standing beside them.
 
 A returning player therefore keeps their name and their bloodline and is handed the default
-silhouette — the honest answer, because nobody ever asked them what their hair looked like.
+bearing — the honest answer, because nobody ever asked them which one they were.
+
+A save from *after* v17 but before the bitmaps is the other case, and it needs no migration step
+at all: it carries `hairPreset`/`facePreset`/`skinPreset`, and `normalizeLook` builds its result
+from the three keys it knows rather than copying the object, so the retired three are dropped on
+the way in. Deliberately not migrated — there is no sheet to index a haircut out of any more, so
+the only faithful answer to `hairPreset: 3` is that the question stopped existing. A test loads
+such a save and asserts the look comes back with exactly three keys.
 
 `normalizeLook` runs on the way in either way, so a hand-edited look is repaired rather than
-honoured: a blank nickname becomes `Commander`, `hairPreset: 900` wraps to a real haircut, and
-a `starterCompanion` naming a hybrid or a non-discipline is replaced.
+honoured: a blank nickname becomes `Commander`, an unknown bearing becomes one that has a sprite,
+and a `starterCompanion` naming a hybrid or a non-discipline is replaced.
 
 ---
 
@@ -536,59 +577,86 @@ drift, and the drift is invisible because both look correct in isolation.
 
 ---
 
-## 8. What is tested, and one thing that nearly was not
+## 8. What is tested
 
-[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 56 tests, all 52 deliberate
-mutations of these rules confirmed to fail the suite.
+[`src/tests/creation.test.ts`](../src/tests/creation.test.ts) — 34 tests.
 
-Coverage: look normalisation (trim, cap, blank, wrap, string-form indices, total nonsense);
-who may be vowed to (six founders, no Lexis, no hybrid, corrections); `initializeNewProfile`
-(look stored, name filed, 0 Ducats, bare slots, coat owned, beast rolled and varied, unlocks
-scoped, 7+8=15 legal in every discipline); migration (synthesis, round-trip, repair).
+Coverage: look normalisation (trim, cap, blank, unknown bearing, retired preset keys dropped,
+total nonsense); who may be vowed to (six founders, no Lexis, no hybrid, corrections);
+`initializeNewProfile` (look stored, name filed, 0 Ducats, bare slots, coat owned, beast rolled
+and varied, unlocks scoped, 7+8=15 legal in every discipline); migration (v17 synthesis,
+round-trip, a pre-bitmap save loading without its presets, hand-edit repair); the art on disk;
+the beast fallback; and the shot.
 
-### The sprite tests
+### It used to be 56, and the 22 that went were the right ones
 
-There is no DOM and no canvas in the test environment, so the sprite tests hand the drawing
-code a **recording context** ([creation.test.ts:287](../src/tests/creation.test.ts#L287)) — an
-object implementing enough of the 2D API to run, which writes down each call. The transcript
-is what the assertions compare.
+The largest block in this suite was **twenty-eight sprite tests** asserting that the procedural
+painter gave every haircut its own silhouette, put a catchlight in both eyes, shaded a coat in
+three discrete bands, kept the value ramp in order, and never erased a hole through the figure.
+Every one of those claims was about code that no longer exists.
 
-That is a better test than a pixel diff: *"a topknot draws a different shape than a crop"* is
-the actual claim, and it survives somebody nudging a colour.
+They were not replaced one-for-one, because there is no honest bitmap equivalent. A `drawImage`
+transcript can only report that one image was blitted at one size, and that is not twenty-eight
+tests' worth of claim — asserting it would be testing the canvas API. Deleting them is not lost
+coverage; it is coverage of a thing that is gone.
 
-**It also nearly lied.** The first version compared the full transcript — including
-`fillStyle`. But hair tone and skin tone are indexed by the *same* preset number, so six
-haircuts could have collapsed to **one shape in six colours** and the colours alone would have
-kept the transcripts distinct. A mutation that pinned every head to `crop` went completely
-unnoticed.
+Two survived intact, because they test `drawCompanion`, the procedural fallback that is still
+there: the beast's eye is *lit* rather than dotted, and each school gets its own colour.
 
-The fix was [`shapeOf()`](../src/tests/creation.test.ts#L343), which strips every colour line and compares geometry only, plus a
-separate test asserting the tones vary. Two claims, tested separately, because they are two
-claims.
+### What replaced them: the failures the bitmaps actually introduced
+
+- **The art on disk.** Every id `starterSpecies()` returns has a front sprite, both bearings do,
+  and all three facings exist for all six beasts. Checked against a **directory listing** rather
+  than `existsSync`, which answers case-insensitively on Windows and macOS — the art arrived as
+  capitalised exports and was renamed down, so a leftover `Ignis-front.png` would pass on every
+  machine here and 404 the first time it is served from Linux. A missing file is not an error at
+  runtime: `drawCommander` skips a null image, so the failure mode is a silently empty stage.
+- **No raw exports under `public/`.** The background-removal sources are ~250KB each, referenced
+  by nothing, and everything under `public/` is served. They live in `art-source/` now, and a
+  test keeps them out.
+- **The crown is inside the frame.** At both framings, for both bodies. This is the test that was
+  missing: the suite already checked that the Commander was inside the *focus band* and it
+  passed, while the head was 44 pixels above the top of the screen. Feet on screen and body on
+  screen are two different claims.
+- **The Commander is exactly centred at Step I**, asserted as `x === W / 2` rather than
+  approximately, because the camera sits on their own tile and the projection cannot drift.
+- **The cast heights are imported, not restated.** `COMMANDER_HEIGHT_TILES` and
+  `COMPANION_HEIGHT_TILES` come from `sprites.ts`. The old block wrote `1.15` while the draw code
+  blitted `1.7`, and that single duplicated literal is the whole reason a decapitated figure
+  passed a green suite.
+
+### The lesson, which is the same one as §7
+
+Two copies of one fact drift, and the drift is invisible because both look correct in isolation.
+It was `starterSpecies()` re-deriving the founder rule; it was then an actor height written down
+in three places. The fix is the same both times: one owner, everybody else reads it.
 
 ---
 
 ## 9. Open questions
 
-- **`shorn` used to cut a hole in the world.** It drew the shared hair cap and then erased a
-  disc out of it with `destination-out` — which does not remove "the hair", it removes
-  pixels, and the sprite is drawn straight onto a diorama that already has sky and ground on
-  it. A Shorn Commander arrived with a bite taken clean through their skull and the landscape
-  behind it: **782 transparent pixels** on a 200×200 probe against zero for every other
-  preset. Fixed by giving each style its own cap radius (`HAIR_CAP`) so nothing erases; a
-  test now asserts no style emits `destination-out`.
-- **The animation has not been seen.** The dev-browser pane used for verification does not
-  composite frames, so `requestAnimationFrame` never ticks there. The render path was verified
-  by driving `Diorama.render` directly and hashing pixels — seven look variants produced six
-  distinct images, the one collision being two configs that are genuinely the same look. The
+- **The animation has not been seen in full.** The dev-browser pane used for verification does
+  not composite frames, so `requestAnimationFrame` never ticks there. The render path is verified
+  by driving `Diorama.render` directly and by pure arithmetic over `projectTile`/`focusBand`. The
   camera pan, the beast's drop and the tilt-shift in motion are **unverified by eye**.
-- **`gender` is two values.** It is what the brief specified and what the silhouette
-  meaningfully distinguishes (shoulder width, coat flare). If it should be a bearing/build
-  axis with more entries, the schema takes it without a migration — `normalizeLook` is the only
-  gate.
-- **The companion silhouette is one shape.** Intentional for now (§4). If bloodlines should be
-  visually distinct at the Vow, that is six sprites' worth of authoring, and the combat board
-  would want them too.
-- **No portrait "slides on".** The brief described a portrait sliding in at Step 1; what
-  shipped puts the character *on the diorama* instead, which serves the same goal more
-  directly. Flagged in case the slide was wanted literally.
+- **`gender` is two values**, and now for a concrete reason: there are two sprite sheets. If it
+  should become a bearing/build axis with more entries, the schema takes it without a migration —
+  `normalizeLook` is the only gate — but each new value is a pair of PNGs somebody has to draw.
+- **Side and back facings are drawn but unused.** Six beasts × 2 and both bearings × 3 frames sit
+  in `public/` loaded by nothing. The obvious use is the combat board turning a unit to face the
+  direction it moved; the near one is the hero turning toward the beast when the Vow lands, which
+  was deliberately left out of this pass because which way `hero-*-side.png` faces has not been
+  checked against where the beast stands. `loadCommanderSprite` would need a facing parameter
+  mirroring `loadCompanionSprite`.
+- **The board and the creator no longer draw the same body.** `BoardRenderer` draws procedural
+  prisms out of `shapes.ts`; the creator draws authored PNGs. The old rule — *the creator draws
+  its actors the same way the board does, rather than inventing a second visual language the game
+  would then fail to live up to* — is currently broken in the direction of the creator being
+  better. Either the board grows sprites or the gap stays visible at the first fight.
+- **The Commander's art does not react to the Vow.** The procedural version tinted the cloak with
+  the vowed school's colour, so the Vow visibly changed what the Commander was wearing; a bitmap
+  has no shape left to tint and that was dropped. The ground still tints. Whether the figure
+  should is an art question, not a code one.
+- **No portrait "slides on".** The brief described a portrait sliding in at Step 1; what shipped
+  puts the character *on the diorama* instead, centred and at three-fifths of frame height, which
+  serves the same goal more directly. Flagged in case the slide was wanted literally.

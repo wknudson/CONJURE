@@ -1,37 +1,19 @@
 /**
- * Procedural 2D sprites, drawn from a `CharacterLook`.
+ * The Commander and companion, as drawn on the diorama.
  *
- * There is no art in this project — every body on the combat board is canvas shapes out of
- * `palette.ts` — so the creator draws its actors the same way rather than inventing a
- * second visual language that the game would then fail to live up to.
+ * Both are bitmaps now: `hero-{male,female}-front.png` for the Commander and
+ * `companions/{id}-front.png` for the beast, loaded through the two caches below and drawn
+ * by `blit`. This replaced an earlier procedural version (arcs and rects driven by
+ * hair/face/skin presets); that system is gone along with the presets it read, not merely
+ * unused.
  *
- * Two things make these read as *pixel* sprites rather than as vector illustration, and
- * they are worth naming because neither is about the drawing:
- *
- *  1. **They are rendered into a small buffer and blitted up with smoothing off.** A figure
- *     ~89px tall on screen is painted at 44 art-pixels and doubled. That quantisation is
- *     most of the HD-2D read: smooth anti-aliased curves at final size look like vector art
- *     however well they are lit, and no amount of extra shape detail fixes it.
- *  2. **Most of the body is axis-aligned rectangles on integer coordinates.** Rects land on
- *     pixel boundaries exactly, which is the pixel-art idiom and the reason a 2px forearm
- *     stays a crisp 2px forearm instead of a grey smear.
- *
- * `paintCommander` is the shape code and takes any 2D context, so it is testable without a
- * DOM. `drawCommander` is the buffered wrapper the game actually calls.
- *
- * Everything is drawn in **sprite units**: feet at the origin, up is negative, and `unit` is
- * roughly a tile height. The figure stands `FIGURE` units tall.
+ * `drawCompanion` — one silhouette recoloured per school — survives as the fallback for a
+ * species with no art yet, so a newly added bloodline renders as *something arrived* rather
+ * than as nothing at all. Every founder has art, so nothing reaches it today.
  */
 
 import { PALETTE } from './palette.js';
-import type { CharacterLook } from '../core/data/characterLook.js';
-import {
-  FACE_PRESETS,
-  HAIR_PRESETS,
-  HAIR_TONES,
-  SKIN_TONES,
-  clampPreset,
-} from '../core/data/characterLook.js';
+import type { Gender } from '../core/data/characterLook.js';
 import type { School } from '../contract/ids.js';
 
 /** A school's colour on the stage. The same six the enrolment crests use. */
@@ -45,869 +27,193 @@ export const SCHOOL_COLOR: Record<string, string> = {
 };
 
 /**
- * The Commander's own value ramp.
+ * Where the Commander's bitmap sprite lives, one file per bearing.
  *
- * Exported so the ordering rule can be *tested* against the real values rather than against
- * a copy of them pasted into an assertion.
- *
- * Named rather than inlined because these have to be read *against each other* to stay
- * legible: the lit panel must sit above the shadow panel, and the ink line must sit below
- * both — but not far below, or an outline darker than the form reads as a void. Editing one
- * in isolation is how a sprite goes flat.
+ * Front-facing only for now — the creator only ever shows the figure from the front, so
+ * that is the one frame actually wired up. `hero-*-side.png` / `-back.png` / `-side-alt.png`
+ * exist alongside these if a facing change is ever added to the diorama; nothing in this
+ * file references them yet.
  */
-export const RAMP = {
-  // The coat: a genuinely saturated blue, in three discrete bands rather than two.
-  //
-  // The whole ramp used to live inside a narrow navy-slate spread — coat `#3D4A60`, cloak
-  // `#3B3A6B`, trousers `#3A3550` — which is four garments in one hue family and reads as a
-  // monochrome silhouette however carefully each one is shaded. Every value below now sits
-  // in a *different* hue family from the ones it touches, and the jumps between them are
-  // large enough to survive being quantised to a 48-pixel grid.
-  coatLight: '#3F76C4',
-  coatMid: '#2E5495',
-  coatDark: '#1C3A69',
-  coatInk: '#24304A',
-
-  brass: '#E8C860',
-  brassLit: '#FFF0B8',
-  /** Key light, warm and low. */
-  rim: '#FFF6D8',
-
-  /** The Magistracy's own crimson, worn until a discipline is vowed to. */
-  cloak: '#8E2F3F',
-
-  /**
-   * The sash at the waist. One saturated accent that is neither the coat's blue nor the
-   * cloak's crimson — every reference sprite carries a single piece like this, worn on top
-   * of the belt line rather than replacing it, and it is what keeps the eye from reading
-   * the whole waist as one dark seam.
-   */
-  sash: '#D94F3A',
-  sashLit: '#F07858',
-
-  /**
-   * Legs, in a **warm** dark — deliberately a different hue family from the blue coat above
-   * them and the tan boots below, so all three read as separate blocks rather than as one
-   * tonal slide.
-   *
-   * The first value here was `#2A2F3A`, byte-identical to `PALETTE.tileA`: the legs were the
-   * exact colour of the floor they stand on.
-   */
-  trouser: '#4A3826',
-  trouserDark: '#2E2318',
-  /** Lighter than the trouser, which is the only reason a boot reads as a separate thing. */
-  boot: '#8A6A44',
-
-
-  // -------------------------------------------------------- secondary detail
-  //
-  // Every one of these is a **one-pixel mark**. At this resolution that is not a limitation
-  // to work around, it is the unit of the medium: an eyebrow is one pixel, a cuff is one
-  // pixel, a boot sole is one pixel. What they buy is the difference between a shape with
-  // colour blocks on it and a thing that looks made.
-
-  /**
-   * Inside the eye, top-left, where the key light catches a wet surface.
-   *
-   * Brighter and cooler than `rim`, and deliberately its own value: a specular hit on an eye
-   * is not the same light as a warm edge on cloth. They were the same hex to begin with,
-   * which was defensible as "one key light" right up until nothing could tell the catchlight
-   * and the rim apart — including a test that then measured the arm rim as an eye.
-   */
-  eyeLit: '#FFFDF2',
-  /** Eyes, brows, and the mouth line. Warmer than the coat's ink so a face is not machinery. */
-  faceInk: '#2A1D1C',
-  /** Seams, cuffs and the boot sole — one value below whatever they divide. */
-  seam: '#171E2E',
-} as const;
-
-const COAT_LIGHT = RAMP.coatLight;
-const COAT_MID = RAMP.coatMid;
-const COAT_DARK = RAMP.coatDark;
-const COAT_INK = RAMP.coatInk;
-const BRASS = RAMP.brass;
-const BRASS_LIT = RAMP.brassLit;
-const RIM = RAMP.rim;
+const SPRITE_SRC: Record<Gender, string> = {
+  male: '/assets/sprites/hero-male-front.png',
+  female: '/assets/sprites/hero-female-front.png',
+};
 
 /**
- * How tall the figure stands, in `unit`s.
- */
-const FIGURE = 1.15;
-
-/**
- * The art grid.
+ * Where the Commander's sprite lives, for a bearing. The counterpart to `companionSpriteSrc`.
  *
- * 48 tall against ~89 on screen. Raised from 44 for one reason: **the face.** At 44 the head
- * came out four pixels across and the eye dots were 0.6px — drawn, and literally sub-pixel,
- * which is why the sprite read as facing away when it has been facing forward all along. A
- * feature that cannot occupy a whole pixel does not exist.
+ * Exported so a test can ask whether the file the loader will request is actually on disk,
+ * under exactly that name. Worth checking rather than assuming: the art arrived as
+ * capitalised exports (`Boreas-removebg-preview.png`) and was renamed down to lowercase, and
+ * a case slip survives every Windows filesystem to fail only once it is served from Linux.
  */
-const ART_H = 48;
-const ART_W = 36;
-
-/**
- * Landmarks down the body, as a fraction of figure height measured **up from the feet**.
- *
- * Rebuilt around a **1:4** head. The previous table was 1:5.3, chasing anatomical realism,
- * and that is the wrong idiom: the reference sprites — and every 16-bit RPG sprite — carry
- * big heads precisely because the head is where all the identity lives and a realistic one
- * has no room for a face. Legibility beats proportion at this size.
- *
- * There is deliberately no `neck` entry. A landmark for it looked right and drew a hole:
- * the neck has to be measured off the **head**, from wherever the chin actually lands down
- * to the collar, or the two disagree by a pixel or two and the figure gets a gap through it.
- */
-const Y = {
-  boot: 0.14,
-  hem: 0.4,
-  waist: 0.54,
-  shoulder: 0.68,
-  chin: 0.74,
-} as const;
-
-
-
-/**
- * A rectangle snapped to the pixel grid, never smaller than a pixel.
- *
- * Every secondary mark goes through this. The rule the sprite keeps learning is that a
- * feature which cannot occupy a whole pixel does not exist — the eye dots were 0.6px, the
- * brass was a 3px triangle that measured zero, the rim light was a translucent stroke worth
- * 28 pixels on the whole figure. `Math.max(1, ...)` is that lesson, enforced.
- */
-function px(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-): void {
-  ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)));
+export function commanderSpriteSrc(gender: Gender): string {
+  return SPRITE_SRC[gender];
 }
 
-/** Rasterised sprites, keyed on everything that changes one. */
-const CACHE = new Map<string, HTMLCanvasElement>();
+const spriteCache = new Map<Gender, HTMLImageElement>();
+const spriteLoading = new Map<Gender, Promise<HTMLImageElement>>();
 
 /**
- * The Commander, as the diorama sees them — buffered and quantised.
+ * Loads (and caches) the Commander sprite for a bearing.
  *
- * Cached on the look, because the buffer is identical every frame until the player clicks
- * something, and re-rasterising 34x44 sixty times a second to produce the same result is
- * work with no observable difference.
+ * Call this once, ahead of the first `render()` that needs it — e.g. when the creation
+ * screen mounts — and hold the resolved `HTMLImageElement` for `drawCommander`, which is
+ * synchronous and cannot itself await a decode mid-frame. Calling it again for a bearing
+ * already loaded or loading returns the same promise/image rather than re-fetching.
+ */
+export async function loadCommanderSprite(gender: Gender): Promise<HTMLImageElement> {
+  const cached = spriteCache.get(gender);
+  if (cached) return cached;
+  const inFlight = spriteLoading.get(gender);
+  if (inFlight) return inFlight;
+
+  const promise = (async () => {
+    const img = new Image();
+    img.src = SPRITE_SRC[gender];
+    await img.decode();
+    spriteCache.set(gender, img);
+    return img;
+  })();
+  spriteLoading.set(gender, promise);
+  return promise;
+}
+
+/** The cached sprite for a bearing, if `loadCommanderSprite` has already resolved it. */
+export function commanderSpriteIfLoaded(gender: Gender): HTMLImageElement | null {
+  return spriteCache.get(gender) ?? null;
+}
+
+/**
+ * How tall each body stands, in tile units.
+ *
+ * Exported because two files have to agree about it: the blit below, and the `height` the
+ * creation screen hands its diorama actor so `focusBand` knows where the head is. They were
+ * separate literals — 1.7 drawn against a declared 1.15 — and the disagreement was invisible
+ * until Step I pulled in close, at which point the sharp band stopped a fifth of a figure
+ * short of the head it exists to keep sharp. One constant per body, read by both.
+ */
+export const COMMANDER_HEIGHT_TILES = 1.7;
+export const COMPANION_HEIGHT_TILES = 1.1;
+
+/**
+ * The one place a bitmap actor is scaled and drawn. Feet at the origin, upright — the same
+ * convention every other actor on the diorama uses, and `Diorama.ts` neither knows nor cares
+ * that these are `drawImage` calls instead of shapes.
+ *
+ * Smoothing is **on**, which reverses the rule the procedural sprite was drawn under. That
+ * rule was right for what it governed: a small buffer of hand-placed pixels blown up whole
+ * numbers of times, where interpolation could only soften marks that were already exact.
+ * This art is not that. It is anti-aliased painted work 250–330px tall, and a zoomed Step I
+ * blows it up two to three times once the display's pixel ratio is counted — a range where
+ * nearest neighbour has no pixel edges to preserve and instead stair-steps every soft
+ * gradient the artist did draw. Bilinear keeps the drawing and loses nothing that was there.
+ */
+function blit(
+  ctx: CanvasRenderingContext2D,
+  unit: number,
+  img: HTMLImageElement,
+  tiles: number,
+): void {
+  const destH = unit * tiles;
+  const destW = destH * (img.width / img.height);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, -destW / 2, -destH, destW, destH);
+}
+
+/**
+ * The Commander, as a bitmap.
+ *
+ * The two bearings' source files differ in height (288px against 253px) and are blitted to
+ * the same `destH`, so both figures stand the same height on the stage whichever is chosen.
  */
 export function drawCommander(
   ctx: CanvasRenderingContext2D,
   unit: number,
-  look: CharacterLook,
-  accent?: string | null,
+  img: HTMLImageElement | null,
 ): void {
-  const h = unit * FIGURE;
-  const w = h * (ART_W / ART_H);
-
-  const buf = buffer(look, accent ?? null);
-  if (!buf) {
-    // Nothing to rasterise into. Paint straight through at full size rather than refusing —
-    // the un-quantised drawing is the right fallback for a headless caller, which wants the
-    // shapes rather than the pixels.
-    paintCommander(ctx, unit, look, accent);
-    return;
-  }
-
-  const smoothing = ctx.imageSmoothingEnabled;
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(buf, -w / 2, -h, w, h);
-  ctx.imageSmoothingEnabled = smoothing;
+  if (!img) return; // Sprite still loading — nothing to draw this frame rather than a blank flash.
+  blit(ctx, unit, img, COMMANDER_HEIGHT_TILES);
 }
 
-/** The rasterised sprite for a look, or null where there is nothing to rasterise into. */
-function buffer(look: CharacterLook, accent: string | null): HTMLCanvasElement | null {
-  if (typeof document === 'undefined') return null;
 
-  const key = [
-    look.gender,
-    clampPreset(look.hairPreset, HAIR_PRESETS.length),
-    clampPreset(look.facePreset, FACE_PRESETS.length),
-    clampPreset(look.skinPreset, SKIN_TONES.length),
-    accent ?? '-',
-  ].join('|');
+/**
+ * Where a companion's bitmap sprite lives, one folder per species, one file per facing.
+ *
+ * Front is what the creation screen ever shows — the diorama beast stands still and faces
+ * camera, same as the Commander. `back`/`side` exist for the combat board, where a unit
+ * turns to face the direction it moved or attacked; nothing in this file uses them yet.
+ *
+ * Exported because the creation screen needs the same path for an `<img>` in its vow panel,
+ * and was building it by hand. Two copies of a filename convention is one copy too many:
+ * renaming a facing should break one line, not two.
+ */
+export function companionSpriteSrc(id: string, facing: 'front' | 'back' | 'side' = 'front'): string {
+  return `/assets/sprites/companions/${id}-${facing}.png`;
+}
 
-  const hit = CACHE.get(key);
-  if (hit) return hit;
+const companionCache = new Map<string, HTMLImageElement>();
+const companionLoading = new Map<string, Promise<HTMLImageElement>>();
 
-  const c = document.createElement('canvas');
-  c.width = ART_W;
-  c.height = ART_H;
-  const g = c.getContext('2d');
-  if (!g) return null;
+/**
+ * Loads (and caches) one facing of a companion's sprite.
+ *
+ * Cached by `${id}:${facing}` so loading `ignis` front and `ignis` back are independent
+ * entries rather than one clobbering the other — same shape as `loadCommanderSprite`, keyed
+ * one level deeper.
+ */
+export async function loadCompanionSprite(
+  id: string,
+  facing: 'front' | 'back' | 'side' = 'front',
+): Promise<HTMLImageElement> {
+  const key = `${id}:${facing}`;
+  const cached = companionCache.get(key);
+  if (cached) return cached;
+  const inFlight = companionLoading.get(key);
+  if (inFlight) return inFlight;
 
-  g.translate(ART_W / 2, ART_H);
-  paintCommander(g, ART_H / FIGURE, look, accent);
+  const promise = (async () => {
+    const img = new Image();
+    img.src = companionSpriteSrc(id, facing);
+    await img.decode();
+    companionCache.set(key, img);
+    return img;
+  })();
+  companionLoading.set(key, promise);
+  return promise;
+}
 
-  // Bounded, so cycling presets for ten minutes cannot grow this without limit. Six hairs by
-  // four faces by two bearings by seven accents is 336 at the absolute worst.
-  if (CACHE.size > 400) CACHE.clear();
-  CACHE.set(key, c);
-  return c;
+/** The cached facing, if `loadCompanionSprite` has already resolved it. */
+export function companionSpriteIfLoaded(
+  id: string,
+  facing: 'front' | 'back' | 'side' = 'front',
+): HTMLImageElement | null {
+  return companionCache.get(`${id}:${facing}`) ?? null;
 }
 
 /**
- * The shapes. Feet at the origin, up is negative.
+ * The companion, as a bitmap — the diorama's replacement for the old procedural silhouette.
  *
- * Split from `drawCommander` so it can be handed a recording context and tested without a
- * DOM — and so the buffered path and the fallback path are provably the same drawing.
+ * Shorter than the Commander, so it reads as an animal beside an upright person. The six
+ * species' art differs in aspect as well as height — Voltara is wider than it is tall, Sylva
+ * is the reverse — and `blit` preserves each one's own ratio rather than forcing a box, which
+ * is why a lynx does not end up as tall as a stag.
  */
-export function paintCommander(
+export function drawCompanionBitmap(
   ctx: CanvasRenderingContext2D,
   unit: number,
-  look: CharacterLook,
-  accent?: string | null,
+  img: HTMLImageElement | null,
 ): void {
-  const hair = HAIR_PRESETS[clampPreset(look.hairPreset, HAIR_PRESETS.length)]!;
-  const faceIdx = clampPreset(look.facePreset, FACE_PRESETS.length);
-  const skin = SKIN_TONES[clampPreset(look.skinPreset, SKIN_TONES.length)]!;
-  const hairTone = HAIR_TONES[clampPreset(look.hairPreset, HAIR_TONES.length)]!;
-
-  const H = unit * FIGURE;
-  const p = (v: number): number => Math.round(v);
-  const up = (f: number): number => p(-H * f);
-
-  // The two bearings now differ in more than shoulder width and coat flare: a waist taper
-  // is added for the narrower bearing, which is the actual silhouette cue reference sprites
-  // use — a straight-sided coat reads as the same body regardless of shoulder width, since
-  // shoulders alone are only visible for two or three rows before the coat begins.
-  const broad = look.gender === 'male';
-  const shoulder = Math.max(4, p(H * (broad ? 0.10 : 0.095)));
-  const hemW = Math.max(5, p(H * (broad ? 0.175 : 0.195)));
-  // How far the waist band pulls in from a straight line between shoulder and hem. Zero for
-  // the broad bearing (a straight coat side), pulled in for the narrow one (a fitted waist).
-  const waistPull = broad ? 0 : Math.max(1, p(H * 0.03));
-
-  // Hoisted, because the neck below is measured off the head rather than off a landmark.
-  const headR = Math.max(5, p(H * 0.13));
-
-  const yBoot = up(Y.boot);
-  const yHem = up(Y.hem);
-  const yWaist = up(Y.waist);
-  const yShoulder = up(Y.shoulder);
-  const yChin = up(Y.chin);
-
-  // ---------------------------------------------------------------- the cloak, behind
-  //
-  // A second garment in a contrasting hue, which every figure in the reference has: a cape
-  // reading *behind* the body is what gives a silhouette its outer edge and its second
-  // colour region. It takes the vowed school's colour once there is one, so the Vow visibly
-  // changes what the Commander is wearing.
-  const cloak = accent ?? RAMP.cloak;
-  // Ends above the boots rather than at them. Reaching to `Y.boot * 0.8` left five rows of
-  // leg showing out of forty-eight — the legs were drawn, separated and coloured, and then
-  // almost entirely covered by the garment in front of them.
-  const cloakBottom = up(0.22);
-  const cloakW = Math.max(7, p(H * 0.21));
-
-  ctx.fillStyle = cloak;
-  ctx.beginPath();
-  ctx.moveTo(-shoulder - 1, yShoulder);
-  ctx.lineTo(shoulder + 1, yShoulder);
-  ctx.lineTo(cloakW, cloakBottom);
-  ctx.lineTo(-cloakW, cloakBottom);
-  ctx.closePath();
-  ctx.fill();
-
-  // Its own shadow half, on the same centre line as the coat, so the whole figure agrees
-  // about where the light comes from.
-  ctx.fillStyle = shade(cloak);
-  ctx.beginPath();
-  ctx.moveTo(0, yShoulder);
-  ctx.lineTo(shoulder + 1, yShoulder);
-  ctx.lineTo(cloakW, cloakBottom);
-  ctx.lineTo(0, cloakBottom);
-  ctx.closePath();
-  ctx.fill();
-
-  // ---------------------------------------------------------------- legs, separated
-  //
-  // Two bearings, two different lower-body silhouettes rather than one shape reused with a
-  // taper. The male bearing keeps the separated trouser legs — two blocks with daylight
-  // between them read as a person standing. The female bearing wears a flared skirt instead:
-  // one triangular shape reaching most of the way to the boots, no gap, which is the actual
-  // silhouette difference reference sprites use rather than a narrower version of the same
-  // trousers.
-  const legW = Math.max(3, p(H * 0.075));
-  const gap = Math.max(2, p(H * 0.03));
-
-  if (broad) {
-    ctx.fillStyle = RAMP.trouser;
-    ctx.fillRect(-gap - legW, yHem, legW, yBoot - yHem);
-    ctx.fillStyle = RAMP.trouserDark;
-    ctx.fillRect(gap, yHem, legW, yBoot - yHem);
-  } else {
-    // The skirt flares wider than the coat's hem and stops just above the boots, so ankles
-    // and boots stay visible below it rather than the shape swallowing the feet.
-    const skirtHem = up(0.2);
-    const skirtW = Math.max(hemW + 2, p(H * 0.22));
-    ctx.fillStyle = RAMP.trouser;
-    ctx.beginPath();
-    ctx.moveTo(-hemW, yHem);
-    ctx.lineTo(0, yHem);
-    ctx.lineTo(0, skirtHem);
-    ctx.lineTo(-skirtW, skirtHem);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = RAMP.trouserDark;
-    ctx.beginPath();
-    ctx.moveTo(0, yHem);
-    ctx.lineTo(hemW, yHem);
-    ctx.lineTo(skirtW, skirtHem);
-    ctx.lineTo(0, skirtHem);
-    ctx.closePath();
-    ctx.fill();
-    // The centre fold — one line down the skirt, echoing the coat's own centre seam so the
-    // two garments read as a matching set rather than as two unrelated shapes.
-    ctx.fillStyle = RAMP.seam;
-    px(ctx, 0, yHem, 1, skirtHem - yHem);
-  }
-
-  // Boots, wider than the leg and *lighter* than it. Both differences matter: the width is
-  // what makes a boot a boot, and the value jump is what stops it merging into the trouser.
-  ctx.fillStyle = RAMP.boot;
-  ctx.fillRect(-gap - legW - 1, yBoot, legW + 2, -yBoot);
-  ctx.fillRect(gap - 1, yBoot, legW + 2, -yBoot);
-
-  // The sole: one darker row at the very bottom of each boot. It is what puts the figure
-  // *on* the ground rather than hovering a pixel above it.
-  ctx.fillStyle = shade(RAMP.boot);
-  px(ctx, -gap - legW - 1, -1, legW + 2, 1);
-  px(ctx, gap - 1, -1, legW + 2, 1);
-
-  // The cuff: one lighter row at the top of each boot, where it folds over the trouser.
-  // Without it the boot is one flat block between two seams; this is the second value step
-  // the reference boots carry.
-  ctx.fillStyle = lift(RAMP.boot);
-  px(ctx, -gap - legW - 1, yBoot, legW + 2, 1);
-  px(ctx, gap - 1, yBoot, legW + 2, 1);
-
-  // ---------------------------------------------------------------- the coat, in three bands
-  //
-  // Three discrete steps rather than two, and hard-edged rather than blended. Pixel-art
-  // shading is banded because a smooth ramp turns to mud the moment it is quantised — the
-  // middle value is what carries the turn of the form once there are only a few pixels to
-  // say it in.
-  const bandL = -p(shoulder * 0.3);
-  const bandR = p(shoulder * 0.35);
-
-  ctx.fillStyle = COAT_LIGHT;
-  ctx.beginPath();
-  ctx.moveTo(-shoulder, yShoulder);
-  ctx.lineTo(bandL, yShoulder);
-  ctx.lineTo(bandL + waistPull, yWaist);
-  ctx.lineTo(bandL, yHem);
-  ctx.lineTo(-hemW + waistPull, yWaist);
-  ctx.lineTo(-hemW, yHem);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = COAT_MID;
-  ctx.beginPath();
-  ctx.moveTo(bandL, yShoulder);
-  ctx.lineTo(bandR, yShoulder);
-  ctx.lineTo(bandR - waistPull, yWaist);
-  ctx.lineTo(bandL + waistPull, yWaist);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(bandL + waistPull, yWaist);
-  ctx.lineTo(bandR - waistPull, yWaist);
-  ctx.lineTo(bandR, yHem);
-  ctx.lineTo(bandL, yHem);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = COAT_DARK;
-  ctx.beginPath();
-  ctx.moveTo(bandR, yShoulder);
-  ctx.lineTo(shoulder, yShoulder);
-  ctx.lineTo(hemW - waistPull, yWaist);
-  ctx.lineTo(hemW, yHem);
-  ctx.lineTo(bandR, yHem);
-  ctx.lineTo(bandR - waistPull, yWaist);
-  ctx.closePath();
-  ctx.fill();
-
-  // The outline goes around the whole garment, and is deliberately *not* pure black: an ink
-  // line darker than the shadow band flattens the value break it is drawn around. Routed
-  // through the waist point too, so the fitted bearing's outer silhouette actually curves —
-  // without this the taper only existed in the internal band colours and the figure's true
-  // outer edge stayed a straight line regardless of `waistPull`.
-  ctx.strokeStyle = COAT_INK;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(-shoulder, yShoulder);
-  ctx.lineTo(shoulder, yShoulder);
-  ctx.lineTo(hemW - waistPull, yWaist);
-  ctx.lineTo(hemW, yHem);
-  ctx.lineTo(-hemW, yHem);
-  ctx.lineTo(-hemW + waistPull, yWaist);
-  ctx.closePath();
-  ctx.stroke();
-
-  // ---------------------------------------------------------------- bust
-  //
-  // Female bearing only, and drawn as two small bumps just below the shoulder line rather
-  // than folded into the coat's own polygons — the coat's fill already carries the waist
-  // taper and doing a second silhouette feature in the same shape risked the two fighting
-  // over the same vertices. A pixel or two of outward curve at chest height, echoed by the
-  // outline, is the actual cue reference sprites use to distinguish a fitted bodice from a
-  // straight tunic — the waist taper alone reads as "narrower", not as "a different build".
-  if (!broad) {
-    const bustY = yShoulder + Math.max(2, p((yWaist - yShoulder) * 0.4));
-    const bustH = Math.max(2, p(H * 0.035));
-    const bustPush = Math.max(1, p(H * 0.018));
-
-    ctx.fillStyle = COAT_LIGHT;
-    ctx.beginPath();
-    ctx.moveTo(-shoulder, bustY);
-    ctx.quadraticCurveTo(-shoulder - bustPush, bustY + bustH / 2, -shoulder, bustY + bustH);
-    ctx.lineTo(bandL, bustY + bustH);
-    ctx.lineTo(bandL, bustY);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = COAT_DARK;
-    ctx.beginPath();
-    ctx.moveTo(shoulder, bustY);
-    ctx.quadraticCurveTo(shoulder + bustPush, bustY + bustH / 2, shoulder, bustY + bustH);
-    ctx.lineTo(bandR, bustY + bustH);
-    ctx.lineTo(bandR, bustY);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = COAT_INK;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(-shoulder, bustY);
-    ctx.quadraticCurveTo(-shoulder - bustPush, bustY + bustH / 2, -shoulder, bustY + bustH);
-    ctx.moveTo(shoulder, bustY);
-    ctx.quadraticCurveTo(shoulder + bustPush, bustY + bustH / 2, shoulder, bustY + bustH);
-    ctx.stroke();
-  }
-
-  // ---------------------------------------------------------------- arms, off the torso
-  //
-  // Held a pixel clear of the body and angled outward, which is the entire difference
-  // between "arms" and "a slightly wider coat". They used to be drawn at `-shoulder - armW +
-  // 1` — overlapping the torso by a pixel, so the silhouette never actually broke.
-  const armW = Math.max(3, p(H * (broad ? 0.07 : 0.05)));
-  const yElbow = up(0.5);
-  const yWrist = up(0.42);
-  const armGap = 1;
-  const flare = Math.max(1, p(H * 0.02));
-
-  const arm = (dir: -1 | 1, upper: string, lower: string): void => {
-    const x = dir * (shoulder + armGap);
-    ctx.fillStyle = upper;
-    ctx.fillRect(dir < 0 ? x - armW : x, yShoulder, armW, yElbow - yShoulder);
-    // The forearm steps out by a pixel or two, so the limb has a bend in it.
-    ctx.fillStyle = lower;
-    const fx = x + dir * flare;
-    ctx.fillRect(dir < 0 ? fx - armW : fx, yElbow, armW, yWrist - yElbow);
-    // The cuff: one dark row between sleeve and skin. Without it the sleeve and the hand are
-    // two similar-value blocks touching, and the arm ends in a smudge rather than a wrist.
-    ctx.fillStyle = RAMP.seam;
-    px(ctx, dir < 0 ? fx - armW : fx, yWrist, armW, 1);
-
-    // The hand.
-    ctx.fillStyle = skin;
-    ctx.fillRect(dir < 0 ? fx - armW : fx, yWrist + 1, armW, Math.max(2, p(H * 0.05)));
-  };
-  arm(-1, COAT_LIGHT, COAT_MID);
-  arm(1, COAT_DARK, COAT_DARK);
-
-  // ---------------------------------------------------------------- seams
-  //
-  // Three lines, and between them they turn one painted block into a garment with
-  // construction: a centre seam down the tunic, the waist where the tunic meets the robe,
-  // and the collar line that was already there.
-  ctx.fillStyle = RAMP.seam;
-
-  // The centre seam. Runs from under the collar to the waist, on the band boundary so it
-  // reads as a closure rather than as a stripe.
-  const collarBase = yShoulder + Math.max(2, p(H * 0.04));
-  px(ctx, 0, collarBase, 1, yWaist - collarBase);
-
-  // Where the tunic ends and the robe begins.
-  px(ctx, -shoulder, yWaist, shoulder * 2, 1);
-
-  // And a lighter row directly under it, so the waist reads as an overlap — the tunic
-  // sitting *on* the robe — rather than as a line drawn across a flat panel.
-  ctx.fillStyle = COAT_MID;
-  px(ctx, -shoulder, yWaist + 1, shoulder * 2, 1);
-
-  // ---------------------------------------------------------------- belt and brass
-  ctx.fillStyle = COAT_INK;
-  ctx.fillRect(-shoulder, yWaist + 2, shoulder * 2, Math.max(1, p(H * 0.028)));
-
-  // The sash, worn over the belt line rather than instead of it. A single saturated band
-  // is what a reference sprite spends its one bright accent on — everything else on the
-  // figure is doing structure (coat, cloak, skin); this is the piece doing colour.
-  const sashH = Math.max(2, p(H * 0.05));
-  ctx.fillStyle = RAMP.sash;
-  ctx.fillRect(-shoulder, yWaist - 1, shoulder * 2, sashH);
-  ctx.fillStyle = RAMP.sashLit;
-  ctx.fillRect(-shoulder, yWaist - 1, shoulder * 2, 1);
-
-  // The Magistracy's brass, at the collar. A **rect**, not the triangle it started as: at
-  // this resolution the chest is a handful of pixels tall and a three-pixel triangle
-  // anti-aliased into mud — measured at literally zero pixels of brass on a real canvas.
-  const collarW = p(shoulder * 0.9);
-  const collarH = Math.max(2, p(H * 0.04));
-  ctx.fillStyle = BRASS;
-  ctx.fillRect(-collarW, yShoulder, collarW * 2, collarH);
-  ctx.fillStyle = BRASS_LIT;
-  ctx.fillRect(-collarW, yShoulder, collarW * 2, 1);
-
-  // ---------------------------------------------------------------- neck
-  //
-  // Two pixels of skin between the collar and the chin. A head sitting straight on a pair of
-  // shoulders is one continuous blob; this is what makes it a person wearing a coat.
-  //
-  // Anchored to the **head**, not to `Y.neck`. Taking the landmark literally left rows of
-  // bare canvas between the chin and the collar — a two-pixel hole through the figure,
-  // which is a gap of the wrong kind entirely.
-  const neckW = Math.max(2, p(H * 0.045));
-  //
-  // `yChin` **is** the bottom of the head — the circle is centred a radius above it — so the
-  // neck runs from there to the collar and the two cannot disagree. Writing `yChin + headR`
-  // put it a whole radius below the shoulder and gave the rect a negative height, which
-  // draws nothing at all and left the hole exactly where it had been.
-  // Derived from the chosen complexion rather than authored against one. A fixed hex was
-  // fine while skin was four tones off the face preset and became wrong the moment it became
-  // six on their own axis — a pale neck under a dark jaw is not a shadow, it is a mistake.
-  ctx.fillStyle = shade(skin);
-  ctx.fillRect(-neckW, yChin, neckW * 2, yShoulder - yChin);
-
-  // ---------------------------------------------------------------- head, facing forward
-  const headY = yChin - headR;
-  ctx.beginPath();
-  ctx.arc(0, headY, headR, 0, Math.PI * 2);
-  ctx.fillStyle = skin;
-  ctx.fill();
-
-  // The shadow side of the face, as a hard band rather than a gradient — the same three-step
-  // logic the coat uses, at the size a head can afford.
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(0, headY, headR, 0, Math.PI * 2);
-  ctx.clip();
-  ctx.fillStyle = shade(skin);
-  ctx.fillRect(p(headR * 0.35), headY - headR, headR, headR * 2);
-  ctx.restore();
-
-  drawHair(ctx, headY, headR, hair.id, hairTone);
-  drawFace(ctx, headY, headR, faceIdx, skin);
-
-  // ---------------------------------------------------------------- rim light
-  //
-  // Alpha 0.85, and a `fillRect` rather than a stroke. At 0.55 across a 1px stroke this
-  // measured 28 pixels on the whole figure — present in the transcript and invisible on the
-  // screen, because a stroke anti-aliases across two rows at half intensity each.
-  ctx.save();
-  ctx.globalAlpha = 0.85;
-  ctx.fillStyle = RIM;
-  ctx.fillRect(-shoulder - armGap - armW, yShoulder, 1, yElbow - yShoulder);
-  ctx.fillRect(-headR, headY - p(headR * 0.5), 1, headR);
-  // The lit-side coat edge and the lit-side leg, so the highlight runs the whole silhouette
-  // rather than stopping at the arm. This is most of the difference between "one rim-lit
-  // limb" and a figure that reads as lit as a whole.
-  ctx.globalAlpha = 0.6;
-  ctx.fillRect(-shoulder, yShoulder, 1, yHem - yShoulder);
-  ctx.fillRect(-gap - legW - 1, yHem, 1, yBoot - yHem);
-  ctx.restore();
-}
-
-/**
- * The cap each style wears, as radius and arc.
- *
- * Per-style rather than one shared cap, and that is a **bug fix** rather than tidying.
- * `shorn` used to draw the common cap and then erase a disc out of it with
- * `destination-out` — which does not erase "the hair". It erases pixels, and the sprite is
- * drawn straight onto a diorama that already has sky and ground on it, so a Shorn Commander
- * came with a hole bitten clean through their skull and the landscape behind it. Measured at
- * 782 transparent pixels on a 200x200 probe against zero for every other preset.
- *
- * A tighter cap says the same thing and composites like everything else.
- */
-const HAIR_CAP: Record<string, { r: number; from: number; to: number }> = {
-  shorn: { r: 1.02, from: 1.2, to: 1.8 },
-  undercut: { r: 1.02, from: 1.2, to: 1.8 },
-  ponytail: { r: 1.1, from: 1.02, to: 1.98 },
-  curls: { r: 1.22, from: 0.98, to: 2.02 },
-  pigtails: { r: 1.1, from: 1.02, to: 1.98 },
-  longBangs: { r: 1.14, from: 0.96, to: 2.04 },
-  default: { r: 1.12, from: 1.02, to: 1.98 },
-};
-
-/**
- * The six silhouettes, each a different outline against the sky.
- *
- * Bigger than a head strictly needs. Hair is the loudest thing in the reference
- * silhouettes — often wider than the skull it sits on — because at this size it is the only
- * feature with enough area to tell two people apart across a room.
- */
-function drawHair(
-  ctx: CanvasRenderingContext2D,
-  headY: number,
-  headR: number,
-  id: string,
-  tone: string,
-): void {
-  ctx.fillStyle = tone;
-
-  const cap = HAIR_CAP[id] ?? HAIR_CAP.default!;
-  ctx.beginPath();
-  ctx.arc(0, headY, headR * cap.r, Math.PI * cap.from, Math.PI * cap.to);
-  ctx.fill();
-
-  // The shadow the hairline casts on the forehead. One arc, and it does more to separate
-  // "hair" from "head" at this scale than the colour difference does — two tones of similar
-  // value sit flat against each other without it, whatever the hue.
-  ctx.beginPath();
-  ctx.arc(0, headY, headR * 0.98, Math.PI * 1.1, Math.PI * 1.9);
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-  ctx.lineWidth = Math.max(1, headR * 0.22);
-  ctx.stroke();
-
-  ctx.fillStyle = tone;
-
-  switch (id) {
-    case 'crop':
-      break;
-
-    case 'mane':
-      // Down *to* the shoulders and wider than the head — the biggest silhouette here.
-      //
-      // It used to reach `headR * 2.2` below the crown, which at this resolution buried six
-      // rows of the figure: the neck and the whole brass collar disappeared under it, and
-      // the two features the sprite had just gained were invisible on the one preset most
-      // likely to be chosen for being the loudest.
-      ctx.beginPath();
-      ctx.ellipse(0, headY + headR * 0.35, headR * 1.5, headR * 1.1, 0, 0, Math.PI);
-      ctx.fill();
-      break;
-
-    case 'braid':
-      ctx.beginPath();
-      ctx.ellipse(
-        headR * 1.05,
-        headY + headR * 1.0,
-        headR * 0.34,
-        headR * 1.35,
-        0.35,
-        0,
-        Math.PI * 2,
-      );
-      ctx.fill();
-      break;
-
-    case 'topknot':
-      ctx.beginPath();
-      ctx.arc(0, headY - headR * 1.35, headR * 0.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(
-        -Math.max(1, headR * 0.12),
-        headY - headR * 1.4,
-        Math.max(1, headR * 0.24),
-        headR * 0.5,
-      );
-      break;
-
-    case 'shorn':
-      // Nothing above the cap. The tighter arc in `HAIR_CAP` is the whole style, so there is
-      // deliberately no second shape here — and, crucially, nothing erased.
-      break;
-
-    case 'undercut':
-      // A thin cap on the sides, then a taller block on top — the two-length silhouette
-      // reads distinct from `shorn` even though both use the tight cap.
-      ctx.fillRect(-headR * 0.35, headY - headR * 1.35, headR * 0.7, headR * 0.45);
-      break;
-
-    case 'ponytail':
-      // The same cap as `mane`'s crown, but gathered into one trailing shape off the back
-      // rather than spread wide — reads as "pulled back" rather than "loose".
-      ctx.beginPath();
-      ctx.ellipse(
-        headR * 0.15,
-        headY + headR * 1.15,
-        headR * 0.32,
-        headR * 1.5,
-        0.12,
-        0,
-        Math.PI * 2,
-      );
-      ctx.fill();
-      break;
-
-    case 'curls':
-      // Several overlapping discs along the cap rather than one smooth arc — the only style
-      // whose *edge* is irregular, which is the whole distinction at silhouette scale.
-      for (let i = -2; i <= 2; i++) {
-        ctx.beginPath();
-        ctx.arc(i * headR * 0.42, headY - headR * 0.85 - Math.abs(i) * headR * 0.08, headR * 0.4, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      break;
-
-    case 'pigtails':
-      // Two bunches, one each side — the only style symmetric about the vertical axis in a
-      // way that reads at a glance, since every other style breaks left/right.
-      for (const dir of [-1, 1] as const) {
-        ctx.beginPath();
-        ctx.ellipse(
-          dir * headR * 1.1,
-          headY + headR * 0.55,
-          headR * 0.3,
-          headR * 0.85,
-          dir * 0.3,
-          0,
-          Math.PI * 2,
-        );
-        ctx.fill();
-      }
-      break;
-
-    case 'longBangs':
-      // A fringe hanging past the brow line in front, plus length down the back — the one
-      // style that reads differently from the front vs. `mane`, since the fringe sits over
-      // where the face's brow marks go.
-      ctx.beginPath();
-      ctx.ellipse(0, headY + headR * 0.5, headR * 1.3, headR * 1.0, 0, 0, Math.PI);
-      ctx.fill();
-      ctx.fillRect(-headR * 0.85, headY - headR * 0.1, headR * 0.35, headR * 0.55);
-      ctx.fillRect(headR * 0.5, headY - headR * 0.1, headR * 0.35, headR * 0.55);
-      break;
-
-    case 'wild':
-      for (let i = -2; i <= 2; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * headR * 0.44, headY - headR * 0.6);
-        ctx.lineTo(i * headR * 0.6, headY - headR * 1.8);
-        ctx.lineTo(i * headR * 0.44 + headR * 0.34, headY - headR * 0.6);
-        ctx.closePath();
-        ctx.fill();
-      }
-      break;
-  }
-
-  // A highlight block and a shadow block, so the hair is not one flat fill.
-  //
-  // **After** the style switch, not before it. `wild` draws its spikes over the crown in
-  // flat tone, and painting the surface detail first meant that preset overpainted its own
-  // highlight and part-line — measured at zero pixels of both, where every other style had
-  // them. Surface detail goes on last, which is what "surface" means.
-  //
-  // **Clipped to the cap.** The caps differ per style — `shorn` is a tighter arc than the
-  // rest — so a rect at a fixed offset would hang off the side of the head on some presets
-  // and land on skin. Clipping to the shape that was just filled means the marks are on
-  // hair by construction, whatever shape the hair is.
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(0, headY, headR * cap.r, Math.PI * cap.from, Math.PI * cap.to);
-  ctx.clip();
-
-  // Both marks hug the crown, near the vertical axis. Placed further out they measured zero
-  // pixels on `shorn`, whose cap is a much tighter arc than the rest — the clip did its job
-  // and there was simply no hair under them. The top of the head is the one place every
-  // preset has material.
-  const capTop = headY - headR * cap.r;
-
-  // Lit side, just off the crown toward the key light.
-  ctx.fillStyle = lift(tone);
-  px(ctx, -headR * 0.55, capTop + headR * 0.15, Math.max(2, headR * 0.35), Math.max(2, headR * 0.3));
-
-  // And the part-line: a darker column just off centre, which is where hair divides and
-  // where the eye looks for the direction it falls.
-  ctx.fillStyle = shade(tone);
-  px(ctx, headR * 0.15, capTop + headR * 0.1, 1, Math.max(2, headR * 0.55));
-  ctx.restore();
-
-}
-
-/**
- * The face: brows, eyes with a catchlight, and the suggestion of a nose and a mouth.
- *
- * Every mark is one or two pixels, placed on the grid, on a head twelve pixels tall. That
- * sounds like nothing and it is most of what makes a sprite read as a person — the eye
- * highlight in particular, which is a single pixel and is the difference between two dark
- * dots and something looking back.
- *
- * `idx` still changes the brow and the eye, because that is what the four presets are for.
- */
-function drawFace(
-  ctx: CanvasRenderingContext2D,
-  headY: number,
-  headR: number,
-  idx: number,
-  skin: string,
-): void {
-  const eyeY = Math.round(headY + headR * 0.12);
-  const eyeX = Math.round(headR * 0.42);
-  const eyeW = Math.max(1, Math.round(headR * 0.3));
-
-  // ---------------------------------------------------------------- brows
-  //
-  // One row above the eye, and a pixel wider than it. A brow is the cheapest expression
-  // control there is: its height off the eye is the whole difference between the presets.
-  const browLift = [2, 3, 1, 2, 4, 1, 2][idx] ?? 2;
-  const browH = idx === 4 ? 2 : 1;
-  ctx.fillStyle = RAMP.faceInk;
-  px(ctx, -eyeX - eyeW, eyeY - browLift, eyeW + 1, browH);
-  px(ctx, eyeX - 1, eyeY - browLift, eyeW + 1, browH);
-
-  // ---------------------------------------------------------------- eyes
-  //
-  // Rects, not circles. A two-pixel disc is a rect that has been through anti-aliasing on
-  // the way, and the blend is what made these read as smudges rather than as eyes.
-  const eyeH = idx === 2 ? Math.max(2, eyeW) : idx === 5 ? Math.max(1, eyeW - 2) : Math.max(1, eyeW - 1);
-  px(ctx, -eyeX - eyeW + 1, eyeY, eyeW, eyeH);
-  px(ctx, eyeX - 1, eyeY, eyeW, eyeH);
-
-  // The catchlight. One pixel, top-left of each eye, on the side the key light is on.
-  ctx.fillStyle = RAMP.eyeLit;
-  px(ctx, -eyeX - eyeW + 1, eyeY, 1, 1);
-  px(ctx, eyeX - 1, eyeY, 1, 1);
-
-  // ---------------------------------------------------------------- nose and mouth
-  //
-  // A suggestion, and deliberately no more: at twelve pixels a drawn nose is a blemish. One
-  // pixel of shadow where the nose would cast, and a short line for the mouth.
-  ctx.fillStyle = shade(skin);
-  px(ctx, 0, eyeY + 2, 1, 1);
-  // Idx 6 (sly) gets an asymmetric mouth — one corner lifted — rather than the level line
-  // every other preset uses. It is the one expression that is not readable from the brow
-  // or the eyes alone, so the mouth has to carry it.
-  if (idx === 6) {
-    px(ctx, -1, eyeY + 4, 2, 1);
-    px(ctx, 1, eyeY + 3, 1, 1);
-  } else {
-    px(ctx, -1, eyeY + 4, 3, 1);
-  }
-
-  // ---------------------------------------------------------------- the scar
-  //
-  // The one preset whose identity is not in the brow. Kept as a rect column so it snaps to
-  // the grid like everything else — the old diagonal stroke anti-aliased into a grey smear.
-  if (idx === 3) {
-    ctx.fillStyle = shade(shade(skin));
-    px(ctx, eyeX, eyeY - 3, 1, Math.max(3, headR * 0.8));
-  }
+  if (!img) return;
+  blit(ctx, unit, img, COMPANION_HEIGHT_TILES);
 }
 
 /**
  * The beast, as a silhouette in its school's colour.
  *
- * One shape for every bloodline, deliberately: this is the moment the Vow lands, and what
- * the player is being shown is *that something arrived*, in a colour they just chose. Six
- * hand-drawn creatures would be six promises the combat board would then have to keep.
+ * Kept as a fallback for any species without bitmap art yet — one shape recoloured per
+ * school, rather than every not-yet-drawn companion failing to render at all.
  */
 export function drawCompanion(
   ctx: CanvasRenderingContext2D,
@@ -964,35 +270,4 @@ export function drawCompanion(
   ctx.strokeStyle = color;
   ctx.lineWidth = Math.max(1, unit * 0.045);
   ctx.stroke();
-}
-
-/**
- * A colour's lit side. The counterpart to `shade`, and derived the same way so any tone —
- * including the six school colours and every hair preset — gets a highlight nobody authored.
- */
-function lift(hex: string): string {
-  const n = Number.parseInt(hex.slice(1), 16);
-  if (!Number.isFinite(n)) return hex;
-  const up = (v: number): number => Math.min(255, Math.round(v * 1.35 + 24));
-  const r = up((n >> 16) & 255);
-  const g = up((n >> 8) & 255);
-  const b = up(n & 255);
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-}
-
-/**
- * A colour's shadow side.
- *
- * Multiplied toward black rather than picked, so the cloak gets a matching dark whatever
- * accent it is handed — including the six school colours, which nobody authored a shadow
- * for and nobody should have to.
- */
-function shade(hex: string): string {
-  const n = Number.parseInt(hex.slice(1), 16);
-  if (!Number.isFinite(n)) return hex;
-  const dim = (v: number): number => Math.round(v * 0.62);
-  const r = dim((n >> 16) & 255);
-  const g = dim((n >> 8) & 255);
-  const b = dim(n & 255);
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }

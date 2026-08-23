@@ -7,8 +7,12 @@
  * deliberately papery, and nothing is allowed to become a full-screen panel that hides the
  * thing it is editing.
  *
- * The one hard rule: the Commander's sprite stands slightly left of centre, so the panel
- * lives on the right and the lower third stays clear.
+ * The one hard rule: **the middle of the frame belongs to the cast.** Step I stands the
+ * Commander dead centre and close (`SHOT_IDENTITY`), so the form docks along the bottom
+ * under their feet; Step II pulls back and lands the beast beside them, so the rail goes
+ * left and the card goes right and the channel between them stays empty. Both steps leave
+ * the sky clear. This replaced an earlier rule — figure left of centre, panel on the right —
+ * which is why nothing here is anchored to a corner any more.
  */
 
 .screen--creation {
@@ -27,16 +31,20 @@
 }
 
 /*
- * A soft wash under the copy only. The diorama already vignettes itself; this exists so
- * body text over a bright tile stays legible without dimming the stage.
+ * A soft wash top and bottom, where the copy is. The diorama already vignettes itself; this
+ * exists so body text over a bright tile stays legible without dimming the stage.
+ *
+ * Both gradients run vertically now. The old pair washed the top and the *left*, the left
+ * one being there to seat a panel against the right edge — there is no such panel now, and
+ * a one-sided wash under a centred figure reads as weather.
  */
 .creation__scrim {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(to bottom, rgba(8, 10, 15, 0.72) 0%, rgba(8, 10, 15, 0) 38%),
-    linear-gradient(to left, rgba(8, 10, 15, 0.66) 0%, rgba(8, 10, 15, 0) 46%);
+    linear-gradient(to bottom, rgba(8, 10, 15, 0.72) 0%, rgba(8, 10, 15, 0) 34%),
+    linear-gradient(to top, rgba(8, 10, 15, 0.8) 0%, rgba(8, 10, 15, 0) 30%);
 }
 
 .creation__ui {
@@ -50,10 +58,47 @@
   box-sizing: border-box;
 }
 
+/*
+ * The six school colours, as a variable rather than six copies of a rule.
+ *
+ * Set on anything carrying `data-school`, and read by the rail tabs and the featured card
+ * for their edge, their glow and their selected fill. The source of truth is `SCHOOL_COLOR`
+ * in `render/sprites.ts` — CSS cannot import it, so these are a deliberate mirror and should
+ * be changed together.
+ */
+.creation__ui [data-school='pyre'] {
+  --school: #d9643a;
+}
+.creation__ui [data-school='frost'] {
+  --school: #6fb6d8;
+}
+.creation__ui [data-school='surge'] {
+  --school: #d9c04a;
+}
+.creation__ui [data-school='bulwark'] {
+  --school: #9a9086;
+}
+.creation__ui [data-school='dusk'] {
+  --school: #9a6fc4;
+}
+.creation__ui [data-school='bloom'] {
+  --school: #79b45c;
+}
+
 /* ------------------------------------------------------------------ the header */
 
+/*
+ * Capped against the viewport as well as in rems, because the figure now stands in the
+ * middle: at 44rem of prose on a 1280 frame the lede runs under the Commander's head.
+ *
+ * `36vw` rather than something looser because the margin is small and worth having explicitly.
+ * At 42vw the longest lede line reached x=562 on a 1280 frame against a sprite box starting at
+ * x=546 — no *pixels* collided, only because the head is narrower than the sprite's widest
+ * point (the skirt), which is a property of one drawing and not a layout rule. 36vw clears the
+ * box itself by ~37px, so it stays true if the art changes.
+ */
 .creation__head {
-  max-width: 44rem;
+  max-width: min(44rem, 36vw);
 }
 
 .creation__steps {
@@ -92,30 +137,58 @@
   text-shadow: 0 1px 0.9rem rgba(0, 0, 0, 0.85);
 }
 
-/* ------------------------------------------------------------------ step one */
+/* ------------------------------------------------------------------ the panel */
 
+/*
+ * One cell, positioned by the step. The modifier is set in `renderStep()` because which
+ * step is showing is a fact about the screen's state, not something to re-derive per rule.
+ */
 .creation__panel {
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
+  display: grid;
   min-height: 0;
+  min-width: 0;
 }
 
+.creation__panel--identity {
+  align-items: end;
+  justify-items: center;
+}
+
+.creation__panel--vow {
+  align-items: stretch;
+  justify-items: stretch;
+}
+
+/* ------------------------------------------------------------------ step one */
+
 .creation__form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  width: min(24rem, 100%);
-  padding: clamp(0.9rem, 2vw, 1.4rem);
-  background: rgba(14, 17, 24, 0.82);
+  padding: clamp(0.8rem, 1.8vw, 1.3rem);
+  background: rgba(14, 17, 24, 0.84);
   border: 1px solid var(--brass-edge, #6b5a3c);
   backdrop-filter: blur(6px);
+  box-sizing: border-box;
+}
+
+/*
+ * Name, bearing and the two buttons on one line, docked under the figure's feet.
+ *
+ * A bar rather than the column this used to be, because a centred Commander leaves a wide
+ * shallow gap at the bottom of the frame and nothing at either side. Three fields is short
+ * enough to lie down.
+ */
+.creation__form--bar {
+  display: grid;
+  grid-template-columns: minmax(11rem, 1fr) auto auto;
+  align-items: end;
+  gap: clamp(0.5rem, 1.5vw, 0.9rem);
+  width: min(52rem, 100%);
 }
 
 .creation__field {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  min-width: 0;
 }
 
 .creation__label {
@@ -132,6 +205,7 @@
   color: var(--ink-strong, #efe6d2);
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid var(--brass-edge, #6b5a3c);
+  min-width: 0;
 }
 
 .creation__input:focus-visible {
@@ -145,9 +219,8 @@
   gap: 0.35rem;
 }
 
-.creation__opt,
-.creation__arrow {
-  padding: 0.4rem 0.6rem;
+.creation__opt {
+  padding: 0.4rem 0.75rem;
   font-family: inherit;
   font-size: 0.85rem;
   color: var(--ink-dim, #b9ae95);
@@ -164,154 +237,268 @@
   border-color: var(--brass-bright, #c8a558);
 }
 
-.creation__opt:hover,
-.creation__arrow:hover {
+.creation__opt:hover {
   color: var(--ink-strong, #efe6d2);
   border-color: var(--brass-bright, #c8a558);
-}
-
-.creation__cyclers {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-
-.creation__cycler {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.creation__cycle {
-  display: grid;
-  grid-template-columns: 2.2rem 1fr 2.2rem;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.creation__value {
-  text-align: center;
-  font-size: 0.9rem;
-  color: var(--ink-strong, #efe6d2);
 }
 
 .creation__actions {
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
-  margin-top: 0.3rem;
+  align-items: end;
 }
 
 /* ------------------------------------------------------------------ step two */
 
+/*
+ * Rail, stage, card. The middle column holds nothing on purpose: it is the window onto the
+ * pair of bodies, and it is the **binding constraint on `SHOT_VOW`** — the zoom is set by how
+ * much room these two flanks leave, not by the frame. Widening either one crops a beast.
+ * Both sit at the bottom so the horizon stays open above.
+ */
 .creation__vow {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  width: 100%;
-  align-self: flex-end;
+  display: grid;
+  grid-template-columns: minmax(7rem, 10.5rem) 1fr min(23rem, 34vw);
+  align-items: end;
+  gap: clamp(0.5rem, 1.5vw, 1.1rem);
+  min-height: 0;
+  min-width: 0;
 }
 
 /*
- * Six cards in one scrolling row. A row rather than a grid because the camera is panning
- * behind them and a tall grid would cover the stage the pan exists to show.
+ * Mid widths: both flanks give ground, twice, because the cast does not shrink with the
+ * viewport the way a column of text does.
+ *
+ * The pair is sized off frame **height** (`SHOT_VOW.zoom` against `h/9`) while these panels are
+ * sized off **width**, so as a window narrows the bodies hold their size and the channel closes
+ * on them. Both steps were measured, not guessed: at 1024x640 the pair spans 424px and the
+ * unnarrowed channel is 395px, so the widest beast is drawn 40px behind the card; at 760x520 the
+ * Commander's left edge lands at 155px against a rail ending at 174px. Each query buys back more
+ * than the overlap it fixes. Below 44rem the layout stacks and the problem goes away with it.
  */
-.creation__grid {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(13rem, 1fr);
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.3rem;
+@media (max-width: 68rem) {
+  .creation__vow {
+    grid-template-columns: minmax(6.5rem, 9rem) 1fr min(19rem, 30vw);
+  }
 }
 
-.vow-card {
+@media (max-width: 56rem) {
+  .creation__vow {
+    grid-template-columns: minmax(5rem, 7rem) 1fr min(16rem, 27vw);
+  }
+  /* The thumb keeps its size; the name gives up the room, and already ellipsises. */
+  .vow-tab__thumb {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+.vow-rail {
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.7rem 0.75rem;
+  gap: 0.35rem;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.vow-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: none;
+  padding: 0.3rem 0.4rem;
   text-align: left;
   cursor: pointer;
-  background: rgba(14, 17, 24, 0.86);
+  background: rgba(14, 17, 24, 0.84);
   border: 1px solid var(--brass-edge, #6b5a3c);
+  border-left: 3px solid var(--school, var(--brass-edge, #6b5a3c));
   transition:
     transform 130ms ease,
     border-color 130ms ease,
-    box-shadow 130ms ease;
+    background 130ms ease;
 }
 
-.vow-card:hover {
-  transform: translateY(-3px);
+.vow-tab:hover {
+  transform: translateX(2px);
   border-color: var(--brass-bright, #c8a558);
 }
 
-.vow-card.is-vowed {
+.vow-tab.is-vowed {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--school, #8a7a55) 24%, transparent),
+    rgba(14, 17, 24, 0.9) 72%
+  );
   border-color: var(--brass-bright, #c8a558);
-  box-shadow:
-    0 0 0 1px var(--brass-bright, #c8a558),
-    0 0 1.6rem rgba(200, 165, 88, 0.3);
+  box-shadow: 0 0 1.1rem color-mix(in srgb, var(--school, #8a7a55) 26%, transparent);
 }
 
-.vow-card__crest {
-  height: 0.24rem;
-  border-radius: 2px;
-  background: var(--crest, #8a7a55);
+.vow-tab__thumb {
+  width: 2.3rem;
+  height: 2.3rem;
+  flex: none;
+  object-fit: contain;
 }
 
-.vow-card__crest[data-school='pyre'] {
-  --crest: #d9643a;
-}
-.vow-card__crest[data-school='frost'] {
-  --crest: #6fb6d8;
-}
-.vow-card__crest[data-school='surge'] {
-  --crest: #d9c04a;
-}
-.vow-card__crest[data-school='bulwark'] {
-  --crest: #9a9086;
-}
-.vow-card__crest[data-school='dusk'] {
-  --crest: #9a6fc4;
-}
-.vow-card__crest[data-school='bloom'] {
-  --crest: #79b45c;
+.vow-tab__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.vow-card__school {
-  font-size: 0.66rem;
-  letter-spacing: 0.18em;
+.vow-tab__name {
+  font-family: var(--font-display, serif);
+  font-size: 0.95rem;
+  line-height: 1.15;
+  color: var(--ink-strong, #efe6d2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vow-tab__school {
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--brass-bright, #c8a558);
 }
 
-.vow-card__name {
+/*
+ * The card. Scrolls internally rather than growing, so a long blurb cannot push the actions
+ * off the bottom of a short viewport.
+ */
+.vow-featured {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 0;
+  min-width: 0;
+  max-height: 100%;
+  padding: clamp(0.75rem, 1.6vw, 1.15rem);
+  background: rgba(14, 17, 24, 0.88);
+  border: 1px solid var(--brass-edge, #6b5a3c);
+  border-top: 2px solid var(--school, var(--brass-edge, #6b5a3c));
+  backdrop-filter: blur(6px);
+  box-sizing: border-box;
+}
+
+.vow-featured__slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.vow-featured.is-empty .vow-featured__slot {
+  justify-content: flex-end;
+}
+
+.vow-featured__prompt {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--ink-dim, #b9ae95);
+}
+
+/*
+ * The portrait frame, after the pattern the Wanted poster reserved for one: a school-tinted
+ * pool of light with the beast standing in it. Fixed height and `contain`, because the six
+ * files disagree about aspect — Voltara is wider than tall, Sylva is the reverse — and a
+ * stretched lynx is worse than a small one.
+ */
+.vow-featured__portrait {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex: none;
+  height: clamp(5.5rem, 17vh, 9.5rem);
+  margin-bottom: 0.15rem;
+  border: 1px solid var(--brass-edge, #6b5a3c);
+  background:
+    radial-gradient(
+      ellipse at 50% 70%,
+      color-mix(in srgb, var(--school, #8a7a55) 32%, transparent),
+      transparent 72%
+    ),
+    rgba(0, 0, 0, 0.34);
+  overflow: hidden;
+}
+
+.vow-featured__art {
+  max-height: 94%;
+  max-width: 90%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 9px rgba(0, 0, 0, 0.6));
+}
+
+.vow-featured__school {
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--brass-bright, #c8a558);
+}
+
+.vow-featured__name {
+  margin: 0;
   font-family: var(--font-display, serif);
-  font-size: 1.05rem;
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+  line-height: 1.1;
   color: var(--ink-strong, #efe6d2);
 }
 
-.vow-card__blurb {
-  font-size: 0.76rem;
-  line-height: 1.4;
-  color: var(--ink-dim, #b9ae95);
-  flex: 1;
+.vow-featured__title {
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint, #8d846f);
 }
 
-.vow-card__facts {
+.vow-featured__blurb {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ink, #d6cbb2);
+}
+
+.vow-featured__discipline {
+  margin: 0;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--brass-edge, #6b5a3c);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--ink-dim, #b9ae95);
+}
+
+.vow-featured__facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.15rem 0.7rem;
-  font-size: 0.7rem;
+  gap: 0.15rem 0.8rem;
+  font-size: 0.72rem;
   color: var(--ink, #d6cbb2);
   font-variant-numeric: tabular-nums;
 }
 
-.vow-card__line {
-  font-size: 0.66rem;
-  line-height: 1.3;
-  color: var(--ink-faint, #8d846f);
-  border-top: 1px solid var(--brass-edge, #6b5a3c);
+.vow-featured__facts b {
+  color: var(--brass-bright, #c8a558);
+  font-weight: 600;
+}
+
+.vow-featured__line {
+  margin: 0;
   padding-top: 0.3rem;
+  border-top: 1px solid var(--brass-edge, #6b5a3c);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--ink-faint, #8d846f);
 }
 
 .creation__sign[disabled] {
@@ -319,24 +506,65 @@
   cursor: not-allowed;
 }
 
-/* Narrow screens: the panel gives up its corner and takes the full width. */
+/*
+ * Narrow screens: both steps stack. The stage keeps the top of the frame — it is still the
+ * thing being edited — and the controls become sheets under it rather than full-screen
+ * panels over it.
+ */
 @media (max-width: 44rem) {
-  .creation__form {
+  .creation__head {
+    max-width: 100%;
+  }
+  .creation__form--bar {
+    grid-template-columns: 1fr;
     width: 100%;
   }
+  .creation__actions {
+    justify-content: stretch;
+  }
+  .creation__actions .brass-btn {
+    flex: 1;
+  }
+  .creation__vow {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto auto;
+    align-items: stretch;
+  }
+  .vow-featured {
+    grid-column: 1;
+    grid-row: 2;
+    max-height: 46vh;
+  }
+  .vow-featured__portrait {
+    height: clamp(4.5rem, 13vh, 7rem);
+  }
+  .vow-rail {
+    grid-column: 1;
+    grid-row: 3;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .vow-tab:hover {
+    transform: none;
+  }
   .creation__scrim {
-    background: linear-gradient(to bottom, rgba(8, 10, 15, 0.7) 0%, rgba(8, 10, 15, 0.35) 50%, rgba(8, 10, 15, 0.8) 100%);
+    background: linear-gradient(
+      to bottom,
+      rgba(8, 10, 15, 0.7) 0%,
+      rgba(8, 10, 15, 0.3) 45%,
+      rgba(8, 10, 15, 0.85) 100%
+    );
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vow-card,
+  .vow-tab,
   .creation__opt,
-  .creation__arrow,
   .creation__step {
     transition: none;
   }
-  .vow-card:hover {
+  .vow-tab:hover {
     transform: none;
   }
 }

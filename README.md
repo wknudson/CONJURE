@@ -169,8 +169,13 @@ the movement BFS simply finds no legal step.
 
 A hybrid: **Canvas 2D** draws the isometric world (tiles, units, marks, ghosts, particles)
 with hand-rolled 2:1 diamond projection, while **DOM/CSS** draws all interface chrome, so
-card text stays crisp when it scales on hover. There are no image assets — every visual is
-a canvas path, and units are extruded prisms on team-coloured base plates.
+card text stays crisp when it scales on hover. On the board every visual is a canvas path,
+and units are extruded prisms on team-coloured base plates.
+
+The one exception is **character creation**, which stands the Commander and the six Companions
+on its diorama as authored PNG sprites out of `public/assets/sprites/` — the only image assets
+in the project. The board has not caught up, so the two currently draw a body differently; see
+`docs/06_character_creation.md` §4 and §9.
 
 The board turns in 90° steps. The *logical* orientation flips instantly, so depth sorting
 and tile picking never see an in-between state; what animates is the drawing, which spins
@@ -577,6 +582,6 @@ cards in all seven schools. A new character is handed a **seven-card** Hero Deck
 colourless staples — a strike, a shove, a wall, a ward, a tithe, a beam and a finisher —
 which the Companion's eight-spell Grimoire fuses to fifteen at the bell
 (`core/data/cards/starter.ts`, `docs/07_deck_building.md` §4). The catalog behind it is
-122 base cards (`docs/08_card_catalog.md`), and between them they exercise every core
+173 base cards (`docs/08_card_catalog.md`), and between them they exercise every core
 system: summoning, a 2×2 Behemoth, displacement and collisions, Mark attachment, cascading
 detonations, the blood tithe economy, obstacles, persistent armor, and a global finisher.
