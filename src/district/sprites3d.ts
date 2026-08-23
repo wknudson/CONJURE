@@ -14,8 +14,22 @@ import { ACTOR_ALPHA_TEST, spriteTexture } from './textures.js';
 /** The four frames an actor can be drawn in, before mirroring. */
 export type Facing = 'down' | 'up' | 'left' | 'right';
 
+/**
+ * Which way the side-on art is actually drawn.
+ *
+ * Every side-facing frame the Commander has — the standing pose and all four walk frames,
+ * both bearings — is drawn facing **left**. One declared fact, mirrored against by the one
+ * flip below, so if the art is ever redrawn the other way this constant is the only edit.
+ *
+ * It was previously assumed to face right and mirrored on that assumption, which turned the
+ * Commander around: walking left drew the left-facing art flipped to face right, and walking
+ * right drew it unflipped, still facing left. Wrong in both directions at once, which is
+ * exactly why it survived — there was no correct case on screen to compare against.
+ */
+export const SIDE_ART_FACES: Facing = 'left';
+
 export class BillboardSprite extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshLambertMaterial> {
-  /** Mirrored horizontally — a left-facing body is the right-facing art, flipped. */
+  /** Mirrored horizontally — the opposite bearing is the drawn one, flipped. */
   private mirrored = false;
 
   constructor(texture: THREE.Texture, worldWidth: number, worldHeight: number) {
@@ -82,29 +96,77 @@ export function pickFacing(mx: number, mz: number, cameraYaw: number): Facing {
 }
 
 /**
- * One actor's art: a texture per frame, plus the second step of a walk cycle if it has one.
+ * Playback order for the side-on walk, as indices into the authored frames.
  *
- * The Commander has `side-alt`; companions do not, so `sideAlt` is optional and the walk
- * animation quietly does nothing for a beast rather than needing a branch at every call.
+ * Not `[0, 1, 2, 3]`, and the reason is in the art rather than the code. Measured at the
+ * ground line, the gap between the two boots across the four frames runs 35, 10, 31, 34
+ * pixels (the female set: 37, 11, 34, 35). A walk alternates spread, together, spread,
+ * together — one passing pose per footfall. What is drawn is spread, together, spread,
+ * *spread*: frame 3 is a third stride pose rather than the second passing pose the cycle
+ * needs, and only 41% of the body changes between frames 2 and 3 against 69% between 1
+ * and 2. Played in file order it hitches through its second half.
+ *
+ * So frame 1 — the one real passing pose — carries both footfalls, and frame 3 is left out.
+ * Two strides, two passes, even rhythm. The reused pass does not swap which leg leads, but
+ * at the size a Commander occupies on the street that is invisible, where the hitch is not.
+ *
+ * Change this to `[0, 1, 2, 3]` the moment frame 3 is redrawn as a passing pose. That is the
+ * whole fix — nothing else here knows or cares how many frames there are.
+ */
+export const SIDE_WALK_ORDER: readonly number[] = [0, 1, 2, 1];
+
+/**
+ * Ground covered by one complete gait cycle, whatever it is made of.
+ *
+ * Distance rather than time, for the same reason the rest of this class works that way: the
+ * legs and the ground have to agree. Expressed per *cycle* rather than per frame so cadence
+ * is a property of the walk and not of how many drawings happen to be in it — the two-frame
+ * fallback and the four-entry cycle cover the same 1.8 units, which is the figure the old
+ * two-frame version shipped with and which reads as a walk at six units a second.
+ */
+export const GAIT_CYCLE_DISTANCE = 1.8;
+
+/**
+ * One actor's art: a texture per facing, plus the side-on walk frames if it has any.
+ *
+ * `sideWalk` holds textures **in playback order**, already arranged by `SIDE_WALK_ORDER`, so
+ * one texture can appear twice and `Walker` need only index. It is empty for a companion, a
+ * Warden, or a Commander whose walk art failed to load, and the walk then quietly does
+ * nothing rather than needing a branch at every call.
  */
 export interface ActorArt {
   front: THREE.Texture;
   back: THREE.Texture;
   side: THREE.Texture;
-  sideAlt?: THREE.Texture;
+  sideWalk: readonly THREE.Texture[];
   /** Source aspect of the front frame, so the plane is not forced into a box. */
   aspect: number;
 }
 
 export function buildActorArt(
-  images: { front: HTMLImageElement; back: HTMLImageElement; side: HTMLImageElement; sideAlt?: HTMLImageElement },
+  images: {
+    front: HTMLImageElement;
+    back: HTMLImageElement;
+    side: HTMLImageElement;
+    /** The authored walk frames in file order; arranged into playback order here. */
+    sideWalk?: readonly HTMLImageElement[];
+  },
   maxAnisotropy: number,
 ): ActorArt {
+  const authored = images.sideWalk ?? [];
+  // One texture per authored frame, then the order applied over them — so a frame the cycle
+  // uses twice is uploaded once and appears twice by reference.
+  const made = authored.map((img) => spriteTexture(img, maxAnisotropy));
+  // The reorder only applies to a set that can actually satisfy it. Anything shorter — the
+  // two-pose fallback — plays in file order, because filtering the order down would drop a
+  // frame and double another, which is a stranger walk than the one it set out to fix.
+  const reorderable = SIDE_WALK_ORDER.every((i) => i < made.length);
+  const sideWalk = reorderable ? SIDE_WALK_ORDER.map((i) => made[i]!) : made;
   return {
     front: spriteTexture(images.front, maxAnisotropy),
     back: spriteTexture(images.back, maxAnisotropy),
     side: spriteTexture(images.side, maxAnisotropy),
-    ...(images.sideAlt ? { sideAlt: spriteTexture(images.sideAlt, maxAnisotropy) } : {}),
+    sideWalk,
     aspect: images.front.width / images.front.height,
   };
 }
@@ -122,14 +184,14 @@ export function actorArtFromTextures(
   side: THREE.Texture,
   aspect: number,
 ): ActorArt {
-  return { front, back, side, aspect };
+  return { front, back, side, sideWalk: [], aspect };
 }
 
 export function disposeActorArt(art: ActorArt): void {
-  art.front.dispose();
-  art.back.dispose();
-  art.side.dispose();
-  art.sideAlt?.dispose();
+  // A Set because the walk order reuses one frame for both footfalls, so the same texture
+  // appears twice in `sideWalk` and must still be released exactly once.
+  const seen = new Set<THREE.Texture>([art.front, art.back, art.side, ...art.sideWalk]);
+  for (const tex of seen) tex.dispose();
 }
 
 /**
@@ -178,7 +240,8 @@ export class Walker {
 
   private applyFrame(): void {
     const sideways = this.facing === 'left' || this.facing === 'right';
-    this.sprite.setMirrored(this.facing === 'left');
+    // The one flip, taken against the one declared fact about the art. Nothing else mirrors.
+    this.sprite.setMirrored(sideways && this.facing !== SIDE_ART_FACES);
 
     if (this.facing === 'up') {
       this.sprite.setTexture(this.art.back);
@@ -188,10 +251,14 @@ export class Walker {
       this.sprite.setTexture(this.art.front);
       return;
     }
-    // A stride every 0.9 units of ground covered reads as a walk at six units a second
-    // without ever looking like a sprint.
-    const alt = this.art.sideAlt;
-    const onSecondFrame = alt !== undefined && Math.floor(this.walked / 0.9) % 2 === 1;
-    this.sprite.setTexture(onSecondFrame ? alt! : this.art.side);
+
+    const cycle = this.art.sideWalk;
+    if (cycle.length === 0) {
+      // No walk art — the standing profile, which is what a companion and the Warden get.
+      this.sprite.setTexture(this.art.side);
+      return;
+    }
+    const frame = Math.floor((this.walked / GAIT_CYCLE_DISTANCE) * cycle.length) % cycle.length;
+    this.sprite.setTexture(cycle[frame] ?? this.art.side);
   }
 }

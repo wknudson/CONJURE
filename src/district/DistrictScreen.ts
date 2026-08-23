@@ -26,6 +26,7 @@ import { schematicsFor } from '../core/data/artificer.js';
 import { fusedDeckSize, validateDeck } from '../core/data/deckRules.js';
 import {
   loadCommanderSprite,
+  loadCommanderWalk,
   loadCompanionSprite,
   type HeroFacing,
 } from '../render/sprites.js';
@@ -311,12 +312,29 @@ export class DistrictScreen implements Screen {
         loadCommanderSprite(vexGender, 'side'),
       ]);
 
+    // The walk frames, loaded apart from the rest and allowed to fail.
+    //
+    // Only `side` has them; there are no front or back walk frames yet, and asking for them
+    // would 404. Kept out of the `Promise.all` above because a missing walk should cost the
+    // animation and nothing else — folded in, one absent file would reject the whole batch
+    // and the street would open with no Commander, no companion and no Vex standing in it.
+    const heroWalk = await loadCommanderWalk(gender, 'side').catch(() => null);
+    if (this.disposed || !this.world) return;
+
     // The screen may have been swapped out while those were decoding.
     if (this.disposed || !this.world) return;
 
     const anis = this.renderer!.capabilities.getMaxAnisotropy();
     const heroArt = buildActorArt(
-      { front: hFront!, back: hBack!, side: hSide!, sideAlt: hSideAlt! },
+      {
+        front: hFront!,
+        back: hBack!,
+        side: hSide!,
+        // The four authored frames when they loaded. Falling back to the old two-pose
+        // shuffle rather than to nothing, so a checkout without the walk art still has legs
+        // that move — `side-alt` is that pose, and it is why it is still fetched above.
+        sideWalk: heroWalk ? [...heroWalk.frames] : [hSide!, hSideAlt!],
+      },
       anis,
     );
     const beastArt = buildActorArt({ front: cFront!, back: cBack!, side: cSide! }, anis);
