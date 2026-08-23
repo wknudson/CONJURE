@@ -4,9 +4,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* `safe center` for the same reason the hand uses it: centred while it fits, and
+     top-aligned rather than half-off-screen once it does not. */
   justify-content: center;
+  justify-content: safe center;
   gap: 8px;
   padding: 40px;
+  /* Every `.screen` is `position: absolute; inset: 0` inside a `body` that cannot scroll,
+     so a screen which does not scroll *itself* simply loses whatever does not fit. The
+     Safehouse, Artificer, Shop, Vivarium and Victory screens all opt in; these two were
+     overlooked, which on a short window put the encounter list past the bottom edge with
+     no way to reach it. */
+  overflow-y: auto;
   background:
     radial-gradient(ellipse at 50% 30%, rgba(103, 232, 249, 0.09), transparent 60%),
     var(--bg);
@@ -92,7 +101,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  justify-content: safe center;
   gap: 14px;
+  padding: 24px;
+  overflow-y: auto;
   background: var(--bg);
 }
 

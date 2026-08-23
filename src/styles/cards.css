@@ -86,15 +86,25 @@
   }
 }
 
+/*
+ * A circle for a single number, a pill for a dual cost.
+ *
+ * This was a hard 25px circle, which is exactly right for `2` and eleven pixels too narrow
+ * for `1+1<marrow>` -- a Marrow-gated card overflowed its own badge and the text was clipped
+ * by the card edge. `min-width` keeps the circle honest (equal to the height, so a single
+ * digit still reads as a disc) while letting the pill grow only when there is more to say.
+ */
 .card__cost {
   position: absolute;
   top: -7px;
   left: -7px;
-  width: 25px;
+  min-width: 25px;
   height: 25px;
+  padding: 0 5px;
   display: grid;
   place-items: center;
-  border-radius: 50%;
+  white-space: nowrap;
+  border-radius: 999px;
   border: 2px solid color-mix(in srgb, var(--school, #94a3b8) 80%, white);
   background: var(--school-deep, #334155);
   font: 800 13px var(--font);
@@ -111,11 +121,15 @@
 }
 
 /* Type line: what the card does with the board, and who casts it. */
+/* `space-between` with children that refuse to shrink is how a row ends up wider than its
+   card. The kind never truncates -- it is one short word -- so the range label is the half
+   that gives, and it has a tooltip and the card text behind it either way. */
 .card__type {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 3px;
+  min-width: 0;
   padding: 2px 0 3px;
   margin-bottom: 4px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -262,4 +276,20 @@
   text-transform: uppercase;
   color: var(--accent);
   opacity: 0.85;
+}
+
+/*
+ * Both halves truncate, not just one.
+ *
+ * `min-width: 0` above lets these boxes shrink, but text does not shrink with its box -- so
+ * on the mini card face the labels went on overflowing, just from a narrower start. An
+ * ellipsis is the honest end state: "ABILIT…" reads as a clipped word, whereas a hard cut
+ * mid-glyph reads as a rendering fault. The full kind and range are on the card body and in
+ * the tooltip regardless.
+ */
+.card__type > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

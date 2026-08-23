@@ -176,7 +176,7 @@
 
 .hub-menu {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 18px;
 }
 
@@ -822,7 +822,7 @@
 
 .bounty-board__list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 14px;
 }
 
@@ -1041,7 +1041,7 @@
 
 .splice2__slots {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(122px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(122px, 100%), 1fr));
   gap: 10px;
 }
 
@@ -1455,7 +1455,7 @@
 
 .vivarium__stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr));
   gap: 14px;
   margin: 18px 0;
   padding-top: 14px;
@@ -1559,7 +1559,11 @@
 
 .brick-wall__posters {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  /* `min()` rather than a bare 210px floor: `auto-fit` will still put one poster per row
+     once there is only room for one, but the *track* can then be narrower than 210px
+     instead of overflowing by the difference. Below ~250px wide that 3px overhang was
+     enough to cut the poster's right edge and its rivet. */
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
   gap: 22px;
 }
 
@@ -2461,7 +2465,7 @@
    window happens to be, and a grid that only works at one size is a list with extra steps. */
 .sch-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(132px, 100%), 1fr));
   gap: 12px;
   align-items: start;
 }
@@ -2489,6 +2493,14 @@
   justify-content: space-between;
   gap: 8px;
   width: 100%;
+  /* Same shrink problem the card's type row had: a long "No schematic / Locked" pairing was
+     twelve pixels wider than the cell and lost its tail to the border. */
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.sch-cell__foot > * {
+  min-width: 0;
 }
 
 .sch-cell__price {
@@ -2688,4 +2700,65 @@
   font: italic 600 11px var(--font);
   color: var(--text-dim);
   text-align: center;
+}
+
+/* ============================================================ narrow windows
+
+   This sheet covers six screens -- the Safehouse hub, the Apothecary, the Artificer, the
+   Vivarium, the title wall and the Victory spoils -- and until now had no breakpoints at
+   all. Most of its grids are already `auto-fit`/`auto-fill` and reflow on their own; what
+   follows is only the handful of *fixed-track* layouts that cannot.
+
+   Each of these screens is its own scroll container (`overflow-y: auto` on the screen
+   root), so collapsing a row of panes into a column is safe: it gets taller and the screen
+   scrolls. Nothing here needs to fit in one view.
+   ------------------------------------------------------------------------ */
+
+@media (max-width: 1200px) {
+  /* The splice bench is the tightest layout in the game: three fixed-minimum tracks whose
+     floors add to 380px before the middle column's compare-card is counted. The beast list
+     is the one that reads fine as a full-width strip above the bench. */
+  .splice2 {
+    grid-template-columns: minmax(0, 2.4fr) minmax(190px, 1.1fr);
+  }
+
+  .splice2__beasts {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1000px) {
+  .splice2,
+  .forge-layout,
+  .shop__body,
+  .vivarium__body {
+    grid-template-columns: 1fr;
+  }
+
+  /* Restored to a plain row once the grid is a single column -- the span was only there to
+     lift it out of a multi-column layout that no longer exists. */
+  .splice2__beasts {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 820px) {
+  /* The hub tiles' 280px floor is the last thing standing between the Safehouse and a
+     horizontal scrollbar. */
+  .hub-menu {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-zone {
+    min-height: 0;
+  }
+
+  /* The Pact readout's 320px floor is wider than the ledger it sits in. */
+  .ledger__pact {
+    min-width: 0;
+  }
+
+  .hub-ledger {
+    flex-wrap: wrap;
+  }
 }

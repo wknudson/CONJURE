@@ -106,10 +106,32 @@ export class CombatScreen implements Screen {
   private speed: 'normal' | 'fast' = readSpeed();
   private fx: Fx | null = null;
 
+  /**
+   * Coalesced to one refit per frame.
+   *
+   * A drag-resize fires this continuously, and `renderer.resize()` reallocates the canvas
+   * backing store every call -- so the unthrottled version did that work dozens of times
+   * per second and cleared the canvas each time, which is visible as a flicker while
+   * dragging a window edge.
+   */
+  private resizeFrame = 0;
   private onResize = () => {
-    this.renderer?.resize();
-    this.reportViewportSize();
+    if (this.resizeFrame) return;
+    this.resizeFrame = requestAnimationFrame(() => {
+      this.resizeFrame = 0;
+      this.renderer?.resize();
+      this.reportViewportSize();
+    });
   };
+  /**
+   * Watches the board's own box rather than the window.
+   *
+   * The window listener misses every resize that does not change the window: the Graveyard
+   * drawer sliding in, a scrollbar appearing, the deploy tray mounting and unmounting. All
+   * of those change how much room the canvas has, and before this the board simply stayed
+   * fitted to a box it no longer occupied until the next window resize.
+   */
+  private boardObserver: ResizeObserver | null = null;
   private help: HelpOverlay | null = null;
   /** Board states to step back to. Client-side only; never part of the event stream. */
   private undoStack: GameState[] = [];
@@ -284,6 +306,14 @@ export class CombatScreen implements Screen {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
 
+    // Kept alongside the window listener rather than replacing it: the observer catches
+    // layout changes, the window event catches a devicePixelRatio change on a monitor
+    // switch, which does not alter the element's box at all.
+    if (typeof ResizeObserver !== 'undefined') {
+      this.boardObserver = new ResizeObserver(this.onResize);
+      this.boardObserver.observe(canvas);
+    }
+
     this.help = new HelpOverlay(root);
 
     // A first-time player gets the danger zone on by default and a short walkthrough.
@@ -351,6 +381,12 @@ export class CombatScreen implements Screen {
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    this.boardObserver?.disconnect();
+    this.boardObserver = null;
+    if (this.resizeFrame) {
+      cancelAnimationFrame(this.resizeFrame);
+      this.resizeFrame = 0;
+    }
     this.help?.destroy();
     this.help = null;
     this.tutorial?.destroy();
@@ -833,7 +869,15 @@ export class CombatScreen implements Screen {
    * a board whose tiles are too fine to aim at. Said once per session, not every resize.
    */
   private reportViewportSize(): void {
-    if (!this.cam.tooSmall || this.warnedTooSmall) return;
+    // Re-armed once the board is readable again, so a player who enlarges the window and
+    // later shrinks it is told a second time. The latch is there to stop the notice firing
+    // on every frame of a drag-resize, not to ration it to one per fight -- and a warning
+    // that never comes back is indistinguishable from one that was never wired up.
+    if (!this.cam.tooSmall) {
+      this.warnedTooSmall = false;
+      return;
+    }
+    if (this.warnedTooSmall) return;
     this.warnedTooSmall = true;
     this.hud?.flashNotice('Window is small — enlarge it for a readable board');
   }

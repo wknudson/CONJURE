@@ -1,11 +1,19 @@
 /* Deck builder, deck summary on the title screen, and win rewards. */
 
-.screen--builder {
+/*
+ * Pre-combat reuses the builder's head/body/pane furniture but had no root rule of its own,
+ * so it inherited only `.screen`'s `position: absolute; inset: 0` -- no flex column, no
+ * height, and no scroll. Its three panes therefore laid out against an auto height and
+ * whatever fell past the bottom edge was gone. Same shell as the builder, same reasons.
+ */
+.screen--builder,
+.screen--precombat {
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding: 22px 26px 24px;
   height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -74,6 +82,13 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  /* The pane is the scroll container, not the screen.
+     `.screen--builder` is `overflow: hidden` on purpose -- the head and the tab strip must
+     stay put while a list moves under them. But the panes were `visible`, so a Grimoire
+     longer than the pane spilled out of the screen and straight into the clip. The
+     `min-height: 0` above is what makes this work at all: without it a flex child refuses
+     to be shorter than its content and there is nothing to scroll. */
+  overflow-y: auto;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.02);
@@ -569,7 +584,7 @@
 
 .threat-ledger__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
   gap: 12px;
 }
 
@@ -679,7 +694,7 @@
 
 .loadout__slots {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   gap: 12px;
 }
 
@@ -1060,7 +1075,7 @@
 
 .builder__collection {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(124px, 100%), 1fr));
   gap: 10px;
   align-items: start;
   overflow-y: auto;
@@ -1158,9 +1173,34 @@
   color: var(--lamp);
 }
 
+/*
+ * The column ladder.
+ *
+ * Pre-combat carries three panes and the builder two, so they cannot collapse at the same
+ * width: dropping three straight to one at 1000px was throwing away a column that still
+ * fitted. Three becomes two first, and only then does everything become one.
+ *
+ * `.builder__body` scrolls once it is a single column, because stacked panes are taller
+ * than any window and the screen above them is deliberately `overflow: hidden`.
+ */
+@media (max-width: 1200px) {
+  .screen--precombat .builder__body {
+    grid-template-columns: minmax(180px, 0.9fr) 1fr;
+  }
+}
+
 @media (max-width: 1000px) {
-  .builder__body {
+  .builder__body,
+  .screen--precombat .builder__body {
     grid-template-columns: 1fr;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  /* Stacked, each pane needs a floor or the last one is a sliver; the pane's own
+     `overflow-y: auto` keeps a long list inside that floor. */
+  .builder__pane {
+    min-height: 220px;
   }
 }
 
@@ -1253,7 +1293,7 @@
 .vanguard__warband,
 .vanguard__pool {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr));
   gap: 10px;
 }
 

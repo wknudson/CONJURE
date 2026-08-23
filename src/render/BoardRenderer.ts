@@ -249,9 +249,20 @@ export class BoardRenderer {
   resize(): void {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const rect = this.canvas.getBoundingClientRect();
-    this.canvas.width = Math.round(rect.width * dpr);
-    this.canvas.height = Math.round(rect.height * dpr);
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // A zero-sized box means the screen is mid-transition or hidden. Fitting to it would
+    // divide by nothing and leave the camera holding a garbage zoom.
+    if (rect.width < 1 || rect.height < 1) return;
+
+    const w = Math.round(rect.width * dpr);
+    const h = Math.round(rect.height * dpr);
+    // Assigning `canvas.width` clears the canvas even when the value is unchanged, so the
+    // guard is not a micro-optimisation -- it is what stops a same-size refit from blanking
+    // the board for a frame. `Diorama.resize` has taken this shape from the start.
+    if (this.canvas.width !== w || this.canvas.height !== h) {
+      this.canvas.width = w;
+      this.canvas.height = h;
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
     this.cam.fit(rect.width, rect.height);
   }
 

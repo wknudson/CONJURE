@@ -12,6 +12,21 @@
   --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
+/*
+ * Breakpoints, named once.
+ *
+ * These were five ad-hoc numbers (780, 900, 1000, 1100, 44rem) scattered across four
+ * sheets, which is how a layout ends up collapsing one pane at 1000px and another at 900px
+ * for no reason anybody could state. Custom properties cannot be used in a media query, so
+ * these are documentation rather than machinery -- but they are the list to grep for, and
+ * the values below are the only ones any sheet should use.
+ *
+ *   --bp-wide:   1200px  three panes become two
+ *   --bp-mid:    1000px  two panes become one; HUD corners tighten
+ *   --bp-narrow:  820px  the hand starts scrolling; non-essential chrome hides
+ *   --bp-tight:   640px  single column everywhere
+ */
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -33,8 +48,14 @@ body {
 
 #app {
   position: relative;
-  width: 100vw;
+  /* `100%` rather than `100vw`: the viewport unit ignores the scrollbar gutter, so on any
+     screen that grows a vertical scrollbar it is wider than the space actually available
+     and pushes a horizontal one out of nothing. */
+  width: 100%;
+  /* `dvh` where it is understood, so a mobile URL bar sliding away does not leave the
+     board short. The `vh` line below it is the fallback and must stay first. */
   height: 100vh;
+  height: 100dvh;
 }
 
 #app.is-fading-in {

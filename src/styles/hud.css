@@ -282,15 +282,45 @@
   align-items: flex-end;
   justify-content: center;
   gap: 14px;
+  /* Without this the row refuses to shrink below its content and pushes End Turn -- and
+     the controls beside it -- off the right edge, where `body { overflow: hidden }` eats
+     them. A player could not end their turn. */
+  min-width: 0;
 }
 
+/*
+ * The hand scrolls rather than overflowing.
+ *
+ * A card is a fixed 104px and does not shrink, so seven of them plus the gaps is 764px of
+ * unshrinkable content sitting between two absolutely-positioned corners. Above roughly
+ * 1000px that is fine and the row stays centred, which is what it should look like. Below
+ * it the cards used to run under the corners and then straight off the viewport.
+ *
+ * `overflow-x: auto` is the whole fix, and it is deliberately not `flex-wrap`: a second row
+ * of cards would grow upward into the board, which is worse than a short sideways scroll on
+ * a window nobody should be playing at anyway. `min-width: 0` is what lets the flex item
+ * actually be smaller than its contents.
+ *
+ * `safe center` is doing real work in the third declaration. Plain `center` on a scroll
+ * container puts the overflow on *both* sides and makes the leftmost card unreachable --
+ * you cannot scroll to negative offset. `safe` keeps the centring while there is room and
+ * silently becomes `flex-start` the moment there is not. The bare `center` above it is the
+ * fallback for anything that does not parse the keyword.
+ */
 .hand {
   display: flex;
-  justify-content: center;
   align-items: flex-end;
   gap: 6px;
   min-height: 142px;
   flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Room for the scrollbar so it never sits on top of a card's bottom edge. */
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+  justify-content: center;
+  justify-content: safe center;
 }
 
 .end-turn {
@@ -805,6 +835,55 @@
   }
 }
 
+/* The narrow ladder: shed chrome before the hand has to give up any width.
+
+   The hand already scrolls rather than clipping, but a scrolling hand is a worse hand, so
+   everything that is *not* a card gets smaller or goes away first. Labels go before
+   buttons, and buttons that have a keyboard equivalent go before ones that do not. */
+@media (max-width: 820px) {
+  /* The governor keeps its gauge -- that is the state readout -- and loses its word. */
+  .speed__label {
+    display: none;
+  }
+
+  .threat-toggle,
+  .channel,
+  .help,
+  .speed {
+    padding: 5px 7px;
+  }
+
+  .left-controls,
+  .right-controls {
+    gap: 5px;
+  }
+
+  .hand-row {
+    gap: 8px;
+  }
+}
+
+/* Last resort. Below this the controls alone are wider than the window, so the row is
+   allowed to wrap: the hand takes its own line and the buttons sit under it, which is ugly
+   and playable. Clipping the End Turn button is neither. */
+@media (max-width: 640px) {
+  .hand-row {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .hand {
+    flex-basis: 100%;
+    order: -1;
+  }
+
+  /* Q/E rotate the board from the keyboard, and at this width the buttons are the first
+     thing worth the space they cost. */
+  .rotate {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------------- the governor
 
    A brass regulator rather than a media control. It takes the pill shape the Threat
@@ -1007,6 +1086,18 @@
 .deploy-chip:hover {
   border-color: rgba(103, 232, 249, 0.5);
   background: rgba(103, 232, 249, 0.08);
+}
+
+/* No room in this arena. Dimmed rather than hidden — the body is still owned, it simply
+   cannot be seated here, and a chip that vanished would read as a body lost. Still
+   clickable: picking it up and finding no lit tiles is a legible way to learn the rule. */
+.deploy-chip.is-no-room {
+  opacity: 0.42;
+  border-style: dashed;
+}
+
+.deploy-chip.is-no-room .deploy-chip__points {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* Held. Lifted and ringed, so the board's lit tiles read as "this one goes there". */
