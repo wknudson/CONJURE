@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CONJURE — Tutorial District (Ashfall Ward)</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0a0d; }
+  canvas { display: block; }
+
+  :root {
+    --ink: #cfd6e4;
+    --panel: rgba(14,12,18,.78);
+    --edge: rgba(207,214,228,.18);
+    --safe: #63e0c4;
+    --danger: #e8a33c;
+    --arcane: #5ef2d6;
+  }
+
+  .panel {
+    font: 12px/1.6 ui-monospace, Menlo, Consolas, monospace;
+    color: var(--ink); background: var(--panel);
+    border: 1px solid var(--edge); border-radius: 6px;
+  }
+
+  #help {
+    position: fixed; left: 12px; bottom: 12px; z-index: 10;
+    padding: 10px 12px; pointer-events: none; white-space: pre;
+    opacity: .8; transition: opacity .2s;
+  }
+  /* The control legend would sit under the dialogue box. Get it out of the way. */
+  body.talking #help { opacity: 0; }
+
+  /* --- objective HUD, top left --- */
+  #objective {
+    position: fixed; left: 12px; top: 12px; z-index: 10;
+    padding: 10px 14px; pointer-events: none; min-width: 250px;
+  }
+  #objective .cap {
+    font-size: 10px; letter-spacing: .22em; color: #8a93a6; margin-bottom: 3px;
+  }
+  #objective .task { font-size: 13px; color: #f0e6d2; }
+  #objective .pips { margin-top: 8px; font-size: 10px; letter-spacing: .08em; color: #4e5666; }
+  #objective .pip.lit { color: var(--arcane); text-shadow: 0 0 8px rgba(94,242,214,.7); }
+
+  /* --- zone chip, top center --- */
+  #zoneChip {
+    position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 10;
+    padding: 6px 16px; pointer-events: none;
+    font: 11px/1.5 ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: .18em; border-radius: 999px;
+    transition: color .25s, border-color .25s, box-shadow .25s;
+  }
+  #zoneChip.safe   { color: var(--safe);   border-color: rgba(99,224,196,.5); box-shadow: 0 0 18px rgba(99,224,196,.18); }
+  #zoneChip.danger { color: var(--danger); border-color: rgba(232,163,60,.55); box-shadow: 0 0 18px rgba(232,163,60,.22); }
+
+  /* --- warden alert, under the chip --- */
+  #alert {
+    position: fixed; left: 50%; top: 52px; transform: translateX(-50%); z-index: 10;
+    font: 700 13px/1.4 ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: .3em; color: #ff6a45; text-shadow: 0 0 14px rgba(255,106,69,.8);
+    pointer-events: none; opacity: 0; transition: opacity .18s;
+  }
+  #alert.show { opacity: 1; }
+
+  /* --- interaction prompt --- */
+  #prompt {
+    position: fixed; left: 50%; bottom: 132px; transform: translateX(-50%); z-index: 10;
+    padding: 6px 14px; pointer-events: none; opacity: 0; transition: opacity .15s;
+    font-size: 12px; letter-spacing: .1em; color: #f0e6d2;
+  }
+  #prompt.show { opacity: 1; }
+  #prompt b { color: var(--arcane); font-weight: 700; }
+
+  /* --- dialogue box --- */
+  #dialogue {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 11;
+    width: min(720px, calc(100vw - 48px)); padding: 14px 18px 12px;
+    display: none;
+  }
+  #dialogue.show { display: block; }
+  #dialogue .who {
+    font-size: 10px; letter-spacing: .24em; color: var(--arcane); margin-bottom: 6px;
+  }
+  #dialogue .line {
+    font: 14px/1.75 ui-monospace, Menlo, Consolas, monospace;
+    color: #f2ead9; min-height: 3.5em; white-space: pre-wrap;
+  }
+  #dialogue .next {
+    text-align: right; font-size: 11px; color: #7b8496; letter-spacing: .12em;
+    opacity: 0; transition: opacity .2s;
+  }
+  #dialogue .next.show { opacity: 1; }
+
+  /* --- danger vignette --- */
+  #vignette {
+    position: fixed; inset: 0; z-index: 5; pointer-events: none;
+    box-shadow: inset 0 0 200px 30px rgba(190,40,18,.42);
+    opacity: 0; transition: opacity .45s;
+  }
+  #vignette.show { opacity: 1; }
+
+  /* --- full-screen overlay (caught / finale) --- */
+  #overlay {
+    position: fixed; inset: 0; z-index: 20; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; text-align: center;
+    background: rgba(6,5,8,0); opacity: 0; transition: opacity .35s, background .35s;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  #overlay.show { opacity: 1; background: rgba(6,5,8,.72); }
+  #overlay.flash { opacity: 1; background: rgba(240,255,250,.92); transition: none; }
+  #overlay .big {
+    font-size: 30px; letter-spacing: .34em; color: #f6ecd8;
+    text-shadow: 0 0 26px rgba(94,242,214,.45);
+  }
+  #overlay .sub { font-size: 13px; color: #aab3c2; letter-spacing: .08em; max-width: 34em; line-height: 1.8; }
+  #overlay .key { font-size: 11px; color: var(--arcane); letter-spacing: .2em; margin-top: 12px; }
+</style>
+
+<!--
+  Dependency map. All version-locked so the file keeps working.
+  'three/addons/' must match the three version exactly.
+-->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/",
+    "lil-gui": "https://unpkg.com/lil-gui@0.19.2/dist/lil-gui.esm.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="objective" class="panel">
+  <div class="cap">OBJECTIVE</div>
+  <div class="task" id="objTask">…</div>
+  <div class="pips">
+    <span class="pip" id="pipGlyph">&#9672; residue</span> &nbsp;
+    <span class="pip" id="pipTestimony">&#9672; testimony</span> &nbsp;
+    <span class="pip" id="pipBlueprint">&#9672; blueprint</span>
+  </div>
+</div>
+
+<div id="zoneChip" class="panel safe">SANCTIONED WALKWAY &mdash; SAFE</div>
+<div id="alert">SPOTTED</div>
+
+<div id="prompt" class="panel"><b>[SPACE]</b> <span id="promptLabel">Interact</span></div>
+
+<div id="dialogue" class="panel">
+  <div class="who" id="dlgWho">&nbsp;</div>
+  <div class="line" id="dlgLine">&nbsp;</div>
+  <div class="next" id="dlgNext">[SPACE] &#9662;</div>
+</div>
+
+<div id="vignette"></div>
+<div id="overlay"></div>
+
+<div id="help" class="panel">WASD / arrows - move
+Q / E - orbit camera
+Space - interact / advance
+F - impact light (VFX test)
+Panel (top right) - tune the look</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import GUI from 'lil-gui';
+
+/* ============================================================
+   0. TUNABLE LOOK PARAMETERS
+   The gaslamp-night preset. Tune live in the GUI, then use
+   "log LOOK to console" and paste the numbers back here.
+   ============================================================ */
+const LOOK = {
+  // Camera — narrow FOV is what makes the world read as a diorama.
+  fov: 28,
+  cameraPitch: 50,      // degrees below horizontal — steep enough to see into the alleys
+  cameraDistance: 22,
+
+  // Lighting — a cold moon straining through coal smoke. Dim enough that
+  // the gas lamps do the storytelling, bright enough to read the street.
+  // `exposure` is the master brightness dial: turn this first, and only
+  // reach for the individual lights if the balance between them is wrong.
+  exposure: 1.15,
+  sunIntensity: 1.95,
+  sunColor: '#8fa3c8',
+  ambientIntensity: 1.45,
+  skyColor: '#5d6b8a',
+  groundBounce: '#3d2e21',
+
+  // Atmosphere — brown-violet industrial smog, tight.
+  fogColor: '#2b2630',
+  fogDensity: 0.03,
+
+  // Bloom — the lamps and the arcane residue have to sing.
+  bloomStrength: 0.85,
+  bloomRadius: 0.7,
+  bloomThreshold: 0.45,
+
+  // Tilt-shift (the "toy miniature" blur)
+  tiltEnabled: true,
+  tiltFocusCenter: 0.54,
+  tiltFocusWidth: 0.15,
+  tiltFalloff: 0.24,
+  tiltMaxBlur: 3.4,
+
+  // Impact light (per-VFX point light, the Octopath combat trick)
+  impactColor: '#ffb347',
+  impactIntensity: 40,
+  impactDistance: 9,
+  impactDecayTime: 0.45,
+
+  // Gaslamp district
+  lampColor: '#ffb45e',
+  lampIntensity: 26,
+  lampDistance: 17,
+  lampFlicker: 0.14,
+  glyphColor: '#5ef2d6',
+
+  // Warden vision
+  coneOpacity: 0.16,
+  visionRange: 8,
+  visionAngle: 80,      // full cone angle, degrees
+};
+
+/* ============================================================
+   1. RENDERER / SCENE / CAMERA
+   ============================================================ */
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = LOOK.exposure;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(LOOK.fogColor, LOOK.fogDensity);
+scene.background = new THREE.Color(LOOK.fogColor);
+
+const camera = new THREE.PerspectiveCamera(LOOK.fov, innerWidth / innerHeight, 0.1, 220);
+
+// Declared up here because the entity code picks sprite frames relative
+// to the camera long before the player rig is built.
+let cameraYaw = 0;
+
+// Global slow-motion multiplier, driven by the finale cinematic.
+let timeScale = 1;
+// True while a cutscene, dialogue or overlay owns the input.
+let inputLocked = false;
+
+// A tiny deterministic RNG so the district looks the same every reload.
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ============================================================
+   2. PROCEDURAL PIXEL ART
+   Every texture is drawn on a canvas so this file runs with zero
+   assets. Swap any of these for loadPixelTexture('/path.png').
+   ============================================================ */
+
+// The single most important setting for pixel art in 3D.
+function configurePixelTexture(tex) {
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.NearestFilter;
+  tex.generateMipmaps = false;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// Use this for your real art:  const t = loadPixelTexture('/sprites/hero.png');
+const texLoader = new THREE.TextureLoader();
+function loadPixelTexture(url) {
+  return configurePixelTexture(texLoader.load(url));
+}
+
+function makeCanvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  return { c, ctx };
+}
+
+function canvasTexture(canvas) {
+  return configurePixelTexture(new THREE.CanvasTexture(canvas));
+}
+
+/* --- characters, 4 facings, palette-driven ------------------ */
+const PALETTES = {
+  player: { skin: '#f0c8a0', hair: '#5b3a29', coat: '#3f6fbf', trim: '#e0d2a8', boot: '#2e2419' },
+  vex:    { skin: '#e8bd94', hair: '#3a2a20', coat: '#7d2732', trim: '#d9a441', boot: '#241c14' },
+  finn:   { skin: '#d8ad86', hair: '#8a7c5c', coat: '#4c4a3e', trim: '#6f6a52', boot: '#221e18' },
+};
+
+function makeCharacterTexture(facing, P) {
+  const { c, ctx } = makeCanvas(16, 22);
+
+  ctx.fillStyle = P.coat; ctx.fillRect(4, 10, 8, 8);        // torso
+  ctx.fillStyle = P.trim; ctx.fillRect(4, 17, 8, 1);        // hem
+  ctx.fillStyle = P.trim; ctx.fillRect(7, 11, 1, 5);        // button placket
+  ctx.fillStyle = P.boot; ctx.fillRect(5, 18, 2, 4); ctx.fillRect(9, 18, 2, 4);
+  ctx.fillStyle = P.skin; ctx.fillRect(5, 3, 6, 7);         // head
+
+  if (facing === 'up') {
+    ctx.fillStyle = P.hair; ctx.fillRect(4, 2, 8, 8);       // back of head
+  } else if (facing === 'left' || facing === 'right') {
+    ctx.fillStyle = P.hair; ctx.fillRect(4, 2, 8, 4);
+    ctx.fillStyle = '#20242e';
+    ctx.fillRect(facing === 'left' ? 5 : 9, 6, 2, 2);       // one eye in profile
+    ctx.fillStyle = P.skin; ctx.fillRect(facing === 'left' ? 3 : 12, 6, 2, 3);
+  } else {
+    ctx.fillStyle = P.hair; ctx.fillRect(4, 2, 8, 3);
+    ctx.fillStyle = '#20242e';
+    ctx.fillRect(6, 6, 1, 2); ctx.fillRect(9, 6, 1, 2);     // eyes
+  }
+  return canvasTexture(c);
+}
+
+function characterSet(paletteName) {
+  const P = PALETTES[paletteName];
+  return {
+    down:  makeCharacterTexture('down', P),
+    up:    makeCharacterTexture('up', P),
+    left:  makeCharacterTexture('left', P),
+    right: makeCharacterTexture('right', P),
+  };
+}
+
+const PLAYER_TEXTURES = characterSet('player');
+const VEX_TEXTURES    = characterSet('vex');
+const FINN_TEXTURES   = characterSet('finn');
+
+/* --- the Warden: tall coat, brass buttons, one amber visor slit --- */
+function makeWardenTexture(facing) {
+  const { c, ctx } = makeCanvas(16, 26);
+  const coat = '#191a20', brass = '#c8973a', skin = '#c9a684';
+
+  ctx.fillStyle = '#101116'; ctx.fillRect(3, 1, 10, 4);     // tall hat
+  ctx.fillStyle = '#101116'; ctx.fillRect(2, 5, 12, 1);     // brim
+  ctx.fillStyle = skin;      ctx.fillRect(5, 6, 6, 5);      // face
+  ctx.fillStyle = coat;      ctx.fillRect(3, 11, 10, 11);   // long coat
+  ctx.fillStyle = coat;      ctx.fillRect(2, 12, 1, 7); ctx.fillRect(13, 12, 1, 7); // shoulders
+  ctx.fillStyle = brass;
+  for (let y = 12; y < 21; y += 3) ctx.fillRect(8, y, 1, 1);
+  ctx.fillStyle = '#0c0d11'; ctx.fillRect(5, 22, 3, 4); ctx.fillRect(9, 22, 3, 4);
+
+  // The amber visor is the read-at-distance tell.
+  if (facing === 'up') {
+    ctx.fillStyle = '#101116'; ctx.fillRect(5, 6, 6, 5);
+  } else if (facing === 'left' || facing === 'right') {
+    ctx.fillStyle = '#ffb43a';
+    ctx.fillRect(facing === 'left' ? 5 : 8, 8, 3, 1);
+  } else {
+    ctx.fillStyle = '#ffb43a'; ctx.fillRect(5, 8, 6, 1);
+  }
+  return canvasTexture(c);
+}
+
+const WARDEN_TEXTURES = {
+  down:  makeWardenTexture('down'),
+  up:    makeWardenTexture('up'),
+  left:  makeWardenTexture('left'),
+  right: makeWardenTexture('right'),
+};
+
+/* --- the wild companion: a Cinder Sylph, 2 idle frames --- */
+function makeSylphTexture(frame) {
+  const { c, ctx } = makeCanvas(20, 16);
+  const body = '#22202a', shade = '#33303f', ember = '#5ef2d6';
+
+  ctx.fillStyle = body;  ctx.fillRect(5, 6, 9, 6);          // body
+  ctx.fillStyle = shade; ctx.fillRect(5, 6, 9, 2);
+  ctx.fillStyle = body;  ctx.fillRect(13, 3, 5, 5);         // head
+  ctx.fillStyle = body;  ctx.fillRect(13, 1, 1, 2); ctx.fillRect(16, 1, 1, 2); // ears
+  ctx.fillStyle = body;  ctx.fillRect(6, 12, 2, 3); ctx.fillRect(11, 12, 2, 3); // legs
+  ctx.fillStyle = ember; ctx.fillRect(16, 5, 1, 1);         // eye
+
+  // tail, raised on frame 1
+  const ty = frame === 0 ? 5 : 3;
+  ctx.fillStyle = shade;
+  ctx.fillRect(2, ty + 2, 4, 2); ctx.fillRect(0, ty, 3, 2);
+  ctx.fillStyle = ember;
+  ctx.fillRect(0, ty, 1, 1); ctx.fillRect(2, ty + 1, 1, 1); ctx.fillRect(4, ty + 3, 1, 1);
+  return canvasTexture(c);
+}
+
+const SYLPH_TEXTURES = [makeSylphTexture(0), makeSylphTexture(1)];
+
+/* --- the crime-scene glyph, an additive ground decal --- */
+function makeGlyphTexture() {
+  const { c, ctx } = makeCanvas(32, 32);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(16, 16, 13.5, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(16, 16, 9.5, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.3;
+    ctx.fillRect(Math.round(16 + Math.cos(a) * 11.5), Math.round(16 + Math.sin(a) * 11.5), 2, 2);
+  }
+  ctx.fillRect(15, 10, 2, 12);
+  ctx.fillRect(10, 15, 12, 2);
+  ctx.fillRect(12, 12, 2, 2); ctx.fillRect(18, 18, 2, 2);
+  return canvasTexture(c);
+}
+
+/* --- the blueprint, a small glowing prop --- */
+function makeBlueprintTexture() {
+  const { c, ctx } = makeCanvas(14, 11);
+  ctx.fillStyle = '#9fd8e8'; ctx.fillRect(0, 0, 14, 11);
+  ctx.fillStyle = '#4d8ba3';
+  for (let x = 2; x < 14; x += 3) ctx.fillRect(x, 0, 1, 11);
+  for (let y = 2; y < 11; y += 3) ctx.fillRect(0, y, 14, 1);
+  ctx.fillStyle = '#1c3d4d'; ctx.strokeStyle = '#1c3d4d';
+  ctx.fillRect(3, 3, 5, 4);
+  ctx.fillStyle = '#eafcff'; ctx.fillRect(12, 0, 2, 2);
+  return canvasTexture(c);
+}
+
+/* --- the warded gate: bars, alpha cutout --- */
+function makeGateTexture() {
+  const { c, ctx } = makeCanvas(16, 24);
+  ctx.fillStyle = '#14151a';
+  for (let x = 1; x < 16; x += 4) ctx.fillRect(x, 0, 2, 24);
+  ctx.fillStyle = '#7a5c2a';
+  ctx.fillRect(0, 4, 16, 2); ctx.fillRect(0, 17, 16, 2);
+  ctx.fillStyle = '#5ef2d6';
+  ctx.fillRect(7, 10, 2, 2);
+  return canvasTexture(c);
+}
+
+/* --- soot brick, for every building face --- */
+function makeWallTexture() {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(7);
+  ctx.fillStyle = '#4a3c35'; ctx.fillRect(0, 0, 16, 16);
+  for (let y = 0; y < 16; y += 4) {
+    for (let x = 0; x < 16; x += 1) {
+      if (rng() < 0.25) { ctx.fillStyle = '#55453c'; ctx.fillRect(x, y + 1, 1, 3); }
+    }
+  }
+  ctx.fillStyle = '#241d19';
+  for (let y = 0; y < 16; y += 4) {
+    ctx.fillRect(0, y, 16, 1);
+    ctx.fillRect((y / 4) % 2 ? 4 : 11, y, 1, 4);
+  }
+  // soot gradient into the lower courses
+  for (let y = 10; y < 16; y++) {
+    ctx.fillStyle = `rgba(10,8,10,${(y - 9) * 0.07})`;
+    ctx.fillRect(0, y, 16, 1);
+  }
+  const t = canvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+/* --- canal water --- */
+function makeWaterTexture() {
+  const { c, ctx } = makeCanvas(32, 16);
+  const rng = mulberry32(19);
+  const palette = ['#16292c', '#1b3337', '#122225', '#203d41'];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 32; x++) {
+    ctx.fillStyle = palette[(rng() * palette.length) | 0];
+    ctx.fillRect(x, y, 1, 1);
+  }
+  // Bright ripple crests. These are deliberate bloom bait — without them the
+  // canal is a black hole at the top of the frame.
+  for (let i = 0; i < 7; i++) {
+    const y = (rng() * 16) | 0, x = (rng() * 26) | 0;
+    ctx.fillStyle = rng() < 0.4 ? '#8ab4b2' : '#5d8583';
+    ctx.fillRect(x, y, 3 + ((rng() * 4) | 0), 1);
+  }
+  const t = canvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(10, 2);
+  return t;
+}
+
+/* --- a night-darkened tree for the canal bank --- */
+function makeTreeTexture() {
+  const { c, ctx } = makeCanvas(24, 32);
+  ctx.fillStyle = '#2a1e16'; ctx.fillRect(10, 20, 4, 12);
+  const greens = ['#1a2c1e', '#233a26', '#2c472f'];
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = greens[i];
+    ctx.fillRect(3 + i, 4 + i * 5, 18 - i * 2, 10 - i);
+  }
+  return canvasTexture(c);
+}
+
+/* --- a crate, for dressing and for standing props on --- */
+function makeCrateTexture() {
+  const { c, ctx } = makeCanvas(16, 16);
+  ctx.fillStyle = '#4a3b28'; ctx.fillRect(0, 0, 16, 16);
+  ctx.fillStyle = '#5c4a33'; ctx.fillRect(1, 1, 14, 14);
+  ctx.fillStyle = '#332818';
+  ctx.fillRect(0, 7, 16, 2);
+  ctx.fillRect(7, 0, 2, 16);
+  return canvasTexture(c);
+}
+
+/* ============================================================
+   3. BILLBOARD SPRITE
+   A lit, shadow-casting plane. NOT THREE.Sprite — that class
+   ignores lighting and won't give you the look.
+   alphaTest (not alpha blending) keeps pixel edges hard and
+   lets the plane cast a correct cut-out shadow.
+   ============================================================ */
+class BillboardSprite extends THREE.Mesh {
+  constructor(texture, worldWidth, worldHeight) {
+    const material = new THREE.MeshLambertMaterial({
+      map: texture,
+      transparent: false,
+      alphaTest: 0.5,
+      side: THREE.DoubleSide,
+    });
+    super(new THREE.PlaneGeometry(worldWidth, worldHeight), material);
+    // Geometry is centered; shift up so position.y sits at the sprite's feet.
+    this.geometry.translate(0, worldHeight / 2, 0);
+    this.castShadow = true;
+    this.receiveShadow = false;
+  }
+
+  // Cylindrical billboarding: rotate on Y only. Full lookAt() would
+  // tilt the sprite as the camera pitches and break the illusion.
+  faceCamera(cam) {
+    this.rotation.y = Math.atan2(
+      cam.position.x - this.position.x,
+      cam.position.z - this.position.z
+    );
+  }
+
+  setTexture(texture) {
+    if (this.material.map !== texture) {
+      this.material.map = texture;
+      this.material.needsUpdate = true;
+    }
+  }
+}
+
+const billboards = [];
+function addBillboard(texture, w, h, x, z) {
+  const b = new BillboardSprite(texture, w, h);
+  b.position.set(x, 0, z);
+  scene.add(b);
+  billboards.push(b);
+  return b;
+}
+
+// Projecting a world-space move vector onto the screen axes is how you
+// keep authored 4-way art correct under a rotating camera. Shared by
+// the player and the Warden.
+function pickFacing(mx, mz) {
+  const screenRight = mx * Math.cos(cameraYaw) - mz * Math.sin(cameraYaw);
+  const screenAway  = -mx * Math.sin(cameraYaw) - mz * Math.cos(cameraYaw);
+  return Math.abs(screenAway) > Math.abs(screenRight)
+    ? (screenAway > 0 ? 'up' : 'down')
+    : (screenRight > 0 ? 'right' : 'left');
+}
+
+/* ============================================================
+   4. MAP DATA & ZONES  —  Ashfall Ward
+   One ASCII grid is the single source of truth for ground art,
+   for the Sidewalk Immunity rule, for passability, and for where
+   the buildings stand. Art and gameplay cannot desync.
+
+     S  sanctioned walkway  (SAFE — no Warden may see you here)
+     c  cobbles             (danger)
+     .  broken cobbles      (danger, weeds)
+     #  scrub verge         (danger)
+     W  canal               (impassable)
+     B  building footprint  (impassable, tall)
+     V  yard wall           (impassable, low)
+     G  gate tile           (walkable once the gate is opened)
+   ============================================================ */
+const TILE = 4;
+const GRID = 20;
+const HALF = (GRID * TILE) / 2;   // 40
+
+const MAP = [
+  'WWWWWWWWWWWWWWWWWWWW',  //  0  canal
+  'WWWWWWWWWWWWWWWWWWWW',  //  1
+  '##cccccccccccccccc##',  //  2  quay
+  '##cccc......cccccc##',  //  3  companion yard
+  '##cccccccccccccccc##',  //  4
+  '##VVVVVVVVGGVVVVVV##',  //  5  yard wall + warded gate
+  '#cccccccccSSccccccc#',  //  6
+  '#ccBBBBBBcSScBBBBBB#',  //  7
+  '#cc......cSSc......#',  //  8  west: warehouse yard   east: crime alley
+  '#cc......cSSc......#',  //  9
+  '#cc......cSSc......#',  // 10
+  '#ccBBBBBBcSScBBBBBB#',  // 11
+  '#SSSSSSSSSSSSSSSSSS#',  // 12  cross street
+  '#SSSSSSSSSSSSSSSSSS#',  // 13
+  '#ccBBBBBBcSScBBBBBB#',  // 14
+  '#ccBBBBBBcSScBBBBBB#',  // 15
+  '#ccccccccSSSScccccc#',  // 16
+  '##cccccSSSSSSSScccc#',  // 17  plaza
+  '###ccccSSSSSSSScc###',  // 18
+  '####################',  // 19
+];
+
+const TILES = {
+  S: { tex: 'sidewalk', safe: true,  walk: true  },
+  c: { tex: 'cobble',   safe: false, walk: true  },
+  '.': { tex: 'weeds',  safe: false, walk: true  },
+  '#': { tex: 'grass',  safe: false, walk: true  },
+  W: { tex: 'water',    safe: false, walk: false },
+  B: { tex: 'cobble',   safe: false, walk: false },
+  V: { tex: 'cobble',   safe: false, walk: false },
+  G: { tex: 'cobble',   safe: false, walk: true  },
+};
+const OUT_OF_BOUNDS = { tex: 'water', safe: false, walk: false };
+
+const colOf = (x) => Math.floor((x + HALF) / TILE);
+const rowOf = (z) => Math.floor((z + HALF) / TILE);
+const xOfCol = (col) => col * TILE - HALF + TILE / 2;
+const zOfRow = (row) => row * TILE - HALF + TILE / 2;
+
+function tileAt(x, z) {
+  const col = colOf(x), row = rowOf(z);
+  if (row < 0 || row >= GRID || col < 0 || col >= GRID) return OUT_OF_BOUNDS;
+  return TILES[MAP[row][col]] ?? OUT_OF_BOUNDS;
+}
+const isSafeAt = (x, z) => tileAt(x, z).safe;
+const isWalkable = (x, z) => tileAt(x, z).walk;
+
+let playerSafe = true;
+
+/* --- ground bake -------------------------------------------
+   One canvas, 16 px per tile, painted straight off MAP. The
+   canal rows are excluded — the water gets its own plane, so
+   the ground plane stops at the quay.
+   ----------------------------------------------------------- */
+const GROUND_ROW0 = 2;                              // first row the ground plane covers
+const GROUND_ROWS = GRID - GROUND_ROW0;             // 18
+const GROUND_W = GRID * TILE;                       // 80
+const GROUND_D = GROUND_ROWS * TILE;                // 72
+const GROUND_CZ = zOfRow(GROUND_ROW0) - TILE / 2 + GROUND_D / 2;
+
+const PX = 16;  // canvas pixels per tile
+
+function paintSidewalk(ctx, px, py, rng) {
+  // Warm flagstones. The grout is only a shade darker than the slab — a hard
+  // black line at this scale reads as a bathroom floor, not paving.
+  const base = ['#7f7a6d', '#8a8477', '#767162', '#847e70'];
+  const slab = () => base[(rng() * base.length) | 0];
+  ctx.fillStyle = slab();
+  ctx.fillRect(px, py, PX, PX);
+
+  // Offset the split per tile so the whole street isn't one repeated stamp.
+  const sx = 5 + ((rng() * 6) | 0);
+  const sy = 5 + ((rng() * 6) | 0);
+  ctx.fillStyle = slab(); ctx.fillRect(px, py, sx, sy);
+  ctx.fillStyle = slab(); ctx.fillRect(px + sx, py + sy, PX - sx, PX - sy);
+  ctx.fillStyle = slab(); ctx.fillRect(px + sx, py, PX - sx, sy);
+
+  ctx.fillStyle = '#6a6559';
+  ctx.fillRect(px, py + sy, PX, 1);
+  ctx.fillRect(px + sx, py, 1, PX);
+
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = rng() < 0.5 ? '#918b7c' : '#6e6a5c';
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 1, 1);
+  }
+}
+
+function paintCobble(ctx, px, py, rng, weedy) {
+  ctx.fillStyle = '#20242c';
+  ctx.fillRect(px, py, PX, PX);
+  const stones = ['#3b424e', '#434b58', '#333944', '#4a5260'];
+  for (let ry = 0; ry < 4; ry++) {
+    const offset = (ry % 2) * 2;
+    for (let rx = -1; rx < 5; rx++) {
+      const sx = px + rx * 4 + offset, sy = py + ry * 4;
+      const left = Math.max(px, sx);
+      const w = Math.min(sx + 3, px + PX) - left;
+      if (w <= 0) continue;
+      ctx.fillStyle = stones[(rng() * stones.length) | 0];
+      ctx.fillRect(left, sy, w, 3);
+    }
+  }
+  if (weedy) {
+    ctx.fillStyle = '#2f4029';
+    for (let i = 0; i < 6; i++) ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 1, 1);
+  }
+}
+
+function paintGrass(ctx, px, py, rng) {
+  const palette = ['#232b21', '#2a3327', '#1e251c', '#303a2c'];
+  for (let y = 0; y < PX; y++) for (let x = 0; x < PX; x++) {
+    ctx.fillStyle = palette[(rng() * palette.length) | 0];
+    ctx.fillRect(px + x, py + y, 1, 1);
+  }
+}
+
+function bakeGround() {
+  const { c, ctx } = makeCanvas(GRID * PX, GROUND_ROWS * PX);
+  const rng = mulberry32(1337);
+
+  for (let row = GROUND_ROW0; row < GRID; row++) {
+    for (let col = 0; col < GRID; col++) {
+      const px = col * PX, py = (row - GROUND_ROW0) * PX;
+      const tex = (TILES[MAP[row][col]] ?? OUT_OF_BOUNDS).tex;
+      if (tex === 'sidewalk') paintSidewalk(ctx, px, py, rng);
+      else if (tex === 'grass') paintGrass(ctx, px, py, rng);
+      else if (tex === 'weeds') paintCobble(ctx, px, py, rng, true);
+      else paintCobble(ctx, px, py, rng, false);
+    }
+  }
+
+  // Curb: a warm 2 px line on the walkway side of every safe/danger border.
+  // This is the player's first, silent lesson in where the rule changes.
+  ctx.fillStyle = '#b09263';
+  for (let row = GROUND_ROW0; row < GRID; row++) {
+    for (let col = 0; col < GRID; col++) {
+      if (MAP[row][col] !== 'S') continue;
+      const px = col * PX, py = (row - GROUND_ROW0) * PX;
+      const notS = (r, cc) => (r < 0 || r >= GRID || cc < 0 || cc >= GRID) ? true : MAP[r][cc] !== 'S';
+      if (notS(row - 1, col)) ctx.fillRect(px, py, PX, 2);
+      if (notS(row + 1, col)) ctx.fillRect(px, py + PX - 2, PX, 2);
+      if (notS(row, col - 1)) ctx.fillRect(px, py, 2, PX);
+      if (notS(row, col + 1)) ctx.fillRect(px + PX - 2, py, 2, PX);
+    }
+  }
+
+  const t = canvasTexture(c);
+  // Nearest magnification keeps the pixels hard; mipmaps stop the far
+  // end of the street from shimmering.
+  t.minFilter = THREE.NearestMipmapLinearFilter;
+  t.generateMipmaps = true;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  t.needsUpdate = true;
+  return t;
+}
+
+/* ============================================================
+   5. COLLISION
+   Two layers: tile passability (canal, out of bounds) and an
+   AABB registry for buildings, walls, lamp posts and the gate.
+   ============================================================ */
+const colliders = [];
+function addCollider(x, z, w, d, tag = '') {
+  const c = {
+    minX: x - w / 2, maxX: x + w / 2,
+    minZ: z - d / 2, maxZ: z + d / 2,
+    tag, enabled: true,
+  };
+  colliders.push(c);
+  return c;
+}
+
+function blockedAt(x, z, r = 0.4) {
+  // Tile layer: sample the centre and four cardinal offsets so you can't
+  // clip the corner of the canal.
+  if (!isWalkable(x, z)) return true;
+  if (!isWalkable(x + r, z) || !isWalkable(x - r, z)) return true;
+  if (!isWalkable(x, z + r) || !isWalkable(x, z - r)) return true;
+
+  for (const c of colliders) {
+    if (!c.enabled) continue;
+    if (x > c.minX - r && x < c.maxX + r && z > c.minZ - r && z < c.maxZ + r) return true;
+  }
+  return false;
+}
+
+// Per-axis resolution gives wall-sliding for free.
+function moveWithCollision(pos, dx, dz, r = 0.4) {
+  const nx = pos.x + dx;
+  if (!blockedAt(nx, pos.z, r)) pos.x = nx;
+  const nz = pos.z + dz;
+  if (!blockedAt(pos.x, nz, r)) pos.z = nz;
+}
+
+/* ============================================================
+   6. WORLD BUILD
+   Buildings are extracted straight out of MAP, so a change to
+   the ASCII changes the geometry, the collision and the ground
+   art together.
+   ============================================================ */
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(GROUND_W, GROUND_D),
+  new THREE.MeshLambertMaterial({ map: bakeGround() })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.set(0, 0, GROUND_CZ);
+ground.receiveShadow = true;
+scene.add(ground);
+
+// The outskirts: a big dull plane sitting just under everything else so the
+// district never terminates in visible void. The fog eats it within ~40 units,
+// which is exactly the "the ward goes on forever" read we want. It has to sit
+// below the canal surface or it would cover the water.
+const outskirtsTex = (() => {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(55);
+  const palette = ['#1d211c', '#22261f', '#191d18', '#262b22'];
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    ctx.fillStyle = palette[(rng() * palette.length) | 0];
+    ctx.fillRect(x, y, 1, 1);
+  }
+  const t = canvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(65, 65);
+  return t;
+})();
+const outskirts = new THREE.Mesh(
+  new THREE.PlaneGeometry(260, 260),
+  new THREE.MeshLambertMaterial({ map: outskirtsTex })
+);
+outskirts.rotation.x = -Math.PI / 2;
+outskirts.position.y = -0.9;
+scene.add(outskirts);
+
+/* --- canal ------------------------------------------------- */
+const waterTexture = makeWaterTexture();
+// Unlit on purpose: no lamp reaches the canal, and a Lambert surface out here
+// renders as pure black. Basic material lets the water carry its own moonlight
+// (it still takes fog, so it fades into the smog like everything else).
+const water = new THREE.Mesh(
+  new THREE.PlaneGeometry(GROUND_W, GROUND_ROW0 * TILE + 2),
+  new THREE.MeshBasicMaterial({ map: waterTexture })
+);
+water.rotation.x = -Math.PI / 2;
+water.position.set(0, -0.5, zOfRow(0) - TILE / 2 + (GROUND_ROW0 * TILE + 2) / 2 - 1);
+water.receiveShadow = true;
+scene.add(water);
+
+const quay = new THREE.Mesh(
+  new THREE.BoxGeometry(GROUND_W, 0.7, 0.7),
+  new THREE.MeshLambertMaterial({ color: 0x2a2b30 })
+);
+quay.position.set(0, -0.15, zOfRow(GROUND_ROW0) - TILE / 2 - 0.35);
+quay.castShadow = true; quay.receiveShadow = true;
+scene.add(quay);
+
+/* --- greedy rectangle extraction of B / V footprints -------- */
+function extractRects(char) {
+  const seen = Array.from({ length: GRID }, () => new Array(GRID).fill(false));
+  const rects = [];
+  for (let row = 0; row < GRID; row++) {
+    for (let col = 0; col < GRID; col++) {
+      if (MAP[row][col] !== char || seen[row][col]) continue;
+      // widest run on this row
+      let w = 0;
+      while (col + w < GRID && MAP[row][col + w] === char && !seen[row][col + w]) w++;
+      // extend downwards while the whole run matches
+      let d = 1;
+      outer: while (row + d < GRID) {
+        for (let i = 0; i < w; i++) {
+          if (MAP[row + d][col + i] !== char || seen[row + d][col + i]) break outer;
+        }
+        d++;
+      }
+      for (let r = row; r < row + d; r++) for (let i = col; i < col + w; i++) seen[r][i] = true;
+      rects.push({ col, row, w, d });
+    }
+  }
+  return rects;
+}
+
+// Break long runs into 2–3 tile chunks so the skyline varies.
+function splitRun(len) {
+  const parts = [];
+  let i = 0;
+  while (i < len) {
+    const left = len - i;
+    const take = left === 4 ? 2 : Math.min(3, left);
+    parts.push([i, take]);
+    i += take;
+  }
+  return parts;
+}
+
+const wallTexture = makeWallTexture();
+
+// Every building registers itself here so the camera can see through whatever
+// stands between it and the player. Courtyards and alleys are unplayable
+// without this.
+const structures = [];
+const structureHitboxes = [];
+
+function addStructure(x, z, w, h, d, opts = {}) {
+  const tex = wallTexture.clone();
+  configurePixelTexture(tex);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(h / 2)));
+  tex.needsUpdate = true;
+
+  const box = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshLambertMaterial({ map: tex })
+  );
+  box.position.set(x, h / 2, z);
+  box.castShadow = true;
+  box.receiveShadow = true;
+  scene.add(box);
+
+  // Flat industrial roof with a parapet — no fairytale cones in this ward.
+  const parapet = new THREE.Mesh(
+    new THREE.BoxGeometry(w + 0.35, 0.4, d + 0.35),
+    new THREE.MeshLambertMaterial({ color: 0x2b2622 })
+  );
+  parapet.position.set(x, h + 0.2, z);
+  parapet.castShadow = true;
+  scene.add(parapet);
+
+  const parts = [box, parapet];
+
+  if (opts.chimney) {
+    const stack = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.45, 0.55, opts.chimney, 6),
+      new THREE.MeshLambertMaterial({ color: 0x241f1c })
+    );
+    stack.position.set(x + w * 0.28, h + opts.chimney / 2, z - d * 0.24);
+    stack.castShadow = true;
+    scene.add(stack);
+    parts.push(stack);
+  }
+
+  structures.push({ hit: box, mats: parts.map(p => p.material) });
+  structureHitboxes.push(box);
+  addCollider(x, z, w, d, 'structure');
+}
+
+const _occRay = new THREE.Raycaster();
+const _occDir = new THREE.Vector3();
+const _occTarget = new THREE.Vector3();
+const _occHit = new Set();
+
+function updateOccluders(dt) {
+  // Aim at the player's head, not the feet — a ray along the ground grazes
+  // every wall it passes.
+  _occTarget.set(player.position.x, player.position.y + 1.2, player.position.z);
+  _occDir.subVectors(_occTarget, camera.position);
+  const dist = _occDir.length();
+  _occRay.set(camera.position, _occDir.normalize());
+  _occRay.far = dist;
+
+  _occHit.clear();
+  for (const h of _occRay.intersectObjects(structureHitboxes, false)) _occHit.add(h.object);
+
+  const k = Math.min(1, dt * 9);
+  for (const s of structures) {
+    const want = _occHit.has(s.hit) ? 0.16 : 1;
+    for (const mat of s.mats) {
+      if (Math.abs(mat.opacity - want) < 0.005) { mat.opacity = want; continue; }
+      mat.opacity += (want - mat.opacity) * k;
+      const clear = mat.opacity < 0.995;
+      if (mat.transparent !== clear) { mat.transparent = clear; mat.needsUpdate = true; }
+      mat.depthWrite = !clear;
+    }
+  }
+}
+
+const buildRng = mulberry32(4242);
+for (const rect of extractRects('B')) {
+  for (const [off, w] of splitRun(rect.w)) {
+    const cx = xOfCol(rect.col + off) - TILE / 2 + (w * TILE) / 2;
+    const cz = zOfRow(rect.row) - TILE / 2 + (rect.d * TILE) / 2;
+    const h = 4.8 + buildRng() * 2.2;
+    addStructure(cx, cz, w * TILE - 0.3, h, rect.d * TILE - 0.3, {
+      chimney: buildRng() < 0.4 ? 1.6 + buildRng() * 1.8 : 0,
+    });
+  }
+}
+for (const rect of extractRects('V')) {
+  for (const [off, w] of splitRun(rect.w)) {
+    const cx = xOfCol(rect.col + off) - TILE / 2 + (w * TILE) / 2;
+    const cz = zOfRow(rect.row) - TILE / 2 + (rect.d * TILE) / 2;
+    addStructure(cx, cz, w * TILE - 0.1, 3.2, rect.d * TILE - 1.6);
+  }
+}
+
+/* --- distant skyline, pure silhouette in the smog ----------- */
+const skyRng = mulberry32(88);
+for (let i = 0; i < 16; i++) {
+  const a = (i / 16) * Math.PI * 2 + skyRng() * 0.2;
+  const r = 52 + skyRng() * 22;
+  const h = 12 + skyRng() * 22;
+  const block = new THREE.Mesh(
+    new THREE.BoxGeometry(6 + skyRng() * 8, h, 6 + skyRng() * 8),
+    new THREE.MeshLambertMaterial({ color: 0x171419 })
+  );
+  block.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r);
+  scene.add(block);
+}
+
+/* --- dressing ----------------------------------------------- */
+const treeTexture = makeTreeTexture();
+for (const [x, z] of [[-30, -26], [-24, -30], [26, -28], [32, -24], [-34, -20], [34, -20]]) {
+  addBillboard(treeTexture, 3, 4, x, z);
+}
+
+const crateTexture = makeCrateTexture();
+function addCrate(x, z, s = 1.1) {
+  const crate = new THREE.Mesh(
+    new THREE.BoxGeometry(s, s, s),
+    new THREE.MeshLambertMaterial({ map: crateTexture })
+  );
+  crate.position.set(x, s / 2, z);
+  crate.castShadow = true; crate.receiveShadow = true;
+  scene.add(crate);
+  addCollider(x, z, s, s, 'crate');
+  return crate;
+}
+// Kept clear of the Warden's patrol rectangle (x -24..-8, z -6..2) so it
+// never snags on the way round.
+addCrate(19.5, -6.5); addCrate(25, 1.5); addCrate(-6, -2); addCrate(-26, -2);
+
+/* --- the warded gate ---------------------------------------- */
+const GATE_X = 4, GATE_Z = zOfRow(5);
+const gate = new THREE.Mesh(
+  new THREE.PlaneGeometry(8, 4.6),
+  new THREE.MeshLambertMaterial({
+    map: makeGateTexture(), transparent: false, alphaTest: 0.5, side: THREE.DoubleSide,
+  })
+);
+gate.geometry.translate(0, 2.3, 0);
+gate.position.set(GATE_X, 0, GATE_Z);
+gate.castShadow = true;
+scene.add(gate);
+const gateCollider = addCollider(GATE_X, GATE_Z, 8, 1.2, 'gate');
+
+/* ============================================================
+   7. LIGHTING RIG
+   Hemisphere fill + one shadow-casting key light + gas lamps +
+   transient point lights for VFX. That last one is the Octopath
+   trick: a point light alongside each effect so the world throws
+   real shadows in response to magic.
+   ============================================================ */
+const hemi = new THREE.HemisphereLight(LOOK.skyColor, LOOK.groundBounce, LOOK.ambientIntensity);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(LOOK.sunColor, LOOK.sunIntensity);
+sun.position.set(-12, 18, 10);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -30;
+sun.shadow.camera.right = 30;
+sun.shadow.camera.top = 30;
+sun.shadow.camera.bottom = -30;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 60;
+sun.shadow.bias = -0.0008;
+sun.shadow.normalBias = 0.02;
+scene.add(sun);
+scene.add(sun.target);
+
+/* --- gas lamps: the only warmth in Ashfall Ward -------------- */
+const lamps = [];
+const lampPoleGeo = new THREE.CylinderGeometry(0.09, 0.13, 3.4, 6);
+const lampHeadGeo = new THREE.BoxGeometry(0.42, 0.5, 0.42);
+const lampPoleMat = new THREE.MeshLambertMaterial({ color: 0x17181d });
+
+function addLamp(x, z) {
+  const pole = new THREE.Mesh(lampPoleGeo, lampPoleMat);
+  pole.position.set(x, 1.7, z);
+  pole.castShadow = true;
+  scene.add(pole);
+
+  // Unlit basic material reads as emissive and gives the bloom something to grab.
+  const head = new THREE.Mesh(
+    lampHeadGeo,
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(LOOK.lampColor) })
+  );
+  head.position.set(x, 3.6, z);
+  scene.add(head);
+
+  // No shadow map on these — one shadow-casting light is the budget.
+  const light = new THREE.PointLight(
+    new THREE.Color(LOOK.lampColor), LOOK.lampIntensity, LOOK.lampDistance, 2
+  );
+  light.position.set(x, 3.6, z);
+  scene.add(light);
+
+  addCollider(x, z, 0.5, 0.5, 'lamp');
+  lamps.push({ light, head, phase: lamps.length * 1.7 });
+}
+
+for (const z of [-13, -1, 7]) { addLamp(0.7, z); addLamp(7.3, z); }
+addLamp(-16, 8.7); addLamp(16, 8.7);
+addLamp(-4, 15.3);  addLamp(28, 15.3);
+addLamp(-8, 30);   addLamp(16, 30);
+
+function updateLamps(t) {
+  for (const l of lamps) {
+    // Two summed sines read as a gas flame without allocating anything.
+    const n = 0.5 + 0.5 * (Math.sin(t * 6.3 + l.phase) * 0.6 + Math.sin(t * 11.7 + l.phase * 2.1) * 0.4);
+    l.light.intensity = LOOK.lampIntensity * (1 - LOOK.lampFlicker + LOOK.lampFlicker * n * 2);
+  }
+}
+
+/* --- transient impact lights --------------------------------- */
+const impactLights = [];
+function spawnImpactLight(position, colorOverride, scale = 1) {
+  const light = new THREE.PointLight(
+    new THREE.Color(colorOverride ?? LOOK.impactColor),
+    LOOK.impactIntensity * scale,
+    LOOK.impactDistance,
+    2
+  );
+  light.position.copy(position).add(new THREE.Vector3(0, 1.1, 0));
+  light.castShadow = true;
+  light.shadow.mapSize.set(512, 512);
+  scene.add(light);
+  impactLights.push({
+    light, life: LOOK.impactDecayTime, max: LOOK.impactDecayTime,
+    peak: LOOK.impactIntensity * scale,
+  });
+}
+
+function updateImpactLights(dt) {
+  for (let i = impactLights.length - 1; i >= 0; i--) {
+    const fx = impactLights[i];
+    fx.life -= dt;
+    if (fx.life <= 0) {
+      scene.remove(fx.light);
+      fx.light.dispose();
+      impactLights.splice(i, 1);
+    } else {
+      const t = fx.life / fx.max;
+      fx.light.intensity = fx.peak * t * t;
+    }
+  }
+}
+
+/* ============================================================
+   8. ENTITIES
+   Anything with behaviour. Entities are billboards too, so the
+   single faceCamera pass in the main loop still covers them.
+   ============================================================ */
+const entities = [];
+
+class Entity extends BillboardSprite {
+  constructor(texture, w, h, x, z) {
+    super(texture, w, h);
+    this.position.set(x, 0, z);
+    this.interactLabel = null;   // null = not interactable
+    this.interactRadius = 2.6;
+    scene.add(this);
+    billboards.push(this);
+    entities.push(this);
+  }
+  update(dt, t) {}
+  onInteract() {}
+}
+
+/* --- an invisible interaction volume for props and scenery --- */
+class Hotspot extends Entity {
+  constructor(x, z, label, dialogueId) {
+    super(PLAYER_TEXTURES.down, 0.1, 0.1, x, z);
+    this.visible = false;
+    this.castShadow = false;
+    this.interactLabel = label;
+    this.dialogueId = dialogueId;
+  }
+  onInteract() { startDialogue(this.dialogueId); }
+}
+
+/* --- talking people ------------------------------------------ */
+class NPC extends Entity {
+  constructor(textures, x, z, label, dialogueId) {
+    super(textures.down, 1.5, 2.1, x, z);
+    this.textures = textures;
+    this.interactLabel = label;
+    this.dialogueId = dialogueId;
+    this.bobPhase = entities.length * 1.3;
+  }
+  update(dt, t) {
+    this.position.y = Math.abs(Math.sin(t * 1.4 + this.bobPhase)) * 0.035;
+  }
+  onInteract() { startDialogue(this.dialogueId); }
+}
+
+/* --- the Warden ----------------------------------------------
+   Patrols the warehouse yard. Its vision cone is suppressed the
+   instant the player stands on a sanctioned walkway — that
+   suppression IS the tutorial's central lesson, so it is drawn
+   rather than explained.
+   -------------------------------------------------------------- */
+const WARDEN_SPEED = 2.4;
+const WARDEN_CHASE_SPEED = 4.6;
+const DETECT_GRACE = 0.4;
+
+class Warden extends Entity {
+  constructor(waypoints) {
+    super(WARDEN_TEXTURES.down, 1.6, 2.6, waypoints[0].x, waypoints[0].z);
+    this.waypoints = waypoints;
+    this.target = 1;
+    this.state = 'PATROL';
+    this.pause = 0;
+    this.detect = 0;
+    this.heading = new THREE.Vector2(0, 1);
+    this.facing = 'down';
+
+    this.coneMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color('#d8b13a'),
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+    });
+    this.cone = new THREE.Mesh(new THREE.BufferGeometry(), this.coneMat);
+    this.cone.renderOrder = 2;
+    scene.add(this.cone);
+    this.rebuildCone();
+    this.coneOpacity = 0;
+  }
+
+  rebuildCone() {
+    const half = THREE.MathUtils.degToRad(LOOK.visionAngle) / 2;
+    this.cone.geometry.dispose();
+    this.cone.geometry = new THREE.CircleGeometry(LOOK.visionRange, 28, -half, half * 2);
+  }
+
+  seesPlayer() {
+    if (playerSafe) return false;              // Sidewalk Immunity, absolute
+    const dx = player.position.x - this.position.x;
+    const dz = player.position.z - this.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > LOOK.visionRange || dist < 0.001) return false;
+    const dot = (dx * this.heading.x + dz * this.heading.y) / dist;
+    return dot > Math.cos(THREE.MathUtils.degToRad(LOOK.visionAngle) / 2);
+  }
+
+  steerTowards(tx, tz, speed, dt) {
+    const dx = tx - this.position.x, dz = tz - this.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 0.001) return 0;
+    const ux = dx / dist, uz = dz / dist;
+    this.heading.set(ux, uz);
+    moveWithCollision(this.position, ux * speed * dt, uz * speed * dt, 0.45);
+    this.facing = pickFacing(ux, uz);
+    this.setTexture(WARDEN_TEXTURES[this.facing]);
+    return dist;
+  }
+
+  update(dt, t) {
+    if (this.state === 'PATROL' || this.state === 'RETURN') {
+      if (this.pause > 0) {
+        this.pause -= dt;
+      } else {
+        const wp = this.waypoints[this.target];
+        const dist = this.steerTowards(wp.x, wp.z, WARDEN_SPEED, dt);
+        if (dist < 0.6) {
+          this.target = (this.target + 1) % this.waypoints.length;
+          this.pause = 0.9;
+          this.state = 'PATROL';
+        }
+      }
+      if (this.seesPlayer()) { this.state = 'ALERT'; this.detect = 0; }
+
+    } else if (this.state === 'ALERT') {
+      // A beat of grace before the chase — long enough to step back onto stone.
+      this.steerTowards(player.position.x, player.position.z, 0, dt);
+      this.detect += dt;
+      if (!this.seesPlayer()) { this.state = 'RETURN'; this.detect = 0; hideAlert(); }
+      else if (this.detect >= DETECT_GRACE) { this.state = 'CHASE'; showAlert(); }
+
+    } else if (this.state === 'CHASE') {
+      if (playerSafe) {
+        // The rule holds even mid-pursuit. This is the moment the lesson lands.
+        this.state = 'RETURN';
+        hideAlert();
+      } else {
+        const dist = this.steerTowards(player.position.x, player.position.z, WARDEN_CHASE_SPEED, dt);
+        if (dist < 1.0 && !inputLocked) catchPlayer(this);
+      }
+    }
+
+    // Cone follows the body, and fades out entirely while the player is safe.
+    const wantOpacity = (playerSafe || this.state === 'RETURN') ? 0 : LOOK.coneOpacity;
+    this.coneOpacity += (wantOpacity - this.coneOpacity) * Math.min(1, dt * 6);
+    this.coneMat.opacity = this.coneOpacity;
+    this.coneMat.color.set(this.state === 'PATROL' ? '#d8b13a' : '#e04422');
+    this.cone.position.set(this.position.x, 0.06, this.position.z);
+    this.cone.rotation.set(-Math.PI / 2, 0, Math.atan2(-this.heading.y, this.heading.x));
+  }
+
+  resetTo(index) {
+    this.state = 'PATROL';
+    this.detect = 0;
+    this.pause = 0.6;
+    this.target = index;
+    this.position.set(this.waypoints[index].x, 0, this.waypoints[index].z);
+  }
+}
+
+/* --- the wild companion --------------------------------------- */
+class Sylph extends Entity {
+  constructor(x, z) {
+    super(SYLPH_TEXTURES[0], 2.2, 1.8, x, z);
+    this.glow = new THREE.PointLight(new THREE.Color(LOOK.glyphColor), 12, 10, 2);
+    this.glow.position.set(x, 1.0, z);
+    scene.add(this.glow);
+  }
+  update(dt, t) {
+    this.setTexture(SYLPH_TEXTURES[Math.floor(t * 2) % 2]);
+    this.position.y = Math.sin(t * 1.1) * 0.07;
+    this.glow.intensity = 10 + Math.sin(t * 2.2) * 5;
+  }
+}
+
+/* --- placing the cast ------------------------------------------ */
+const vex  = new NPC(VEX_TEXTURES,  -2, 27, 'Talk to Dispatcher Vex', 'vex_intro');
+const finn = new NPC(FINN_TEXTURES,  18, 14, 'Question Mudlark Finn', 'finn_hint');
+
+const warden = new Warden([
+  { x: -24, z: -6 }, { x: -8, z: -6 }, { x: -8, z: 2 }, { x: -24, z: 2 },
+]);
+
+const sylph = new Sylph(4, -26);
+
+const glyphHotspot     = new Hotspot(22, -2, 'Examine the residue glyph', 'glyph_examine');
+const blueprintHotspot = new Hotspot(-18, -2, 'Take the blueprint', 'blueprint_take');
+const gateHotspot      = new Hotspot(GATE_X, GATE_Z + 2.2, 'Inspect the warded gate', 'gate_locked');
+
+/* --- the glyph decal and the blueprint prop -------------------- */
+const glyphDecal = new THREE.Mesh(
+  new THREE.PlaneGeometry(3.4, 3.4),
+  new THREE.MeshBasicMaterial({
+    map: makeGlyphTexture(),
+    color: new THREE.Color(LOOK.glyphColor),
+    transparent: true,
+    opacity: 0.6,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  })
+);
+glyphDecal.rotation.x = -Math.PI / 2;
+glyphDecal.position.set(22, 0.04, -2);
+glyphDecal.renderOrder = 1;
+scene.add(glyphDecal);
+
+addCrate(-18, -2, 1.0);
+const blueprintProp = addBillboard(makeBlueprintTexture(), 1.0, 0.8, -18, -1.35);
+blueprintProp.position.y = 1.0;
+
+/* ============================================================
+   9. DIALOGUE & INTERACTION
+   ============================================================ */
+const elPrompt = document.getElementById('prompt');
+const elPromptLabel = document.getElementById('promptLabel');
+const elDialogue = document.getElementById('dialogue');
+const elWho = document.getElementById('dlgWho');
+const elLine = document.getElementById('dlgLine');
+const elNext = document.getElementById('dlgNext');
+const elAlert = document.getElementById('alert');
+const elOverlay = document.getElementById('overlay');
+
+const DIALOGUES = {
+  vex_intro: {
+    lines: [
+      { who: 'DISPATCHER VEX', text: 'You are the new Whisperer, then. Walk with WASD. Swing your eyes with Q and E.' },
+      { who: 'DISPATCHER VEX', text: 'Now the only rule that keeps you breathing. Sanctioned walkways are warded stone. On pavement, no Warden may see you. None. Ever.' },
+      { who: 'DISPATCHER VEX', text: 'Step off onto the cobbles and you are EXPOSED. Their lamps find you, and the Ward does not argue.' },
+      { who: 'DISPATCHER VEX', text: 'Something bled raw arcane residue in the east alley last night. Go and look at it. Do not come back with a guess.' },
+    ],
+    onEnd: () => questEvent('talked_vex'),
+  },
+  vex_repeat: {
+    lines: [
+      { who: 'DISPATCHER VEX', text: 'Three truths, Whisperer. Residue, a witness, and paper. The canal gate opens for nothing less.' },
+    ],
+  },
+  glyph_examine: {
+    lines: [
+      { who: 'RESIDUE GLYPH', text: 'A conjuring circle, burned into the cobbles. The scoring is fresh — the stone is still warm.' },
+      { who: 'RESIDUE GLYPH', text: 'This is not a summoning. The lines run inward. Something was dragged OUT of a pact and bottled.' },
+      { who: 'RESIDUE GLYPH', text: 'Harvesting. Someone is draining companions for lamp fuel, here, inside the Ward.' },
+    ],
+    onEnd: () => questEvent('found_glyph'),
+  },
+  finn_hint: {
+    lines: [
+      { who: 'MUDLARK FINN', text: 'Saw nothing. Heard nothing. Ask the stones in the east alley — they keep better records than I do.' },
+    ],
+  },
+  finn_testimony: {
+    lines: [
+      { who: 'MUDLARK FINN', text: 'You have been to the circle. I can see the shine of it on you. Fine.' },
+      { who: 'MUDLARK FINN', text: 'Two nights running, a Warden wagon rolls into the warehouse yard west of here. Empty going in. Heavy coming out.' },
+      { who: 'MUDLARK FINN', text: 'They keep their papers in the yard. But that yard is cobble the whole way — no pavement, no mercy. Time your walk.' },
+    ],
+    onEnd: () => questEvent('got_testimony'),
+  },
+  blueprint_take: {
+    lines: [
+      { who: 'HAULAGE BLUEPRINT', text: 'A schematic for a condenser rig — companion-scale. Intake, binding coil, a tap valve at the base.' },
+      { who: 'HAULAGE BLUEPRINT', text: 'The delivery address is the canal yard, beyond the warded gate. Signed with the Ward\'s own seal.' },
+    ],
+    onEnd: () => questEvent('got_blueprint'),
+  },
+  gate_locked: {
+    lines: [
+      { who: 'WARDED GATE', text: 'The seal drinks the light off your hand and gives nothing back. It wants three truths, and you are short.' },
+    ],
+  },
+};
+
+let dlg = null;   // { lines, onEnd, index, shown, full, complete }
+const TYPE_SPEED = 48;  // characters per second
+
+function startDialogue(id) {
+  const data = DIALOGUES[id];
+  if (!data || dlg) return;
+  dlg = { lines: data.lines, onEnd: data.onEnd, index: 0, shown: 0, complete: false };
+  inputLocked = true;
+  elDialogue.classList.add('show');
+  document.body.classList.add('talking');
+  elPrompt.classList.remove('show');
+  renderDialogueLine();
+}
+
+function renderDialogueLine() {
+  const line = dlg.lines[dlg.index];
+  elWho.textContent = line.who;
+  elLine.textContent = '';
+  elNext.classList.remove('show');
+  dlg.shown = 0;
+  dlg.complete = false;
+}
+
+function updateDialogue(dt) {
+  if (!dlg || dlg.complete) return;
+  const full = dlg.lines[dlg.index].text;
+  dlg.shown = Math.min(full.length, dlg.shown + TYPE_SPEED * dt);
+  elLine.textContent = full.slice(0, Math.floor(dlg.shown));
+  if (dlg.shown >= full.length) {
+    dlg.complete = true;
+    elNext.classList.add('show');
+  }
+}
+
+function advanceDialogue() {
+  if (!dlg) return;
+  if (!dlg.complete) {                       // first press completes the line
+    dlg.shown = dlg.lines[dlg.index].text.length;
+    elLine.textContent = dlg.lines[dlg.index].text;
+    dlg.complete = true;
+    elNext.classList.add('show');
+    return;
+  }
+  dlg.index++;
+  if (dlg.index < dlg.lines.length) { renderDialogueLine(); return; }
+
+  const onEnd = dlg.onEnd;
+  dlg = null;
+  elDialogue.classList.remove('show');
+  document.body.classList.remove('talking');
+  inputLocked = false;
+  if (onEnd) onEnd();
+}
+
+/* --- proximity scan ------------------------------------------- */
+let nearest = null;
+function updateInteraction() {
+  if (inputLocked) { elPrompt.classList.remove('show'); nearest = null; return; }
+  let best = null, bestDist = Infinity;
+  for (const e of entities) {
+    if (!e.interactLabel) continue;
+    const d = Math.hypot(e.position.x - player.position.x, e.position.z - player.position.z);
+    if (d < e.interactRadius && d < bestDist) { best = e; bestDist = d; }
+  }
+  nearest = best;
+  if (best) {
+    elPromptLabel.textContent = best.interactLabel;
+    elPrompt.classList.add('show');
+  } else {
+    elPrompt.classList.remove('show');
+  }
+}
+
+function showAlert() { elAlert.classList.add('show'); }
+function hideAlert() { elAlert.classList.remove('show'); }
+
+/* ============================================================
+   10. QUEST STATE
+   Ordered steps drive the HUD; the three clue flags are
+   independent, so finding them out of order can never soft-lock.
+   ============================================================ */
+const elTask = document.getElementById('objTask');
+const PIPS = {
+  glyph: document.getElementById('pipGlyph'),
+  testimony: document.getElementById('pipTestimony'),
+  blueprint: document.getElementById('pipBlueprint'),
+};
+
+const quest = {
+  talkedVex: false,
+  clues: { glyph: false, testimony: false, blueprint: false },
+  gateOpen: false,
+  gateAnim: 0,
+  finaleStarted: false,
+};
+
+const TASKS = {
+  meet:      'Report to Dispatcher Vex on the plaza',
+  glyph:     'Examine the residue glyph in the east alley',
+  testimony: 'Question Mudlark Finn on the cross-street',
+  blueprint: 'Recover the blueprint from the warehouse yard — the Warden patrols it',
+  finale:    'The canal gate is open. Approach what waits in the yard',
+};
+
+function allClues() {
+  return quest.clues.glyph && quest.clues.testimony && quest.clues.blueprint;
+}
+
+function refreshHud() {
+  let task;
+  if (!quest.talkedVex) task = TASKS.meet;
+  else if (allClues()) task = TASKS.finale;
+  else if (!quest.clues.glyph) task = TASKS.glyph;
+  else if (!quest.clues.testimony) task = TASKS.testimony;
+  else task = TASKS.blueprint;
+  elTask.textContent = task;
+
+  for (const key of Object.keys(PIPS)) {
+    PIPS[key].classList.toggle('lit', quest.clues[key]);
+  }
+}
+
+function questEvent(ev) {
+  if (ev === 'talked_vex') {
+    quest.talkedVex = true;
+    vex.dialogueId = 'vex_repeat';
+    vex.interactLabel = 'Talk to Dispatcher Vex';
+  } else if (ev === 'found_glyph') {
+    quest.clues.glyph = true;
+    glyphHotspot.interactLabel = null;
+    finn.dialogueId = 'finn_testimony';
+    spawnImpactLight(glyphDecal.position, LOOK.glyphColor, 1.4);
+  } else if (ev === 'got_testimony') {
+    quest.clues.testimony = true;
+    finn.dialogueId = 'finn_hint';
+    finn.interactLabel = null;
+  } else if (ev === 'got_blueprint') {
+    quest.clues.blueprint = true;
+    blueprintHotspot.interactLabel = null;
+    blueprintProp.visible = false;
+    spawnImpactLight(blueprintProp.position, '#9fd8e8', 1.0);
+  }
+
+  if (allClues() && !quest.gateOpen) openGate();
+  refreshHud();
+}
+
+function openGate() {
+  quest.gateOpen = true;
+  quest.gateAnim = 1.0;
+  gateCollider.enabled = false;
+  gateHotspot.interactLabel = null;
+  spawnImpactLight(new THREE.Vector3(GATE_X, 0, GATE_Z), LOOK.glyphColor, 2.0);
+}
+
+function updateGate(dt) {
+  if (quest.gateAnim <= 0) return;
+  quest.gateAnim = Math.max(0, quest.gateAnim - dt);
+  const t = quest.gateAnim;                 // 1 -> 0
+  gate.position.y = -4.8 * (1 - t);
+  if (quest.gateAnim === 0) gate.visible = false;
+}
+
+refreshHud();
+
+/* ============================================================
+   11. PLAYER + CAMERA RIG
+   ============================================================ */
+const SPAWN = new THREE.Vector3(4, 0, 30);
+const player = addBillboard(PLAYER_TEXTURES.down, 1.5, 2.1, SPAWN.x, SPAWN.z);
+let facing = 'down';
+const lastSafePos = SPAWN.clone();
+
+const elZone = document.getElementById('zoneChip');
+const elVignette = document.getElementById('vignette');
+let zoneShown = null;
+
+function setZone(safe) {
+  if (zoneShown === safe) return;
+  zoneShown = safe;
+  elZone.classList.toggle('safe', safe);
+  elZone.classList.toggle('danger', !safe);
+  elZone.textContent = safe ? 'SANCTIONED WALKWAY — SAFE' : 'UNPAVED GROUND — EXPOSED';
+  elVignette.classList.toggle('show', !safe);
+}
+setZone(true);
+
+const keys = new Set();
+addEventListener('keydown', (e) => {
+  if (e.repeat) { return; }
+  keys.add(e.code);
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (dlg) advanceDialogue();
+    else if (nearest) nearest.onInteract();
+  }
+  if (e.code === 'KeyF') {
+    e.preventDefault();
+    spawnImpactLight(player.position);
+  }
+  if (e.code === 'KeyR' && quest.finaleStarted) {
+    location.reload();
+  }
+});
+addEventListener('keyup', (e) => keys.delete(e.code));
+
+const MOVE_SPEED = 6;
+const ORBIT_SPEED = 1.6;
+const _fwd = new THREE.Vector2();
+const _right = new THREE.Vector2();
+const _move = new THREE.Vector2();
+
+function updatePlayer(dt) {
+  // Camera orbit stays live even while a dialogue is open — it can't
+  // change any state, and locking it feels broken.
+  if (keys.has('KeyQ')) cameraYaw -= ORBIT_SPEED * dt;
+  if (keys.has('KeyE')) cameraYaw += ORBIT_SPEED * dt;
+
+  if (!inputLocked) {
+    _fwd.set(-Math.sin(cameraYaw), -Math.cos(cameraYaw));
+    _right.set(Math.cos(cameraYaw), -Math.sin(cameraYaw));
+
+    let ix = 0, iy = 0;
+    if (keys.has('KeyW') || keys.has('ArrowUp'))    iy += 1;
+    if (keys.has('KeyS') || keys.has('ArrowDown'))  iy -= 1;
+    if (keys.has('KeyD') || keys.has('ArrowRight')) ix += 1;
+    if (keys.has('KeyA') || keys.has('ArrowLeft'))  ix -= 1;
+
+    _move.set(_fwd.x * iy + _right.x * ix, _fwd.y * iy + _right.y * ix);
+
+    if (_move.lengthSq() > 0) {
+      _move.normalize();
+      moveWithCollision(player.position, _move.x * MOVE_SPEED * dt, _move.y * MOVE_SPEED * dt);
+      facing = pickFacing(_move.x, _move.y);
+      player.setTexture(PLAYER_TEXTURES[facing]);
+    }
+  }
+
+  // The Sidewalk Immunity check, every frame.
+  playerSafe = isSafeAt(player.position.x, player.position.z);
+  setZone(playerSafe);
+  if (playerSafe) lastSafePos.set(player.position.x, 0, player.position.z);
+
+  // Keep the key light's shadow frustum centered on the player.
+  sun.position.set(player.position.x - 12, 18, player.position.z + 10);
+  sun.target.position.copy(player.position);
+}
+
+function updateCamera() {
+  const pitch = THREE.MathUtils.degToRad(LOOK.cameraPitch);
+  const dist = LOOK.cameraDistance + cameraPush;
+  const horizontal = Math.cos(pitch) * dist;
+  const height = Math.sin(pitch) * dist;
+  camera.position.set(
+    player.position.x + Math.sin(cameraYaw) * horizontal,
+    height,
+    player.position.z + Math.cos(cameraYaw) * horizontal
+  );
+  camera.lookAt(player.position.x, player.position.y + 1.0, player.position.z);
+}
+let cameraPush = 0;   // runtime offset so the finale can move in without touching LOOK
+
+/* --- caught by the Warden -------------------------------------- */
+let overlayTimer = 0;
+function showOverlay(big, sub, key) {
+  elOverlay.innerHTML =
+    `<div class="big">${big}</div><div class="sub">${sub}</div>` +
+    (key ? `<div class="key">${key}</div>` : '');
+  elOverlay.classList.add('show');
+}
+function hideOverlay() {
+  elOverlay.classList.remove('show');
+  elOverlay.innerHTML = '';
+}
+
+function catchPlayer(w) {
+  inputLocked = true;
+  overlayTimer = 1.6;
+  hideAlert();
+  spawnImpactLight(player.position, '#ff5a30', 1.6);
+  showOverlay('SEIZED', 'The pavement is sanctuary. Stay in the lamplight, and no Warden can lay a hand on you.');
+  player.position.set(lastSafePos.x, 0, lastSafePos.z);
+  playerSafe = true;
+  w.resetTo(0);
+}
+
+function updateOverlayTimer(dt) {
+  if (overlayTimer <= 0) return;
+  overlayTimer -= dt;
+  if (overlayTimer <= 0 && !quest.finaleStarted) {
+    hideOverlay();
+    inputLocked = false;
+  }
+}
+
+/* --- the finale ------------------------------------------------- */
+let finale = 0;
+function startFinale() {
+  quest.finaleStarted = true;
+  inputLocked = true;
+  finale = 0;
+  hideAlert();
+}
+
+function updateFinale(dt) {
+  if (!quest.finaleStarted) return;
+  const prev = finale;
+  finale += dt;
+
+  // slow-mo and a slow push-in
+  timeScale = THREE.MathUtils.lerp(1, 0.15, Math.min(1, finale / 0.8));
+  cameraPush = -Math.min(3.5, finale * 2.6);
+
+  // three staggered pulses
+  for (const at of [0.15, 0.5, 0.85]) {
+    if (prev < at && finale >= at) spawnImpactLight(sylph.position, LOOK.glyphColor, 1.8);
+  }
+
+  if (prev < 1.15 && finale >= 1.15) {
+    elOverlay.classList.add('flash');
+    elOverlay.innerHTML = '';
+  }
+  if (prev < 1.35 && finale >= 1.35) {
+    elOverlay.classList.remove('flash');
+    showOverlay(
+      'PACT OFFERED',
+      'A wild Cinder Sylph turns and holds your eye. It has been waiting at the tap valve for someone who came asking questions instead of carrying a jar.<br><br>— combat would begin here —',
+      '[R] restart the tutorial'
+    );
+  }
+}
+
+/* ============================================================
+   12. POST-PROCESSING
+   RenderPass -> Bloom -> TiltShift(H) -> TiltShift(V) -> Output.
+   OutputPass must be last: it does tone mapping + sRGB conversion.
+   ============================================================ */
+const TiltShiftShader = {
+  uniforms: {
+    tDiffuse:    { value: null },
+    direction:   { value: new THREE.Vector2(1, 0) },
+    resolution:  { value: new THREE.Vector2(1, 1) },
+    focusCenter: { value: LOOK.tiltFocusCenter },
+    focusWidth:  { value: LOOK.tiltFocusWidth },
+    falloff:     { value: LOOK.tiltFalloff },
+    maxBlur:     { value: LOOK.tiltMaxBlur },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform vec2 direction;
+    uniform vec2 resolution;
+    uniform float focusCenter;
+    uniform float focusWidth;
+    uniform float falloff;
+    uniform float maxBlur;
+    varying vec2 vUv;
+
+    void main() {
+      float d = abs(vUv.y - focusCenter);
+      float blur = smoothstep(focusWidth, focusWidth + falloff, d) * maxBlur;
+
+      if (blur < 0.01) {
+        gl_FragColor = texture2D(tDiffuse, vUv);
+        return;
+      }
+
+      vec2 texel = direction / resolution * blur;
+      vec4 sum = vec4(0.0);
+      sum += texture2D(tDiffuse, vUv - texel * 4.0) * 0.0162162162;
+      sum += texture2D(tDiffuse, vUv - texel * 3.0) * 0.0540540541;
+      sum += texture2D(tDiffuse, vUv - texel * 2.0) * 0.1216216216;
+      sum += texture2D(tDiffuse, vUv - texel * 1.0) * 0.1945945946;
+      sum += texture2D(tDiffuse, vUv)               * 0.2270270270;
+      sum += texture2D(tDiffuse, vUv + texel * 1.0) * 0.1945945946;
+      sum += texture2D(tDiffuse, vUv + texel * 2.0) * 0.1216216216;
+      sum += texture2D(tDiffuse, vUv + texel * 3.0) * 0.0540540541;
+      sum += texture2D(tDiffuse, vUv + texel * 4.0) * 0.0162162162;
+      gl_FragColor = sum;
+    }
+  `,
+};
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(innerWidth, innerHeight),
+  LOOK.bloomStrength, LOOK.bloomRadius, LOOK.bloomThreshold
+);
+composer.addPass(bloomPass);
+
+const tiltH = new ShaderPass(TiltShiftShader);
+tiltH.uniforms.direction.value.set(1, 0);
+composer.addPass(tiltH);
+
+const tiltV = new ShaderPass(THREE.UniformsUtils.clone
+  ? { ...TiltShiftShader, uniforms: THREE.UniformsUtils.clone(TiltShiftShader.uniforms) }
+  : TiltShiftShader);
+tiltV.uniforms.direction.value.set(0, 1);
+composer.addPass(tiltV);
+
+composer.addPass(new OutputPass());
+
+function syncTiltUniforms() {
+  for (const pass of [tiltH, tiltV]) {
+    pass.enabled = LOOK.tiltEnabled;
+    pass.uniforms.focusCenter.value = LOOK.tiltFocusCenter;
+    pass.uniforms.focusWidth.value = LOOK.tiltFocusWidth;
+    pass.uniforms.falloff.value = LOOK.tiltFalloff;
+    pass.uniforms.maxBlur.value = LOOK.tiltMaxBlur;
+    pass.uniforms.resolution.value.set(innerWidth, innerHeight);
+  }
+}
+syncTiltUniforms();
+
+/* ============================================================
+   13. DEBUG GUI
+   Tune live, then "log LOOK to console" and paste the values
+   back into section 0.
+   ============================================================ */
+const gui = new GUI({ title: 'Ashfall Ward — Look' });
+
+const fCam = gui.addFolder('Camera');
+fCam.add(LOOK, 'fov', 15, 70, 1).onChange(v => { camera.fov = v; camera.updateProjectionMatrix(); });
+fCam.add(LOOK, 'cameraPitch', 15, 80, 1);
+fCam.add(LOOK, 'cameraDistance', 6, 30, 0.5);
+
+const fLight = gui.addFolder('Lighting');
+fLight.add(LOOK, 'exposure', 0.2, 2.5, 0.05).name('exposure (master)')
+      .onChange(v => renderer.toneMappingExposure = v);
+fLight.add(LOOK, 'sunIntensity', 0, 4, 0.05).onChange(v => sun.intensity = v);
+fLight.addColor(LOOK, 'sunColor').onChange(v => sun.color.set(v));
+fLight.add(LOOK, 'ambientIntensity', 0, 2, 0.05).onChange(v => hemi.intensity = v);
+fLight.addColor(LOOK, 'skyColor').onChange(v => hemi.color.set(v));
+fLight.addColor(LOOK, 'groundBounce').onChange(v => hemi.groundColor.set(v));
+
+const fAtmo = gui.addFolder('Atmosphere');
+fAtmo.addColor(LOOK, 'fogColor').onChange(v => { scene.fog.color.set(v); scene.background.set(v); });
+fAtmo.add(LOOK, 'fogDensity', 0, 0.12, 0.001).onChange(v => scene.fog.density = v);
+
+const fGas = gui.addFolder('Gaslamp');
+fGas.addColor(LOOK, 'lampColor').onChange(v => {
+  for (const l of lamps) { l.light.color.set(v); l.head.material.color.set(v); }
+});
+fGas.add(LOOK, 'lampIntensity', 0, 30, 0.5);
+fGas.add(LOOK, 'lampDistance', 4, 30, 0.5).onChange(v => { for (const l of lamps) l.light.distance = v; });
+fGas.add(LOOK, 'lampFlicker', 0, 0.6, 0.01);
+fGas.addColor(LOOK, 'glyphColor').onChange(v => {
+  glyphDecal.material.color.set(v);
+  sylph.glow.color.set(v);
+});
+
+const fBloom = gui.addFolder('Bloom');
+fBloom.add(LOOK, 'bloomStrength', 0, 3, 0.01).onChange(v => bloomPass.strength = v);
+fBloom.add(LOOK, 'bloomRadius', 0, 1.5, 0.01).onChange(v => bloomPass.radius = v);
+fBloom.add(LOOK, 'bloomThreshold', 0, 1, 0.01).onChange(v => bloomPass.threshold = v);
+
+const fTilt = gui.addFolder('Tilt-shift');
+fTilt.add(LOOK, 'tiltEnabled').onChange(syncTiltUniforms);
+fTilt.add(LOOK, 'tiltFocusCenter', 0, 1, 0.01).onChange(syncTiltUniforms);
+fTilt.add(LOOK, 'tiltFocusWidth', 0, 0.5, 0.01).onChange(syncTiltUniforms);
+fTilt.add(LOOK, 'tiltFalloff', 0.01, 0.6, 0.01).onChange(syncTiltUniforms);
+fTilt.add(LOOK, 'tiltMaxBlur', 0, 12, 0.1).onChange(syncTiltUniforms);
+
+const fFx = gui.addFolder('Impact light');
+fFx.addColor(LOOK, 'impactColor');
+fFx.add(LOOK, 'impactIntensity', 0, 150, 1);
+fFx.add(LOOK, 'impactDistance', 1, 25, 0.5);
+fFx.add(LOOK, 'impactDecayTime', 0.05, 2, 0.05);
+
+const fWarden = gui.addFolder('Warden');
+fWarden.add(LOOK, 'visionRange', 3, 20, 0.5).onChange(() => warden.rebuildCone());
+fWarden.add(LOOK, 'visionAngle', 20, 180, 1).onChange(() => warden.rebuildCone());
+fWarden.add(LOOK, 'coneOpacity', 0, 0.6, 0.01);
+
+const fDebug = gui.addFolder('Debug');
+const debugState = { showColliders: false, unlockGate: () => { if (!quest.gateOpen) openGate(); } };
+const colliderHelpers = new THREE.Group();
+colliderHelpers.visible = false;
+scene.add(colliderHelpers);
+for (const c of colliders) {
+  const box = new THREE.Mesh(
+    new THREE.BoxGeometry(c.maxX - c.minX, 3, c.maxZ - c.minZ),
+    new THREE.MeshBasicMaterial({ color: 0xff3355, wireframe: true })
+  );
+  box.position.set((c.minX + c.maxX) / 2, 1.5, (c.minZ + c.maxZ) / 2);
+  colliderHelpers.add(box);
+}
+fDebug.add(debugState, 'showColliders').onChange(v => colliderHelpers.visible = v);
+fDebug.add(debugState, 'unlockGate').name('force-open gate');
+fDebug.close();
+
+gui.add({ copy: () => console.log(JSON.stringify(LOOK, null, 2)) }, 'copy')
+   .name('log LOOK to console');
+
+// Handles for poking at the district from the browser console (or from a
+// coding assistant driving the page).
+window.WARD = {
+  LOOK, quest, questEvent, openGate, player, warden, sylph, camera, entities, renderer,
+  MAP, TILES, tileAt, isSafeAt, blockedAt, colliders,
+  get inputLocked() { return inputLocked; },
+  get playerSafe() { return playerSafe; },
+  get nearest() { return nearest; },
+  get dialogue() { return dlg; },
+};
+
+/* ============================================================
+   14. MAIN LOOP
+   ============================================================ */
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+  bloomPass.resolution.set(innerWidth, innerHeight);
+  syncTiltUniforms();
+});
+
+/* Shader pre-warm.
+   three.js bakes the number of shadow-casting point lights into every lit
+   material's shader. The first impact light therefore recompiles the whole
+   scene mid-frame — and the finale fires three overlapping pulses, so the
+   stall would land exactly on the climax. Compiling each variant up front
+   costs a few frames at load and nothing afterwards, because the programs
+   stay in three's cache once built. */
+function warmupShaders(maxConcurrent = 6) {
+  // (a) The occluder fade flips buildings to transparent, which is its own
+  //     shader variant. Compile it before the player first walks behind one.
+  const opaqueAgain = [];
+  for (const s of structures) {
+    for (const mat of s.mats) {
+      if (!mat.transparent) { mat.transparent = true; mat.needsUpdate = true; opaqueAgain.push(mat); }
+    }
+  }
+  composer.render();
+  for (const mat of opaqueAgain) { mat.transparent = false; mat.needsUpdate = true; }
+  composer.render();
+
+  // (b) One variant per concurrent impact light. The finale runs in slow motion,
+  //     which stretches each pulse to a few real seconds, so several overlap.
+  const temp = [];
+  for (let i = 0; i < maxConcurrent; i++) {
+    const l = new THREE.PointLight(0xffffff, 0.0001, 1, 2);
+    l.position.set(0, -60 - i, 0);      // far below the world; lights nothing
+    l.castShadow = true;
+    l.shadow.mapSize.set(512, 512);
+    scene.add(l);
+    temp.push(l);
+    composer.render();                  // compiles the (i+1)-shadow variant
+  }
+  for (const l of temp) { scene.remove(l); l.dispose(); }
+}
+warmupShaders();
+
+const clock = new THREE.Clock();
+let elapsed = 0;
+
+function animate() {
+  const raw = Math.min(clock.getDelta(), 0.05);
+  const dt = raw * timeScale;
+  elapsed += dt;
+
+  updatePlayer(dt);
+  for (const e of entities) e.update(dt, elapsed);
+  updateGate(raw);
+  updateCamera();
+  updateOccluders(raw);
+  updateLamps(elapsed);
+  updateImpactLights(dt);
+  updateInteraction();
+  updateDialogue(raw);
+  updateOverlayTimer(raw);
+  updateFinale(raw);
+
+  // Arm the finale once the gate is open and the player closes on the Sylph.
+  if (quest.gateOpen && !quest.finaleStarted) {
+    const d = Math.hypot(player.position.x - sylph.position.x, player.position.z - sylph.position.z);
+    if (d < 3.2) startFinale();
+  }
+
+  waterTexture.offset.x += 0.03 * raw;
+  glyphDecal.material.opacity = 0.45 + 0.28 * Math.sin(elapsed * 2.4);
+  for (const b of billboards) b.faceCamera(camera);
+
+  composer.render();
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>

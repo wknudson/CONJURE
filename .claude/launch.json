@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "prototypes",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "serve:static"],
+      "port": 5199
     }
   ]
 }

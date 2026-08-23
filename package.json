@@ -6,6 +6,7 @@
   "description": "CONJURE — tactical grid card battler, playable combat demo",
   "scripts": {
     "dev": "vite",
+    "serve:static": "node scripts/serve-static.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
