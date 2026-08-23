@@ -28,6 +28,7 @@ import {
 import { CARDS } from '../core/data/cards/index.js';
 import { printedId } from '../core/data/collection.js';
 import { companionById } from '../core/data/companions.js';
+import { rosterBudgetFor } from '../core/data/roster.js';
 import { territoryDepthFor } from '../core/types/state.js';
 import { schoolOf } from '../render/palette.js';
 import { KIND_WORD } from '../hud/cardFace.js';
@@ -92,7 +93,7 @@ export class PreCombatScreen implements Screen {
       <div class="builder__head">
         <div>
           <div class="builder__title">${enc.name}</div>
-          <div class="builder__sub">${companion?.name ?? 'Companion'} · ${enc.width}×${enc.height} · ${describeArena(enc)}</div>
+          <div class="builder__sub">${companion?.name ?? 'Companion'} · ${enc.width}×${enc.height} · seats ${rosterBudgetFor(enc.width, enc.height)} Vanguard points · ${describeArena(enc)}</div>
           ${describeWeather(enc) ? `<div class="pre__weather">${describeWeather(enc)}</div>` : ''}
         </div>
         <div class="builder__actions">

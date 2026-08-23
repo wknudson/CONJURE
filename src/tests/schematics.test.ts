@@ -222,6 +222,50 @@ describe('what the loop can actually reach', () => {
     // Frost spells the Glacial Field happens not to run.
     'creeping_rime',
     'rime_lock',
+    // ---------------------------------------------------------- the second expansion
+    //
+    // Twenty-six spells and Constructs, and the same story for all of them: there are four
+    // encounters, none of them is fought against a Bloom, Surge or Bulwark deck, and an
+    // enemy deck is the only thing that carries a Schematic. They are **not** unreachable
+    // in play — every one of them is in its school's `spellPool`, so a bloodline that
+    // speaks the school can draft it into a Grimoire on the taming roll. What they cannot
+    // yet be is *forged*, and that waits on encounters to fight them in rather than on
+    // anything about the cards.
+    //
+    // This ledger is the honest record of that gap. The day a Sylva duelist is authored,
+    // her deck teaches the Bloom half and these lines come out.
+    'stoke',
+    'cinder_gale',
+    'slag_cairn',
+    'rime_lance',
+    'whiteout',
+    'deep_winter',
+    'hail_spire',
+    'discharge',
+    'paralytic_arc',
+    'chain_bolt',
+    'galvanic_rally',
+    'tempest_break',
+    'tesla_pylon',
+    'bastion_stance',
+    'hammer_fall',
+    'phalanx_step',
+    'crag_slam',
+    'siege_break',
+    'iron_gate',
+    'battlement',
+    'sap_draught',
+    'thornlash',
+    'strangling_vines',
+    'blight_bloom',
+    'spore_burst',
+    'briar_rampart',
+    // Dusk's decay shelf, the three that closed the last catalog gap. Same story again: no
+    // shipped fight is against a Dusk deck, so they are draftable onto a Mortis and not yet
+    // forgeable by anyone.
+    'charnel_pillar',
+    'wither',
+    'creeping_decay',
   ]);
 
   const reachable = (): Set<string> => {

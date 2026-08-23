@@ -13,7 +13,7 @@ import { CARDS } from '../data/cards/index.js';
 import { effectiveCost } from './deck.js';
 import { MARKS } from '../data/marks.js';
 import { resonanceFor } from '../data/resonance.js';
-import { rosterPointsOf } from '../data/roster.js';
+import { rosterBudgetFor, rosterPointsOf } from '../data/roster.js';
 import { allObstacles, allUnits } from './board.js';
 import { isSpent } from './movement.js';
 import { isClimaxed } from './growth.js';
@@ -179,6 +179,10 @@ export function toBoardView(state: GameState): BoardView {
       .filter((u) => u.escalation > 0)
       .map((u) => ({ unitId: u.id, stacks: u.escalation })),
     anchors: state.anchors.map((c) => ({ ...c })),
+    // What this arena seats, in points. Derived rather than stored, like every other view
+    // field — and shipped here so the deploy tray reads the same number `deployRefusal`
+    // enforces rather than recomputing it from the board's dimensions itself.
+    deployBudget: rosterBudgetFor(state.width, state.height),
     roster: state.players.player.roster.map((r) => ({
       defId: r.defId,
       name: CARDS[r.defId]?.name ?? r.defId,

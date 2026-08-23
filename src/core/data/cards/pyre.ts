@@ -127,4 +127,141 @@ export const PYRE_CARDS: Record<string, CardDef> = {
     obstacleTurnStart: { status: 'burn', stacks: 1 },
     leavesRubble: true,
   },
+
+  // ------------------------------------------------------------ the second expansion
+  //
+  // Pyre was already the richest school, so this is four cards rather than ten: the two
+  // shapes the shelf was missing (a cone, and a line that pays for what is already alight)
+  // plus a body and a wall that both turn dying into damage. Pyre's whole character is that
+  // its cards are worth more when something is already burning, and every one of these
+  // reads or writes that state.
+
+  /**
+   * The school's first cone, and the reason the shape exists.
+   *
+   * A widening wedge from the caster: one tile, then three, then five. It needs a `line`
+   * target because a cone with no facing is just a circle, and that makes it the only Pyre
+   * card whose value depends on where the Companion is standing rather than on where the
+   * enemy is.
+   *
+   * Twenty is modest for three Pips until the geometry lands — a well-placed cone catches
+   * five bodies, and every one of them is left Burning for the Ashen Wake or the Stoke that
+   * follows.
+   */
+  cinder_gale: {
+    id: 'cinder_gale',
+    name: 'Cinder Gale',
+    cost: { pips: 3, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 fire damage in a widening 3-deep cone and sets everything caught alight (Burn 1).',
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'fire', area: { shape: 'cone', depth: 3 } },
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'cone', depth: 3 } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * A Pip that pays double on a fire already lit.
+   *
+   * The cheapest card in the school and the one that most rewards having played it second.
+   * Against a Burning target it is 30 through armour — better than a two-Pip spell — and
+   * against anything else it is a stack of Burn and almost nothing, which is a fair price
+   * for a Pip and a bad opening move.
+   *
+   * `true` on the paid branch because Burn itself ignores nothing and plate is the obvious
+   * answer to a burn deck. This is the card that says plate is not enough.
+   */
+  stoke: {
+    id: 'stoke',
+    name: 'Stoke',
+    cost: { pips: 1, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Against a Burning target, deals 30 damage through any armor. Otherwise it merely sets the target alight (Burn 1).',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'ifMet',
+      cond: { kind: 'targetStatus', status: 'burn' },
+      then: { op: 'damage', amount: 30, dtype: 'true', area: { shape: 'target' } },
+      otherwise: { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'target' } },
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * A wall that is worth more broken than standing.
+   *
+   * Forty health, which is soft even for a construct, and that is the whole card: it is not
+   * trying to hold a lane, it is trying to be attacked. Whoever brings it down takes thirty
+   * fire and a stack of Burn across the cross around it, indiscriminately — a crystal does
+   * not know whose army is standing next to it.
+   *
+   * So the decision the Cairn asks is the opposite of the one a gate asks. Breaking it is
+   * cheap and breaking it hurts, and leaving it standing in the way is sometimes the play.
+   */
+  slag_cairn: {
+    id: 'slag_cairn',
+    name: 'Slag Cairn',
+    cost: { pips: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'obstacle',
+    text: 'Raises a 40 HP cairn on an empty tile. When it breaks it bursts for 30 fire damage and Burn 1 in a cross around it, hitting whatever is there.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'spawnObstacle', obstacleDef: 'slag_cairn' },
+    keywords: [],
+    obstacleHp: 40,
+    obstacleDeath: { status: 'burn', stacks: 1, damage: 30 },
+    leavesRubble: true,
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * A body that leaves the floor on fire behind it.
+   *
+   * `trail` lays a hazard on every tile the Hound walks off, and only when it moves under
+   * its own power — a body dragged by a Seismic Slam is not grinding its way forward, and
+   * letting displacement lay the trail would hand the player a way to wreck their own board
+   * by shoving the wrong creature around.
+   *
+   * Burning ground ignites whoever *starts* a turn standing on it, either side, so a Hound
+   * run through your own line is a mistake you get to make. Three movement is what makes
+   * the trail long enough to matter.
+   */
+  ember_hound: {
+    id: 'ember_hound',
+    name: 'Ember Hound',
+    cost: { pips: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Every tile it walks off is left burning. Anything starting its turn on burning ground catches fire — yours included.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'ember_hound' },
+    keywords: [],
+    unit: {
+      atk: 20,
+      hp: 40,
+      mov: 3,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'skirmisher',
+      escalationBonus: { atk: 0, hp: 0 },
+      trail: 'burning',
+    },
+  },
 };

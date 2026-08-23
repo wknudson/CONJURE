@@ -152,6 +152,15 @@ export interface BoardView {
    * the renderer cannot import the engine, so the ground travels with the picture.
    */
   anchors: Coord[];
+  /**
+   * Points this arena will seat, from `rosterBudgetFor(width, height)`.
+   *
+   * A character owns one warband up to the kit ceiling and fields an arena's worth of it, so
+   * the tray needs the arena's number to show a running total and to grey a chip that will
+   * not fit. Travels on the view for the same reason `anchors` does — the renderer cannot
+   * import the engine, and a second copy of the arithmetic is a second answer.
+   */
+  deployBudget: number;
   /** The Vanguard tray: every body brought, and where each one currently is. */
   roster: RosterView[];
   player: CommanderView;

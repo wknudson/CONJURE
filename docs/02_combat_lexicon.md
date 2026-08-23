@@ -449,18 +449,85 @@ second deck built once the terrain is known.
 writes `hp` directly:
 
 ```
-encounter Damage Gate → armor absorption → HP loss → mark triggers → death → lethal check
+encounter Damage Gate → weather → elemental resistance → Brittle → reaction bonus
+  → armor absorption → HP loss → reactions → mark triggers → death → lethal check
 ```
+
+### A school is a damage type
+
+**Every body strikes with its school's element.** `SCHOOL_DTYPE`
+([`core/data/elements.ts`](../src/core/data/elements.ts)) is the only place the mapping is
+written, and the attack reducer reads it instead of defaulting; `attackDtype` on a stat block
+remains the override for the handful whose strikes are something else.
+
+| School | Deals | School | Deals |
+|---|---|---|---|
+| Pyre | `fire` | Dusk | `decay` |
+| Frost | `frost` | Bloom | `toxic` |
+| Surge | `shock` | arcane / neutral | `physical` |
+| Bulwark | `impact` | | |
+
+This was not always so, and the way it failed is worth keeping. The attack reducer defaulted
+to `physical` and `attackDtype` was opt-in — **two cards in the whole catalogue set it.** So a
+school was a colour on a card frame: a Pyre minion could not detonate a Cinder Mark, because
+that aligns to fire and spell and a Pyre body dealt neither. Marks were triggerable only by
+spells, no weather could favour an element, and nothing could resist one.
+
+`decay` and `toxic` were added at the same time, for the same reason. Dusk and Bloom were the
+two schools with no damage type of their own — Dusk's own Mark hit with `spell`, which is
+aligned by four *other* Marks, so a Soul Splinter could set off a Cinder Mark on its way past.
+
+Note the deliberate omission: **arcane and neutral deal `physical`, not `spell`.** `spell` is
+aligned by four of the six Marks, so a colourless body swinging with it would be the best
+mark-trigger in the game. `spell` is what a *spell* with no element does.
 
 | Type | Notes |
 |---|---|
-| `physical` | breaks ice (Shatter) |
-| `fire` | reduced by rain. Triggers Vaporize, Overload, Wildfire |
-| `frost` | triggers Superconduct |
-| `shock` | leaves `charged` |
-| `spell` | magic. Does **not** shatter ice. Aligned for Cinder Mark |
-| `impact` | collisions and slams. Shatters |
-| `true` | **ignores armor entirely** |
+| `physical` | the absence of an element. Breaks ice (Shatter) |
+| `fire` | Pyre. Damped by rain, fanned by a gale. Triggers Vaporize, Overload, Wildfire |
+| `frost` | Frost. Triggers Superconduct |
+| `shock` | Surge. Leaves `charged`; amplified by rain, which also earths it (Arc) |
+| `impact` | Bulwark, and collisions and slams. Shatters |
+| `decay` | Dusk |
+| `toxic` | Bloom. Scattered by a gale. Aligned for the Rot-Root Snare |
+| `spell` | magic with no element. Does **not** shatter ice. Aligned for Cinder, Rime, Arc |
+| `true` | **ignores armor, Brittle, resistance and weather alike** |
+
+### Elemental resistance
+
+**A body shrugs off its own element by `SELF_ELEMENT_RESIST` (10),** applied before armour so a
+resisted hit is a genuinely smaller hit rather than one absorbed differently. Flat, not a
+percentage, because every figure in this game is a multiple of ten and a percentage is the one
+thing that reliably produces a 27. Setting the constant to `0` disables the rule outright.
+
+The self-resist covers **elements only**. Physical is the absence of an element and nothing
+resists its own absence — without that guard, `arcane` and `neutral` bodies (which deal
+physical) quietly gained 10 free armour against the commonest damage type on the board, and two
+Scout Imps hit each other for 10 less than their stat blocks claimed.
+
+A stat block may name its own table with `elementalMod`: **negative resists, positive is a
+vulnerability.** The positive entries are the interesting ones — a resistance is a small reward
+for bringing the wrong element, but a stated weakness is a body the player can be *told* how to
+kill, which is a puzzle with an answer rather than a fight that takes longer.
+
+A **Pact takes no elemental resistance.** A Commander's school is a deck-building fact; reading
+it at the portrait would hand a Pyre player a fire resistance they never chose or paid for.
+
+### Weather favours an element
+
+`WEATHER_ELEMENTAL` is the table, and it replaced a single hard-coded rule that took 10 off
+fire in rain and could express nothing else.
+
+| Sky | Elemental effect |
+|---|---|
+| Rain | `fire` −10, `shock` +10 — water drowns one and carries the other |
+| Gale | `fire` +10, `toxic` −10 — wind fans a flame and scatters a cloud |
+| Fog | **none.** Its effect is on sight, and it is already the harshest weather in the game for that |
+
+Because a body's swing now carries its school, this reaches further than it used to: rain
+damping fire damps every Pyre *body*, not only Pyre cards. That is the intended reading of an
+elemental warband caught in the wrong weather, and the pre-combat briefing names the sky —
+generating its wording from this table — so the decision is an informed one.
 
 **Collision:** a shoved unit that hits something takes 30 (`COLLISION_TARGET_DAMAGE`);
 whatever it hit takes 20 (`COLLISION_BLOCKER_DAMAGE`); an obstacle takes 30
@@ -704,8 +771,8 @@ size depending on who the player had tamed. All six ship now.
 | **Rime Mark** | frost · `frost` 20 | frost or spell | adjacent8 | Chill 2 |
 | **Arc Mark** | surge · `shock` 30 | shock or spell | plus 1 | Charged (from the damage) |
 | **Tremor Mark** | bulwark · `impact` 40 | physical or impact | plus 1 | — |
-| **Soul Splinter Mark** | dusk · `spell` 50 | on death | lowest-HP enemy | — |
-| **Rot-Root Snare** | bloom · none (`damage: 0`) | physical or impact | adjacent8 | Entangle 1 + Toxin 1 |
+| **Soul Splinter Mark** | dusk · `decay` 50 | on death | lowest-HP enemy | — |
+| **Rot-Root Snare** | bloom · none (`damage: 0`) | physical, impact or toxic | adjacent8 | Entangle 1 + Toxin 1 |
 
 Plus **Cask Blast** (arcane; the Volatile Cask's own detonation, attached by no card).
 
@@ -738,7 +805,7 @@ the Hero may.
 | Rime Mark | arcane | frost | `frost` |
 | Arc Mark | arcane | surge | `shock` |
 | Tremor Mark | arcane | bulwark | `impact` |
-| Soul Splinter Mark | arcane | dusk | `spell` |
+| Soul Splinter Mark | arcane | dusk | `decay` |
 | Rot-Root Snare | arcane | bloom | no damage — `entangle` + `toxin` |
 
 Two fields answering two questions, and the split is load-bearing in both directions.

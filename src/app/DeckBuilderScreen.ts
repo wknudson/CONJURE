@@ -42,6 +42,7 @@ import {
   slotOf,
 } from '../core/data/relics.js';
 import type { CombatBoons } from '../core/engine/setup.js';
+import { MIN_ARENA } from '../core/engine/setup.js';
 import type { School } from '../contract/ids.js';
 import { KIND_WORD, cardFaceHtml, faceOfDef } from '../hud/cardFace.js';
 import { filterBarHtml, matchesPips, pipPills, wireFilterBar } from '../hud/filterBar.js';
@@ -80,7 +81,8 @@ import { RELIC_SLOT_ORDER } from '../core/overworld/state.js';
 import type { CardModifier } from '../core/types/cards.js';
 import {
   DEFAULT_ROSTER,
-  ROSTER_BUDGET,
+  KIT_BUDGET,
+  rosterBudgetFor,
   rosterCost,
   rosterPointsOf,
   rosterPool,
@@ -368,6 +370,7 @@ export class DeckBuilderScreen implements Screen {
             <span class="vanguard__budget-count"></span>
             <span class="vanguard__budget-bar"><i></i></span>
           </div>
+          <span class="vanguard__budget-note"></span>
         </div>
         <div class="vanguard__warband-title">The warband</div>
         <div class="vanguard__warband"></div>
@@ -1115,13 +1118,23 @@ export class DeckBuilderScreen implements Screen {
     const spent = rosterCost(this.roster);
     const problems = validateRoster(this.roster, this.rosterUnlocks);
 
+    // Against the *kit* ceiling, because this screen has no arena. What a given fight will
+    // seat is smaller and varies with the board, so the sub-line says so rather than letting
+    // a full bar read as "ready for anything".
     const count = el.querySelector<HTMLElement>('.vanguard__budget-count');
-    if (count) count.textContent = `Budget ${spent} / ${ROSTER_BUDGET}`;
+    if (count) count.textContent = `Kit ${spent} / ${KIT_BUDGET}`;
 
     const bar = el.querySelector<HTMLElement>('.vanguard__budget-bar i');
     if (bar) {
-      bar.style.width = `${Math.min(100, (spent / ROSTER_BUDGET) * 100)}%`;
-      bar.classList.toggle('is-full', spent >= ROSTER_BUDGET);
+      bar.style.width = `${Math.min(100, (spent / KIT_BUDGET) * 100)}%`;
+      bar.classList.toggle('is-full', spent >= KIT_BUDGET);
+    }
+
+    const seats = el.querySelector<HTMLElement>('.vanguard__budget-note');
+    if (seats) {
+      seats.textContent =
+        `An arena seats one point per rank and one per file — ${rosterBudgetFor(MIN_ARENA, MIN_ARENA)} ` +
+        `on the smallest board, ${KIT_BUDGET} on the largest. Anything over is held in reserve.`;
     }
 
     // --- the warband

@@ -116,6 +116,7 @@ const seen = new Set<string>();
 for (const source of [
   STARTER_CARDS,
   ARCANE_CARDS,
+  PYRE_CARDS,
   FROST_CARDS,
   COMPANION_UNIT_CARDS,
   TERRAIN_CARDS,
@@ -128,6 +129,7 @@ for (const source of [
   WILDLIFE_CARDS,
   THREAT_CARDS,
   HYBRID_CARDS,
+  AURA_CARDS,
 ]) {
   for (const id of Object.keys(source)) {
     if (seen.has(id)) throw new Error(`duplicate card id across school files: ${id}`);

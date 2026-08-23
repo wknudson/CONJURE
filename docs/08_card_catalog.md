@@ -8,28 +8,28 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**122 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**173 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
-| minion | 50 | Hero | Vanguard Roster, never a deck |
-| spell | 44 | Companion | drafted into a Grimoire |
+| minion | 64 | Hero | Vanguard Roster, never a deck |
+| spell | 74 | Companion | drafted into a Grimoire |
 | ability | 10 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
-| obstacle | 12 | Hero | Hero Deck, shown as a Construct |
-| **total** | **122** | | |
+| obstacle | 19 | Hero | Hero Deck, shown as a Construct |
+| **total** | **173** | | |
 
 ### By school
 
 | School | Cards |
 |---|---:|
-| dusk | 22 |
+| dusk | 27 |
+| bulwark | 24 |
+| frost | 24 |
+| bloom | 23 |
+| surge | 23 |
 | arcane | 21 |
-| pyre | 17 |
-| frost | 16 |
-| surge | 13 |
-| bulwark | 12 |
-| bloom | 11 |
+| pyre | 21 |
 | neutral | 10 |
 
 ### By file
@@ -38,21 +38,21 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 |---|---:|---|
 | [`starter.ts`](#starterts) | 12 | 5 minion, 2 spell, 4 ability, 1 obstacle |
 | [`arcane.ts`](#arcanets) | 12 | 1 minion, 3 ability, 6 mark, 2 obstacle |
-| [`pyre.ts`](#pyrets) | 3 | 1 minion, 1 spell, 1 obstacle |
-| [`frost.ts`](#frostts) | 10 | 2 minion, 6 spell, 2 obstacle |
+| [`pyre.ts`](#pyrets) | 7 | 2 minion, 3 spell, 2 obstacle |
+| [`frost.ts`](#frostts) | 16 | 4 minion, 9 spell, 3 obstacle |
 | [`companionUnits.ts`](#companionunitsts) | 20 | 20 minion |
 | [`terrain.ts`](#terraints) | 5 | 5 obstacle |
 | [`ranged.ts`](#rangedts) | 3 | 3 minion |
-| [`surge.ts`](#surgets) | 7 | 3 minion, 4 spell |
-| [`bloom.ts`](#bloomts) | 5 | 2 minion, 3 spell |
-| [`bulwark.ts`](#bulwarkts) | 6 | 3 minion, 3 spell |
-| [`dusk.ts`](#duskts) | 8 | 4 minion, 3 spell, 1 obstacle |
+| [`surge.ts`](#surgets) | 17 | 7 minion, 9 spell, 1 obstacle |
+| [`bloom.ts`](#bloomts) | 15 | 6 minion, 8 spell, 1 obstacle |
+| [`bulwark.ts`](#bulwarkts) | 16 | 6 minion, 8 spell, 2 obstacle |
+| [`dusk.ts`](#duskts) | 11 | 4 minion, 5 spell, 2 obstacle |
 | [`gaslamp.ts`](#gaslampts) | 4 | 1 minion, 2 spell, 1 ability |
 | [`wildlife.ts`](#wildlifets) | 2 | 2 minion |
 | [`threats.ts`](#threatsts) | 3 | 3 minion |
-| [`hybrid.ts`](#hybridts) | 11 | 11 spell |
+| [`hybrid.ts`](#hybridts) | 19 | 19 spell |
 | [`auras.ts`](#aurasts) | 11 | 9 spell, 2 ability |
-| **total** | **122** | |
+| **total** | **173** | |
 
 ---
 
@@ -100,30 +100,40 @@ The Hero's own colour: Marks, abilities and constructs, never a Spell. — **12 
 
 ### `pyre.ts`
 
-Pyre expansion — burst and burn. — **3 cards** (1 minion, 1 spell, 1 obstacle).
+Pyre expansion — burst and burn. — **7 cards** (2 minion, 3 spell, 2 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
 | **Ember Moth** | `ember_moth` | minion | 1P | 1 | hero | 10 atk, 20 hp, 3 mov, rng 1, skirmisher | deathburst burn 1 | empty tile (ownTerritory) | Haste | — | Haste. When it dies, every adjacent enemy catches fire (Burn 1). |
+| **Ember Hound** | `ember_hound` | minion | 2P | 2 | hero | 20 atk, 40 hp, 3 mov, rng 1, skirmisher | trail burning | empty tile (ownTerritory) | — | — | Every tile it walks off is left burning. Anything starting its turn on burning ground catches fire — yours included. |
+| **Stoke** | `stoke` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Against a Burning target, deals 30 damage through any armor. Otherwise it merely sets the target alight (Burn 1). |
 | **Ashen Wake** | `ashen_wake` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 20 fire damage in a 3-tile line. If anything on the line was already Burning, everything on it is left Brittle. |
+| **Cinder Gale** | `cinder_gale` | spell | 3P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 20 fire damage in a widening 3-deep cone and sets everything caught alight (Burn 1). |
 | **Pyre Pillar** | `pyre_pillar` | obstacle | 2P | 2 | companion | 60 hp | turn start burn 1; leaves rubble | empty tile (any) | — | R2 | Raises a 60 HP pillar on an empty tile. At the start of each enemy turn, every enemy in its row catches fire (Burn 1). |
+| **Slag Cairn** | `slag_cairn` | obstacle | 2P | 2 | companion | 40 hp | on break 30 dmg + burn 1; leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 40 HP cairn on an empty tile. When it breaks it bursts for 30 fire damage and Burn 1 in a cross around it, hitting whatever is there. |
 
 ### `frost.ts`
 
-Frost expansion — slow, freeze, shatter. — **10 cards** (2 minion, 6 spell, 2 obstacle).
+Frost expansion — slow, freeze, shatter. — **16 cards** (4 minion, 9 spell, 3 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Rime Fox** | `rime_fox` | minion | 1P | 1 | hero | 10 atk, 20 hp, 3 mov, rng 1, skirmisher | onHit chill 1 | empty tile (ownTerritory) | Haste | — | Haste. Whatever survives its bite takes Chill 1, and the third stack freezes a unit solid. |
 | **Glacial Stalker** | `glacial_stalker` | minion | 2P | 2 | hero | 20 atk, 50 hp, 2 mov, rng 1, bruiser | +20 vs chill/freeze | empty tile (ownTerritory) | — | — | Deals 20 extra damage to a Chilled or Frozen target. |
 | **Rimeguard** | `rimeguard` | minion | 2P | 2 | hero | 10 atk, 70 hp, 1 mov, rng 1, bruiser | escalate +0/+10 | empty tile (ownTerritory) | Guardian, Growth | — | Guardian: blocks line of sight behind it. |
+| **Glacier Warden** | `glacier_warden` | minion | 4P | 3 | hero | 40 atk, 80 hp, 1 mov, rng 1, bruiser | deathburst chill 2 | empty tile (ownTerritory) | Counter | — | Counter: strikes back for its full Attack whenever it is hit in melee. When it dies, every adjacent enemy takes Chill 2. |
 | **Creeping Rime** | `creeping_rime` | spell | 1P | 1 | companion | — | — | entity (any) — range 4, LoS | — | — | Chills the target tile and everything orthogonally beside it (Chill 1). |
 | **Rime Touch** | `brittle_touch` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 2, LoS | — | — | Apply Brittle 2 to a unit. A Brittle target takes +20 damage from every hit. |
 | **Glacial Spike** | `glacial_spike` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 5, LoS | — | R2 | Deal 30 frost damage to a unit and apply Chill 1. Chill 3 freezes a unit solid. |
+| **Rime Lance** | `rime_lance` | spell | 2P | 2 | companion | — | — | line 3 — range 5, linear, LoS | — | R2 | Deals 30 frost damage down a 3-tile line and applies Chill 1 to everything in it. Fires only along a rank, file or diagonal. |
+| **Whiteout** | `whiteout` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | — | Fogs a 2x2 block of tiles for 2 turns, blocking ranged line of sight through them, and Chills everything standing there. |
+| **Deep Winter** | `deep_winter` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Applies Chill 2 to everything in a 3x3 around the target tile, and deals no damage at all. The third stack freezes a unit solid. |
 | **Flash Freeze** | `flash_freeze` | spell | 1P+2M | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Raise a 40 HP Coolant Pillar on an empty tile, Chilling everything orthogonally beside it. |
 | **Frost Nova** | `frost_nova` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | R2 | Apply Chill 1 to every unit adjacent to the target tile, and 10 frost damage. |
 | **Rime Lock** | `rime_lock` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Freezes the target solid. If it was already Frozen, deals 50 damage through any armor instead. |
 | **Coolant Pillar** | `coolant_pillar` | obstacle | 0 | 1 | companion | 40 hp | leaves rubble | none | — | setup only | A venting column of coolant. Blocks sight and movement; leaves rubble when broken. |
 | **Ice Barricade** | `ice_barricade` | obstacle | 1P | 1 | hero | 50 hp | leaves rubble | empty tile (any) | — | R2 | Raise a wall of ice. Blocks movement and line of sight until it is broken. |
+| **Hail Spire** | `hail_spire` | obstacle | 2P | 2 | companion | 50 hp | turn start chill 1; leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 50 HP spire on an empty tile. At the start of each enemy turn, every enemy in its row takes Chill 1. Three stacks freeze. |
 
 ### `companionUnits.ts`
 
@@ -176,46 +186,76 @@ Bodies that shoot. — **3 cards** (3 minion).
 
 ### `surge.ts`
 
-Surge expansion — charge and chain. — **7 cards** (3 minion, 4 spell).
+Surge expansion — charge and chain. — **17 cards** (7 minion, 9 spell, 1 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Static Hare** | `static_hare` | minion | 1P | 1 | hero | 10 atk, 20 hp, 3 mov, rng 1, skirmisher | onHit charged 1 | empty tile (ownTerritory) | Haste | — | Haste. Whatever survives its bite is left Charged. Fire Overloads a Charged target; frost Superconducts. |
+| **Storm Rod** | `storm_rod` | minion | 1P | 1 | hero | 10 atk, 40 hp, 0 mov, rng 1, caster | deathburst charged 1 | empty tile (ownTerritory) | — | — | Cannot move, ever. When it dies, every adjacent enemy is left Charged. |
 | **Storm Wisp** | `storm_wisp` | minion | 1P | 1 | hero | 10 atk, 20 hp, 2 mov, rng 1, skirmisher | refund 1P on attack | empty tile (ownTerritory) | Haste | — | Haste. Whenever it attacks, you are paid 1 Pip. |
+| **Voltaic Coil** | `voltaic_coil` | minion | 2P | 2 | hero | 20 atk, 50 hp, 1 mov, rng 1, bruiser | refund 1P on death | empty tile (ownTerritory) | — | — | When it dies — however it dies — you are paid 1 Pip. |
 | **Voltaic Hound** | `voltaic_hound` | minion | 2P | 2 | hero | 30 atk, 20 hp, 3 mov, rng 1, skirmisher | — | empty tile (ownTerritory) | Haste | — | Haste. Can move and attack the turn it is deployed. Fast, vicious, and made of paper. |
 | **Clockwork Bombardier** | `clockwork_bombardier` | minion | 3P | 2 | hero | 10 atk, 40 hp, 1 mov, rng 2-4, sniper | arcing; onHit charged 1 | empty tile (ownTerritory) | — | — | Lobber. Fires 2-4 tiles, arcing over cover, and cannot depress its aim onto anything adjacent. Whatever survives a shell is left Charged. |
+| **Arc Dynamo** | `arc_dynamo` | minion | 4P | 3 | hero | 50 atk, 60 hp, 1 mov, rng 1-3, sniper | onHit charged 1 | empty tile (ownTerritory) | — | — | Strikes up to 3 tiles away, and whatever survives is left Charged. Slow to move, and the whole reason to bring a Discharge. |
 | **Arcing Step** | `arcing_step` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | — | An allied unit moves 2 further this turn and is left Charged. Fire Overloads it; frost Superconducts. |
+| **Galvanic Rally** | `galvanic_rally` | spell | 1P | 1 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Every unit orthogonally beside the target tile moves 1 further this turn and is left Charged. |
 | **Static Arc** | `static_arc` | spell | 1P | 1 | companion | — | — | empty tile (any) — range 3, LoS | — | R2 | Deals 20 spell damage to everything orthogonally beside the target tile and leaves it Charged. Fire into a Charged target Overloads; frost Superconducts. |
 | **Arc Lash** | `arc_lash` | spell | 2P | 2 | hero | — | — | entity (enemy) | — | R2 | Deal 30 shock damage to a unit. In rain, the charge arcs for 10 to everything adjacent to it. |
+| **Chain Bolt** | `chain_bolt` | spell | 2P | 2 | companion | — | — | line 3 — range 5, linear, LoS | — | R2 | Deals 30 shock damage down a 3-tile line, and shock leaves everything it touches Charged. Fires only along a rank, file or diagonal. |
+| **Discharge** | `discharge` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Against a Charged target, deals 40 shock damage and 20 more to everything adjacent. Otherwise only 20. |
 | **Thunderhead** | `thunderhead` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 30 shock damage. If you still hold 3 or more Pips, it earths outward for 20 more to everything adjacent. |
+| **Paralytic Arc** | `paralytic_arc` | spell | 2P+1M | 2 | companion | — | — | entity (enemy, has charged) — range 4, LoS | — | R2 | Costs 1 Marrow, and can only be aimed at a Charged unit. Deals 20 shock damage and Stuns it: no moving, no swinging. |
+| **Tempest Break** | `tempest_break` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 30 shock damage in a 3x3 around the target tile, and shock leaves every survivor Charged. |
+| **Tesla Pylon** | `tesla_pylon` | obstacle | 2P | 2 | companion | 40 hp | turn start charged 1 | empty tile (any) — range 3, LoS | — | R2 | Raises a 40 HP pylon on an empty tile. At the start of each enemy turn, every enemy in its row is left Charged. Deals no damage itself. |
 
 ### `bloom.ts`
 
-Bloom expansion — growth and regrowth. — **5 cards** (2 minion, 3 spell).
+Bloom expansion — growth and regrowth. — **15 cards** (6 minion, 8 spell, 1 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
 | **Creeping Briar** | `creeping_briar` | minion | 1P | 1 | hero | 10 atk, 40 hp, 0 mov, rng 1, bruiser | escalate +10/+10 | empty tile (ownTerritory) | Growth | — | Cannot move, ever. Plant it where the fight is going to be. |
+| **Sap Wisp** | `sap_wisp` | minion | 1P | 1 | hero | 10 atk, 30 hp, 2 mov, rng 1, caster | tithe +1M | empty tile (ownTerritory) | — | — | Bled for +1 Marrow above the usual. Slow, soft, and worth more opened than standing. |
+| **Bramble Sentinel** | `bramble_sentinel` | minion | 2P | 2 | hero | 10 atk, 70 hp, 1 mov, rng 1, bruiser | escalate +0/+10 | empty tile (ownTerritory) | Guardian, Growth | — | Guardian: blocks line of sight behind it. A slow wall of thorns that would rather be stood in front of than swung. |
 | **Briar Wolf** | `briar_wolf` | minion | 2P | 2 | hero | 20 atk, 50 hp, 2 mov, rng 1, bruiser | onHit toxin 1 | empty tile (ownTerritory) | — | — | Everything it bites is left poisoned (Toxin 1). |
+| **Sporeback Boar** | `sporeback_boar` | minion | 2P | 2 | hero | 30 atk, 40 hp, 2 mov, rng 1, bruiser | deathburst toxin 2 | empty tile (ownTerritory) | — | — | When it dies, every adjacent enemy takes 2 Toxin. Toxin ticks through Armor. |
+| **Verdant Colossus** | `verdant_colossus` | minion | 4P | 3 | hero | 40 atk, 80 hp, 1 mov, rng 1-3, sniper | onHit toxin 2 | empty tile (ownTerritory) | — | — | Strikes up to 3 tiles away, and everything it wounds is left poisoned (Toxin 2). |
 | **Root Snare** | `root_snare` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Roots the target in place and leaves it Brittle — every hit against it lands harder until it wears off. |
+| **Sap Draught** | `sap_draught` | spell | 1P | 1 | companion | — | — | none — range 4 | — | R2 | Returns 30 health to your Pact. Stacks with the Verdant Growth your Companion already pays. |
+| **Spore Burst** | `spore_burst` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Against a target carrying 2 or more Toxin, deals 40 damage through any armor. Otherwise only 10. |
 | **Noxious Cloud** | `noxious_cloud` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | — | Poisons a 2x2 block of tiles (Toxin 2). |
 | **Spore Cloud** | `spore_cloud` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Applies 2 Toxin to everything orthogonally beside the target tile. Toxin ticks through Armor. Fire ignites it for 20 damage per stack to everything adjacent. |
+| **Strangling Vines** | `strangling_vines` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Roots everything orthogonally beside the target tile and poisons it (Toxin 1). A rooted unit can still attack. |
+| **Thornlash** | `thornlash` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 30 physical damage and leaves 1 Toxin. Shatters a Frozen target, as any physical blow does. |
+| **Blight Bloom** | `blight_bloom` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 20 physical damage and applies 2 Toxin to everything around the target tile. Fire consumes every stack for 20 damage each. |
+| **Briar Rampart** | `briar_rampart` | obstacle | 2P | 2 | companion | 50 hp | turn start toxin 1; leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 50 HP thicket on an empty tile. At the start of each enemy turn, every enemy in its row takes 1 Toxin. Leaves rough ground when it breaks. |
 
 ### `bulwark.ts`
 
-Bulwark expansion — plate and hold. — **6 cards** (3 minion, 3 spell).
+Bulwark expansion — plate and hold. — **16 cards** (6 minion, 8 spell, 2 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Shieldbearer** | `shieldbearer` | minion | 1P | 1 | hero | 10 atk, 50 hp, 1 mov, rng 1, bruiser | — | empty tile (ownTerritory) | Guardian | — | Guardian: blocks line of sight behind it. A Pip for a sightline, and almost no threat at all. |
 | **Concussive Blow** | `concussive_blow` | minion | 2P | 2 | hero | 20 atk, 40 hp, 1 mov, rng 1, bruiser | onHit stun 1; escalate +10/+10 | empty tile (ownTerritory) | — | — | A slab of a thing with a hammer. Whatever it wounds is Stunned: no moving, no swinging. |
+| **Siege Ox** | `siege_ox` | minion | 2P | 2 | hero | 30 atk, 50 hp, 1 mov, rng 1, bruiser | onHit brittle 1 | empty tile (ownTerritory) | — | — | Whatever survives its charge is left Brittle, taking +20 damage from every hit until it wears off. |
 | **Stone-Heart Golem** | `stone_heart_golem` | minion | 3P | 2 | hero | 30 atk, 80 hp, 1 mov, rng 1, bruiser | plates 10/turn | empty tile (ownTerritory) | Guardian | — | Guardian. At the start of each of your turns it welds on 10 more Armor, up to 30. |
+| **Anvil Lord** | `anvil_lord` | minion | 4P | 3 | hero | 40 atk, 90 hp, 1 mov, rng 1, bruiser | plates 20/turn | empty tile (ownTerritory) | — | — | At the start of each of your turns it welds on 20 more Armor, up to 60. Slow, short-reached, and very hard to remove. |
 | **Slag-Iron Golem** | `slag_iron_golem` | minion | 4P | 3 | hero | 30 atk, 80 hp, 1 mov, rng 1, bruiser | — | empty tile (ownTerritory) | Guardian, Counter | — | Guardian: blocks line of sight behind it. Counter: strikes back for its full Attack whenever it is hit in melee, and survives to do it again. |
+| **Bastion Stance** | `bastion_stance` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 40 Persistent Armor and moves nothing. Armor is spent before health, and does not decay. |
 | **Tectonic Plate** | `tectonic_plate` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 30 Armor and shoves everything beside it 1 tile away. |
 | **Avalanche Slam** | `avalanche_slam` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | — | Shoves the target 2 tiles. If it slams into something, it is left Brittle. |
+| **Phalanx Step** | `phalanx_step` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Drags everything around the target tile 1 tile toward it. They collide with whatever arrives first. Triggers standard Collision Damage (30 / 20). |
 | **Seismic Slam** | `seismic_slam` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Every unit around the target tile is thrown 1 tile directly away from it. Deals no damage of its own — only what they hit. Triggers standard Collision Damage (30 / 20). |
+| **Siege Break** | `siege_break` | spell | 2P | 2 | companion | — | — | entity (any, +obstacles) — range 4, LoS | — | R2 | Deals 50 impact damage to any unit or construct, yours included. The answer to a wall you cannot walk around. |
+| **Crag Slam** | `crag_slam` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 40 impact damage to everything orthogonally beside the target tile, then shoves them 1 tile away. Shatters anything Frozen. |
+| **Hammer Fall** | `hammer_fall` | spell | 2P+1M | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Costs 1 Marrow, which no amount of banked Pips will cover. Deals 30 impact damage and Stuns: no moving, no swinging. |
+| **Battlement** | `battlement` | obstacle | 2P | 2 | companion | 40 hp, cover | — | empty tile (any) — range 3, LoS | — | R2 | Raises 40 HP of cover on an empty tile. Blocks line of sight but not movement — your own units may stand in it and shoot out. |
+| **Iron Gate** | `iron_gate` | obstacle | 2P | 2 | companion | 80 hp | leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises an 80 HP gate on an empty tile. Blocks movement and line of sight, and leaves rough ground when it finally breaks. |
 
 ### `dusk.ts`
 
-Dusk expansion — drain, decay, the graveyard. — **8 cards** (4 minion, 3 spell, 1 obstacle).
+Dusk expansion — drain, decay, the graveyard. — **11 cards** (4 minion, 5 spell, 2 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -225,8 +265,11 @@ Dusk expansion — drain, decay, the graveyard. — **8 cards** (4 minion, 3 spe
 | **Hollowed Husk** | `hollowed_husk` | minion | 1P | 1 | hero | 0 atk, 40 hp, 1 mov, rng 1, bruiser | refund 2P on death | empty tile (ownTerritory) | Guardian | — | Guardian. It cannot strike. When it dies, you are paid 2 Pips. |
 | **Shadow Siphon** | `shadow_siphon` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Spends an allied unit whole. The weakest enemy loses 30 health through any armor, and your Pact recovers 30. |
 | **Smoke Bomb** | `smoke_bomb` | spell | 1P | 1 | hero | — | — | empty tile (any) | — | R2 | A held breath of black smoke. Blocks line of sight; anyone may walk into it. |
+| **Wither** | `wither` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Against a Brittle target, deals 30 damage through any armor. Otherwise it merely leaves the target Brittle. |
+| **Creeping Decay** | `creeping_decay` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | R2 | Deals 20 damage through any armor to everything orthogonally beside the target tile, and leaves it all Brittle. |
 | **Grave Call** | `grave_call` | spell | 2P | 2 | companion | — | — | entity (ally) — range 4 | — | — | Spends an allied unit whole. A Hollow Wraith stands up on the same tile, striking through any armor. |
 | **Smoke Bank** | `smoke_bank` | obstacle | 0 | 1 | hero | 30 hp, cover | — | none | — | setup only | Blocks sight but not movement. Units may stand in it. |
+| **Charnel Pillar** | `charnel_pillar` | obstacle | 2P | 2 | companion | 50 hp | turn start brittle 1; leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 50 HP cairn of bone on an empty tile. At the start of each enemy turn, every enemy in its row is left Brittle — taking +20 damage from every hit until it wears off. |
 
 ### `gaslamp.ts`
 
@@ -260,13 +303,20 @@ Enemy warband bodies. — **3 cards** (3 minion).
 
 ### `hybrid.ts`
 
-Splice products. Obtainable only at the bench. — **11 cards** (11 spell).
+Splice products. Obtainable only at the bench. — **19 cards** (19 spell).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
 | **Aetheric Overload** | `aetheric_overload` | spell | 0 | 1 | companion | — | — | entity (ally, has charged) — range 4 | — | splice only | Spends a Charged allied unit whole. You are paid 3 Pips. |
+| **Bone Bastion** | `bone_bastion` | spell | 1P | 1 | companion | — | — | entity (ally, unexhausted) — range 4 | — | splice only | Bleed an un-exhausted friendly minion for 30: extracts 1 Marrow and plates your Pact with Persistent Armor equal to the health taken. |
 | **Icebreaker** | `icebreaker` | spell | 1P | 1 | companion | — | — | adjacent enemy — range 1 | — | splice only, R2 | A 30 damage blow to an adjacent enemy. Against a Frozen one this Shatters: all of its Armor is stripped and everything beside it takes 40. |
+| **Black Ice** | `black_ice` | spell | 2P | 2 | companion | — | — | entity (enemy, has freeze) — range 4, LoS | — | splice only, R2 | Can only be aimed at a Frozen unit. Deals 40 damage through any armor, and everything adjacent takes Chill 2. |
+| **Blight Siphon** | `blight_siphon` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | splice only | Against a target carrying 2 or more Toxin, deals 50 damage through any armor and returns 30 health to your Pact. Otherwise only 20. |
+| **Iron Briar** | `iron_briar` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | splice only | Raises a 50 HP Briar Rampart on an empty tile and roots everything orthogonally beside it, poisoning them (Toxin 1). |
+| **Kinetic Arc** | `kinetic_arc` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | splice only | Shoves the target 2 tiles. If it slams into something, the impact discharges for 30 shock damage all around it — and shock leaves everything it touches Charged. |
 | **Magma Shove** | `magma_shove` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | splice only | Shoves the target 2 tiles and leaves every tile it crossed burning for 2 turns. Anything starting a turn on burning ground catches fire. |
+| **Permafrost** | `permafrost` | spell | 2P | 2 | companion | — | — | entity (enemy, has chill) — range 4, LoS | — | splice only, R2 | Can only be aimed at a Chilled unit. Deals 20 frost damage, roots it in place, and applies 2 Toxin that ticks through Armor. |
+| **Superconductor** | `superconductor` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | splice only, R2 | Deals 30 frost damage and applies Chill 2. Against a Charged target this Superconducts: all Armor stripped, and it is left Brittle. |
 | **Thermal Eruption** | `thermal_eruption` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | splice only, R2 | Chills the target, then deals 30 fire damage — which flash-boils it, fogging the tile. A Frozen target is also set alight (Burn 2). |
 | **Aetheric Defibrillator** | `aetheric_defibrillator` | spell | 3P | 2 | companion | — | — | entity (ally, unexhausted) — range 4 | — | splice only | Consume an un-exhausted friendly minion. A Galvanic Revenant stands up on the same tile, ready to move and strike this turn. |
 | **Cryo-Combustion** | `cryo_combustion` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | splice only, R2 | Deals 20 impact damage, then sets the target alight for 2 Burn. A Frozen target Shatters first and loses all Armor. A Chilled one Vaporizes when the fire next bites, on its own turn. |
@@ -274,6 +324,7 @@ Splice products. Obtainable only at the bench. — **11 cards** (11 spell).
 | **Overload Strike** | `overload_strike` | spell | 2P+1M | 2 | companion | — | — | entity (enemy, +obstacles) — range 3, LoS | — | splice only, R2 | Charge the target, then set it alight: 20 shock damage, then 20 fire damage, and the arc jumps. |
 | **Plasma Arc** | `plasma_arc` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | splice only | Consumes 2 Burn on the target for 50 shock damage, earthing 30 more into everything adjacent. Without the fire, only 20. |
 | **Scorched Earth** | `scorched_earth` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | splice only, R2 | Poisons the 3x3 around the target (Toxin 1), then sets it alight for 30 fire damage — igniting every Toxin stack it carries for 20 more each to everything adjacent. |
+| **Soulfire** | `soulfire` | spell | 2P+1M | 2 | companion | — | — | entity (enemy, has burn) — range 4, LoS | — | splice only, R2 | Can only be aimed at a Burning unit. Consumes the fire on it for 50 fire damage, and 20 to everything adjacent. |
 | **Vaporize Blast** | `vaporize_blast` | spell | 2P+1M | 2 | companion | — | — | entity (enemy, +obstacles) — range 4, LoS | — | splice only, R2 | Chill the target, then boil it: 10 frost damage, then 30 fire damage. The steam blinds what is left. |
 
 ### `auras.ts`
@@ -300,7 +351,7 @@ The Aura attach cards, their Detonations and Revival. — **11 cards** (9 spell,
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 32 of the 122 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 56 of the 173 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 

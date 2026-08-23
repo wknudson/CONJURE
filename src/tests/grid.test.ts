@@ -401,23 +401,31 @@ describe('Ash-Ghoul', () => {
 });
 
 describe('the summon path', () => {
-  it('carries the on-hit rider onto the body the engine actually places', () => {
+  it('carries the on-hit rider and the attack profile onto the body the engine actually places', () => {
     // `scenario.addUnit` builds a unit by hand and had drifted from `spawn.ts` — it copied
     // `attackProfile` but not `onHit`, so these tests passed a unit the game would never
     // produce. Summoning through a played card is the only way to prove the real path.
+    //
+    // Two cards, because no single one carries both fields any anymore. The Bombardier's
+    // `charged` rider was deleted when a Surge body's swing began carrying `shock`: the
+    // engine already leaves a charge on any shock hit, so the rider had become a second
+    // helping and branded its target twice. The Briar Wolf still has a rider worth copying.
     const state = scenario({
       width: 6,
       height: 8,
-      hand: ['clockwork_bombardier'],
+      hand: ['clockwork_bombardier', 'briar_wolf'],
       pips: 8,
     });
-    const card = handCard(state, 'player', 'clockwork_bombardier');
 
-    const res = run(state, play(card, atTile(2, 6)));
-    const id = eventsOf(res.events, 'unitSummoned')[0]!.unit.id;
+    const bombardier = handCard(state, 'player', 'clockwork_bombardier');
+    const first = run(state, play(bombardier, atTile(2, 6)));
+    const arcingId = eventsOf(first.events, 'unitSummoned')[0]!.unit.id;
+    expect(first.state.units[arcingId]!.attackProfile).toBe('arcing');
 
-    expect(res.state.units[id]!.onHit).toEqual({ status: 'charged', stacks: 1 });
-    expect(res.state.units[id]!.attackProfile).toBe('arcing');
+    const wolf = handCard(first.state, 'player', 'briar_wolf');
+    const second = run(first.state, play(wolf, atTile(3, 6)));
+    const wolfId = eventsOf(second.events, 'unitSummoned')[0]!.unit.id;
+    expect(second.state.units[wolfId]!.onHit).toEqual({ status: 'toxin', stacks: 1 });
   });
 
   it('leaves a body with no rider without one', () => {

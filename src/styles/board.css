@@ -42,6 +42,57 @@
   color: #d6c4a0;
 }
 
+/*
+ * Elemental damage numbers.
+ *
+ * Each takes its school's own colour — the same six hexes the card frames and the enrolment
+ * crests use — so a player who has learned that Pyre is orange reads the element off the
+ * number without being taught a second palette. Shock keeps the arc-light cyan it already
+ * had rather than Surge's yellow, because it also has the jitter and the two together are
+ * already the most legible floater in the game.
+ *
+ * This matters more than it used to. A body's swing now carries its school's element, and a
+ * Mark detonates on aligned damage and fizzles on the wrong kind — so "what element just hit
+ * that" is the difference between a combo and a wasted card, and the player has to be able to
+ * see it happen.
+ */
+.floater--fire {
+  color: #e8763f;
+  text-shadow:
+    0 0 8px rgba(217, 100, 58, 0.9),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.floater--frost {
+  color: #8fd0ea;
+  text-shadow:
+    0 0 8px rgba(111, 182, 216, 0.85),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.floater--impact {
+  color: #c4b8a8;
+  /* No glow: impact is mass, not light. The weight comes from the letterform instead. */
+  letter-spacing: 0.5px;
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.8),
+    0 2px 5px rgba(0, 0, 0, 0.95);
+}
+
+.floater--decay {
+  color: #b98fe0;
+  text-shadow:
+    0 0 9px rgba(154, 111, 196, 0.9),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.floater--toxic {
+  color: #92cf72;
+  text-shadow:
+    0 0 8px rgba(121, 180, 92, 0.85),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
 /* Shock. Arc-light cyan and skewed off true, so a discharge is distinguishable from an
    ordinary blow at a glance — which matters in the rain, where one cast produces a shock
    number and a scatter of physical ones from the arcs it throws. */

@@ -223,4 +223,309 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
     range: 3,
     needsLoS: true,
   },
+
+  // ------------------------------------------------------------ the second expansion
+  //
+  // Bulwark had the thinnest spell shelf of any school -- four cards, and two of them were
+  // the same shove at different sizes. What was missing was not more shoving: it was the
+  // rest of the school's own vocabulary. Plate you buy outright, plate a body grows,
+  // constructs that are walls rather than clocks, and the one thing a school built around
+  // terrain could not previously do at all -- break somebody else's.
+
+  /**
+   * Plate, bought plainly.
+   *
+   * Forty armour for a Pip and no rider, which reads as strictly worse than Tectonic
+   * Plate's thirty-and-a-shove until the shove is the problem: the Plate scatters the
+   * cluster you were about to Slam, and half the time an armour card is cast on a body you
+   * want left exactly where it is standing.
+   *
+   * Same price, same school, opposite geometry. That is the decision.
+   */
+  bastion_stance: {
+    id: 'bastion_stance',
+    name: 'Bastion Stance',
+    cost: { pips: 1, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Gives an ally 40 Persistent Armor and moves nothing. Armor is spent before health, and does not decay.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: { op: 'grantArmor', amount: 40 },
+    keywords: [],
+    range: 4,
+  },
+
+  /**
+   * Hard control, and the Marrow that pays for it.
+   *
+   * A Stun on demand is the strongest thing a card can do to a single body — a turn taken
+   * off the board with no way to answer it — so it is gated the way the game gates
+   * everything unanswerable: **one Marrow**, which no bank of Pips will cover. The player
+   * has to have opened something up this turn.
+   *
+   * Concussive Blow reaches the same effect for two flat Pips and asks the body to walk up,
+   * survive a round in the open and actually wound. This is that Stun bought instead of
+   * earned, and the Marrow is the difference.
+   */
+  hammer_fall: {
+    id: 'hammer_fall',
+    name: 'Hammer Fall',
+    cost: { pips: 2, marrow: 1 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Costs 1 Marrow, which no amount of banked Pips will cover. Deals 30 impact damage and Stuns: no moving, no swinging.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'impact', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'stun', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * The Slam, inverted.
+   *
+   * Seismic Slam throws everything away from a point; this drags everything toward one. The
+   * ops are deliberately the pair — `shoveArea` and `pullArea` — and the difference in play
+   * is the whole card: a shove scatters a line you cannot fight, a pull assembles a cluster
+   * you can.
+   *
+   * Victims are collected before anyone moves and resolved row-then-column, so converging
+   * bodies collide with whoever arrived first. A pull into a wall is collision damage the
+   * enemy chose none of.
+   */
+  phalanx_step: {
+    id: 'phalanx_step',
+    name: 'Phalanx Step',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Drags everything around the target tile 1 tile toward it. They collide with whatever arrives first. Triggers standard Collision Damage (30 / 20).',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'pullArea', distance: 1, area: { shape: 'adjacent8' } },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * The school's finisher, and it is still mostly geometry.
+   *
+   * Forty impact into the four orthogonal neighbours and then a shove on all of them —
+   * damage first, so the blow lands on the cluster as it stood rather than on whatever is
+   * left after it scatters. Ordering inside a `seq` is load-bearing and this is the clearest
+   * case of it in the school.
+   *
+   * `impact` is what Shatters ice, so a Crag Slam into a frozen line is doing two schools'
+   * work with one card.
+   */
+  crag_slam: {
+    id: 'crag_slam',
+    name: 'Crag Slam',
+    cost: { pips: 3, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 40 impact damage to everything orthogonally beside the target tile, then shoves them 1 tile away. Shatters anything Frozen.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 40, dtype: 'impact', area: { shape: 'adjacentCross' } },
+        { op: 'shoveArea', distance: 1, area: { shape: 'adjacentCross' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * The first card in the game whose job is breaking a construct.
+   *
+   * Obstacles have always been terrain rather than allies — either side may break a pillar
+   * to open a lane — but nothing was ever *good* at it. Every wall in the game came down to
+   * ordinary attacks and incidental splash, which made a Barricade far better than its
+   * price against a deck holding no answer.
+   *
+   * `side: 'any'` with obstacles included, and that is not an oversight: this will happily
+   * bring down your own Iron Gate. A demolition card that could only ever help you would be
+   * a strictly-better card, and the interesting version asks which wall is in the way.
+   */
+  siege_break: {
+    id: 'siege_break',
+    name: 'Siege Break',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 50 impact damage to any unit or construct, yours included. The answer to a wall you cannot walk around.',
+    target: { kind: 'entity', side: 'any', includeObstacles: true },
+    effect: { op: 'damage', amount: 50, dtype: 'impact', area: { shape: 'target' } },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * A real wall, at last.
+   *
+   * Every construct in the game so far has been a clock: sixty health or less, meant to be
+   * broken, asking only whether breaking it is worth the turn. Eighty is the first one that
+   * is genuinely meant to *hold* — two turns of a bruiser's attention, or one Siege Break,
+   * which is why the two were written together.
+   *
+   * Masonry, so it leaves rough ground behind. The tile stays expensive after the gate is
+   * gone.
+   */
+  iron_gate: {
+    id: 'iron_gate',
+    name: 'Iron Gate',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'obstacle',
+    text: 'Raises an 80 HP gate on an empty tile. Blocks movement and line of sight, and leaves rough ground when it finally breaks.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'spawnObstacle', obstacleDef: 'iron_gate' },
+    keywords: [],
+    obstacleHp: 80,
+    leavesRubble: true,
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * Cover you can stand in, which is a different thing from a wall.
+   *
+   * `obstacleCover` blocks sight and nothing else: units walk into it and shoot out of it,
+   * and a ranged body inside one is a body nothing across the board can draw a line to.
+   * Bramble cover has done this in encounter terrain since the beginning; this is the first
+   * time a player can raise it.
+   *
+   * Forty health because it is not trying to stop anybody — it is trying to hide them.
+   */
+  battlement: {
+    id: 'battlement',
+    name: 'Battlement',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'obstacle',
+    text: 'Raises 40 HP of cover on an empty tile. Blocks line of sight but not movement — your own units may stand in it and shoot out.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'spawnObstacle', obstacleDef: 'battlement' },
+    keywords: [],
+    obstacleHp: 40,
+    obstacleCover: true,
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * The cheapest Guardian in the game.
+   *
+   * Ten attack means it will never kill anything, and that is the entire design: a Pip buys
+   * a sightline, not a threat. Everything Bulwark wants to do needs a body nobody can shoot
+   * past, and until now the cheapest was three Pips.
+   */
+  shieldbearer: {
+    id: 'shieldbearer',
+    name: 'Shieldbearer',
+    cost: { pips: 1, marrow: 0 },
+    school: 'bulwark',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Guardian: blocks line of sight behind it. A Pip for a sightline, and almost no threat at all.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'shieldbearer' },
+    keywords: ['Guardian'],
+    unit: {
+      atk: 10,
+      hp: 50,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /**
+   * A body that softens what it hits, for somebody else to finish.
+   *
+   * Brittle is +20 from *every* hit until it wears off, so an Ox that connects has not
+   * dealt thirty damage — it has made the next two blows land for fifty. It is the school's
+   * only enabler body, and it wants a warband standing behind it.
+   *
+   * The rider fires after the blow and only on a survivor, so it can never soften and cash
+   * in with the same swing.
+   */
+  siege_ox: {
+    id: 'siege_ox',
+    name: 'Siege Ox',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Whatever survives its charge is left Brittle, taking +20 damage from every hit until it wears off.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'siege_ox' },
+    keywords: [],
+    unit: {
+      atk: 30,
+      hp: 50,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+      onHit: { status: 'brittle', stacks: 1 },
+    },
+  },
+
+  /**
+   * The elite, and the hardest single body a player can field.
+   *
+   * Twenty plate a turn to the cap is sixty armour on top of ninety health, which takes
+   * three turns to reach and is close to unanswerable by damage alone once it does. What
+   * keeps it fair is what it cannot do: one movement, one tile of reach, and no Guardian —
+   * it holds the tile it is standing on and has no opinion about any other.
+   *
+   * Four Pips puts it at Tier 3, one copy a deck and four roster points. It is meant to be
+   * the whole plan, not part of one.
+   */
+  anvil_lord: {
+    id: 'anvil_lord',
+    name: 'Anvil Lord',
+    cost: { pips: 4, marrow: 0 },
+    school: 'bulwark',
+    source: 'hero',
+    kind: 'minion',
+    text: 'At the start of each of your turns it welds on 20 more Armor, up to 60. Slow, short-reached, and very hard to remove.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'anvil_lord' },
+    keywords: [],
+    unit: {
+      atk: 40,
+      hp: 90,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+      platesEachTurn: 20,
+    },
+  },
 };

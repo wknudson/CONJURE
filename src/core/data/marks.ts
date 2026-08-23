@@ -49,7 +49,11 @@ export const MARKS: Record<string, MarkDef> = {
     id: 'rot_root_snare',
     name: 'Rot-Root Snare',
     school: 'bloom',
-    trigger: { kind: 'hpLoss', alignedTypes: ['physical', 'impact'] },
+    // `toxic` joined the pair when bodies started swinging with their school's element:
+    // Bloom deals toxic now, so without it Bloom's own trap was the one Mark its own
+    // warband could not set off. Additive rather than a replacement — a physical or impact
+    // blow from anybody still springs it, which is the trigger the card was priced around.
+    trigger: { kind: 'hpLoss', alignedTypes: ['physical', 'impact', 'toxic'] },
     // Deliberately none. The card is priced as control, and a snare that also hit would
     // be doing two jobs for one Pip.
     damage: 0,
@@ -161,14 +165,25 @@ export const MARKS: Record<string, MarkDef> = {
     text: 'When the host loses health to a physical or impact blow, the ground gives: 40 impact damage in a cross around it. Shatters anything Frozen it catches.',
   },
 
+  /**
+   * Dusk's trap, and the only one that hunts rather than splashes.
+   *
+   * `decay` now, where it used to be `spell`. Dusk was one of the two schools with no damage
+   * type of its own, so its own Mark hit with the generic magic type that four other Marks
+   * align to — the splinter could set off a Cinder Mark on the way past, which is not
+   * something Dusk was ever supposed to be able to do. It hits with Dusk now.
+   *
+   * A death trigger, so there are no `alignedTypes` to keep in step: whatever kills the host
+   * sets it off.
+   */
   soul_splinter_mark: {
     id: 'soul_splinter_mark',
     name: 'Soul Splinter Mark',
     school: 'dusk',
     trigger: { kind: 'death' },
     damage: 50,
-    dtype: 'spell',
+    dtype: 'decay',
     blast: { shape: 'lowestHpEnemy' },
-    text: 'When the host dies, deals 50 damage to the lowest-HP enemy.',
+    text: 'When the host dies, deals 50 decay damage to the lowest-HP enemy.',
   },
 };

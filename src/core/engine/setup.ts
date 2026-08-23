@@ -16,6 +16,7 @@ import { cellsOf } from '../util/grid.js';
 import { CARDS } from '../data/cards/index.js';
 import { makeCtx, emit } from './context.js';
 import { DEFAULT_COMPANION, companionById } from '../data/companions.js';
+import { rosterBudgetFor } from '../data/roster.js';
 import { HAND_LIMIT, OPENING_HAND, PIP_CAP, drawCards } from './deck.js';
 import { placeOpeningUnit, spawnObstacle } from './spawn.js';
 import { beginTurn } from './turn.js';
@@ -387,15 +388,21 @@ export const MIN_ANCHORS = 5;
 /**
  * Where the Vanguard may stand.
  *
- * **The Anchor Guarantee: the player is never forced to bench a bought unit.** The count is
- * always at least the roster size, and always at least `MIN_ANCHORS`. This is what makes
- * the point-buy honest — if a cramped biome could refuse to seat the fourth body, the
- * correct play would become "never fill your budget", and a point-buy that punishes
- * spending its own budget is not a build system.
+ * **The Anchor Guarantee: the ground never benches what the arena's budget seats.** The count
+ * is always at least what this board will field, and always at least `MIN_ANCHORS`. That is
+ * what makes the point-buy honest — if a cramped biome could refuse to seat a body the budget
+ * paid for, the correct play would become "never fill your budget", and a point-buy that
+ * punishes spending its own budget is not a build system.
+ *
+ * What changed when budgets became grid-derived: the guarantee is now about the *arena's*
+ * allowance rather than the whole kit. A character carrying a 24-point warband into a 4x6 ruin
+ * is holding most of it back by rule, so lighting an anchor for every body it owns would flood
+ * the starting zone and spill anchors into neutral ground for units that can never be placed.
+ * The caller passes what the budget will actually seat; the guarantee covers that, exactly.
  *
  * The biome still shapes the formation, and that is the whole intended difficulty: anchors
- * in a line, split around a wall, or backed into a corner. It simply may not shrink the
- * warband.
+ * in a line, split around a wall, or backed into a corner. It simply may not shrink what the
+ * budget allows.
  *
  * Runs at a fixed point in the setup order, before the geodes, because the seeded stream is
  * positional — moving this call moves every geode in every replay.
@@ -735,8 +742,14 @@ export function createCombat(
 
   // The Vanguard, and the ground it may stand on. Anchors are laid even for a fight with
   // no roster, so the two Rallies in Phase 4 always have somewhere to put a body back.
+  //
+  // Anchors cover what this arena will *seat*, not the whole kit. A basic body is the
+  // cheapest thing on the ladder at two points, so half the budget is the most bodies that
+  // can ever be standing — lighting more tiles than that would promise placements the
+  // deployment budget refuses. Whichever is smaller: what was brought, or what fits.
   const warband = (roster ?? []).filter((id) => CARDS[id]);
-  state.anchors = placeAnchors(state, rng, warband.length);
+  const seats = Math.floor(rosterBudgetFor(encounter.width, encounter.height) / 2);
+  state.anchors = placeAnchors(state, rng, Math.min(warband.length, seats));
   state.players.player.roster = warband.map((defId) => ({
     defId,
     status: 'reserve' as const,

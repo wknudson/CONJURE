@@ -84,9 +84,15 @@ export class DeployTray {
       this.cb.onSelect(null);
     }
 
+    // What this arena seats, against what is standing. A kit is built for the biggest board
+    // in the game, so on a small one the tray is showing a warband it cannot fully field —
+    // and the player has to be told that here rather than discovering it as a refusal.
+    const spent = fielded.reduce((sum, r) => sum + r.points, 0);
+    const room = board.deployBudget - spent;
+
     this.trayEl.replaceChildren();
     for (const entry of reserve) {
-      this.trayEl.appendChild(this.chipFor(entry));
+      this.trayEl.appendChild(this.chipFor(entry, entry.points > room));
     }
 
     if (reserve.length === 0) {
@@ -96,25 +102,33 @@ export class DeployTray {
       this.trayEl.appendChild(done);
     }
 
+    const benched = reserve.some((r) => r.points > room);
     this.hintEl.textContent = this.selected
       ? 'Click a glowing Anchor Tile to place it.'
-      : reserve.length > 0
-        ? 'Pick a body, then an Anchor Tile. Click a placed body to take it back.'
-        : 'Click a placed body to take it back.';
+      : benched
+        ? 'This arena has no room left for the greyed bodies. They stay in reserve.'
+        : reserve.length > 0
+          ? 'Pick a body, then an Anchor Tile. Click a placed body to take it back.'
+          : 'Click a placed body to take it back.';
 
     // Deliberately never disabled. Holding something back is a decision, and a button that
     // refused to start the fight would be the UI overruling it.
+    const points = `${spent} / ${board.deployBudget} pts`;
     this.engageSub.textContent =
       reserve.length > 0
-        ? `${fielded.length} placed · ${reserve.length} held back`
-        : `${fielded.length} placed`;
+        ? `${points} · ${fielded.length} placed · ${reserve.length} held back`
+        : `${points} · ${fielded.length} placed`;
   }
 
-  private chipFor(entry: RosterView): HTMLElement {
+  private chipFor(entry: RosterView, noRoom: boolean): HTMLElement {
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'deploy-chip';
     chip.classList.toggle('is-selected', entry.defId === this.selected);
+    // Greyed rather than removed: a body the arena cannot seat is still yours, and hiding it
+    // would read as having lost it.
+    chip.classList.toggle('is-no-room', noRoom);
+    if (noRoom) chip.title = 'No room left in this arena for this body.';
     chip.dataset.defId = entry.defId;
     chip.innerHTML = `
       <span class="deploy-chip__points">${entry.points}</span>

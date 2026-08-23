@@ -171,4 +171,329 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  // ------------------------------------------------------------ the second expansion
+  //
+  // Bloom's shelf was the thinnest in the game: five cards, none of which did anything on
+  // the turn it was played. That is the school's character and it was also its problem --
+  // a deck that cannot answer the board at all is not patient, it is helpless. The ten
+  // below keep the identity and give it a floor: a body that poisons by dying, a wall that
+  // poisons by standing there, and one line that finally *cashes* a Toxin stack instead of
+  // waiting for somebody else's torch.
+
+  /**
+   * The school's only unconditional heal, and the reason it is a Spell rather than a rider.
+   *
+   * Bloom's Resonance already returns 20 to the Pact for free, once a turn. This is the
+   * same idea bought deliberately, and the two stack — which is the whole Bloom race: a
+   * deck that heals 50 a turn does not have to win the board, it only has to not lose it.
+   *
+   * `heal` reaches the Pact and nothing else. There is no way to mend a *unit* in this
+   * engine, deliberately, so a card promising to would be a promise the reducer cannot
+   * keep.
+   */
+  sap_draught: {
+    id: 'sap_draught',
+    name: 'Sap Draught',
+    cost: { pips: 1, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Returns 30 health to your Pact. Stacks with the Verdant Growth your Companion already pays.',
+    target: { kind: 'none' },
+    effect: { op: 'heal', amount: 30 },
+    keywords: [],
+    range: 4,
+  },
+
+  /**
+   * The answer to "what does Bloom do on turn one".
+   *
+   * Ordinary damage and one stack of rot, at the ordinary two-Pip rate. Nothing clever, and
+   * that is the point: every other card in this school asks the player to spend a turn
+   * setting up, and a shelf where *nothing* trades on impact cannot open a game.
+   *
+   * `physical`, not a bespoke type, and that is load-bearing rather than lazy — physical is
+   * what Shatters a frozen body, so a Lash is also the Bloom deck's answer to an ally's
+   * Frost card having done the hard part.
+   */
+  thornlash: {
+    id: 'thornlash',
+    name: 'Thornlash',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 30 physical damage and leaves 1 Toxin. Shatters a Frozen target, as any physical blow does.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'physical', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * Lockdown, aimed at the ground.
+   *
+   * Entangle stops a body moving and leaves it free to swing, which is exactly the right
+   * shape for a school that wins by outlasting: the vines do not stop the fight, they stop
+   * the *retreat*. A cluster held in place is a cluster still standing in the Toxin next
+   * turn.
+   *
+   * Tile-targeted and orthogonal, matching Spore Cloud, so the two read as one card played
+   * twice rather than two cards with different geometry.
+   */
+  strangling_vines: {
+    id: 'strangling_vines',
+    name: 'Strangling Vines',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Roots everything orthogonally beside the target tile and poisons it (Toxin 1). A rooted unit can still attack.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'applyStatus', status: 'entangle', stacks: 1, area: { shape: 'adjacentCross' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'adjacentCross' } },
+      ],
+    },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * The wide fuse.
+   *
+   * Eight tiles of rot and a little damage to go with it — the largest Toxin footprint in
+   * the school, and the one that makes a Pyre ally's next card worth a whole turn. Two
+   * stacks across `adjacent8` is up to 40 fire damage a body once somebody lights it.
+   *
+   * The 20 on the way in is deliberately small. A card that both laid the fuse *and*
+   * cleared the board would make every other Bloom card a worse version of itself.
+   */
+  blight_bloom: {
+    id: 'blight_bloom',
+    name: 'Blight Bloom',
+    cost: { pips: 3, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 physical damage and applies 2 Toxin to everything around the target tile. Fire consumes every stack for 20 damage each.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'physical', area: { shape: 'adjacent8' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 2, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * The first Bloom card that spends its own Toxin.
+   *
+   * Every other card in the school lays stacks and hopes an ally brings fire. This one
+   * cashes them itself, and at a Pip it is the cheapest payoff in the game — but only
+   * against a target already rotting, which is a board state Bloom had to work two turns to
+   * reach.
+   *
+   * `true` damage on the paid branch, because armour has had two turns to matter and the
+   * whole promise of Toxin is that plate does not answer it. The unpaid branch is a
+   * consolation, not a card: 10 is what a Pip buys when the setup is not there.
+   */
+  spore_burst: {
+    id: 'spore_burst',
+    name: 'Spore Burst',
+    cost: { pips: 1, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Against a target carrying 2 or more Toxin, deals 40 damage through any armor. Otherwise only 10.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'ifMet',
+      cond: { kind: 'targetStatus', status: 'toxin', stacks: 2 },
+      then: { op: 'damage', amount: 40, dtype: 'true', area: { shape: 'target' } },
+      otherwise: { op: 'damage', amount: 10, dtype: 'physical', area: { shape: 'target' } },
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * A wall that fights by being walked past.
+   *
+   * The school's first Construct, and the only obstacle in the game that poisons rather
+   * than burns or chills. It costs the enemy a stack every turn they leave it standing in
+   * their row, which is the Bloom bargain stated as terrain: breaking it is a turn, and
+   * not breaking it is a turn's worth of rot.
+   *
+   * Fifty health is deliberately soft. It is a clock, not a fortification.
+   *
+   * Also what **Iron Briar** raises, which is why it is a real card rather than a
+   * setup-only stat block: the fusion presses a Bulwark spell into this, and a pressing
+   * whose product nothing else could ever deal would be a card nobody can read.
+   */
+  briar_rampart: {
+    id: 'briar_rampart',
+    name: 'Briar Rampart',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'obstacle',
+    text: 'Raises a 50 HP thicket on an empty tile. At the start of each enemy turn, every enemy in its row takes 1 Toxin. Leaves rough ground when it breaks.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'spawnObstacle', obstacleDef: 'briar_rampart' },
+    keywords: [],
+    obstacleHp: 50,
+    obstacleTurnStart: { status: 'toxin', stacks: 1 },
+    leavesRubble: true,
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * Bred to bleed, in the school with nothing to bleed for.
+   *
+   * Bloom has no Marrow costs and no Marrow sources — the one school where a tithe pays
+   * for nothing of its own. That is exactly why it wants a body priced to be spent: the
+   * Marrow leaves the school to pay for a colourless Hero card, and the Wisp is the pump
+   * that lets a Sylva deck afford one.
+   */
+  sap_wisp: {
+    id: 'sap_wisp',
+    name: 'Sap Wisp',
+    cost: { pips: 1, marrow: 0 },
+    school: 'bloom',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Bled for +1 Marrow above the usual. Slow, soft, and worth more opened than standing.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'sap_wisp' },
+    keywords: [],
+    unit: {
+      titheBonus: 1,
+      atk: 10,
+      hp: 30,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'caster',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /**
+   * A body that lays its own fuse by dying.
+   *
+   * The Briar Wolf poisons what it bites, which asks it to survive to bite twice. This one
+   * poisons what killed it, which asks nothing at all — and that makes it the school's
+   * first genuinely aggressive body: thirty attack on forty health wants to trade, and the
+   * trade is where the card pays.
+   *
+   * Deathburst hits enemies of the dead body wherever it fell and whatever killed it, so
+   * this is a Boar you are happy to see traded into a cluster.
+   */
+  sporeback_boar: {
+    id: 'sporeback_boar',
+    name: 'Sporeback Boar',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'hero',
+    kind: 'minion',
+    text: 'When it dies, every adjacent enemy takes 2 Toxin. Toxin ticks through Armor.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'sporeback_boar' },
+    keywords: [],
+    unit: {
+      atk: 30,
+      hp: 40,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+      deathburst: { status: 'toxin', stacks: 2 },
+    },
+  },
+
+  /**
+   * The line Bloom never had.
+   *
+   * Ten attack is not a threat and seventy health behind a Guardian is a genuine problem:
+   * everything the school does needs turns, and this is the body that buys them. It blocks
+   * sight for whatever is shooting from behind it, which in a Bloom deck is usually
+   * nothing — the point is that the enemy has to come through it to reach the rot.
+   */
+  bramble_sentinel: {
+    id: 'bramble_sentinel',
+    name: 'Bramble Sentinel',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Guardian: blocks line of sight behind it. A slow wall of thorns that would rather be stood in front of than swung.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'bramble_sentinel' },
+    keywords: ['Guardian', 'Growth'],
+    unit: {
+      atk: 10,
+      hp: 70,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 10 },
+    },
+  },
+
+  /**
+   * The school's elite, and its reach.
+   *
+   * Three tiles of reach on a forty-attack body is the longest arm in Bloom, and the reason
+   * it costs four: at that price it is Tier 3, one copy a deck, and three roster points
+   * rather than two. Sylva already fights at reach 3; this is the warband learning to.
+   *
+   * The rider is the school in one line. Everything it strikes rots, and it strikes from
+   * far enough away that answering it means walking into the Toxin it has already laid.
+   */
+  verdant_colossus: {
+    id: 'verdant_colossus',
+    name: 'Verdant Colossus',
+    cost: { pips: 4, marrow: 0 },
+    school: 'bloom',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Strikes up to 3 tiles away, and everything it wounds is left poisoned (Toxin 2).',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'verdant_colossus' },
+    keywords: [],
+    unit: {
+      atk: 40,
+      hp: 80,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 3,
+      footprint: 1,
+      archetype: 'sniper',
+      escalationBonus: { atk: 0, hp: 0 },
+      onHit: { status: 'toxin', stacks: 2 },
+    },
+  },
 };

@@ -89,13 +89,14 @@ the offering was worth any Marrow.
 | System | State | Reference |
 | :-- | :-- | :-- |
 | Rules engine | Pips and Marrow, overdraw burn, free reshuffle, Retain, movement (BFS, 2×2 footprints), **independent move + attack per turn**, collisions 30/20 with Mass Invariance, supercover LoS, Guardian occlusion, Marks with cascades and armor gating and fizzle, Growth caps, the status tick order, sudden-death double-KO | `docs/02_combat_lexicon.md` |
-| Cards | 122 base cards across the six elemental schools plus Arcane and neutral, all data-driven through shared effect primitives. Rank 2 printings are derived, not authored | `docs/08_card_catalog.md` |
+| Cards | 173 base cards — **at least twenty per elemental school**, and every school's draftable shelf full — all data-driven through shared effect primitives. Rank 2 printings are derived, not authored | `docs/08_card_catalog.md` |
+| Splicing | 19 pressings covering **all fifteen** dual-school pairings, from six Cores (one per school) | `docs/08_card_catalog.md` |
 | Deck building | Hero Deck of 4–12, tier-derived copy limits, Behemoth cap, the Grimoire draft, one swap after seeing the arena | `docs/07_deck_building.md` |
 | Encounters | Novice Duelist, Ignis Trial (damage gate with chain nullification, Rite of Subjugation at 25%, Forced Eviction), Glacial Field, Narrow Ruin, Wildlife | `docs/09_ai_and_encounters.md` |
 | AI | Novice and Adept tiers — utility scoring, Lethal Veto, deterministic tie-breaks, seeded suboptimality, collision awareness at Adept | `docs/09_ai_and_encounters.md` |
 | Reactions | Six shipped: Vaporize, Shatter, Overload, Superconduct, Arc, Wildfire | `docs/02_combat_lexicon.md` |
 | Companions | 17 companions with Bound Forms, Resonance passives, the taming roll and trait bloodlines | `docs/03_rpg_sandbox.md` |
-| Roster and revival | The Vanguard Roster on a point budget, a deployment phase onto Anchor Tiles, Auras that climax, three revival routes | `docs/07_deck_building.md` |
+| Roster and revival | The Vanguard Roster on a point budget that **scales with the arena** (`width + height`, 8–24) against a 24-point owned kit, a deployment phase onto Anchor Tiles, Auras that climax, three revival routes | `docs/07_deck_building.md` |
 | Sandbox | Safehouse hub, Bounty Board, the Artificer's Forge (schematics, ascension, splicing), 11 relics | `docs/05_ironworks_artificer.md` |
 | Terrain and weather | Rubble, cover, volatile crystals, conveyor currents, hazard tiles, fog, a directional gale, rain | `docs/02_combat_lexicon.md` |
 | Saves | Versioned localStorage with migration, a backup copy, corruption recovery, soulbound staples | `docs/01_system_architecture.md` |
@@ -115,9 +116,11 @@ the offering was worth any Marrow.
 
 ### Not started, in rough demo-relevance order
 
-Master AI tier (2-turn lookahead) · the nine unbuilt cross-school reactions (§6) ·
-the card backlog (§6) · overworld slice (sidewalk immunity, aggro, combat circle) ·
-flanking and facing · per-unit initiative.
+Master AI tier (2-turn lookahead) · the cross-school reactions as *reactions* rather than as
+cards (§6.1) · **more encounters**, so the new shelves can actually be forged and not merely
+drafted (§6.2) · arcane's shelf, which pads six of Lexis's eight slots (§6.2) · Frost and
+Arcane Auras · overworld slice (sidewalk immunity, aggro, combat circle) · flanking and facing ·
+per-unit initiative.
 
 ---
 
@@ -276,6 +279,18 @@ and walk back — twice in a row without a reload.
 
 ## 4. Known issues (small, tracked, not blocking)
 
+- **The shipped fights got easier, and the enemy boards have not caught up.** Vanguard budgets
+  are now `width + height`, so the Novice Duelist (6×8) seats 14 player points and both 8×8s
+  seat 16, against enemy warbands still authored at roughly ten. Narrow Ruin (4×6) lands on 10
+  and is unchanged. The follow-up is a balance pass topping up
+  `encounter.enemyOpeningBoard` per arena — `duelist.test.ts` already asserts the Duelist's
+  enemy board matches the *starting* warband's points, and that is the template for asserting
+  it against the arena's budget instead. An optional `rosterBudget` override on `EncounterDef`
+  is the escape hatch if a specific fight wants its own number; deliberately not built yet.
+- **`magma_brute` is the only fieldable 2×2 in the game**, so the two-Behemoth kit cap is
+  reachable only by holding two copies of it. Legal — the roster has always been a multiset —
+  but a second Behemoth body would make the cap mean something. `deployment.test.ts` asserts
+  the count so the fixture can switch to distinct ids the day one ships.
 - Threat projection is deliberately optimistic (ignores friendly-unit traffic jams) —
   documented behavior, revisit only if playtesters call tiles "wrongly red".
 - Enemy hand shows a count but no card-level tell. Deliberate; revisit if the enemy turn
@@ -314,7 +329,17 @@ shipped, superseded by `docs/`, or deliberately declined.
 
 Six reactions ship today — Vaporize, Shatter, Overload, Superconduct, Arc and Wildfire
 (`src/core/data/reactions.ts`). The original matrix paired every school with every other.
-These are the pairings still open:
+These are the pairings still open **as reactions**.
+
+> **Seven of them now ship as hybrid cards instead**, which is a different thing and worth
+> being precise about. A reaction is a rule the engine applies whenever two elements meet; a
+> card is a thing a player chooses to cast. Soulfire, Black Ice, Permafrost, Kinetic Arc,
+> Bone Bastion, Iron Briar and Blight Siphon exist as pressings in `cards/hybrid.ts` — so
+> the *effect* is reachable and the theme is spoken for, while the automatic interaction
+> below is still unbuilt. Plasma Burst and Magma Surge were already in that position
+> (`plasma_arc`, `magma_shove`); Bio-Pulse is half-covered by `galvanic_spores`. What is
+> genuinely untouched is the engine work: making these fire off *any* qualifying hit rather
+> than off one specific card.
 
 | Pairing | Name | Trigger | Effect |
 | :-- | :-- | :-- | :-- |
@@ -338,16 +363,39 @@ in the same worklist without reentrancy, and a reaction that would kill a Pact m
 has to respect the boss damage gate's `chainCancelled`. Both are already true of the six
 shipped reactions and are the pattern any new one should follow.
 
-### 6.2 Card backlog
+### 6.2 Card backlog — **closed**
 
-The original catalog specified roughly 136 cards against the 122 that ship. `pools.ts`
-states the real target — `CATALOG_TARGET` of 10–15 spells per school — and `catalogGaps()`
-reports which schools fall short, asserted by `src/tests/catalog.test.ts`. **That function,
-not a list in a document, is the backlog**: it cannot go stale. Add cards to the thin
-schools it names, following `docs/08_card_catalog.md` for where each shelf lives.
+The original catalog specified roughly 136 cards. **173 ship**, at least twenty per elemental
+school, all fifteen dual-school pairings have a pressing, and **every school's draftable shelf
+now clears the target**. The specific card names in the retired catalog were not preserved and
+were not worth preserving — they were written against different resources, a different scale
+and a card taxonomy that no longer exists.
 
-The specific card names in the retired catalog are not worth preserving — they were written
-against different resources, a different scale and a card taxonomy that no longer exists.
+`pools.ts` states the target — `CATALOG_TARGET` of 10–15 spells per school — and
+`catalogGaps()` reports against it. Dusk was the last school short, at seven, because nine of
+its twenty cards are Bound Forms and authored threats rather than anything a Grimoire can draw.
+Three cards closed it, and the interesting part was *why* they had not been written:
+
+> **Dusk was the only school with no status of its own.** Pyre has Burn, Frost Chill, Surge
+> Charged, Bloom Toxin, Bulwark armour and Stun. Dusk's payload is Marrow — a resource, not a
+> status — and `obstacleTurnStart` is typed `{ status, stacks }` with nowhere to put a
+> resource. So Dusk could not have a construct at all, and it had no area card either. The
+> decay shelf gives it `brittle` as a second pillar: a Charnel Pillar that ticks it onto the
+> row, a Wither that cashes it, and a Creeping Decay that spreads it.
+
+The gap report's tripwire in `catalog.test.ts` has been retired, as its own comment instructed.
+`catalogGaps()` itself stays — it is what will answer "is a new school ready to ship".
+
+**Still short, and newly visible: arcane.** Lexis has **two** draftable cards and pads six of
+its eight Grimoire slots from the neutral fallback — far worse than Mortis ever was, and
+invisible to every report because arcane is excluded from `SCHOOLS` by design (it is the Hero's
+colour, not a discipline anybody enrols in). Whether that wants fixing is a design question
+about what a Lexis run is *for*, not a counting exercise.
+
+The other remaining gap is not cards, it is **encounters**. Twenty-nine of the new spells and
+Constructs are in no enemy deck, so they can be drafted onto a beast but not yet forged —
+`UNREACHABLE` in `src/tests/schematics.test.ts` is the honest ledger of that, and it shrinks
+by writing fights rather than cards.
 
 ### 6.3 Sandbox ideas not yet designed into `docs/03`
 

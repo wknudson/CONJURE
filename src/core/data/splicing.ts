@@ -45,6 +45,28 @@ export const REAGENTS: readonly Reagent[] = [
     school: 'frost',
     blurb: 'Cold enough to make brass brittle. Handle with tongs.',
   },
+  // The three that finish the table. A pressing is a base card and a Core, and the base
+  // card only ever accounts for one school -- so the three pairings *among* Bulwark, Dusk
+  // and Bloom could not be pressed at all while none of the three was bottled. Six schools,
+  // six Cores, fifteen pairings, no gaps.
+  {
+    id: 'core_bulwark',
+    name: 'Bulwark Core',
+    school: 'bulwark',
+    blurb: 'A cored plug of load-bearing stone. Heavier than it has any right to be.',
+  },
+  {
+    id: 'core_dusk',
+    name: 'Dusk Core',
+    school: 'dusk',
+    blurb: 'Something was in here. The jar remembers the shape of it.',
+  },
+  {
+    id: 'core_bloom',
+    name: 'Bloom Core',
+    school: 'bloom',
+    blurb: 'A seed case that will not stop swelling. Vented, for everyone’s sake.',
+  },
 ];
 
 export function reagentById(id: string): Reagent | undefined {
@@ -79,11 +101,15 @@ export interface SpliceRecipe {
 }
 
 /**
- * The book.
+ * The book. Nineteen rows, covering all fifteen elemental pairings.
  *
- * Both current recipes take the same base card, which is deliberate: the interesting
- * decision is *which core* to spend, not which card to feed in. `flame_surge` is the
- * common Pyre spell every starter deck carries, so the bench is reachable on day one.
+ * The earliest rows all take the same base card, which was deliberate: the interesting
+ * decision is *which Core* to spend, not which card to feed in. `flame_surge` is the common
+ * Pyre spell every starter deck carries, so the bench is reachable on day one.
+ *
+ * A base card has to be something a beast can actually be holding — the bench offers
+ * pressings from the selected Companion's Grimoire — so every base here is a `spell` or
+ * `obstacle` that reaches some species' pool.
  */
 export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
   {
@@ -121,11 +147,12 @@ export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
   },
   // -------------------------------------------------------------- the second pressing
   //
-  // Six rows that between them reach every school. Note what none of them needs: a new
-  // Core. A pressing is *two* schools, and the base card is always one of them -- so a
-  // Bulwark spell and a Pyre Core is a Pyre/Bulwark hybrid without Bulwark ever having to
-  // be bottled. That is what keeps the reagent table at three entries while the book
-  // covers ten pairings.
+  // Six rows that between them reach every school, and none of them needed a new Core. A
+  // pressing is *two* schools and the base card is always one of them -- so a Bulwark spell
+  // and a Pyre Core is a Pyre/Bulwark hybrid without Bulwark ever having to be bottled.
+  //
+  // That trick has a limit, and the third pressing below is where it ran out: it only works
+  // while one half of the pairing is a school that *is* bottled.
   {
     baseCardId: 'ember_coat',
     catalystId: 'core_frost',
@@ -161,6 +188,59 @@ export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
     catalystId: 'core_surge',
     resultId: 'aetheric_overload',
     requiredUnlockedCards: ['arc_lash'],
+  },
+  // --------------------------------------------------------------- the third pressing
+  //
+  // Eight rows, and with them every one of the fifteen elemental pairings has a fusion.
+  // The last three needed the three new Cores: Bulwark, Dusk and Bloom pair only with each
+  // other in what was left, and none of them had ever been bottled.
+  {
+    baseCardId: 'shadow_siphon',
+    catalystId: 'core_pyre',
+    resultId: 'soulfire',
+    requiredUnlockedCards: ['flame_surge'],
+  },
+  {
+    baseCardId: 'glacial_spike',
+    catalystId: 'core_surge',
+    resultId: 'superconductor',
+    requiredUnlockedCards: ['arc_lash'],
+  },
+  {
+    baseCardId: 'grave_call',
+    catalystId: 'core_frost',
+    resultId: 'black_ice',
+    requiredUnlockedCards: ['glacial_spike'],
+  },
+  {
+    baseCardId: 'spore_cloud',
+    catalystId: 'core_frost',
+    resultId: 'permafrost',
+    requiredUnlockedCards: ['glacial_spike'],
+  },
+  {
+    baseCardId: 'avalanche_slam',
+    catalystId: 'core_surge',
+    resultId: 'kinetic_arc',
+    requiredUnlockedCards: ['arc_lash'],
+  },
+  {
+    baseCardId: 'shadow_siphon',
+    catalystId: 'core_bulwark',
+    resultId: 'bone_bastion',
+    requiredUnlockedCards: ['tectonic_plate'],
+  },
+  {
+    baseCardId: 'tectonic_plate',
+    catalystId: 'core_bloom',
+    resultId: 'iron_briar',
+    requiredUnlockedCards: ['spore_cloud'],
+  },
+  {
+    baseCardId: 'noxious_cloud',
+    catalystId: 'core_dusk',
+    resultId: 'blight_siphon',
+    requiredUnlockedCards: ['shadow_siphon'],
   },
 ];
 

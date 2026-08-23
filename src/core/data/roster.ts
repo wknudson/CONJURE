@@ -15,11 +15,88 @@ import type { CardDef } from '../types/cards.js';
 import { CARDS } from './cards/index.js';
 import { cardCostTotal } from '../types/cards.js';
 
-/** Points a warband may spend. Deliberately not divisible into a comfortable answer. */
-export const ROSTER_BUDGET = 10;
+/**
+ * What an arena seats, in points: **one per rank and one per file.**
+ *
+ * The old budget was a flat ten, tuned for a 5x5 — where ten points is five basic bodies
+ * standing shoulder to shoulder across the single territory row, and the row is full. That
+ * number stopped being a rule about warbands and started being a rule about *that board* the
+ * moment arenas ran from 4x4 to 12x12.
+ *
+ * `width + height` restores the reading. It is deliberately not area:
+ *
+ *  - **It cannot overflow the ground.** Deployment happens in the starting zone, which is
+ *    `width` tiles across and `territoryDepthFor(height)` deep — one row at height 5 or less,
+ *    two above it. At every supported size, the `floor(budget / 2)` basic bodies the budget
+ *    could buy fit inside that zone. The binding case is the smallest board: a 4x4 grants
+ *    eight points, which is four bodies for a four-tile row — exactly full, and the reason
+ *    the minimum is not lower. Everything larger has slack. An area-proportional budget does
+ *    not have this property at all: 0.4 x 144 grants a 12x12 warband twenty-nine bodies for
+ *    twenty-four tiles, and a budget that cannot be deployed is a budget that lies.
+ *  - **It reads off the board.** A player can count the edge of the arena and know what it
+ *    seats. Nothing needs rounding, because a sum of two integers is an integer — no formula
+ *    with a `Math.round` in it survives being explained at the table.
+ *  - **It grows in both directions.** A long thin ruin and a broad field are different
+ *    problems, and both earn points for the dimension they are generous in.
+ *
+ * Height moves the number the same as width even though only width adds *seats*. That is
+ * intentional: a deeper board is a longer walk, and a longer walk is what makes a second rank
+ * of bodies worth owning rather than a crowd.
+ *
+ * Range across the supported sizes is **8 (4x4) to 24 (12x12)**, with 5x5 landing on the
+ * historical ten exactly.
+ */
+export function rosterBudgetFor(width: number, height: number): number {
+  return width + height;
+}
 
-/** At most one 2x2 body. The 6-point price nearly enforces it; saying it makes it a rule. */
-export const MAX_ROSTER_BEHEMOTHS = 1;
+/**
+ * The most a character may ever *own*, as opposed to field.
+ *
+ * A character holds one warband and builds it in the Field Journal, which has no encounter in
+ * scope and cannot have one — the Journal is reached from the Safehouse, and a contract is
+ * accepted somewhere else entirely. So ownership is capped at the largest thing any arena
+ * could seat, and each fight decides how much of the kit comes off the shelf. That split is
+ * the whole design: **you own a kit, you field an arena's worth of it.**
+ *
+ * Equal to `rosterBudgetFor(MAX_ARENA, MAX_ARENA)` and asserted so in `deployment.test.ts`,
+ * rather than imported from `engine/setup.ts` — pricing lives in the data layer and must not
+ * start depending on the engine to know its own ceiling.
+ */
+export const KIT_BUDGET = 24;
+
+/**
+ * What a new character's warband is bought with.
+ *
+ * The old ten, kept for the job it was actually good at. It is a *starting allowance* rather
+ * than a rule about boards, and it keeps its original character: deliberately not divisible
+ * into a comfortable answer, so the opening warband is a shape somebody chose.
+ */
+export const STARTING_WARBAND_POINTS = 10;
+
+/**
+ * At most two 2x2 bodies in a kit — the same cap a deck keeps on Behemoth *cards*.
+ *
+ * Was one, and the comment said the 6-point price nearly enforced it. At ten points that was
+ * true: two Behemoths were the entire budget and nothing else. At a 24-point kit it is no
+ * longer true, so the rule has to say what it means rather than lean on arithmetic that has
+ * moved.
+ *
+ * Owning two is not the same as fielding two — see `fieldableBehemoths`.
+ */
+export const MAX_ROSTER_BEHEMOTHS = 2;
+
+/**
+ * How many Behemoths this arena will seat.
+ *
+ * A 2x2 needs an adjacent pair of Anchor Tiles, and `placeAnchors` guarantees one such pair
+ * but does not promise two. Sixteen points is where the two-row starting zone is reliably
+ * wide enough for a second — 8x8 and up — and below that the second Behemoth stays in
+ * reserve however many points are spare.
+ */
+export function fieldableBehemoths(arenaBudget: number): number {
+  return arenaBudget >= 16 ? 2 : 1;
+}
 
 /**
  * What a body costs, derived rather than authored.
@@ -96,8 +173,17 @@ export type RosterProblem =
  * `unlocked` is optional: omitted means every eligible body is available, which is what the
  * tests and the current build want. Passing a list is the seam a Companion-gated unlock
  * hangs off later.
+ *
+ * `budget` defaults to the **kit** ceiling, because that is the question this function is
+ * asked: the Field Journal wants to know whether a warband may be *owned*. What an arena will
+ * seat is a different question, asked at deployment against `rosterBudgetFor`, and it is not
+ * a validation failure — a kit too big for a small ruin is a kit with something held back.
  */
-export function validateRoster(roster: string[], unlocked?: string[]): RosterProblem[] {
+export function validateRoster(
+  roster: string[],
+  unlocked?: string[],
+  budget: number = KIT_BUDGET,
+): RosterProblem[] {
   const problems: RosterProblem[] = [];
   let behemoths = 0;
 
@@ -128,17 +214,17 @@ export function validateRoster(roster: string[], unlocked?: string[]): RosterPro
   if (behemoths > MAX_ROSTER_BEHEMOTHS) {
     problems.push({
       code: 'too_many_behemoths',
-      message: `A Vanguard may field at most ${MAX_ROSTER_BEHEMOTHS} Behemoth.`,
+      message: `A Vanguard may hold at most ${MAX_ROSTER_BEHEMOTHS} Behemoths.`,
     });
   }
 
   const spent = rosterCost(roster);
-  if (spent > ROSTER_BUDGET) {
+  if (spent > budget) {
     problems.push({
       code: 'over_budget',
-      message: `That warband costs ${spent} of ${ROSTER_BUDGET} points.`,
+      message: `That warband costs ${spent} of ${budget} points.`,
       spent,
-      budget: ROSTER_BUDGET,
+      budget,
     });
   }
 
@@ -146,8 +232,8 @@ export function validateRoster(roster: string[], unlocked?: string[]): RosterPro
 }
 
 /** Points still unspent. Never negative, so a UI can render it without guarding. */
-export function pointsRemaining(roster: string[]): number {
-  return Math.max(0, ROSTER_BUDGET - rosterCost(roster));
+export function pointsRemaining(roster: string[], budget: number = KIT_BUDGET): number {
+  return Math.max(0, budget - rosterCost(roster));
 }
 
 // ---------------------------------------------------------------- progression
@@ -325,8 +411,9 @@ export function vanguardLevels(
 /**
  * The warband a new player starts with, and the one legacy callers get by default.
  *
- * Spends the budget exactly: two basics and two ranged specialists is a line with
- * something behind it, which is the shape the deployment phase is most legible with.
+ * Spends `STARTING_WARBAND_POINTS` exactly: two basics and two ranged specialists is a line
+ * with something behind it, which is the shape the deployment phase is most legible with. Ten
+ * points, not the kit ceiling — a character earns its way up to twenty-four.
  */
 export const DEFAULT_ROSTER: string[] = [
   'vanguard_footman',

@@ -240,10 +240,14 @@ describe('Rot-Root Snare', () => {
   });
 
   it('does not spring on a spell, which is the Cinder Mark’s job', () => {
-    // Aligned to physical and impact. A board carrying both marks answers two threats.
+    // Aligned to violence, not to magic. A board carrying both marks answers two threats.
+    //
+    // `toxic` joined the pair when bodies began swinging with their school's element: Bloom
+    // deals toxic, so without it Bloom's own trap was the one Mark its own warband could not
+    // spring. Spell is still deliberately absent — that is the Cinder Mark's trigger.
     expect(MARKS.rot_root_snare!.trigger).toEqual({
       kind: 'hpLoss',
-      alignedTypes: ['physical', 'impact'],
+      alignedTypes: ['physical', 'impact', 'toxic'],
     });
     expect(MARKS.cinder_mark!.trigger).toEqual({
       kind: 'hpLoss',
@@ -395,7 +399,11 @@ describe('Soul Splinter Mark', () => {
     expect(mark.trigger).toEqual({ kind: 'death' });
     expect(mark.blast).toEqual({ shape: 'lowestHpEnemy' });
     expect(mark.damage).toBe(50);
-    expect(mark.dtype, 'the one delta from the brief').toBe('spell');
+    // `decay` now, where the brief said `spell`. Dusk was one of two schools with no damage
+    // type of its own, so its Mark hit with the generic magic type that four other Marks
+    // align to — a Soul Splinter could set off a Cinder Mark on its way past, which Dusk was
+    // never meant to be able to do. It hits with Dusk's own element instead.
+    expect(mark.dtype, 'Dusk hits with Dusk').toBe('decay');
   });
 
   it('fires when its host is bled to death, not only when an enemy kills it', () => {

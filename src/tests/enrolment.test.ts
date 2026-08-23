@@ -18,7 +18,12 @@ import {
   fusedDeckSize,
   validateDeck,
 } from '../core/data/deckRules.js';
-import { ROSTER_BUDGET, rosterCost, rosterPointsOf, validateRoster } from '../core/data/roster.js';
+import {
+  STARTING_WARBAND_POINTS,
+  rosterCost,
+  rosterPointsOf,
+  validateRoster,
+} from '../core/data/roster.js';
 import { COMPANION_TRAITS } from '../core/data/companionTraits.js';
 import { newProfile } from '../app/save.js';
 
@@ -122,7 +127,7 @@ describe('the opening warband', () => {
     for (const school of PLAYABLE_SCHOOLS) {
       const line = startingRosterFor(school);
       expect(line.length, `${school} line`).toBeGreaterThan(0);
-      expect(rosterCost(line), `${school} budget`).toBeLessThanOrEqual(ROSTER_BUDGET);
+      expect(rosterCost(line), `${school} budget`).toBeLessThanOrEqual(STARTING_WARBAND_POINTS);
 
       const own = new Set(MINIONS_BY_SPECIES[speciesForSchool(school)!]);
       for (const id of line) {
@@ -154,7 +159,9 @@ describe('the opening warband', () => {
           rosterPointsOf(CARDS[id]!),
         ),
       );
-      expect(rosterCost(line) + cheapest, `${school} left room`).toBeGreaterThan(ROSTER_BUDGET);
+      expect(rosterCost(line) + cheapest, `${school} left room`).toBeGreaterThan(
+        STARTING_WARBAND_POINTS,
+      );
     }
   });
 

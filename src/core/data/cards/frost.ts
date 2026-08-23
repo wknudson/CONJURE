@@ -246,4 +246,200 @@ export const FROST_CARDS: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  // ------------------------------------------------------------ the second expansion
+  //
+  // Frost was already well served for spells and had almost no bodies -- two, one of which
+  // is a wall. Six cards: a beam, a fog bank, a wide chill, a spire that chills the row it
+  // stands in, and two bodies that finally let a Boreas hold ground with something other
+  // than a Rimeguard.
+
+  /**
+   * The school's beam, and its longest reach.
+   *
+   * `vector: 'linear'` buys five tiles of range with a restriction: rank, file or diagonal
+   * from the Companion and nothing else. It is the same geometry a Sniper's `lineOnly`
+   * profile uses, so a lance is a lance whoever threw it.
+   *
+   * Chill on everything it passes through is what makes it more than damage — three stacks
+   * freeze, so a Lance down a lane that a Creeping Rime has already crossed is a row of
+   * frozen bodies waiting for a physical blow to Shatter them.
+   */
+  rime_lance: {
+    id: 'rime_lance',
+    name: 'Rime Lance',
+    cost: { pips: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 30 frost damage down a 3-tile line and applies Chill 1 to everything in it. Fires only along a rank, file or diagonal.',
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'frost', area: { shape: 'line', length: 3 } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'line', length: 3 } },
+      ],
+    },
+    keywords: [],
+    range: 5,
+    vector: 'linear',
+    needsLoS: true,
+  },
+
+  /**
+   * Sight, taken away.
+   *
+   * Steam fog blocks ranged line of sight through the tile, which is the one thing Frost
+   * could previously only do by raising a wall somebody had to break. A fog bank costs the
+   * enemy nothing to walk through and everything to shoot through, and it expires on its
+   * own — so it is a tempo card rather than a construct.
+   *
+   * The Chill is what stops it being purely defensive: a body that walks into the bank to
+   * clear the sightline is a body one stack closer to freezing.
+   */
+  whiteout: {
+    id: 'whiteout',
+    name: 'Whiteout',
+    cost: { pips: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Fogs a 2x2 block of tiles for 2 turns, blocking ranged line of sight through them, and Chills everything standing there.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 2 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'spawnHazard', kind: 'steam_fog', turns: 2, area: { shape: 'square', size: 2 } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'square', size: 2 } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * Two stacks, wide, and no damage at all.
+   *
+   * Frost Nova chills a ring for ten; this chills a 3x3 for nothing. That is the trade, and
+   * it is the right one for a school whose payoff is the *third* stack: two stacks on nine
+   * tiles is a board where every body is one Creeping Rime away from frozen, and a frozen
+   * board is a Shatter waiting for any physical card.
+   *
+   * An odd `square` centres on its origin, so this is genuinely nine tiles around the point
+   * rather than a footprint anchored to a corner.
+   */
+  deep_winter: {
+    id: 'deep_winter',
+    name: 'Deep Winter',
+    cost: { pips: 3, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Applies Chill 2 to everything in a 3x3 around the target tile, and deals no damage at all. The third stack freezes a unit solid.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'applyStatus', status: 'chill', stacks: 2, area: { shape: 'square', size: 3 } },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * The row-chiller.
+   *
+   * Pyre burns its row, Surge charges its row, Bloom poisons its row. This one chills it,
+   * and chill is the only one of the four that *ends* in hard control: three stacks is a
+   * Freeze, so a Spire left standing for three enemy turns locks the lane rather than
+   * grinding it down.
+   *
+   * Fifty health, and it wants to be broken quickly — which is exactly the pressure a
+   * control school wants to apply.
+   */
+  hail_spire: {
+    id: 'hail_spire',
+    name: 'Hail Spire',
+    cost: { pips: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'obstacle',
+    text: 'Raises a 50 HP spire on an empty tile. At the start of each enemy turn, every enemy in its row takes Chill 1. Three stacks freeze.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'spawnObstacle', obstacleDef: 'hail_spire' },
+    keywords: [],
+    obstacleHp: 50,
+    obstacleTurnStart: { status: 'chill', stacks: 1 },
+    leavesRubble: true,
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * A body that does the school's setup for free.
+   *
+   * Every Frost card wants stacks on the board and every one of them costs a Pip. This costs
+   * a Pip once and then chills whatever it bites for the rest of the fight — which makes it
+   * the cheapest route to a Freeze in the game, and the reason a Boreas warband wants two.
+   *
+   * Ten attack, so it will never finish anything itself. The Fox is a setup body, and the
+   * `onHit` fires after the blow and only on a survivor: it cannot chill and Shatter with
+   * the same swing.
+   */
+  rime_fox: {
+    id: 'rime_fox',
+    name: 'Rime Fox',
+    cost: { pips: 1, marrow: 0 },
+    school: 'frost',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Haste. Whatever survives its bite takes Chill 1, and the third stack freezes a unit solid.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'rime_fox' },
+    keywords: ['Haste'],
+    unit: {
+      atk: 10,
+      hp: 20,
+      mov: 3,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'skirmisher',
+      escalationBonus: { atk: 0, hp: 0 },
+      onHit: { status: 'chill', stacks: 1 },
+    },
+  },
+
+  /**
+   * The elite, and the one Frost body that punishes being answered.
+   *
+   * Counter strikes back for its full attack whenever it is hit in melee and survives to do
+   * it again, so forty attack behind eighty health is a body a bruiser cannot profitably
+   * trade with. And when it does finally go down it chills everything adjacent — the
+   * deathburst is the school's answer to being killed by a cluster.
+   *
+   * Four Pips: Tier 3, one copy, four roster points. Bought as the plan.
+   */
+  glacier_warden: {
+    id: 'glacier_warden',
+    name: 'Glacier Warden',
+    cost: { pips: 4, marrow: 0 },
+    school: 'frost',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Counter: strikes back for its full Attack whenever it is hit in melee. When it dies, every adjacent enemy takes Chill 2.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'glacier_warden' },
+    keywords: ['Counter'],
+    unit: {
+      atk: 40,
+      hp: 80,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+      deathburst: { status: 'chill', stacks: 2 },
+    },
+  },
 };

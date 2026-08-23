@@ -119,6 +119,12 @@ ROSTER_BUDGET = 10
   Behemoth       6 points
 ```
 
+> *Since shipped: there is no `ROSTER_BUDGET`.* The flat ten was tuned for a 5×5 and became a
+> statement about one board once arenas ran 4×4 to 12×12. It is now two constants — a 24-point
+> `KIT_BUDGET` a character may own, and `rosterBudgetFor(width, height) = width + height` for
+> what a given arena will seat, which reproduces the ten exactly on a 5×5. The ladder below is
+> unchanged apart from the elite tier this document proposed. See `docs/07_deck_building.md`.
+
 **A fourth class at 4 points — "elite"** *(shipped; the ladder is in `src/core/data/roster.ts`)*. Two shipped units (`slag_iron_golem`,
 4 Pips, Guardian + Counter, 8 HP; `arc_turret`, 4 Pips, 5 ATK) are plainly not 3-point
 ranged bodies and are equally plainly not Behemoths. Pricing them at 3 makes the ranged
@@ -388,6 +394,14 @@ the Safehouse, before they know which arena the contract leads to. If a cramped 
 then refuse to seat the fourth unit, those points were spent on nothing, and the correct
 play would become *never fill your budget* — buy three units so no map can strand one. A
 point-buy that punishes spending its own budget is not a build system.
+
+> *Since shipped: the budget is grid-derived.* A character now owns a kit of up to 24 points
+> and fields `width + height` of it per arena, so the guarantee is stated against **what the
+> arena will seat** rather than the whole kit — a 24-point warband carried into a 4×6 ruin is
+> holding most of it back by rule, and lighting a tile for a body the budget refuses would be
+> a promise broken from the other side. The reasoning above is unchanged and is why the
+> guarantee still exists; only the quantity it covers moved. See
+> `docs/07_deck_building.md`.
 
 So the guarantee runs one way and one way only. The biome may make deployment
 **awkward** — anchors in a line, split around a wall, backed into a corner, far from where

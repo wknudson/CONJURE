@@ -176,7 +176,14 @@ describe('Adept determinism', () => {
     const a = replay(encounter, 31, steps, ADEPT_AI);
     const b = replay(encounter, 31, steps, ADEPT_AI);
     expect(b.finalHash).toBe(a.finalHash);
-  }, 30_000);
+    // 90s, not 30s. This asserts *correctness* and borrowed its budget from the perf guard
+    // above, which is a different kind of test. Two full Adept replays with lookahead take
+    // about seven seconds of CPU between them; the number that matters is how little of a
+    // core this file gets while eighty-seven others run beside it. At 30s it timed out under
+    // full-suite load while passing in isolation, which is a clock reading contention rather
+    // than a determinism failure -- and a determinism test that fails for being busy teaches
+    // nobody anything.
+  }, 90_000);
 
   it('plays a different game than Novice from the same seed', () => {
     const encounter = ENCOUNTERS[0]!;
@@ -191,5 +198,6 @@ describe('Adept determinism', () => {
     const adept = replay(encounter, 31, steps, ADEPT_AI);
     expect(adept.finalHash).not.toBe(novice.finalHash);
     expect(hashState(adept.state)).toBe(adept.finalHash);
-  }, 30_000);
+    // Two full replays again, and the same reasoning as above.
+  }, 90_000);
 });

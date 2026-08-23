@@ -29,7 +29,7 @@ import { CARDS } from './cards/index.js';
 import { isBloodlineCard, isDraftable, isHybrid } from './grimoire.js';
 import {
   DEFAULT_ROSTER,
-  ROSTER_BUDGET,
+  STARTING_WARBAND_POINTS,
   UNIVERSAL_ROSTER,
   isRosterEligible,
   rosterCost,
@@ -99,6 +99,17 @@ export interface CatalogGap {
  *
  * Exists to be *read*, by a test and by whoever is authoring next. A gap that only shows
  * up as a Grimoire quietly padded with neutral cards is a gap nobody schedules.
+ *
+ * **Every school clears the floor now.** Dusk was the last one short — seven, because nine
+ * of its twenty cards are Bound Forms and authored threats — and the decay shelf closed it.
+ * So this reports zeroes today, and it is kept rather than deleted for the case it was really
+ * written for: the next school somebody adds, which will read short here before it reads
+ * short anywhere a player can see.
+ *
+ * It is worth knowing what this does **not** cover. `SCHOOLS` omits `arcane`, so Lexis —
+ * whose grimoire is arcane and which pads six of its eight slots from the neutral fallback —
+ * is invisible to this function by construction. That is the padded-Grimoire failure the
+ * docblock above warns about, still live, one school out of scope.
  */
 export function catalogGaps(): CatalogGap[] {
   return SCHOOLS.map((school) => {
@@ -255,9 +266,12 @@ export function speciesForSchool(school: School): string | undefined {
  * as an Ignis; with a discipline to choose it would mean a Boreas opening with a Pyre
  * body and a Dusk one, which is precisely the identity this screen exists to establish.
  */
-export function startingRosterFor(school: School): string[] {
+export function startingRosterFor(
+  school: School,
+  budget: number = STARTING_WARBAND_POINTS,
+): string[] {
   const roster: string[] = [];
-  const fits = (id: string): boolean => rosterCost([...roster, id]) <= ROSTER_BUDGET;
+  const fits = (id: string): boolean => rosterCost([...roster, id]) <= budget;
   const take = (id: string): void => {
     if (fits(id)) roster.push(id);
   };
@@ -277,7 +291,7 @@ export function startingRosterFor(school: School): string[] {
   // Without this pass most schools open a point or two short: the shelves are thin enough
   // that no *distinct* body is left that fits the remainder. Leaving the budget unspent
   // would teach a new player that the number on the screen is decorative.
-  for (let guard = 0; guard < ROSTER_BUDGET && rosterCost(roster) < ROSTER_BUDGET; guard++) {
+  for (let guard = 0; guard < budget && rosterCost(roster) < budget; guard++) {
     const next = candidates.find(fits);
     if (!next) break;
     roster.push(next);

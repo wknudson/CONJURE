@@ -33,7 +33,7 @@ import type { CardModifier } from '../core/types/cards.js';
 import { rollSpellModifiers } from '../core/overworld/vivarium.js';
 import {
   DEFAULT_ROSTER,
-  ROSTER_BUDGET,
+  KIT_BUDGET,
   UNIVERSAL_ROSTER,
   VANGUARD_START_LEVEL,
   unlockVanguard,
@@ -788,8 +788,8 @@ function migrateProfile(
     }
     if (repaired.length !== roster.length) {
       notes.push(
-        `Your Vanguard held bodies it can no longer field, or overran its ${ROSTER_BUDGET}-point 
-         budget, and was trimmed to what fits.`.replace(/\s+/g, ' '),
+        `Your Vanguard held bodies it can no longer field, or overran its ${KIT_BUDGET}-point
+         kit, and was trimmed to what fits.`.replace(/\s+/g, ' '),
       );
     }
     roster = repaired;

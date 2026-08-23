@@ -15,6 +15,8 @@ import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import { getEntity, opposite } from './board.js';
 import { getEncounterScript } from '../data/encounters/registry.js';
+import { CARDS } from '../data/cards/index.js';
+import { WEATHER_ELEMENTAL, dtypeOf, resistOf, weatherMod } from '../data/elements.js';
 // Circular by design: marks/death call back into dealDamage. ESM hoists function
 // declarations, so these resolve correctly at call time.
 import { evaluateMarkOnDamage } from './marks.js';
@@ -133,25 +135,41 @@ export function dealDamage(ctx: Ctx, req: DamageRequest): DamageOutcome {
 }
 
 /**
- * Fire gutters in the rain.
+ * What the sky does to this hit.
  *
- * Applied before armor and before anything else looks at the number, so a Cinder Mark in
- * a downpour is genuinely weaker rather than merely absorbed differently. It can be
- * damped to nothing, which is the point: bringing a Pyre deck to a storm is a decision
- * with a price, and the pre-combat screen exists so it is an informed one.
+ * Applied before armor and before anything else looks at the number, so a Cinder Mark in a
+ * downpour is genuinely weaker rather than merely absorbed differently. It can be damped to
+ * nothing, which is the point: bringing a Pyre deck to a storm is a decision with a price,
+ * and the pre-combat screen exists so it is an informed one.
+ *
+ * This was `dampenFire`, and it was the whole of the elemental-weather system: one `if` for
+ * one type in one weather. The table it now reads lives in `data/elements.ts` — a rule about
+ * which element the sky favours is data, and hard-coding it here is what kept it at one entry
+ * for as long as it was.
+ *
+ * Note that a **body's attack** is now typed by its school, so this reaches further than it
+ * used to: rain damping fire no longer only damps Pyre *spells*, it damps every Pyre body's
+ * swing. That is the intended reading of an elemental warband caught in the wrong weather.
  */
-function dampenFire(ctx: Ctx, req: DamageRequest): number {
-  if (req.dtype !== 'fire') return req.amount;
-  if (ctx.state.encounter.weather?.kind !== 'rain') return req.amount;
-  return Math.max(0, req.amount - RAIN_FIRE_PENALTY);
+function weatherAdjust(ctx: Ctx, req: DamageRequest): number {
+  return Math.max(0, req.amount + weatherMod(ctx.state.encounter.weather, req.dtype));
 }
 
-/** How much a downpour takes off every point of fire. */
-export const RAIN_FIRE_PENALTY = 10;
+/**
+ * How much a downpour takes off every point of fire.
+ *
+ * Kept as a named export because tests and the rules reference cite it, but the value now
+ * lives in `WEATHER_ELEMENTAL` and this reads it back rather than declaring it — two copies
+ * of a balance number is one copy too many.
+ */
+export const RAIN_FIRE_PENALTY = -(WEATHER_ELEMENTAL.rain?.fire ?? 0);
 
 function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side, at?: Coord): DamageOutcome {
   const cmd = ctx.state.players[side];
-  let amount = dampenFire(ctx, req);
+  // Weather, but no elemental resistance: a Pact is not a body and has no school of its own.
+  // The Commander's school is a deck-building fact, and reading it here would mean a Pyre
+  // player's portrait shrugged off fire, which is a defence nobody chose or paid for.
+  let amount = weatherAdjust(ctx, req);
 
   // Boss Damage Gates clamp incoming damage at phase thresholds and cancel the rest
   // of the current resolution chain.
@@ -195,8 +213,20 @@ function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side, at?: Coord): D
 }
 
 function damageEntity(ctx: Ctx, entity: Entity, req: DamageRequest): DamageOutcome {
-  let amount = dampenFire(ctx, req);
+  let amount = weatherAdjust(ctx, req);
   let absorbed = 0;
+
+  // Elemental resistance: a body shrugs off its own element, and may name others.
+  //
+  // Before armor, like Brittle and the weather, so a resisted hit is genuinely a smaller hit
+  // rather than one absorbed differently — and so the number the floater shows is the number
+  // that mattered. Clamped at zero here rather than after armor: resistance reducing a blow
+  // below nothing must not turn into healing, and must not hand the armor branch a negative
+  // to absorb.
+  if (isUnit(entity)) {
+    const authored = CARDS[entity.defId]?.unit?.elementalMod;
+    amount = Math.max(0, amount + resistOf(entity.school, req.dtype, authored));
+  }
 
   // Brittle: frozen-through flesh takes more from everything, before armor is applied.
   if (isUnit(entity) && (entity.statuses.brittle ?? 0) > 0 && req.dtype !== 'true') {
@@ -274,7 +304,11 @@ function damageEntity(ctx: Ctx, entity: Entity, req: DamageRequest): DamageOutco
         dealDamage(ctx, {
           target: { kind: 'unit', id: attacker.id },
           amount: entity.atk,
-          dtype: 'physical',
+          // The defender's own element, for the same reason its attack carries it: a riposte
+          // is that body swinging back, and a Frost sentinel's counter-blow should be cold.
+          // This was hard-coded `physical`, which made Counter the one strike in the game
+          // that forgot whose it was.
+          dtype: dtypeOf(entity.school),
           cause: 'counter',
           sourceUnitId: entity.id,
           chainDepth: nextDepth(req),

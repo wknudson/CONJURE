@@ -405,4 +405,309 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
     range: 4,
     spliceOnly: true,
   },
+
+  // ------------------------------------------------------------- the third pressing
+  //
+  // Eight rows that close the book: every one of the fifteen elemental pairings now has a
+  // fusion. Three of these needed a Core the bench had never bottled -- Dusk, Bloom and
+  // Bulwark -- because a pressing is base card plus Core and the three pairings among those
+  // schools contained none of the original three. The reagent table is symmetric now: six
+  // schools, six Cores.
+  //
+  // Four species were rolling a 35% hybrid chance against an empty pool before this: the
+  // Storm-Mantis, the Grave-Gargoyle, the Kinetic Dynamo and the Bone Bastion Sovereign.
+  // Each of them has something to draw now.
+
+  /**
+   * **Pyre + Dusk.** The fire on a body, spent as a detonation.
+   *
+   * Dusk's verb is spending something you already have; Pyre's is fire. This spends the
+   * *Burn* — `clearStatus` strips every stack before the damage lands, so the card cannot
+   * be cast twice on the same fire, and the fifty is paid for by giving up the ten a turn
+   * the Burn would have ticked for anyway.
+   *
+   * `requiresStatus` makes it unplayable until something is alight, which is what lets it
+   * cost what it costs. A Stoke or an Ashen Wake is the turn before this one.
+   *
+   * Soulfire is not a reaction and was never built as one. This is its shape as ordinary
+   * damage: the body, and the fire coming off it.
+   */
+  soulfire: {
+    id: 'soulfire',
+    name: 'Soulfire',
+    cost: { pips: 2, marrow: 1 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Can only be aimed at a Burning unit. Consumes the fire on it for 50 fire damage, and 20 to everything adjacent.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false, requiresStatus: 'burn' },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'clearStatus', status: 'burn', area: { shape: 'target' } },
+        { op: 'damage', amount: 50, dtype: 'fire', area: { shape: 'target' } },
+        { op: 'damage', amount: 20, dtype: 'fire', area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * **Frost + Surge.** The one fusion whose reaction already ships.
+   *
+   * Superconduct has been in the reaction table since Surge landed: frost through a Charged
+   * target strips all its armour and leaves it Brittle. Nothing needed writing here except
+   * a card that reliably *causes* it — frost damage, aimed by a bloodline that speaks both
+   * schools, at the status its own other half applies.
+   *
+   * So this is deliberately plain. The two stacks of Chill are the frost half being paid
+   * for; the Superconduct is the engine's, and it fires off the damage above without this
+   * card mentioning it.
+   */
+  superconductor: {
+    id: 'superconductor',
+    name: 'Superconductor',
+    cost: { pips: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 30 frost damage and applies Chill 2. Against a Charged target this Superconducts: all Armor stripped, and it is left Brittle.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'frost', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'chill', stacks: 2, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * **Frost + Dusk.** Through the ice, and through the plate.
+   *
+   * Two Pips for forty through any armour is above rate, and the gate is why: it cannot be
+   * cast at all except at something already Frozen, which is two Frost cards or a Rime Lock
+   * of setup. `true` damage because a frozen body has had every chance to be plated and the
+   * whole point of a Dusk fusion is that plate is not an answer.
+   *
+   * The spread Chill is what makes it a board card rather than a finisher. Everything
+   * standing around the corpse is two stacks closer to being the next target.
+   */
+  black_ice: {
+    id: 'black_ice',
+    name: 'Black Ice',
+    cost: { pips: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Can only be aimed at a Frozen unit. Deals 40 damage through any armor, and everything adjacent takes Chill 2.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false, requiresStatus: 'freeze' },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 40, dtype: 'true', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'chill', stacks: 2, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * **Frost + Bloom.** The rot sets where the cold holds it.
+   *
+   * Both schools are patient and both are answered the same way — by walking out of the
+   * area. This is the card that refuses that: Entangle stops the body moving and the Toxin
+   * ticks through its armour while it stands there, which is Bloom's damage finally
+   * guaranteed to land.
+   *
+   * Chill is the gate rather than an effect, because a Permafrost that also chilled would
+   * be doing the setup and the payoff at once. Creeping Rime is the turn before.
+   */
+  permafrost: {
+    id: 'permafrost',
+    name: 'Permafrost',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Can only be aimed at a Chilled unit. Deals 20 frost damage, roots it in place, and applies 2 Toxin that ticks through Armor.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false, requiresStatus: 'chill' },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'frost', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'entangle', stacks: 1, area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 2, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * **Surge + Bulwark.** The shove that discharges when it lands.
+   *
+   * Bulwark supplies the collision and Surge supplies what the collision releases. The
+   * `ifMet collided` is the same pattern the Avalanche Slam established — `push` writes
+   * `play.collided`, the condition reads it — so the blast is *earned* by aiming at a wall
+   * rather than granted for casting.
+   *
+   * Everything caught is left Charged, which is the Surge half paying forward: a Kinetic
+   * Arc into a corner is three bodies armed for a Discharge next turn.
+   *
+   * **No `applyStatus` for that charge, deliberately.** `dealDamage` already leaves one
+   * Charged on anything a `shock` hit survives, so a rider here would be the card paying
+   * for what the engine gives free — and it would land *two* stacks, which reads on the
+   * board as a card doing something it never claimed. This is the same trap Static Arc
+   * sidesteps from the other direction: that card wants the charge and so deals `spell`
+   * rather than `shock`, because `shock` would have applied it twice over.
+   */
+  kinetic_arc: {
+    id: 'kinetic_arc',
+    name: 'Kinetic Arc',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Shoves the target 2 tiles. If it slams into something, the impact discharges for 30 shock damage all around it — and shock leaves everything it touches Charged.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'push', distance: 2 },
+        {
+          op: 'ifMet',
+          cond: { kind: 'collided' },
+          then: { op: 'damage', amount: 30, dtype: 'shock', area: { shape: 'adjacent8' } },
+        },
+      ],
+    },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * **Bulwark + Dusk.** The wound worn as plate.
+   *
+   * The first fusion pressed with a Bulwark Core, and the reason that Core had to exist:
+   * Bulwark, Dusk and Bloom are the three schools that were never bottled, and the three
+   * pairings among them could not be pressed at all.
+   *
+   * `grantArmor` with `{ from: 'titheDamage' }` reads the wound the tithe just made and
+   * plates the **Pact** with it — that dynamic form always pays the portrait, which is what
+   * makes this a Bone Bastion rather than a buff on one body. Thirty health off a minion
+   * becomes thirty armour on the thing you actually have to protect, and the Marrow is paid
+   * on top.
+   *
+   * One Pip, because the tithe is the cost. A body has to be standing there un-exhausted.
+   */
+  bone_bastion: {
+    id: 'bone_bastion',
+    name: 'Bone Bastion',
+    cost: { pips: 1, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Bleed an un-exhausted friendly minion for 30: extracts 1 Marrow and plates your Pact with Persistent Armor equal to the health taken.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false, requireUnexhausted: true },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'tithe', damage: 30, marrow: 1 },
+        { op: 'grantArmor', amount: { from: 'titheDamage' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    spliceOnly: true,
+  },
+
+  /**
+   * **Bulwark + Bloom.** A wall that is also a snare.
+   *
+   * Bulwark raises constructs and Bloom roots things; this does both at the same tile, which
+   * is the only way either half is worth two Pips. The thicket goes up and everything
+   * orthogonally beside it is caught in the same motion — so the enemy is held in place
+   * *next to* the thing that poisons its row every turn.
+   *
+   * The Rampart it raises is a real Bloom card in its own right (`briar_rampart`), not a
+   * setup-only stat block. A pressing whose product nothing else in the game could ever
+   * deal would be a card nobody could learn to read.
+   */
+  iron_briar: {
+    id: 'iron_briar',
+    name: 'Iron Briar',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Raises a 50 HP Briar Rampart on an empty tile and roots everything orthogonally beside it, poisoning them (Toxin 1).',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'spawnObstacle', obstacleDef: 'briar_rampart' },
+        { op: 'applyStatus', status: 'entangle', stacks: 1, area: { shape: 'adjacentCross' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'adjacentCross' } },
+      ],
+    },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * **Dusk + Bloom.** The rot, drunk.
+   *
+   * The last pairing in the book, and the one both halves were already built for: Bloom
+   * spends turns stacking Toxin and Dusk spends bodies turning damage into health. This
+   * turns the stacks themselves into health — fifty through any armour, and thirty of it
+   * back to your Pact.
+   *
+   * `ifMet` rather than `requiresStatus`, so it is always castable and merely weak when the
+   * setup is not there. That is the right shape for the *last* card a Bloom deck draws: a
+   * fusion you cannot play at all on a board that went badly is a dead card in the hand you
+   * least want one.
+   */
+  blight_siphon: {
+    id: 'blight_siphon',
+    name: 'Blight Siphon',
+    cost: { pips: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Against a target carrying 2 or more Toxin, deals 50 damage through any armor and returns 30 health to your Pact. Otherwise only 20.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'ifMet',
+      cond: { kind: 'targetStatus', status: 'toxin', stacks: 2 },
+      then: {
+        op: 'seq',
+        effects: [
+          { op: 'damage', amount: 50, dtype: 'true', area: { shape: 'target' } },
+          { op: 'heal', amount: 30 },
+        ],
+      },
+      otherwise: { op: 'damage', amount: 20, dtype: 'true', area: { shape: 'target' } },
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+    spliceOnly: true,
+  },
 };

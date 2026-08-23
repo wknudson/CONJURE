@@ -17,8 +17,31 @@ export interface Coord {
 /** Elemental schools. The demo uses pyre / dusk / arcane; the rest are reserved. */
 export type School = 'pyre' | 'frost' | 'surge' | 'bulwark' | 'dusk' | 'bloom' | 'arcane' | 'neutral';
 
-/** Damage typing drives mark alignment (which triggers detonate vs. fizzle). */
-export type DamageType = 'physical' | 'fire' | 'frost' | 'shock' | 'spell' | 'impact' | 'true';
+/**
+ * Damage typing drives mark alignment (which triggers detonate vs. fizzle), the reaction
+ * table, weather modifiers, and elemental resistance.
+ *
+ * Six of these are the elemental schools' own damage, one per school — see `SCHOOL_DTYPE`
+ * in `core/data/elements.ts`, which is the only place the mapping is written down. `decay`
+ * and `toxic` were added last, for Dusk and Bloom: those two were the schools with no damage
+ * type of their own, so a Dusk body hit like an arcane one and neither school could be
+ * gated by weather or aligned to a mark the way the other four could.
+ *
+ * `physical` is what a body with no element swings with. `spell` is what a *spell* with no
+ * element does — deliberately not the arcane school's attack type, because `spell` is aligned
+ * by four of the six Marks and an arcane body swinging would otherwise set off all of them.
+ * `true` bypasses armour, Brittle, resistance and weather alike.
+ */
+export type DamageType =
+  | 'physical'
+  | 'fire'
+  | 'frost'
+  | 'shock'
+  | 'impact'
+  | 'decay'
+  | 'toxic'
+  | 'spell'
+  | 'true';
 
 /** What caused a damage instance — the renderer picks animations from this. */
 export type DamageCause = 'attack' | 'spell' | 'collision' | 'mark' | 'status' | 'counter' | 'impact' | 'reaction';

@@ -12,6 +12,7 @@ import { easeInQuad, easeOutBack, easeOutQuad, tween } from './tween.js';
 import type { EntityViewMap } from '../render/EntityViews.js';
 import { lerpCoord } from '../render/EntityViews.js';
 import type { Fx } from '../render/Fx.js';
+import { FLOATER_FOR_DTYPE } from '../render/Fx.js';
 import type { Sfx } from '../sound/Sfx.js';
 import type { Hud } from '../hud/Hud.js';
 import type { BoardRenderer } from '../render/BoardRenderer.js';
@@ -169,7 +170,7 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     }
 
     if (e.at) {
-      if (e.hpLoss > 0) view.fx.damageNumber(e.at, e.hpLoss, e.dtype === 'shock' ? 'shock' : 'damage');
+      if (e.hpLoss > 0) view.fx.damageNumber(e.at, e.hpLoss, FLOATER_FOR_DTYPE[e.dtype]);
       else if (e.absorbedByArmor > 0) view.fx.label(e.at, 'ABSORBED', 'absorb');
     }
 

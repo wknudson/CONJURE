@@ -441,15 +441,60 @@ buying a board meant not casting anything — the "Pip Tax". The deck keeps the 
 and Pips buy magic and only magic
 ([roster.ts:1](src/core/data/roster.ts:1)).
 
-### The budget
+### The budget: you own a kit, you field an arena's worth of it
 
 ```ts
-export const ROSTER_BUDGET = 10;
-export const MAX_ROSTER_BEHEMOTHS = 1;
+export function rosterBudgetFor(width: number, height: number): number  // width + height
+export const KIT_BUDGET = 24;               // what a character may own
+export const STARTING_WARBAND_POINTS = 10;  // what a new one is bought with
+export const MAX_ROSTER_BEHEMOTHS = 2;      // what a kit may hold
+export function fieldableBehemoths(arenaBudget: number): number  // 2 at 16+, else 1
 ```
-— [roster.ts:19](src/core/data/roster.ts:19)
+— [roster.ts](src/core/data/roster.ts)
 
-Ten is "deliberately not divisible into a comfortable answer."
+There are **two budgets**, and they answer different questions.
+
+The **kit** is what a character owns, capped at 24 — the largest thing any arena could seat.
+It is built in the Field Journal, which has no encounter in scope and cannot have one: the
+Journal is reached from the Safehouse and a contract is accepted somewhere else. So ownership
+cannot be arena-dependent, and `validateRoster` defaults to this ceiling.
+
+The **arena budget** is what a given board will seat: **one point per rank and one per file.**
+A warband larger than the ground it is standing on holds the remainder in reserve — which
+deployment has always allowed, because "holding something back is a decision, not a mistake."
+
+| | h=4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|---|---|
+| **w=4** | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 |
+| **6** | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 |
+| **8** | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 |
+| **10** | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 |
+| **12** | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 |
+
+Shipped arenas: Narrow Ruin (4×6) **10**, Novice Duelist (6×8) **14**, Glacial Field and the
+Ignis Trial (8×8) **16**.
+
+**Why width + height and not area.** The old flat ten was tuned for a 5×5, where ten points is
+five basic bodies filling the single territory row — and the formula reproduces that exactly.
+It is not area-proportional because area overflows the ground it is buying: deployment happens
+in the starting zone, `width` across and one or two rows deep, and 0.4 × 144 would grant a
+12×12 warband twenty-nine bodies for twenty-four tiles. A budget that cannot be deployed is a
+budget that lies. `width + height` never overflows; the binding case is the 4×4, where four
+bodies exactly fill a four-tile row. It also needs no rounding, because a sum of two integers
+is an integer — no formula with a `Math.round` in it survives being explained at the table.
+
+Height counts the same as width even though only width adds *seats*. That is intentional: a
+deeper board is a longer walk, and a longer walk is what makes a second rank worth owning.
+
+**Where each is enforced.** The kit is settled in the Journal and **never re-litigated at the
+door** — refusing a legally bought warband would make the point-buy a lie. Capacity is checked
+in `deployRefusal`, which asks the arena's rules before it asks whether a particular tile has
+room, because "there is no room there" is the wrong answer to a body the board will never
+seat. `PreCombatScreen` shows the number before Ready; the deploy tray shows the running total
+and greys what will not fit.
+
+Ten survives as the **starting** allowance, keeping its original character: deliberately not
+divisible into a comfortable answer, so the opening warband is a shape somebody chose.
 
 ### The price ladder, derived
 

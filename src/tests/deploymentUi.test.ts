@@ -3,7 +3,8 @@ import { CombatSession } from '../core/session.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
 import {
   DEFAULT_ROSTER,
-  ROSTER_BUDGET,
+  STARTING_WARBAND_POINTS,
+  rosterBudgetFor,
   rosterCost,
   rosterPointsOf,
   validateRoster,
@@ -44,10 +45,23 @@ describe('the view the tray draws from', () => {
     expect(board.roster.reduce((n, r) => n + r.points, 0)).toBe(rosterCost(DEFAULT_ROSTER));
   });
 
+  it('carries what the arena seats, so the tray never recomputes the budget', () => {
+    // The tray shows a running total and greys a body that will not fit, and it must reach
+    // the same verdict `deployRefusal` does. One number, shipped on the view — the renderer
+    // cannot import the engine, and a second copy of the arithmetic is a second answer.
+    const board = session(DEFAULT_ROSTER).getBoard();
+    expect(board.deployBudget).toBe(
+      rosterBudgetFor(NOVICE_DUELIST.width, NOVICE_DUELIST.height),
+    );
+    expect(board.deployBudget, 'the Duelist is 6x8').toBe(14);
+  });
+
   it('is empty, with no phase, when no Vanguard came along', () => {
     const board = session().getBoard();
     expect(board.roster).toEqual([]);
     expect(board.phase, 'the legacy path opens on turn one').toBe('action');
+    // Still carried: the budget is a fact about the arena, not about the warband.
+    expect(board.deployBudget).toBeGreaterThan(0);
   });
 
   it('names the unit a fielded body became, so a board click can find its tray entry', () => {
@@ -146,7 +160,7 @@ describe('the actions the tray dispatches', () => {
 
 describe('the Vanguard on the profile', () => {
   it('gives a new character a legal warband with nothing left it could add', () => {
-    // The invariant, rather than the old exact `=== ROSTER_BUDGET`.
+    // The invariant, rather than the old exact `=== STARTING_WARBAND_POINTS`.
     //
     // That number was an artefact of `DEFAULT_ROSTER` being hand-authored to spend the ten
     // precisely. Enrolment derives the opening warband from the chosen school's shelf, and
@@ -156,13 +170,13 @@ describe('the Vanguard on the profile', () => {
     // added.
     const p = newProfile('slot-1');
     expect(validateRoster(p.roster, p.rosterUnlocks)).toEqual([]);
-    expect(rosterCost(p.roster)).toBeGreaterThan(ROSTER_BUDGET - 3);
+    expect(rosterCost(p.roster)).toBeGreaterThan(STARTING_WARBAND_POINTS - 3);
 
     const cheapest = Math.min(
       ...p.rosterUnlocks.map((id) => rosterPointsOf(CARDS[id]!)).filter((n) => n > 0),
     );
     expect(rosterCost(p.roster) + cheapest, 'nothing else would fit').toBeGreaterThan(
-      ROSTER_BUDGET,
+      STARTING_WARBAND_POINTS,
     );
   });
 

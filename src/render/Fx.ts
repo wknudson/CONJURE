@@ -3,10 +3,49 @@
  * world-anchored DOM floaters (damage numbers, CRASH badges).
  */
 
-import type { Coord } from '../contract/ids.js';
+import type { Coord, DamageType } from '../contract/ids.js';
 import type { IsoCamera } from './IsoCamera.js';
 import { schoolOf } from './palette.js';
 import { tween, easeOutQuad, linear } from '../anim/tween.js';
+
+/** The CSS treatments a floating number can take. One class per value, in `board.css`. */
+export type FloaterKind =
+  | 'damage'
+  | 'heal'
+  | 'armor'
+  | 'fire'
+  | 'frost'
+  | 'shock'
+  | 'impact'
+  | 'decay'
+  | 'toxic';
+
+/**
+ * Which treatment a damage type gets on screen.
+ *
+ * Written as a total `Record` rather than a lookup with a fallback, deliberately: adding a
+ * member to `DamageType` should fail to compile until somebody decides how it *looks*. The
+ * damage model went years with a type the player could not see — Shock was the only element
+ * distinguishable at a glance, and it was distinguishable because one line special-cased it.
+ *
+ * Now that a body's swing carries its school, the type is information a player has to act on:
+ * a Cinder Mark detonates on fire and fizzles on frost, so "what element just hit that" stops
+ * being flavour and becomes the difference between a combo and a wasted card.
+ *
+ * The three non-elemental types share the plain red number. They have no school colour to
+ * borrow and inventing one for `true` would imply an element it deliberately does not have.
+ */
+export const FLOATER_FOR_DTYPE: Record<DamageType, FloaterKind> = {
+  fire: 'fire',
+  frost: 'frost',
+  shock: 'shock',
+  impact: 'impact',
+  decay: 'decay',
+  toxic: 'toxic',
+  physical: 'damage',
+  spell: 'damage',
+  true: 'damage',
+};
 
 interface Ring {
   at: Coord;
@@ -249,7 +288,7 @@ export class Fx {
   damageNumber(
     at: Coord,
     amount: number,
-    kind: 'damage' | 'heal' | 'armor' | 'shock' = 'damage',
+    kind: FloaterKind = 'damage',
   ): void {
     const centre = this.cam.tileCenter(at);
     const el = document.createElement('div');

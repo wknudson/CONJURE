@@ -189,7 +189,14 @@ export const AUDIT_BOUNTY_ID = 'audit_smuggled_vault';
 export const AUDIT_SPOILS = {
   ducats: 5000,
   marrowShards: 100,
-  reagents: { core_pyre: 12, core_surge: 12, core_frost: 12 },
+  reagents: {
+    core_pyre: 12,
+    core_surge: 12,
+    core_frost: 12,
+    core_bulwark: 12,
+    core_dusk: 12,
+    core_bloom: 12,
+  },
 } as const;
 
 function auditBounty(): Bounty {

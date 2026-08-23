@@ -340,7 +340,10 @@ describe('Arc is a reaction like any other', () => {
       cause: 'spell',
     });
 
-    expect(ctx.state.units[target.id]!.hp).toBe(170);
+    // 40, not the 30 requested: rain conducts, so `WEATHER_ELEMENTAL` adds 10 to every shock
+    // hit before armour. The arc it throws is `physical` and deliberately unaffected, which
+    // is why the neighbours below are unchanged.
+    expect(ctx.state.units[target.id]!.hp).toBe(160);
     expect(ctx.state.units[near.id]!.hp, 'the arc').toBe(190);
     expect(ctx.state.units[far.id]!.hp, 'out of reach').toBe(200);
   });

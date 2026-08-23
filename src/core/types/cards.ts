@@ -366,6 +366,20 @@ export interface UnitStatBlock {
    */
   attackDtype?: DamageType;
   /**
+   * This body's elemental defences, beyond the one every body gets for free.
+   *
+   * Signed and flat, in the same multiples of ten everything else here uses: **negative
+   * resists, positive is a vulnerability.** Absent almost everywhere, because a body already
+   * shrugs off its own school's element by `SELF_ELEMENT_RESIST` without being asked
+   * (`resistOf`, `data/elements.ts`) — this is for the exceptions that rule cannot express.
+   *
+   * The interesting entries are the positive ones. A resistance is a small reward for
+   * bringing the wrong element; a stated weakness is a body the player can be *told* how to
+   * kill, which is worth more than a number that only ever makes fights longer. A construct
+   * that comes apart to impact, or a Bloom horror that burns, is a puzzle with an answer.
+   */
+  elementalMod?: Partial<Record<DamageType, number>>;
+  /**
    * Extra damage this body's attacks deal to a target already carrying one of these.
    *
    * A hunter, in one field. Checked against the target at the moment of the swing, so it

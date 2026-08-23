@@ -111,7 +111,17 @@ describe('the new shelf', () => {
   it('gives Pyre a shelf of its own', () => {
     // The starter four stay in `starter.ts`; everything new is here. Both are Pyre, and
     // `spellPool` cannot tell the difference, which is the point.
-    expect(Object.keys(PYRE_CARDS).sort()).toEqual(['ashen_wake', 'ember_moth', 'pyre_pillar']);
+    //
+    // A superset check rather than an exact one. This assertion was pinned to the three
+    // cards the first expansion added, which made *adding a Pyre card* a test failure — a
+    // guard that fires on the thing it was meant to permit. What it should protect is the
+    // split itself: these live here, the founders live in `starter.ts`.
+    for (const id of ['ashen_wake', 'ember_moth', 'pyre_pillar']) {
+      expect(Object.keys(PYRE_CARDS), `${id} left the Pyre shelf`).toContain(id);
+    }
+    expect(Object.keys(PYRE_CARDS), 'a founder wandered onto the expansion shelf').not.toContain(
+      'flame_surge',
+    );
     const pyre = spellPool('pyre').map((c) => c.id);
     expect(pyre, 'the new one').toContain('ashen_wake');
     expect(pyre, 'and the old one').toContain('flame_surge');
@@ -138,13 +148,25 @@ describe('the new pressings', () => {
     }
   });
 
-  it('needs no new Core to cover six more pairings', () => {
+  it('bottles one Core per school, and spends every one of them', () => {
     // A pressing is two schools and the *base card* is always one of them, so a Bulwark
     // spell plus a Pyre Core is a Pyre/Bulwark fusion without Bulwark ever being bottled.
-    // That is what keeps the reagent table at three entries.
-    expect(REAGENTS).toHaveLength(3);
+    // That trick covered ten pairings on three Cores — and then ran out, because the three
+    // pairings *among* Bulwark, Dusk and Bloom contain none of the original three. Hence
+    // six Cores, one per school.
+    expect(REAGENTS).toHaveLength(SCHOOLS.length);
+    for (const school of SCHOOLS) {
+      expect(REAGENTS.map((x) => x.school), `${school} is not bottled`).toContain(school);
+    }
+    // Both directions. A Core no recipe takes is a reward the player can earn and never
+    // spend; a catalyst no Core provides is a row nobody can press.
     for (const r of SPLICE_RECIPES) {
       expect(REAGENTS.some((x) => x.id === r.catalystId), r.resultId).toBe(true);
+    }
+    for (const x of REAGENTS) {
+      expect(SPLICE_RECIPES.some((r) => r.catalystId === x.id), `${x.id} presses nothing`).toBe(
+        true,
+      );
     }
   });
 
@@ -679,19 +701,21 @@ describe('the catalog pools', () => {
 
   it('reports how far each school is from a full shelf', () => {
     // Deliberately asserted as a *ceiling on the gap* rather than as an exact number, so
-    // authoring a card makes this test more true rather than making it fail. The day every
-    // school clears the target, the last line here starts failing and should be deleted.
+    // authoring a card makes this test more true rather than making it fail.
+    //
+    // **That day came.** This block used to end with `expect(gaps.some(g => g.short > 0))`,
+    // a tripwire whose own message read "if this fails the catalog is complete and the gap
+    // report can go". Dusk was the last school short — seven draftable cards, because nine
+    // of its twenty were Bound Forms and authored threats — and the decay shelf closed it.
+    // The tripwire is gone; the report is not, because it is still the thing that answers
+    // "is a new school ready to ship" and it costs nothing to keep asking.
     const gaps = catalogGaps();
     expect(gaps).toHaveLength(SCHOOLS.length);
     for (const gap of gaps) {
       expect(gap.spells, `${gap.school} has no shelf at all`).toBeGreaterThan(0);
       expect(gap.minions, `${gap.school} has no bodies`).toBeGreaterThan(0);
-      expect(gap.short, `${gap.school} is further behind than it was`).toBeLessThanOrEqual(6);
+      expect(gap.short, `${gap.school} fell back below the target`).toBe(0);
     }
-    expect(
-      gaps.some((g) => g.short > 0),
-      'if this fails the catalog is complete and the gap report can go',
-    ).toBe(true);
     expect(CATALOG_TARGET.min).toBe(10);
   });
 

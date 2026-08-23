@@ -241,7 +241,9 @@ describe('torrential rain conducting a shock', () => {
     const { state, primary, orthogonal, diagonal, clear } = cluster({ kind: 'rain' });
     const out = strike(state, primary.id, 'shock');
 
-    expect(out.units[primary.id]!.hp, 'the primary takes the full hit').toBe(170);
+    // 40 rather than 30: the rain amplifies shock as well as conducting it, so the strike
+    // lands harder *and* earths itself. The arc stays physical and so stays at 10.
+    expect(out.units[primary.id]!.hp, 'the primary takes the full hit').toBe(160);
     expect(out.units[orthogonal.id]!.hp, 'orthogonal neighbour').toBe(190);
     expect(out.units[diagonal.id]!.hp, 'diagonal neighbour').toBe(190);
     expect(out.units[clear.id]!.hp, 'two tiles away, untouched').toBe(200);

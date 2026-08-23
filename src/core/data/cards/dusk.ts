@@ -263,4 +263,124 @@ export const DUSK_CARDS: Record<string, CardDef> = {
       attackDtype: 'true',
     },
   },
+
+  // -------------------------------------------------------------------- decay
+  //
+  // Three cards, and the reason they were unwritable until now is worth stating.
+  //
+  // Dusk was the only school with no status of its own. Pyre has Burn, Frost has
+  // Chill/Freeze/Brittle, Surge has Charged, Bloom has Toxin and Entangle, Bulwark has armour
+  // and Stun. Dusk's payload is **Marrow** — and Marrow is a resource, not a status. That is
+  // not a flavour observation, it is why four hooks every other school got were closed to this
+  // one: `obstacleTurnStart` is typed `{ status, stacks }` with nowhere to put a resource, so a
+  // Dusk construct could not be built at all. Dusk had no construct, and no area card either.
+  //
+  // So Dusk gets a second pillar beside Marrow: **decay, spelled as `brittle`**. Borrowed
+  // rather than invented, and defensible — Brittle is "+20 from every hit until it wears off",
+  // which is what decay *is*, and the one Climax trait reserved for this school (`hollow`,
+  // `data/auras.ts`) is described as frail-strike, the same idea from the other end. One card
+  // lays it, one cashes it, one spreads it.
+  //
+  // The shelf needed this for a second reason: five of Dusk's seven spells spend a body, which
+  // made the school a single move played at different prices.
+
+  /**
+   * Dusk's first construct, and the school's first standing threat.
+   *
+   * Every other school has an obstacle that ticks its own status onto the row it occupies —
+   * the Pyre Pillar burns, the Hail Spire chills, the Tesla Pylon charges, the Briar Rampart
+   * poisons. Dusk had nothing to tick, so it had no pillar. Brittle is what it ticks: a row
+   * left standing beside this is a row where every blow lands twenty harder, which is the
+   * whole of what Dusk means by decay.
+   *
+   * Fifty health, matching the Spire and the Rampart. It is a clock the enemy has to answer,
+   * and answering it costs the turn that is the actual price of the card.
+   *
+   * **Not `spawnConstruct`.** Smoke Bomb puts its health on the spell because smoke is a held
+   * breath and the caster's `bonusObstacleHp` should thicken it. Masonry is masonry: the health
+   * belongs to the definition, which is also what `spawnObstacle` requires.
+   */
+  charnel_pillar: {
+    id: 'charnel_pillar',
+    name: 'Charnel Pillar',
+    cost: { pips: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'obstacle',
+    text: 'Raises a 50 HP cairn of bone on an empty tile. At the start of each enemy turn, every enemy in its row is left Brittle — taking +20 damage from every hit until it wears off.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'spawnObstacle', obstacleDef: 'charnel_pillar' },
+    keywords: [],
+    obstacleHp: 50,
+    obstacleTurnStart: { status: 'brittle', stacks: 1 },
+    leavesRubble: true,
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * The cash-in, at the cheapest price the game charges for one.
+   *
+   * The house pattern, fourth time it has been used and the first time for Dusk: Stoke reads
+   * Burn, Rime Lock reads Freeze, Spore Burst reads Toxin, and this reads Brittle. A Pip buys
+   * either a genuine finisher or a stack of setup, and which one it buys is a fact about the
+   * board rather than about the card.
+   *
+   * `true` on the paid branch, because Brittle is a *damage-taken* multiplier and pairing it
+   * with a blow armour could eat would be the card arguing with itself. Thirty rather than
+   * Spore Burst's forty: one stack of Brittle is a great deal easier to arrange than two
+   * stacks of Toxin, and the Charnel Pillar arranges it for free every turn.
+   */
+  wither: {
+    id: 'wither',
+    name: 'Wither',
+    cost: { pips: 1, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Against a Brittle target, deals 30 damage through any armor. Otherwise it merely leaves the target Brittle.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'ifMet',
+      cond: { kind: 'targetStatus', status: 'brittle' },
+      then: { op: 'damage', amount: 30, dtype: 'true', area: { shape: 'target' } },
+      otherwise: { op: 'applyStatus', status: 'brittle', stacks: 1, area: { shape: 'target' } },
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * Dusk's first area card, of any kind.
+   *
+   * Seven spells and not one of them touched more than a single body — every one was a trade
+   * aimed at a specific thing, which is a school that can answer a duel and never a board.
+   * This is the correction, and it is deliberately the *cheap* shape rather than a finisher:
+   * twenty through armour is a rounding error on its own, and four bodies each taking twenty
+   * more from everything that follows is the turn that wins the next one.
+   *
+   * Orthogonal and tile-aimed, matching Spore Cloud and Static Arc, so the three read as one
+   * geometry the player has already learned. The diagonals are the restraint.
+   */
+  creeping_decay: {
+    id: 'creeping_decay',
+    name: 'Creeping Decay',
+    cost: { pips: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 damage through any armor to everything orthogonally beside the target tile, and leaves it all Brittle.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'true', area: { shape: 'adjacentCross' } },
+        { op: 'applyStatus', status: 'brittle', stacks: 1, area: { shape: 'adjacentCross' } },
+      ],
+    },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+  },
 };

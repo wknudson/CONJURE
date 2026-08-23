@@ -19,6 +19,7 @@ import type { Ctx } from './context.js';
 import { emit, makeCtx, newCause } from './context.js';
 import { deepClone } from '../util/clone.js';
 import { CARDS } from '../data/cards/index.js';
+import { dtypeOf } from '../data/elements.js';
 import { canAfford, effectiveCost, resolvePlayedCard, spendResources } from './deck.js';
 import { applyTithe, executeEffect, TITHE_DAMAGE, TITHE_MARROW } from './effects.js';
 import { canAct, canAttack, canMove, findMove, licenseFor, setAnchor } from './movement.js';
@@ -35,11 +36,19 @@ import { cellsAt, cellsOf, footprintDistance } from '../util/grid.js';
 import { coordEq } from '../../contract/ids.js';
 import { creditRefund, spawnHazard } from './reactions.js';
 import { resonanceFor } from '../data/resonance.js';
+import { fieldableBehemoths, rosterBudgetFor, rosterPointsOf } from '../data/roster.js';
 import { declareIntents } from './intents.js';
 import { isSealed } from './subjugation.js';
 
 /** The only commands the deployment phase entertains. */
 const DEPLOYMENT_COMMANDS: Command['type'][] = ['deployUnit', 'recallUnit', 'finishDeployment'];
+
+/** Points already standing on the board, for the arena-capacity check. */
+function fieldedPoints(state: GameState): number {
+  return state.players.player.roster
+    .filter((r) => r.status === 'fielded')
+    .reduce((sum, r) => sum + (CARDS[r.defId] ? rosterPointsOf(CARDS[r.defId]!) : 0), 0);
+}
 
 /**
  * Why this body may not stand there, or null if it may.
@@ -48,9 +57,16 @@ const DEPLOYMENT_COMMANDS: Command['type'][] = ['deployUnit', 'recallUnit', 'fin
  * whatever this returns and the UI asks the same question to decide whether the tile
  * should light up, so the two can never disagree.
  *
- * Note there is no budget check. The roster was validated when it was *bought*, before the
- * dungeon; by the time a fight starts the points are long spent, and re-litigating them
- * here would let a legal warband be refused at the door.
+ * **The kit is never re-litigated here, and the arena is.** Those are two different
+ * questions and the distinction is the whole design. What a character may *own* was settled
+ * in the Field Journal, before the dungeon, and refusing a legally bought warband at the door
+ * would make the point-buy a lie. What this arena will *seat* is not a purse, it is
+ * capacity — `rosterBudgetFor(width, height)`, one point per rank and one per file — and a
+ * kit larger than the ground it is standing on holds the remainder in reserve.
+ *
+ * Both numbers are derived from facts already in the state: the board's dimensions and the
+ * def ids of what is standing. Nothing new is stored, so a replay of a save written before
+ * this rule existed produces the same board it always did.
  */
 export function deployRefusal(state: GameState, defId: string, at: Coord): string | null {
   if (state.phase !== 'deployment') return 'not deploying';
@@ -66,6 +82,33 @@ export function deployRefusal(state: GameState, defId: string, at: Coord): strin
 
   const def = CARDS[defId];
   const footprint = def?.unit?.footprint ?? 1;
+  const arenaBudget = rosterBudgetFor(state.width, state.height);
+
+  // Capacity before geometry, and the order is the message.
+  //
+  // "There is no room there" is the right answer to a tile that is taken; it is the *wrong*
+  // answer to a body this arena will never seat, because it sends the player hunting for a
+  // bigger gap that cannot help. So the rules that hold everywhere on this board are asked
+  // first, and only then whether this particular tile has space.
+
+  // A second 2x2 needs a second adjacent pair of Anchor Tiles, which `placeAnchors`
+  // guarantees exactly one of. Small arenas seat one Behemoth however many points are spare.
+  if (footprint === 2) {
+    const seats = fieldableBehemoths(arenaBudget);
+    const standing = state.players.player.roster.filter(
+      (r) => r.status === 'fielded' && CARDS[r.defId]?.unit?.footprint === 2,
+    ).length;
+    if (standing >= seats) {
+      return `this arena seats ${seats} Behemoth${seats === 1 ? '' : 's'}`;
+    }
+  }
+
+  const price = def ? rosterPointsOf(def) : 0;
+  const spent = fieldedPoints(state);
+  if (spent + price > arenaBudget) {
+    return `this arena seats ${arenaBudget} points, and ${spent} are already standing`;
+  }
+
   // A Behemoth anchors on the Anchor Tile; its second cell need only be free. Demanding
   // two anchors would make the guaranteed adjacent pair the only legal 2x2 placement on
   // every map in the game.
@@ -516,10 +559,15 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
   const landed = dealDamage(ctx, {
     target,
     amount: attacker.atk + bonus,
-    // Physical unless the body says otherwise, and the exception is load-bearing rather
-    // than decorative: the damage type is what the reaction table matches on, so a Wraith
-    // striking `true` bypasses plate and stops Shattering ice in the same stroke.
-    dtype: stats?.attackDtype ?? 'physical',
+    // **The body's own element**, derived from the school it already declares, with
+    // `attackDtype` left as the override for the handful whose strikes are something else —
+    // a Wraith striking `true` bypasses plate and stops Shattering ice in the same stroke.
+    //
+    // This used to default to `physical`, which made a school a colour on a card frame and
+    // nothing else: a Pyre minion could not detonate a Cinder Mark, because that aligns to
+    // fire and spell and a Pyre body dealt neither. Deriving it means the element cannot be
+    // forgotten on a new card and cannot disagree with the school printed beside it.
+    dtype: stats?.attackDtype ?? dtypeOf(attacker.school),
     cause: 'attack',
     ...(isMelee ? { sourceUnitId: attackerId } : {}),
   });
