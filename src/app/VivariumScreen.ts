@@ -185,7 +185,7 @@ export class VivariumScreen implements Screen {
           </span>
         </div>
         <div class="vivarium__dev"></div>
-        <button class="brass-btn vivarium__back">Back to Safehouse</button>
+        <button class="brass-btn vivarium__back">Back to the street</button>
       </div>
 
       <div class="vivarium__body">

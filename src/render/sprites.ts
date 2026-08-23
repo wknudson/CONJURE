@@ -27,61 +27,73 @@ export const SCHOOL_COLOR: Record<string, string> = {
 };
 
 /**
- * Where the Commander's bitmap sprite lives, one file per bearing.
+ * Which way the Commander is turned.
  *
- * Front-facing only for now — the creator only ever shows the figure from the front, so
- * that is the one frame actually wired up. `hero-*-side.png` / `-back.png` / `-side-alt.png`
- * exist alongside these if a facing change is ever added to the diorama; nothing in this
- * file references them yet.
+ * All four are on disk for both bearings. `front` is the only one the creation screen ever
+ * asks for — the figure there stands still and faces camera — but the district walks the
+ * same body around a street, so it needs the other three. `side-alt` is the second frame
+ * of the walk: the same profile with the legs swapped, alternated on distance travelled.
+ *
+ * There is no `left`. A left-facing Commander is `side` mirrored by the caller, because
+ * drawing the same profile twice would be two files to keep in agreement for no gain.
  */
-const SPRITE_SRC: Record<Gender, string> = {
-  male: '/assets/sprites/hero-male-front.png',
-  female: '/assets/sprites/hero-female-front.png',
-};
+export type HeroFacing = 'front' | 'back' | 'side' | 'side-alt';
 
 /**
- * Where the Commander's sprite lives, for a bearing. The counterpart to `companionSpriteSrc`.
+ * Where the Commander's sprite lives, for a bearing and a facing. The counterpart to
+ * `companionSpriteSrc`.
  *
  * Exported so a test can ask whether the file the loader will request is actually on disk,
  * under exactly that name. Worth checking rather than assuming: the art arrived as
  * capitalised exports (`Boreas-removebg-preview.png`) and was renamed down to lowercase, and
  * a case slip survives every Windows filesystem to fail only once it is served from Linux.
  */
-export function commanderSpriteSrc(gender: Gender): string {
-  return SPRITE_SRC[gender];
+export function commanderSpriteSrc(gender: Gender, facing: HeroFacing = 'front'): string {
+  return `/assets/sprites/hero-${gender}-${facing}.png`;
 }
 
-const spriteCache = new Map<Gender, HTMLImageElement>();
-const spriteLoading = new Map<Gender, Promise<HTMLImageElement>>();
+const spriteCache = new Map<string, HTMLImageElement>();
+const spriteLoading = new Map<string, Promise<HTMLImageElement>>();
 
 /**
- * Loads (and caches) the Commander sprite for a bearing.
+ * Loads (and caches) one facing of the Commander sprite.
  *
  * Call this once, ahead of the first `render()` that needs it — e.g. when the creation
  * screen mounts — and hold the resolved `HTMLImageElement` for `drawCommander`, which is
- * synchronous and cannot itself await a decode mid-frame. Calling it again for a bearing
+ * synchronous and cannot itself await a decode mid-frame. Calling it again for a facing
  * already loaded or loading returns the same promise/image rather than re-fetching.
+ *
+ * Keyed `${gender}:${facing}`, the same shape as the companion cache below: loading a
+ * female front and a female back are independent entries rather than one clobbering the
+ * other, which is what lets the district warm all eight frames in one `Promise.all`.
  */
-export async function loadCommanderSprite(gender: Gender): Promise<HTMLImageElement> {
-  const cached = spriteCache.get(gender);
+export async function loadCommanderSprite(
+  gender: Gender,
+  facing: HeroFacing = 'front',
+): Promise<HTMLImageElement> {
+  const key = `${gender}:${facing}`;
+  const cached = spriteCache.get(key);
   if (cached) return cached;
-  const inFlight = spriteLoading.get(gender);
+  const inFlight = spriteLoading.get(key);
   if (inFlight) return inFlight;
 
   const promise = (async () => {
     const img = new Image();
-    img.src = SPRITE_SRC[gender];
+    img.src = commanderSpriteSrc(gender, facing);
     await img.decode();
-    spriteCache.set(gender, img);
+    spriteCache.set(key, img);
     return img;
   })();
-  spriteLoading.set(gender, promise);
+  spriteLoading.set(key, promise);
   return promise;
 }
 
-/** The cached sprite for a bearing, if `loadCommanderSprite` has already resolved it. */
-export function commanderSpriteIfLoaded(gender: Gender): HTMLImageElement | null {
-  return spriteCache.get(gender) ?? null;
+/** The cached facing, if `loadCommanderSprite` has already resolved it. */
+export function commanderSpriteIfLoaded(
+  gender: Gender,
+  facing: HeroFacing = 'front',
+): HTMLImageElement | null {
+  return spriteCache.get(`${gender}:${facing}`) ?? null;
 }
 
 /**

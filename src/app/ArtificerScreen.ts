@@ -251,7 +251,7 @@ export class ArtificerScreen implements Screen {
             <span class="workbench__shards"></span>
           </span>
         </div>
-        <button class="brass-btn workbench__back">Back to Safehouse</button>
+        <button class="brass-btn workbench__back">Back to the street</button>
       </div>
 
       <div class="workbench-tabs">

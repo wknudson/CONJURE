@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   SAVE_VERSION,
   SLOT_IDS,
+  STARTING_DUCATS,
   clearSave,
   deleteProfile,
   emptySave,
@@ -13,6 +14,7 @@ import {
   type SaveFile,
 } from '../app/save.js';
 import { COMPANIONS } from '../core/data/companions.js';
+import { TIER_WAGER } from '../core/data/bounties.js';
 import { traitsFor } from '../core/data/companionTraits.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import { CARDS } from '../core/data/cards/index.js';
@@ -71,11 +73,13 @@ describe('the wall', () => {
     expect(firstEmptySlot(fileWith('slot-1', 'slot-3'))).toBe('slot-2');
   });
 
-  it('gives a new character a legal deck and an empty purse', () => {
+  it('gives a new character a legal deck and a stake for the first duel', () => {
     const p = newProfile('slot-1');
     expect(p.name).toBe('Commander');
     expect(p.level).toBe(1);
-    expect(p.state.overworld.economy.ducats).toBe(0);
+    // Enough to cover the Novice duel's buy-in and nothing more — see STARTING_DUCATS.
+    expect(p.state.overworld.economy.ducats).toBe(STARTING_DUCATS);
+    expect(p.state.overworld.economy.ducats).toBeGreaterThanOrEqual(TIER_WAGER.novice);
     expect(p.state.overworld.economy.marrowShards).toBe(0);
     // Two cores in the satchel: the splicing bench has no other way in yet, so a
     // character who could not reach it at all would never learn it exists.
@@ -679,6 +683,60 @@ describe('burning a dossier', () => {
     reopened.profiles['slot-1'] = newProfile('slot-1');
     writeSave(reopened);
 
-    expect(loadSave().save.profiles['slot-1']!.state.overworld.economy.ducats).toBe(0);
+    // Back to a new character's stake, not the 4000 the burnt one had banked.
+    expect(loadSave().save.profiles['slot-1']!.state.overworld.economy.ducats).toBe(
+      STARTING_DUCATS,
+    );
+  });
+});
+
+describe('the guided lap', () => {
+  let store: Map<string, string>;
+  beforeEach(() => {
+    store = installStorage();
+  });
+
+  /** Writes a raw save at a chosen version, bypassing `writeSave`'s version stamp. */
+  function writeRaw(version: number, tutorial?: unknown): void {
+    const file = fileWith('slot-1');
+    const raw = JSON.parse(JSON.stringify(file)) as Record<string, unknown>;
+    raw.version = version;
+    const profiles = raw.profiles as Record<string, Record<string, unknown>>;
+    if (tutorial === undefined) delete profiles['slot-1']!.tutorial;
+    else profiles['slot-1']!.tutorial = tutorial;
+    store.set('conjure.save', JSON.stringify(raw));
+  }
+
+  it('starts a new character at the door with nothing walked', () => {
+    expect(newProfile('slot-1').tutorial).toEqual([]);
+  });
+
+  it('carries the steps a character has actually taken', () => {
+    writeRaw(SAVE_VERSION, ['intro', 'artificer']);
+    expect(loadSave().save.profiles['slot-1']!.tutorial).toEqual(['intro', 'artificer']);
+  });
+
+  it('counts a character from before the ward as having walked it', () => {
+    // They have lived in the old Safehouse. Marching them past its doors on upgrade would
+    // be the new version taking something away.
+    writeRaw(SAVE_VERSION - 1);
+    expect(loadSave().save.profiles['slot-1']!.tutorial).toContain('complete');
+  });
+
+  it('drops steps nothing checks, rather than stranding the objective on one', () => {
+    writeRaw(SAVE_VERSION, ['intro', 'wander_off', 42, null, 'intro']);
+    expect(loadSave().save.profiles['slot-1']!.tutorial).toEqual(['intro']);
+  });
+
+  it('reads a missing or malformed ledger as nothing walked', () => {
+    writeRaw(SAVE_VERSION, 'not an array');
+    expect(loadSave().save.profiles['slot-1']!.tutorial).toEqual([]);
+  });
+
+  it('survives a round trip through disk', () => {
+    const file = fileWith('slot-1');
+    file.profiles['slot-1']!.tutorial = ['intro', 'artificer', 'journal'];
+    writeSave(file);
+    expect(loadSave().save.profiles['slot-1']!.tutorial).toEqual(['intro', 'artificer', 'journal']);
   });
 });

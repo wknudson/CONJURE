@@ -78,7 +78,7 @@ import { draftGrimoire, isDraftable, socketRefusal } from '../core/data/grimoire
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 19;
+export const SAVE_VERSION = 20;
 
 /**
  * The first version whose health numbers are written at the stretched scale.
@@ -100,6 +100,14 @@ const FIRST_STRETCHED_SAVE = 14;
  */
 const FIRST_DRAFTED_GRIMOIRE = 15;
 
+/**
+ * What a new Commander has in their pocket.
+ *
+ * Sized off `TIER_WAGER.novice` with a little room, not picked for feel: its whole job is
+ * to make the first contract on the board takeable. See `initializeNewProfile`.
+ */
+export const STARTING_DUCATS = 60;
+
 /** Posters on the wall. Three, and the wall is the reason it is three. */
 export const PROFILE_SLOTS = 3;
 
@@ -116,6 +124,30 @@ export type SlotId = (typeof SLOT_IDS)[number];
 
 export function isSlotId(value: unknown): value is SlotId {
   return typeof value === 'string' && (SLOT_IDS as readonly string[]).includes(value);
+}
+
+/**
+ * The version at which the guided lap of the ward arrived (v20).
+ *
+ * Named for the same reason `FIRST_STRETCHED_SAVE` is: the number appears in a comparison
+ * that decides whether to invent data for a character who predates the feature, and
+ * `< 20` on its own would be a magic number nobody could date.
+ */
+const FIRST_GUIDED_WARD = 20;
+
+/**
+ * The steps of the first lap, in the order a new Commander meets them.
+ *
+ * Written down as a union rather than left as loose strings because two files have to
+ * agree on the spelling — the district raises them, `main.ts` records them — and a typo in
+ * either would produce a step that can be reached but never satisfied.
+ */
+export const TUTORIAL_FLAGS = ['intro', 'artificer', 'journal', 'bounty_taken', 'complete'] as const;
+
+export type TutorialFlag = (typeof TUTORIAL_FLAGS)[number];
+
+export function isTutorialFlag(value: unknown): value is TutorialFlag {
+  return typeof value === 'string' && (TUTORIAL_FLAGS as readonly string[]).includes(value);
 }
 
 /**
@@ -237,6 +269,24 @@ export interface Profile {
    * free-rewards economy one last time, on the way out of it.
    */
   schematics: string[];
+  /**
+   * How far this character has got through the guided first lap of the ward (v20).
+   *
+   * A **ledger**, like `rosterUnlocks` and `schematics`: it records things that happened,
+   * and nothing removes from it. The district reads it to decide what the objective panel
+   * says and which contracts the board will hand over; once `complete` is in here the
+   * street is simply the hub and the panel goes away.
+   *
+   * Order in the array is arrival order and means nothing — every step is checked by
+   * presence, so a player who wanders into the Journal before the Artificer cannot strand
+   * themselves between two steps that each expect the other to have happened first.
+   *
+   * A pre-v20 save arrives with the whole set, unlike `schematics` above. The opposite
+   * choice for the opposite reason: that character has already lived in the old Safehouse
+   * and knows where the doors are, so walking them through an introduction to it would be
+   * the upgrade taking something away rather than leaving them where they were.
+   */
+  tutorial: TutorialFlag[];
   /**
    * Who the player said they were, at the desk (v18).
    *
@@ -438,6 +488,18 @@ export function initializeNewProfile(profileId: string, rawLook: CharacterLook):
   overworld.relics = ['relic_coat'];
   overworld.equippedRelics = emptyLoadout();
 
+  // A stake for the first duel, and nothing else.
+  //
+  // The Novice contract is a duel, so it asks for `TIER_WAGER.novice` up front — and it is
+  // the *only* posting on the board that asks for anything. A character created with an
+  // empty purse could therefore take an Adept or a Master contract on day one but not the
+  // beginner's one, and the Ready button on the fight they were pointed at simply did
+  // nothing. This is the smallest thing that fixes that: enough to cover the opening
+  // wager once, which a win pays straight back at `WAGER_MULTIPLIER`.
+  //
+  // Deliberately not enough to shop with. Gear is still earned; this is a buy-in.
+  overworld.economy.ducats = STARTING_DUCATS;
+
   return {
     profileId,
     name: characterLook.nickname,
@@ -449,6 +511,9 @@ export function initializeNewProfile(profileId: string, rawLook: CharacterLook):
     // have cut. Seeding even one would make the Artificer's door useful before the player
     // has any idea what is behind it.
     schematics: [],
+    // Nothing walked yet. The district reads this on the first mount and puts the player
+    // in front of the Dispatcher.
+    tutorial: [],
     decks,
     // A warband of their own colour, spending as much of the ten as their school's shelf
     // allows -- so a new player meets the deployment phase with a real line to place, and
@@ -897,6 +962,7 @@ function migrateProfile(
     // `reconcileCollection` drops them -- a plan for a card that has left the game is a row
     // on the bench that can never be cut.
     schematics: readSchematics(data.schematics),
+    tutorial: readTutorialFlags(data.tutorial, version),
     decks,
     roster,
     rosterUnlocks: unlocks,
@@ -1185,6 +1251,25 @@ function readSchematics(raw: unknown): string[] {
     if (def && isObtainable(def)) out.add(id);
   }
   return [...out].sort();
+}
+
+/**
+ * How far through the guided lap a save claims to be, cleaned on the way in.
+ *
+ * A character from before the ward was walkable gets the whole ledger. They already know
+ * where the Artificer keeps his bench; being marched past it by a tooltip would be the
+ * upgrade charging them for a feature.
+ *
+ * Unknown strings are dropped rather than kept, on the same grounds as `readSchematics`:
+ * a flag nothing checks is a step that can never be satisfied, and one of those in the
+ * middle of the list would leave the objective panel pointing at nothing.
+ */
+function readTutorialFlags(raw: unknown, version: number): TutorialFlag[] {
+  if (version < FIRST_GUIDED_WARD) return [...TUTORIAL_FLAGS];
+  if (!Array.isArray(raw)) return [];
+  const out = new Set<TutorialFlag>();
+  for (const value of raw) if (isTutorialFlag(value)) out.add(value);
+  return [...out];
 }
 
 /** A stable seed from a beast's own id, so a migrated roll never changes. */

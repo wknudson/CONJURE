@@ -21,6 +21,7 @@ import './styles/onboarding.css';
 import './styles/creation.css';
 import './styles/builder.css';
 import './styles/safehouse.css';
+import './styles/district.css';
 
 import { ScreenManager } from './app/ScreenManager.js';
 import { TitleScreen } from './app/TitleScreen.js';
@@ -30,7 +31,7 @@ import { VictoryScreen } from './app/VictoryScreen.js';
 import { DeckBuilderScreen } from './app/DeckBuilderScreen.js';
 import type { DeckBuilderResult } from './app/DeckBuilderScreen.js';
 import { PreCombatScreen } from './app/PreCombatScreen.js';
-import { SafehouseScreen } from './app/SafehouseScreen.js';
+import { DistrictScreen } from './district/DistrictScreen.js';
 import { ShopScreen } from './app/ShopScreen.js';
 import { ArtificerScreen } from './app/ArtificerScreen.js';
 import { CharacterCreationScreen } from './app/CharacterCreationScreen.js';
@@ -43,10 +44,17 @@ import {
   type Profile,
   type SaveFile,
   type SlotId,
+  type TutorialFlag,
 } from './app/save.js';
 import { forfeitIfAbandoned, isDown, rescuePlayer } from './core/overworld/state.js';
 import { encounterForBounty, rollBounties, type Bounty } from './core/data/bounties.js';
-import { carryFor, openContract, resolveCombat, type CombatOutcome } from './core/overworld/run.js';
+import {
+  carryFor,
+  contractRefusal,
+  openContract,
+  resolveCombat,
+  type CombatOutcome,
+} from './core/overworld/run.js';
 import { companionById, DEFAULT_COMPANION } from './core/data/companions.js';
 import { printedDeck } from './core/data/collection.js';
 import { grantSchematic, rollSchematicOffer } from './core/data/schematics.js';
@@ -224,7 +232,7 @@ function openProfile(slot: SlotId): void {
   // The *species*, not the instance: everything below the hub keys decks, schools and
   // Bound Forms off the bloodline. Passing the roster id here left the pre-combat screen
   // looking up a companion that does not exist and handing the fight an empty deck.
-  showSafehouse(activeBaseId());
+  showDistrict(activeBaseId());
 }
 
 /** Draws up a new commission on an empty poster, then opens it. */
@@ -264,12 +272,32 @@ function rescueIfDown(): void {
 }
 
 /**
- * The hub between contracts.
+ * Records a step of the guided lap, once.
+ *
+ * The only writer. The district raises the one flag only it can see — that the Dispatcher
+ * has been spoken to — and every other step is recorded here, on the way through the
+ * callback that actually performs it, so a step cannot be marked done by a screen that
+ * merely intended to open.
+ */
+function recordTutorial(flag: TutorialFlag): void {
+  const p = profile();
+  if (p.tutorial.includes(flag)) return;
+  p.tutorial.push(flag);
+  persist();
+}
+
+/**
+ * The ward between contracts.
+ *
+ * A street rather than a menu: the four trades are doors on it, the board is a post on the
+ * plaza, and the Commander walks between them with their beast at heel. Every callback
+ * below is the same one the DOM hub used to hand out — this changed where the player
+ * stands, not what the doors do.
  *
  * A player who walks in on the floor is picked up at the door rather than being stopped
  * at it — the rescue is a fee and a hospital bed, not a wall.
  */
-function showSafehouse(companionId: string): void {
+function showDistrict(companionId: string): void {
   rescueIfDown();
   const global = profile().state;
   // The gauge is resynced on every entry rather than only when a Companion changes: it
@@ -281,23 +309,26 @@ function showSafehouse(companionId: string): void {
   pendingNotice = null;
 
   screens.go(
-    new SafehouseScreen({
+    new DistrictScreen({
       global,
       companionId,
       companionLevel: activeCompanion().level,
+      gender: profile().characterLook.gender,
       bounties: rollBounties(global.overworld.bountySeed),
       collection: profile().collection,
       deck: deckFor(companionId),
       // Consumed on the way in, so a death is announced once rather than every time a
       // shop door closes behind the player.
       notice: notice ?? undefined,
+      tutorial: profile().tutorial,
+      onTutorialFlag: recordTutorial,
       onChange: persist,
       onApothecary: () =>
         screens.go(
           new ShopScreen({
             global,
             onChange: persist,
-            onBack: () => showSafehouse(companionId),
+            onBack: () => showDistrict(companionId),
           }),
         ),
       onArtificer: () =>
@@ -353,7 +384,7 @@ function showSafehouse(companionId: string): void {
               return true;
             },
             onChange: persist,
-            onBack: () => showSafehouse(companionId),
+            onBack: () => showDistrict(companionId),
           }),
         ),
       onVivarium: () =>
@@ -377,11 +408,17 @@ function showSafehouse(companionId: string): void {
             onChange: persist,
             // Back through the hub rather than to it, so the room is rebuilt around
             // whichever Companion the player walked out with.
-            onBack: () => showSafehouse(activeBaseId()),
+            onBack: () => showDistrict(activeBaseId()),
           }),
         ),
-      onJournal: () => showBuilder(companionId, () => showSafehouse(companionId)),
-      onBounty: (bounty) => takeBounty(bounty, companionId),
+      onJournal: () => showBuilder(companionId, () => showDistrict(companionId)),
+      onBounty: (bounty) => {
+        // Only the Novice posting closes the guided lap. The board refuses the rest while
+        // it is running, so this is belt and braces — but the flag is what unlocks them,
+        // and granting it off an audit would open the Master contract for free.
+        if (bounty.difficulty === 'novice' && !bounty.audit) recordTutorial('bounty_taken');
+        takeBounty(bounty, companionId);
+      },
       onLeave: showTitle,
     }),
   );
@@ -473,7 +510,7 @@ function takeBounty(bounty: Bounty, companionId: string): void {
       title: 'Contract Void',
       body: 'The posting names a place nobody can find any more. Try another.',
     };
-    showSafehouse(companionId);
+    showDistrict(companionId);
     return;
   }
   showPreCombat(encounter, companionId, bounty);
@@ -499,7 +536,7 @@ function showPreCombat(
         startCombat(encounter, companionId, deck, seed, bounty);
       },
       // Back to the Safehouse, because that is where the contract was taken down from.
-      onBack: () => showSafehouse(companionId),
+      onBack: () => showDistrict(companionId),
     }),
   );
 }
@@ -548,10 +585,27 @@ function startCombat(
   //
   // Before `global.combat` is set, not after: `contractRefusal` refuses while a fight is
   // open, so setting the handle first makes it refuse the very fight it is opening.
-  if (!openContract(global, bounty)) {
-    // Nothing to undo: the refusal is checked before anything is spent or opened.
+  const refusal = contractRefusal(global, bounty);
+  if (refusal !== null) {
+    // Nothing to undo: the refusal is checked before anything is spent or opened. But it
+    // has to be *said* — this used to return in silence, which left the player on the
+    // pre-combat screen pressing a Ready button that did nothing and told them nothing.
+    pendingNotice =
+      refusal === 'cannot-cover-wager'
+        ? {
+            title: 'Stake Refused',
+            body: `A duel wants ${bounty.wager ?? 0} Ducats on the table and you have ${
+              global.overworld.economy.ducats
+            }. Take other work first.`,
+          }
+        : {
+            title: 'Contract Refused',
+            body: 'Another fight is already open against your name. Finish it first.',
+          };
+    showDistrict(companionId);
     return;
   }
+  openContract(global, bounty);
   global.combat = { encounterId: encounter.id, seed };
   persist();
 
@@ -617,6 +671,14 @@ function finishCombat(
   // with it. Seeded off the running record so the same win does not reroll into a
   // different offer if the screen is rebuilt -- and salted with the encounter id, because
   // the record alone would hand two different fights won at the same tally the same seed.
+  // The lap ends when the first contract does, won or lost. What it was teaching was the
+  // loop — street, board, fight, street — and a Commander who came home beaten has been
+  // all the way round it. Making them do it again until they win would be the tutorial
+  // refusing to admit it is over.
+  if (p.tutorial.includes('bounty_taken') && !p.tutorial.includes('complete')) {
+    p.tutorial.push('complete');
+  }
+
   const won = result === 'victory' || result === 'bound';
   const offer = won
     ? rollSchematicOffer(
@@ -646,7 +708,7 @@ function finishCombat(
         },
         onLeave: () => {
           persist();
-          showSafehouse(companionId);
+          showDistrict(companionId);
         },
       }),
     );
@@ -662,7 +724,7 @@ function finishCombat(
       // printer sitting on the results screen.
       // Back to the hub rather than the title: the Safehouse is where a character lives
       // between contracts, and the title is only the way out.
-      onTitle: () => showSafehouse(companionId),
+      onTitle: () => showDistrict(companionId),
     }),
   );
 }

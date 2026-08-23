@@ -25,7 +25,8 @@ import {
   validateRoster,
 } from '../core/data/roster.js';
 import { COMPANION_TRAITS } from '../core/data/companionTraits.js';
-import { newProfile } from '../app/save.js';
+import { STARTING_DUCATS, newProfile } from '../app/save.js';
+import { TIER_WAGER } from '../core/data/bounties.js';
 
 /**
  * Enrolment: the one decision a character is made of.
@@ -263,9 +264,14 @@ describe('a freshly enrolled character', () => {
     }
   });
 
-  it('starts broke', () => {
+  it('starts with a stake and nothing else', () => {
+    // Not broke, but close to it. The opening Novice contract is a duel and asks for a
+    // buy-in, so a character created with an empty purse could take every posting on the
+    // board *except* the beginner's one. `STARTING_DUCATS` covers exactly that and is
+    // deliberately too little to shop with — gear is still earned.
     const p = newProfile('slot-1', 'Commander', 'dusk');
-    expect(p.state.overworld.economy.ducats).toBe(0);
+    expect(p.state.overworld.economy.ducats).toBe(STARTING_DUCATS);
+    expect(p.state.overworld.economy.ducats).toBeGreaterThanOrEqual(TIER_WAGER.novice);
     expect(p.state.overworld.economy.marrowShards).toBe(0);
   });
 
