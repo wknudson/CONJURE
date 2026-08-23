@@ -7,6 +7,7 @@
  */
 
 import GUI from 'lil-gui';
+import { FACING } from './sprites3d.js';
 
 export interface LookConfig {
   fov: number;
@@ -164,6 +165,14 @@ export function buildLookGui(handles: LookHandles): GUI {
   warden.add(LOOK, 'visionRange', 3, 20, 0.5).onChange(handles.onVision);
   warden.add(LOOK, 'visionAngle', 20, 180, 1).onChange(handles.onVision);
   warden.add(LOOK, 'coneOpacity', 0, 0.6, 0.01);
+
+  // Two ways to stop the walk sprite flickering on a diagonal, side by side so they can be
+  // felt rather than argued about. Neither makes the diagonal *correct* — there is no
+  // correct frame to show at 45 degrees — they only stop the wrong one changing every frame.
+  const facing = gui.addFolder('Facing');
+  facing.add(FACING, 'mode', ['raw', 'hysteresis', 'smoothing', 'both']).name('mode');
+  facing.add(FACING, 'hysteresisDeg', 0, 44, 1).name('hysteresis (deg past line)');
+  facing.add(FACING, 'smoothDistance', 0.05, 2, 0.05).name('smoothing (units)');
 
   const debug = gui.addFolder('Debug');
   const state = { showColliders: false };

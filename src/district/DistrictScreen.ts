@@ -27,6 +27,7 @@ import { fusedDeckSize, validateDeck } from '../core/data/deckRules.js';
 import {
   loadCommanderSprite,
   loadCommanderWalk,
+  loadCommanderWalkSheet,
   loadCompanionSprite,
   type HeroFacing,
 } from '../render/sprites.js';
@@ -38,8 +39,10 @@ import { buildPostChain, type PostChain } from './post.js';
 import { DistrictHud } from './hud.js';
 import { DialogueBox, GATE_SEALED, VEX_INTRO, VEX_REPEAT } from './dialogue.js';
 import {
+  FACING,
   actorArtFromTextures,
   buildActorArt,
+  buildSheetActorArt,
   disposeActorArt,
   Walker,
   type ActorArt,
@@ -214,6 +217,7 @@ export class DistrictScreen implements Screen {
         safe: () => this.playerSafe,
         nearest: () => this.nearest?.interactLabel ?? null,
         teleport: (x: number, z: number) => this.player?.position.set(x, 0, z),
+        FACING,
       };
     }
 
@@ -312,38 +316,47 @@ export class DistrictScreen implements Screen {
         loadCommanderSprite(vexGender, 'side'),
       ]);
 
-    // The walk frames, loaded apart from the rest and allowed to fail.
+    // The walk art, fetched apart from the rest and allowed to fail at every step.
     //
-    // Only `side` has them; there are no front or back walk frames yet, and asking for them
-    // would 404. Kept out of the `Promise.all` above because a missing walk should cost the
-    // animation and nothing else — folded in, one absent file would reject the whole batch
-    // and the street would open with no Commander, no companion and no Vex standing in it.
-    const heroWalk = await loadCommanderWalk(gender, 'side').catch(() => null);
+    // Three sources in order of preference, because the two bearings are not in the same
+    // place: the male has a twenty-frame sheet, the female still has her four separate
+    // frames, and anything with neither falls back to the standing profile. Only `side` is
+    // covered at all — there are no front or back walk frames for either.
+    //
+    // Kept out of the `Promise.all` above because a missing walk should cost the animation
+    // and nothing else. Folded in, one absent file would reject the whole batch and the
+    // street would open with no Commander, no companion and no Vex standing in it.
+    const walkSheet = await loadCommanderWalkSheet(gender).catch(() => null);
+    const heroWalk = walkSheet ? null : await loadCommanderWalk(gender, 'side').catch(() => null);
     if (this.disposed || !this.world) return;
 
     // The screen may have been swapped out while those were decoding.
     if (this.disposed || !this.world) return;
 
     const anis = this.renderer!.capabilities.getMaxAnisotropy();
-    const heroArt = buildActorArt(
-      {
-        front: hFront!,
-        back: hBack!,
-        side: hSide!,
-        // The four authored frames when they loaded. Falling back to the old two-pose
-        // shuffle rather than to nothing, so a checkout without the walk art still has legs
-        // that move — `side-alt` is that pose, and it is why it is still fetched above.
-        sideWalk: heroWalk ? [...heroWalk.frames] : [hSide!, hSideAlt!],
-      },
-      anis,
-    );
+    const heroArt = walkSheet
+      ? buildSheetActorArt(
+          { front: hFront!, back: hBack!, side: hSide!, sheet: walkSheet },
+          anis,
+        )
+      : buildActorArt(
+          {
+            front: hFront!,
+            back: hBack!,
+            side: hSide!,
+            // The four separate frames when they loaded, and otherwise the old two-pose
+            // shuffle — so a bearing with no walk art still has legs that move at all.
+            // `side-alt` is that second pose, and it is why it is still fetched above.
+            sideWalk: heroWalk ? [...heroWalk.frames] : [hSide!, hSideAlt!],
+          },
+          anis,
+        );
     const beastArt = buildActorArt({ front: cFront!, back: cBack!, side: cSide! }, anis);
     const vexArt = buildActorArt({ front: vFront!, back: vBack!, side: vSide! }, anis);
     const wardenArt = actorArtFromTextures(
       makeWardenTexture('front'),
       makeWardenTexture('back'),
       makeWardenTexture('side'),
-      16 / 26,
     );
     this.heroArt.push(heroArt, beastArt, vexArt, wardenArt);
 

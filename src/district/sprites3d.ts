@@ -9,7 +9,13 @@
  */
 
 import * as THREE from 'three';
-import { ACTOR_ALPHA_TEST, spriteTexture } from './textures.js';
+import { ACTOR_ALPHA_TEST, sheetFrameTexture, spriteTexture } from './textures.js';
+import {
+  WALK_SHEET_CONTENT,
+  WALK_SHEET_FRAMES,
+  WALK_SHEET_GAIT_CYCLES,
+  walkFrameCell,
+} from '../render/sprites.js';
 
 /** The four frames an actor can be drawn in, before mirroring. */
 export type Facing = 'down' | 'up' | 'left' | 'right';
@@ -31,20 +37,39 @@ export const SIDE_ART_FACES: Facing = 'left';
 export class BillboardSprite extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshLambertMaterial> {
   /** Mirrored horizontally — the opposite bearing is the drawn one, flipped. */
   private mirrored = false;
+  private readonly worldHeight: number;
+  private worldWidth: number;
 
-  constructor(texture: THREE.Texture, worldWidth: number, worldHeight: number) {
+  /**
+   * Built on a unit plane and sized by `scale`, rather than baked into the geometry.
+   *
+   * Because the width has to change with the picture. A body is not the same width from the
+   * front as it is from the side — 110px against 76px for the Commander — and one plane cut
+   * to the front's proportions was stretching the side-on figure 45% wider than it was drawn.
+   * Sizing by scale lets `setTexture` correct it per frame at no cost, and the mirror is the
+   * sign of the same number it was always the sign of.
+   */
+  constructor(texture: THREE.Texture, worldHeight: number) {
     const material = new THREE.MeshLambertMaterial({
       map: texture,
       transparent: false,
       alphaTest: ACTOR_ALPHA_TEST,
       side: THREE.DoubleSide,
     });
-    super(new THREE.PlaneGeometry(worldWidth, worldHeight), material);
-    // Shift the geometry up so `position.y` sits at the feet, which is what every caller
-    // means by "where it is standing".
-    this.geometry.translate(0, worldHeight / 2, 0);
+    // A 1x1 plane lifted so it spans y 0..1: scaled, its bottom edge stays on `position.y`,
+    // which is what every caller means by "where it is standing".
+    const geometry = new THREE.PlaneGeometry(1, 1);
+    geometry.translate(0, 0.5, 0);
+    super(geometry, material);
+    this.worldHeight = worldHeight;
+    this.worldWidth = worldHeight * aspectOf(texture);
+    this.applyScale();
     this.castShadow = true;
     this.receiveShadow = false;
+  }
+
+  private applyScale(): void {
+    this.scale.set(this.mirrored ? -this.worldWidth : this.worldWidth, this.worldHeight, 1);
   }
 
   /** Cylindrical billboarding: Y only. */
@@ -55,10 +80,15 @@ export class BillboardSprite extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshL
     );
   }
 
+  /** Swaps the picture, and the plane's width with it, so nothing is ever stretched. */
   setTexture(texture: THREE.Texture): void {
-    if (this.material.map !== texture) {
-      this.material.map = texture;
-      this.material.needsUpdate = true;
+    if (this.material.map === texture) return;
+    this.material.map = texture;
+    this.material.needsUpdate = true;
+    const width = this.worldHeight * aspectOf(texture);
+    if (width !== this.worldWidth) {
+      this.worldWidth = width;
+      this.applyScale();
     }
   }
 
@@ -72,8 +102,21 @@ export class BillboardSprite extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshL
   setMirrored(on: boolean): void {
     if (this.mirrored === on) return;
     this.mirrored = on;
-    this.scale.x = on ? -1 : 1;
+    this.applyScale();
   }
+}
+
+/**
+ * A texture's own proportions, read off whatever it wraps.
+ *
+ * An `Image` for a loaded PNG, a `<canvas>` for a sheet slice or the Warden's drawn frames —
+ * both carry `width`/`height`, so the plane can follow the picture without anyone having to
+ * declare the number twice and let the two drift.
+ */
+function aspectOf(texture: THREE.Texture): number {
+  const src = texture.image as { width?: number; height?: number } | null | undefined;
+  if (!src?.width || !src.height) return 1;
+  return src.width / src.height;
 }
 
 /**
@@ -93,6 +136,69 @@ export function pickFacing(mx: number, mz: number, cameraYaw: number): Facing {
     : screenRight > 0
       ? 'right'
       : 'left';
+}
+
+/**
+ * Where a movement vector points on screen, in degrees: 0 toward the camera, 90 to the
+ * right, 180 away, 270 to the left. The continuous form of `pickFacing`'s four-way answer.
+ */
+export function screenAngleDeg(mx: number, mz: number, cameraYaw: number): number {
+  const screenRight = mx * Math.cos(cameraYaw) - mz * Math.sin(cameraYaw);
+  const screenAway = -mx * Math.sin(cameraYaw) - mz * Math.cos(cameraYaw);
+  const deg = (Math.atan2(screenRight, -screenAway) * 180) / Math.PI;
+  return (deg + 360) % 360;
+}
+
+/** The screen angle each facing actually depicts. */
+export const FACING_CENTRES: Record<Facing, number> = { down: 0, right: 90, up: 180, left: 270 };
+
+/** Smallest angle between two bearings, either way round the circle. Always 0..180. */
+export function angleGap(a: number, b: number): number {
+  return Math.abs(((((a - b) % 360) + 540) % 360) - 180);
+}
+
+/**
+ * How facing is chosen, live-switchable from the debug panel so the two fixes can be felt
+ * against each other rather than argued about.
+ *
+ * - `raw`        — what shipped: re-decide from the frame's vector, every frame.
+ * - `hysteresis` — make the current facing keep the boundary until the direction is clearly past it.
+ * - `smoothing`  — average the direction vector before deciding.
+ * - `both`       — smoothing feeding hysteresis.
+ */
+export const FACING = {
+  mode: 'hysteresis' as 'raw' | 'hysteresis' | 'smoothing' | 'both',
+  /**
+   * Degrees a direction must travel *past* a sector boundary before the facing gives way.
+   * Fifteen either side of the line makes a thirty-degree band in which the facing sticks.
+   */
+  hysteresisDeg: 15,
+  /** Ground over which the smoothed direction catches up to the real one. */
+  smoothDistance: 0.35,
+};
+
+/**
+ * `pickFacing`, but the incumbent gets to keep the boundary.
+ *
+ * A body only turns once the direction is more than `hysteresisDeg` past the line where the
+ * sectors meet, so a direction sitting *on* the line holds whatever it was already showing
+ * instead of being re-decided from scratch every frame.
+ *
+ * This is a stability fix and not a correctness one. On the boundary there is no correct
+ * answer to find — see `SIDE_ART_FACES` and the note on diagonal art — so what this buys is
+ * that the wrong answer at least stops changing sixty times a second.
+ */
+export function holdFacing(
+  mx: number,
+  mz: number,
+  cameraYaw: number,
+  current: Facing,
+  marginDeg: number = FACING.hysteresisDeg,
+): Facing {
+  const proposed = pickFacing(mx, mz, cameraYaw);
+  if (proposed === current) return current;
+  const drift = angleGap(screenAngleDeg(mx, mz, cameraYaw), FACING_CENTRES[current]);
+  return drift > 45 + marginDeg ? proposed : current;
 }
 
 /**
@@ -158,8 +264,15 @@ export interface ActorArt {
   back: THREE.Texture;
   side: THREE.Texture;
   sideWalk: readonly THREE.Texture[];
-  /** Source aspect of the front frame, so the plane is not forced into a box. */
-  aspect: number;
+  /**
+   * How many complete gait cycles `sideWalk` spans.
+   *
+   * One for a hand-listed cycle; two for the twenty-frame sheet, which holds four steps. The
+   * frame count alone cannot say this, and guessing it wrong is what decouples the legs from
+   * the ground — twenty frames read as one cycle would swing them at half the speed the
+   * pavement goes past.
+   */
+  walkGaitCycles: number;
 }
 
 export function buildActorArt(
@@ -169,6 +282,8 @@ export function buildActorArt(
     side: HTMLImageElement;
     /** The authored walk frames in file order; arranged into playback order here. */
     sideWalk?: readonly HTMLImageElement[];
+    /** Gait cycles those frames span. Omit for one. */
+    walkGaitCycles?: number;
   },
   maxAnisotropy: number,
 ): ActorArt {
@@ -176,17 +291,56 @@ export function buildActorArt(
   // One texture per authored frame, then the order applied over them — so a frame the cycle
   // uses twice is uploaded once and appears twice by reference.
   const made = authored.map((img) => spriteTexture(img, maxAnisotropy));
-  // The reorder only applies to a set that can actually satisfy it. Anything shorter — the
-  // two-pose fallback — plays in file order, because filtering the order down would drop a
-  // frame and double another, which is a stranger walk than the one it set out to fix.
-  const reorderable = SIDE_WALK_ORDER.every((i) => i < made.length);
+  // The reorder applies to exactly the four-frame set it was measured against, and nothing
+  // else. Shorter — the two-pose fallback — has no frame 2 to name. Longer is a sheet, whose
+  // frames are already a real cycle; running `[0, 1, 2, 1]` over twenty of them would throw
+  // away seventeen and stutter on the rest. Everything but the four plays in file order.
+  const reorderable = made.length === 4;
   const sideWalk = reorderable ? SIDE_WALK_ORDER.map((i) => made[i]!) : made;
   return {
     front: spriteTexture(images.front, maxAnisotropy),
     back: spriteTexture(images.back, maxAnisotropy),
     side: spriteTexture(images.side, maxAnisotropy),
     sideWalk,
-    aspect: images.front.width / images.front.height,
+    walkGaitCycles: images.walkGaitCycles ?? 1,
+  };
+}
+
+/**
+ * The same, from a walk sprite sheet instead of a folder of frames.
+ *
+ * Every cell is cut once, here, into an ordinary texture — so from `Walker`'s point of view a
+ * sheet-backed walk and a file-backed one are the same thing, and none of the cycle machinery
+ * has to learn what a sheet is. Twenty slices of the content box cost about a megabyte all
+ * told, against five for holding the whole 1280x1024 sheet on the card, so this is also the
+ * cheaper of the two.
+ *
+ * All twenty are cut to the same box rather than to their own bounds, which is what stops the
+ * figure resizing every frame and keeps the animator's vertical travel in the picture.
+ */
+export function buildSheetActorArt(
+  images: {
+    front: HTMLImageElement;
+    back: HTMLImageElement;
+    side: HTMLImageElement;
+    sheet: HTMLImageElement;
+  },
+  maxAnisotropy: number,
+): ActorArt {
+  const c = WALK_SHEET_CONTENT;
+  const sideWalk: THREE.Texture[] = [];
+  for (let i = 0; i < WALK_SHEET_FRAMES; i++) {
+    const cell = walkFrameCell(i);
+    sideWalk.push(
+      sheetFrameTexture(images.sheet, cell.x + c.x, cell.y + c.y, c.w, c.h, maxAnisotropy),
+    );
+  }
+  return {
+    front: spriteTexture(images.front, maxAnisotropy),
+    back: spriteTexture(images.back, maxAnisotropy),
+    side: spriteTexture(images.side, maxAnisotropy),
+    sideWalk,
+    walkGaitCycles: WALK_SHEET_GAIT_CYCLES,
   };
 }
 
@@ -201,9 +355,8 @@ export function actorArtFromTextures(
   front: THREE.Texture,
   back: THREE.Texture,
   side: THREE.Texture,
-  aspect: number,
 ): ActorArt {
-  return { front, back, side, sideWalk: [], aspect };
+  return { front, back, side, sideWalk: [], walkGaitCycles: 1 };
 }
 
 export function disposeActorArt(art: ActorArt): void {
@@ -226,11 +379,15 @@ export class Walker {
   private readonly height: number;
   private facing: Facing = 'down';
   private walked = 0;
+  /** Smoothed direction, and whether it holds anything worth easing from. */
+  private smoothX = 0;
+  private smoothZ = 0;
+  private moving = false;
 
   constructor(art: ActorArt, height: number) {
     this.art = art;
     this.height = height;
-    this.sprite = new BillboardSprite(art.front, height * art.aspect, height);
+    this.sprite = new BillboardSprite(art.front, height);
   }
 
   get position(): THREE.Vector3 {
@@ -244,11 +401,42 @@ export class Walker {
       // Standing still: hold the frame, but reset the cycle so the next step starts on the
       // planted foot rather than mid-stride.
       this.walked = 0;
+      this.moving = false;
       this.applyFrame();
       return;
     }
     this.walked += dist;
-    this.facing = pickFacing(dx, dz, cameraYaw);
+
+    // Direction only — speed has no business in a facing decision, and normalising here
+    // means the smoothing below averages bearings rather than bearings-times-framerate.
+    const nx = dx / dist;
+    const nz = dz / dist;
+    let ux = nx;
+    let uz = nz;
+
+    if (FACING.mode === 'smoothing' || FACING.mode === 'both') {
+      if (!this.moving) {
+        // First step out of a standstill: start on the real direction, so the body does not
+        // spend its first stride easing out of whichever way it last happened to be walking.
+        this.smoothX = nx;
+        this.smoothZ = nz;
+      } else {
+        // Keyed on distance, like everything else here, which makes it framerate-independent
+        // without `step` having to be told the frame time.
+        const a = 1 - Math.exp(-dist / FACING.smoothDistance);
+        this.smoothX += (nx - this.smoothX) * a;
+        this.smoothZ += (nz - this.smoothZ) * a;
+      }
+      const len = Math.hypot(this.smoothX, this.smoothZ) || 1;
+      ux = this.smoothX / len;
+      uz = this.smoothZ / len;
+    }
+    this.moving = true;
+
+    this.facing =
+      FACING.mode === 'hysteresis' || FACING.mode === 'both'
+        ? holdFacing(ux, uz, cameraYaw, this.facing)
+        : pickFacing(ux, uz, cameraYaw);
     this.applyFrame();
   }
 
@@ -256,6 +444,7 @@ export class Walker {
   face(facing: Facing): void {
     this.facing = facing;
     this.walked = 0;
+    this.moving = false;
     this.applyFrame();
   }
 
@@ -296,7 +485,10 @@ export class Walker {
       this.sprite.setTexture(this.art.side);
       return;
     }
-    const frame = Math.floor((this.walked / GAIT_CYCLE_DISTANCE) * cycle.length) % cycle.length;
+    // Frames per gait cycle, not frames per loop — a sheet holding two cycles must advance
+    // twice as fast through its list to keep pace with the same ground.
+    const perCycle = cycle.length / Math.max(1, this.art.walkGaitCycles);
+    const frame = Math.floor((this.walked / GAIT_CYCLE_DISTANCE) * perCycle) % cycle.length;
     this.sprite.setTexture(cycle[frame] ?? this.art.side);
   }
 }
