@@ -195,6 +195,69 @@ describe('the walk cycle', () => {
     expect(sample(w, GAIT_CYCLE_DISTANCE, 8)).toEqual(Array(8).fill('c-side'));
   });
 
+  it('runs at a cadence a walk can be read at', () => {
+    // The complaint that prompted this was chop, and chop is a frame rate. At the ward's six
+    // units a second, the cycle distance decides it: this asserts the resulting frame is on
+    // screen long enough to be seen as a pose rather than a flicker. 1.8 gave 75ms, which is
+    // roughly twice too fast to read with only three distinct drawings to show.
+    const MOVE_SPEED = 6;
+    const secondsPerCycle = GAIT_CYCLE_DISTANCE / MOVE_SPEED;
+    const msPerFrame = (secondsPerCycle * 1000) / SIDE_WALK_ORDER.length;
+    expect(msPerFrame).toBeGreaterThanOrEqual(120);
+    expect(msPerFrame).toBeLessThanOrEqual(220);
+  });
+
+  it('lifts the body between footfalls and sets it down on them', () => {
+    const w = new Walker(heroArt(), 2.1);
+    const bobAfter = (d: number): number => {
+      const fresh = new Walker(heroArt(), 2.1);
+      fresh.step(d, 0, 0);
+      return fresh.bob;
+    };
+    // Peaks land on the two passing poses, troughs on the two strides, so the rise
+    // reinforces the frame cycle rather than beating against it.
+    expect(bobAfter(GAIT_CYCLE_DISTANCE * 0.25)).toBeGreaterThan(0);
+    expect(bobAfter(GAIT_CYCLE_DISTANCE * 0.75)).toBeGreaterThan(0);
+    expect(bobAfter(GAIT_CYCLE_DISTANCE * 0.5)).toBeCloseTo(0, 6);
+    expect(bobAfter(GAIT_CYCLE_DISTANCE)).toBeCloseTo(0, 6);
+    expect(w.bob).toBe(0); // untouched: standing still
+  });
+
+  it('never sinks the body below the pavement', () => {
+    const w = new Walker(heroArt(), 2.1);
+    for (let i = 0; i < 200; i++) {
+      w.step(0.06, 0, 0);
+      expect(w.bob).toBeGreaterThanOrEqual(0);
+      expect(w.sprite.position.y).toBeCloseTo(w.bob, 9);
+    }
+  });
+
+  it('keeps the rise subtle, and in proportion to the body', () => {
+    const tall = new Walker(heroArt(), 2.1);
+    const small = new Walker(heroArt(), 1.5);
+    tall.step(GAIT_CYCLE_DISTANCE * 0.25, 0, 0);
+    small.step(GAIT_CYCLE_DISTANCE * 0.25, 0, 0);
+    expect(tall.bob / 2.1).toBeCloseTo(small.bob / 1.5, 9);
+    expect(tall.bob).toBeLessThan(2.1 * 0.04);
+  });
+
+  it('bobs a body that has no walk frames at all', () => {
+    // The companion slides otherwise: with nothing to swap, the rise is the only thing
+    // saying it is moving under its own legs.
+    const beast = buildActorArt({ front: img('c-front'), back: img('c-back'), side: img('c-side') }, 1);
+    const w = new Walker(beast, 1.5);
+    w.step(GAIT_CYCLE_DISTANCE * 0.25, 0, 0);
+    expect(w.bob).toBeGreaterThan(0);
+  });
+
+  it('drops flat the moment it stops, leaving idle bobs a clear field', () => {
+    const w = new Walker(heroArt(), 2.1);
+    w.step(GAIT_CYCLE_DISTANCE * 0.25, 0, 0);
+    expect(w.sprite.position.y).toBeGreaterThan(0);
+    w.step(0, 0, 0);
+    expect(w.sprite.position.y).toBe(0);
+  });
+
   it('releases a reused frame exactly once', () => {
     const art = heroArt(4);
     let disposals = 0;

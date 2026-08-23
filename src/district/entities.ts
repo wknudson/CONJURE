@@ -184,10 +184,12 @@ export class CompanionFollower implements Updatable {
     const moved = { x: this.position.x - before.x, z: this.position.z - before.z };
     this.walker.step(moved.x, moved.z, cameraYaw);
     if (Math.hypot(moved.x, moved.z) < 1e-4) {
+      // Breathing on the spot, on a timer, because nothing is being covered to drive it.
       this.position.y = Math.abs(Math.sin(t * 1.9)) * 0.03;
-    } else {
-      this.position.y = 0;
     }
+    // Moving, the walk's own bob is already on `position.y` and is left alone. Flattening it
+    // here is what made the beast slide: it has no walk frames, so the bob is the only thing
+    // it has that says it is moving under its own legs.
   }
 
   /** Rough length of the path still ahead of it — cheaper than a true arc length. */

@@ -120,11 +120,30 @@ export const SIDE_WALK_ORDER: readonly number[] = [0, 1, 2, 1];
  *
  * Distance rather than time, for the same reason the rest of this class works that way: the
  * legs and the ground have to agree. Expressed per *cycle* rather than per frame so cadence
- * is a property of the walk and not of how many drawings happen to be in it — the two-frame
- * fallback and the four-entry cycle cover the same 1.8 units, which is the figure the old
- * two-frame version shipped with and which reads as a walk at six units a second.
+ * is a property of the walk and not of how many drawings happen to be in it.
+ *
+ * It was 1.8, inherited from the two-pose shuffle, and at a move speed of six units a second
+ * that is three and a third gait cycles every second — a sprint cadence, seventy-five
+ * milliseconds a frame. With three distinct poses to show, the eye does not read that as
+ * legs; it reads it as a flicker. Four units puts it at one and a half cycles a second and
+ * about a sixth of a second a frame, which is where hand-drawn walks usually sit.
+ *
+ * The cost is a longer stride than the art depicts, so the boots skate a little. That is the
+ * honest trade at this move speed, and it is far less noticeable than the flicker was. The
+ * lever for fixing it properly is `MOVE_SPEED`, not this.
  */
-export const GAIT_CYCLE_DISTANCE = 1.8;
+export const GAIT_CYCLE_DISTANCE = 4.0;
+
+/**
+ * How far a walking body rises between footfalls, as a fraction of its own height.
+ *
+ * Frames can only ever step; this is what makes the motion between them continuous. Because
+ * the rise is driven by the same distance the frames are, it peaks exactly on the two passing
+ * poses and returns to the ground on the two strides — so it reinforces the cycle instead of
+ * beating against it, and a body with no walk frames at all (a companion) still reads as
+ * walking rather than sliding.
+ */
+export const WALK_BOB_RISE = 0.022;
 
 /**
  * One actor's art: a texture per facing, plus the side-on walk frames if it has any.
@@ -204,11 +223,13 @@ export function disposeActorArt(art: ActorArt): void {
 export class Walker {
   readonly sprite: BillboardSprite;
   private readonly art: ActorArt;
+  private readonly height: number;
   private facing: Facing = 'down';
   private walked = 0;
 
   constructor(art: ActorArt, height: number) {
     this.art = art;
+    this.height = height;
     this.sprite = new BillboardSprite(art.front, height * art.aspect, height);
   }
 
@@ -238,7 +259,24 @@ export class Walker {
     this.applyFrame();
   }
 
+  /**
+   * How far off the ground the body is, this instant.
+   *
+   * Zero while standing, so an idle body sits flat and whatever owns it can put its own idle
+   * bob there without the two fighting. `abs(sin)` for the same reason the canvas gait uses
+   * it: it touches down at each footfall and never goes negative, so nobody sinks through
+   * the pavement.
+   */
+  get bob(): number {
+    if (this.walked === 0) return 0;
+    const phase = this.walked / GAIT_CYCLE_DISTANCE;
+    return Math.abs(Math.sin(phase * Math.PI * 2)) * this.height * WALK_BOB_RISE;
+  }
+
   private applyFrame(): void {
+    // Continuous, unlike the frames — this is what carries the eye between them.
+    this.sprite.position.y = this.bob;
+
     const sideways = this.facing === 'left' || this.facing === 'right';
     // The one flip, taken against the one declared fact about the art. Nothing else mirrors.
     this.sprite.setMirrored(sideways && this.facing !== SIDE_ART_FACES);
