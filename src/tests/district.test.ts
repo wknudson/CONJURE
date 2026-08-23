@@ -96,6 +96,34 @@ describe('the board during the lap', () => {
   });
 });
 
+describe('closing the lap', () => {
+  // `finishCombat` completes the tutorial whenever `tutorialActive` still reports true.
+  // These pin the cases that rule has to get right, since the alternative — keying off
+  // which contract was taken — is what left the panel nagging forever in the last one.
+
+  it('closes on a resolved contract however far round the player got', () => {
+    expect(tutorialActive(['bounty_taken'])).toBe(true);
+    expect(tutorialActive(['intro', 'artificer', 'journal', 'bounty_taken'])).toBe(true);
+  });
+
+  it('closes for someone who ignored the Dispatcher and just went to work', () => {
+    // Skipping the guided doors and taking a contract still demonstrates the loop. The
+    // panel has nothing left to teach them.
+    expect(tutorialActive([])).toBe(true);
+  });
+
+  it('does not fire twice', () => {
+    expect(tutorialActive(ALL)).toBe(false);
+    expect(tutorialActive(['bounty_taken', 'complete'])).toBe(false);
+  });
+
+  it('leaves a character from before the ward alone', () => {
+    // A pre-v20 save migrates in with the whole ledger, so their next fight must not try
+    // to complete a lap they were never shown.
+    expect(tutorialActive(ALL)).toBe(false);
+  });
+});
+
 describe('the ward grid', () => {
   it('is square and complete', () => {
     expect(MAP).toHaveLength(GRID);

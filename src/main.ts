@@ -32,6 +32,7 @@ import { DeckBuilderScreen } from './app/DeckBuilderScreen.js';
 import type { DeckBuilderResult } from './app/DeckBuilderScreen.js';
 import { PreCombatScreen } from './app/PreCombatScreen.js';
 import { DistrictScreen } from './district/DistrictScreen.js';
+import { tutorialActive } from './district/quest.js';
 import { ShopScreen } from './app/ShopScreen.js';
 import { ArtificerScreen } from './app/ArtificerScreen.js';
 import { CharacterCreationScreen } from './app/CharacterCreationScreen.js';
@@ -413,10 +414,12 @@ function showDistrict(companionId: string): void {
         ),
       onJournal: () => showBuilder(companionId, () => showDistrict(companionId)),
       onBounty: (bounty) => {
-        // Only the Novice posting closes the guided lap. The board refuses the rest while
-        // it is running, so this is belt and braces — but the flag is what unlocks them,
-        // and granting it off an audit would open the Master contract for free.
-        if (bounty.difficulty === 'novice' && !bounty.audit) recordTutorial('bounty_taken');
+        // Any real contract counts, not only the Novice one. The board steers a new
+        // Commander at the Novice posting and refuses the rest — but it lifts that gate if
+        // the Novice stake is out of reach, and a player who got through it that way has
+        // still taken work. The audit is the one exclusion: it is a dev affordance paying
+        // five thousand Ducats, and a lap "completed" on it would be completed on nothing.
+        if (!bounty.audit) recordTutorial('bounty_taken');
         takeBounty(bounty, companionId);
       },
       onLeave: showTitle,
@@ -671,13 +674,16 @@ function finishCombat(
   // with it. Seeded off the running record so the same win does not reroll into a
   // different offer if the screen is rebuilt -- and salted with the encounter id, because
   // the record alone would hand two different fights won at the same tally the same seed.
-  // The lap ends when the first contract does, won or lost. What it was teaching was the
-  // loop — street, board, fight, street — and a Commander who came home beaten has been
-  // all the way round it. Making them do it again until they win would be the tutorial
-  // refusing to admit it is over.
-  if (p.tutorial.includes('bounty_taken') && !p.tutorial.includes('complete')) {
-    p.tutorial.push('complete');
-  }
+  // The lap ends when a contract does, won or lost. What it was teaching was the loop —
+  // street, board, fight, street — and a Commander who came home beaten has been all the
+  // way round it. Making them do it again until they win would be the tutorial refusing
+  // to admit it is over.
+  //
+  // Keyed off the lap still running rather than off which contract was taken. Tying it to
+  // the Novice one specifically left a player who spent their stake at the Apothecary,
+  // took the Adept contract through the lifted gate and won it with the objective panel
+  // still asking them to go and take a Novice contract they could no longer afford.
+  if (tutorialActive(p.tutorial)) p.tutorial.push('complete');
 
   const won = result === 'victory' || result === 'bound';
   const offer = won
