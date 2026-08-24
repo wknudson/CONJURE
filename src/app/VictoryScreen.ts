@@ -92,7 +92,7 @@ export class VictoryScreen implements Screen {
 
       ${this.bindingPanel()}
       <div class="victory__rewards"></div>
-      <button class="brass-btn victory__leave">Return to Safehouse</button>
+      <button class="brass-btn victory__leave">Back to the street</button>
     `;
 
     el.querySelector('.victory__leave')!.addEventListener('click', () => this.opts.onLeave());

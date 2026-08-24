@@ -55,7 +55,7 @@ export class ResultsScreen implements Screen {
       <div class="results__blurb">${copy.blurb}</div>
       <div class="results__meta">${this.opts.encounter.name}</div>
       <div class="results__buttons">
-        <button class="results__btn results__menu">Back to Safehouse</button>
+        <button class="results__btn results__menu">Back to the street</button>
       </div>
     `;
 

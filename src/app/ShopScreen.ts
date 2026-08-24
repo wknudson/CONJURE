@@ -51,7 +51,7 @@ export class ShopScreen implements Screen {
           <span class="shop__purse-label">Ducats</span>
           <span class="shop__purse-value"></span>
         </div>
-        <button class="brass-btn shop__back">Back to Safehouse</button>
+        <button class="brass-btn shop__back">Back to the street</button>
       </div>
 
       <div class="shop__body">

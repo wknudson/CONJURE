@@ -1,0 +1,187 @@
+/**
+ * Every value that defines the ward's look, in one object with a panel attached.
+ *
+ * Module-level on purpose. The screen is torn down and rebuilt every time a shop door
+ * closes, and tuning that reset on the way back from the Apothecary would make the panel
+ * useless for the thing it exists for — walking around and adjusting until it reads right.
+ */
+
+import GUI from 'lil-gui';
+import { FACING } from './sprites3d.js';
+
+export interface LookConfig {
+  fov: number;
+  cameraPitch: number;
+  cameraDistance: number;
+
+  exposure: number;
+  sunIntensity: number;
+  sunColor: string;
+  ambientIntensity: number;
+  skyColor: string;
+  groundBounce: string;
+
+  fogColor: string;
+  fogDensity: number;
+
+  bloomStrength: number;
+  bloomRadius: number;
+  bloomThreshold: number;
+
+  tiltEnabled: boolean;
+  tiltFocusCenter: number;
+  tiltFocusWidth: number;
+  tiltFalloff: number;
+  tiltMaxBlur: number;
+
+  impactColor: string;
+  impactIntensity: number;
+  impactDistance: number;
+  impactDecayTime: number;
+
+  lampColor: string;
+  lampIntensity: number;
+  lampDistance: number;
+  lampFlicker: number;
+  signColor: string;
+
+  coneOpacity: number;
+  visionRange: number;
+  visionAngle: number;
+}
+
+export const LOOK: LookConfig = {
+  // A narrow lens is what makes the ward read as a diorama rather than a level. The pitch
+  // is steep enough to see into the alleys between the terraces.
+  fov: 28,
+  cameraPitch: 50,
+  cameraDistance: 22,
+
+  // A cold moon through coal smoke. `exposure` is the master dial — turn this first, and
+  // only reach for the individual lights when the balance between them is wrong rather
+  // than the overall level.
+  exposure: 1.15,
+  sunIntensity: 1.25,
+  sunColor: '#8fa3c8',
+  ambientIntensity: 0.95,
+  skyColor: '#5d6b8a',
+  groundBounce: '#3d2e21',
+
+  fogColor: '#2b2630',
+  fogDensity: 0.03,
+
+  bloomStrength: 0.85,
+  bloomRadius: 0.7,
+  bloomThreshold: 0.45,
+
+  tiltEnabled: true,
+  tiltFocusCenter: 0.54,
+  tiltFocusWidth: 0.15,
+  tiltFalloff: 0.24,
+  tiltMaxBlur: 3.4,
+
+  impactColor: '#ffb347',
+  impactIntensity: 40,
+  impactDistance: 9,
+  impactDecayTime: 0.45,
+
+  lampColor: '#ffb45e',
+  lampIntensity: 26,
+  lampDistance: 17,
+  lampFlicker: 0.14,
+  signColor: '#5ef2d6',
+
+  coneOpacity: 0.16,
+  visionRange: 8,
+  visionAngle: 80,
+};
+
+/**
+ * What the panel needs to reach in order to make a change visible.
+ *
+ * Passed in rather than imported so `look.ts` stays free of scene knowledge: this file
+ * owns the numbers and the widgets, and the screen owns the objects they point at.
+ */
+export interface LookHandles {
+  onExposure(v: number): void;
+  onCamera(): void;
+  onSun(): void;
+  onAmbient(): void;
+  onFog(): void;
+  onBloom(): void;
+  onTilt(): void;
+  onLamps(): void;
+  onSigns(): void;
+  onVision(): void;
+  onColliders(show: boolean): void;
+}
+
+export function buildLookGui(handles: LookHandles): GUI {
+  const gui = new GUI({ title: 'Ashfall Ward — Look' });
+
+  const cam = gui.addFolder('Camera');
+  cam.add(LOOK, 'fov', 15, 70, 1).onChange(handles.onCamera);
+  cam.add(LOOK, 'cameraPitch', 15, 80, 1);
+  cam.add(LOOK, 'cameraDistance', 6, 40, 0.5);
+
+  const light = gui.addFolder('Lighting');
+  light.add(LOOK, 'exposure', 0.2, 2.5, 0.05).name('exposure (master)').onChange(handles.onExposure);
+  light.add(LOOK, 'sunIntensity', 0, 4, 0.05).onChange(handles.onSun);
+  light.addColor(LOOK, 'sunColor').onChange(handles.onSun);
+  light.add(LOOK, 'ambientIntensity', 0, 2, 0.05).onChange(handles.onAmbient);
+  light.addColor(LOOK, 'skyColor').onChange(handles.onAmbient);
+  light.addColor(LOOK, 'groundBounce').onChange(handles.onAmbient);
+
+  const atmo = gui.addFolder('Atmosphere');
+  atmo.addColor(LOOK, 'fogColor').onChange(handles.onFog);
+  atmo.add(LOOK, 'fogDensity', 0, 0.12, 0.001).onChange(handles.onFog);
+
+  const gas = gui.addFolder('Gaslamp');
+  gas.addColor(LOOK, 'lampColor').onChange(handles.onLamps);
+  gas.add(LOOK, 'lampIntensity', 0, 60, 0.5);
+  gas.add(LOOK, 'lampDistance', 4, 40, 0.5).onChange(handles.onLamps);
+  gas.add(LOOK, 'lampFlicker', 0, 0.6, 0.01);
+  gas.addColor(LOOK, 'signColor').onChange(handles.onSigns);
+
+  const bloom = gui.addFolder('Bloom');
+  bloom.add(LOOK, 'bloomStrength', 0, 3, 0.01).onChange(handles.onBloom);
+  bloom.add(LOOK, 'bloomRadius', 0, 1.5, 0.01).onChange(handles.onBloom);
+  bloom.add(LOOK, 'bloomThreshold', 0, 1, 0.01).onChange(handles.onBloom);
+
+  const tilt = gui.addFolder('Tilt-shift');
+  tilt.add(LOOK, 'tiltEnabled').onChange(handles.onTilt);
+  tilt.add(LOOK, 'tiltFocusCenter', 0, 1, 0.01).onChange(handles.onTilt);
+  tilt.add(LOOK, 'tiltFocusWidth', 0, 0.5, 0.01).onChange(handles.onTilt);
+  tilt.add(LOOK, 'tiltFalloff', 0.01, 0.6, 0.01).onChange(handles.onTilt);
+  tilt.add(LOOK, 'tiltMaxBlur', 0, 12, 0.1).onChange(handles.onTilt);
+
+  const fx = gui.addFolder('Impact light');
+  fx.addColor(LOOK, 'impactColor');
+  fx.add(LOOK, 'impactIntensity', 0, 150, 1);
+  fx.add(LOOK, 'impactDistance', 1, 25, 0.5);
+  fx.add(LOOK, 'impactDecayTime', 0.05, 2, 0.05);
+
+  const warden = gui.addFolder('Warden');
+  warden.add(LOOK, 'visionRange', 3, 20, 0.5).onChange(handles.onVision);
+  warden.add(LOOK, 'visionAngle', 20, 180, 1).onChange(handles.onVision);
+  warden.add(LOOK, 'coneOpacity', 0, 0.6, 0.01);
+
+  // Two ways to stop the walk sprite flickering on a diagonal, side by side so they can be
+  // felt rather than argued about. Neither makes the diagonal *correct* — there is no
+  // correct frame to show at 45 degrees — they only stop the wrong one changing every frame.
+  const facing = gui.addFolder('Facing');
+  facing.add(FACING, 'mode', ['raw', 'hysteresis', 'smoothing', 'both']).name('mode');
+  facing.add(FACING, 'hysteresisDeg', 0, 44, 1).name('hysteresis (deg past line)');
+  facing.add(FACING, 'smoothDistance', 0.05, 2, 0.05).name('smoothing (units)');
+
+  const debug = gui.addFolder('Debug');
+  const state = { showColliders: false };
+  debug.add(state, 'showColliders').onChange((v: boolean) => handles.onColliders(v));
+  debug.close();
+
+  gui
+    .add({ copy: () => console.log(JSON.stringify(LOOK, null, 2)) }, 'copy')
+    .name('log LOOK to console');
+
+  return gui;
+}

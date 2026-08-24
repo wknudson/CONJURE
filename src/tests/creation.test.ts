@@ -17,12 +17,14 @@ import { validateRoster } from '../core/data/roster.js';
 import { RELIC_SLOT_ORDER } from '../core/overworld/state.js';
 import {
   emptySave,
+  STARTING_DUCATS,
   initializeNewProfile,
   loadSave,
   newProfile,
   writeSave,
   type SaveFile,
 } from '../app/save.js';
+import { TIER_WAGER } from '../core/data/bounties.js';
 import {
   COMMANDER_HEIGHT_TILES,
   COMPANION_HEIGHT_TILES,
@@ -204,10 +206,19 @@ describe('the art on disk', () => {
     }
   });
 
-  it('names every facing it does not yet draw, so the set stays complete', () => {
-    // Side and back frames exist for all six beasts and both bearings. Nothing loads them
-    // today — the creation stage is front-on — but they are the art a facing change on the
-    // combat board would need, and a half-delivered set is worth knowing about before then.
+  it('has every facing the street walks, for both bearings', () => {
+    // The district turns the Commander as they walk, so all four frames are load-bearing
+    // now rather than reserved. `side-alt` is the second step of the walk cycle; there is
+    // deliberately no `left`, which is `side` mirrored by the caller.
+    for (const gender of ['female', 'male'] as const) {
+      for (const facing of ['front', 'back', 'side', 'side-alt'] as const) {
+        const src = commanderSpriteSrc(gender, facing);
+        expect(isShipped(src), src).toBe(true);
+      }
+    }
+  });
+
+  it('has every facing the follower walks, for every bloodline that may be vowed to', () => {
     for (const baseId of starterSpecies()) {
       for (const facing of ['front', 'side', 'back'] as const) {
         const src = companionSpriteSrc(baseId, facing);
@@ -308,9 +319,12 @@ describe('initializeNewProfile', () => {
     expect(initializeNewProfile('slot-1', look({ nickname: 'Vessa Kade' })).name).toBe('Vessa Kade');
   });
 
-  it('starts broke', () => {
+  it('starts with the opening duel’s stake and nothing else', () => {
+    // The Novice contract is the only posting that asks for a buy-in, so an empty purse
+    // would leave a new Commander able to take every fight except the beginner's one.
     const p = initializeNewProfile('slot-1', look());
-    expect(p.state.overworld.economy.ducats).toBe(0);
+    expect(p.state.overworld.economy.ducats).toBe(STARTING_DUCATS);
+    expect(p.state.overworld.economy.ducats).toBeGreaterThanOrEqual(TIER_WAGER.novice);
     expect(p.state.overworld.economy.marrowShards).toBe(0);
   });
 

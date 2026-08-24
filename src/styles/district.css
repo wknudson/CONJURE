@@ -1,0 +1,368 @@
+/*
+ * Ashfall Ward — the glass in front of the street.
+ *
+ * Everything here is absolutely positioned inside `.screen--district` rather than fixed to
+ * the viewport, so `ScreenManager` clearing the root takes the whole HUD with it. A fixed
+ * panel would outlive its screen and hang over the Artificer's bench.
+ *
+ * The ledger, notice and bounty-card rules live in `safehouse.css` and are reused as-is:
+ * the street and the rooms it opens onto should not look like two different games.
+ */
+
+.screen--district {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0a0d;
+}
+
+.district-stage {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* --- shared panel chrome ------------------------------------------------ */
+
+.district-panel {
+  position: absolute;
+  z-index: 10;
+  font: 12px/1.6 ui-monospace, Menlo, Consolas, monospace;
+  color: #cfd6e4;
+  background: rgba(14, 12, 18, 0.78);
+  border: 1px solid rgba(207, 214, 228, 0.18);
+  border-radius: 6px;
+}
+
+/* --- objective, top left ------------------------------------------------ */
+
+.district-objective {
+  left: 14px;
+  top: 14px;
+  padding: 10px 14px;
+  min-width: 250px;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.district-objective.is-hidden {
+  opacity: 0;
+}
+.district-objective__cap {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: #8a93a6;
+  margin-bottom: 3px;
+}
+.district-objective__task {
+  font-size: 13px;
+  color: #f0e6d2;
+}
+.district-objective__pips {
+  margin-top: 8px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #4e5666;
+}
+.district-pip.is-lit {
+  color: #5ef2d6;
+  text-shadow: 0 0 8px rgba(94, 242, 214, 0.7);
+}
+
+/* --- zone chip, top centre ---------------------------------------------- */
+
+.district-zone {
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  pointer-events: none;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  border-radius: 999px;
+  white-space: nowrap;
+  transition:
+    color 0.25s,
+    border-color 0.25s,
+    box-shadow 0.25s;
+}
+.district-zone.is-safe {
+  color: #63e0c4;
+  border-color: rgba(99, 224, 196, 0.5);
+  box-shadow: 0 0 18px rgba(99, 224, 196, 0.18);
+}
+.district-zone.is-danger {
+  color: #e8a33c;
+  border-color: rgba(232, 163, 60, 0.55);
+  box-shadow: 0 0 18px rgba(232, 163, 60, 0.22);
+}
+
+/* --- the Warden has seen you -------------------------------------------- */
+
+.district-alert {
+  position: absolute;
+  left: 50%;
+  top: 54px;
+  transform: translateX(-50%);
+  z-index: 10;
+  font: 700 13px/1.4 ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.3em;
+  color: #ff6a45;
+  text-shadow: 0 0 14px rgba(255, 106, 69, 0.8);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.district-alert.is-shown {
+  opacity: 1;
+}
+
+/* --- interaction prompt -------------------------------------------------- */
+
+.district-prompt {
+  left: 50%;
+  bottom: 150px;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: #f0e6d2;
+  white-space: nowrap;
+}
+.district-prompt.is-shown {
+  opacity: 1;
+}
+.district-prompt b {
+  color: #5ef2d6;
+  font-weight: 700;
+}
+.district-prompt__detail {
+  color: #8a93a6;
+}
+
+/* --- dialogue box -------------------------------------------------------- */
+
+.district-dialogue {
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  width: min(720px, calc(100% - 48px));
+  padding: 14px 18px 12px;
+  display: none;
+  z-index: 12;
+}
+.district-dialogue.is-open {
+  display: block;
+}
+.district-dialogue__who {
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: #5ef2d6;
+  margin-bottom: 6px;
+}
+.district-dialogue__line {
+  font: 14px/1.75 ui-monospace, Menlo, Consolas, monospace;
+  color: #f2ead9;
+  min-height: 3.5em;
+  white-space: pre-wrap;
+}
+.district-dialogue__next {
+  text-align: right;
+  font-size: 11px;
+  color: #7b8496;
+  letter-spacing: 0.12em;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.district-dialogue__next.is-shown {
+  opacity: 1;
+}
+
+/* --- danger vignette ------------------------------------------------------ */
+
+.district-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  box-shadow: inset 0 0 200px 30px rgba(190, 40, 18, 0.42);
+  opacity: 0;
+  transition: opacity 0.45s;
+}
+.district-vignette.is-shown {
+  opacity: 1;
+}
+
+/* --- the ledger, bottom right --------------------------------------------- */
+
+.district-ledger {
+  right: 14px;
+  bottom: 14px;
+  width: 232px;
+  padding: 10px 12px;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/*
+ * The ledger's inner classes come from `safehouse.css`, where they lay out a wide bar
+ * across the top of a room. Three of those rules assume that width and have to be undone
+ * for a 232px corner panel: the pact row's 320px floor, the coin row's horizontal flow,
+ * and the label/value stack.
+ */
+.district-ledger .ledger__pact {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.district-ledger .ledger__gauge {
+  flex: 1 1 100%;
+  margin: 2px 0;
+}
+.district-ledger .ledger__coins {
+  flex-direction: column;
+  gap: 3px;
+}
+.district-ledger .ledger__stat {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.district-ledger .ledger__value {
+  font-size: 13px;
+}
+.district-ledger .ledger__critical {
+  flex: 1 1 100%;
+}
+.district-satchel {
+  display: none;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.district-ledger.is-open .district-satchel {
+  display: flex;
+}
+.district-satchel__toggle {
+  margin-top: 8px;
+  width: 100%;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #cfd6e4;
+  background: rgba(207, 214, 228, 0.06);
+  border: 1px solid rgba(207, 214, 228, 0.2);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.district-satchel__toggle:hover {
+  background: rgba(207, 214, 228, 0.12);
+}
+
+/* --- the control legend, bottom left --------------------------------------- */
+
+.district-help {
+  left: 14px;
+  bottom: 14px;
+  padding: 10px 12px;
+  pointer-events: none;
+  white-space: pre;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+/* The legend sits under the dialogue box on a narrow window. Get it out of the way. */
+body.is-talking .district-help {
+  opacity: 0;
+}
+
+/* --- the bounty board ------------------------------------------------------ */
+
+.district-board {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 5, 8, 0.72);
+  padding: 24px;
+}
+.district-board.is-open {
+  display: flex;
+}
+.district-board__card {
+  width: min(1000px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 18px 20px 22px;
+}
+.district-board__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.district-board__title {
+  font-size: 18px;
+  letter-spacing: 0.14em;
+  color: #f0e6d2;
+}
+.district-board__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 12px;
+}
+.district-board .bounty-card.is-locked {
+  opacity: 0.42;
+  cursor: not-allowed;
+  filter: saturate(0.4);
+}
+.bounty-card__locked {
+  margin-top: 8px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #e8a33c;
+}
+
+/* --- overlays: the notice, and the Warden's hand ---------------------------- */
+
+.district-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  background: rgba(6, 5, 8, 0.72);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  padding: 24px;
+}
+.district-overlay.is-shown {
+  display: flex;
+}
+/* The seizure card dismisses itself, so nothing under it should take a click. */
+.district-overlay.is-passive {
+  pointer-events: none;
+}
+.district-overlay__big {
+  font-size: 30px;
+  letter-spacing: 0.34em;
+  color: #f6ecd8;
+  text-shadow: 0 0 26px rgba(255, 106, 69, 0.4);
+}
+.district-overlay__sub {
+  font-size: 13px;
+  color: #aab3c2;
+  letter-spacing: 0.08em;
+  max-width: 34em;
+  line-height: 1.8;
+}

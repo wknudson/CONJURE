@@ -27,61 +27,83 @@ export const SCHOOL_COLOR: Record<string, string> = {
 };
 
 /**
- * Where the Commander's bitmap sprite lives, one file per bearing.
+ * Which way the Commander is turned.
  *
- * Front-facing only for now — the creator only ever shows the figure from the front, so
- * that is the one frame actually wired up. `hero-*-side.png` / `-back.png` / `-side-alt.png`
- * exist alongside these if a facing change is ever added to the diorama; nothing in this
- * file references them yet.
+ * All four are on disk for both bearings. `front` is the only one the creation screen ever
+ * asks for — the figure there stands still and faces camera — but the district walks the
+ * same body around a street, so it needs the other three. `side-alt` is the second frame
+ * of the walk: the same profile with the legs swapped, alternated on distance travelled.
+ *
+ * There is no `left`. A left-facing Commander is `side` mirrored by the caller, because
+ * drawing the same profile twice would be two files to keep in agreement for no gain.
  */
-const SPRITE_SRC: Record<Gender, string> = {
-  male: '/assets/sprites/hero-male-front.png',
-  female: '/assets/sprites/hero-female-front.png',
-};
+export type HeroFacing = 'front' | 'back' | 'side' | 'side-alt';
 
 /**
- * Where the Commander's sprite lives, for a bearing. The counterpart to `companionSpriteSrc`.
+ * Where the Commander's sprite lives, for a bearing and a facing. The counterpart to
+ * `companionSpriteSrc`.
  *
  * Exported so a test can ask whether the file the loader will request is actually on disk,
  * under exactly that name. Worth checking rather than assuming: the art arrived as
  * capitalised exports (`Boreas-removebg-preview.png`) and was renamed down to lowercase, and
  * a case slip survives every Windows filesystem to fail only once it is served from Linux.
  */
-export function commanderSpriteSrc(gender: Gender): string {
-  return SPRITE_SRC[gender];
+export function commanderSpriteSrc(gender: Gender, facing: HeroFacing = 'front'): string {
+  return `/assets/sprites/hero-${gender}-${facing}.png`;
 }
 
-const spriteCache = new Map<Gender, HTMLImageElement>();
-const spriteLoading = new Map<Gender, Promise<HTMLImageElement>>();
+const spriteCache = new Map<string, HTMLImageElement>();
+const spriteLoading = new Map<string, Promise<HTMLImageElement>>();
 
 /**
- * Loads (and caches) the Commander sprite for a bearing.
+ * Loads (and caches) one facing of the Commander sprite.
  *
  * Call this once, ahead of the first `render()` that needs it — e.g. when the creation
  * screen mounts — and hold the resolved `HTMLImageElement` for `drawCommander`, which is
- * synchronous and cannot itself await a decode mid-frame. Calling it again for a bearing
+ * synchronous and cannot itself await a decode mid-frame. Calling it again for a facing
  * already loaded or loading returns the same promise/image rather than re-fetching.
+ *
+ * Keyed `${gender}:${facing}`, the same shape as the companion cache below: loading a
+ * female front and a female back are independent entries rather than one clobbering the
+ * other, which is what lets the district warm all eight frames in one `Promise.all`.
  */
-export async function loadCommanderSprite(gender: Gender): Promise<HTMLImageElement> {
-  const cached = spriteCache.get(gender);
-  if (cached) return cached;
-  const inFlight = spriteLoading.get(gender);
+export async function loadCommanderSprite(
+  gender: Gender,
+  facing: HeroFacing = 'front',
+): Promise<HTMLImageElement> {
+  return loadHeroImage(`${gender}:${facing}`, commanderSpriteSrc(gender, facing));
+}
+
+/**
+ * Cache, dedupe, decode. Shared by the standing facings above and the walk frames below so
+ * there is one answer to "is this already loading?" rather than two that can disagree.
+ *
+ * The key is the caller's to choose and the two namespaces do not collide: standing facings
+ * are `${gender}:${facing}`, walk frames `${gender}:${facing}-walk-${n}`.
+ */
+function loadHeroImage(key: string, src: string): Promise<HTMLImageElement> {
+  const cached = spriteCache.get(key);
+  if (cached) return Promise.resolve(cached);
+  const inFlight = spriteLoading.get(key);
   if (inFlight) return inFlight;
 
   const promise = (async () => {
     const img = new Image();
-    img.src = SPRITE_SRC[gender];
+    img.src = src;
     await img.decode();
-    spriteCache.set(gender, img);
+    spriteCache.set(key, img);
     return img;
   })();
-  spriteLoading.set(gender, promise);
+  spriteLoading.set(key, promise);
   return promise;
 }
 
-/** The cached sprite for a bearing, if `loadCommanderSprite` has already resolved it. */
-export function commanderSpriteIfLoaded(gender: Gender): HTMLImageElement | null {
-  return spriteCache.get(gender) ?? null;
+/** The cached facing, if `loadCommanderSprite` has already resolved it. */
+export function commanderSpriteIfLoaded(
+  gender: Gender,
+  facing: HeroFacing = 'front',
+): HTMLImageElement | null {
+  return spriteCache.get(`${gender}:${facing}`) ?? null;
 }
 
 /**
@@ -123,20 +145,203 @@ function blit(
 }
 
 /**
+ * A body in motion, for the placeholder walk.
+ *
+ * The counterpart to `DioramaActor.entry`: one optional value the caller owns and the draw
+ * code reads, describing something the drawing cannot work out for itself. `entry` says how
+ * far through arriving an actor is; this says how far through a step.
+ *
+ * Absent means standing. That is the default on purpose — every caller that has no idea
+ * whether its actor is walking gets the still figure it drew before.
+ */
+export interface Gait {
+  /**
+   * Position in the step cycle, counted in footfalls: whole numbers are the moments a foot
+   * lands, halves are mid-stride. Unbounded and expected to keep climbing — the draw code
+   * takes it modulo a cycle itself, so a caller can just accumulate.
+   *
+   * Drive it from **distance covered**, not from a timer, if the caller knows the distance.
+   * `Walker` in the district does this (`walked / 0.9`) and it is the reason a Commander who
+   * walks into a wall stops moving their legs instead of jogging on the spot.
+   */
+  phase: number;
+  /**
+   * Which way the body is travelling across the screen, `-1` (left) to `1` (right). Scales
+   * the lean, so a figure drifting slowly leans less than one at a run. Omit for none.
+   */
+  lean?: number;
+}
+
+/**
+ * How far the body rises between footfalls, as a fraction of its own height.
+ *
+ * A fraction rather than a pixel count because the figure is drawn at wildly different
+ * sizes — the creation screen's Step I blows it up better than three times what the street
+ * shows — and a bounce fixed in pixels would be invisible at one end and a jolt at the
+ * other. Proportion holds the same read at every zoom.
+ */
+const BOB_RISE = 0.015;
+/** Lean into the direction of travel, in radians, at full speed. About two degrees. */
+const LEAN_RADIANS = 0.035;
+/** Sway rocked across the step on top of the lean. Half the lean, so it never overturns it. */
+const SWAY_RADIANS = 0.014;
+
+/**
  * The Commander, as a bitmap.
  *
  * The two bearings' source files differ in height (288px against 253px) and are blitted to
  * the same `destH`, so both figures stand the same height on the stage whichever is chosen.
+ *
+ * Pass a `gait` and the still figure gets a placeholder walk: it rises between footfalls and
+ * leans into its travel. This is deliberately cheap and deliberately temporary — one frame
+ * cannot move its legs, and no amount of rocking the whole body will convince anyone it is
+ * walking. What it buys is that a figure crossing the street stops looking like it is being
+ * *slid*, which is the specific ugliness of translating a static bitmap. Replace it with
+ * `drawCommanderAnimated` once there are frames; keep the bob when you do, since a real walk
+ * cycle wants the vertical travel too and the art will not carry it.
  */
 export function drawCommander(
   ctx: CanvasRenderingContext2D,
   unit: number,
   img: HTMLImageElement | null,
+  gait?: Gait | null,
 ): void {
   if (!img) return; // Sprite still loading — nothing to draw this frame rather than a blank flash.
+  if (!gait) {
+    blit(ctx, unit, img, COMMANDER_HEIGHT_TILES);
+    return;
+  }
+
+  // `abs(sin)` rather than a plain sine: it touches zero at every whole phase and never goes
+  // negative, so footfalls land the body on the ground instead of sinking it through the
+  // pavement, and one stride gives one rise rather than a rise and a dip.
+  const rise = Math.abs(Math.sin(gait.phase * Math.PI)) * unit * COMMANDER_HEIGHT_TILES * BOB_RISE;
+  const sway = Math.sin(gait.phase * Math.PI * 2) * SWAY_RADIANS;
+  const lean = (gait.lean ?? 0) * LEAN_RADIANS;
+
+  ctx.save();
+  // Rotate first, so the pivot is the feet — where a leaning body actually hinges. Lifting
+  // before rotating would swing the figure about a point floating above the ground.
+  ctx.rotate(lean + sway);
+  ctx.translate(0, -rise);
   blit(ctx, unit, img, COMMANDER_HEIGHT_TILES);
+  ctx.restore();
 }
 
+
+/* ------------------------------------------------------------------------------------ *
+ * The real walk cycle — designed, not yet wired.
+ *
+ * NOTHING BELOW HAS ART BEHIND IT YET. `loadCommanderWalk` will 404 until the frames named
+ * by `commanderWalkSrc` are on disk; the pure parts (`commanderWalkSrc`, `walkFrameAt`) are
+ * live and tested so the convention is pinned down before anyone draws to it.
+ * ------------------------------------------------------------------------------------ */
+
+/**
+ * Which facings get a walk cycle.
+ *
+ * No `side-alt` here. That file is the two-frame stopgap the district alternates on distance
+ * travelled; a real cycle supersedes it, and its pose becomes frame 2 below. As with the
+ * standing art there is no `left` — the caller mirrors `side`.
+ */
+export type WalkFacing = 'front' | 'back' | 'side';
+
+/**
+ * Frames per direction.
+ *
+ * Four is the classic contact/passing pair doubled, and it is the fewest that reads as a
+ * walk rather than as a shuffle: 0 and 2 are the two contact poses (opposite feet forward),
+ * 1 and 3 the passing poses between them. Three would force one passing pose to serve both
+ * halves of the stride and the walk picks up a limp; eight is animator's work for a figure
+ * this small on screen.
+ */
+export const WALK_FRAMES = 4;
+
+/** How long one frame holds. Four of these is a full stride, so a stride is about half a second. */
+export const WALK_FRAME_MS = 120;
+
+/**
+ * Where one frame of the walk lives.
+ *
+ * Extends the standing convention rather than replacing it: `hero-{gender}-{facing}` still
+ * prefixes the name, so anything globbing a bearing keeps working, and the standing file
+ * stays the idle pose for that facing. Frame index last, zero-based.
+ *
+ *     hero-male-side-walk-0.png     hero-female-front-walk-3.png
+ */
+export function commanderWalkSrc(gender: Gender, facing: WalkFacing, frame: number): string {
+  return `/assets/sprites/hero-${gender}-${facing}-walk-${frame}.png`;
+}
+
+/**
+ * One direction's worth of walk: the frames in order, how long each holds, and whether it
+ * repeats. A cycle that does not loop holds its last frame forever, which is what a
+ * one-shot (a stumble, a landing) wants.
+ *
+ * Separate images rather than one sheet plus rects, to match how the rest of this art
+ * arrives — the pipeline exports a PNG per pose, and slicing a sheet would mean a second
+ * place where a frame's boundaries are written down and can drift from the file.
+ */
+export interface WalkCycle {
+  readonly frames: readonly HTMLImageElement[];
+  readonly frameMs: number;
+  readonly loops: boolean;
+}
+
+/**
+ * Loads every frame of one direction, in parallel, into the same cache the standing facings
+ * use. Safe to call repeatedly — the frames dedupe individually.
+ *
+ * Unused today. It is written because it is the existing loader's shape with the key changed,
+ * and leaving a hole here would mean rediscovering that shape later.
+ */
+export async function loadCommanderWalk(
+  gender: Gender,
+  facing: WalkFacing,
+  opts: { frameMs?: number; loops?: boolean } = {},
+): Promise<WalkCycle> {
+  const frames = await Promise.all(
+    Array.from({ length: WALK_FRAMES }, (_unused, n) =>
+      loadHeroImage(`${gender}:${facing}-walk-${n}`, commanderWalkSrc(gender, facing, n)),
+    ),
+  );
+  return { frames, frameMs: opts.frameMs ?? WALK_FRAME_MS, loops: opts.loops ?? true };
+}
+
+/**
+ * The frame showing at a given point in the cycle.
+ *
+ * Takes elapsed time rather than a frame index so the caller keeps one accumulating number
+ * and never has to know how many frames there are. Negative input is handled because a
+ * caller subtracting a start stamp from a clock can hand over a small negative on the first
+ * frame, and a walk that flickers to its last pose for one frame on every start is the kind
+ * of thing nobody finds until it ships.
+ */
+export function walkFrameAt(cycle: WalkCycle, elapsedMs: number): HTMLImageElement | null {
+  const count = cycle.frames.length;
+  if (count === 0) return null;
+  const total = count * cycle.frameMs;
+  if (!cycle.loops && elapsedMs >= total) return cycle.frames[count - 1] ?? null;
+  const t = ((elapsedMs % total) + total) % total;
+  return cycle.frames[Math.floor(t / cycle.frameMs)] ?? null;
+}
+
+/**
+ * The Commander mid-walk, from real frames.
+ *
+ * Still takes a `gait`, and it should still be given one: the frames move the legs, the bob
+ * moves the body, and the two are different jobs. Art that already carries its own vertical
+ * travel wants `gait` omitted instead.
+ */
+export function drawCommanderAnimated(
+  ctx: CanvasRenderingContext2D,
+  unit: number,
+  cycle: WalkCycle,
+  elapsedMs: number,
+  gait?: Gait | null,
+): void {
+  drawCommander(ctx, unit, walkFrameAt(cycle, elapsedMs), gait);
+}
 
 /**
  * Where a companion's bitmap sprite lives, one folder per species, one file per facing.
