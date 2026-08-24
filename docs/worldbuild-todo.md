@@ -22,10 +22,21 @@ whole remaining surface.
 | Threat Ledger clue (`bonemarket_vermin`, doc §3.2) | folded into the crack notice text | a real bestiary note ("stomach empty" convention) — bestiary has no notes field yet |
 | Wrong-shaped spoils | described in crack text only | spoils that *are* bread/seed-tools would need an item system; ducat pay is unchanged |
 
-## Wave 2 — duels + remaining Adept + graffiti (pending)
+## Wave 2 — duels + remaining Novice/Adept + graffiti (built)
 
-Novice 4–10, Adept 2–10, the wager duels (Smoke-Eater, Poacher, Waystone), graffiti set
-dressing in the district.
+| Where | Placeholder | Standing in for |
+|---|---|---|
+| `encounters/campaign.novice.ts` (`lamplighter_escort`) | stock dusk bodies | laid-off Ellery-pit miners |
+| `encounters/campaign.novice.ts` (`debt_collected_minor`) | stock bodies | printers with ink and hooks |
+| `encounters/campaign.novice.ts` (`poster_work`) | normal AI + `scavenger` as the lookout | flee-biased bill-sticker AI (no data field for it) |
+| `encounters/campaign.novice.ts` (`gutter_dispute`) | `turfwar` marrow-hounds | a genuinely three-sided rival crew (engine is two-sided) |
+| `encounters/campaign.adept.ts` (`saltglass_riot`) | stock bulwark bodies | fishermen with driftwood pikes |
+| `encounters/campaign.adept.ts` (`night_freight`) | plain fight; wagon is a scenery prop | the doc's prop-destruction win condition (needs an engine objective) |
+| `encounters/campaign.adept.ts` (`warrant_of_distraint`) | script chips the most advanced player unit 10/turn | the family throwing stones (want a visual/event for it) |
+| `encounters/campaign.duels.ts` (all three) | `umbra_bound` companions | each duelist's own beast |
+| `encounters/campaign.duels.ts` | enemy decks are approximated Hero kit | tuned duelist decks (only `novice_duelist`'s is test-enforced) |
+| `world.ts` graffiti | three lines hung near door plaques | a proper set-dressing pass (more walls, wildland waystones in later waves) |
+| Escort framing (`lamplighter_escort`, `hollow_census`, `night_freight`) | plain fights | actual escort objectives (no escort mechanic exists) |
 
 ## Wave 3 — the Apex subjugations (pending)
 

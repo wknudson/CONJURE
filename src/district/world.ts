@@ -33,6 +33,7 @@ import {
   makeCrateTexture,
   makeGateTexture,
   makeOutskirtsTexture,
+  makeGraffitiTexture,
   makeSignTexture,
   makeTreeTexture,
   makeWallTexture,
@@ -205,6 +206,40 @@ export class DistrictWorld {
       this.attachToStructure(door.signX, door.signZ, sign.material);
     }
 
+    /* --- graffiti ---
+       The clue layer, hung on the same walls the plaques are, a few strides from each
+       door and at reading height rather than signage height. Unlit basic material like
+       the plaques, so the words hold in the dark the way chalk does. */
+    const GRAFFITI: { text: string; door: number; dx: number; tint: string }[] = [
+      { text: 'THE ENGINES EAT OUR MARROW', door: 0, dx: 3.2, tint: '#b7ae9d' },
+      { text: 'THE CENSUS COUNTS DOWN', door: 1, dx: -3.4, tint: '#a46a4a' },
+      { text: "VANE'S LIGHT IS OUR DARK", door: 2, dx: 3.0, tint: '#b7ae9d' },
+    ];
+    for (const g of GRAFFITI) {
+      const door = DOORS[g.door];
+      if (!door) continue;
+      const tex = makeGraffitiTexture(g.text);
+      const img = tex.image as HTMLCanvasElement;
+      const scrawl = new THREE.Mesh(
+        // Sized off the text so long lines do not squash: ~0.045 world units per pixel.
+        new THREE.PlaneGeometry(img.width * 0.045, img.height * 0.045),
+        new THREE.MeshBasicMaterial({
+          map: tex,
+          color: new THREE.Color(g.tint),
+          transparent: true,
+          opacity: 0.85,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+        }),
+      );
+      const facesSouth = door.signZ < door.z;
+      scrawl.position.set(door.signX + g.dx, 1.15, door.signZ + (facesSouth ? 0.09 : -0.09));
+      if (!facesSouth) scrawl.rotation.y = Math.PI;
+      scrawl.rotation.z = 0.03 * (g.dx > 0 ? -1 : 1); // hand-drawn, not hung level
+      this.scene.add(scrawl);
+      this.attachToStructure(door.signX, door.signZ, scrawl.material);
+    }
+
     /* --- the bounty board --- */
     const boardPost = new THREE.Mesh(
       new THREE.BoxGeometry(0.24, 1.6, 0.24),
@@ -271,8 +306,9 @@ export class DistrictWorld {
      Construction helpers
      ============================================================ */
 
-  addBillboard(texture: THREE.Texture, w: number, h: number, x: number, z: number): BillboardSprite {
-    const b = new BillboardSprite(texture, w, h);
+  /** `w` is ignored now: the sprite takes its width from the picture's own proportions. */
+  addBillboard(texture: THREE.Texture, _w: number, h: number, x: number, z: number): BillboardSprite {
+    const b = new BillboardSprite(texture, h);
     b.position.set(x, 0, z);
     this.scene.add(b);
     this.billboards.push(b);

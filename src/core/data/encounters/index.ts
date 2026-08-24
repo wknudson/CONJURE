@@ -12,6 +12,24 @@ import { LAMPROW_TITHE } from './lamprow.tithe.js';
 import { BONEMARKET_VERMIN } from './bonemarket.vermin.js';
 import { CURFEW_BREAKERS } from './curfew.breakers.js';
 import { CHALK_ROAD_TOLL } from './chalk.road.toll.js';
+import {
+  CLINIC_QUOTA,
+  DEBT_COLLECTED_MINOR,
+  FOULED_CISTERN,
+  GUTTER_DISPUTE,
+  LAMPLIGHTER_ESCORT,
+  POSTER_WORK,
+} from './campaign.novice.js';
+import {
+  CELLAR_CLEARANCE,
+  DROWNED_GRANARY,
+  HOLLOW_CENSUS,
+  NIGHT_FREIGHT,
+  SALTGLASS_RIOT,
+  TALLOW_BLIGHT,
+  WARRANT_OF_DISTRAINT,
+} from './campaign.adept.js';
+import { ASHWOOD_POACHER, SMOKE_EATERS_REST, WAYSTONE_DUEL } from './campaign.duels.js';
 
 // Roughly in order of what they ask of a player: an honest duel, then a corridor that
 // punishes standing still, then an open field where nothing can see, then the boss.
@@ -23,8 +41,24 @@ export const ENCOUNTERS: EncounterDef[] = [
   IGNIS_TRIAL,
   LAMPROW_TITHE,
   BONEMARKET_VERMIN,
+  LAMPLIGHTER_ESCORT,
   CURFEW_BREAKERS,
+  DEBT_COLLECTED_MINOR,
+  SMOKE_EATERS_REST,
+  FOULED_CISTERN,
+  POSTER_WORK,
+  GUTTER_DISPUTE,
+  CLINIC_QUOTA,
   CHALK_ROAD_TOLL,
+  TALLOW_BLIGHT,
+  SALTGLASS_RIOT,
+  WARRANT_OF_DISTRAINT,
+  NIGHT_FREIGHT,
+  ASHWOOD_POACHER,
+  CELLAR_CLEARANCE,
+  HOLLOW_CENSUS,
+  DROWNED_GRANARY,
+  WAYSTONE_DUEL,
 ];
 
 export function encounterById(id: string): EncounterDef | undefined {
@@ -33,3 +67,21 @@ export function encounterById(id: string): EncounterDef | undefined {
 
 export { NOVICE_DUELIST, NARROW_RUIN, GLACIAL_FIELD, IGNIS_TRIAL };
 export { LAMPROW_TITHE, BONEMARKET_VERMIN, CURFEW_BREAKERS, CHALK_ROAD_TOLL };
+export {
+  LAMPLIGHTER_ESCORT,
+  DEBT_COLLECTED_MINOR,
+  FOULED_CISTERN,
+  POSTER_WORK,
+  GUTTER_DISPUTE,
+  CLINIC_QUOTA,
+  TALLOW_BLIGHT,
+  SALTGLASS_RIOT,
+  WARRANT_OF_DISTRAINT,
+  NIGHT_FREIGHT,
+  CELLAR_CLEARANCE,
+  HOLLOW_CENSUS,
+  DROWNED_GRANARY,
+  SMOKE_EATERS_REST,
+  ASHWOOD_POACHER,
+  WAYSTONE_DUEL,
+};

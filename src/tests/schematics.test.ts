@@ -199,7 +199,6 @@ describe('what the loop can actually reach', () => {
     // the Duelist lays it, because a Mark is Hero kit whatever its blast is made of.)
     'spore_cloud',
     'noxious_cloud',
-    'root_snare',
     'verdant_swell',
     'verdant_collapse',
     // Surge: same story.
@@ -214,13 +213,10 @@ describe('what the loop can actually reach', () => {
     'avalanche_slam',
     'petrifying_mantle',
     // Dusk: the Trial is Pyre and the Duelist plays colourless, so none of this is on offer.
-    'smoke_bomb',
-    'shadow_siphon',
     'grave_call',
     'harvest_the_weak',
     'blood_and_bone_rally',
     // Frost spells the Glacial Field happens not to run.
-    'creeping_rime',
     'rime_lock',
     // ---------------------------------------------------------- the second expansion
     //
@@ -233,9 +229,11 @@ describe('what the loop can actually reach', () => {
     // anything about the cards.
     //
     // This ledger is the honest record of that gap. The day a Sylva duelist is authored,
-    // her deck teaches the Bloom half and these lines come out. (The campaign has begun
-    // doing exactly that: the Bonemarket nest took Stoke, Cinder Gale and Ashen Wake off
-    // this list, and the Assembly took Bastion Stance and Phalanx Step.)
+    // her deck teaches the Bloom half and these lines come out. (The campaign has been
+    // doing exactly that, wave by wave: Wave 1's nest and Assembly took five plans off
+    // this list, and Wave 2's Middle Ring — the treant, the minders, the cistern, the
+    // masked Whisperers, the village — took another twelve. What remains is what no
+    // authored fight yet casts.)
     'slag_cairn',
     'rime_lance',
     'whiteout',
@@ -248,22 +246,14 @@ describe('what the loop can actually reach', () => {
     'tempest_break',
     'tesla_pylon',
     'hammer_fall',
-    'crag_slam',
     'siege_break',
     'iron_gate',
     'battlement',
-    'sap_draught',
-    'thornlash',
-    'strangling_vines',
     'blight_bloom',
-    'spore_burst',
-    'briar_rampart',
     // Dusk's decay shelf, the three that closed the last catalog gap. Same story again: no
     // shipped fight is against a Dusk deck, so they are draftable onto a Mortis and not yet
     // forgeable by anyone.
     'charnel_pillar',
-    'wither',
-    'creeping_decay',
   ]);
 
   const reachable = (): Set<string> => {
