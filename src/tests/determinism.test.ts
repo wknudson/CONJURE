@@ -152,7 +152,11 @@ describe('determinism', () => {
 
     expect(eventSignature(b.events)).toBe(eventSignature(a.events));
     expect(b.finalHash).toBe(a.finalHash);
-  }, 30_000);
+    // No local budget. This carried a 30s override and failed at 32.7s in a full parallel
+    // run — the same disease the 180s comment above describes, caught by the same symptom:
+    // a deadline that means "this machine was busy" instead of "this hung". Divergence is
+    // caught by the two assertions above; hangs are the global deadline's job.
+  });
 
   it('hashes are sensitive to any state change', () => {
     // A harness whose hash ignored some field would pass every replay test for the wrong
