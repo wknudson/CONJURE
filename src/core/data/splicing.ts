@@ -236,6 +236,45 @@ export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
     resultId: 'iron_briar',
     requiredUnlockedCards: ['spore_cloud'],
   },
+  // --------------------------------------------------------------- the fourth pressing
+  //
+  // A second row for each of the five pairings that just gained a bloodline. The book was
+  // already complete in the sense that every pairing had one recipe; a hybrid beast that
+  // draws a third of its book from fusions was still drawing the same card every time.
+  //
+  // Each row deliberately runs the *opposite* direction from its pairing's first: Soulfire
+  // presses a Dusk siphon with a Pyre core, so the Funeral Pyre presses a Pyre line with a
+  // Dusk one. The prerequisite is the other school's common card, exactly as the rows above.
+  {
+    baseCardId: 'ashen_wake',
+    catalystId: 'core_dusk',
+    resultId: 'funeral_pyre',
+    requiredUnlockedCards: ['shadow_siphon'],
+  },
+  {
+    baseCardId: 'cold_snap',
+    catalystId: 'core_bloom',
+    resultId: 'killing_frost',
+    requiredUnlockedCards: ['spore_cloud'],
+  },
+  {
+    baseCardId: 'root_snare',
+    catalystId: 'core_surge',
+    resultId: 'livewire_snare',
+    requiredUnlockedCards: ['arc_lash'],
+  },
+  {
+    baseCardId: 'pall',
+    catalystId: 'core_bloom',
+    resultId: 'rot_bloom',
+    requiredUnlockedCards: ['spore_cloud'],
+  },
+  {
+    baseCardId: 'taproot',
+    catalystId: 'core_bulwark',
+    resultId: 'bramble_dolmen',
+    requiredUnlockedCards: ['tectonic_plate'],
+  },
   {
     baseCardId: 'noxious_cloud',
     catalystId: 'core_dusk',

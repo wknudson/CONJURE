@@ -264,4 +264,193 @@ export const PYRE_CARDS: Record<string, CardDef> = {
       trail: 'burning',
     },
   },
+
+  // ------------------------------------------------------------- the third expansion
+  //
+  // Written for the day Pyre stopped being one bloodline's school. A Flue Salamander and an
+  // Ember Drake are both Pyre and must not draft the same eight cards, and a shelf of ten is
+  // too short to split — cutting four from each leaves six, and a book needs eight. So the
+  // shelf grows first and the split follows.
+  //
+  // Three verbs Pyre did not have: cashing the fire in, laying it on the ground, and pulling
+  // somebody into it. The Drake keeps the marks and the cascades it was built on; the
+  // Salamander lives in flues and chimneys, and these are the cards that read like it.
+
+  /**
+   * The fire cashed in rather than stacked up.
+   *
+   * Pyre's whole problem as a school is that Burn is a slow clock and every card wants to
+   * add to it — the deck's own payoff is *waiting*, which is a bad thing to ask of a player
+   * holding a hand. Backdraft is the release valve: it eats the fire off a body outright
+   * and pays for it in one blow, and the blast catches the cross around it, so a cluster
+   * that has been quietly cooking is worth a turn to detonate.
+   *
+   * Two Burn is a real requirement rather than a nicety, and the unfed branch is honest
+   * about it: 15 for two Pips is a bad card, and it should be, because the good branch is
+   * 40 plus splash for the same price.
+   */
+  backdraft: {
+    id: 'backdraft',
+    name: 'Backdraft',
+    cost: { pips: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Consumes 2 Burn on the target for 40 fire damage, and 20 more to everything orthogonally adjacent. Without the fire, only 15.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'ifMet',
+      cond: { kind: 'targetStatus', status: 'burn', stacks: 2 },
+      then: {
+        op: 'seq',
+        effects: [
+          { op: 'clearStatus', status: 'burn', area: { shape: 'target' } },
+          { op: 'damage', amount: 40, dtype: 'fire', area: { shape: 'target' } },
+          { op: 'damage', amount: 20, dtype: 'fire', area: { shape: 'adjacentCross' } },
+        ],
+      },
+      otherwise: { op: 'damage', amount: 15, dtype: 'fire', area: { shape: 'target' } },
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * Fire as ground rather than as damage.
+   *
+   * The school could set bodies alight and could not set *tiles* alight — `burning` hazard
+   * existed and only the Ember Hound's trail and a spliced Magma Shove could lay it, both of
+   * which need something to already be moving. This is the card that just puts it there.
+   *
+   * It deals almost nothing on the way in (10, once) because the tile is the payload: four
+   * squares that burn whoever stops on them for two turns, which is a wall an enemy is
+   * allowed to walk through and will regret standing in. Against an army that has to cross
+   * it, that is a far worse turn than 30 damage would have been.
+   */
+  emberfall: {
+    id: 'emberfall',
+    name: 'Emberfall',
+    cost: { pips: 3, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Sets a 2x2 block of ground burning for 2 turns and deals 10 fire damage there. Anything starting its turn on burning ground catches fire — yours included.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 2 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'fire', area: { shape: 'square', size: 2 } },
+        { op: 'spawnHazard', kind: 'burning', turns: 2, area: { shape: 'square', size: 2 } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * A chimney, as a spell: the draw that pulls everything toward the heat.
+   *
+   * Pyre's first pull, and the reason it belongs here rather than in Bulwark — where a shove
+   * is Bulwark saying *get off my tile*, a draw is a fire saying *come closer*. It is also
+   * the setup half the two cards above want: Emberfall lays ground nobody has to cross, and
+   * this one decides they are crossing it.
+   *
+   * A Pip, because the damage is a rounding error. What it buys is geometry, and units
+   * converging on one tile arrive in sequence and collide with whoever got there first —
+   * `pullArea`'s own documented quirk, and half the reason to cast it.
+   */
+  chimney_draw: {
+    id: 'chimney_draw',
+    name: 'Chimney Draw',
+    cost: { pips: 1, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Drags everything within a tile of the target point 1 tile toward it, sets it alight (Burn 1), and deals 10 fire damage.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'pullArea', distance: 1, area: { shape: 'adjacent8' } },
+        { op: 'damage', amount: 10, dtype: 'fire', area: { shape: 'adjacent8' } },
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * The cheapest body in the school, and the one that makes Burn spread by itself.
+   *
+   * Ten attack does nothing to a health bar and everything to a plan: the Sprite's job is to
+   * touch things, and every thing it touches is left alight for the Backdraft. Two of them
+   * cost what one Ember Hound does and light twice as much.
+   *
+   * Deliberately fragile — 20 health is one blow from almost anything. A Sprite that traded
+   * evenly with a real body would be the only one-Pip minion worth fielding.
+   */
+  soot_sprite: {
+    id: 'soot_sprite',
+    name: 'Soot Sprite',
+    cost: { pips: 1, marrow: 0 },
+    school: 'pyre',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Anything it strikes is left burning (Burn 1).',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'soot_sprite' },
+    keywords: [],
+    unit: {
+      atk: 10,
+      hp: 20,
+      mov: 3,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'skirmisher',
+      escalationBonus: { atk: 0, hp: 0 },
+      onHit: { status: 'burn', stacks: 1 },
+    },
+  },
+
+  /**
+   * Pyre's own artillery, and a hunter of things already alight.
+   *
+   * The school had exactly one ranged body — the Cinder Lobber, filed under `ranged.ts` with
+   * the other siege pieces — so a Pyre warband that wanted to shoot was buying out of
+   * somebody else's shelf. This one is Pyre's, and it reads like the rest of the school:
+   * `bonusVs` burn means it hits hardest at what the deck has already lit, so the Adder is
+   * the payoff for a board state rather than a stat line.
+   *
+   * Three range and one movement is the trade. It cannot reposition and it cannot defend
+   * itself, so where it is placed on turn one is very nearly the whole decision.
+   */
+  cinder_adder: {
+    id: 'cinder_adder',
+    name: 'Cinder Adder',
+    cost: { pips: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Spits fire at 3 tiles. Deals 20 extra damage to anything already Burning.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'cinder_adder' },
+    keywords: [],
+    unit: {
+      atk: 20,
+      hp: 30,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 3,
+      footprint: 1,
+      archetype: 'sniper',
+      escalationBonus: { atk: 0, hp: 0 },
+      attackDtype: 'fire',
+      bonusVs: { statuses: ['burn'], amount: 20 },
+    },
+  },
 };

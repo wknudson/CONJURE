@@ -90,7 +90,13 @@ export const COMPANIONS: CompanionDef[] = [
       'Marks and cascades. Brand your enemies, then set the whole board off at once. Ember Watch ignites anything standing in its lane.',
     // The founding deck, exactly as specced.
     deck: [...STARTER_DECK],
-    grimoire: { schools: ['pyre'], hybridChance: MONO_HYBRID_CHANCE },
+    // Marks, cascades and the big burst. The Drake gives up the chimney half of the school
+    // to the Salamander: ground fire, the draw, and the two slow constructs.
+    grimoire: {
+      schools: ['pyre'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['chimney_draw', 'emberfall', 'slag_cairn', 'pressure_valve_release'],
+    },
     legacyGrimoire: [
       'flame_surge',
       'flame_surge',
@@ -111,7 +117,13 @@ export const COMPANIONS: CompanionDef[] = [
     blurb:
       'Control. Chill an enemy three times and it freezes solid — then break it. Rime Guard armours your Hero each turn.',
     deck: [...STARTER_DECK],
-    grimoire: { schools: ['frost'], hybridChance: MONO_HYBRID_CHANCE },
+    // Lockdown. The Bear keeps the long control cards — the rime, the deep winter, the wall
+    // — and leaves the harbour's weather and the ice-breaking to the Seal.
+    grimoire: {
+      schools: ['frost'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['hoarfrost_veil', 'calving', 'whiteout', 'hail_spire'],
+    },
     legacyGrimoire: [
       'glacial_spike',
       'glacial_spike',
@@ -135,7 +147,13 @@ export const COMPANIONS: CompanionDef[] = [
     // plan a coincidence. Arc Lash and the Hound are Hero cards and would be legal in any
     // deck; they are here because this is the deck that wants them.
     deck: [...STARTER_DECK],
-    grimoire: { schools: ['surge'], hybridChance: MONO_HYBRID_CHANCE },
+    // Charge, step, cash in. The Lynx is the mobile half of Surge and gives the Kite the
+    // things that stand still: the pylon, the storm overhead, and the two big discharges.
+    grimoire: {
+      schools: ['surge'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['elmos_fire', 'capacitor_dump', 'tesla_pylon', 'thunderhead'],
+    },
     legacyGrimoire: [
       'static_arc',
       'static_arc',
@@ -158,7 +176,13 @@ export const COMPANIONS: CompanionDef[] = [
     // Its own school has exactly two cards a deck can hold three of, so the six are those
     // at their caps. A Dusk deck is short on options by design: it spends what it has.
     deck: [...STARTER_DECK],
-    grimoire: { schools: ['dusk'], hybridChance: MONO_HYBRID_CHANCE },
+    // Attrition by siphon. The Stag spends bodies; it does not dig them up again — the
+    // grave-work, the smoke and the mercy go to the Jackal.
+    grimoire: {
+      schools: ['dusk'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['exhume', 'last_rites', 'charnel_pillar', 'smoke_bomb'],
+    },
     legacyGrimoire: [
       'shadow_siphon',
       'shadow_siphon',
@@ -179,7 +203,13 @@ export const COMPANIONS: CompanionDef[] = [
     blurb:
       'Patience. Poison, roots, and a body that grows where you plant it. Verdant Growth gives 2 HP back for the first card each turn.',
     deck: [...STARTER_DECK],
-    grimoire: { schools: ['bloom'], hybridChance: MONO_HYBRID_CHANCE },
+    // Thorns and roots. The Warden is the briar half of Bloom and hands the field half —
+    // pollen, blight, the harvest — to the Aurochs.
+    grimoire: {
+      schools: ['bloom'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['pollen_drift', 'blight_harvest', 'noxious_cloud', 'blight_bloom'],
+    },
     legacyGrimoire: [
       'spore_cloud',
       'spore_cloud',
@@ -200,7 +230,13 @@ export const COMPANIONS: CompanionDef[] = [
     blurb:
       'Ground. Walls, shoves, and a body that will not be moved. Shield Oath armours everything standing in its lane.',
     deck: [...STARTER_DECK],
-    grimoire: { schools: ['bulwark'], hybridChance: MONO_HYBRID_CHANCE },
+    // Walls and the refusal to move. The Boar keeps the gates and the plate; the breaking
+    // work — the sinkhole, the counterweight, the crag — belongs to the Ram.
+    grimoire: {
+      schools: ['bulwark'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['sinkhole', 'counterweight', 'deadweight', 'crag_slam'],
+    },
     legacyGrimoire: [
       'seismic_slam',
       'seismic_slam',
@@ -457,6 +493,315 @@ export const COMPANIONS: CompanionDef[] = [
       'marrow_burst',
     ],
     unitCardId: 'sovereign_bound',
+  },
+
+  // ------------------------------------------------------- the second bloodlines
+  //
+  // One more mono-element species per school, so no element is a single beast any more.
+  //
+  // These exist because of a gap the hybrids made obvious. A school used to *be* its founder
+  // — Frost was Boreas — so "what does a Frost beast draw" and "what does Boreas draw" were
+  // the same question, and `GrimoireSource` could be a pair of schools because nothing else
+  // varied. Six of these break that, and `omit` is what they broke it with: each pair shares
+  // most of a shelf and disagrees at the edges, so catching the second Frost bloodline hands
+  // you a book the first one could not have dealt.
+  //
+  // **None of them reach the creation screen**, and that is by construction rather than by a
+  // list: `foundersOf` takes the *first* mono species of each school, and these are second.
+  // Every one is something you go out and catch.
+
+  {
+    id: 'salamander',
+    artId: 'flue_salamander',
+    name: 'Flue Salamander',
+    title: 'Chimney Fire',
+    school: 'pyre',
+    blurb:
+      'Fire that lives in the ductwork. Lays burning ground, drags them onto it, and is somewhere else by the time it catches.',
+    deck: [...STARTER_DECK],
+    // The chimney half of Pyre: ground fire, the draw, the slow constructs. It never learns
+    // the Drake's cataclysms -- a salamander is not an artillery piece.
+    grimoire: {
+      schools: ['pyre'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['cataclysm', 'cataclysmic_core', 'cinder_gale', 'pyre_pillar'],
+    },
+    legacyGrimoire: [
+      'emberfall',
+      'emberfall',
+      'chimney_draw',
+      'chimney_draw',
+      'backdraft',
+      'backdraft',
+      'stoke',
+      'slag_cairn',
+    ],
+    unitCardId: 'salamander_bound',
+  },
+  {
+    id: 'seal',
+    artId: 'saltglass_seal',
+    name: 'Saltglass Seal',
+    title: 'Harbor Ghost',
+    school: 'frost',
+    blurb:
+      'Came in with the tide and stayed after the writ. Fogs the water, freezes what moves in it, and breaks the ice itself.',
+    deck: [...STARTER_DECK],
+    // Harbour weather and the breaking of ice. The long lockdown cards are the Bear's.
+    grimoire: {
+      schools: ['frost'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['rime_lock', 'deep_winter', 'creeping_rime', 'ice_barricade'],
+    },
+    legacyGrimoire: [
+      'cold_snap',
+      'cold_snap',
+      'whiteout',
+      'whiteout',
+      'calving',
+      'hoarfrost_veil',
+      'flash_freeze',
+      'hail_spire',
+    ],
+    unitCardId: 'seal_bound',
+  },
+  {
+    id: 'kite',
+    artId: 'conduit_kite',
+    name: 'Conduit Kite',
+    title: 'Pylon Nester',
+    school: 'surge',
+    blurb:
+      'Nests where the grid hums loudest. Charges everything within reach and empties it into one body.',
+    deck: [...STARTER_DECK],
+    // The standing half of Surge -- pylons, the storm overhead, the big discharge. The
+    // Lynx keeps the footwork.
+    grimoire: {
+      schools: ['surge'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['arcing_step', 'galvanic_rally', 'paralytic_arc', 'chain_bolt'],
+    },
+    legacyGrimoire: [
+      'induction',
+      'induction',
+      'capacitor_dump',
+      'thunderhead',
+      'tesla_pylon',
+      'elmos_fire',
+      'static_arc',
+      'discharge',
+    ],
+    unitCardId: 'kite_bound',
+  },
+  {
+    id: 'jackal',
+    artId: 'barrow_jackal',
+    name: 'Barrow Jackal',
+    title: 'Grave-Digger',
+    school: 'dusk',
+    blurb:
+      'Digs where the ground is freshest. Rots them slowly, and puts your own dead back on their feet.',
+    deck: [...STARTER_DECK],
+    // The grave-work half of Dusk. It exhumes and it tends; the Stag's harvests and rallies
+    // are somebody else's appetite.
+    grimoire: {
+      schools: ['dusk'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['harvest_the_weak', 'blood_and_bone_rally', 'marrow_burst', 'grave_call'],
+    },
+    legacyGrimoire: [
+      'pall',
+      'pall',
+      'exhume',
+      'last_rites',
+      'creeping_decay',
+      'charnel_pillar',
+      'shadow_siphon',
+      'wither',
+    ],
+    unitCardId: 'jackal_bound',
+  },
+  {
+    id: 'aurochs',
+    artId: 'moss_aurochs',
+    name: 'Moss Aurochs',
+    title: 'Fallow Warden',
+    school: 'bloom',
+    blurb:
+      'Grazes the strips the tithe left. Poisons a whole field and calls the rot in when it is ready.',
+    deck: [...STARTER_DECK],
+    // The field half of Bloom: pollen, blight, harvest. Thorns and briars are the Warden's.
+    grimoire: {
+      schools: ['bloom'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['thornlash', 'strangling_vines', 'briar_rampart', 'verdant_collapse'],
+    },
+    legacyGrimoire: [
+      'pollen_drift',
+      'pollen_drift',
+      'blight_harvest',
+      'blight_harvest',
+      'blight_bloom',
+      'noxious_cloud',
+      'taproot',
+      'spore_cloud',
+    ],
+    unitCardId: 'aurochs_bound',
+  },
+  {
+    id: 'ram',
+    artId: 'quarry_ram',
+    name: 'Quarry Ram',
+    title: 'Chalk Breaker',
+    school: 'bulwark',
+    blurb:
+      'Breaks the road it is not allowed to walk. Drops the ground out from under them and shoves what is left.',
+    deck: [...STARTER_DECK],
+    // The breaking half of Bulwark. The Boar keeps the gates; a ram has never held a door
+    // in its life.
+    grimoire: {
+      schools: ['bulwark'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['iron_gate', 'battlement', 'bastion_stance', 'petrifying_mantle'],
+    },
+    legacyGrimoire: [
+      'sinkhole',
+      'counterweight',
+      'counterweight',
+      'crag_slam',
+      'deadweight',
+      'seismic_slam',
+      'seismic_slam',
+      'avalanche_slam',
+    ],
+    unitCardId: 'ram_bound',
+  },
+
+  // ------------------------------------------------- the last five pairings
+  //
+  // Fifteen pairs of schools exist and ten of them had a bloodline. These are the other
+  // five, and with them every two-school combination in the game is somebody's.
+  //
+  // Four of the five are half Bloom, which is not an accident of taste: Bloom was the school
+  // with the fewest partners already spoken for, so closing the set meant closing Bloom's
+  // row. The fusion book grew to match -- each of these five pairings gained a second
+  // fusion card in the same change, so a hybrid drafting a third of its book out of fusions
+  // no longer draws the same one every time.
+  //
+  // No `omit` on any of them. A hybrid is already unlike every other species by its pairing,
+  // and it draws from two schools at once -- roughly thirty cards -- so subtracting four
+  // would be noise rather than character. The omit lists exist to separate species that
+  // would otherwise be identical, and no two hybrids are.
+
+  {
+    id: 'shade',
+    artId: 'cinder_shade',
+    name: 'Cinder Shade',
+    title: 'Lamp-Eater',
+    school: 'dusk',
+    blurb:
+      'What is left of a lamplighter who kept going back. Burns them, then drinks what the burning left.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['pyre', 'dusk'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'flame_surge',
+      'ashen_wake',
+      'stoke',
+      'shadow_siphon',
+      'shadow_siphon',
+      'marrow_siphon',
+      'wither',
+      'ember_coat',
+    ],
+    unitCardId: 'shade_bound',
+  },
+  {
+    id: 'elk',
+    artId: 'winterthorn_elk',
+    name: 'Winterthorn Elk',
+    title: 'Rimebloom',
+    school: 'frost',
+    blurb:
+      'Poison first, then the cold. Anything rotting when the frost lands freezes where it stands.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['frost', 'bloom'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'spore_cloud',
+      'spore_cloud',
+      'root_snare',
+      'glacial_spike',
+      'glacial_spike',
+      'cold_snap',
+      'frost_nova',
+      'brittle_touch',
+    ],
+    unitCardId: 'elk_bound',
+  },
+  {
+    id: 'serpent',
+    artId: 'voltbriar_serpent',
+    name: 'Voltbriar Serpent',
+    title: 'Hedge Lightning',
+    school: 'surge',
+    blurb:
+      'Lives in the briar and the briar is live. Roots them where they stand, then makes standing there a mistake.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['surge', 'bloom'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'root_snare',
+      'root_snare',
+      'static_arc',
+      'static_arc',
+      'arc_lash',
+      'induction',
+      'spore_cloud',
+      'static_charge',
+    ],
+    unitCardId: 'serpent_bound',
+  },
+  {
+    id: 'heron',
+    artId: 'murk_heron',
+    name: 'Murk Heron',
+    title: 'Fen Reaper',
+    school: 'dusk',
+    blurb:
+      'Stands in the shallows until the rot is ready. Poison and decay are the same patience twice.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['dusk', 'bloom'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'noxious_cloud',
+      'noxious_cloud',
+      'creeping_decay',
+      'shadow_siphon',
+      'marrow_siphon',
+      'pall',
+      'spore_cloud',
+      'wither',
+    ],
+    unitCardId: 'heron_bound',
+  },
+  {
+    id: 'crab',
+    artId: 'dolmen_crab',
+    name: 'Dolmen Crab',
+    title: 'Hedgefort',
+    school: 'bulwark',
+    blurb:
+      'A standing stone the hedge grew through, and then wore. Holds the ground and taxes whoever stands beside it.',
+    deck: [...STARTER_DECK],
+    grimoire: { schools: ['bulwark', 'bloom'], hybridChance: HYBRID_HYBRID_CHANCE },
+    legacyGrimoire: [
+      'tectonic_plate',
+      'tectonic_plate',
+      'briar_rampart',
+      'root_snare',
+      'seismic_slam',
+      'seismic_slam',
+      'spore_cloud',
+      'thornlash',
+    ],
+    unitCardId: 'crab_bound',
   },
 ];
 

@@ -222,3 +222,60 @@ off soonest:
 3. **Wave 3 — the apexes.** The subjugation bosses, one per wildland region, reusing the
    `ignis_trial` script shape.
 4. **Wave 4 — the end.** The Summons, the monologue, the throne room, the Colossus.
+
+---
+
+## 8. The Wildlands, as standing work
+
+Everything above is a contract: posted, finite, walked once. The wilds are the other half of
+the map, and they run on a different clock.
+
+**The Wildlands Gate.** The warded gate in Ashfall's yard wall opens now. Past it is not a
+place the player walks — there is no wildland map — but a board of standing work, twelve
+hunts grouped by region. Nobody posted them and completing one closes nothing.
+
+**Why they repeat.** A hunt pays out an *animal*, and an animal is rolled: its eight-card
+Grimoire drawn from its bloodline's own shelf, its constitution, its knack, the modifiers on
+each of its eight cards, and — one time in a hundred — its lustre. Two Saltglass Seals are
+two different beasts. Each hunt is empty for ten minutes of real time after it pays, which
+is long enough to be a reason to go and do something else and short enough that a session
+sees one twice.
+
+**Who lives where.**
+
+| Region | Beast | Tier |
+|---|---|---|
+| The Caldera | Ignis, Ember Drake | novice |
+| The Cinderworks | Flue Salamander, Chimney Fire | novice |
+| The Ashwood (grove) | Sylva, Thorn Warden | novice |
+| The Ashwood (dark) | Mortis, Carrion Stag | master |
+| The Chalk Road | Ferrum, Vault Boar | novice |
+| The Chalk Cut | Quarry Ram, Chalk Breaker | novice |
+| The Rimefields | Boreas, Frost Bear | adept |
+| Saltglass | Saltglass Seal, Harbor Ghost | adept |
+| The Tallow Levels | Moss Aurochs, Fallow Warden | adept |
+| The Storm Shelf | Voltara, Storm Lynx | adept |
+| The Storm Shelf (Pylon Twelve) | Conduit Kite, Pylon Nester | master |
+| The Bone Bastion (fringe) | Barrow Jackal, Grave-Digger | master |
+
+The six founding bloodlines are on that list deliberately. A character enrols vowed to one
+of them, and the other five were previously unreachable in a finished save — five sixths of
+the starting roster was content nobody could ever field. The player's *own* species is
+listed too, for the same reason a second Ignis is worth catching: it is a different book.
+
+**What the wilds do not give you.** No hybrid is huntable. Every one of the fifteen two-school
+bloodlines is bound off a named enemy in the campaign — a duelist's stake, a contract's apex —
+and each of those is a single occasion. A hybrid on a ten-minute timer would turn the arc's
+most particular rewards into a shopping list.
+
+## 9. Mercy, as a mechanic
+
+The doc has said from the start that the wild species can be bound rather than destroyed and
+that the game never says so out loud. That was true of four contracts. It is true of all of
+them now: **every fight in the game that fields a beast can end in a binding instead of a
+kill**, including the six species that previously appeared as enemies with no way to take
+them alive, and all four wager duels — where the beast, not only the purse, is the stake.
+
+The arithmetic the player is never told: a killed apex pays its contract, and a bound one
+pays the same contract *and* joins the roster. The generous reading is also the profitable
+one, and the game leaves them to notice.

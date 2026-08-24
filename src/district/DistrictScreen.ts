@@ -37,7 +37,7 @@ import { ColliderSet } from './collision.js';
 import { DistrictWorld } from './world.js';
 import { buildPostChain, type PostChain } from './post.js';
 import { DistrictHud } from './hud.js';
-import { DialogueBox, GATE_SEALED, VEX_INTRO, VEX_REPEAT } from './dialogue.js';
+import { DialogueBox, VEX_INTRO, VEX_REPEAT } from './dialogue.js';
 import {
   FACING,
   actorArtFromTextures,
@@ -75,13 +75,34 @@ const ORBIT_SPEED = 1.6;
 const COMMANDER_HEIGHT = 2.1;
 const COMPANION_HEIGHT = 1.5;
 
+/**
+ * The colour a lustrous companion is multiplied by.
+ *
+ * Warm gold with the blue pulled down, so any beast reads as gilded regardless of its own
+ * palette — a tint keyed to the species' school would be invisible on half of them.
+ */
+const SHINY_TINT = 0xffe9a8;
+
 export interface DistrictOpts {
   global: GlobalGameState;
   /** The species standing beside the player — picks the follower's art and the door line. */
   companionId: string;
   companionLevel: number;
+  /** Whether the beast beside you is lustrous. Tints the follower, nothing more. */
+  companionShiny?: boolean;
   gender: Gender;
   bounties: Bounty[];
+  /**
+   * The Wild Hunts, and when each was last walked.
+   *
+   * Handed in the same way `bounties` is — composed once per district entry, so the panel
+   * renders from data rather than reaching into a profile the district has never been
+   * allowed to see. `hunts` is the raw stamp map; the panel does the cooldown arithmetic
+   * against a clock it reads itself, because a countdown has to tick while the panel is
+   * open and a value captured at mount would be stale by the time anybody read it.
+   */
+  huntBoard: Bounty[];
+  hunts: Readonly<Record<string, number>>;
   collection: Collection;
   deck: string[];
   notice?: { title: string; body: string };
@@ -284,8 +305,11 @@ export class DistrictScreen implements Screen {
     );
     this.interactables.push(board);
 
-    const gate = new Hotspot(GATE_POS.x, GATE_POS.z + 2.4, 'Inspect the warded gate', () =>
-      this.dialogue!.start(GATE_SEALED),
+    // The gate was dressing with a hook in it — a sealed door and one line of flavour,
+    // shipped as "content goes here later". This is later: it opens onto the Wildlands, and
+    // the Wild Hunts are what is out there.
+    const gate = new Hotspot(GATE_POS.x, GATE_POS.z + 2.4, 'Take the road past the gate', () =>
+      this.hud!.openHunts(this.opts.huntBoard, this.opts.hunts),
     );
     this.interactables.push(gate);
   }
@@ -401,6 +425,9 @@ export class DistrictScreen implements Screen {
         start.z + 1.2,
         colliders,
       );
+      // A lustrous beast walks the ward wearing it. Cosmetic, like the tank treatment the
+      // Vivarium gives it — see `CompanionInstance.shiny`.
+      if (this.opts.companionShiny) this.follower.walker.sprite.setTint(SHINY_TINT);
       this.world.scene.add(this.follower.walker.sprite);
       this.world.billboards.push(this.follower.walker.sprite);
       this.updatables.push(this.follower);

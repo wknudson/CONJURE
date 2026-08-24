@@ -56,8 +56,12 @@ const withKnack = (baseId: string, traitId: string) => {
 };
 
 describe('the hybrid roster', () => {
-  it('registers all ten', () => {
-    expect(BLOODLINES).toHaveLength(10);
+  it('registers all fifteen — one per school pairing', () => {
+    // Six schools make fifteen pairings, and every one of them is now somebody's. The
+    // number is asserted rather than derived on purpose: it is the whole claim of the
+    // roster, and deriving it from `TRAIT_LINEAGE` would make this test agree with any
+    // mistake made there.
+    expect(BLOODLINES).toHaveLength(15);
     for (const id of BLOODLINES) {
       expect(companionById(id), id).toBeDefined();
     }
@@ -160,6 +164,9 @@ describe('the taming roll', () => {
     for (const id of BLOODLINES) {
       expect(declaredTraitsFor(id), id).toHaveLength(2);
     }
+    // Still nine, and all nine belong to the original ten hybrids: the five bloodlines
+    // added when the pairings closed were written against boons the engine already reads,
+    // so none of them owes an IOU.
     const pending = Object.values(COMPANION_TRAITS).filter((t) => t.pending);
     expect(pending).toHaveLength(9);
     for (const trait of pending) {
@@ -395,7 +402,9 @@ describe('the wired knacks', () => {
         }
       }
     }
-    expect(checked, 'wired hybrid knacks').toBe(11);
+    // Counts boon *entries*, not traits — a knack granting two boons contributes two. Rose
+    // from 11 when the five closing hybrids arrived with ten wired knacks between them.
+    expect(checked, 'wired hybrid knacks').toBe(24);
   });
 
   it('opens a fight with the knack already switched on', () => {

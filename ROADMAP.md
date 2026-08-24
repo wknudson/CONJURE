@@ -89,7 +89,7 @@ the offering was worth any Marrow.
 | System | State | Reference |
 | :-- | :-- | :-- |
 | Rules engine | Pips and Marrow, overdraw burn, free reshuffle, Retain, movement (BFS, 2×2 footprints), **independent move + attack per turn**, collisions 30/20 with Mass Invariance, supercover LoS, Guardian occlusion, Marks with cascades and armor gating and fizzle, Growth caps, the status tick order, sudden-death double-KO | `docs/02_combat_lexicon.md` |
-| Cards | 173 base cards — **at least twenty per elemental school**, and every school's draftable shelf full — all data-driven through shared effect primitives. Rank 2 printings are derived, not authored | `docs/08_card_catalog.md` |
+| Cards | 214 base cards — **at least twenty per elemental school**, and every school's draftable shelf full — all data-driven through shared effect primitives. Rank 2 printings are derived, not authored | `docs/08_card_catalog.md` |
 | Splicing | 19 pressings covering **all fifteen** dual-school pairings, from six Cores (one per school) | `docs/08_card_catalog.md` |
 | Deck building | Hero Deck of 4–12, tier-derived copy limits, Behemoth cap, the Grimoire draft, one swap after seeing the arena | `docs/07_deck_building.md` |
 | Encounters | Novice Duelist, Ignis Trial (damage gate with chain nullification, Rite of Subjugation at 25%, Forced Eviction), Glacial Field, Narrow Ruin, Wildlife | `docs/09_ai_and_encounters.md` |

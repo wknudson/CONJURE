@@ -46,6 +46,20 @@ import {
   WILDFIRE_WRIT,
 } from './campaign.master.js';
 import { THE_SUMMONS } from './the.summons.js';
+import {
+  HUNT_ASHWOOD_STAG,
+  HUNT_ASHWOOD_WARDEN,
+  HUNT_BARROW_JACKAL,
+  HUNT_CALDERA_DRAKE,
+  HUNT_CHALK_BOAR,
+  HUNT_CHALK_CUT_RAM,
+  HUNT_CINDERWORKS_SALAMANDER,
+  HUNT_PYLON_KITE,
+  HUNT_RIMEFIELD_BEAR,
+  HUNT_SALTGLASS_SEAL,
+  HUNT_SHELF_LYNX,
+  HUNT_TALLOW_AUROCHS,
+} from './hunts.js';
 
 // Roughly in order of what they ask of a player: an honest duel, then a corridor that
 // punishes standing still, then an open field where nothing can see, then the boss.
@@ -85,6 +99,20 @@ export const ENCOUNTERS: EncounterDef[] = [
   RELOCATION_TRAIN,
   BONE_BASTION,
   THE_SUMMONS,
+  // The Wild Hunts, last: they are not campaign order because they are not campaign. Every
+  // one is standing work behind the ward gate, repeatable on its own clock.
+  HUNT_CALDERA_DRAKE,
+  HUNT_RIMEFIELD_BEAR,
+  HUNT_SHELF_LYNX,
+  HUNT_ASHWOOD_STAG,
+  HUNT_ASHWOOD_WARDEN,
+  HUNT_CHALK_BOAR,
+  HUNT_CINDERWORKS_SALAMANDER,
+  HUNT_CHALK_CUT_RAM,
+  HUNT_SALTGLASS_SEAL,
+  HUNT_TALLOW_AUROCHS,
+  HUNT_PYLON_KITE,
+  HUNT_BARROW_JACKAL,
 ];
 
 export function encounterById(id: string): EncounterDef | undefined {

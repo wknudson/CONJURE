@@ -446,6 +446,257 @@ export const TRAIT_LINEAGE: Record<string, readonly string[]> = {
   dynamo: ['voltara', 'ferrum'],
   geist: ['voltara', 'mortis'],
   sovereign: ['ferrum', 'mortis'],
+  // The five pairings that had no bloodline until the roster closed the set. Each names the
+  // *founder* of its two schools rather than the school's second bloodline — a hybrid
+  // inherits from the beast the school is named after, and picking the newcomer instead
+  // would be an arbitrary choice dressed as a rule.
+  shade: ['ignis', 'mortis'],
+  elk: ['boreas', 'sylva'],
+  serpent: ['voltara', 'sylva'],
+  heron: ['mortis', 'sylva'],
+  crab: ['ferrum', 'sylva'],
+};
+
+/**
+ * The six second bloodlines' knacks.
+ *
+ * Three apiece and all three wired, which is the standard a mono species is held to — a
+ * taming roll is meant to be a three-way choice, and `buildRelics.test.ts` enforces exactly
+ * that. Hybrids get away with two because they inherit their parents' pools; these have no
+ * parents to inherit from.
+ *
+ * Written against boons the engine already reads, deliberately. Every one of these is a
+ * capability the resolver has been able to express since the hybrid pool was built —
+ * `steamBurns`, `alliesGrounded`, `bonusFreezeStacks` and the rest were authored for beasts
+ * that could not all use them, and this is the change that spends them. Two new boons appear
+ * below and no more; the rest is vocabulary the game already had.
+ */
+const SECOND_BLOODLINE_TRAITS: Record<string, CompanionTrait> = {
+  // ---------------------------------------------------------------- salamander (pyre)
+  flue_born: {
+    id: 'flue_born',
+    name: 'Flue-Born',
+    text: 'Grew up in a chimney. Fire does nothing to it at all.',
+    baseId: 'salamander',
+    boons: { immuneToBurn: true },
+  },
+  soot_lungs: {
+    id: 'soot_lungs',
+    name: 'Soot Lungs',
+    text: 'Reads a room by its smoke. Sees through fog nobody else can.',
+    baseId: 'salamander',
+    boons: { ignoreFog: true },
+  },
+  quick_kindling: {
+    id: 'quick_kindling',
+    name: 'Quick Kindling',
+    text: 'Catches before the match is out. Opens every contract holding an extra card.',
+    baseId: 'salamander',
+    boons: { extraOpeningCards: 1 },
+  },
+
+  // ---------------------------------------------------------------------- seal (frost)
+  harbor_hide: {
+    id: 'harbor_hide',
+    name: 'Harbor Hide',
+    text: 'Blubber and salt glass. Opens every contract wearing 30 Armor.',
+    baseId: 'seal',
+    boons: { armor: 30 },
+  },
+  deep_breath: {
+    id: 'deep_breath',
+    name: 'Deep Breath',
+    text: 'Surfaces when it chooses to. Every Freeze you cause lasts one turn longer.',
+    baseId: 'seal',
+    boons: { bonusFreezeStacks: 1 },
+  },
+  glass_footed: {
+    id: 'glass_footed',
+    name: 'Glass-Footed',
+    text: 'Born on ice. Keeps its feet where everyone else loses theirs, and the shards of a Shatter never reach it.',
+    baseId: 'seal',
+    boons: { ignoreIceSlip: true, immuneToShatterSplash: true },
+  },
+
+  // ---------------------------------------------------------------------- kite (surge)
+  pylon_nest: {
+    id: 'pylon_nest',
+    name: 'Pylon Nest',
+    text: 'Roosts on the grid and bleeds it. Opens every contract with an extra Pip in hand.',
+    baseId: 'kite',
+    boons: { pips: 1 },
+  },
+  earthing_claws: {
+    id: 'earthing_claws',
+    name: 'Earthing Claws',
+    text: 'Grips the conduit itself. Arc collateral ignores Armor entirely.',
+    baseId: 'kite',
+    boons: { arcPierces: true },
+  },
+  updraft: {
+    id: 'updraft',
+    name: 'Updraft',
+    text: 'Nothing on the ground can drag it off station. No shove, drag or current moves any unit of yours.',
+    baseId: 'kite',
+    boons: { alliesGrounded: true },
+  },
+
+  // ---------------------------------------------------------------------- jackal (dusk)
+  grave_nose: {
+    id: 'grave_nose',
+    name: 'Grave-Nose',
+    text: 'Smells a plan before it is buried. Enemy intentions are shown to you before they happen.',
+    baseId: 'jackal',
+    boons: { revealIntents: true },
+  },
+  scavengers_due: {
+    id: 'scavengers_due',
+    name: "Scavenger's Due",
+    text: 'Takes its cut off every body. Each tithe yields 1 extra Marrow.',
+    baseId: 'jackal',
+    boons: { bonusTitheMarrow: 1 },
+  },
+  carrion_thrift: {
+    id: 'carrion_thrift',
+    name: 'Carrion Thrift',
+    text: 'Wastes nothing it opens. Each tithe puts 10 health back on your Pact.',
+    baseId: 'jackal',
+    boons: { healOnTithe: 10 },
+  },
+
+  // -------------------------------------------------------------------- aurochs (bloom)
+  fallow_gut: {
+    id: 'fallow_gut',
+    name: 'Fallow Gut',
+    text: 'Grazes what would kill anything else. Poison does nothing to it.',
+    baseId: 'aurochs',
+    boons: { immuneToToxin: true },
+  },
+  deep_pasture: {
+    id: 'deep_pasture',
+    name: 'Deep Pasture',
+    text: 'Sows heavier than it looks. Every Toxin you apply lands with an extra stack.',
+    baseId: 'aurochs',
+    boons: { bonusToxinStacks: 1 },
+  },
+  broad_back: {
+    id: 'broad_back',
+    name: 'Broad Back',
+    text: 'Built to be walked into. Takes 20 less from every collision.',
+    baseId: 'aurochs',
+    boons: { collisionResist: 20 },
+  },
+
+  // ------------------------------------------------------------------------ ram (bulwark)
+  chalk_horn: {
+    id: 'chalk_horn',
+    name: 'Chalk Horn',
+    text: 'Hits like the quarry face coming down. Every shove you deal throws its target one tile further.',
+    baseId: 'ram',
+    boons: { bonusShoveDistance: 1 },
+  },
+  right_of_way: {
+    id: 'right_of_way',
+    name: 'Right of Way',
+    text: 'Goes where it was going. Guardians do not stop your units reaching what is behind them.',
+    baseId: 'ram',
+    boons: { ignoreGuardians: true },
+  },
+  drystone_sense: {
+    id: 'drystone_sense',
+    name: 'Drystone Sense',
+    text: 'Knows how a wall wants to stand. Every construct you raise is built with 20 extra health.',
+    baseId: 'ram',
+    boons: { bonusObstacleHp: 20 },
+  },
+};
+
+/**
+ * The five closing hybrids' own knacks.
+ *
+ * Two apiece, matching the ten hybrids above, and every one of them wired — the nine pending
+ * knacks on the original hybrids are all waiting on engine hooks that do not exist, and
+ * writing five more IOUs would have been the easy half of this change and the useless half.
+ * These are chosen from what the resolver can already do.
+ *
+ * Their parents' pools come free through `TRAIT_LINEAGE`, so each of these species rolls
+ * eight knacks: two of its own and six inherited.
+ */
+const CLOSING_HYBRID_TRAITS: Record<string, CompanionTrait> = {
+  wick_eater: {
+    id: 'wick_eater',
+    name: 'Wick-Eater',
+    text: 'Feeds on the flame it set. Each tithe puts 20 health back on your Pact.',
+    baseId: 'shade',
+    boons: { healOnTithe: 20 },
+  },
+  lamp_shy: {
+    id: 'lamp_shy',
+    name: 'Lamp-Shy',
+    text: 'Keeps out of its own light. Fire cannot touch it, and it reads a smoke bank like clear air.',
+    baseId: 'shade',
+    boons: { immuneToBurn: true, ignoreFog: true },
+  },
+
+  hard_frost: {
+    id: 'hard_frost',
+    name: 'Hard Frost',
+    text: 'The rot goes rigid. Every Freeze you cause lasts one turn longer.',
+    baseId: 'elk',
+    boons: { bonusFreezeStacks: 1 },
+  },
+  thorned_hide: {
+    id: 'thorned_hide',
+    name: 'Thorned Hide',
+    text: 'Antlers of last winter. Poison does nothing to it and the shards of a Shatter never reach it.',
+    baseId: 'elk',
+    boons: { immuneToToxin: true, immuneToShatterSplash: true },
+  },
+
+  hedge_current: {
+    id: 'hedge_current',
+    name: 'Hedge Current',
+    text: 'The briar is live all the way down. Arc collateral ignores Armor entirely.',
+    baseId: 'serpent',
+    boons: { arcPierces: true },
+  },
+  root_earth: {
+    id: 'root_earth',
+    name: 'Root-Earth',
+    text: 'Earthed through the hedge. Every arc that splashes off a target plates you for 10.',
+    baseId: 'serpent',
+    boons: { armorOnArcCollateral: 10 },
+  },
+
+  fen_patience: {
+    id: 'fen_patience',
+    name: 'Fen Patience',
+    text: 'Waits until the water is ready. Every Toxin you apply lands with an extra stack.',
+    baseId: 'heron',
+    boons: { bonusToxinStacks: 1 },
+  },
+  still_water: {
+    id: 'still_water',
+    name: 'Still Water',
+    text: 'Nothing it stands in is a surprise. Poison does nothing to it, and it sees through fog.',
+    baseId: 'heron',
+    boons: { immuneToToxin: true, ignoreFog: true },
+  },
+
+  hedgefort: {
+    id: 'hedgefort',
+    name: 'Hedgefort',
+    text: 'Stone grown through with thorn. Every construct you raise is built with 30 extra health.',
+    baseId: 'crab',
+    boons: { bonusObstacleHp: 30 },
+  },
+  dug_in: {
+    id: 'dug_in',
+    name: 'Dug In',
+    text: 'Ten thousand years in one spot. Nothing shoves, drags or carries any unit of yours anywhere.',
+    baseId: 'crab',
+    boons: { alliesGrounded: true },
+  },
 };
 
 for (const [id, trait] of Object.entries(VOLTARA_TRAITS)) COMPANION_TRAITS[id] = trait;
@@ -453,6 +704,8 @@ for (const [id, trait] of Object.entries(MORTIS_TRAITS)) COMPANION_TRAITS[id] = 
 for (const [id, trait] of Object.entries(SYLVA_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(FERRUM_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(HYBRID_TRAITS)) COMPANION_TRAITS[id] = trait;
+for (const [id, trait] of Object.entries(SECOND_BLOODLINE_TRAITS)) COMPANION_TRAITS[id] = trait;
+for (const [id, trait] of Object.entries(CLOSING_HYBRID_TRAITS)) COMPANION_TRAITS[id] = trait;
 
 export function traitById(id: string): CompanionTrait | undefined {
   return COMPANION_TRAITS[id];

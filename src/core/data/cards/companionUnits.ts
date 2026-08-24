@@ -599,4 +599,297 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
+
+  // ------------------------------------------------------------- the eleven newcomers
+  //
+  // Six second bloodlines — one per school, so no element is a single beast any more — and
+  // five hybrids closing the last five school pairings. Every one is a `PACT_HP` body like
+  // the sixteen above; a Bound Form's health is the Pact's health and is not a place to
+  // express character.
+  //
+  // Where they *do* differ is reach, speed and swing, and each of the six new monos is
+  // deliberately built as the counter-argument to its school's founder: the Salamander is
+  // quick where the Drake is a bruiser, the Ram is a wall where the Boar is a wall that
+  // hits. A player who catches both should be choosing between two bodies, not upgrading.
+
+  /** Lives in flues. Fast, thin, and never where the smoke was a moment ago. */
+  salamander_bound: {
+    id: 'salamander_bound',
+    name: 'Flue Salamander',
+    cost: { pips: 0, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Pyre spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      // Ignis is a 30-attack bruiser that walks 2. This is the other half of the school:
+      // 4 movement, and it would rather be somewhere else than win an exchange.
+      atk: 10,
+      hp: PACT_HP,
+      mov: 4,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'skirmisher',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /** Came in with the tide the harbour writ closed. Slow on land, impossible to move. */
+  seal_bound: {
+    id: 'seal_bound',
+    name: 'Saltglass Seal',
+    cost: { pips: 0, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Frost spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 20,
+      hp: PACT_HP,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 2,
+      footprint: 1,
+      archetype: 'caster',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /** Nests on the Magistracy's own pylons and has never once been asked to leave. */
+  kite_bound: {
+    id: 'kite_bound',
+    name: 'Conduit Kite',
+    cost: { pips: 0, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 10,
+      hp: PACT_HP,
+      mov: 3,
+      rangeMin: 1,
+      rangeMax: 3,
+      footprint: 1,
+      archetype: 'caster',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /** Digs where the Census buried, and has learned which ground is fresh. */
+  jackal_bound: {
+    id: 'jackal_bound',
+    name: 'Barrow Jackal',
+    cost: { pips: 0, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 20,
+      hp: PACT_HP,
+      mov: 4,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'skirmisher',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /** Walks the fallow strips the tithe left. Nothing hurries it. */
+  aurochs_bound: {
+    id: 'aurochs_bound',
+    name: 'Moss Aurochs',
+    cost: { pips: 0, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      // Sylva is the longest reach in the game and swings for 10. The Aurochs is the
+      // opposite reading of patience: it stands in front, and it hits back.
+      atk: 30,
+      hp: PACT_HP,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /** Breaks chalk for the road it will never be allowed to walk down. */
+  ram_bound: {
+    id: 'ram_bound',
+    name: 'Quarry Ram',
+    cost: { pips: 0, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      // Ferrum walks 1 and holds its lane. The Ram walks 3 and arrives — same school, and
+      // the only Bulwark body in the game with somewhere to be.
+      atk: 30,
+      hp: PACT_HP,
+      mov: 3,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /** **Pyre + Dusk.** What is left of a lamplighter who kept going back for the wick. */
+  shade_bound: {
+    id: 'shade_bound',
+    name: 'Cinder Shade',
+    cost: { pips: 0, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Pyre and Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 20,
+      hp: PACT_HP,
+      mov: 3,
+      rangeMin: 1,
+      rangeMax: 2,
+      footprint: 1,
+      archetype: 'caster',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /** **Frost + Bloom.** Antlers with last winter's thorns still frozen into them. */
+  elk_bound: {
+    id: 'elk_bound',
+    name: 'Winterthorn Elk',
+    cost: { pips: 0, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Frost and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 30,
+      hp: PACT_HP,
+      mov: 3,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /** **Surge + Bloom.** Hedge lightning: it lives in the briar and the briar is live. */
+  serpent_bound: {
+    id: 'serpent_bound',
+    name: 'Voltbriar Serpent',
+    cost: { pips: 0, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Surge and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 20,
+      hp: PACT_HP,
+      mov: 3,
+      rangeMin: 1,
+      rangeMax: 2,
+      footprint: 1,
+      archetype: 'skirmisher',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /** **Dusk + Bloom.** Stands in the fen all day. Whatever it is waiting for, it comes. */
+  heron_bound: {
+    id: 'heron_bound',
+    name: 'Murk Heron',
+    cost: { pips: 0, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Dusk and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 10,
+      hp: PACT_HP,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 3,
+      footprint: 1,
+      archetype: 'caster',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
+  /** **Bulwark + Bloom.** A standing stone the hedge grew through and then wore. */
+  crab_bound: {
+    id: 'crab_bound',
+    name: 'Dolmen Crab',
+    cost: { pips: 0, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. Your Bulwark and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 20,
+      hp: PACT_HP,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
 };

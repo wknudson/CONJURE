@@ -15,6 +15,7 @@ import {
 } from '../app/save.js';
 import { COMPANIONS } from '../core/data/companions.js';
 import { TIER_WAGER } from '../core/data/bounties.js';
+import { HUNTS } from '../core/data/hunts.js';
 import { traitsFor } from '../core/data/companionTraits.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import { CARDS } from '../core/data/cards/index.js';
@@ -742,5 +743,71 @@ describe('the guided lap', () => {
     file.profiles['slot-1']!.tutorial = ['intro', 'artificer', 'journal'];
     writeSave(file);
     expect(loadSave().save.profiles['slot-1']!.tutorial).toEqual(['intro', 'artificer', 'journal']);
+  });
+});
+
+describe('the hunt clock', () => {
+  let store: Map<string, string>;
+  beforeEach(() => {
+    store = installStorage();
+  });
+
+  /** Writes a raw save at a chosen version, bypassing `writeSave`'s version stamp. */
+  function writeRawHunts(version: number, hunts?: unknown): void {
+    const file = fileWith('slot-1');
+    const raw = JSON.parse(JSON.stringify(file)) as Record<string, unknown>;
+    raw.version = version;
+    const profiles = raw.profiles as Record<string, Record<string, unknown>>;
+    if (hunts === undefined) delete profiles['slot-1']!.hunts;
+    else profiles['slot-1']!.hunts = hunts;
+    store.set('conjure.save', JSON.stringify(raw));
+  }
+
+  const A_HUNT = HUNTS[0]!.encounterId;
+
+  it('starts a new character with every hunt open', () => {
+    expect(newProfile('slot-1').hunts).toEqual({});
+  });
+
+  it('opens every hunt for a character from before they existed', () => {
+    // There is nothing to migrate: a hunt not yet invented has not been walked.
+    // Pinned to the literal version before hunts shipped, not to `SAVE_VERSION - 1`: the
+    // relative form silently changes meaning the next time the version moves, which is the
+    // trap the guided-lap test above records falling into.
+    writeRawHunts(21, { [A_HUNT]: 1_700_000_000_000 });
+    expect(loadSave().save.profiles['slot-1']!.hunts).toEqual({});
+  });
+
+  it('carries a stamp a character actually earned', () => {
+    writeRawHunts(SAVE_VERSION, { [A_HUNT]: 1_700_000_000_000 });
+    expect(loadSave().save.profiles['slot-1']!.hunts).toEqual({ [A_HUNT]: 1_700_000_000_000 });
+  });
+
+  it('drops stamps for hunts that no longer exist, rather than growing forever', () => {
+    writeRawHunts(SAVE_VERSION, { [A_HUNT]: 1_000, hunt_retired_long_ago: 2_000 });
+    expect(loadSave().save.profiles['slot-1']!.hunts).toEqual({ [A_HUNT]: 1_000 });
+  });
+
+  it('refuses a stamp that is not a finite number', () => {
+    // NaN would make every comparison in the cooldown false and the arithmetic produce NaN,
+    // which reads as neither locked nor open.
+    writeRawHunts(SAVE_VERSION, { [A_HUNT]: 'soon', hunt_caldera_drake: null });
+    expect(loadSave().save.profiles['slot-1']!.hunts).toEqual({});
+  });
+
+  it('reads a missing or malformed map as no hunts walked', () => {
+    writeRawHunts(SAVE_VERSION, 'not an object');
+    expect(loadSave().save.profiles['slot-1']!.hunts).toEqual({});
+    writeRawHunts(SAVE_VERSION, ['array', 'is', 'not', 'a', 'map']);
+    expect(loadSave().save.profiles['slot-1']!.hunts).toEqual({});
+    writeRawHunts(SAVE_VERSION);
+    expect(loadSave().save.profiles['slot-1']!.hunts).toEqual({});
+  });
+
+  it('survives a round trip through disk', () => {
+    const file = fileWith('slot-1');
+    file.profiles['slot-1']!.hunts = { [A_HUNT]: 1_700_000_000_000 };
+    writeSave(file);
+    expect(loadSave().save.profiles['slot-1']!.hunts).toEqual({ [A_HUNT]: 1_700_000_000_000 });
   });
 });

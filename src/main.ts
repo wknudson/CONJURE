@@ -48,7 +48,8 @@ import {
   type TutorialFlag,
 } from './app/save.js';
 import { forfeitIfAbandoned, isDown, rescuePlayer } from './core/overworld/state.js';
-import { composeBoard, encounterForBounty, type Bounty } from './core/data/bounties.js';
+import { composeBoard, encounterForBounty, huntBoard, type Bounty } from './core/data/bounties.js';
+import { isHunt } from './core/data/hunts.js';
 import { storyContractByEncounter } from './core/data/campaign.js';
 import {
   carryFor,
@@ -315,10 +316,16 @@ function showDistrict(companionId: string): void {
       global,
       companionId,
       companionLevel: activeCompanion().level,
+      companionShiny: activeCompanion().shiny === true,
       gender: profile().characterLook.gender,
       // The campaign first, dice after: each tier's poster is the next story contract
       // until that tier's arc is walked, then the rolled pools take the slot back.
       bounties: composeBoard(global.overworld.bountySeed, profile().campaign),
+      // Standing work, past the gate. Composed off the same seed as the board so a hunt's
+      // fee is stable while the player is looking at it, and re-rolled when a fight moves
+      // the seed on — the same rule the posters follow.
+      huntBoard: huntBoard(global.overworld.bountySeed),
+      hunts: profile().hunts,
       collection: profile().collection,
       deck: deckFor(companionId),
       // Consumed on the way in, so a death is announced once rather than every time a
@@ -699,6 +706,14 @@ function finishCombat(
     p.campaign.push(story.id);
     pendingNotice = { title: story.crack.title, body: story.crack.body };
   }
+
+  // The hunt clock, stamped only on a win. A hunt is a place with an animal in it, and a
+  // Whisperer who was driven off has not taken the animal — locking the gate for ten minutes
+  // over a defeat would punish the loss twice, once by the loss and once by the wait.
+  //
+  // `Date.now()` is read here rather than in `core`, which stays clock-free: the registry
+  // does the arithmetic and is handed the time. See `core/data/hunts.ts`.
+  if (won && isHunt(played.id)) p.hunts[played.id] = Date.now();
 
   const offer = won
     ? rollSchematicOffer(

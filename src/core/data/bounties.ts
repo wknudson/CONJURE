@@ -17,6 +17,7 @@ import { ENCOUNTERS, encounterById } from './encounters/index.js';
 import { hashText, makeRng, nextInt } from '../util/rng.js';
 import { REAGENTS } from './splicing.js';
 import { nextStoryContract, storyContractByEncounter, type StoryContract } from './campaign.js';
+import { HUNTS, huntByEncounter, type Hunt } from './hunts.js';
 
 export type BountyDifficulty = 'novice' | 'adept' | 'master';
 
@@ -92,6 +93,11 @@ export function tierOfEncounter(encounterId: string): BountyDifficulty {
   // through `composeBoard` in campaign order instead of by dice.
   const story = storyContractByEncounter(encounterId);
   if (story) return story.tier;
+  // Hunts likewise: they are posted at the gate rather than on the board, and a Master
+  // hunt paying Novice Schematics because nobody filed it is exactly the failure the
+  // fallback below is apologising for.
+  const wild = huntByEncounter(encounterId);
+  if (wild) return wild.tier;
   for (const tier of DIFFICULTIES) {
     if (TIER_ENCOUNTERS[tier].includes(encounterId)) return tier;
   }
@@ -288,6 +294,49 @@ export function storyBounty(contract: StoryContract, seed: number): Bounty {
     ...(contract.wager ? { wager: TIER_WAGER[contract.tier] } : {}),
     flavour: contract.flavour,
   };
+}
+
+/**
+ * One Wild Hunt, dressed as a Bounty so it can ride the road every other fight rides.
+ *
+ * A hunt is not posted on the board — it is taken at the gate — but everything downstream of
+ * *taking* a contract is the same machinery: `takeBounty` finds the encounter, the
+ * pre-combat screen locks the deck, `finishCombat` resolves it, and `resolveCombat` pays the
+ * spoils and advances the bounty seed. Inventing a second path for hunts would have meant a
+ * second place where a subjugation is claimed, and the first one is nine steps long.
+ *
+ * It also buys the repeatability for free, which is the part worth pointing at.
+ * `resolveCombat` advances `bountySeed` after **every** finished fight, and
+ * `claimSubjugation` salts its roll by how many beasts are already in the roster — so the
+ * second Saltglass Seal is rolled off a different seed than the first without hunts having
+ * to arrange anything.
+ *
+ * Pays its tier, exactly like a story contract, with the same seeded spread. Never wagered:
+ * a wager is a bet against a person, and an animal has not agreed to anything.
+ */
+export function huntBounty(hunt: Hunt, seed: number): Bounty {
+  const rng = makeRng((seed ^ hashText(hunt.encounterId)) >>> 0);
+  const pay = TIER_PAY[hunt.tier];
+  const encounter = encounterById(hunt.encounterId);
+  return {
+    id: `hunt_${hunt.encounterId}`,
+    title: encounter?.name ?? hunt.encounterId,
+    difficulty: hunt.tier,
+    enemySeed: hunt.encounterId,
+    spoils: {
+      ducats: pay.ducats + nextInt(rng, TIER_SPREAD[hunt.tier] + 1),
+      marrowShards: pay.marrowShards,
+      ...(TIER_CORES[hunt.tier] > 0
+        ? { reagents: { [REAGENTS[nextInt(rng, REAGENTS.length)]!.id]: TIER_CORES[hunt.tier] } }
+        : {}),
+    },
+    flavour: encounter?.blurb ?? 'Standing work, past the gate.',
+  };
+}
+
+/** Every hunt as a Bounty, in registry order. The gate panel's whole data source. */
+export function huntBoard(seed: number): Bounty[] {
+  return HUNTS.map((h) => huntBounty(h, seed));
 }
 
 /**

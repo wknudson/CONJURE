@@ -15,6 +15,21 @@ import type { Bounty } from '../core/data/bounties.js';
 import { encounterById } from '../core/data/encounters/index.js';
 import type { TutorialFlag } from '../app/save.js';
 import { LOCKED_REASON, bountyAvailable, currentObjective, pipStates, tutorialActive } from './quest.js';
+import { companionById } from '../core/data/companions.js';
+import { huntByEncounter, huntCooldownLabel, huntCooldownRemaining } from '../core/data/hunts.js';
+
+/**
+ * Escapes text bound for `innerHTML`.
+ *
+ * Every string the gate panel interpolates is authored content — species names, region
+ * names, encounter blurbs — so nothing here is user input today. It is escaped anyway
+ * because "authored" is a property of the current content and not of the code: the panel
+ * renders whatever the registry holds, and the day a name arrives from somewhere else this
+ * is the line that decides whether that is a bug or a nothing.
+ */
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 export interface HudOpts {
   root: HTMLElement;
@@ -39,6 +54,8 @@ export class DistrictHud {
 
   private zoneSafe: boolean | null = null;
   private boardOpen = false;
+  /** Repaints the gate's countdowns while it is open. Cleared by `closeBoard`. */
+  private huntTimer: number | undefined;
 
   constructor(private readonly opts: HudOpts) {
     const root = opts.root;
@@ -311,10 +328,130 @@ export class DistrictHud {
     }
   }
 
+  /**
+   * The Wildlands Gate: standing work, on its own clock.
+   *
+   * Renders into the **same** panel element the Bounty Board uses, and sets the same
+   * `boardOpen` flag. That is not laziness about styling — it is what makes Escape close
+   * this, movement stay blocked while it is up, and the interact prompt behave, all without
+   * a second copy of the logic in `DistrictScreen`. Two overlays that must never be open at
+   * once are more honestly one overlay with two renderers.
+   *
+   * The countdown ticks. A ten-minute cooldown that only updated when the panel was reopened
+   * would show a stale "returns in 4m" to a player standing there watching it, so a repaint
+   * runs every second while the gate is up and is cleared the moment it closes.
+   */
+  openHunts(board: readonly Bounty[], stamps: Readonly<Record<string, number>>): void {
+    this.boardOpen = true;
+    this.boardPanel.classList.add('is-open');
+    this.renderHunts(board, stamps);
+
+    this.huntTimer = window.setInterval(() => {
+      // Re-rendered rather than patched: the panel is small, rebuilt from scratch on every
+      // open already, and a targeted update would need to know which cards crossed the line
+      // this second. Repainting is the cheaper thing to be correct about.
+      if (this.boardOpen) this.renderHunts(board, stamps);
+    }, 1000);
+  }
+
+  private renderHunts(
+    board: readonly Bounty[],
+    stamps: Readonly<Record<string, number>>,
+  ): void {
+    const critical = isCritical(this.opts.global.overworld);
+    // Read here rather than passed in, because this repaints on a timer and a `now` captured
+    // at open would freeze every countdown at the moment the gate was opened.
+    const now = Date.now();
+
+    // Grouped by region so the panel reads as a map rather than as a list. Built off the
+    // registry's own order, which is founders first and then the second bloodlines.
+    const regions: { region: string; cards: string[] }[] = [];
+    for (const bounty of board) {
+      const entry = huntByEncounter(bounty.enemySeed);
+      if (!entry) continue;
+      const left = huntCooldownRemaining(stamps[bounty.enemySeed], now);
+      const open = left === 0;
+      const encounter = encounterById(bounty.enemySeed);
+      const species = companionById(entry.species);
+      const reagents = bounty.spoils.reagents
+        ? Object.values(bounty.spoils.reagents).reduce((a, b) => a + b, 0)
+        : 0;
+
+      const card = `
+        <button class="bounty-card brass-panel bounty-card--${bounty.difficulty}${
+          open ? '' : ' is-locked'
+        }" data-hunt="${esc(bounty.enemySeed)}"${open ? '' : ' disabled'}>
+          <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
+          <div class="bounty-card__tier">${esc(bounty.difficulty)}</div>
+          <div class="bounty-card__title">${esc(species?.name ?? bounty.title)}</div>
+          <div class="bounty-card__where">${
+            encounter
+              ? `${esc(encounter.name)} · ${encounter.width}×${encounter.height}`
+              : esc(entry.region)
+          }</div>
+          <div class="bounty-card__flavour">${esc(bounty.flavour)}</div>
+          <div class="bounty-card__pay">
+            <span class="bounty-card__coin bounty-card__coin--gold">${bounty.spoils.ducats ?? 0} d</span>
+            ${
+              bounty.spoils.marrowShards
+                ? `<span class="bounty-card__coin bounty-card__coin--marrow">${bounty.spoils.marrowShards} shards</span>`
+                : ''
+            }
+            ${reagents ? `<span class="bounty-card__coin bounty-card__coin--reagent">${reagents} cores</span>` : ''}
+            ${critical ? '<span class="bounty-card__warn">at critical health</span>' : ''}
+          </div>
+          ${open ? '' : `<div class="bounty-card__locked">${esc(huntCooldownLabel(left))}</div>`}
+        </button>`;
+
+      const group = regions.find((r) => r.region === entry.region);
+      if (group) group.cards.push(card);
+      else regions.push({ region: entry.region, cards: [card] });
+    }
+
+    const groups = regions
+      .map(
+        (r) => `
+        <div class="district-board__region">${esc(r.region)}</div>
+        <div class="district-board__list">${r.cards.join('')}</div>`,
+      )
+      .join('');
+
+    this.boardPanel.innerHTML = `
+      <div class="district-board__card brass-panel">
+        <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
+        <div class="district-board__head">
+          <div class="district-board__title">Past the Gate</div>
+          <button class="brass-btn district-board__close">Step away</button>
+        </div>
+        <div class="district-board__note">
+          Nobody posted these. What comes back with you is whatever you catch — and no two
+          are the same animal.
+        </div>
+        ${groups}
+      </div>`;
+
+    this.boardPanel
+      .querySelector('.district-board__close')!
+      .addEventListener('click', () => this.closeBoard());
+
+    for (const node of this.boardPanel.querySelectorAll<HTMLButtonElement>('[data-hunt]')) {
+      node.addEventListener('click', () => {
+        const found = board.find((b) => b.enemySeed === node.dataset.hunt);
+        if (!found) return;
+        this.closeBoard();
+        this.opts.onBounty(found);
+      });
+    }
+  }
+
   closeBoard(): void {
     this.boardOpen = false;
     this.boardPanel.classList.remove('is-open');
     this.boardPanel.innerHTML = '';
+    if (this.huntTimer !== undefined) {
+      window.clearInterval(this.huntTimer);
+      this.huntTimer = undefined;
+    }
   }
 
   /* ------------------------------------------------------------ overlays */

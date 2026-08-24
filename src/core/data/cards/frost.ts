@@ -442,4 +442,153 @@ export const FROST_CARDS: Record<string, CardDef> = {
       deathburst: { status: 'chill', stacks: 2 },
     },
   },
+
+  // -------------------------------------------------------------- the second bloodline
+  //
+  // Frost speaks for two species now — the Frost Bear that founded it and the Saltglass Seal
+  // that turned up in a harbour the Magistracy closed — and two beasts drafting one identical
+  // shelf is the "second one is a checkbox" problem the Grimoire draft exists to prevent.
+  // These three widen the shelf enough to split it: a cheap opener, a defensive turn, and a
+  // finisher that pays for the freeze the school spends three cards setting up.
+
+  /**
+   * The opener the school did not have.
+   *
+   * Frost's cheapest card was Rime Touch at a Pip, and it is a single-target Brittle — fine
+   * as a follow-up and useless as a first move, because there is nothing to make Brittle
+   * yet. Chill is what a Frost deck actually wants on turn one, on as many bodies as
+   * possible, and Cold Snap is that and nothing else.
+   *
+   * Ten damage down a 3-tile line is not the point and is priced as if it is not. Three
+   * Chills for a Pip is the point: Chill three times over is a Freeze, so this is one third
+   * of a lockdown on every body the line touches.
+   */
+  cold_snap: {
+    id: 'cold_snap',
+    name: 'Cold Snap',
+    cost: { pips: 1, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 10 frost damage in a 3-tile line and Chills everything on it.',
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'frost', area: { shape: 'line', length: 3 } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'line', length: 3 } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * Frost as armour rather than as control.
+   *
+   * The school is all offence-by-denial — everything it owns either slows a body or breaks
+   * one — and it had no way to spend a turn *surviving* except by raising a wall and hiding
+   * behind it. This is the other answer: 20 plate on the caster, and a ring of cold that
+   * Chills whatever was close enough to be the reason plate was needed.
+   *
+   * Two Pips buys both halves deliberately. Either alone is a weak card; together they are
+   * the turn a Frost player takes when the line has arrived and Deep Winter is still two
+   * draws away.
+   */
+  hoarfrost_veil: {
+    id: 'hoarfrost_veil',
+    name: 'Hoarfrost Veil',
+    cost: { pips: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Sheathes the caster in 20 Armor and Chills everything adjacent to it.',
+    target: { kind: 'none' },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'grantArmor', amount: 20 },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    // A Companion card declares its reach even when it goes off underfoot: the cast origin
+    // is the Bound Form's tile, and the ring is the one square around it.
+    range: 1,
+  },
+
+  /**
+   * What the freeze was for.
+   *
+   * Frost spends two and three cards driving a body to Frozen and then has to hit it with
+   * something *physical* to Shatter — which a caster holding a hand of spells often cannot
+   * do. Calving is the school's own answer: impact damage, from a spell, so the reaction
+   * table fires on the deck's own terms.
+   *
+   * The conditional half is enormous on purpose (50 and the ice goes) because the setup cost
+   * is enormous: three Chills, or a Flash Freeze at two Pips. Against an unfrozen body it is
+   * 20 impact, which is a fair three-Pip nothing and exactly the punishment for casting it
+   * early.
+   */
+  calving: {
+    id: 'calving',
+    name: 'Calving',
+    cost: { pips: 3, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Against a Frozen target, breaks the ice for 50 impact damage and 20 more to everything adjacent. Otherwise, 20 impact.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: true },
+    effect: {
+      op: 'ifMet',
+      cond: { kind: 'targetStatus', status: 'freeze' },
+      then: {
+        op: 'seq',
+        effects: [
+          { op: 'damage', amount: 50, dtype: 'impact', area: { shape: 'target' } },
+          { op: 'damage', amount: 20, dtype: 'impact', area: { shape: 'adjacent8' } },
+        ],
+      },
+      otherwise: { op: 'damage', amount: 20, dtype: 'impact', area: { shape: 'target' } },
+    },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * A body that does the school's setup for it.
+   *
+   * Every Frost card is worth more against a Chilled target and every Frost card has to
+   * spend itself applying the Chill first. The Hoarhound applies it by walking up and
+   * biting, which is the one resource a caster never runs out of — and four movement means
+   * it reaches something on the turn it lands.
+   *
+   * Weak on purpose. 20 attack does not kill anything; it *marks* things, and the Companion
+   * kills them.
+   */
+  hoarhound: {
+    id: 'hoarhound',
+    name: 'Hoarhound',
+    cost: { pips: 2, marrow: 0 },
+    school: 'frost',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Anything it strikes is left Chilled.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'hoarhound' },
+    keywords: [],
+    unit: {
+      atk: 20,
+      hp: 40,
+      mov: 4,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'skirmisher',
+      escalationBonus: { atk: 0, hp: 0 },
+      onHit: { status: 'chill', stacks: 1 },
+    },
+  },
 };

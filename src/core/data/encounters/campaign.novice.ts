@@ -9,7 +9,15 @@
  */
 
 import type { EncounterDef } from './registry.js';
-import { registerEncounter } from './registry.js';
+import { registerEncounter, registerEncounterScript } from './registry.js';
+import { SEAL_ONLY_SCRIPT } from './seal.js';
+
+// These fights carry a `subjugationPrize` now, and a prize is inert without something to
+// offer it: `beginSubjugation` is what deals the Rite, and an encounter opts in by calling
+// it. The shared seal-only script fires at a quarter strength, so the starved gargoyle can be
+// bound instead of killed — which in each case is the reading the contract's own evidence
+// supports, and the game never says so out loud.
+registerEncounterScript('fouled_cistern', SEAL_ONLY_SCRIPT);
 
 /** Novice #3 — fog, an ambush, and three lamps that did not fail. */
 export const LAMPLIGHTER_ESCORT: EncounterDef = registerEncounter({
@@ -132,6 +140,9 @@ export const FOULED_CISTERN: EncounterDef = registerEncounter({
     { at: { x: 1, y: 4 }, kind: 'cover' },
     { at: { x: 4, y: 2 }, kind: 'cover' },
   ],
+  // It was hiding, not hunting — the Threat Ledger says so afterwards. Binding it is the
+// reading the evidence already supports.
+  subjugationPrize: 'gargoyle',
 });
 
 /** Novice #8 — bill-stickers, a lookout, and manifests someone wanted read. */

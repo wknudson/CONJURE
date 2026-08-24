@@ -528,4 +528,142 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
       platesEachTurn: 20,
     },
   },
+
+  // -------------------------------------------------------------- the second bloodline
+  //
+  // Bulwark speaks for the Vault Boar and now the Quarry Ram, which breaks chalk on the road
+  // to Jolrek. Three cards for the split, and each one is a thing the school could nearly do
+  // already: plate somebody else, drop the floor, and make a shove hurt for what it hits
+  // rather than for how far it goes.
+
+  /**
+   * Armour for a body that is not the caster.
+   *
+   * Bulwark plates itself, plates its lane through the Shield Oath, and welds plate onto
+   * bodies that bring their own — and had no way to hand 30 points to the one unit that
+   * needs it this turn. Deadweight is that card and nothing else, at a Pip.
+   *
+   * The Exhaust is the price and it is a real one: the plated body gives up its turn. This is
+   * for the Anvil Lord holding a door, not for the skirmisher who was about to strike, and
+   * misreading which is which is how a player wastes it.
+   */
+  deadweight: {
+    id: 'deadweight',
+    name: 'Deadweight',
+    cost: { pips: 1, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Bolts 30 Armor onto an allied body. It digs in and cannot act until your next turn.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false, requireUnexhausted: true },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'grantArmor', amount: 30 },
+        { op: 'applyStatus', status: 'exhaust', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    range: 3,
+  },
+
+  /**
+   * The ground itself, as an attack.
+   *
+   * Every Bulwark area card pushes bodies away from a point. This one pulls them into one —
+   * the floor gives out and everything around the hole slides in, which is the same
+   * `pullArea` geometry Chimney Draw uses and a completely different card, because Bulwark
+   * follows it with impact damage and Bulwark is the school the collision table was written
+   * for.
+   *
+   * Units converging on one tile arrive in sequence and collide with whoever got there first.
+   * That is the card. The 20 impact is the opening bid.
+   */
+  sinkhole: {
+    id: 'sinkhole',
+    name: 'Sinkhole',
+    cost: { pips: 3, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Collapses the ground: everything within a tile of the point is dragged 1 tile into it and takes 20 impact damage. Bodies arriving on the same tile collide.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'pullArea', distance: 1, area: { shape: 'adjacent8' } },
+        { op: 'damage', amount: 20, dtype: 'impact', area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * A shove priced for what it leaves behind rather than for how far it throws.
+   *
+   * One tile, which is the shortest push in the school and looks like a downgrade on the
+   * Seismic Slam until the Brittle lands. A body shoved one tile has usually not hit
+   * anything; a body shoved one tile and left Brittle takes more from every blow after,
+   * which is the Bulwark player's answer to an armoured line that shrugs off collisions.
+   *
+   * Two Pips, and the Brittle is the whole purchase. The push is there so the card still does
+   * something on a turn when nothing is worth softening.
+   */
+  counterweight: {
+    id: 'counterweight',
+    name: 'Counterweight',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Shoves the target 1 tile, deals 20 impact damage, and leaves it Brittle.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'push', distance: 1 },
+        { op: 'damage', amount: 20, dtype: 'impact', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'brittle', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /**
+   * The cheap body that holds a door.
+   *
+   * Bulwark's shelf runs to golems and lords — good bodies, all of them expensive in Vanguard
+   * points. The Quarry Hand is two points of budget with Guardian on it, which is the keyword
+   * that actually makes a line a line: enemies have to deal with it before they deal with
+   * what is behind it.
+   *
+   * 50 health and 20 attack means it is not winning any exchange it starts. It is not meant
+   * to start one. It is meant to be in the way for two turns while the Companion works.
+   */
+  quarry_hand: {
+    id: 'quarry_hand',
+    name: 'Quarry Hand',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Guardian. Enemies must come through it before they reach what is behind it.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'quarry_hand' },
+    keywords: ['Guardian'],
+    unit: {
+      atk: 20,
+      hp: 50,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
 };

@@ -51,13 +51,6 @@ export const VEX_REPEAT: DialogueLine[] = [
   },
 ];
 
-export const GATE_SEALED: DialogueLine[] = [
-  {
-    who: 'WARDED GATE',
-    text: 'The Magistracy’s seal drinks the light off your hand and gives nothing back. Whatever is behind it is not yours today.',
-  },
-];
-
 /**
  * The bottom panel, and the state machine that fills it one character at a time.
  *
