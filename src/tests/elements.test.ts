@@ -493,8 +493,12 @@ describe('the Reaction matrix, as content', () => {
    * `KNOWN_UNREACHABLE` is a ledger, not an exemption. A reaction listed here is formal,
    * tested, and unplayable — and the assertion runs in *both* directions, so the gap
    * cannot be forgotten and closing it cannot go unrecorded.
+   *
+   * Arc lived here until the Chalk Road Toll shipped — the campaign's first Adept
+   * contract is fought in rain, which is exactly the closing-the-gap event this ledger
+   * exists to record.
    */
-  const KNOWN_UNREACHABLE = new Set(['arc']);
+  const KNOWN_UNREACHABLE = new Set<string>([]);
 
   it('knows which weather no encounter provides', () => {
     const skies = new Set(ENCOUNTERS.map((e) => e.weather?.kind).filter(Boolean));

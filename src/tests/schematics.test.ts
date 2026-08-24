@@ -184,10 +184,10 @@ describe('grantSchematic', () => {
  */
 describe('what the loop can actually reach', () => {
   const UNREACHABLE = new Set([
-    // Arcane and Pyre furniture no shipped fight plays.
+    // Arcane and Pyre furniture no shipped fight plays. (Ashen Wake left this list when
+    // the Bonemarket nest started casting it.)
     'volatile_cask',
     'pyre_pillar',
-    'ashen_wake',
     'pressure_valve_release',
     // The Hero's own arcane tools. No enemy has ever cast one at anybody -- the Duelist
     // carries Grapple Line and Aether Beam, but not the two Rallies or the Tether, because
@@ -233,9 +233,9 @@ describe('what the loop can actually reach', () => {
     // anything about the cards.
     //
     // This ledger is the honest record of that gap. The day a Sylva duelist is authored,
-    // her deck teaches the Bloom half and these lines come out.
-    'stoke',
-    'cinder_gale',
+    // her deck teaches the Bloom half and these lines come out. (The campaign has begun
+    // doing exactly that: the Bonemarket nest took Stoke, Cinder Gale and Ashen Wake off
+    // this list, and the Assembly took Bastion Stance and Phalanx Step.)
     'slag_cairn',
     'rime_lance',
     'whiteout',
@@ -247,9 +247,7 @@ describe('what the loop can actually reach', () => {
     'galvanic_rally',
     'tempest_break',
     'tesla_pylon',
-    'bastion_stance',
     'hammer_fall',
-    'phalanx_step',
     'crag_slam',
     'siege_break',
     'iron_gate',
