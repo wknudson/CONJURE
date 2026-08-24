@@ -196,9 +196,18 @@ const FLAVOUR: Record<BountyDifficulty, string> = {
  */
 export const AUDIT_BOUNTY_ID = 'audit_smuggled_vault';
 
-/** What the vault holds. Absurd on purpose: this is a bench supply, not a reward curve. */
+/**
+ * What the vault holds. Absurd on purpose: this is a bench supply, not a reward curve.
+ *
+ * The Ducat figure is sized against the **whole gear counter**, because the thing the audit
+ * exists to test is the counter, and a purse that buys most of a shelf tests most of one.
+ * `audit.test.ts` asserts it outright rather than trusting this comment, which is how the
+ * number was caught trailing the catalogue: 5000 covered eleven relics comfortably and did
+ * not cover thirty-six. Raised with headroom, so the next shelf to grow does not
+ * immediately fail the same assertion.
+ */
 export const AUDIT_SPOILS = {
-  ducats: 5000,
+  ducats: 15000,
   marrowShards: 100,
   reagents: {
     core_pyre: 12,

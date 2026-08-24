@@ -49,12 +49,22 @@ const wearing = (...ids: string[]): GlobalGameState => {
   return { overworld, combat: null };
 };
 
+/**
+ * The floor every slot's shelf has to clear.
+ *
+ * `> 0` was the old assertion, and it passed while `treads` held exactly one relic — a slot
+ * with one option is not a choice, it is a default with a price. Six is what the catalogue
+ * carries now at its thinnest, and stating it here means thinning a shelf back out is a
+ * decision somebody has to make on purpose.
+ */
+const MIN_PER_SLOT = 6;
+
 describe('the slots', () => {
-  it('has five, and every one holds something', () => {
+  it('has five, and every one holds a real choice', () => {
     expect(RELIC_SLOT_ORDER).toHaveLength(5);
     for (const slot of RELIC_SLOT_ORDER) {
-      expect(relicsForSlot(slot).length, `${RELIC_SLOT_LABELS[slot]} is an empty shelf`)
-        .toBeGreaterThan(0);
+      expect(relicsForSlot(slot).length, `${RELIC_SLOT_LABELS[slot]} is a thin shelf`)
+        .toBeGreaterThanOrEqual(MIN_PER_SLOT);
       expect(RELIC_SLOT_LABELS[slot], slot).toBeTruthy();
     }
   });
