@@ -95,6 +95,7 @@ export class PreCombatScreen implements Screen {
           <div class="builder__title">${enc.name}</div>
           <div class="builder__sub">${companion?.name ?? 'Companion'} · ${enc.width}×${enc.height} · seats ${rosterBudgetFor(enc.width, enc.height)} Vanguard points · ${describeArena(enc)}</div>
           ${describeWeather(enc) ? `<div class="pre__weather">${describeWeather(enc)}</div>` : ''}
+          <div class="pre__blurb">${enc.blurb}</div>
         </div>
         <div class="builder__actions">
           <button class="pre__reset">Undo changes</button>

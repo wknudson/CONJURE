@@ -393,6 +393,38 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     },
   },
 
+  /**
+   * Lord Magistrate Vane's second phase: the throne floor opens and he boards the
+   * engine. The campaign finale's Bound Form, shaped exactly like `ignis_behemoth_bound`
+   * because it fills the same role — the fight's second half, at 2x2, redrawing the
+   * arena's lanes by standing in them.
+   */
+  colossus_bound: {
+    id: 'colossus_bound',
+    name: 'The Clockwork Colossus',
+    cost: { pips: 0, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. The Great Quieting, given legs. Blocks sight through itself.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      // A step over the behemoth's 50, and on the Stat Stretch grid — every figure is
+      // x10, and the stretch test holds bodies to it.
+      atk: 60,
+      hp: BOSS_HP,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 2,
+      archetype: 'behemoth',
+      escalationBonus: { atk: 0, hp: 0 },
+    },
+  },
+
   voltara_bound: {
     id: 'voltara_bound',
     name: 'Voltara',

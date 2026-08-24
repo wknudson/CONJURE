@@ -14,8 +14,9 @@
 import type { EncounterDef } from './encounters/registry.js';
 import type { CombatSpoils } from '../overworld/state.js';
 import { ENCOUNTERS, encounterById } from './encounters/index.js';
-import { makeRng, nextInt } from '../util/rng.js';
+import { hashText, makeRng, nextInt } from '../util/rng.js';
 import { REAGENTS } from './splicing.js';
+import { nextStoryContract, storyContractByEncounter, type StoryContract } from './campaign.js';
 
 export type BountyDifficulty = 'novice' | 'adept' | 'master';
 
@@ -87,6 +88,10 @@ const TIER_ENCOUNTERS: Record<BountyDifficulty, string[]> = {
  * alternative is a fight that pays the top tier because nobody filed it.
  */
 export function tierOfEncounter(encounterId: string): BountyDifficulty {
+  // Story contracts carry their own tier, and are not in the rolled pools — they surface
+  // through `composeBoard` in campaign order instead of by dice.
+  const story = storyContractByEncounter(encounterId);
+  if (story) return story.tier;
   for (const tier of DIFFICULTIES) {
     if (TIER_ENCOUNTERS[tier].includes(encounterId)) return tier;
   }
@@ -254,6 +259,52 @@ export const DUEL_ENCOUNTERS: readonly string[] = ['novice_duelist'];
 export function rollBounties(seed: number): Bounty[] {
   const rolled = rollTiers(seed);
   return [rolled[0]!, rolled[1]!, auditBounty(), rolled[2]!];
+}
+
+/**
+ * One story contract, dressed as a Bounty for the board.
+ *
+ * Pays exactly what its tier pays (base + the same seeded spread the rolled contracts
+ * get), so taking the campaign is never a tax and never a windfall — the story changes
+ * what the work *is*, not what work is worth. Duels stake the tier wager, same as any
+ * duelist. The id is prefixed rather than seeded because a story contract must be
+ * recognisable across boards: it stays posted until it is done.
+ */
+export function storyBounty(contract: StoryContract, seed: number): Bounty {
+  const rng = makeRng((seed ^ hashText(contract.id)) >>> 0);
+  const pay = TIER_PAY[contract.tier];
+  return {
+    id: `story_${contract.id}`,
+    title: contract.title,
+    difficulty: contract.tier,
+    enemySeed: contract.id,
+    spoils: {
+      ducats: pay.ducats + nextInt(rng, TIER_SPREAD[contract.tier] + 1),
+      marrowShards: pay.marrowShards,
+      ...(TIER_CORES[contract.tier] > 0
+        ? { reagents: { [REAGENTS[nextInt(rng, REAGENTS.length)]!.id]: TIER_CORES[contract.tier] } }
+        : {}),
+    },
+    ...(contract.wager ? { wager: TIER_WAGER[contract.tier] } : {}),
+    flavour: contract.flavour,
+  };
+}
+
+/**
+ * The board the player actually sees: the campaign first, dice after.
+ *
+ * Each tier's poster shows the next uncompleted story contract of that tier; once a
+ * tier's arc is walked, the poster falls back to the rolled pool, which is the board the
+ * game had before the campaign existed. The audit keeps its slot either way.
+ */
+export function composeBoard(seed: number, completed: readonly string[]): Bounty[] {
+  const board = rollBounties(seed);
+  const slotByTier: Record<BountyDifficulty, number> = { novice: 0, adept: 1, master: 3 };
+  for (const tier of DIFFICULTIES) {
+    const next = nextStoryContract(tier, completed);
+    if (next) board[slotByTier[tier]] = storyBounty(next, seed);
+  }
+  return board;
 }
 
 /** The three real contracts, one per tier. */

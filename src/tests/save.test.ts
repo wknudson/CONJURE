@@ -719,7 +719,11 @@ describe('the guided lap', () => {
   it('counts a character from before the ward as having walked it', () => {
     // They have lived in the old Safehouse. Marching them past its doors on upgrade would
     // be the new version taking something away.
-    writeRaw(SAVE_VERSION - 1);
+    //
+    // Pinned to the ward's own landmark (v20's predecessor), not to `SAVE_VERSION - 1`:
+    // the relative form silently changed meaning the day v21 shipped, and started
+    // testing a v20 save — which post-dates the ward and is owed no backfill.
+    writeRaw(19);
     expect(loadSave().save.profiles['slot-1']!.tutorial).toContain('complete');
   });
 

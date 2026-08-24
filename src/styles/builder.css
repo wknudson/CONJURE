@@ -522,6 +522,15 @@
   color: #a5c8e1;
 }
 
+/* The fight's own voice, under the numbers. For the campaign this is where the story
+   speaks last before the bell — the Summons delivers Vane's monologue through it. */
+.pre__blurb {
+  margin-top: 6px;
+  max-width: 520px;
+  font: italic 400 11px/1.5 var(--font);
+  color: #9a938a;
+}
+
 /* ------------------------------------------------------- the Field Journal */
 
 .journal-tabs {

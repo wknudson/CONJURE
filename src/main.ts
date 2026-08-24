@@ -48,7 +48,8 @@ import {
   type TutorialFlag,
 } from './app/save.js';
 import { forfeitIfAbandoned, isDown, rescuePlayer } from './core/overworld/state.js';
-import { encounterForBounty, rollBounties, type Bounty } from './core/data/bounties.js';
+import { composeBoard, encounterForBounty, type Bounty } from './core/data/bounties.js';
+import { storyContractByEncounter } from './core/data/campaign.js';
 import {
   carryFor,
   contractRefusal,
@@ -315,7 +316,9 @@ function showDistrict(companionId: string): void {
       companionId,
       companionLevel: activeCompanion().level,
       gender: profile().characterLook.gender,
-      bounties: rollBounties(global.overworld.bountySeed),
+      // The campaign first, dice after: each tier's poster is the next story contract
+      // until that tier's arc is walked, then the rolled pools take the slot back.
+      bounties: composeBoard(global.overworld.bountySeed, profile().campaign),
       collection: profile().collection,
       deck: deckFor(companionId),
       // Consumed on the way in, so a death is announced once rather than every time a
@@ -686,6 +689,17 @@ function finishCombat(
   if (tutorialActive(p.tutorial)) p.tutorial.push('complete');
 
   const won = result === 'victory' || result === 'bound';
+
+  // The campaign ledger, and the crack. A story contract completes on a win (a loss
+  // keeps it posted — the story does not advance past a fight the player lost), and its
+  // reveal is queued as the street notice, which is where the rescue notes already
+  // appear: the player reads it standing on the pavement the contract lied about.
+  const story = storyContractByEncounter(played.id);
+  if (won && story && !p.campaign.includes(story.id)) {
+    p.campaign.push(story.id);
+    pendingNotice = { title: story.crack.title, body: story.crack.body };
+  }
+
   const offer = won
     ? rollSchematicOffer(
         makeRng(p.record.wins * 7919 + p.record.bound * 31 + hashText(played.id) + 5),

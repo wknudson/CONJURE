@@ -80,6 +80,45 @@ export function spriteTexture(img: HTMLImageElement, maxAnisotropy = 1): THREE.T
  */
 export const ACTOR_ALPHA_TEST = 0.35;
 
+/**
+ * Cuts one frame out of a walk sheet into a texture of its own.
+ *
+ * Sliced up front rather than by animating a shared texture's UV offset, because the frames
+ * then behave exactly like every other actor texture — one image, feet on the bottom edge —
+ * and the walk machinery that already existed needs to know nothing about sheets.
+ *
+ * Every frame is cut to the *same* box, handed in by the caller, not to its own bounds. Two
+ * things depend on that: the figure keeps one size instead of being rescaled every frame, and
+ * whatever vertical travel the animator drew stays in the art rather than being cropped out
+ * of it.
+ */
+export function sheetFrameTexture(
+  sheet: HTMLImageElement,
+  sx: number,
+  sy: number,
+  sw: number,
+  sh: number,
+  maxAnisotropy = 1,
+): THREE.Texture {
+  const canvas = document.createElement('canvas');
+  canvas.width = sw;
+  canvas.height = sh;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('no 2d context for a sheet slice');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(sheet, sx, sy, sw, sh, 0, 0, sw, sh);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.generateMipmaps = true;
+  tex.anisotropy = maxAnisotropy;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 /* ============================================================
    Ground
    ============================================================ */
@@ -390,6 +429,29 @@ export function makeWardenTexture(facing: 'front' | 'back' | 'side'): THREE.Text
  * The glyph is one shape per door — a bench, a book, a flask, a paw — at a size where
  * silhouette is the only thing that survives, which is exactly what a sign has to be.
  */
+/**
+ * A line of wall-scrawl, chalked in the hand that writes on every gutter wall in Jolrek.
+ *
+ * The campaign's first clue layer (doc §2): sidewalks suppress combat, so they are where
+ * a player *reads* — and this is what they read. Rendered rough on purpose: each glyph is
+ * jittered off the baseline so the same font never quite reads as a font.
+ */
+export function makeGraffitiTexture(text: string): THREE.Texture {
+  const w = 12 + text.length * 11;
+  const { c, ctx } = makeCanvas(w, 28);
+  ctx.font = 'bold 15px monospace';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#cfc7b8';
+  // Deterministic jitter, seeded off the character codes — same text, same scrawl.
+  let h = 5;
+  for (let i = 0; i < text.length; i++) {
+    h = (Math.imul(h, 31) + text.charCodeAt(i)) >>> 0;
+    const dy = ((h >>> 3) % 5) - 2;
+    ctx.fillText(text[i]!, 6 + i * 11, 14 + dy);
+  }
+  return canvasTexture(c);
+}
+
 export function makeSignTexture(key: string): THREE.Texture {
   const { c, ctx } = makeCanvas(20, 12);
   ctx.fillStyle = '#141118';

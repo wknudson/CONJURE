@@ -8,16 +8,16 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**173 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**174 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
-| minion | 64 | Hero | Vanguard Roster, never a deck |
+| minion | 65 | Hero | Vanguard Roster, never a deck |
 | spell | 74 | Companion | drafted into a Grimoire |
 | ability | 10 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
 | obstacle | 19 | Hero | Hero Deck, shown as a Construct |
-| **total** | **173** | | |
+| **total** | **174** | | |
 
 ### By school
 
@@ -26,8 +26,8 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | dusk | 27 |
 | bulwark | 24 |
 | frost | 24 |
+| surge | 24 |
 | bloom | 23 |
-| surge | 23 |
 | arcane | 21 |
 | pyre | 21 |
 | neutral | 10 |
@@ -40,7 +40,7 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`arcane.ts`](#arcanets) | 12 | 1 minion, 3 ability, 6 mark, 2 obstacle |
 | [`pyre.ts`](#pyrets) | 7 | 2 minion, 3 spell, 2 obstacle |
 | [`frost.ts`](#frostts) | 16 | 4 minion, 9 spell, 3 obstacle |
-| [`companionUnits.ts`](#companionunitsts) | 20 | 20 minion |
+| [`companionUnits.ts`](#companionunitsts) | 21 | 21 minion |
 | [`terrain.ts`](#terraints) | 5 | 5 obstacle |
 | [`ranged.ts`](#rangedts) | 3 | 3 minion |
 | [`surge.ts`](#surgets) | 17 | 7 minion, 9 spell, 1 obstacle |
@@ -52,7 +52,7 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`threats.ts`](#threatsts) | 3 | 3 minion |
 | [`hybrid.ts`](#hybridts) | 19 | 19 spell |
 | [`auras.ts`](#aurasts) | 11 | 9 spell, 2 ability |
-| **total** | **173** | |
+| **total** | **174** | |
 
 ---
 
@@ -137,7 +137,7 @@ Frost expansion — slow, freeze, shatter. — **16 cards** (4 minion, 9 spell, 
 
 ### `companionUnits.ts`
 
-Bound Forms. Placed by setup, never drawn, never bought. — **20 cards** (20 minion).
+Bound Forms. Placed by setup, never drawn, never bought. — **21 cards** (21 minion).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -158,6 +158,7 @@ Bound Forms. Placed by setup, never drawn, never bought. — **20 cards** (20 mi
 | **Obsidian Tortoise** | `tortoise_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 1 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Pyre and Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Storm-Mantis** | `mantis_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 3 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Frost and Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Sylva** | `sylva_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 2 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
+| **The Clockwork Colossus** | `colossus_bound` | minion | 0 | 3 | companion | 60 atk, 440 hp, 1 mov, rng 1, behemoth, **2x2** | — | none | BoundForm | setup only | Bound Form. The Great Quieting, given legs. Blocks sight through itself. |
 | **Umbra** | `umbra_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 2 mov, rng 1-2, skirmisher | — | none | BoundForm | setup only | Bound Form. The Duelist casts from where it stands, and bleeds when it is struck. |
 | **Volatile Geist** | `geist_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Surge and Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Voltara** | `voltara_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-2, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
@@ -190,13 +191,13 @@ Surge expansion — charge and chain. — **17 cards** (7 minion, 9 spell, 1 obs
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
-| **Static Hare** | `static_hare` | minion | 1P | 1 | hero | 10 atk, 20 hp, 3 mov, rng 1, skirmisher | onHit charged 1 | empty tile (ownTerritory) | Haste | — | Haste. Whatever survives its bite is left Charged. Fire Overloads a Charged target; frost Superconducts. |
+| **Static Hare** | `static_hare` | minion | 1P | 1 | hero | 10 atk, 20 hp, 3 mov, rng 1, skirmisher | — | empty tile (ownTerritory) | Haste | — | Haste. Whatever survives its bite is left Charged. Fire Overloads a Charged target; frost Superconducts. |
 | **Storm Rod** | `storm_rod` | minion | 1P | 1 | hero | 10 atk, 40 hp, 0 mov, rng 1, caster | deathburst charged 1 | empty tile (ownTerritory) | — | — | Cannot move, ever. When it dies, every adjacent enemy is left Charged. |
 | **Storm Wisp** | `storm_wisp` | minion | 1P | 1 | hero | 10 atk, 20 hp, 2 mov, rng 1, skirmisher | refund 1P on attack | empty tile (ownTerritory) | Haste | — | Haste. Whenever it attacks, you are paid 1 Pip. |
 | **Voltaic Coil** | `voltaic_coil` | minion | 2P | 2 | hero | 20 atk, 50 hp, 1 mov, rng 1, bruiser | refund 1P on death | empty tile (ownTerritory) | — | — | When it dies — however it dies — you are paid 1 Pip. |
 | **Voltaic Hound** | `voltaic_hound` | minion | 2P | 2 | hero | 30 atk, 20 hp, 3 mov, rng 1, skirmisher | — | empty tile (ownTerritory) | Haste | — | Haste. Can move and attack the turn it is deployed. Fast, vicious, and made of paper. |
-| **Clockwork Bombardier** | `clockwork_bombardier` | minion | 3P | 2 | hero | 10 atk, 40 hp, 1 mov, rng 2-4, sniper | arcing; onHit charged 1 | empty tile (ownTerritory) | — | — | Lobber. Fires 2-4 tiles, arcing over cover, and cannot depress its aim onto anything adjacent. Whatever survives a shell is left Charged. |
-| **Arc Dynamo** | `arc_dynamo` | minion | 4P | 3 | hero | 50 atk, 60 hp, 1 mov, rng 1-3, sniper | onHit charged 1 | empty tile (ownTerritory) | — | — | Strikes up to 3 tiles away, and whatever survives is left Charged. Slow to move, and the whole reason to bring a Discharge. |
+| **Clockwork Bombardier** | `clockwork_bombardier` | minion | 3P | 2 | hero | 10 atk, 40 hp, 1 mov, rng 2-4, sniper | arcing | empty tile (ownTerritory) | — | — | Lobber. Fires 2-4 tiles, arcing over cover, and cannot depress its aim onto anything adjacent. Whatever survives a shell is left Charged. |
+| **Arc Dynamo** | `arc_dynamo` | minion | 4P | 3 | hero | 50 atk, 60 hp, 1 mov, rng 1-3, sniper | — | empty tile (ownTerritory) | — | — | Strikes up to 3 tiles away, and whatever survives is left Charged. Slow to move, and the whole reason to bring a Discharge. |
 | **Arcing Step** | `arcing_step` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | — | An allied unit moves 2 further this turn and is left Charged. Fire Overloads it; frost Superconducts. |
 | **Galvanic Rally** | `galvanic_rally` | spell | 1P | 1 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Every unit orthogonally beside the target tile moves 1 further this turn and is left Charged. |
 | **Static Arc** | `static_arc` | spell | 1P | 1 | companion | — | — | empty tile (any) — range 3, LoS | — | R2 | Deals 20 spell damage to everything orthogonally beside the target tile and leaves it Charged. Fire into a Charged target Overloads; frost Superconducts. |
@@ -351,7 +352,7 @@ The Aura attach cards, their Detonations and Revival. — **11 cards** (9 spell,
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 56 of the 173 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 56 of the 174 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 

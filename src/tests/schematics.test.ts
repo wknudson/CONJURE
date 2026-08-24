@@ -184,10 +184,10 @@ describe('grantSchematic', () => {
  */
 describe('what the loop can actually reach', () => {
   const UNREACHABLE = new Set([
-    // Arcane and Pyre furniture no shipped fight plays.
+    // Arcane and Pyre furniture no shipped fight plays. (Ashen Wake left this list when
+    // the Bonemarket nest started casting it.)
     'volatile_cask',
     'pyre_pillar',
-    'ashen_wake',
     'pressure_valve_release',
     // The Hero's own arcane tools. No enemy has ever cast one at anybody -- the Duelist
     // carries Grapple Line and Aether Beam, but not the two Rallies or the Tether, because
@@ -199,13 +199,9 @@ describe('what the loop can actually reach', () => {
     // the Duelist lays it, because a Mark is Hero kit whatever its blast is made of.)
     'spore_cloud',
     'noxious_cloud',
-    'root_snare',
     'verdant_swell',
     'verdant_collapse',
     // Surge: same story.
-    'static_arc',
-    'arc_lash',
-    'arcing_step',
     'thunderhead',
     'static_charge',
     // Bulwark: same story.
@@ -214,13 +210,8 @@ describe('what the loop can actually reach', () => {
     'avalanche_slam',
     'petrifying_mantle',
     // Dusk: the Trial is Pyre and the Duelist plays colourless, so none of this is on offer.
-    'smoke_bomb',
-    'shadow_siphon',
-    'grave_call',
-    'harvest_the_weak',
     'blood_and_bone_rally',
     // Frost spells the Glacial Field happens not to run.
-    'creeping_rime',
     'rime_lock',
     // ---------------------------------------------------------- the second expansion
     //
@@ -233,39 +224,26 @@ describe('what the loop can actually reach', () => {
     // anything about the cards.
     //
     // This ledger is the honest record of that gap. The day a Sylva duelist is authored,
-    // her deck teaches the Bloom half and these lines come out.
-    'stoke',
-    'cinder_gale',
+    // her deck teaches the Bloom half and these lines come out. (The campaign has been
+    // doing exactly that, wave by wave: Wave 1's nest and Assembly took five plans off
+    // this list, and Wave 2's Middle Ring — the treant, the minders, the cistern, the
+    // masked Whisperers, the village — took another twelve, and Wave 3's wildland
+    // apexes a further handful. What remains is what no authored fight yet casts.)
     'slag_cairn',
     'rime_lance',
     'whiteout',
     'deep_winter',
     'hail_spire',
-    'discharge',
-    'paralytic_arc',
-    'chain_bolt',
-    'galvanic_rally',
-    'tempest_break',
     'tesla_pylon',
-    'bastion_stance',
     'hammer_fall',
-    'phalanx_step',
-    'crag_slam',
     'siege_break',
     'iron_gate',
     'battlement',
-    'sap_draught',
-    'thornlash',
-    'strangling_vines',
     'blight_bloom',
-    'spore_burst',
-    'briar_rampart',
     // Dusk's decay shelf, the three that closed the last catalog gap. Same story again: no
     // shipped fight is against a Dusk deck, so they are draftable onto a Mortis and not yet
     // forgeable by anyone.
     'charnel_pillar',
-    'wither',
-    'creeping_decay',
   ]);
 
   const reachable = (): Set<string> => {

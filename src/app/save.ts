@@ -78,7 +78,7 @@ import { draftGrimoire, isDraftable, socketRefusal } from '../core/data/grimoire
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 20;
+export const SAVE_VERSION = 21;
 
 /**
  * The first version whose health numbers are written at the stretched scale.
@@ -134,6 +134,8 @@ export function isSlotId(value: unknown): value is SlotId {
  * `< 20` on its own would be a magic number nobody could date.
  */
 const FIRST_GUIDED_WARD = 20;
+/** v21 added the story campaign ledger. */
+const FIRST_CAMPAIGN = 21;
 
 /**
  * The steps of the first lap, in the order a new Commander meets them.
@@ -287,6 +289,18 @@ export interface Profile {
    * the upgrade taking something away rather than leaving them where they were.
    */
   tutorial: TutorialFlag[];
+  /**
+   * Story contracts completed, as a ledger of encounter ids (v21).
+   *
+   * Same idiom as `rosterUnlocks` and `tutorial`: things that happened, nothing removes
+   * from it, presence is the only question asked. The board (`composeBoard`) reads it to
+   * decide which campaign poster each tier shows next.
+   *
+   * A pre-v21 save arrives **empty**, unlike `tutorial` above and for the opposite
+   * reason: no story contract existed before v21, so an old character genuinely has not
+   * done any. Backfilling would skip them past content they never saw.
+   */
+  campaign: string[];
   /**
    * Who the player said they were, at the desk (v18).
    *
@@ -514,6 +528,8 @@ export function initializeNewProfile(profileId: string, rawLook: CharacterLook):
     // Nothing walked yet. The district reads this on the first mount and puts the player
     // in front of the Dispatcher.
     tutorial: [],
+    // No contracts of the King's taken yet either. The campaign starts at the board.
+    campaign: [],
     decks,
     // A warband of their own colour, spending as much of the ten as their school's shelf
     // allows -- so a new player meets the deployment phase with a real line to place, and
@@ -963,6 +979,7 @@ function migrateProfile(
     // on the bench that can never be cut.
     schematics: readSchematics(data.schematics),
     tutorial: readTutorialFlags(data.tutorial, version),
+    campaign: readCampaign(data.campaign, version),
     decks,
     roster,
     rosterUnlocks: unlocks,
@@ -1264,6 +1281,20 @@ function readSchematics(raw: unknown): string[] {
  * a flag nothing checks is a step that can never be satisfied, and one of those in the
  * middle of the list would leave the objective panel pointing at nothing.
  */
+/**
+ * The campaign ledger, kept to strings that look like ids and deduped.
+ *
+ * No backfill on upgrade (`FIRST_CAMPAIGN`): a pre-v21 character has completed none of
+ * the story contracts, because none existed. Unknown entries are kept rather than
+ * filtered against the shipped list — a ledger naming a contract that was later renamed
+ * should not quietly un-complete it.
+ */
+function readCampaign(raw: unknown, version: number): string[] {
+  if (version < FIRST_CAMPAIGN) return [];
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((x): x is string => typeof x === 'string' && x.length > 0))];
+}
+
 function readTutorialFlags(raw: unknown, version: number): TutorialFlag[] {
   if (version < FIRST_GUIDED_WARD) return [...TUTORIAL_FLAGS];
   if (!Array.isArray(raw)) return [];
