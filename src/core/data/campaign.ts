@@ -530,6 +530,26 @@ export const STORY_CONTRACTS: readonly StoryContract[] = [
         'was walking toward Jolrek because that is where they come from.',
     },
   },
+  {
+    id: 'the_summons',
+    tier: 'master',
+    title: 'The Summons',
+    flavour:
+      'Not a bounty. A royal writ, with your name on it, in a hand that has never ' +
+      'written a name it feared. Carry what you have subjugated to the throne room and ' +
+      'be honored. The city already knows; Highcourt is hanging bunting.',
+    crack: {
+      title: 'The Quieting, Quieted',
+      body:
+        'The engine kneels the way anything kneels under the Rite — all at once, and ' +
+        'forever. Vane is alive inside it, sealed to the instrument he built to license ' +
+        'the wild, and the core you carried in powers nothing now but the tether ' +
+        'holding him. Outside, the Spire’s windows go dark floor by floor, and for the ' +
+        'first time anyone on the street can remember, Jolrek can see the sky. The ' +
+        'walls will need new paint. Somebody has already started: WE FEED OURSELVES ' +
+        'NOW.',
+    },
+  },
 ];
 
 /** The next uncompleted story contract of a tier, in shipped order. */

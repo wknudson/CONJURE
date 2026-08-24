@@ -214,6 +214,11 @@ export class DistrictWorld {
       { text: 'THE ENGINES EAT OUR MARROW', door: 0, dx: 3.2, tint: '#b7ae9d' },
       { text: 'THE CENSUS COUNTS DOWN', door: 1, dx: -3.4, tint: '#a46a4a' },
       { text: "VANE'S LIGHT IS OUR DARK", door: 2, dx: 3.0, tint: '#b7ae9d' },
+      // The last line before the Spire, per the doc: fresh paint on the wall nearest the
+      // board that posts The Summons. TODO(worldbuild): should live on the Highcourt
+      // approach once one exists, and ideally only appear late-campaign — the world does
+      // not read campaign state yet.
+      { text: "DON'T CARRY IT IN", door: 3, dx: -3.2, tint: '#a4543a' },
     ];
     for (const g of GRAFFITI) {
       const door = DOORS[g.door];

@@ -49,4 +49,13 @@ whole remaining surface.
 | `encounters/campaign.duels.ts` (`coldwater_duel`) | `umbra_bound` companion; devour approximated with culls/harvests | her own beast and a true devour/cascade kit |
 | Boss phase gates | 50% purge + adds only (`phaseAtHalf`) | per-boss transformations — no species but Ignis has a grown form |
 
-## Wave 4 — the Summons, the monologue, the throne room, the Colossus (pending)
+## Wave 4 — the Summons and the throne room (built)
+
+| Where | Placeholder | Standing in for |
+|---|---|---|
+| `encounters/the.summons.ts` | monologue compressed into the encounter blurb | a real pre-fight monologue scene (dialogue screen / cutscene) |
+| `encounters/the.summons.ts` | the fight begins at the throne | the doc's fightless cheering walk through Highcourt (needs an overworld route beyond the ward) |
+| `encounters/the.summons.ts` | Vane's phase-1 body is his Ink Owl (`lexis_bound`) | a Vane-specific dais form/portrait |
+| `cards/companionUnits.ts` (`colossus_bound`) | stats mirror `ignis_behemoth_bound` | tuned Colossus kit (smog aura, cascade punishes) |
+| `world.ts` graffiti (`DON'T CARRY IT IN`) | always present, on the ward wall by the Vivarium | Highcourt's last safe wall, appearing only late-campaign (world does not read campaign state) |
+| Ending | the crack notice is the epilogue | a real ending screen/credits beat |

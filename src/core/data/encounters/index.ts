@@ -45,6 +45,7 @@ import {
   STORM_SHELF_BINDING,
   WILDFIRE_WRIT,
 } from './campaign.master.js';
+import { THE_SUMMONS } from './the.summons.js';
 
 // Roughly in order of what they ask of a player: an honest duel, then a corridor that
 // punishes standing still, then an open field where nothing can see, then the boss.
@@ -83,6 +84,7 @@ export const ENCOUNTERS: EncounterDef[] = [
   DYNAMO_FLATS,
   RELOCATION_TRAIN,
   BONE_BASTION,
+  THE_SUMMONS,
 ];
 
 export function encounterById(id: string): EncounterDef | undefined {
@@ -117,4 +119,5 @@ export {
   DYNAMO_FLATS,
   RELOCATION_TRAIN,
   BONE_BASTION,
+  THE_SUMMONS,
 };
