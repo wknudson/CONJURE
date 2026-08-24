@@ -202,9 +202,6 @@ describe('what the loop can actually reach', () => {
     'verdant_swell',
     'verdant_collapse',
     // Surge: same story.
-    'static_arc',
-    'arc_lash',
-    'arcing_step',
     'thunderhead',
     'static_charge',
     // Bulwark: same story.
@@ -213,8 +210,6 @@ describe('what the loop can actually reach', () => {
     'avalanche_slam',
     'petrifying_mantle',
     // Dusk: the Trial is Pyre and the Duelist plays colourless, so none of this is on offer.
-    'grave_call',
-    'harvest_the_weak',
     'blood_and_bone_rally',
     // Frost spells the Glacial Field happens not to run.
     'rime_lock',
@@ -232,18 +227,13 @@ describe('what the loop can actually reach', () => {
     // her deck teaches the Bloom half and these lines come out. (The campaign has been
     // doing exactly that, wave by wave: Wave 1's nest and Assembly took five plans off
     // this list, and Wave 2's Middle Ring — the treant, the minders, the cistern, the
-    // masked Whisperers, the village — took another twelve. What remains is what no
-    // authored fight yet casts.)
+    // masked Whisperers, the village — took another twelve, and Wave 3's wildland
+    // apexes a further handful. What remains is what no authored fight yet casts.)
     'slag_cairn',
     'rime_lance',
     'whiteout',
     'deep_winter',
     'hail_spire',
-    'discharge',
-    'paralytic_arc',
-    'chain_bolt',
-    'galvanic_rally',
-    'tempest_break',
     'tesla_pylon',
     'hammer_fall',
     'siege_break',

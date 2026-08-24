@@ -373,6 +373,163 @@ export const STORY_CONTRACTS: readonly StoryContract[] = [
         'bridge. The town is feeding him.',
     },
   },
+
+  // ---- Master: the Wildlands -------------------------------------------------------
+  {
+    id: 'caldera_chimera',
+    tier: 'master',
+    title: 'Apex Subjugation: The Caldera Chimera',
+    flavour:
+      'The chimera has raided three tap-field crews this season. Subjugate or destroy ' +
+      'it. The drilling schedule holds either way.',
+    crack: {
+      title: 'The Two Schedules',
+      body:
+        'The crew foreman, paying out your fee, keeps a raid log. You have seen the ' +
+        'other document — the blasting schedule stapled to your own contract. Set side ' +
+        'by side they are the same list: every raid follows a detonation in its denning ' +
+        'ground by a day, sometimes by an hour. The beast was not raiding the drills. ' +
+        'It was answering them.',
+    },
+  },
+  {
+    id: 'rimefield_break',
+    tier: 'master',
+    title: 'The Rimefield Break',
+    flavour:
+      'A glacial juggernaut is menacing the north pass and the winter freight cannot ' +
+      'reroute. The pass opens this month.',
+    crack: {
+      title: 'What Was Holding the Snow',
+      body:
+        'It dies the way a wall dies, and the pass is open. Three nights later the ' +
+        'snowpack its body was bracing — cracked, the shepherds say, by the Conduit ' +
+        'Works’ blasting last autumn — comes down across the pass town. The freight is ' +
+        'through by then. The town is not. The Magistracy calls the burial weather.',
+    },
+  },
+  {
+    id: 'storm_shelf_binding',
+    tier: 'master',
+    title: 'Binding Order: Sealed — the Storm Shelf',
+    flavour:
+      'The Rime Conductor interferes with the sky-conduits. Bind it. The order is ' +
+      'sealed; do not read past the fee.',
+    crack: {
+      title: 'What It Was Conducting',
+      body:
+        'With the mantis gone the shelf’s storms do not clear. They spread. A shepherd ' +
+        'walks you to a strike-scar the width of a sheepfold, one of dozens, all new. ' +
+        'The storms are the conduits’ own exhaust, and the beast you took off the shelf ' +
+        'was grounding every strike that would have found the camps. The pylons hold. ' +
+        'The pylons were never in danger.',
+    },
+  },
+  {
+    id: 'pylon_nine',
+    tier: 'master',
+    title: 'The Geist of Pylon Nine',
+    flavour:
+      'Something haunts the newest pylon and drinks its charge. The ledger carries it ' +
+      'as product loss. Make the ledger balance.',
+    crack: {
+      title: 'Product Loss',
+      body:
+        'Up close it has almost a shape — a lineman’s harness, a lamplighter’s stoop, ' +
+        'something that remembers standing upright. The Works engineer will not look at ' +
+        'it. “Siphon residue curdles,” she says, to her boots. “If it’s drawn off a ' +
+        'living grid it comes back... shaped.” Pylon Nine is the newest pylon. Its grid ' +
+        'is the undercroft. You are killing what the floor did not finish eating.',
+    },
+  },
+  {
+    id: 'wildfire_writ',
+    tier: 'master',
+    title: 'Wildfire Writ: the Ashwood',
+    flavour:
+      'The blight in the treant grove threatens the timber camps, per the survey ' +
+      'attached. Burn it out before the wind turns.',
+    crack: {
+      title: 'The Burn Line',
+      body:
+        'The grove burns the way the writ drew it, and the writ drew it well: the line ' +
+        'curves neatly around every stand of harvestable timber and through nothing ' +
+        'else. The “blight” on the survey map follows the runoff channel from the ' +
+        'Cinderworks, upstream of nothing but the logging ledger. You did not stop a ' +
+        'blight. You cleared a parcel.',
+    },
+  },
+  {
+    id: 'coldwater_duel',
+    tier: 'master',
+    title: 'The King’s Duelist: Coldwater',
+    wager: true,
+    flavour:
+      'The first of the King’s Duelists requests you by name, on ground of her ' +
+      'choosing. This is an honor. The fee schedule says so.',
+    crack: {
+      title: 'The Crest, Unpinned',
+      body:
+        'Beaten, she does not ask for the rematch the circuit entitles her to. She ' +
+        'unpins her crest and presses it into your hand like a debt. “I cleared ' +
+        'Weeping Stile. Sixty-one souls to the undercroft, and I walked the count down ' +
+        'myself. Ask the floor what it eats.” The poacher’s discharge, the veteran’s ' +
+        'bench, the burnt census page — every story you have collected has the same ' +
+        'basement under it.',
+    },
+  },
+  {
+    id: 'dynamo_flats',
+    tier: 'master',
+    title: 'Apex Subjugation: The Kinetic Dynamo',
+    flavour:
+      'The engine-beast that walked out of the Cinderworks is loose on the flats, and ' +
+      'foundry stock goes missing wherever it passes. Bring it back in harness.',
+    crack: {
+      title: 'Built, Not Born',
+      body:
+        'In harness it stops fighting all at once, the way a machine stops. Under the ' +
+        'plating: a foundry serial, a maker’s mark, a Cinderworks lot number. It is not ' +
+        'a wild beast and never was — it was built, then worked, then it walked out. ' +
+        'And every animal it freed on the flats wears a brand from the same pit series ' +
+        'you found under the coach inn. It was not stealing stock. It was emptying ' +
+        'cages.',
+    },
+  },
+  {
+    id: 'relocation_train',
+    tier: 'master',
+    title: 'The Relocation Train',
+    flavour:
+      'The season’s last relocation convoy runs to the Spire undercroft tonight, and ' +
+      'it will be interfered with. It must not be. That is the whole contract.',
+    crack: {
+      title: 'No Return Trips',
+      body:
+        'The convoy clears the undercroft gate and the gate closes. You are paid on the ' +
+        'street, in full, and handed the manifest to countersign. Outbound: one entry, ' +
+        'tonight, sixty berths, all filled. Return trips: none scheduled. Not tonight. ' +
+        'Not ever. There has never been a return column on this form. You sign it, ' +
+        'because that is the contract, and the ink is the loudest thing on the street.',
+    },
+  },
+  {
+    id: 'bone_bastion',
+    tier: 'master',
+    title: 'Apex Subjugation: The Bone Bastion Sovereign',
+    flavour:
+      'The necropolis apex walks at night now, and it walks toward the Levels. Put it ' +
+      'down or put it in harness before it reaches the tithe barns.',
+    crack: {
+      title: 'The New Tenants',
+      body:
+        'The Bastion the maps call unconsecrated is not old. The graves the Sovereign ' +
+        'walks between are fresh-cut, mass, and numbered — Census hand, the same tidy ' +
+        'clerk’s figures that said RELOCATED. Sixty-one in the newest row. The ' +
+        'Sovereign was not raiding the Levels. It was grieving its new tenants, and it ' +
+        'was walking toward Jolrek because that is where they come from.',
+    },
+  },
 ];
 
 /** The next uncompleted story contract of a tier, in shipped order. */

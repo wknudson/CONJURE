@@ -103,6 +103,51 @@ export const ASHWOOD_POACHER: EncounterDef = registerEncounter({
   ],
 });
 
+/** Master #6 — the King's Duelist who cleared Weeping Stile, and cannot stop saying so. */
+export const COLDWATER_DUEL: EncounterDef = registerEncounter({
+  id: 'coldwater_duel',
+  name: 'The King’s Duelist: Coldwater',
+  blurb:
+    'The first of the King’s Duelists requests you by name, on ground of her choosing. ' +
+    'This is an honor. The fee schedule says so.',
+  width: 8,
+  height: 8,
+  playerHp: 400,
+  enemyHp: 460,
+  playerName: 'Hero',
+  companionName: 'Ignis',
+  companionSchool: 'pyre',
+  enemyName: 'Coldwater',
+  enemySchool: 'dusk',
+  // The doc's brief: devour and cascade. Culls, harvests, tithes — a duelist who wins by
+  // spending what falls.
+  enemyDeck: [
+    'cull_the_weak',
+    'harvest_the_weak',
+    'dark_tithe',
+    'dark_tithe',
+    'shield_bash',
+    'shield_bash',
+    'aegis_ward',
+    'aegis_ward',
+    'aether_beam',
+    'soul_splinter_mark',
+    'arc_mark',
+  ],
+  enemyOpeningBoard: [
+    ['galvanic_revenant', 2, 1],
+    ['grave_sentinel', 5, 1],
+    ['hollow_wraith', 3, 0],
+  ],
+  // TODO(worldbuild): stock duelist companion; a King's Duelist warrants her own beast.
+  enemyCompanion: { unitCardId: 'umbra_bound' },
+  // Ground of her choosing: a clean court, one obstruction, nowhere to hide from her.
+  terrain: [
+    { at: { x: 3, y: 4 }, kind: 'wall' },
+    { at: { x: 4, y: 3 }, kind: 'wall' },
+  ],
+});
+
 /** Adept #10 — the man Millharrow feeds, holding the bridge against the toll. */
 export const WAYSTONE_DUEL: EncounterDef = registerEncounter({
   id: 'waystone_duel',

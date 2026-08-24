@@ -29,7 +29,22 @@ import {
   TALLOW_BLIGHT,
   WARRANT_OF_DISTRAINT,
 } from './campaign.adept.js';
-import { ASHWOOD_POACHER, SMOKE_EATERS_REST, WAYSTONE_DUEL } from './campaign.duels.js';
+import {
+  ASHWOOD_POACHER,
+  COLDWATER_DUEL,
+  SMOKE_EATERS_REST,
+  WAYSTONE_DUEL,
+} from './campaign.duels.js';
+import {
+  BONE_BASTION,
+  CALDERA_CHIMERA,
+  DYNAMO_FLATS,
+  PYLON_NINE,
+  RELOCATION_TRAIN,
+  RIMEFIELD_BREAK,
+  STORM_SHELF_BINDING,
+  WILDFIRE_WRIT,
+} from './campaign.master.js';
 
 // Roughly in order of what they ask of a player: an honest duel, then a corridor that
 // punishes standing still, then an open field where nothing can see, then the boss.
@@ -59,6 +74,15 @@ export const ENCOUNTERS: EncounterDef[] = [
   HOLLOW_CENSUS,
   DROWNED_GRANARY,
   WAYSTONE_DUEL,
+  CALDERA_CHIMERA,
+  RIMEFIELD_BREAK,
+  STORM_SHELF_BINDING,
+  PYLON_NINE,
+  WILDFIRE_WRIT,
+  COLDWATER_DUEL,
+  DYNAMO_FLATS,
+  RELOCATION_TRAIN,
+  BONE_BASTION,
 ];
 
 export function encounterById(id: string): EncounterDef | undefined {
@@ -84,4 +108,13 @@ export {
   SMOKE_EATERS_REST,
   ASHWOOD_POACHER,
   WAYSTONE_DUEL,
+  COLDWATER_DUEL,
+  CALDERA_CHIMERA,
+  RIMEFIELD_BREAK,
+  STORM_SHELF_BINDING,
+  PYLON_NINE,
+  WILDFIRE_WRIT,
+  DYNAMO_FLATS,
+  RELOCATION_TRAIN,
+  BONE_BASTION,
 };

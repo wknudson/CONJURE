@@ -38,10 +38,15 @@ whole remaining surface.
 | `world.ts` graffiti | three lines hung near door plaques | a proper set-dressing pass (more walls, wildland waystones in later waves) |
 | Escort framing (`lamplighter_escort`, `hollow_census`, `night_freight`) | plain fights | actual escort objectives (no escort mechanic exists) |
 
-## Wave 3 — the Apex subjugations (pending)
+## Wave 3 — the Master tier (built)
 
-Caldera Chimera, Rimefield Break, Storm Shelf, Pylon Nine, Wildfire Writ, Coldwater,
-Kinetic Dynamo, Relocation Train, Bone Bastion Sovereign — one per wildland region,
-reusing the `ignis_trial` script shape and the existing `*_bound` companion unit cards.
+| Where | Placeholder | Standing in for |
+|---|---|---|
+| `encounters/campaign.master.ts` (`pylon_nine`) | no shock-healing | the doc's "heals from shock — starve it" rule (needs a unit keyword or a unit-damage script hook) |
+| `encounters/campaign.master.ts` (`bone_bastion`) | Sovereign fights at footprint 1 | the doc's 2×2 behemoth-class body (only Ignis has a grown form; wants a `sovereign_behemoth_bound`) |
+| `encounters/campaign.master.ts` (`relocation_train`) | waves reuse stock unit defs; wagons are scenery props | attackers wearing earlier contracts' identities (reskin system) + protect-the-wagons objective (same engine work as Night Freight) |
+| `encounters/campaign.master.ts` (`dynamo_flats`) | freed stock arrives as `ember_hound` | freed foundry-beast variety |
+| `encounters/campaign.duels.ts` (`coldwater_duel`) | `umbra_bound` companion; devour approximated with culls/harvests | her own beast and a true devour/cascade kit |
+| Boss phase gates | 50% purge + adds only (`phaseAtHalf`) | per-boss transformations — no species but Ignis has a grown form |
 
 ## Wave 4 — the Summons, the monologue, the throne room, the Colossus (pending)
