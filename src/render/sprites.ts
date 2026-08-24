@@ -343,6 +343,101 @@ export function drawCommanderAnimated(
   drawCommander(ctx, unit, walkFrameAt(cycle, elapsedMs), gait);
 }
 
+/* ------------------------------------------------------------------------------------ *
+ * The walk sprite sheet.
+ *
+ * One file, one decode, one cache entry — `hero-male-walk.png`, a 5x4 grid of 256px cells.
+ * This is how the Commander's walk arrives now; the per-file frames above are what the
+ * female bearing still uses until it has a sheet of its own.
+ * ------------------------------------------------------------------------------------ */
+
+export const WALK_SHEET_COLS = 5;
+export const WALK_SHEET_ROWS = 4;
+export const WALK_SHEET_CELL = 256;
+export const WALK_SHEET_FRAMES = WALK_SHEET_COLS * WALK_SHEET_ROWS;
+
+/**
+ * How many complete gait cycles the twenty frames actually contain.
+ *
+ * Two, not one, and this is the number that keeps the legs and the ground agreeing. Measured
+ * off the art: foot separation at the ground line has a period of exactly five frames —
+ * column 1 is the passing pose in every row (31px, 30px, 31px, 31px) and column 4 the widest
+ * stride (86, 74, 81, 82). Five frames is therefore one step, twenty frames is four steps,
+ * and four steps is two gait cycles. Treating the sheet as a single cycle would run the legs
+ * at half the speed the ground moves.
+ */
+export const WALK_SHEET_GAIT_CYCLES = 2;
+
+/**
+ * Where the Commander actually is inside a 256px cell.
+ *
+ * The union of all twenty cells' opaque bounds, so one box holds every frame. The character
+ * occupies 197 of the cell's 256 rows — a shade over three quarters — and stands clear of the
+ * bottom edge by 29 of them. Cropping to this rather than to each frame's own bounds is what
+ * keeps the body from throbbing: per-frame boxes vary by 5px in height, and normalising each
+ * to the same drawn height would rescale the figure every frame. It also preserves the
+ * animator's own vertical travel, since a frame whose feet sit high in the box is drawn high.
+ */
+export const WALK_SHEET_CONTENT = { x: 78, y: 30, w: 95, h: 197 } as const;
+
+export function commanderWalkSheetSrc(gender: Gender): string {
+  return `/assets/sprites/hero-${gender}-walk.png`;
+}
+
+/**
+ * Top-left corner of a frame's cell, in sheet pixels. Frames read left to right, top to
+ * bottom; the index wraps, so a caller can hand over an ever-climbing counter.
+ */
+export function walkFrameCell(index: number): { x: number; y: number } {
+  const i = ((index % WALK_SHEET_FRAMES) + WALK_SHEET_FRAMES) % WALK_SHEET_FRAMES;
+  return {
+    x: (i % WALK_SHEET_COLS) * WALK_SHEET_CELL,
+    y: Math.floor(i / WALK_SHEET_COLS) * WALK_SHEET_CELL,
+  };
+}
+
+/** The one load. Cached beside the standing facings, keyed so it cannot collide with them. */
+export async function loadCommanderWalkSheet(gender: Gender): Promise<HTMLImageElement> {
+  return loadHeroImage(`${gender}:walk-sheet`, commanderWalkSheetSrc(gender));
+}
+
+/** The sheet if it is already decoded, for a draw path that cannot await one. */
+export function commanderWalkSheetIfLoaded(gender: Gender): HTMLImageElement | null {
+  return spriteCache.get(`${gender}:walk-sheet`) ?? null;
+}
+
+/**
+ * One frame of the sheet, drawn feet-on-origin at the same height as every other body.
+ *
+ * Only the content box is blitted, not the whole cell — which is why `COMMANDER_HEIGHT_TILES`
+ * still means what it says here. Handing the full 256px cell to the same scale would draw the
+ * character at 77% of its height and float it a fifth of a tile off the pavement, because
+ * nearly a quarter of the cell is padding and 29 rows of that sit under the boots.
+ */
+export function drawCommanderSheetFrame(
+  ctx: CanvasRenderingContext2D,
+  unit: number,
+  sheet: HTMLImageElement | null,
+  frameIndex: number,
+  gait?: Gait | null,
+): void {
+  if (!sheet) return;
+  const cell = walkFrameCell(frameIndex);
+  const c = WALK_SHEET_CONTENT;
+  const destH = unit * COMMANDER_HEIGHT_TILES;
+  const destW = destH * (c.w / c.h);
+
+  ctx.save();
+  if (gait) {
+    ctx.rotate((gait.lean ?? 0) * LEAN_RADIANS + Math.sin(gait.phase * Math.PI * 2) * SWAY_RADIANS);
+    ctx.translate(0, -Math.abs(Math.sin(gait.phase * Math.PI)) * destH * BOB_RISE);
+  }
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(sheet, cell.x + c.x, cell.y + c.y, c.w, c.h, -destW / 2, -destH, destW, destH);
+  ctx.restore();
+}
+
 /**
  * Where a companion's bitmap sprite lives, one folder per species, one file per facing.
  *
