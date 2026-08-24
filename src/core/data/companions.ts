@@ -27,6 +27,20 @@ export interface CompanionDef {
   name: string;
   title: string;
   school: School;
+  /**
+   * What this species' art is filed under, when that is not its id.
+   *
+   * The founders' files are named for their ids (`ignis-front.png`); the wild bloodlines'
+   * are named for their titles (`chimera_of_the_caldera-front.png` for `chimera`). Rather
+   * than rename painted art or make the loader guess, the species states where its own
+   * pictures are — the one place that already knows everything else about it.
+   *
+   * This existed as an unwritten assumption that ids and filenames matched, and every
+   * wild species broke it: a bound Chimera fetched `chimera-front.png`, 404ed, and took
+   * the whole district's actor batch down with it. `spriteAssets.test.ts` now walks every
+   * species against the folder so the next mismatch is a red test, not a dead street.
+   */
+  artId?: string;
   /** One line, shown on the selection screen. */
   blurb: string;
   /**
@@ -199,27 +213,6 @@ export const COMPANIONS: CompanionDef[] = [
     ],
     unitCardId: 'ferrum_bound',
   },
-  {
-    id: 'lexis',
-    name: 'Lexis',
-    title: 'Ink Owl',
-    school: 'arcane',
-    blurb:
-      'Cards. Beams, hooks, and a hand that keeps refilling. Marginalia draws you one more every turn you cast.',
-    deck: [...STARTER_DECK],
-    grimoire: { schools: ['arcane'], hybridChance: MONO_HYBRID_CHANCE },
-    legacyGrimoire: [
-      'aether_beam',
-      'aether_beam',
-      'volatile_cask',
-      'alchemists_barricade',
-      'aetheric_resurgence',
-      'anchor_rally',
-      'grapple_line',
-      'cull_the_weak',
-    ],
-    unitCardId: 'lexis_bound',
-  },
   // ---------------------------------------------------------------- hybrids
   //
   // Ten bloodlines that draw on two schools at once. The draft has supported a two-school
@@ -247,6 +240,7 @@ export const COMPANIONS: CompanionDef[] = [
 
   {
     id: 'chimera',
+    artId: 'chimera_of_the_caldera',
     name: 'Chimera of the Caldera',
     title: 'Caldera Chimera',
     school: 'pyre',
@@ -268,6 +262,7 @@ export const COMPANIONS: CompanionDef[] = [
   },
   {
     id: 'wasp',
+    artId: 'cinder_wasp',
     name: 'Cinder-Wasp Swarm',
     title: 'Ember Swarm',
     school: 'surge',
@@ -289,6 +284,7 @@ export const COMPANIONS: CompanionDef[] = [
   },
   {
     id: 'tortoise',
+    artId: 'obsidian_tortoise',
     name: 'Obsidian Tortoise',
     title: 'Caldera Bulwark',
     school: 'bulwark',
@@ -310,6 +306,7 @@ export const COMPANIONS: CompanionDef[] = [
   },
   {
     id: 'treant',
+    artId: 'crimson_treant',
     name: 'Crimson Treant',
     title: 'Ashwood Warden',
     school: 'bloom',
@@ -331,6 +328,7 @@ export const COMPANIONS: CompanionDef[] = [
   },
   {
     id: 'mantis',
+    artId: 'storm_mantis',
     name: 'Storm-Mantis',
     title: 'Rime Conductor',
     school: 'frost',
@@ -352,6 +350,7 @@ export const COMPANIONS: CompanionDef[] = [
   },
   {
     id: 'juggernaut',
+    artId: 'glacial_juggernaut',
     name: 'Glacial Juggernaut',
     title: 'Icebreaker',
     school: 'bulwark',
@@ -373,6 +372,7 @@ export const COMPANIONS: CompanionDef[] = [
   },
   {
     id: 'gargoyle',
+    artId: 'grave_gargoyle',
     name: 'Grave-Gargoyle',
     title: 'Black Ice',
     school: 'dusk',
@@ -394,6 +394,7 @@ export const COMPANIONS: CompanionDef[] = [
   },
   {
     id: 'dynamo',
+    artId: 'kinetic_dynamo',
     name: 'Kinetic Dynamo',
     title: 'Momentum Engine',
     school: 'surge',
@@ -415,6 +416,7 @@ export const COMPANIONS: CompanionDef[] = [
   },
   {
     id: 'geist',
+    artId: 'volatile_geist',
     name: 'Volatile Geist',
     title: 'Aether Siphon',
     school: 'dusk',
@@ -436,6 +438,7 @@ export const COMPANIONS: CompanionDef[] = [
   },
   {
     id: 'sovereign',
+    artId: 'bone_bastion_sovereign',
     name: 'Bone Bastion Sovereign',
     title: 'Marrow Bastion',
     school: 'bulwark',

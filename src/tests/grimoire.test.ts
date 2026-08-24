@@ -15,6 +15,7 @@ import {
   tierOf,
   validateDeck,
 } from '../core/data/deckRules.js';
+import type { GrimoireSource } from '../core/data/grimoire.js';
 import { draftGrimoire, hybridPool, isDraftable, purePool } from '../core/data/grimoire.js';
 import { STARTER_DECK } from '../core/data/cards/starter.js';
 import { rollSpellModifiers, tameCompanion, MODIFIER_CHANCE } from '../core/overworld/vivarium.js';
@@ -151,23 +152,27 @@ describe('the Grimoire, as data', () => {
       return capacity < GRIMOIRE_SIZE;
     }).map((c) => c.id);
 
-    expect(thin, 'a second school has gone thin').toEqual(['lexis']);
+    // Was `['lexis']` -- the arcane bloodline drafted from the Hero Deck's own colour and
+    // could never fill eight from it. It has been retired, so the assertion gets to be the
+    // stronger one it always wanted to be: nothing on the roster is thin.
+    expect(thin, 'a bloodline has gone thin').toEqual([]);
   });
 
   it('lets every elemental bloodline fill a book out of its own school alone', () => {
     for (const c of COMPANIONS) {
-      if (c.id === 'lexis') continue;
       const capacity = purePool(c.grimoire).reduce((n, def) => n + TIER_COPY_LIMIT[tierOf(def)], 0);
       expect(capacity, `${c.name}`).toBeGreaterThanOrEqual(GRIMOIRE_SIZE);
     }
   });
 
-  it('still deals Lexis a full eight, out of the fallback', () => {
-    // The fallback is doing real work now rather than standing by, so it gets a test that
-    // would notice if it stopped. A short book is the failure mode this catches.
-    const lexis = companionById('lexis')!;
+  it('still deals a full eight when a pool cannot cover it, out of the fallback', () => {
+    // The fallback is what stands between a thin pool and a short book. Lexis used to be
+    // the live example and has been retired, so the case is made synthetically rather than
+    // deleted -- a source drafting a school with almost nothing castable in it. Losing the
+    // only exerciser of a safety net is how safety nets rot.
+    const thinSource: GrimoireSource = { schools: ['arcane'], hybridChance: 0 };
     for (let seed = 0; seed < 40; seed++) {
-      const book = draftGrimoire(makeRng(seed), lexis.grimoire, GRIMOIRE_SIZE);
+      const book = draftGrimoire(makeRng(seed), thinSource, GRIMOIRE_SIZE);
       expect(book.length, `seed ${seed}`).toBe(GRIMOIRE_SIZE);
     }
   });
@@ -435,17 +440,19 @@ describe('the fusion', () => {
 
   it('stamps only the Grimoire copy when a card is in both halves', () => {
     // The case `grimoireFrom` exists for, and the only one that can tell an index-split
-    // from a plain lookup by def id. Lexis carries Grapple Line, and so does the Hero Deck
-    // below — the roll belongs to the beast's copy, not to the player's.
-    const hero = ['grapple_line', 'shield_bash', 'aegis_ward', 'stone_barricade', 'cull_the_weak'];
-    const { state } = createCombat(NOVICE_DUELIST, 7, 'lexis', hero, {
-      spellModifiers: { grapple_line: { pipCostDelta: -1 } },
+    // from a plain lookup by def id. Mortis carries Harvest the Weak, and so does the Hero
+    // Deck below — the roll belongs to the beast's copy, not to the player's. (Was Lexis
+    // and Grapple Line until the Ink Owl stopped being a bloodline; the property under
+    // test is a card in both halves, and Mortis supplies one.)
+    const hero = ['harvest_the_weak', 'shield_bash', 'aegis_ward', 'stone_barricade', 'cull_the_weak'];
+    const { state } = createCombat(NOVICE_DUELIST, 7, 'mortis', hero, {
+      spellModifiers: { harvest_the_weak: { pipCostDelta: -1 } },
     });
     const player = state.players.player;
 
-    expect(companionById('lexis')!.legacyGrimoire, 'the premise').toContain('grapple_line');
+    expect(companionById('mortis')!.legacyGrimoire, 'the premise').toContain('harvest_the_weak');
 
-    const copies = Object.values(player.cards).filter((c) => c.defId === 'grapple_line');
+    const copies = Object.values(player.cards).filter((c) => c.defId === 'harvest_the_weak');
     expect(copies.length, 'one from each half').toBe(2);
     expect(copies.filter((c) => c.mods !== undefined), 'exactly one rolled').toHaveLength(1);
   });

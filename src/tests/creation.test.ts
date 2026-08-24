@@ -10,7 +10,7 @@ import {
   type CharacterLook,
 } from '../core/data/characterLook.js';
 import { PLAYABLE_SCHOOLS, speciesForSchool } from '../core/data/pools.js';
-import { companionById, GRIMOIRE_SIZE } from '../core/data/companions.js';
+import { COMPANIONS, companionById, GRIMOIRE_SIZE } from '../core/data/companions.js';
 import { CARDS, STARTER_DECK } from '../core/data/cards/index.js';
 import { HERO_SCHOOLS, fusedDeckSize, validateDeck } from '../core/data/deckRules.js';
 import { validateRoster } from '../core/data/roster.js';
@@ -128,16 +128,17 @@ describe('who may be vowed to', () => {
     expect(starterSpecies()).toHaveLength(6);
   });
 
-  it('does not offer Lexis', () => {
-    // The bug the browser caught. "Speaks exactly one school" reads like the founder rule
-    // and is not: Lexis speaks one school too, and that school is **arcane** — the Hero
-    // Deck's own colour, and not a discipline anybody enrols in. Picking it would have
-    // produced a warband with no bodies of its own and a Grimoire in the same colour as
-    // the half it exists to complement.
-    expect(companionById('lexis')!.grimoire.schools, 'still mono, still not a discipline')
-      .toHaveLength(1);
-    expect(starterSpecies()).not.toContain('lexis');
-    expect(isStarterSpecies('lexis')).toBe(false);
+  it('has no arcane bloodline to offer', () => {
+    // Once a bug the browser caught, now a rule with nothing left to break it. "Speaks
+    // exactly one school" reads like the founder rule and is not — arcane is the Hero
+    // Deck's own colour, not a discipline anybody enrols in, and a bloodline speaking it
+    // would field a warband with no bodies of its own. Lexis was that bloodline and has
+    // been retired; the guard is now that no species speaks arcane at all, which is the
+    // condition the special case existed to work around.
+    expect(companionById('lexis'), 'the Ink Owl is no longer a bloodline').toBeUndefined();
+    for (const c of COMPANIONS) {
+      expect(c.grimoire.schools, `${c.id} drafts a discipline`).not.toContain('arcane');
+    }
   });
 
   it('does not offer a hybrid', () => {

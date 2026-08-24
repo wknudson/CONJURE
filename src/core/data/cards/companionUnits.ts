@@ -537,16 +537,22 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   },
 
   /**
-   * Lexis's body. Fragile, far-sighted, and the only Bound Form that wants to be nowhere
+   * The Ink Owl. Fragile, far-sighted, and the only Bound Form that wants to be nowhere
    * near the fighting.
    *
-   * Marginalia does not care where the owl stands, so unlike every other Companion its
-   * position is purely about cast reach — which makes walking it forward a decision with
-   * no compensation, and that is the point of a caster whose passive is in the hand.
+   * **No longer a bloodline.** Lexis was a tameable arcane species and is not any more —
+   * the roster is the six disciplines and the wild bloodlines a contract can bind, and an
+   * arcane companion sat outside both. What survives is the body, because the Magistracy
+   * keeps one: it is the clerk-bird on Vane's dais in `the.summons.ts`, the phase-1 form
+   * his Colossus docks out of. A creature the regime owns and nobody can pact with reads
+   * better than a bloodline nobody could pick.
+   *
+   * Its position is purely about cast reach, which makes walking it forward a decision
+   * with no compensation — the right shape for something that belongs behind a throne.
    */
   lexis_bound: {
     id: 'lexis_bound',
-    name: 'Lexis',
+    name: 'Ink Owl',
     cost: { pips: 0, marrow: 0 },
     school: 'arcane',
     source: 'companion',

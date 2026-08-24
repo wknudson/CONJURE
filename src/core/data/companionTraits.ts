@@ -243,54 +243,6 @@ const FERRUM_TRAITS: Record<string, CompanionTrait> = {
   },
 };
 
-/**
- * Lexis's knacks. The Ink Owl plays the hand rather than the board, and two of these are
- * the first things in the game to ask for boons that have sat unused since the brews.
- */
-const LEXIS_TRAITS: Record<string, CompanionTrait> = {
-  /**
-   * The second untouched boon axis.
-   *
-   * The opening hand *is* turn one's draw, so a sixth card is a materially different
-   * first turn rather than a card arriving marginally sooner.
-   */
-  prepared_mind: {
-    id: 'prepared_mind',
-    name: 'Prepared Mind',
-    text: 'Reads ahead. Open every fight holding one extra card.',
-    baseId: 'lexis',
-    boons: { extraOpeningCards: 1 },
-  },
-
-  /**
-   * The Gambler's Coin reached from the other direction — and they stack, to eleven.
-   *
-   * Worth more to this Companion than to any other: Marginalia draws every turn, and a
-   * hand already at its limit turns that draw into a burnt card and a Marrow.
-   */
-  hoarder: {
-    id: 'hoarder',
-    name: 'Hoarder',
-    text: 'Throws nothing away. Hold 2 more cards through end of turn.',
-    baseId: 'lexis',
-    boons: { bonusHandLimit: 2 },
-  },
-
-  /**
-   * Reads the posture rather than the geometry.
-   *
-   * A Guardian is a body deliberately interposing; a Behemoth's bulk and a wall are
-   * simply in the way. This sees around the first and not the others, which keeps
-   * `arcing` the answer to terrain and makes this the answer to a screen.
-   */
-  piercing_gaze: {
-    id: 'piercing_gaze',
-    name: 'Piercing Gaze',
-    text: 'Looks straight through a held shield. Your ranged attacks and spells ignore Guardian.',
-    baseId: 'lexis',
-    boons: { ignoreGuardians: true },
-  },
-};
 
 /**
  * The hybrid bloodlines' knacks — two apiece, and the first pool in the game with a
@@ -500,7 +452,6 @@ for (const [id, trait] of Object.entries(VOLTARA_TRAITS)) COMPANION_TRAITS[id] =
 for (const [id, trait] of Object.entries(MORTIS_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(SYLVA_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(FERRUM_TRAITS)) COMPANION_TRAITS[id] = trait;
-for (const [id, trait] of Object.entries(LEXIS_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(HYBRID_TRAITS)) COMPANION_TRAITS[id] = trait;
 
 export function traitById(id: string): CompanionTrait | undefined {

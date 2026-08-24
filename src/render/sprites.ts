@@ -14,6 +14,7 @@
 
 import { PALETTE } from './palette.js';
 import type { Gender } from '../core/data/characterLook.js';
+import { companionById } from '../core/data/companions.js';
 import type { School } from '../contract/ids.js';
 
 /** A school's colour on the stage. The same six the enrolment crests use. */
@@ -93,7 +94,14 @@ function loadHeroImage(key: string, src: string): Promise<HTMLImageElement> {
     await img.decode();
     spriteCache.set(key, img);
     return img;
-  })();
+  })()
+    // Evicted on failure, so a rejection is not cached for the session. Left in the map, a
+    // single transient 404 would be replayed to every later caller -- and since the
+    // district rebuilds on every shop errand, that turns one blip into a permanently
+    // empty street that only a page reload clears.
+    .finally(() => {
+      if (!spriteCache.has(key)) spriteLoading.delete(key);
+    });
   spriteLoading.set(key, promise);
   return promise;
 }
@@ -450,7 +458,12 @@ export function drawCommanderSheetFrame(
  * renaming a facing should break one line, not two.
  */
 export function companionSpriteSrc(id: string, facing: 'front' | 'back' | 'side' = 'front'): string {
-  return `/assets/sprites/companions/${id}-${facing}.png`;
+  // Through the species, not straight off the id. The founders' art is filed under their
+  // ids and every wild bloodline's is filed under its title, so an id here is a guess —
+  // and it was wrong for ten of the seventeen species. `artId` is where the species says
+  // so; an unknown id falls through to itself, which is what a test arena wants.
+  const art = companionById(id)?.artId ?? id;
+  return `/assets/sprites/companions/${art}-${facing}.png`;
 }
 
 const companionCache = new Map<string, HTMLImageElement>();
@@ -479,7 +492,11 @@ export async function loadCompanionSprite(
     await img.decode();
     companionCache.set(key, img);
     return img;
-  })();
+  })()
+    // Same eviction as the hero loader above, for the same reason.
+    .finally(() => {
+      if (!companionCache.has(key)) companionLoading.delete(key);
+    });
   companionLoading.set(key, promise);
   return promise;
 }

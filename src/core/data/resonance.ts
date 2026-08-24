@@ -18,7 +18,6 @@ import { creditRefund } from '../engine/reactions.js';
 import { healCommander } from '../engine/damage.js';
 import { lowestHpEnemy, opposite, unitsOf } from '../engine/board.js';
 import { cellsOf } from '../util/grid.js';
-import { drawCards } from '../engine/deck.js';
 
 export interface ResonanceDef {
   school: School;
@@ -108,22 +107,6 @@ export const RESONANCE: Partial<Record<School, ResonanceDef>> = {
     },
   },
 
-  /**
-   * The first Resonance that touches the hand rather than the board.
-   *
-   * Routed through the ordinary draw, so the hand limit and the overdraw burn both still
-   * apply: a full hand turns the passive into a Marrow and a burnt card. That is a real
-   * cost rather than a punishment, and it is what makes `bonusHandLimit` — the Gambler's
-   * Coin, the Ink Owl's own Hoarder knack — a build instead of a nicety.
-   */
-  arcane: {
-    school: 'arcane',
-    name: 'Marginalia',
-    text: 'Your first Companion card each turn draws a card.',
-    apply(ctx, side) {
-      drawCards(ctx, side, 1);
-    },
-  },
 
   frost: {
     school: 'frost',

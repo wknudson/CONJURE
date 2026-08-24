@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { GrimoireSource } from '../core/data/grimoire.js';
 import {
   acceptsSchool,
   resolveGrimoire,
@@ -110,8 +111,12 @@ describe('socketing a slot', () => {
     expect(socketRefusal(IGNIS, ['magma_brute'], 0, 'magma_brute')).toBe('not-castable');
     const raised = ascendedId('flame_surge');
     expect(socketRefusal(IGNIS, [raised], 0, raised)).toBe('not-castable');
+    // An arcane source, written out rather than borrowed from a species: the Ink Owl was
+    // the only bloodline that spoke arcane and has been retired, but the rule under test
+    // is about the school, not about who happened to speak it.
+    const arcane: GrimoireSource = { schools: ['arcane'], hybridChance: 0 };
     expect(
-      socketRefusal(companionById('lexis')!.grimoire, ['rite_of_subjugation'], 0, 'rite_of_subjugation'),
+      socketRefusal(arcane, ['rite_of_subjugation'], 0, 'rite_of_subjugation'),
     ).toBe('not-castable');
   });
 

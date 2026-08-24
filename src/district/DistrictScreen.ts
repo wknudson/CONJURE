@@ -305,16 +305,27 @@ export class DistrictScreen implements Screen {
     // to does not look exactly like the player.
     const vexGender: Gender = gender === 'male' ? 'female' : 'male';
 
-    const [hFront, hBack, hSide, hSideAlt, cFront, cBack, cSide, vFront, vBack, vSide] =
-      await Promise.all([
-        ...facings.map((f) => loadCommanderSprite(gender, f)),
-        loadCompanionSprite(companionId, 'front'),
-        loadCompanionSprite(companionId, 'back'),
-        loadCompanionSprite(companionId, 'side'),
-        loadCommanderSprite(vexGender, 'front'),
-        loadCommanderSprite(vexGender, 'back'),
-        loadCommanderSprite(vexGender, 'side'),
-      ]);
+    // The beast is fetched apart from the people, and allowed to fail.
+    //
+    // Not every species has art: the campaign hands out bloodlines faster than they can be
+    // painted, and a bound Chimera used to take the whole street down with it — one 404
+    // rejected the batch, so the ward opened with no Commander, no Vex and no Warden, and
+    // input never unlocked. A beast nobody has drawn yet should cost exactly one beast.
+    const beast = await Promise.all([
+      loadCompanionSprite(companionId, 'front').catch(() => null),
+      loadCompanionSprite(companionId, 'back').catch(() => null),
+      loadCompanionSprite(companionId, 'side').catch(() => null),
+    ]);
+
+    const [hFront, hBack, hSide, hSideAlt, vFront, vBack, vSide] = await Promise.all([
+      ...facings.map((f) => loadCommanderSprite(gender, f)),
+      loadCommanderSprite(vexGender, 'front'),
+      loadCommanderSprite(vexGender, 'back'),
+      loadCommanderSprite(vexGender, 'side'),
+    ]);
+    // Front is the one that must exist — the other two fall back to it, exactly as a
+    // species with only a front sprite already renders on the creation screen.
+    const [cFront, cBack, cSide] = [beast[0], beast[1] ?? beast[0], beast[2] ?? beast[0]];
 
     // The walk art, fetched apart from the rest and allowed to fail at every step.
     //
@@ -351,14 +362,17 @@ export class DistrictScreen implements Screen {
           },
           anis,
         );
-    const beastArt = buildActorArt({ front: cFront!, back: cBack!, side: cSide! }, anis);
+    const beastArt = cFront
+      ? buildActorArt({ front: cFront, back: cBack!, side: cSide! }, anis)
+      : null;
     const vexArt = buildActorArt({ front: vFront!, back: vBack!, side: vSide! }, anis);
     const wardenArt = actorArtFromTextures(
       makeWardenTexture('front'),
       makeWardenTexture('back'),
       makeWardenTexture('side'),
     );
-    this.heroArt.push(heroArt, beastArt, vexArt, wardenArt);
+    this.heroArt.push(heroArt, vexArt, wardenArt);
+    if (beastArt) this.heroArt.push(beastArt);
 
     const start = this.restorePosition();
 
@@ -377,16 +391,20 @@ export class DistrictScreen implements Screen {
       this.playerSafe ? start.z : SPAWN.z,
     );
 
-    this.follower = new CompanionFollower(
-      beastArt,
-      COMPANION_HEIGHT,
-      start.x - 1.4,
-      start.z + 1.2,
-      colliders,
-    );
-    this.world.scene.add(this.follower.walker.sprite);
-    this.world.billboards.push(this.follower.walker.sprite);
-    this.updatables.push(this.follower);
+    // No art, no follower. The Commander walks the ward alone rather than beside a hole,
+    // and everything downstream already treats the follower as optional.
+    if (beastArt) {
+      this.follower = new CompanionFollower(
+        beastArt,
+        COMPANION_HEIGHT,
+        start.x - 1.4,
+        start.z + 1.2,
+        colliders,
+      );
+      this.world.scene.add(this.follower.walker.sprite);
+      this.world.billboards.push(this.follower.walker.sprite);
+      this.updatables.push(this.follower);
+    }
 
     this.vex = new NPC(
       vexArt,
