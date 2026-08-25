@@ -105,7 +105,7 @@ export const REACTIONS: ReactionDef[] = [
     id: 'shatter',
     name: 'Shatter',
     // Physical blows and collisions break ice; spells do not.
-    triggers: ['physical', 'impact'],
+    triggers: ['physical', 'impact', 'frost'],
     requires: 'freeze',
     consumes: true,
     requiresHpLoss: false,
