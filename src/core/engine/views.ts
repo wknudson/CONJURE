@@ -195,6 +195,8 @@ export function toBoardView(state: GameState): BoardView {
     player: toCommanderView(state, 'player'),
     enemy: toCommanderView(state, 'enemy'),
     encounterName: state.encounter.name,
+    // Only when true, so an ordinary fight's view is byte-identical to what it was.
+    ...(state.encounter.rout ? { rout: true as const } : {}),
     bossPhase: state.encounter.bossPhase,
   };
 }

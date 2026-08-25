@@ -88,6 +88,15 @@ export interface EncounterDef {
    * naming one binds a beast that cannot be kept, which is a `bound` result that pays
    * like a victory -- the behaviour every subjugation had before this field existed.
    */
+  /**
+   * How this fight is won. Absent means the ordinary rule: drop the enemy commander.
+   *
+   * `'rout'` is for a fight with **no commander to drop** -- a wandering pack, which has no
+   * hero behind it, no Bound Form and nothing to negotiate with. Clear every body and it is
+   * over. The enemy portrait is hidden and untargetable in that mode, so the pack really is
+   * the whole of the opposition rather than a screen in front of an abstract health bar.
+   */
+  victory?: 'rout';
   subjugationPrize?: string;
   script?: EncounterScript;
 }

@@ -66,6 +66,7 @@ export class Hud {
   private handEl!: HTMLElement;
   private pactFill!: HTMLElement;
   private pactText!: HTMLElement;
+  private enemyBar!: HTMLElement;
   private enemyFill!: HTMLElement;
   private enemyText!: HTMLElement;
   private pipRing!: HTMLElement;
@@ -126,6 +127,7 @@ export class Hud {
     this.handEl = q('.hand');
     this.pactFill = q('.pact__fill');
     this.pactText = q('.pact__text');
+    this.enemyBar = q('.enemy-bar');
     this.enemyFill = q('.enemy-bar__fill');
     this.enemyText = q('.enemy-bar__text');
     this.pipRing = q('.dial__pips');
@@ -354,6 +356,12 @@ export class Hud {
     // Maxima first. `setCommanderHp` prints the denominator, so setting it afterwards
     // left the opening render showing the default 40 — invisible for as long as every
     // Pact happened to be 40, and wrong the moment a levelled Companion raised one.
+    // A rout has no enemy Commander, so it gets no Commander bar. Hidden rather than
+    // zeroed: the readout divides by the maximum, and a fight with nothing behind the pack
+    // would have printed a NaN-wide bar over "0 / 0". What the player should learn from the
+    // top of the screen is that there is nothing up there to kill.
+    this.enemyBar.classList.toggle('is-hidden', board.rout === true);
+
     this.setMaxHp(board.player, board.enemy);
     this.setCommanderHp('player', board.player.hp);
     this.setCommanderHp('enemy', board.enemy.hp);
@@ -515,7 +523,9 @@ export class Hud {
       this.pactText.textContent = `PACT  ${Math.max(0, hp)} / ${this.maxPlayerHp}`;
       this.pactFill.classList.toggle('is-critical', frac <= 0.25);
     } else {
-      const frac = Math.max(0, hp) / this.maxEnemyHp;
+      // Defended even though the bar is hidden in the only case that can produce it: a
+      // zero maximum here writes `width: NaN%`, which no later correct value repairs.
+      const frac = this.maxEnemyHp > 0 ? Math.max(0, hp) / this.maxEnemyHp : 0;
       this.enemyFill.style.width = `${frac * 100}%`;
       this.enemyText.textContent = `${Math.max(0, hp)} / ${this.maxEnemyHp}`;
       this.enemyFill.classList.toggle('is-critical', frac <= 0.25);

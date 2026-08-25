@@ -17,7 +17,7 @@
  */
 
 import * as THREE from 'three';
-import { GRID, MAP, TILES } from './map.js';
+import { groundRowsOf, waterRowsOf, type AreaDef } from './map.js';
 
 /** A deterministic RNG, so the ward is painted the same way every reload. */
 export function mulberry32(seed: number): () => number {
@@ -192,45 +192,50 @@ function paintGrass(ctx: CanvasRenderingContext2D, px: number, py: number, rng: 
   }
 }
 
-/** The first row the ground plane covers — the two above it are canal. */
-export const GROUND_ROW0 = 2;
-export const GROUND_ROWS = GRID - GROUND_ROW0;
-
 /**
- * The whole ground, baked off the map in one pass.
+ * The whole ground, baked off one area's map in a single pass.
  *
  * One texture and one draw call. The curb — a warm line on the walkway side of every
  * safe/danger border — is drawn last, over the tiles, because it is the player's first and
  * quietest lesson in where the rule changes.
+ *
+ * The curb asks the **legend** whether a tile is safe rather than comparing the character to
+ * `'S'`. That literal was correct while one grid existed and would have drawn a curb around
+ * nothing in any area that spells its pavement differently — or, worse, around the wrong
+ * tiles. The rule is "mark where safety ends", and safety is a property in the legend.
  */
-export function bakeGround(maxAnisotropy: number): THREE.Texture {
-  const { c, ctx } = makeCanvas(GRID * PX, GROUND_ROWS * PX);
+export function bakeGround(area: AreaDef, maxAnisotropy: number): THREE.Texture {
+  const row0 = waterRowsOf(area);
+  const { c, ctx } = makeCanvas(area.cols * PX, groundRowsOf(area) * PX);
   const rng = mulberry32(1337);
 
-  for (let row = GROUND_ROW0; row < GRID; row++) {
-    for (let col = 0; col < GRID; col++) {
+  const safeAt = (r: number, cc: number): boolean => {
+    if (r < 0 || r >= area.rows || cc < 0 || cc >= area.cols) return false;
+    return area.legend[area.grid[r]![cc]!]?.safe === true;
+  };
+
+  for (let row = row0; row < area.rows; row++) {
+    for (let col = 0; col < area.cols; col++) {
       const px = col * PX;
-      const py = (row - GROUND_ROW0) * PX;
-      const tex = (TILES[MAP[row]![col]!] ?? TILES.W!).tex;
+      const py = (row - row0) * PX;
+      const tex = area.legend[area.grid[row]![col]!]?.tex ?? 'water';
       if (tex === 'sidewalk') paintSidewalk(ctx, px, py, rng);
       else if (tex === 'grass') paintGrass(ctx, px, py, rng);
-      else if (tex === 'weeds') paintCobble(ctx, px, py, rng, true);
+      else if (tex === 'weeds' || tex === 'chalk') paintCobble(ctx, px, py, rng, true);
       else paintCobble(ctx, px, py, rng, false);
     }
   }
 
   ctx.fillStyle = '#b09263';
-  const notS = (r: number, cc: number): boolean =>
-    r < 0 || r >= GRID || cc < 0 || cc >= GRID ? true : MAP[r]![cc] !== 'S';
-  for (let row = GROUND_ROW0; row < GRID; row++) {
-    for (let col = 0; col < GRID; col++) {
-      if (MAP[row]![col] !== 'S') continue;
+  for (let row = row0; row < area.rows; row++) {
+    for (let col = 0; col < area.cols; col++) {
+      if (!safeAt(row, col)) continue;
       const px = col * PX;
-      const py = (row - GROUND_ROW0) * PX;
-      if (notS(row - 1, col)) ctx.fillRect(px, py, PX, 2);
-      if (notS(row + 1, col)) ctx.fillRect(px, py + PX - 2, PX, 2);
-      if (notS(row, col - 1)) ctx.fillRect(px, py, 2, PX);
-      if (notS(row, col + 1)) ctx.fillRect(px + PX - 2, py, 2, PX);
+      const py = (row - row0) * PX;
+      if (!safeAt(row - 1, col)) ctx.fillRect(px, py, PX, 2);
+      if (!safeAt(row + 1, col)) ctx.fillRect(px, py + PX - 2, PX, 2);
+      if (!safeAt(row, col - 1)) ctx.fillRect(px, py, 2, PX);
+      if (!safeAt(row, col + 1)) ctx.fillRect(px + PX - 2, py, 2, PX);
     }
   }
 
@@ -477,6 +482,52 @@ export function makeSignTexture(key: string): THREE.Texture {
     ctx.fillRect(7, 3, 2, 2);
     ctx.fillRect(10, 2, 2, 2);
     ctx.fillRect(13, 4, 2, 2);
+  }
+  return canvasTexture(c);
+}
+
+/**
+ * A pack minion, drawn rather than painted.
+ *
+ * The same argument `makeWardenTexture` makes and for the same reason: there is no minion art
+ * on disk, every painted sprite in this game is somebody the player can stand beside, and a
+ * thing on the road that exists to be fought is furniture. Hard pixels say that before it has
+ * moved.
+ *
+ * Seeded off the pack, so one pack looks like itself every time you meet it and unlike the
+ * pack down the road. Tinting is left to the caller — `BillboardSprite.setTint` multiplies the
+ * material, so three members can differ visibly off one texture.
+ */
+export function makeMinionTexture(facing: 'front' | 'back' | 'side', seed: number): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 22);
+  const rng = mulberry32(seed);
+
+  // A hood, a body and two legs, jittered per pack so the silhouettes are not identical.
+  const cloth = ['#2b2a33', '#332e2c', '#26302c', '#312a24'][(rng() * 4) | 0]!;
+  const trim = ['#6b5a3c', '#5d4a52', '#4a5a5c'][(rng() * 3) | 0]!;
+  const hoodW = 6 + ((rng() * 3) | 0);
+  const hoodX = ((14 - hoodW) / 2) | 0;
+
+  ctx.fillStyle = cloth;
+  ctx.fillRect(hoodX, 2, hoodW, 5); // hood
+  ctx.fillRect(3, 7, 8, 10); // body
+  ctx.fillRect(2, 8, 1, 6);
+  ctx.fillRect(11, 8, 1, 6); // arms
+  ctx.fillStyle = '#14151a';
+  ctx.fillRect(4, 17, 3, 5);
+  ctx.fillRect(8, 17, 3, 5); // legs
+
+  ctx.fillStyle = trim;
+  ctx.fillRect(3, 12, 8, 1); // belt
+
+  if (facing === 'back') {
+    ctx.fillStyle = cloth;
+    ctx.fillRect(hoodX, 3, hoodW, 4); // no face on the way out
+  } else {
+    // One cold eye-line, the only mark that has to read across a dark road.
+    ctx.fillStyle = '#c8683a';
+    if (facing === 'side') ctx.fillRect(8, 4, 2, 1);
+    else ctx.fillRect(hoodX + 1, 4, hoodW - 2, 1);
   }
   return canvasTexture(c);
 }

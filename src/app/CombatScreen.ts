@@ -1087,7 +1087,11 @@ export class CombatScreen implements Screen {
       // The enemy Commander is drawn off-grid only while nothing represents it on the
       // board. Once it has a Bound Form, the off-grid model is the stale one — the same
       // rule the player's Companion follows.
-      ...(enemyEmbodied
+      //
+      // A rout has no enemy Commander at all, so there is nothing to stand on the dais and
+      // the same escape hatch drops it. Drawing a crowned figure the player cannot target
+      // would be the screen inventing an opponent the rules do not have.
+      ...(enemyEmbodied || board.rout
         ? []
         : [
             {

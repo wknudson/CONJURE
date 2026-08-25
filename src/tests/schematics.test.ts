@@ -56,6 +56,15 @@ describe('a fight teaches what it fought you with', () => {
     // this change that is most of the progression gone. If a new encounter trips this, its
     // enemy deck is entirely un-obtainable and that is worth knowing at build time.
     for (const encounter of ENCOUNTERS) {
+      // A fight with no deck is exempt, and the exemption is the rule working rather than a
+      // hole in it. A roaming pack fights with bodies and nothing else — that is the whole
+      // promise of one — and bodies are deliberately **not** obtainable cards: minions come
+      // from the Vanguard's point-buy, so a Schematic for one would be selling something no
+      // deck can hold. What a pack pays out is materials, which is what it was built to pay.
+      if (encounter.enemyDeck.length === 0) {
+        expect(schematicPool(encounter), `${encounter.id} has no deck to teach from`).toEqual([]);
+        continue;
+      }
       expect(schematicPool(encounter).length, `${encounter.id} teaches nothing`).toBeGreaterThan(0);
     }
   });

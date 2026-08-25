@@ -124,9 +124,21 @@ describe('per-encounter arenas', () => {
         zone.some((at) => session.canDeploy(null, at) || isFree(board, at)),
         `${enc.id} left nowhere to stand`,
       ).toBe(true);
-      // The enemy's opening body must have made it onto the field. The player has none:
+      // The enemy's opening line must have made it onto the field. The player has none:
       // their line comes from the Vanguard Roster, and this session brought no roster.
-      expect(board.units.filter((u) => u.defId === 'vanguard_footman')).toHaveLength(1);
+      //
+      // Counted as the whole line rather than as "exactly one vanguard_footman", which was
+      // the same assertion by proxy for as long as the free opening body was the only one
+      // any encounter fielded. A roaming pack sets `vanguard: null` and brings footmen of
+      // its own, so the proxy said two and meant nothing. This asks the question directly.
+      const expectedEnemies =
+        enc.enemyOpeningBoard.length +
+        (enc.vanguard === null ? 0 : 1) +
+        (enc.enemyCompanion ? 1 : 0);
+      expect(
+        board.units.filter((u) => u.side === 'enemy'),
+        `${enc.id} did not field its whole opening line`,
+      ).toHaveLength(expectedEnemies);
     }
   });
 

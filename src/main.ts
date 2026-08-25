@@ -32,6 +32,7 @@ import { DeckBuilderScreen } from './app/DeckBuilderScreen.js';
 import type { DeckBuilderResult } from './app/DeckBuilderScreen.js';
 import { PreCombatScreen } from './app/PreCombatScreen.js';
 import { DistrictScreen } from './district/DistrictScreen.js';
+import { DEFAULT_AREA, areaById } from './district/areas/index.js';
 import { tutorialActive } from './district/quest.js';
 import { ShopScreen } from './app/ShopScreen.js';
 import { ArtificerScreen } from './app/ArtificerScreen.js';
@@ -48,7 +49,14 @@ import {
   type TutorialFlag,
 } from './app/save.js';
 import { forfeitIfAbandoned, isDown, rescuePlayer } from './core/overworld/state.js';
-import { composeBoard, encounterForBounty, huntBoard, type Bounty } from './core/data/bounties.js';
+import {
+  composeBoard,
+  encounterForBounty,
+  huntBoard,
+  packBounty,
+  type Bounty,
+} from './core/data/bounties.js';
+import { isPack, packByEncounter } from './core/data/packs.js';
 import { isHunt } from './core/data/hunts.js';
 import { storyContractByEncounter } from './core/data/campaign.js';
 import {
@@ -300,8 +308,25 @@ function recordTutorial(flag: TutorialFlag): void {
  * A player who walks in on the floor is picked up at the door rather than being stopped
  * at it — the rescue is a fee and a hospital bed, not a wall.
  */
+/**
+ * Which area the player is standing in.
+ *
+ * `playerPos.mapId` was decorative — only `restorePosition` read it, and only to reject a
+ * position saved somewhere else. It selects the screen now, which is what makes a fight
+ * taken out in the wilds return you to the wilds with no extra bookkeeping. A save written
+ * before areas existed says `'start'`, and anything unrecognised falls back to the ward.
+ */
+function currentAreaId(): string {
+  return areaById(profile().state.overworld.playerPos?.mapId ?? '')?.id ?? DEFAULT_AREA.id;
+}
+
 function showDistrict(companionId: string): void {
+  showArea(currentAreaId(), companionId);
+}
+
+function showArea(areaId: string, companionId: string): void {
   rescueIfDown();
+  const area = areaById(areaId) ?? DEFAULT_AREA;
   const global = profile().state;
   // The gauge is resynced on every entry rather than only when a Companion changes: it
   // is the one number every clamp in the game reads, and a profile restored with a
@@ -313,6 +338,7 @@ function showDistrict(companionId: string): void {
 
   screens.go(
     new DistrictScreen({
+      area,
       global,
       companionId,
       companionLevel: activeCompanion().level,
@@ -423,6 +449,16 @@ function showDistrict(companionId: string): void {
           }),
         ),
       onJournal: () => showBuilder(companionId, () => showDistrict(companionId)),
+      onTravel: (exit) => showArea(exit.to, companionId),
+      // A pack is a fight that happened to you, so it is deliberately *not* routed through
+      // `onBounty`: that path records `bounty_taken` and would tick a step of the guided lap
+      // the player never walked. Everything after the hand-off is the ordinary road, because
+      // that road is what pays the spoils and closes the abandon failsafe.
+      onPack: (encounterId) => {
+        const pack = packByEncounter(encounterId);
+        if (!pack) return;
+        takeBounty(packBounty(pack, global.overworld.bountySeed), companionId);
+      },
       onBounty: (bounty) => {
         // Any real contract counts, not only the Novice one. The board steers a new
         // Commander at the Novice posting and refuses the rest — but it lifts that gate if
@@ -713,7 +749,10 @@ function finishCombat(
   //
   // `Date.now()` is read here rather than in `core`, which stays clock-free: the registry
   // does the arithmetic and is handed the time. See `core/data/hunts.ts`.
-  if (won && isHunt(played.id)) p.hunts[played.id] = Date.now();
+  // Hunts and packs share the clock, because they are the same promise: the thing you
+  // cleared is gone for a while and then it is back. A pack is stamped on a win only, so
+  // being driven off leaves it standing on the road where you left it.
+  if (won && (isHunt(played.id) || isPack(played.id))) p.hunts[played.id] = Date.now();
 
   const offer = won
     ? rollSchematicOffer(

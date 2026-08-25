@@ -167,6 +167,14 @@ export interface BoardView {
   enemy: CommanderView;
   encounterName: string;
   bossPhase?: number;
+  /**
+   * This fight is won by clearing the board, and has no enemy Commander to show.
+   *
+   * On the view rather than inferred from an empty name, because the HUD and the renderer
+   * both have to agree to draw nothing — and "the enemy bar is missing" is the kind of
+   * thing that looks like a bug unless something says out loud that it is deliberate.
+   */
+  rout?: boolean;
 }
 
 export interface CommanderView {

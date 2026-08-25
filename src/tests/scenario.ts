@@ -81,6 +81,7 @@ export function scenario(opts: {
       name: 'Test',
       bossPhase: 1,
       firedGates: [],
+    rout: false,
       chainCancelled: false,
       subjugation: { sealed: false, active: false, anchorUnitId: null, turnsSurvived: 0 },
     },

@@ -60,6 +60,7 @@ import {
   HUNT_SHELF_LYNX,
   HUNT_TALLOW_AUROCHS,
 } from './hunts.js';
+import { PACK_ENCOUNTERS } from './packs.js';
 
 // Roughly in order of what they ask of a player: an honest duel, then a corridor that
 // punishes standing still, then an open field where nothing can see, then the boss.
@@ -113,6 +114,9 @@ export const ENCOUNTERS: EncounterDef[] = [
   HUNT_TALLOW_AUROCHS,
   HUNT_PYLON_KITE,
   HUNT_BARROW_JACKAL,
+  // The roaming packs. Spread rather than listed, because what a pack *is* lives in
+  // `data/packs.ts` and this file should not be a second place to forget one.
+  ...PACK_ENCOUNTERS,
 ];
 
 export function encounterById(id: string): EncounterDef | undefined {

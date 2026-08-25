@@ -425,6 +425,12 @@ function onLine(from: Coord[], targets: Coord[]): boolean {
 }
 
 export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): boolean {
+  // A rout has no enemy commander worth the name. Nothing may aim at the space where one
+  // would have stood, because the pack is the whole of the opposition — an attack that
+  // "hit the enemy Commander" here would be a blow landing on an abstraction the fight has
+  // already said does not exist.
+  if (state.encounter.rout && targetSide === 'enemy') return false;
+
   const cells = cellsOf(unit);
 
   if (unit.rangeMax <= 2 && unit.attackProfile === undefined) {

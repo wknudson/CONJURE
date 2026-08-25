@@ -18,6 +18,7 @@ import { hashText, makeRng, nextInt } from '../util/rng.js';
 import { REAGENTS } from './splicing.js';
 import { nextStoryContract, storyContractByEncounter, type StoryContract } from './campaign.js';
 import { HUNTS, huntByEncounter, type Hunt } from './hunts.js';
+import { packByEncounter, type PackDef } from './packs.js';
 
 export type BountyDifficulty = 'novice' | 'adept' | 'master';
 
@@ -98,6 +99,11 @@ export function tierOfEncounter(encounterId: string): BountyDifficulty {
   // fallback below is apologising for.
   const wild = huntByEncounter(encounterId);
   if (wild) return wild.tier;
+  // And packs. Unfiled they would fall through to Novice, which pays **no shards** — the
+  // exact reward class a pack exists to hand out. The same value also picks how many
+  // Schematics a win offers, so getting it wrong is quietly wrong twice.
+  const pack = packByEncounter(encounterId);
+  if (pack) return pack.tier;
   for (const tier of DIFFICULTIES) {
     if (TIER_ENCOUNTERS[tier].includes(encounterId)) return tier;
   }
@@ -340,6 +346,39 @@ export function huntBounty(hunt: Hunt, seed: number): Bounty {
         : {}),
     },
     flavour: encounter?.blurb ?? 'Standing work, past the gate.',
+  };
+}
+
+/**
+ * One roaming pack, dressed as a Bounty.
+ *
+ * Same argument as `huntBounty`, one step further out: a pack is not posted anywhere at all
+ * — you walked into it — and it still rides the ordinary contract road, because that road is
+ * what pays the spoils, offers the Schematics, records the Ledger, and above all closes the
+ * open-contract failsafe. A fight started outside it could be abandoned by closing the tab.
+ *
+ * Pays Marrow Shards and a little coin: shards are the Ascension currency, and the point of
+ * the packs is to be the faucet for one. No wager — a wager is a bet against a person, and
+ * these did not agree to anything either.
+ */
+export function packBounty(pack: PackDef, seed: number): Bounty {
+  const rng = makeRng((seed ^ hashText(pack.encounterId)) >>> 0);
+  const pay = TIER_PAY[pack.tier];
+  return {
+    id: `pack_${pack.encounterId}`,
+    title: pack.name,
+    difficulty: pack.tier,
+    enemySeed: pack.encounterId,
+    spoils: {
+      // Deliberately under a contract's purse. Packs are a material faucet, not an income:
+      // the road should never be the efficient way to earn Ducats.
+      ducats: Math.round(pay.ducats * 0.4) + nextInt(rng, 10),
+      // At least one, whatever the tier says. A Novice contract pays no shards because it is
+      // errand work in a lit ward; a pack is neither, and paying nothing would leave the
+      // whole feature rewarding nothing the player wanted.
+      marrowShards: Math.max(1, pay.marrowShards),
+    },
+    flavour: pack.blurb,
   };
 }
 

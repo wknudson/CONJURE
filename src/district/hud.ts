@@ -134,6 +134,20 @@ export class DistrictHud {
    * that rewrote its own text sixty times a second would fight the CSS transition it
    * depends on for the fade.
    */
+  /**
+   * Takes the zone chip and the danger vignette off the screen entirely.
+   *
+   * For an area where Sidewalk Immunity is not a rule. Pinning the chip to EXPOSED there
+   * would be technically true and a lie in effect: it reads as "you are in trouble" when what
+   * it means is "that rule is not in play here".
+   */
+  hideZone(): void {
+    this.zoneSafe = null;
+    this.zoneChip.classList.remove('is-safe', 'is-danger');
+    this.zoneChip.textContent = '';
+    this.vignette.classList.remove('is-shown');
+  }
+
   setZone(safe: boolean): void {
     if (this.zoneSafe === safe) return;
     this.zoneSafe = safe;

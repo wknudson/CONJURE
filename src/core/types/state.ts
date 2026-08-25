@@ -163,6 +163,15 @@ export interface EncounterState {
   /** Gates already fired, so a 50%/25% threshold triggers exactly once. */
   firedGates: string[];
   /**
+   * Set when the encounter is won by clearing the board rather than by felling a commander.
+   *
+   * Read by `checkLethal`, by the Pacifist Lockout, and by the two places that draw or aim at
+   * the enemy portrait. One flag rather than four independent checks, because a fight where
+   * three of them agreed and the fourth did not would be unwinnable or unloseable in a way
+   * nothing would report.
+   */
+  rout: boolean;
+  /**
    * Set when a boss Damage Gate clamps HP mid-chain. The effect interpreter and the
    * cascade worklist both check this and abandon the rest of the current chain.
    */

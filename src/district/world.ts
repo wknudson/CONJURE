@@ -9,25 +9,19 @@
  */
 
 import * as THREE from 'three';
-import { LOOK } from './look.js';
+import { LOOK, ambientFor, type AmbientDef } from './look.js';
 import type { ColliderSet } from './collision.js';
 import {
-  BOARD_POS,
-  CRATES,
-  DOORS,
-  GATE_POS,
-  GRID,
-  LAMPS,
   TILE,
-  TREES,
   extractRects,
+  groundRowsOf,
   splitRun,
+  waterRowsOf,
   xOfCol,
   zOfRow,
+  type AreaDef,
 } from './map.js';
 import {
-  GROUND_ROW0,
-  GROUND_ROWS,
   bakeGround,
   makeBoardTexture,
   makeCrateTexture,
@@ -68,9 +62,19 @@ interface ImpactLight {
   peak: number;
 }
 
-const GROUND_W = GRID * TILE;
-const GROUND_D = GROUND_ROWS * TILE;
-const GROUND_CZ = zOfRow(GROUND_ROW0) - TILE / 2 + GROUND_D / 2;
+/**
+ * The ground plane's span, computed per area rather than at import.
+ *
+ * These were module constants derived from a single global grid. Left that way they would
+ * have described Ashfall's ground while the collision grid and the baked texture described
+ * somebody else's — the exact "four answers that disagreed" failure `map.ts` exists to end,
+ * and silent, because nothing compares them.
+ */
+function groundSpan(area: AreaDef): { w: number; d: number; cz: number } {
+  const row0 = waterRowsOf(area);
+  const d = groundRowsOf(area) * TILE;
+  return { w: area.cols * TILE, d, cz: zOfRow(area, row0) - TILE / 2 + d / 2 };
+}
 
 export class DistrictWorld {
   readonly scene = new THREE.Scene();
@@ -84,8 +88,18 @@ export class DistrictWorld {
   private readonly lamps: Lamp[] = [];
   private readonly signs: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = [];
   private readonly impacts: ImpactLight[] = [];
-  private readonly waterTexture: THREE.Texture;
+  /** Absent in an area with no canal. `dispose` and `scrollWater` both allow for it. */
+  private readonly waterTexture: THREE.Texture | null = null;
   private readonly colliderHelpers = new THREE.Group();
+  /**
+   * This area's ambience.
+   *
+   * Held rather than looked up per call so the tuning panel and the scene are editing one
+   * object: `AMBIENT[id]` is mutable and the GUI binds straight to it, which is what makes a
+   * nudged fog value show up without a reload — and what stops the ward and the road from
+   * sharing one set of numbers the way they would if this still read `LOOK`.
+   */
+  private readonly amb: AmbientDef;
 
   private readonly occRay = new THREE.Raycaster();
   private readonly occDir = new THREE.Vector3();
@@ -93,19 +107,25 @@ export class DistrictWorld {
   private readonly occHit = new Set<THREE.Object3D>();
 
   constructor(
+    area: AreaDef,
     private readonly colliders: ColliderSet,
     maxAnisotropy: number,
   ) {
-    this.scene.fog = new THREE.FogExp2(LOOK.fogColor, LOOK.fogDensity);
-    this.scene.background = new THREE.Color(LOOK.fogColor);
+    // The ambience is the area's; the camera and the film are the game's. See `AMBIENT`.
+    const amb = ambientFor(area.id);
+    this.amb = amb;
+    this.scene.fog = new THREE.FogExp2(amb.fogColor, amb.fogDensity);
+    this.scene.background = new THREE.Color(amb.fogColor);
 
     /* --- ground, outskirts, canal --- */
+    const span = groundSpan(area);
+    const waterRows = waterRowsOf(area);
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(GROUND_W, GROUND_D),
-      new THREE.MeshLambertMaterial({ map: bakeGround(maxAnisotropy) }),
+      new THREE.PlaneGeometry(span.w, span.d),
+      new THREE.MeshLambertMaterial({ map: bakeGround(area, maxAnisotropy) }),
     );
     ground.rotation.x = -Math.PI / 2;
-    ground.position.set(0, 0, GROUND_CZ);
+    ground.position.set(0, 0, span.cz);
     ground.receiveShadow = true;
     this.scene.add(ground);
 
@@ -119,74 +139,99 @@ export class DistrictWorld {
     outskirts.position.y = -0.9;
     this.scene.add(outskirts);
 
-    this.waterTexture = makeWaterTexture();
-    // Unlit on purpose: no lamp reaches the canal, and a Lambert surface out there renders
-    // as pure black. Basic material lets the water carry its own moonlight, and it still
-    // takes fog so it fades into the smog like everything else.
-    const water = new THREE.Mesh(
-      new THREE.PlaneGeometry(GROUND_W, GROUND_ROW0 * TILE + 2),
-      new THREE.MeshBasicMaterial({ map: this.waterTexture }),
-    );
-    water.rotation.x = -Math.PI / 2;
-    water.position.set(0, -0.5, zOfRow(0) - TILE / 2 + (GROUND_ROW0 * TILE + 2) / 2 - 1);
-    this.scene.add(water);
+    // Only where there is a canal to draw. An area with no water gets neither surface nor
+    // quay, and `waterTexture` stays null — which `dispose` and `scrollWater` both allow for.
+    if (waterRows > 0) {
+      const depth = waterRows * TILE + 2;
+      this.waterTexture = makeWaterTexture();
+      // Unlit on purpose: no lamp reaches the canal, and a Lambert surface out there renders
+      // as pure black. Basic material lets the water carry its own moonlight, and it still
+      // takes fog so it fades into the smog like everything else.
+      const water = new THREE.Mesh(
+        new THREE.PlaneGeometry(span.w, depth),
+        new THREE.MeshBasicMaterial({ map: this.waterTexture }),
+      );
+      water.rotation.x = -Math.PI / 2;
+      water.position.set(0, -0.5, zOfRow(area, 0) - TILE / 2 + depth / 2 - 1);
+      this.scene.add(water);
 
-    const quay = new THREE.Mesh(
-      new THREE.BoxGeometry(GROUND_W, 0.7, 0.7),
-      new THREE.MeshLambertMaterial({ color: 0x2a2b30 }),
-    );
-    quay.position.set(0, -0.15, zOfRow(GROUND_ROW0) - TILE / 2 - 0.35);
-    quay.castShadow = true;
-    quay.receiveShadow = true;
-    this.scene.add(quay);
+      const quay = new THREE.Mesh(
+        new THREE.BoxGeometry(span.w, 0.7, 0.7),
+        new THREE.MeshLambertMaterial({ color: 0x2a2b30 }),
+      );
+      quay.position.set(0, -0.15, zOfRow(area, waterRows) - TILE / 2 - 0.35);
+      quay.castShadow = true;
+      quay.receiveShadow = true;
+      this.scene.add(quay);
+    }
 
-    /* --- buildings, read straight out of the map --- */
+    /* --- solid ground, read straight out of the map ---
+       Every character whose legend entry carries a `solid` profile, rather than the two
+       hardcoded 'B' and 'V' branches this used to be. The heights, the insets and the
+       chimneys live on the tile now, so an area's rock face and a ward's terrace come out of
+       one loop and neither character is magic here. */
     const wallTexture = makeWallTexture();
     const buildRng = mulberry32(4242);
-    for (const rect of extractRects('B')) {
-      for (const [off, w] of splitRun(rect.w)) {
-        const cx = xOfCol(rect.col + off) - TILE / 2 + (w * TILE) / 2;
-        const cz = zOfRow(rect.row) - TILE / 2 + (rect.d * TILE) / 2;
-        // Capped well under the camera's sight line to the player, so the occlusion fade
-        // is a safety net for the awkward angles rather than a thing that runs constantly.
-        const h = 4.8 + buildRng() * 2.2;
-        this.addStructure(wallTexture, cx, cz, w * TILE - 0.3, h, rect.d * TILE - 0.3, {
-          chimney: buildRng() < 0.4 ? 1.6 + buildRng() * 1.8 : 0,
-        });
-      }
-    }
-    for (const rect of extractRects('V')) {
-      for (const [off, w] of splitRun(rect.w)) {
-        const cx = xOfCol(rect.col + off) - TILE / 2 + (w * TILE) / 2;
-        const cz = zOfRow(rect.row) - TILE / 2 + (rect.d * TILE) / 2;
-        this.addStructure(wallTexture, cx, cz, w * TILE - 0.1, 3.2, rect.d * TILE - 1.6, {});
+    for (const [char, def] of Object.entries(area.legend)) {
+      const solid = def.solid;
+      if (!solid) continue;
+      for (const rect of extractRects(area, char)) {
+        const runs = solid.split ? splitRun(rect.w) : ([[0, rect.w]] as [number, number][]);
+        for (const [off, w] of runs) {
+          const cx = xOfCol(area, rect.col + off) - TILE / 2 + (w * TILE) / 2;
+          const cz = zOfRow(area, rect.row) - TILE / 2 + (rect.d * TILE) / 2;
+          // Capped well under the camera's sight line to the player, so the occlusion fade
+          // is a safety net for the awkward angles rather than a thing that runs constantly.
+          const h = solid.minHeight + buildRng() * (solid.maxHeight - solid.minHeight);
+          this.addStructure(
+            wallTexture,
+            cx,
+            cz,
+            w * TILE - solid.inset,
+            h,
+            rect.d * TILE - solid.depthInset,
+            { chimney: buildRng() < solid.chimneyChance ? 1.6 + buildRng() * 1.8 : 0 },
+          );
+        }
       }
     }
     wallTexture.dispose();
 
-    /* --- the far city, pure silhouette in the smog --- */
-    const skyRng = mulberry32(88);
-    for (let i = 0; i < 16; i++) {
-      const a = (i / 16) * Math.PI * 2 + skyRng() * 0.2;
-      const r = 52 + skyRng() * 22;
-      const h = 12 + skyRng() * 22;
-      const block = new THREE.Mesh(
-        new THREE.BoxGeometry(6 + skyRng() * 8, h, 6 + skyRng() * 8),
-        new THREE.MeshLambertMaterial({ color: 0x171419 }),
-      );
-      block.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r);
-      this.scene.add(block);
+    /* --- the horizon, pure silhouette in the smog ---
+       A city ring for the ward; low broken humps for open country. Either way it exists so
+       the world does not visibly end. */
+    const horizon = area.props.horizon ?? 'none';
+    if (horizon !== 'none') {
+      const skyRng = mulberry32(88);
+      const city = horizon === 'city';
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2 + skyRng() * 0.2;
+        const r = 52 + skyRng() * 22;
+        const h = city ? 12 + skyRng() * 22 : 7 + skyRng() * 6;
+        const block = new THREE.Mesh(
+          new THREE.BoxGeometry(6 + skyRng() * 8, h, 6 + skyRng() * 8),
+          new THREE.MeshLambertMaterial({ color: city ? 0x171419 : 0x14180f }),
+        );
+        block.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r);
+        this.scene.add(block);
+      }
     }
 
     /* --- dressing --- */
-    const treeTexture = makeTreeTexture();
-    for (const t of TREES) this.addBillboard(treeTexture, 3, 4, t.x, t.z);
+    const trees = area.props.trees ?? [];
+    if (trees.length > 0) {
+      const treeTexture = makeTreeTexture();
+      for (const t of trees) this.addBillboard(treeTexture, 3, 4, t.x, t.z);
+    }
 
-    const crateTexture = makeCrateTexture();
-    for (const c of CRATES) this.addCrate(crateTexture, c.x, c.z, c.size ?? 1.1);
+    const crates = area.props.crates ?? [];
+    if (crates.length > 0) {
+      const crateTexture = makeCrateTexture();
+      for (const c of crates) this.addCrate(crateTexture, c.x, c.z, c.size ?? 1.1);
+    }
 
     /* --- door plaques --- */
-    for (const door of DOORS) {
+    for (const door of area.props.doors ?? []) {
       const sign = new THREE.Mesh(
         new THREE.PlaneGeometry(2.0, 1.2),
         new THREE.MeshBasicMaterial({
@@ -209,20 +254,12 @@ export class DistrictWorld {
     /* --- graffiti ---
        The clue layer, hung on the same walls the plaques are, a few strides from each
        door and at reading height rather than signage height. Unlit basic material like
-       the plaques, so the words hold in the dark the way chalk does. */
-    const GRAFFITI: { text: string; door: number; dx: number; tint: string }[] = [
-      { text: 'THE ENGINES EAT OUR MARROW', door: 0, dx: 3.2, tint: '#b7ae9d' },
-      { text: 'THE CENSUS COUNTS DOWN', door: 1, dx: -3.4, tint: '#a46a4a' },
-      { text: "VANE'S LIGHT IS OUR DARK", door: 2, dx: 3.0, tint: '#b7ae9d' },
-      // The last line before the Spire, per the doc: fresh paint on the wall nearest the
-      // board that posts The Summons. TODO(worldbuild): should live on the Highcourt
-      // approach once one exists, and ideally only appear late-campaign — the world does
-      // not read campaign state yet.
-      { text: "DON'T CARRY IT IN", door: 3, dx: -3.2, tint: '#a4543a' },
-    ];
-    for (const g of GRAFFITI) {
-      const door = DOORS[g.door];
-      if (!door) continue;
+       the plaques, so the words hold in the dark the way chalk does.
+
+       Anchored to a wall position on the area rather than to a door's index in this file's
+       own list, which is what it was: a `door: number` reaching into `DOORS`, silently
+       skipped when the index missed. Reordering the doors would have erased the words. */
+    for (const g of area.props.graffiti ?? []) {
       const tex = makeGraffitiTexture(g.text);
       const img = tex.image as HTMLCanvasElement;
       const scrawl = new THREE.Mesh(
@@ -237,47 +274,56 @@ export class DistrictWorld {
           side: THREE.DoubleSide,
         }),
       );
-      const facesSouth = door.signZ < door.z;
-      scrawl.position.set(door.signX + g.dx, 1.15, door.signZ + (facesSouth ? 0.09 : -0.09));
-      if (!facesSouth) scrawl.rotation.y = Math.PI;
+      scrawl.position.set(g.wallX + g.dx, 1.15, g.wallZ + (g.facesSouth ? 0.09 : -0.09));
+      if (!g.facesSouth) scrawl.rotation.y = Math.PI;
       scrawl.rotation.z = 0.03 * (g.dx > 0 ? -1 : 1); // hand-drawn, not hung level
       this.scene.add(scrawl);
-      this.attachToStructure(door.signX, door.signZ, scrawl.material);
+      this.attachToStructure(g.wallX, g.wallZ, scrawl.material);
     }
 
     /* --- the bounty board --- */
-    const boardPost = new THREE.Mesh(
-      new THREE.BoxGeometry(0.24, 1.6, 0.24),
-      new THREE.MeshLambertMaterial({ color: 0x2a2118 }),
-    );
-    boardPost.position.set(BOARD_POS.x, 0.8, BOARD_POS.z);
-    boardPost.castShadow = true;
-    this.scene.add(boardPost);
-    const board = this.addBillboard(makeBoardTexture(), 2.4, 2.0, BOARD_POS.x, BOARD_POS.z);
-    board.position.y = 1.4;
-    this.colliders.add(BOARD_POS.x, BOARD_POS.z, 0.9, 0.5, 'board');
+    const boardAt = area.props.board;
+    if (boardAt) {
+      const boardPost = new THREE.Mesh(
+        new THREE.BoxGeometry(0.24, 1.6, 0.24),
+        new THREE.MeshLambertMaterial({ color: 0x2a2118 }),
+      );
+      boardPost.position.set(boardAt.x, 0.8, boardAt.z);
+      boardPost.castShadow = true;
+      this.scene.add(boardPost);
+      const board = this.addBillboard(makeBoardTexture(), 2.4, 2.0, boardAt.x, boardAt.z);
+      board.position.y = 1.4;
+      this.colliders.add(boardAt.x, boardAt.z, 0.9, 0.5, 'board');
+    }
 
-    /* --- the sealed gate --- */
-    const gate = new THREE.Mesh(
-      new THREE.PlaneGeometry(8, 4.6),
-      new THREE.MeshLambertMaterial({
-        map: makeGateTexture(),
-        transparent: false,
-        alphaTest: 0.5,
-        side: THREE.DoubleSide,
-      }),
-    );
-    gate.geometry.translate(0, 2.3, 0);
-    gate.position.set(GATE_POS.x, 0, GATE_POS.z);
-    gate.castShadow = true;
-    this.scene.add(gate);
-    this.colliders.add(GATE_POS.x, GATE_POS.z, 8, 1.2, 'gate');
+    /* --- the gates ---
+       One per exit. It is scenery and a wall with a hole in it: the collider spans the
+       opening so you cannot walk round the frame, and the hotspot in front of it is what
+       actually takes you through. */
+    for (const exit of area.exits) {
+      const at = exit.gate;
+      if (!at) continue;
+      const gate = new THREE.Mesh(
+        new THREE.PlaneGeometry(8, 4.6),
+        new THREE.MeshLambertMaterial({
+          map: makeGateTexture(),
+          transparent: false,
+          alphaTest: 0.5,
+          side: THREE.DoubleSide,
+        }),
+      );
+      gate.geometry.translate(0, 2.3, 0);
+      gate.position.set(at.x, 0, at.z);
+      gate.castShadow = true;
+      this.scene.add(gate);
+      this.colliders.add(at.x, at.z, 8, 1.2, 'gate');
+    }
 
     /* --- lighting rig --- */
-    this.hemi = new THREE.HemisphereLight(LOOK.skyColor, LOOK.groundBounce, LOOK.ambientIntensity);
+    this.hemi = new THREE.HemisphereLight(amb.skyColor, amb.groundBounce, amb.ambientIntensity);
     this.scene.add(this.hemi);
 
-    this.sun = new THREE.DirectionalLight(LOOK.sunColor, LOOK.sunIntensity);
+    this.sun = new THREE.DirectionalLight(amb.sunColor, amb.sunIntensity);
     this.sun.position.set(-12, 18, 10);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
@@ -292,7 +338,7 @@ export class DistrictWorld {
     this.scene.add(this.sun);
     this.scene.add(this.sun.target);
 
-    for (const l of LAMPS) this.addLamp(l.x, l.z);
+    for (const l of area.props.lamps ?? []) this.addLamp(l.x, l.z);
 
     /* --- collider wireframes, off by default --- */
     this.colliderHelpers.visible = false;
@@ -462,6 +508,9 @@ export class DistrictWorld {
   }
 
   scrollWater(dt: number): void {
+    // No canal, nothing to scroll. Called every frame from the loop, which does not know
+    // or care which area it is drawing.
+    if (!this.waterTexture) return;
     this.waterTexture.offset.x += 0.03 * dt;
   }
 
@@ -596,20 +645,20 @@ export class DistrictWorld {
      ============================================================ */
 
   applyFog(): void {
-    (this.scene.fog as THREE.FogExp2).color.set(LOOK.fogColor);
-    (this.scene.fog as THREE.FogExp2).density = LOOK.fogDensity;
-    (this.scene.background as THREE.Color).set(LOOK.fogColor);
+    (this.scene.fog as THREE.FogExp2).color.set(this.amb.fogColor);
+    (this.scene.fog as THREE.FogExp2).density = this.amb.fogDensity;
+    (this.scene.background as THREE.Color).set(this.amb.fogColor);
   }
 
   applySun(): void {
-    this.sun.intensity = LOOK.sunIntensity;
-    this.sun.color.set(LOOK.sunColor);
+    this.sun.intensity = this.amb.sunIntensity;
+    this.sun.color.set(this.amb.sunColor);
   }
 
   applyAmbient(): void {
-    this.hemi.intensity = LOOK.ambientIntensity;
-    this.hemi.color.set(LOOK.skyColor);
-    this.hemi.groundColor.set(LOOK.groundBounce);
+    this.hemi.intensity = this.amb.ambientIntensity;
+    this.hemi.color.set(this.amb.skyColor);
+    this.hemi.groundColor.set(this.amb.groundBounce);
   }
 
   applyLamps(): void {
@@ -656,7 +705,9 @@ export class DistrictWorld {
     });
 
     this.sun.shadow.dispose();
-    this.waterTexture.dispose();
+    // Optional-chained because an area without a canal never made one. Unguarded this is a
+    // crash on leaving the wilds, not a leak.
+    this.waterTexture?.dispose();
     this.scene.clear();
     this.billboards.length = 0;
     this.structures.length = 0;
