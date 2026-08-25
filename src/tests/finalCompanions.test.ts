@@ -118,8 +118,10 @@ describe('the roster is complete', () => {
     }
   });
 
-  it('fields Ferrum and Lexis with bodies, decks and three knacks each', () => {
-    for (const id of ['ferrum', 'lexis']) {
+  it('fields Ferrum with a body, a deck and three knacks', () => {
+    // Was "Ferrum and Lexis". The Ink Owl was retired as a bloodline; Ferrum is what the
+    // pair of them was added to prove, and it still proves it.
+    for (const id of ['ferrum']) {
       const def = companionById(id)!;
       expect(def, id).toBeDefined();
       expect(CARDS[def.unitCardId], `${id} has no body`).toBeDefined();
@@ -128,10 +130,10 @@ describe('the roster is complete', () => {
     }
   });
 
-  it('builds both a legal opening deck out of the pooled collection', () => {
+  it('builds a legal opening deck out of the pooled collection', () => {
     // A species whose own deck does not validate would be unpickable.
     const collection = startingCollection();
-    for (const id of ['ferrum', 'lexis']) {
+    for (const id of ['ferrum']) {
       const def = companionById(id)!;
       const problems = validateDeck(def.deck, collection);
       expect(problems, `${id}: ${JSON.stringify(problems)}`).toHaveLength(0);
@@ -168,33 +170,6 @@ describe('Shield Oath', () => {
   });
 });
 
-describe('Marginalia', () => {
-  it('draws a card', () => {
-    const state = scenario({ deck: ['scout_imp', 'scout_imp', 'scout_imp'] });
-    const before = state.players.player.hand.length;
-
-    const ctx = makeCtx(state);
-    RESONANCE.arcane!.apply(ctx, 'player', 0);
-
-    expect(ctx.state.players.player.hand.length).toBe(before + 1);
-  });
-
-  it('goes through the ordinary draw, so a full hand burns for Marrow', () => {
-    // The passive is not exempt from the hand limit: that is what makes the Coin and the
-    // Hoarder knack a build rather than a nicety.
-    const state = scenario({ deck: ['scout_imp', 'scout_imp'] });
-    const cmd = state.players.player;
-    while (cmd.hand.length < cmd.handLimit) cmd.hand.push(cmd.hand[0] ?? 'x');
-    const marrowBefore = cmd.marrow;
-
-    const ctx = makeCtx(state);
-    RESONANCE.arcane!.apply(ctx, 'player', 0);
-
-    expect(ctx.state.players.player.marrow, 'overdraw paid a Marrow').toBeGreaterThan(
-      marrowBefore,
-    );
-  });
-});
 
 describe('the new knacks reach the engine', () => {
   it('braces a collision by exactly what Heavy Plating promises', () => {
@@ -390,6 +365,8 @@ describe('the new cards as data', () => {
     expect(isRosterEligible(CARDS.concussive_blow!)).toBe(true);
     // The bank is a product of the Bomb, never a card in its own right.
     expect(isObtainable(CARDS.smoke_bank!), 'smoke_bank leaked into the loot pool').toBe(false);
+    // `lexis_bound` is still a card -- the Magistracy's clerk-bird, Vane's phase-1 body --
+    // but it is nobody's bloodline any more, so it is checked as a body and not as a species.
     for (const id of ['ferrum_bound', 'lexis_bound']) {
       expect(isObtainable(CARDS[id]!), id).toBe(false);
     }

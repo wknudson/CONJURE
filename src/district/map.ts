@@ -1,97 +1,58 @@
 /**
- * Ashfall Ward, as one grid of characters.
+ * What a walkable place is, as a grid of characters.
  *
- * This is the single source of truth for four separate things: what the ground is painted
- * with, where the Sidewalk Immunity rule holds, what the player can walk through, and
- * where the buildings stand. They were four answers once and they disagreed — a street
- * that looked paved but read as cobbles underfoot is a rule the player cannot learn. One
- * grid means the paving can never lie about where the rules change.
+ * A grid is the single source of truth for four separate things: what the ground is painted
+ * with, where the Sidewalk Immunity rule holds, what the player can walk through, and where
+ * the buildings stand. They were four answers once and they disagreed — a street that looked
+ * paved but read as cobbles underfoot is a rule the player cannot learn. One grid means the
+ * paving can never lie about where the rules change.
  *
- * Nothing here imports three.js or touches the DOM: it is geometry and lookup, so it can
- * be unit-tested without a canvas.
+ * This file used to *be* Ashfall Ward. It now describes the **kind** of thing Ashfall is, and
+ * the ward itself lives in `areas/ashfall.ts` beside the wildlands. That is the same move the
+ * file made once before, one level up: the four answers became one grid, and now the one grid
+ * becomes one of several.
+ *
+ * Nothing here imports three.js or touches the DOM: it is geometry and lookup, so it can be
+ * unit-tested without a canvas. In particular it holds **no module-level current area** —
+ * every lookup takes the area it is asking about. See `defineArea` for why that is not
+ * negotiable.
  */
-
-/** World units per tile. The whole ward is 20 tiles square. */
-export const TILE = 4;
-export const GRID = 20;
-export const HALF = (GRID * TILE) / 2;
 
 /**
- * The ward.
+ * World units per tile, global to every area.
  *
- *   S  sanctioned walkway  — SAFE, no Warden may see you here
- *   c  cobbles             — danger
- *   .  broken cobbles      — danger, weeds through the joints
- *   #  scrub verge         — danger
- *   W  canal               — impassable
- *   B  building footprint  — impassable, tall
- *   V  yard wall           — impassable, low
- *
- * The four trades sit on the cross-street (rows 12–13), two facing north and two facing
- * south, so a new Commander can walk the entire guided lap without once stepping off the
- * pavement. Leaving it is a choice they make, which is the only way the rule teaches.
+ * Deliberately not per-area. Every feel constant in the game is tuned against it — the walk
+ * speed, the collider radii, the interact radius, the camera distance — and the anti-tunneling
+ * proof in `collision.ts` is stated in terms of it. An area with a different tile size would
+ * be an area with a subtly different stride, which is a bug wearing the clothes of a feature.
  */
-export const MAP: readonly string[] = [
-  'WWWWWWWWWWWWWWWWWWWW', //  0  the canal
-  'WWWWWWWWWWWWWWWWWWWW', //  1
-  '##cccccccccccccccc##', //  2  quay
-  '##cccc......cccccc##', //  3  the sealed yard
-  '##cccccccccccccccc##', //  4
-  '##VVVVVVVVVVVVVVVV##', //  5  yard wall — the Magistracy's seal, permanently shut
-  '#cccccccccSSccccccc#', //  6
-  '#ccBBBBBBcSScBBBBBB#', //  7
-  '#cc......cSSc......#', //  8  west: warehouse yard (the Warden)   east: back alley
-  '#cc......cSSc......#', //  9
-  '#cc......cSSc......#', // 10
-  '#ccBBBBBBcSScBBBBBB#', // 11  ARTIFICER (west)          FIELD JOURNAL (east)
-  '#SSSSSSSSSSSSSSSSSS#', // 12  the cross-street
-  '#SSSSSSSSSSSSSSSSSS#', // 13
-  '#ccBBBBBBcSScBBBBBB#', // 14  APOTHECARY (west)         VIVARIUM (east)
-  '#ccBBBBBBcSScBBBBBB#', // 15
-  '#ccccccccSSSScccccc#', // 16
-  '##cccccSSSSSSSScccc#', // 17  the plaza
-  '###ccccSSSSSSSScc###', // 18
-  '####################', // 19
-];
+export const TILE = 4;
 
 export interface TileDef {
-  readonly tex: 'sidewalk' | 'cobble' | 'weeds' | 'grass' | 'water';
+  /** Which paint `bakeGround` puts down. Open-ended: the wilds grows its own. */
+  readonly tex: string;
+  /** Whether Sidewalk Immunity holds here. */
   readonly safe: boolean;
   readonly walk: boolean;
+  /**
+   * How this tile stands up, if it is solid.
+   *
+   * Here rather than in `world.ts` because building heights were literals in the geometry
+   * builder, keyed by the characters `B` and `V` — which made those two characters magic in a
+   * file that otherwise reads the grid generically. A new area's rock face gets a silhouette
+   * through the same door instead of a third hardcoded branch.
+   */
+  readonly solid?: {
+    readonly minHeight: number;
+    readonly maxHeight: number;
+    /** Shrink in x/z, so neighbouring blocks read as separate buildings. */
+    readonly inset: number;
+    readonly depthInset: number;
+    readonly chimneyChance: number;
+    /** Chunk long runs into two- and three-tile pieces, for a skyline. */
+    readonly split: boolean;
+  };
 }
-
-export const TILES: Record<string, TileDef> = {
-  S: { tex: 'sidewalk', safe: true, walk: true },
-  c: { tex: 'cobble', safe: false, walk: true },
-  '.': { tex: 'weeds', safe: false, walk: true },
-  '#': { tex: 'grass', safe: false, walk: true },
-  W: { tex: 'water', safe: false, walk: false },
-  B: { tex: 'cobble', safe: false, walk: false },
-  V: { tex: 'cobble', safe: false, walk: false },
-};
-
-/** Off the edge of the ward. Impassable, so the grid bounds itself. */
-const OUT_OF_BOUNDS: TileDef = { tex: 'water', safe: false, walk: false };
-
-export const colOf = (x: number): number => Math.floor((x + HALF) / TILE);
-export const rowOf = (z: number): number => Math.floor((z + HALF) / TILE);
-export const xOfCol = (col: number): number => col * TILE - HALF + TILE / 2;
-export const zOfRow = (row: number): number => row * TILE - HALF + TILE / 2;
-
-export function tileAt(x: number, z: number): TileDef {
-  const col = colOf(x);
-  const row = rowOf(z);
-  if (row < 0 || row >= GRID || col < 0 || col >= GRID) return OUT_OF_BOUNDS;
-  return TILES[MAP[row]![col]!] ?? OUT_OF_BOUNDS;
-}
-
-/** The Sidewalk Immunity test, asked every frame the player moves. */
-export const isSafeAt = (x: number, z: number): boolean => tileAt(x, z).safe;
-export const isWalkable = (x: number, z: number): boolean => tileAt(x, z).walk;
-
-/* ============================================================
-   Points of interest
-   ============================================================ */
 
 /** Which trade a door leads to. Mirrors the four callbacks the hub screen takes. */
 export type DoorKey = 'apothecary' | 'artificer' | 'vivarium' | 'journal';
@@ -116,72 +77,191 @@ export interface DoorSpec {
   readonly returnZ: number;
 }
 
-const WEST_X = xOfCol(5); // -18, the middle of both west blocks
-const EAST_X = xOfCol(15); // 22, the middle of both east blocks
+/**
+ * A way out of an area, and where it puts you down.
+ *
+ * `arrive` lives on the exit in the area you are **leaving**, which is `DoorSpec.returnZ`
+ * generalised to two dimensions and to a destination. Where you come back to is a property of
+ * the doorway rather than of the place: the wilds will grow a second way in, and both ways
+ * cannot share one arrival tile.
+ *
+ * Deliberately not derived from the reciprocal exit's position plus an offset — the offset's
+ * direction depends on which way the doorway faces, the data does not know that, and guessing
+ * is how somebody spawns inside a wall.
+ */
+export interface ExitSpec {
+  /** The area id this leads to. */
+  readonly to: string;
+  readonly x: number;
+  readonly z: number;
+  readonly label: string;
+  readonly radius?: number;
+  /**
+   * Where the gate itself stands, if this doorway has one to draw.
+   *
+   * Stated rather than derived from the hotspot. It *was* derived — "a stride north of where
+   * you stand" — which is true of Ashfall's yard wall and false the moment a doorway faces
+   * the other way: the wall landed between the arrival tile and the way out, and the second
+   * area was a room you could enter and not leave. Which side of a doorway the frame is on
+   * is a fact about that doorway, and the data is where facts live.
+   *
+   * Absent means no scenery and no collider — a gap in a thicket is a way through without
+   * being a gate.
+   */
+  readonly gate?: { readonly x: number; readonly z: number };
+  /** Where the player stands on the far side. Must be walkable there, and clear of its hotspot. */
+  readonly arrive: { readonly x: number; readonly z: number };
+}
+
+export interface Vec2 {
+  readonly x: number;
+  readonly z: number;
+}
+
+export interface NpcSpec {
+  readonly id: string;
+  readonly x: number;
+  readonly z: number;
+}
+
+/** A wandering minion pack. See `data/packs.ts` for what it fights as. */
+export interface PackSpec {
+  /** The encounter walking into it starts. */
+  readonly encounterId: string;
+  /** The middle of its beat. */
+  readonly x: number;
+  readonly z: number;
+  /** How far from home it will wander. */
+  readonly roam: number;
+}
 
 /**
- * North-side doors sit at the south face of the row-11 buildings (z = 8); south-side doors
- * at the north face of the row-14 buildings (z = 16). The player stands a stride into the
- * street from each.
+ * A line scrawled on a wall — the campaign's clue layer.
+ *
+ * Anchored to a wall position and an offset along it, rather than to a door's **index** in
+ * the area's door list, which is what it used to be. That form reached across files into an
+ * array position and skipped silently when the index missed, so reordering the doors would
+ * have erased the graffiti rather than moved it.
  */
-export const DOORS: readonly DoorSpec[] = [
-  { key: 'artificer', name: 'The Ironworks Artificer', x: WEST_X, z: 9.4, signX: WEST_X, signZ: 8.05, returnZ: 10.8 },
-  { key: 'journal', name: 'The Field Journal', x: EAST_X, z: 9.4, signX: EAST_X, signZ: 8.05, returnZ: 10.8 },
-  { key: 'apothecary', name: 'The Apothecary', x: WEST_X, z: 14.6, signX: WEST_X, signZ: 15.95, returnZ: 13.2 },
-  { key: 'vivarium', name: 'The Vivarium', x: EAST_X, z: 14.6, signX: EAST_X, signZ: 15.95, returnZ: 13.2 },
-];
+export interface GraffitiSpec {
+  readonly text: string;
+  /** The wall face it is painted on — the same point a door plaque is hung at. */
+  readonly wallX: number;
+  readonly wallZ: number;
+  /** Strides along the wall from that point. Its sign also decides which way the tilt goes. */
+  readonly dx: number;
+  /** Whether the painted face looks south (+z). Decides the nudge off the wall and the yaw. */
+  readonly facesSouth: boolean;
+  readonly tint: string;
+}
 
-/** Where a new Commander is put down: the plaza, in sight of the Dispatcher. */
-export const SPAWN = { x: 4, z: 30 } as const;
+/** Everything an area may put on top of its ground. All optional; the wilds uses few. */
+export interface AreaProps {
+  readonly doors?: readonly DoorSpec[];
+  readonly board?: Vec2;
+  readonly npcs?: readonly NpcSpec[];
+  /** Warden beats. One patrol per waypoint ring. */
+  readonly patrols?: readonly (readonly Vec2[])[];
+  readonly packs?: readonly PackSpec[];
+  /**
+   * Where the hunting notices are posted.
+   *
+   * The gate used to *be* this panel. Travel took the gate over, and the cooldown
+   * countdowns are still the only place a player can read when a beast comes back — so the
+   * board moved out to the road rather than being deleted.
+   */
+  readonly huntSignpost?: Vec2;
+  readonly crates?: readonly { x: number; z: number; size?: number }[];
+  readonly lamps?: readonly Vec2[];
+  readonly trees?: readonly Vec2[];
+  readonly graffiti?: readonly GraffitiSpec[];
+  /** Rows 0..n-1 are open water along the north edge. Absent means no canal and no quay. */
+  readonly waterRows?: number;
+  /** The ring of far silhouettes on the horizon. */
+  readonly horizon?: 'city' | 'treeline' | 'none';
+}
 
-/** The Dispatcher, close enough to the spawn to be the obvious first thing. */
-export const VEX_POS = { x: -2, z: 27 } as const;
+export interface AreaDef {
+  /** Matches `playerPos.mapId`. Changing it strands saves in this area. */
+  readonly id: string;
+  readonly name: string;
+  readonly grid: readonly string[];
+  readonly legend: Readonly<Record<string, TileDef>>;
+  /** Derived by `defineArea`, never authored. */
+  readonly cols: number;
+  readonly rows: number;
+  readonly halfX: number;
+  readonly halfZ: number;
+  /** Where a new Commander is put down, and the fallback for any restore that fails. */
+  readonly spawn: Vec2;
+  readonly exits: readonly ExitSpec[];
+  /**
+   * Whether Sidewalk Immunity is a rule here.
+   *
+   * `'none'` hides the zone chip and the danger vignette rather than pinning them to EXPOSED
+   * forever. An area with no pavement is not an area where you are permanently in trouble; it
+   * is an area where the rule does not apply, and the HUD should say the second thing.
+   */
+  readonly safety: 'sidewalk' | 'none';
+  readonly props: AreaProps;
+}
 
-/** The bounty board, on the plaza between the spawn and the cross-street. */
-export const BOARD_POS = { x: 12, z: 29 } as const;
+/** What an area is written as. The derived fields are filled in by `defineArea`. */
+export type AreaSpec = Omit<AreaDef, 'cols' | 'rows' | 'halfX' | 'halfZ'>;
 
-/** The sealed gate in the yard wall — dressing, and a hook for later content. */
-export const GATE_POS = { x: 4, z: zOfRow(5) } as const;
+/**
+ * The only way to make an area, because it is the only way the derived numbers get derived.
+ *
+ * The validation is new and it is free. A typo in the ASCII used to fall through `TILES` into
+ * out-of-bounds, so a mistyped character became an invisible hole the player walked into — the
+ * exact class of failure the one-grid rule exists to prevent, unreachable until now only
+ * because there was a single hand-checked grid. Two areas is where that luck runs out.
+ */
+export function defineArea(spec: AreaSpec): AreaDef {
+  const rows = spec.grid.length;
+  const cols = spec.grid[0]?.length ?? 0;
+  if (rows === 0 || cols === 0) throw new Error(`area ${spec.id}: empty grid`);
 
-/** The Warden's beat, clockwise around the open warehouse yard. */
-export const WARDEN_WAYPOINTS: readonly { x: number; z: number }[] = [
-  { x: -24, z: -6 },
-  { x: -8, z: -6 },
-  { x: -8, z: 2 },
-  { x: -24, z: 2 },
-];
+  for (let r = 0; r < rows; r++) {
+    const line = spec.grid[r]!;
+    if (line.length !== cols) {
+      throw new Error(`area ${spec.id}: row ${r} is ${line.length} wide, expected ${cols}`);
+    }
+    for (const ch of line) {
+      if (!spec.legend[ch]) throw new Error(`area ${spec.id}: no legend entry for '${ch}'`);
+    }
+  }
 
-/** Crates and clutter, kept clear of the Warden's patrol rectangle so it never snags. */
-export const CRATES: readonly { x: number; z: number; size?: number }[] = [
-  { x: 19.5, z: -6.5 },
-  { x: 25, z: 1.5 },
-  { x: -6, z: -2 },
-  { x: -26, z: -2 },
-];
+  return {
+    ...spec,
+    rows,
+    cols,
+    halfX: (cols * TILE) / 2,
+    halfZ: (rows * TILE) / 2,
+  };
+}
 
-/** Gas lamps, all on walkway tiles — the light *is* the safe zone, so it has to line up. */
-export const LAMPS: readonly { x: number; z: number }[] = [
-  { x: 0.7, z: -13 },
-  { x: 7.3, z: -13 },
-  { x: 0.7, z: -1 },
-  { x: 7.3, z: -1 },
-  { x: -16, z: 12.7 },
-  { x: 16, z: 12.7 },
-  { x: -4, z: 12.7 },
-  { x: 28, z: 12.7 },
-  { x: -8, z: 30 },
-  { x: 16, z: 30 },
-];
+/* ============================================================
+   Lookups
+   ============================================================ */
 
-/** Darkened trees along the canal bank. */
-export const TREES: readonly { x: number; z: number }[] = [
-  { x: -30, z: -26 },
-  { x: -24, z: -30 },
-  { x: 26, z: -28 },
-  { x: 32, z: -24 },
-  { x: -34, z: -20 },
-  { x: 34, z: -20 },
-];
+const OUT_OF_BOUNDS: TileDef = { tex: 'water', safe: false, walk: false };
+
+export const colOf = (a: AreaDef, x: number): number => Math.floor((x + a.halfX) / TILE);
+export const rowOf = (a: AreaDef, z: number): number => Math.floor((z + a.halfZ) / TILE);
+export const xOfCol = (a: AreaDef, col: number): number => col * TILE - a.halfX + TILE / 2;
+export const zOfRow = (a: AreaDef, row: number): number => row * TILE - a.halfZ + TILE / 2;
+
+export function tileAt(a: AreaDef, x: number, z: number): TileDef {
+  const col = colOf(a, x);
+  const row = rowOf(a, z);
+  if (row < 0 || row >= a.rows || col < 0 || col >= a.cols) return OUT_OF_BOUNDS;
+  return a.legend[a.grid[row]![col]!] ?? OUT_OF_BOUNDS;
+}
+
+/** The Sidewalk Immunity test, asked every frame the player moves. */
+export const isSafeAt = (a: AreaDef, x: number, z: number): boolean => tileAt(a, x, z).safe;
+export const isWalkable = (a: AreaDef, x: number, z: number): boolean => tileAt(a, x, z).walk;
 
 /* ============================================================
    Building extraction
@@ -200,22 +280,26 @@ export interface Rect {
  * Buildings are read out of the map rather than listed beside it, so a change to the ASCII
  * moves the geometry, the collision and the ground art together. Listing them twice is how
  * a wall ends up somewhere the paving says you can walk.
+ *
+ * Walks `rows × cols` rather than a square: it used to loop `GRID` in both dimensions, which
+ * was correct only for as long as every area was square, and would have dropped or duplicated
+ * buildings on the first oblong one without erroring.
  */
-export function extractRects(char: string): Rect[] {
-  const seen = Array.from({ length: GRID }, () => new Array<boolean>(GRID).fill(false));
+export function extractRects(a: AreaDef, char: string): Rect[] {
+  const seen = Array.from({ length: a.rows }, () => new Array<boolean>(a.cols).fill(false));
   const rects: Rect[] = [];
 
-  for (let row = 0; row < GRID; row++) {
-    for (let col = 0; col < GRID; col++) {
-      if (MAP[row]![col] !== char || seen[row]![col]) continue;
+  for (let row = 0; row < a.rows; row++) {
+    for (let col = 0; col < a.cols; col++) {
+      if (a.grid[row]![col] !== char || seen[row]![col]) continue;
 
       let w = 0;
-      while (col + w < GRID && MAP[row]![col + w] === char && !seen[row]![col + w]) w++;
+      while (col + w < a.cols && a.grid[row]![col + w] === char && !seen[row]![col + w]) w++;
 
       let d = 1;
-      outer: while (row + d < GRID) {
+      outer: while (row + d < a.rows) {
         for (let i = 0; i < w; i++) {
-          if (MAP[row + d]![col + i] !== char || seen[row + d]![col + i]) break outer;
+          if (a.grid[row + d]![col + i] !== char || seen[row + d]![col + i]) break outer;
         }
         d++;
       }
@@ -246,3 +330,7 @@ export function splitRun(len: number): [number, number][] {
   }
   return parts;
 }
+
+/** Rows of open water along the north edge, and the rows the ground plane covers. */
+export const waterRowsOf = (a: AreaDef): number => a.props.waterRows ?? 0;
+export const groundRowsOf = (a: AreaDef): number => a.rows - waterRowsOf(a);

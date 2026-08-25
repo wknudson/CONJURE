@@ -306,7 +306,7 @@ describe('the grimoire pool', () => {
     // still bites on the thing it was written for: a mono beast whose pool quietly grew a
     // second school, or whose fusion odds were nudged, lands here.
     const mono = COMPANIONS.filter((c) => c.grimoire.hybridChance === MONO_HYBRID_CHANCE);
-    expect(mono.length, 'the mono bloodlines').toBe(COMPANIONS.length - 10);
+    expect(mono.length, 'the mono bloodlines').toBe(COMPANIONS.length - 15);
     for (const c of mono) {
       expect(c.grimoire.schools, `${c.name}`).toHaveLength(1);
     }
@@ -314,7 +314,7 @@ describe('the grimoire pool', () => {
 
   it('gives a two-school bloodline both its schools and a far better fusion rate', () => {
     const hybrid = COMPANIONS.filter((c) => c.grimoire.hybridChance !== MONO_HYBRID_CHANCE);
-    expect(hybrid.length, 'the hybrid bloodlines').toBe(10);
+    expect(hybrid.length, 'the hybrid bloodlines').toBe(15);
     for (const c of hybrid) {
       expect(c.grimoire.schools, `${c.name}`).toHaveLength(2);
       expect(c.grimoire.hybridChance, `${c.name}`).toBe(HYBRID_HYBRID_CHANCE);

@@ -51,32 +51,65 @@ import { filterBarHtml, matchesPips, pipPills, wireFilterBar } from '../hud/filt
  * Every capability a loadout can grant, in the player's words.
  *
  * A list rather than a formatter over the raw keys: `bonusTitheMarrow` is a field
- * name, and a sheet that prints field names is a debug view. Typed against `CombatBoons`,
- * so a new capability that nobody labels fails the build rather than quietly going
- * unreadable on the one screen built to read them.
+ * name, and a sheet that prints field names is a debug view.
+ *
+ * **A `Record`, and that is the whole point.** This was an array typed
+ * `{ key: keyof CombatBoons }[]`, whose docblock claimed a new capability nobody labelled
+ * would fail the build. It would not: that type says every key *is* a boon, never that
+ * every boon *has* one — and the claim had been false since the ten hybrid-knack boons
+ * landed unlabelled. `renderBoons` filters by this table, so a relic granting one of them
+ * showed the player "Nothing worn. The rules apply as written." while it was plainly
+ * working in the fight.
+ *
+ * An exhaustive `Record` makes the original promise true. A literal keeps its authored
+ * order, so the display sequence — measured things, then the flags — is unchanged.
  */
-const BOON_LABELS: readonly { key: keyof CombatBoons; label: string }[] = [
-  { key: 'armor', label: 'Persistent Armor' },
-  { key: 'pips', label: 'Opening Pips' },
-  { key: 'maxPips', label: 'Pip ceiling' },
-  { key: 'extraOpeningCards', label: 'Opening cards' },
-  { key: 'bonusHandLimit', label: 'Hand limit' },
-  { key: 'bonusObstacleHp', label: 'Obstacle health' },
-  { key: 'bonusTitheMarrow', label: 'Marrow per offering' },
-  { key: 'healOnTithe', label: 'Health per offering' },
-  { key: 'bonusToxinStacks', label: 'Toxin per application' },
-  { key: 'collisionResist', label: 'Collision damage shrugged off' },
-  { key: 'ignoreFog', label: 'Sees through fog' },
-  { key: 'ignoreGuardians', label: 'Sees past Guardians' },
-  { key: 'ignoreIceSlip', label: 'Keeps its footing on ice' },
-  { key: 'immuneToBurn', label: 'Immune to Burn' },
-  { key: 'immuneToToxin', label: 'Immune to Toxin' },
-  { key: 'revealIntents', label: 'Reads enemy intent' },
-  { key: 'boundFormIgnoresHazards', label: 'Bound Form ignores hazards' },
-  { key: 'boundFormGrounded', label: 'Bound Form cannot be moved' },
-  { key: 'doubleResonance', label: 'Resonance fires twice' },
-  { key: 'discountHybrids', label: 'Spliced cards cost less' },
-];
+export const BOON_LABELS: Record<keyof CombatBoons, string> = {
+  // Measured and counted things first.
+  armor: 'Persistent Armor',
+  pips: 'Opening Pips',
+  maxPips: 'Pip ceiling',
+  extraOpeningCards: 'Opening cards',
+  bonusHandLimit: 'Hand limit',
+  bonusObstacleHp: 'Obstacle health',
+  bonusTitheMarrow: 'Marrow per offering',
+  healOnTithe: 'Health per offering',
+  bonusToxinStacks: 'Toxin per application',
+  bonusFreezeStacks: 'Freeze duration',
+  bonusShoveDistance: 'Shove distance',
+  wildfireSeedsToxin: 'Toxin left by Wildfire',
+  collisionResist: 'Collision damage shrugged off',
+  steamBurns: 'Damage your steam deals',
+  armorOnArcCollateral: 'Armor from Arc collateral',
+  // Then the flags.
+  ignoreFog: 'Sees through fog',
+  fogConceals: 'Hidden by your own steam',
+  ignoreGuardians: 'Sees past Guardians',
+  ignoreIceSlip: 'Keeps its footing on ice',
+  immuneToBurn: 'Immune to Burn',
+  immuneToToxin: 'Immune to Toxin',
+  immuneToShatterSplash: 'Untouched by Shatter shrapnel',
+  revealIntents: 'Reads enemy intent',
+  arcPierces: 'Arc collateral ignores Armor',
+  chillConducts: 'Chill conducts as Charge',
+  alliesGrounded: 'Nothing of yours can be moved',
+  boundFormIgnoresHazards: 'Bound Form ignores hazards',
+  boundFormGrounded: 'Bound Form cannot be moved',
+  doubleResonance: 'Resonance fires twice',
+  discountHybrids: 'Spliced cards cost less',
+};
+
+/** The order the sheet reads in — authored order, which a `Record` literal preserves. */
+const BOON_ORDER = Object.keys(BOON_LABELS) as (keyof CombatBoons)[];
+
+/**
+ * Ceilings are stated, not added.
+ *
+ * `maxPips` is an absolute — the relic that carries it says "the ceiling is 10", not "+10".
+ * Rendering every number with a `+` read as the latter, which overstated the Galvanic
+ * Battery by roughly nine Pips.
+ */
+const CEILINGS: ReadonlySet<keyof CombatBoons> = new Set(['maxPips']);
 import { RELIC_SLOT_ORDER } from '../core/overworld/state.js';
 import type { CardModifier } from '../core/types/cards.js';
 import {
@@ -432,8 +465,8 @@ export class DeckBuilderScreen implements Screen {
     if (!host) return;
 
     const boons = boonsOfRelics(this.global.overworld.equippedRelics);
-    const rows = BOON_LABELS.filter((b) => {
-      const v = boons[b.key];
+    const rows = BOON_ORDER.filter((key) => {
+      const v = boons[key];
       return v !== undefined && v !== false && v !== 0;
     });
 
@@ -443,13 +476,14 @@ export class DeckBuilderScreen implements Screen {
     }
 
     host.innerHTML = rows
-      .map((b) => {
-        const v = boons[b.key];
-        const amount = typeof v === 'number' ? `+${v}` : 'yes';
+      .map((key) => {
+        const v = boons[key];
+        const amount =
+          typeof v === 'number' ? (CEILINGS.has(key) ? `${v}` : `+${v}`) : 'yes';
         return `
           <div class="hero__boon">
             <span class="hero__boon-amount">${amount}</span>
-            <span class="hero__boon-label">${b.label}</span>
+            <span class="hero__boon-label">${BOON_LABELS[key]}</span>
           </div>`;
       })
       .join('');

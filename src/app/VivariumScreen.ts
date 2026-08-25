@@ -255,6 +255,8 @@ export class VivariumScreen implements Screen {
       tank.className = `tank brass-panel tank--${verdict(beast.baseHpRoll)}`;
       tank.classList.toggle('is-active', beast.instanceId === active);
       tank.classList.toggle('is-viewing', beast.instanceId === this.viewing);
+      // Lustrous. Purely a look — see `CompanionInstance.shiny` for why it stays that way.
+      tank.classList.toggle('is-shiny', beast.shiny === true);
       tank.style.setProperty('--school', schoolOf((species?.school ?? 'neutral') as never).main);
       tank.innerHTML = `
         <div class="tank__glass"><i class="tank__sigil"></i></div>
@@ -264,6 +266,7 @@ export class VivariumScreen implements Screen {
           <span class="tank__verdict">${verdict(beast.baseHpRoll)}</span>
         </div>
         <div class="tank__level">Level ${beast.level}${trait ? ` · ${trait.name}` : ''}</div>
+        ${beast.shiny ? '<div class="tank__lustre">Lustrous</div>' : ''}
         ${beast.instanceId === active ? '<div class="tank__badge">Standing with you</div>' : ''}
       `;
       tank.addEventListener('click', () => {
@@ -297,8 +300,10 @@ export class VivariumScreen implements Screen {
     const onlyOne = this.opts.roster().length <= 1;
 
     host.innerHTML = `
-      <div class="brass-panel vivarium__card" style="--school:${colors.main}">
-        <div class="vivarium__name">${species?.name ?? beast.baseId}</div>
+      <div class="brass-panel vivarium__card${beast.shiny ? ' is-shiny' : ''}" style="--school:${colors.main}">
+        <div class="vivarium__name">${species?.name ?? beast.baseId}${
+          beast.shiny ? '<span class="vivarium__lustre">Lustrous</span>' : ''
+        }</div>
         <div class="vivarium__role">${species?.title ?? ''} · ${species?.school ?? ''}</div>
         <div class="vivarium__blurb">${species?.blurb ?? ''}</div>
 

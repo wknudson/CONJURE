@@ -122,7 +122,21 @@ describe('pricing holds its shape', () => {
   it('charges most for the pieces that change what is legal', () => {
     // The loadout's whole axis: a relic that raises a ceiling or lifts a restriction is a
     // different kind of purchase from one that adds a number, and should read as one.
-    const ruleBenders = ['relic_gloves', 'relic_coin', 'relic_splicer_goggles'];
+    // Anything that raises a ceiling or lifts a restriction. `relic_battery` was missing
+    // from this list, which read as an oversight the moment a second ceiling-raiser joined
+    // it — raising the Pip cap is the same kind of purchase whichever piece does it.
+    const ruleBenders = [
+      'relic_gloves',
+      'relic_coin',
+      'relic_splicer_goggles',
+      'relic_battery',
+      'relic_twin_cell',
+      'relic_survey_prism',
+      'relic_sighting_rig',
+      'relic_leyline_tap',
+      'relic_ferrocrete',
+      'relic_communion',
+    ];
     const plainest = Math.min(
       ...GEAR_STOCK.filter((g) => !ruleBenders.includes(g.relicId)).map((g) => g.price),
     );

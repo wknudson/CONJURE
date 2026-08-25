@@ -53,6 +53,30 @@ export interface GrimoireSource {
    * seam between two schools.
    */
   hybridChance: number;
+  /**
+   * Cards this bloodline never learns, by id. What makes two beasts of one school two
+   * shelves instead of one shelf drawn twice.
+   *
+   * The pool used to be a pure function of `schools`, which was fine while every school had
+   * exactly one species speaking it. It stopped being fine the moment a second Frost
+   * bloodline existed: two species with the same school drew from a byte-identical pool, so
+   * the only thing separating a Boreas from its cousin was a knack and a health roll — the
+   * same "the second one is a checkbox" problem the draft was written to solve, moved up a
+   * level from instances to species.
+   *
+   * Deliberately a **subtraction and a small one**. The two beasts of a school are meant to
+   * share most of a shelf and disagree at the edges: a common core either can roll, plus a
+   * few signature cards only one of them ever will. An exclusion list keeps that honest,
+   * because the omitted cards are named where a reader can see them and the school's shelf
+   * stays the one authoritative list of what the school *has*. A per-species allow-list
+   * would say the same thing four times as long, and would silently drop every card
+   * authored after it.
+   *
+   * Not a weighting. A rarity dial would make the difference statistical — noticeable across
+   * fifty catches and invisible across five — and the point is that a player who catches
+   * both can tell them apart.
+   */
+  omit?: readonly string[];
 }
 
 /** The rarity a mono-element bloodline rolls a Hybrid at. Roughly one beast in three. */
@@ -108,14 +132,31 @@ export function isHybrid(def: CardDef): boolean {
 }
 
 /**
- * The pure half of a bloodline's pool: its own schools, no fusions.
+ * Whether one card belongs to one bloodline's pure shelf.
+ *
+ * The single answer to "may this beast learn this card", shared by `purePool` here and by
+ * `SPELL_POOLS_BY_SPECIES` in `data/pools.ts`. Those two are the game's answer and the
+ * screen's answer to the same question, and they have already drifted once — the role
+ * overhaul taught one of them to refuse Marks and left the other taking anything draftable,
+ * which surfaced to the player as a Vow card reading "8 of 7 spells". They share a function
+ * now rather than a resemblance.
+ */
+export function inPurePool(source: GrimoireSource, def: CardDef): boolean {
+  if (!isDraftable(def) || !isBloodlineCard(def) || isHybrid(def)) return false;
+  if (!source.schools.includes(def.school)) return false;
+  return !source.omit?.includes(def.id);
+}
+
+/**
+ * The pure half of a bloodline's pool: its own schools, no fusions, less what it never
+ * learns.
  *
  * Sorted by id, because a pool whose order came out of `Object.values` would reshuffle
  * every Grimoire in every save the day somebody added a card to the wrong file.
  */
 export function purePool(source: GrimoireSource): CardDef[] {
   return Object.values(CARDS)
-    .filter((c) => isDraftable(c) && isBloodlineCard(c) && !isHybrid(c) && source.schools.includes(c.school))
+    .filter((c) => inPurePool(source, c))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 

@@ -104,6 +104,21 @@ export class BillboardSprite extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshL
     this.mirrored = on;
     this.applyScale();
   }
+
+  /**
+   * Tints the sprite, for a lustrous beast.
+   *
+   * `material.color` multiplies the texture, which is the cheapest correct way to recolour a
+   * pixel-art billboard: no second texture to load, no shader variant to compile, and it
+   * survives every `setTexture` because the colour lives on the material rather than on the
+   * picture. Multiplication can only darken channels, so the tint is a *shift* — warm gold,
+   * cool violet — rather than a brightening, and the sprite stays readable as itself.
+   *
+   * Deliberately not a hue-rotate filter: those are a CSS idea, and this is a WebGL mesh.
+   */
+  setTint(color: number | null): void {
+    this.material.color.set(color ?? 0xffffff);
+  }
 }
 
 /**

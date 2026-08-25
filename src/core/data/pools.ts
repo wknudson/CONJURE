@@ -26,7 +26,7 @@ import type { School } from '../../contract/ids.js';
 import type { CardDef } from '../types/cards.js';
 import type { GrimoireSource } from './grimoire.js';
 import { CARDS } from './cards/index.js';
-import { isBloodlineCard, isDraftable, isHybrid } from './grimoire.js';
+import { isBloodlineCard, isDraftable, isHybrid, purePool } from './grimoire.js';
 import {
   DEFAULT_ROSTER,
   STARTING_WARBAND_POINTS,
@@ -146,8 +146,25 @@ export const MINIONS_BY_SPECIES: Readonly<Record<string, readonly string[]>> = b
   (baseId) => unique(schoolsOf(baseId).flatMap((s) => minionPool(s).map((c) => c.id))),
 );
 
+/**
+ * Asked of the species rather than of its schools, because two beasts of one school no
+ * longer draw the same cards.
+ *
+ * This used to union `spellPool(school)` over the species' schools, which was the same
+ * answer `purePool` gave for as long as school membership was the only thing deciding a
+ * pool. `GrimoireSource.omit` ended that: a Flue Salamander and an Ignis are both Pyre and
+ * draft different shelves. Unioning schools would have shown the player their beast's
+ * cousin's book.
+ *
+ * It reads `purePool` outright now — the draft's own function — so this registry cannot
+ * describe a pool the draft would not deal. That is the same lesson as the docblock on
+ * `spellPool` above, applied one level up: not a matching filter, the same function.
+ */
 export const SPELL_POOLS_BY_SPECIES: Readonly<Record<string, readonly string[]>> = byCompanion(
-  (baseId) => unique(schoolsOf(baseId).flatMap((s) => spellPool(s).map((c) => c.id))),
+  (baseId) => {
+    const def = companionById(baseId);
+    return def ? unique(purePool(def.grimoire).map((c) => c.id)) : [];
+  },
 );
 
 /**

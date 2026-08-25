@@ -6,7 +6,6 @@ import {
   grantsFor,
   minionPool,
   rosterUnlocksFor,
-  spellPool,
 } from '../core/data/pools.js';
 import { COMPANIONS, GRIMOIRE_SIZE } from '../core/data/companions.js';
 import { COMPANION_TRAITS, traitsFor } from '../core/data/companionTraits.js';
@@ -105,8 +104,11 @@ describe('the species registries', () => {
       const fromSchools = new Set(c.grimoire.schools.flatMap((s) => minionPool(s).map((m) => m.id)));
       expect(new Set(MINIONS_BY_SPECIES[c.id]), c.name).toEqual(fromSchools);
       expect(TRAITS_BY_SPECIES[c.id], c.name).toEqual(traitsFor(c.id).map((t) => t.id));
-      const spells = new Set(c.grimoire.schools.flatMap((s) => spellPool(s).map((m) => m.id)));
-      expect(new Set(SPELL_POOLS_BY_SPECIES[c.id]), c.name).toEqual(spells);
+      // Spells are checked by 'advertises the same shelf the draft actually draws from'
+      // below, which asks `purePool` rather than unioning `spellPool` over the schools.
+      // That distinction stopped being cosmetic when `GrimoireSource.omit` arrived: two
+      // beasts of one school draft different shelves, so the school union now describes a
+      // book the draft would not deal. One assertion, in the place that explains itself.
     }
   });
 });

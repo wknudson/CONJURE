@@ -75,10 +75,11 @@ import { APOTHECARY_STOCK } from '../core/data/apothecary.js';
 import { traitsFor } from '../core/data/companionTraits.js';
 import { makeRng } from '../core/util/rng.js';
 import { draftGrimoire, isDraftable, socketRefusal } from '../core/data/grimoire.js';
+import { isHunt } from '../core/data/hunts.js';
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 21;
+export const SAVE_VERSION = 22;
 
 /**
  * The first version whose health numbers are written at the stretched scale.
@@ -136,6 +137,16 @@ export function isSlotId(value: unknown): value is SlotId {
 const FIRST_GUIDED_WARD = 20;
 /** v21 added the story campaign ledger. */
 const FIRST_CAMPAIGN = 21;
+
+/**
+ * The first version that remembers when a Wild Hunt was last walked.
+ *
+ * Nothing before it has a `hunts` map, and there is nothing to reconstruct one from: a hunt
+ * that has never been taken and a hunt taken before the feature existed are the same beast
+ * as far as the gate is concerned, and both should be open. So a pre-v22 save arrives with
+ * an empty map, which is also what a new character gets.
+ */
+const FIRST_HUNTS = 22;
 
 /**
  * The steps of the first lap, in the order a new Commander meets them.
@@ -301,6 +312,24 @@ export interface Profile {
    * done any. Backfilling would skip them past content they never saw.
    */
   campaign: string[];
+  /**
+   * When each Wild Hunt was last completed, by encounter id, in epoch milliseconds (v22).
+   *
+   * **The only wall-clock value the profile has ever stored**, and it is worth being
+   * deliberate about that. Everything else in a save is game state — what happened, what was
+   * bought, what was walked — and reads the same however long the game was closed. This one
+   * is a real-world timestamp, so it means something slightly different every time it is
+   * read, which is exactly what a cooldown is for: the ten minutes run down while the player
+   * is away, and coming back tomorrow finds every hunt open.
+   *
+   * Not a ledger, unlike `campaign` and `rosterUnlocks` above: entries are **overwritten**
+   * each time a hunt pays out, because the question asked of it is "how long ago" and not
+   * "did it ever happen". A hunt never taken is simply absent.
+   *
+   * `huntCooldownRemaining` treats a stamp in the future as expired rather than as a very
+   * long wait, so a clock rolled back cannot lock the gate. See `core/data/hunts.ts`.
+   */
+  hunts: Record<string, number>;
   /**
    * Who the player said they were, at the desk (v18).
    *
@@ -530,6 +559,8 @@ export function initializeNewProfile(profileId: string, rawLook: CharacterLook):
     tutorial: [],
     // No contracts of the King's taken yet either. The campaign starts at the board.
     campaign: [],
+    // Every hunt open. A new Whisperer has not been past the gate.
+    hunts: {},
     decks,
     // A warband of their own colour, spending as much of the ten as their school's shelf
     // allows -- so a new player meets the deployment phase with a real line to place, and
@@ -980,6 +1011,7 @@ function migrateProfile(
     schematics: readSchematics(data.schematics),
     tutorial: readTutorialFlags(data.tutorial, version),
     campaign: readCampaign(data.campaign, version),
+    hunts: readHunts(data.hunts, version),
     decks,
     roster,
     rosterUnlocks: unlocks,
@@ -1295,6 +1327,35 @@ function readCampaign(raw: unknown, version: number): string[] {
   return [...new Set(raw.filter((x): x is string => typeof x === 'string' && x.length > 0))];
 }
 
+/**
+ * The hunt cooldown stamps, rebuilt rather than trusted.
+ *
+ * Three things are refused, and each is a real state a save can be in:
+ *
+ * - **Anything from before v22**, because there is nothing to migrate. A hunt not yet
+ *   invented has not been walked, and the open gate is the honest answer.
+ * - **Keys naming no hunt.** A hunt removed from the registry leaves a stamp behind, and a
+ *   map that grows an entry per deleted encounter forever is a slow leak in the save file.
+ * - **Values that are not finite numbers.** `NaN` in particular would make every comparison
+ *   in `huntCooldownRemaining` false and the arithmetic produce `NaN`, which reads as neither
+ *   locked nor open depending on which side of the comparison it lands.
+ *
+ * Timestamps in the future are deliberately *kept* rather than clamped here. Clamping would
+ * need a clock, this function has none, and `huntCooldownRemaining` already treats a future
+ * stamp as expired — one rule, in the module that owns the question.
+ */
+function readHunts(raw: unknown, version: number): Record<string, number> {
+  if (version < FIRST_HUNTS) return {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, number> = {};
+  for (const [id, at] of Object.entries(raw as Record<string, unknown>)) {
+    if (!isHunt(id)) continue;
+    if (typeof at !== 'number' || !Number.isFinite(at)) continue;
+    out[id] = Math.max(0, Math.round(at));
+  }
+  return out;
+}
+
 function readTutorialFlags(raw: unknown, version: number): TutorialFlag[] {
   if (version < FIRST_GUIDED_WARD) return [...TUTORIAL_FLAGS];
   if (!Array.isArray(raw)) return [];
@@ -1456,6 +1517,12 @@ function readRoster(
       bonusPips: Math.max(0, Math.round(numberOr(saved.bonusPips, 0))),
       traitId,
       spellModifiers: readSpellModifiers(saved.spellModifiers, grimoire, instanceId),
+      // Kept only when it is exactly `true`, and omitted otherwise rather than written as
+      // false — the same shape `tameCompanion` produces, so a beast that survives a save
+      // round-trip is byte-identical to the one that was caught. No version gate: a save
+      // from before shinies existed simply has no flag, which is what an ordinary beast
+      // looks like anyway, and back-filling one would be inventing a fact.
+      ...(saved.shiny === true ? { shiny: true as const } : {}),
     };
   };
 

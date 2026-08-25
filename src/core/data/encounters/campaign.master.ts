@@ -19,17 +19,9 @@ import { registerEncounter, registerEncounterScript } from './registry.js';
 import type { Ctx } from '../../engine/context.js';
 import { emit, newCause } from '../../engine/context.js';
 import { dealDamage } from '../../engine/damage.js';
-import { beginSubjugation } from '../../engine/subjugation.js';
+import { SEAL_ONLY_SCRIPT, sealAt25 } from './seal.js';
 import { summonUnit } from '../../engine/spawn.js';
 import { canPlace, unitsOf } from '../../engine/board.js';
-
-/** The enrage at a quarter strength, exactly as the Ignis trial runs it. */
-function sealAt25(ctx: Ctx): void {
-  const cmd = ctx.state.players.enemy;
-  if (cmd.hp <= 0) return;
-  if (cmd.hp > Math.floor(cmd.maxHp * 0.25)) return;
-  beginSubjugation(ctx);
-}
 
 /**
  * A 50% phase turn: the gate fires once, the boss shrugs off its statuses, and the
@@ -135,6 +127,9 @@ const AVALANCHE_HIT = 12;
 const rimefieldScript: EncounterScript = {
   onTurnStart(ctx, side) {
     if (side !== 'enemy') return;
+    // The juggernaut can be bound rather than broken, so the seal has to fire here too —
+    // this script existed before the fight had a prize and only ever shed snow.
+    sealAt25(ctx);
     // Every other enemy turn the face sheds. Both armies are under it equally — the
     // point of the fight is that the mountain was never on anyone's side.
     if (ctx.state.turn % 2 !== 0) return;
@@ -149,6 +144,9 @@ const rimefieldScript: EncounterScript = {
         cause: 'impact',
       });
     }
+  },
+  onCommanderHpChanged(ctx, side) {
+    if (side === 'enemy') sealAt25(ctx);
   },
 };
 registerEncounterScript('rimefield_break', rimefieldScript);
@@ -196,6 +194,9 @@ export const RIMEFIELD_BREAK: EncounterDef = registerEncounter({
     { at: { x: 5, y: 5 }, defId: 'cryo_crystal' },
   ],
   script: rimefieldScript,
+  // It is bracing a snowpack the blasting cracked. The writ says open the pass; it does
+  // not say the brace has to die — so the pass can be opened by taking the brace instead.
+  subjugationPrize: 'juggernaut',
 });
 
 /* ================================================================================== *
@@ -265,6 +266,10 @@ export const STORM_SHELF_BINDING: EncounterDef = registerEncounter({
 // TODO(worldbuild): the doc gives the geist "heals from shock damage — starve it, not
 // blast it". EncounterScript has no unit-damage hook, so that rule needs either a unit
 // keyword or a new hook; the rough pass ships the fight without it.
+// The haunting had no script: it was a straight fight with a themed deck. It has a prize
+// now, and a prize is only offered by something that calls `beginSubjugation`.
+registerEncounterScript('pylon_nine', SEAL_ONLY_SCRIPT);
+
 export const PYLON_NINE: EncounterDef = registerEncounter({
   id: 'pylon_nine',
   name: 'The Geist of Pylon Nine',
@@ -302,6 +307,9 @@ export const PYLON_NINE: EncounterDef = registerEncounter({
     { at: { x: 5, y: 4 }, kind: 'cover' },
     { at: { x: 2, y: 2 }, kind: 'cover' },
   ],
+  // The geist is the pylon's own waste, curdled into something that remembers being
+  // alive. It can be taken in rather than starved out.
+  subjugationPrize: 'geist',
 });
 
 /* ================================================================================== *

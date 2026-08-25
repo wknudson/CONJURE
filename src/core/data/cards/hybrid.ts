@@ -710,4 +710,195 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
     needsLoS: true,
     spliceOnly: true,
   },
+
+  // ------------------------------------------------------------- the fourth pressing
+  //
+  // Five rows, one for each pairing that just gained a bloodline of its own. Every one of
+  // those pairings already had exactly one fusion — enough to say the recipe book was
+  // complete, not enough to make a hybrid beast's book *feel* like two schools. A Murk Heron
+  // draws roughly a third of its Grimoire from fusions, and until now every one of them was
+  // the same card.
+  //
+  // Chosen as the second half of each pair's argument rather than as a bigger version of the
+  // first: where Soulfire is Dusk taking fire's leavings, the Funeral Pyre is fire taking the
+  // corpse. Same two schools, opposite direction.
+
+  /**
+   * **Pyre + Dusk.** The corpse as fuel.
+   *
+   * Soulfire, the pairing's first fusion, is a siphon that burns. This is the reverse
+   * argument: fire that pays for what it has already killed. It deals its damage down a line
+   * like the Ashen Wake it is pressed from, and then puts health back on the Pact for the
+   * burning it found — so a board the Pyre deck has spent three turns lighting is also a
+   * board the Dusk half can drink.
+   *
+   * The heal is conditional on Burn *being there*, not on the damage landing, which is the
+   * whole seam: the fire has to have been set earlier. A Funeral Pyre cast into a cold board
+   * is a mediocre three-Pip line, and that is the price of holding it.
+   */
+  funeral_pyre: {
+    id: 'funeral_pyre',
+    name: 'Funeral Pyre',
+    cost: { pips: 3, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 40 fire damage in a 3-tile line. If anything on the line was already Burning, your Pact takes 30 health back.',
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 40, dtype: 'fire', area: { shape: 'line', length: 3 } },
+        {
+          op: 'ifMet',
+          cond: { kind: 'targetStatus', status: 'burn', area: { shape: 'line', length: 3 } },
+          then: { op: 'heal', amount: 30 },
+        },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * **Frost + Bloom.** Winter arriving early, on everything at once.
+   *
+   * Permafrost freezes ground. This freezes a *crop*: a 2x2 block takes frost damage, and
+   * everything already poisoned in it is Frozen outright rather than merely Chilled — the
+   * rot goes rigid. It is the Winterthorn Elk's card in one line, which is why the Elk drafts
+   * fusions at a third of its book and this is one of two it can reach.
+   *
+   * Freeze from a spell, with no Chill ladder to climb, is the strongest thing in the
+   * pairing, and Toxin is a fair toll: the Bloom half has to have done its slow work first.
+   */
+  killing_frost: {
+    id: 'killing_frost',
+    name: 'Killing Frost',
+    cost: { pips: 3, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 frost damage in a 2x2 block. Anything poisoned there freezes solid.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 2 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'frost', area: { shape: 'square', size: 2 } },
+        {
+          op: 'ifMet',
+          cond: { kind: 'targetStatus', status: 'toxin', area: { shape: 'square', size: 2 } },
+          then: {
+            op: 'applyStatus',
+            status: 'freeze',
+            stacks: 1,
+            area: { shape: 'square', size: 2 },
+          },
+        },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * **Surge + Bloom.** A snare with a current in it.
+   *
+   * Galvanic Spores is the pairing's cloud. This is its trap: the roots hold a body still and
+   * the charge sits in them waiting, so the thing cannot walk out of the shock that is coming.
+   * Entangle and Charged on the same target is a genuinely nasty pair — one of them stops the
+   * answer to the other.
+   *
+   * Two Pips and almost no damage, because it is entirely a setup card. The Voltbriar Serpent
+   * is the beast that wants it, and the Serpent's whole plan is that nothing gets to leave.
+   */
+  livewire_snare: {
+    id: 'livewire_snare',
+    name: 'Livewire Snare',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Roots the target in place (Entangle 1), leaves it Charged, and deals 20 shock damage.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'shock', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'entangle', stacks: 1, area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'charged', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * **Dusk + Bloom.** The rot spreading off the body it finished.
+   *
+   * Blight Siphon drinks a poisoned body. Rot Bloom uses one as a seed: decay damage on the
+   * target, and Toxin on everything around it, so the poison that killed one thing starts
+   * killing its neighbours. The Murk Heron's book is half made of this idea.
+   *
+   * `adjacentCross` rather than `adjacent8` and 2 Pips rather than 3, because the pairing
+   * already has a heavy finisher and what it lacked was a cheap card that makes the *next*
+   * one better. Cast it into a line and the whole line is rotting for the Blight Harvest.
+   */
+  rot_bloom: {
+    id: 'rot_bloom',
+    name: 'Rot Bloom',
+    cost: { pips: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 30 decay damage to the target and poisons everything orthogonally beside it (Toxin 2).',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'decay', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 2, area: { shape: 'adjacentCross' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+    spliceOnly: true,
+  },
+
+  /**
+   * **Bulwark + Bloom.** A wall that grew there.
+   *
+   * Iron Briar plates a body in thorns. This raises the thorns as a *structure* — a 70 HP
+   * construct, which is sturdier than anything Bloom can raise alone and thornier than
+   * anything Bulwark can, and it poisons whatever is standing next to it at the start of each
+   * enemy turn.
+   *
+   * The Dolmen Crab's card, and the reason a Hedgefort is worth catching: Bulwark's walls
+   * hold ground and this one *taxes* it. Three Pips for a construct with upkeep attached is
+   * the going rate — the Pyre Pillar set it.
+   */
+  bramble_dolmen: {
+    id: 'bramble_dolmen',
+    name: 'Bramble Dolmen',
+    cost: { pips: 3, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'obstacle',
+    text: 'Raises a 70 HP thorn-grown stone on an empty tile. At the start of each enemy turn, everything beside it is poisoned (Toxin 1).',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: { op: 'spawnObstacle', obstacleDef: 'bramble_dolmen' },
+    keywords: [],
+    obstacleHp: 70,
+    obstacleTurnStart: { status: 'toxin', stacks: 1 },
+    leavesRubble: true,
+    range: 3,
+    needsLoS: true,
+    spliceOnly: true,
+  },
 };

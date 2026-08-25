@@ -383,4 +383,140 @@ export const DUSK_CARDS: Record<string, CardDef> = {
     range: 3,
     needsLoS: true,
   },
+
+  // -------------------------------------------------------------- the second bloodline
+  //
+  // Dusk speaks for the Carrion Stag and now for the Barrow Jackal, which digs at the edge of
+  // a necropolis the Magistracy posts no maps of. Three cards, and one of them is the school
+  // finally getting its own body back off the floor: Dusk has spent the whole game feeding
+  // corpses to other cards and has never once picked one up.
+
+  /**
+   * The cheapest thing in the school, and the one that makes its clock tick faster.
+   *
+   * Dusk's decay shelf is slow by design and slow decks need a card that costs almost
+   * nothing to keep the pressure on while the expensive half assembles. A Pall is a Pip for
+   * two bodies' worth of rot — 10 through plate, because a pall does not care what anyone is
+   * wearing, and a Toxin stack on each so the Blight and the Creeping Decay find them
+   * already rotting.
+   */
+  pall: {
+    id: 'pall',
+    name: 'Pall',
+    cost: { pips: 1, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 10 damage through any armor to the target and everything orthogonally beside it, and leaves it all poisoned (Toxin 1).',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'true', area: { shape: 'target' } },
+        { op: 'damage', amount: 10, dtype: 'true', area: { shape: 'adjacentCross' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'adjacentCross' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * The drain, finally pointed the other way.
+   *
+   * Every siphon in the school takes health off a body and gives the caster Marrow. This one
+   * takes it off a body and gives the caster *health*, which the school has never had a way
+   * to do — a Dusk player's Pact bleeds all game from its own tithes and there was no card
+   * anywhere in the colour that put a single point back.
+   *
+   * Priced at two Pips and 30 for 20, deliberately a losing trade in raw numbers. It is not
+   * bought for the damage; it is bought on the turn the Pact is low enough that the fight
+   * ends without it.
+   */
+  last_rites: {
+    id: 'last_rites',
+    name: 'Last Rites',
+    cost: { pips: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Drains 30 decay damage out of the target and puts 20 back on your Pact.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'decay', area: { shape: 'target' } },
+        { op: 'heal', amount: 20 },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * Dusk picking a body up instead of putting one down.
+   *
+   * The school's whole relationship with its own dead has been one-directional — Grave Call
+   * spends a living ally to make a Wraith, Harvest and the tithes spend bodies for Marrow —
+   * and `revive` has existed the whole time, used by Bulwark's rallies. A necropolis
+   * bloodline that could not exhume anything was a gap with a joke in it.
+   *
+   * Raised at the starting zone rather than where it fell, at half health, stripped of
+   * everything: no marks, no statuses, no Aura, no growth — that is what `revive` does by
+   * construction, and it is the reason three Pips is a fair price for a body that might have
+   * cost four.
+   */
+  exhume: {
+    id: 'exhume',
+    name: 'Exhume',
+    cost: { pips: 3, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Digs a fallen Vanguard body out of the ground. It stands up in your starting zone at half health, stripped of everything it was carrying.',
+    target: { kind: 'fallen', site: 'startingZone' },
+    effect: {
+      op: 'revive',
+      site: 'startingZone',
+      hp: { mode: 'percent', percent: 50 },
+    },
+    keywords: [],
+  },
+
+  /**
+   * A body bought to be spent.
+   *
+   * One Pip, 20 health, and a `titheBonus` — the Crow exists to be bled. Dusk's economy runs
+   * on Blood Magic and the school has never had a cheap body bred for it: tithing a Grave
+   * Sentinel works and costs two Pips of Vanguard budget to set up, which makes the Marrow
+   * expensive.
+   *
+   * It also flies, after a fashion — four movement and no attack worth the name. A Crow that
+   * is not tithed is a Crow standing somewhere annoying, which is a fair second use.
+   */
+  carrion_crow: {
+    id: 'carrion_crow',
+    name: 'Carrion Crow',
+    cost: { pips: 1, marrow: 0 },
+    school: 'dusk',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Bleeds well. Yields extra Marrow when tithed.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'carrion_crow' },
+    keywords: [],
+    unit: {
+      atk: 10,
+      hp: 20,
+      mov: 4,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'skirmisher',
+      escalationBonus: { atk: 0, hp: 0 },
+      titheBonus: 1,
+    },
+  },
 };

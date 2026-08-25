@@ -58,8 +58,19 @@ describe('encounter balance sanity', () => {
 
       // Both sides must be able to threaten: across a dozen games the enemy commander
       // has to lose HP somewhere, or the player side is structurally unable to win.
-      const enemyEverDamaged = outcomes.some((o) => o.enemyHp < encounter.enemyHp);
-      expect(enemyEverDamaged, 'player never dealt any commander damage').toBe(true);
+      //
+      // A **rout** is asked the equivalent question in its own terms. There is no enemy
+      // commander to wound in one, so commander damage would be zero in every playout and
+      // this would fail on every pack for a reason that says nothing about the pack. What
+      // it means there is "can the player win at all", and the answer is whether any of the
+      // eight games ended in a victory.
+      if (encounter.victory === 'rout') {
+        const everWon = outcomes.some((o) => o.result === 'victory');
+        expect(everWon, 'player never cleared the pack in eight games').toBe(true);
+      } else {
+        const enemyEverDamaged = outcomes.some((o) => o.enemyHp < encounter.enemyHp);
+        expect(enemyEverDamaged, 'player never dealt any commander damage').toBe(true);
+      }
 
       const playerEverDamaged = outcomes.some((o) => o.playerHp < encounter.playerHp);
       expect(playerEverDamaged, 'enemy never dealt any commander damage').toBe(true);

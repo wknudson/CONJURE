@@ -1,5 +1,5 @@
 /**
- * What the ward will not let you walk through.
+ * What an area will not let you walk through.
  *
  * Two layers, because they answer different questions. The tile layer handles the canal
  * and the edge of the world and comes free with the map. The box layer handles buildings,
@@ -9,9 +9,15 @@
  * An instance rather than module state: the screen is rebuilt every time a shop door
  * closes, and a module-level array would accumulate a second ward's worth of walls on the
  * second visit.
+ *
+ * The **area** is held for the same reason and by the same argument. It could have been a
+ * module-level "current area" read by `isWalkable`, and that would have been the same mistake
+ * one level down: `loadActors` is async and already guards against finishing after its screen
+ * was torn down, so an in-flight load resuming after a crossing would sample the wrong grid.
+ * A set of colliders belongs to one place, so it holds that place.
  */
 
-import { isWalkable } from './map.js';
+import { isWalkable, type AreaDef } from './map.js';
 
 export interface Collider {
   minX: number;
@@ -24,6 +30,8 @@ export interface Collider {
 
 export class ColliderSet {
   readonly boxes: Collider[] = [];
+
+  constructor(private readonly area: AreaDef) {}
 
   add(x: number, z: number, w: number, d: number, tag = ''): Collider {
     const box: Collider = {
@@ -46,9 +54,10 @@ export class ColliderSet {
    * still on stone.
    */
   blocked(x: number, z: number, r = 0.4): boolean {
-    if (!isWalkable(x, z)) return true;
-    if (!isWalkable(x + r, z) || !isWalkable(x - r, z)) return true;
-    if (!isWalkable(x, z + r) || !isWalkable(x, z - r)) return true;
+    const a = this.area;
+    if (!isWalkable(a, x, z)) return true;
+    if (!isWalkable(a, x + r, z) || !isWalkable(a, x - r, z)) return true;
+    if (!isWalkable(a, x, z + r) || !isWalkable(a, x, z - r)) return true;
 
     for (const c of this.boxes) {
       if (!c.enabled) continue;

@@ -629,6 +629,7 @@ export function createCombat(
       name: encounter.name,
       bossPhase: 1,
       firedGates: [],
+      rout: encounter.victory === 'rout',
       chainCancelled: false,
       subjugation: { sealed: false, active: false, anchorUnitId: null, turnsSurvived: 0 },
       ...(encounter.weather ? { weather: encounter.weather } : {}),

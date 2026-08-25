@@ -95,6 +95,21 @@ export interface CompanionInstance extends CompanionProgress {
    * Sparse: most spells roll nothing at all, and an absent key means an ordinary card.
    */
   spellModifiers: Record<string, CardModifier>;
+  /**
+   * Lustrous. One beast in a hundred comes up wrong-coloured, and that is the whole of it.
+   *
+   * **Cosmetic, deliberately and permanently.** A shiny grants nothing: not health, not a
+   * better knack, not a wider draft. The moment it did, every one of the rolls above would
+   * become a thing a player farms *through* rather than a thing they read, and the ten-minute
+   * hunt clock would be a slot machine with a jackpot instead of a reason to go back to a
+   * place. What makes a beast worth keeping is its eight cards; this is worth keeping because
+   * it is rare, which is a different pleasure and does not need help from the balance sheet.
+   *
+   * A flag rather than a tier or a hue index, on the `Bounty.audit` precedent: there is one
+   * of these and it is either true or absent. A number would imply a scale nobody has
+   * designed.
+   */
+  shiny?: true;
 }
 
 export function newCompanion(): CompanionProgress {
@@ -178,6 +193,17 @@ export function rollWildModifier(rng: RngState, affinity = 0): WildModifier {
 }
 
 /** The band a wild Companion's constitution falls in. Tight on purpose. */
+/**
+ * One in this many caught beasts is lustrous.
+ *
+ * A hundred is chosen against the ten-minute hunt clock rather than in the abstract: a
+ * player working the hunts steadily meets one across a long session or two, which is rare
+ * enough to be worth saying out loud and common enough that shinies are a thing that exists
+ * rather than a rumour. Since the effect is purely cosmetic, the number costs nothing to
+ * move later — no balance table reads it.
+ */
+export const SHINY_ODDS = 100;
+
 export const HP_ROLL_MIN = 360;
 export const HP_ROLL_MAX = 440;
 
@@ -266,6 +292,18 @@ export function tameCompanion(
   // Which eight, then what each of them rolled — two independent questions, drawn in that
   // order because the second one needs the answer to the first.
   const grimoire = def ? draftGrimoire(rng, def.grimoire, GRIMOIRE_SIZE) : [];
+  const spellModifiers = rollSpellModifiers(rng, grimoire);
+
+  // **Drawn last, and it has to stay last.** Every roll above consumes a fixed number of
+  // ints off one stream, which is what lets a subjugation replay to the same animal — the
+  // seed is derived from the board that offered the fight. Inserting a draw anywhere but the
+  // end shifts every subsequent roll, so an existing save's Chimera would come back from a
+  // reload with a different constitution and a different book. Appending shifts nothing.
+  //
+  // Affinity deliberately does not touch it. Everything else here rewards a clean capture;
+  // being lustrous is luck, and a shiny you could improve your odds at would quietly become
+  // the reason to grind mastery rather than a thing that happens to you.
+  const shiny = nextInt(rng, SHINY_ODDS) === 0;
 
   return {
     ...newCompanion(),
@@ -280,7 +318,10 @@ export function tameCompanion(
     // Nothing socketed. A caught beast knows what it knows; the sockets are what the
     // player does about it afterwards.
     overrides: {},
-    spellModifiers: rollSpellModifiers(rng, grimoire),
+    spellModifiers,
+    // Absent rather than `false` on an ordinary beast, so the flag reads the same way in a
+    // save as it does in memory and no migration has to invent a value for the ninety-nine.
+    ...(shiny ? { shiny: true as const } : {}),
   };
 }
 

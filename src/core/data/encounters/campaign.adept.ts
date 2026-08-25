@@ -8,6 +8,16 @@
 
 import type { EncounterDef, EncounterScript } from './registry.js';
 import { registerEncounter, registerEncounterScript } from './registry.js';
+import { SEAL_ONLY_SCRIPT } from './seal.js';
+
+// These fights carry a `subjugationPrize` now, and a prize is inert without something to
+// offer it: `beginSubjugation` is what deals the Rite, and an encounter opts in by calling
+// it. The shared seal-only script fires at a quarter strength, so the treant, the tortoise and the heron can be
+// bound instead of killed — which in each case is the reading the contract's own evidence
+// supports, and the game never says so out loud.
+registerEncounterScript('tallow_blight', SEAL_ONLY_SCRIPT);
+registerEncounterScript('drowned_granary', SEAL_ONLY_SCRIPT);
+registerEncounterScript('hollow_census', SEAL_ONLY_SCRIPT);
 import type { Ctx } from '../../engine/context.js';
 import { newCause } from '../../engine/context.js';
 import { dealDamage } from '../../engine/damage.js';
@@ -57,6 +67,9 @@ export const TALLOW_BLIGHT: EncounterDef = registerEncounter({
     { at: { x: 5, y: 4 }, kind: 'wall' },
   ],
   marrowGeodes: { min: 1, max: 2 },
+  // The treant is tearing one straight line, directly above the buried pipe. Bind it and the
+// line stops without the grove having to.
+  subjugationPrize: 'treant',
 });
 
 /** Adept #3 — a riot that is fishermen trying to reach their own boats. */
@@ -285,6 +298,10 @@ export const HOLLOW_CENSUS: EncounterDef = registerEncounter({
   weather: { kind: 'fog' },
   // More of them, loose in the lanes, mauling whoever comes near — either side.
   turfwar: { count: 2, unitCardId: 'marrow_hound' },
+  // The Fen Reaper, standing in the flooded lane the village used for a street. It was
+  // here before the Census was, and it is the only thing in Weeping Stile that stayed.
+  enemyCompanion: { unitCardId: 'heron_bound' },
+  subjugationPrize: 'heron',
   // Empty houses: walls with gaps, a village fought door to door.
   terrain: [
     { at: { x: 1, y: 3 }, kind: 'wall' },
@@ -347,4 +364,7 @@ export const DROWNED_GRANARY: EncounterDef = registerEncounter({
     { at: { x: 0, y: 5 }, kind: 'wall' },
     { at: { x: 5, y: 5 }, kind: 'wall' },
   ],
+  // The tortoise is the only thing keeping the commons' grain dry. Bound, it stops being in
+// the sluice and starts being yours — the one ending where the flood does not come.
+  subjugationPrize: 'tortoise',
 });

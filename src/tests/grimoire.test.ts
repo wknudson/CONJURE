@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createCombat } from '../core/engine/setup.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
-import { COMPANIONS, companionById } from '../core/data/companions.js';
+import { COMPANIONS, companionById, type CompanionDef } from '../core/data/companions.js';
 import { CARDS, isAscendedId } from '../core/data/cards/index.js';
 import {
   HERO_KINDS,
@@ -15,6 +15,7 @@ import {
   tierOf,
   validateDeck,
 } from '../core/data/deckRules.js';
+import type { GrimoireSource } from '../core/data/grimoire.js';
 import { draftGrimoire, hybridPool, isDraftable, purePool } from '../core/data/grimoire.js';
 import { STARTER_DECK } from '../core/data/cards/starter.js';
 import { rollSpellModifiers, tameCompanion, MODIFIER_CHANCE } from '../core/overworld/vivarium.js';
@@ -134,40 +135,43 @@ describe('the sliding scale', () => {
 });
 
 describe('the Grimoire, as data', () => {
-  it('has exactly one bloodline that cannot fill a book on its own, and it is Lexis', () => {
-    // This test used to name Voltara and Ferrum, because Surge had three spells to its
-    // name and Bulwark two. The catalog expansion closed that, and the test was inverted to
-    // assert nobody needed the colourless fallback any more.
+  it('has no bloodline that cannot fill a book on its own', () => {
+    // This test has been through three answers. It named Voltara and Ferrum when Surge had
+    // three spells and Bulwark two; the catalog expansion closed that and it was inverted to
+    // assert nobody was thin. The role overhaul reopened it for Lexis alone — "Spell" came to
+    // mean *elemental* magic, and arcane is by definition not — and Lexis has since been
+    // retired.
     //
-    // The role overhaul reopened it for exactly one bloodline, and not by accident.
-    // "Spell" now means *elemental* magic; Lexis's school is `arcane`, which is by
-    // definition not elemental. An Ink Owl's own shelf holds two Constructs and no Spells
-    // at all, so six of its eight come from the fallback every single time.
-    //
-    // Pinned to Lexis by name rather than relaxed to "some may be thin", because the day a
-    // second bloodline joins it, that is a content bug and this has to say so.
+    // So it is back to the strong form, and it is worth keeping in that form: `omit` now lets
+    // a species be authored with a deliberately narrowed shelf, which is exactly the edit
+    // that could cut a pool below eight without anybody noticing. A short book does not
+    // error — it pads silently from the colourless fallback.
     const thin = COMPANIONS.filter((c) => {
       const capacity = purePool(c.grimoire).reduce((n, def) => n + TIER_COPY_LIMIT[tierOf(def)], 0);
       return capacity < GRIMOIRE_SIZE;
     }).map((c) => c.id);
 
-    expect(thin, 'a second school has gone thin').toEqual(['lexis']);
+    // Was `['lexis']` -- the arcane bloodline drafted from the Hero Deck's own colour and
+    // could never fill eight from it. It has been retired, so the assertion gets to be the
+    // stronger one it always wanted to be: nothing on the roster is thin.
+    expect(thin, 'a bloodline has gone thin').toEqual([]);
   });
 
   it('lets every elemental bloodline fill a book out of its own school alone', () => {
     for (const c of COMPANIONS) {
-      if (c.id === 'lexis') continue;
       const capacity = purePool(c.grimoire).reduce((n, def) => n + TIER_COPY_LIMIT[tierOf(def)], 0);
       expect(capacity, `${c.name}`).toBeGreaterThanOrEqual(GRIMOIRE_SIZE);
     }
   });
 
-  it('still deals Lexis a full eight, out of the fallback', () => {
-    // The fallback is doing real work now rather than standing by, so it gets a test that
-    // would notice if it stopped. A short book is the failure mode this catches.
-    const lexis = companionById('lexis')!;
+  it('still deals a full eight when a pool cannot cover it, out of the fallback', () => {
+    // The fallback is what stands between a thin pool and a short book. Lexis used to be
+    // the live example and has been retired, so the case is made synthetically rather than
+    // deleted -- a source drafting a school with almost nothing castable in it. Losing the
+    // only exerciser of a safety net is how safety nets rot.
+    const thinSource: GrimoireSource = { schools: ['arcane'], hybridChance: 0 };
     for (let seed = 0; seed < 40; seed++) {
-      const book = draftGrimoire(makeRng(seed), lexis.grimoire, GRIMOIRE_SIZE);
+      const book = draftGrimoire(makeRng(seed), thinSource, GRIMOIRE_SIZE);
       expect(book.length, `seed ${seed}`).toBe(GRIMOIRE_SIZE);
     }
   });
@@ -279,10 +283,74 @@ describe('the Grimoire, as data', () => {
 
   it('is where the colour lives, so two species differ by Grimoire and not by deck', () => {
     const decks = new Set(COMPANIONS.map((c) => c.deck.join('|')));
-    const pools = new Set(COMPANIONS.map((c) => c.grimoire.schools.join('|')));
+    // Identity is the **resolved pool**, not the school list. It used to be the school list,
+    // and that only worked while every school had exactly one species speaking it: the day a
+    // second Frost bloodline was authored, two species had the same key and this test was the
+    // thing standing in the way. Asking what the beast can actually draw is the question the
+    // test always meant to ask, and it survives any number of bloodlines per school.
+    const pools = new Set(
+      COMPANIONS.map((c) => purePool(c.grimoire).map((d) => d.id).join('|')),
+    );
 
     expect(decks.size, 'every species hands over the same Hero Deck').toBe(1);
     expect(pools.size, 'and draws from its own shelf').toBe(COMPANIONS.length);
+  });
+
+  it('gives two bloodlines of one school a shared core and their own signatures', () => {
+    // The point of `omit`, stated as a rule rather than as six pairs of card lists. Same
+    // school must not mean same book — but it must still mean the *same school*, so the two
+    // are required to overlap as well as to differ. A split into two disjoint halves would
+    // pass a uniqueness check and be a different design.
+    const bySchool = new Map<string, CompanionDef[]>();
+    for (const c of COMPANIONS) {
+      if (c.grimoire.schools.length !== 1) continue;
+      const key = c.grimoire.schools[0]!;
+      bySchool.set(key, [...(bySchool.get(key) ?? []), c]);
+    }
+    expect(bySchool.size, 'every school should have mono bloodlines').toBeGreaterThan(0);
+
+    for (const [school, species] of bySchool) {
+      expect(species.length, `${school} bloodlines`).toBeGreaterThan(1);
+      for (let i = 0; i < species.length; i++) {
+        for (let j = i + 1; j < species.length; j++) {
+          const a = new Set(purePool(species[i]!.grimoire).map((d) => d.id));
+          const b = new Set(purePool(species[j]!.grimoire).map((d) => d.id));
+          const shared = [...a].filter((id) => b.has(id));
+          const label = `${species[i]!.id} vs ${species[j]!.id}`;
+
+          expect(shared.length, `${label}: should share a core`).toBeGreaterThan(0);
+          expect([...a].some((id) => !b.has(id)), `${label}: ${species[i]!.id} needs its own`).toBe(true);
+          expect([...b].some((id) => !a.has(id)), `${label}: ${species[j]!.id} needs its own`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('never omits a card the bloodline could not have drawn anyway', () => {
+    // An omit naming an off-school card, or a card that no longer exists, is a line that
+    // reads as a design decision and does nothing. Silent no-ops in a list like this are how
+    // somebody later concludes the mechanism is broken.
+    for (const c of COMPANIONS) {
+      for (const id of c.grimoire.omit ?? []) {
+        const def = CARDS[id];
+        expect(def, `${c.id} omits ${id}, which is not a card`).toBeDefined();
+        expect(
+          c.grimoire.schools.includes(def!.school),
+          `${c.id} omits ${id}, which is ${def!.school} and off its shelf regardless`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('leaves every bloodline able to fill a book out of its own school', () => {
+    // The floor `omit` must not cut through. A pool under eight silently falls back to the
+    // colourless shelf, which is the padded-Grimoire failure the fallback's own docblock
+    // warns about — and it would arrive as "this beast feels wrong" rather than as an error.
+    for (const c of COMPANIONS) {
+      expect(purePool(c.grimoire).length, `${c.id} pure pool`).toBeGreaterThanOrEqual(
+        GRIMOIRE_SIZE,
+      );
+    }
   });
 });
 
@@ -435,17 +503,19 @@ describe('the fusion', () => {
 
   it('stamps only the Grimoire copy when a card is in both halves', () => {
     // The case `grimoireFrom` exists for, and the only one that can tell an index-split
-    // from a plain lookup by def id. Lexis carries Grapple Line, and so does the Hero Deck
-    // below — the roll belongs to the beast's copy, not to the player's.
-    const hero = ['grapple_line', 'shield_bash', 'aegis_ward', 'stone_barricade', 'cull_the_weak'];
-    const { state } = createCombat(NOVICE_DUELIST, 7, 'lexis', hero, {
-      spellModifiers: { grapple_line: { pipCostDelta: -1 } },
+    // from a plain lookup by def id. Mortis carries Harvest the Weak, and so does the Hero
+    // Deck below — the roll belongs to the beast's copy, not to the player's. (Was Lexis
+    // and Grapple Line until the Ink Owl stopped being a bloodline; the property under
+    // test is a card in both halves, and Mortis supplies one.)
+    const hero = ['harvest_the_weak', 'shield_bash', 'aegis_ward', 'stone_barricade', 'cull_the_weak'];
+    const { state } = createCombat(NOVICE_DUELIST, 7, 'mortis', hero, {
+      spellModifiers: { harvest_the_weak: { pipCostDelta: -1 } },
     });
     const player = state.players.player;
 
-    expect(companionById('lexis')!.legacyGrimoire, 'the premise').toContain('grapple_line');
+    expect(companionById('mortis')!.legacyGrimoire, 'the premise').toContain('harvest_the_weak');
 
-    const copies = Object.values(player.cards).filter((c) => c.defId === 'grapple_line');
+    const copies = Object.values(player.cards).filter((c) => c.defId === 'harvest_the_weak');
     expect(copies.length, 'one from each half').toBe(2);
     expect(copies.filter((c) => c.mods !== undefined), 'exactly one rolled').toHaveLength(1);
   });

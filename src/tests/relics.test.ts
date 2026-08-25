@@ -8,6 +8,8 @@ import {
   slotOf,
 } from '../core/data/relics.js';
 import { BOON_KEYS } from './boons.js';
+import { BOON_LABELS } from '../app/DeckBuilderScreen.js';
+import type { CombatBoons } from '../core/engine/setup.js';
 import {
   RELIC_SLOT_ORDER,
   emptyLoadout,
@@ -94,6 +96,26 @@ describe('folding gear into capabilities', () => {
 
   it('is empty for bare slots', () => {
     expect(boonsOfRelics(emptyLoadout())).toEqual({});
+  });
+});
+
+describe('reading them', () => {
+  it('has a label for every capability a relic can grant', () => {
+    // The Field Journal's Hero tab filters its totals panel by `BOON_LABELS`, so a boon with
+    // no label is a worn relic the game refuses to admit is doing anything — it renders
+    // "Nothing worn. The rules apply as written." while the fight plainly disagrees.
+    //
+    // That was live for ten boons: the table was an array typed `{ key: keyof CombatBoons }[]`,
+    // which asserts every key is a boon and never that every boon has a key, under a
+    // docblock claiming the opposite. It is a total `Record` now, so the compiler catches a
+    // missing entry — and this catches the thing the compiler cannot, which is an entry that
+    // is present and says nothing.
+    for (const key of BOON_KEYS) {
+      const label = BOON_LABELS[key as keyof CombatBoons];
+      expect(label, `${key} has no label on the Hero sheet`).toBeTruthy();
+      expect(label.trim().length, `${key}'s label is blank`).toBeGreaterThan(0);
+      expect(label, `${key}'s label is the field name`).not.toBe(key);
+    }
   });
 });
 

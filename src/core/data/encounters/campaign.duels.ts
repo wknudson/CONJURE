@@ -11,7 +11,24 @@
  */
 
 import type { EncounterDef } from './registry.js';
-import { registerEncounter } from './registry.js';
+import { registerEncounter, registerEncounterScript } from './registry.js';
+import { SEAL_ONLY_SCRIPT } from './seal.js';
+
+/**
+ * Every duelist here stakes their beast as well as their purse.
+ *
+ * A wager duel was previously the one fight shape that could not end in a binding: the
+ * duelists all fielded a stock `umbra_bound` and none of them carried a `subjugationPrize`,
+ * so beating one paid money and nothing else. Now each carries the beast the doc gave them,
+ * and the seal fires at a quarter strength like everywhere else — so a duel can be won by
+ * taking the animal instead of the man, which is the mercy the whole campaign is quietly
+ * arguing for.
+ *
+ * The script is the shared seal-only one: a duelist is a person with a beast, not a boss
+ * with phases, so there is no gate to fire at half.
+ */
+const DUEL_IDS = ['smoke_eaters_rest', 'ashwood_poacher', 'coldwater_duel', 'waystone_duel'];
+for (const id of DUEL_IDS) registerEncounterScript(id, SEAL_ONLY_SCRIPT);
 
 /** Novice #6 — the veteran who heard the floor eating. */
 export const SMOKE_EATERS_REST: EncounterDef = registerEncounter({
@@ -47,8 +64,12 @@ export const SMOKE_EATERS_REST: EncounterDef = registerEncounter({
     ['shieldbearer', 4, 1],
     ['grave_sentinel', 2, 0],
   ],
-  // TODO(worldbuild): his companion is the stock duelist umbra until he has his own.
-  enemyCompanion: { unitCardId: 'umbra_bound' },
+  // A Hedgefort: a standing stone the hedge grew through, and about as willing to move as
+  // the old soldier casting from behind it.
+  enemyCompanion: { unitCardId: 'crab_bound' },
+  // Bind it and it is yours. A duel staked on the beast rather than only on the purse —
+  // the Smoke-Eater has nothing else left to put up.
+  subjugationPrize: 'crab',
   // A plaza: clean ground, two benches, one fountain. A duel, not an ambush.
   terrain: [
     { at: { x: 3, y: 3 }, kind: 'wall' },
@@ -89,8 +110,10 @@ export const ASHWOOD_POACHER: EncounterDef = registerEncounter({
     ['briar_wolf', 5, 1],
     ['briar_wolf', 2, 0],
   ],
-  // TODO(worldbuild): stock duelist companion; his should be something taken from the wood.
-  enemyCompanion: { unitCardId: 'umbra_bound' },
+  // Something taken from the wood, as a discharged man's beast should be: antlers with
+  // last winter's thorns still frozen into them.
+  enemyCompanion: { unitCardId: 'elk_bound' },
+  subjugationPrize: 'elk',
   // The fringe under fog: trunks and thickets, sight bought a tile at a time.
   weather: { kind: 'fog' },
   terrain: [
@@ -139,8 +162,10 @@ export const COLDWATER_DUEL: EncounterDef = registerEncounter({
     ['grave_sentinel', 5, 1],
     ['hollow_wraith', 3, 0],
   ],
-  // TODO(worldbuild): stock duelist companion; a King's Duelist warrants her own beast.
-  enemyCompanion: { unitCardId: 'umbra_bound' },
+  // A King's Duelist warrants her own beast, and Coldwater's is what is left of a
+  // lamplighter who kept going back for the wick. She does not say where she got it.
+  enemyCompanion: { unitCardId: 'shade_bound' },
+  subjugationPrize: 'shade',
   // Ground of her choosing: a clean court, one obstruction, nowhere to hide from her.
   terrain: [
     { at: { x: 3, y: 4 }, kind: 'wall' },
@@ -179,8 +204,10 @@ export const WAYSTONE_DUEL: EncounterDef = registerEncounter({
     ['shieldbearer', 2, 1],
     ['anvil_lord', 4, 1],
   ],
-  // TODO(worldbuild): stock duelist companion for now.
-  enemyCompanion: { unitCardId: 'umbra_bound' },
+  // Hedge lightning, coiled in the bridge's own briar. The children who bring him bread
+  // walk past it twice a day and it has never once moved.
+  enemyCompanion: { unitCardId: 'serpent_bound' },
+  subjugationPrize: 'serpent',
   // The gale funnels down the river as it always does at the Waystone.
   weather: { kind: 'gale', wind: { x: 0, y: 1 } },
   // The bridge: parapets wall both edges through the middle rows, leaving a two-tile

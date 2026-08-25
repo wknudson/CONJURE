@@ -17,6 +17,8 @@ import { ENCOUNTERS, encounterById } from './encounters/index.js';
 import { hashText, makeRng, nextInt } from '../util/rng.js';
 import { REAGENTS } from './splicing.js';
 import { nextStoryContract, storyContractByEncounter, type StoryContract } from './campaign.js';
+import { HUNTS, huntByEncounter, type Hunt } from './hunts.js';
+import { packByEncounter, type PackDef } from './packs.js';
 
 export type BountyDifficulty = 'novice' | 'adept' | 'master';
 
@@ -92,6 +94,16 @@ export function tierOfEncounter(encounterId: string): BountyDifficulty {
   // through `composeBoard` in campaign order instead of by dice.
   const story = storyContractByEncounter(encounterId);
   if (story) return story.tier;
+  // Hunts likewise: they are posted at the gate rather than on the board, and a Master
+  // hunt paying Novice Schematics because nobody filed it is exactly the failure the
+  // fallback below is apologising for.
+  const wild = huntByEncounter(encounterId);
+  if (wild) return wild.tier;
+  // And packs. Unfiled they would fall through to Novice, which pays **no shards** — the
+  // exact reward class a pack exists to hand out. The same value also picks how many
+  // Schematics a win offers, so getting it wrong is quietly wrong twice.
+  const pack = packByEncounter(encounterId);
+  if (pack) return pack.tier;
   for (const tier of DIFFICULTIES) {
     if (TIER_ENCOUNTERS[tier].includes(encounterId)) return tier;
   }
@@ -190,9 +202,18 @@ const FLAVOUR: Record<BountyDifficulty, string> = {
  */
 export const AUDIT_BOUNTY_ID = 'audit_smuggled_vault';
 
-/** What the vault holds. Absurd on purpose: this is a bench supply, not a reward curve. */
+/**
+ * What the vault holds. Absurd on purpose: this is a bench supply, not a reward curve.
+ *
+ * The Ducat figure is sized against the **whole gear counter**, because the thing the audit
+ * exists to test is the counter, and a purse that buys most of a shelf tests most of one.
+ * `audit.test.ts` asserts it outright rather than trusting this comment, which is how the
+ * number was caught trailing the catalogue: 5000 covered eleven relics comfortably and did
+ * not cover thirty-six. Raised with headroom, so the next shelf to grow does not
+ * immediately fail the same assertion.
+ */
 export const AUDIT_SPOILS = {
-  ducats: 5000,
+  ducats: 15000,
   marrowShards: 100,
   reagents: {
     core_pyre: 12,
@@ -288,6 +309,82 @@ export function storyBounty(contract: StoryContract, seed: number): Bounty {
     ...(contract.wager ? { wager: TIER_WAGER[contract.tier] } : {}),
     flavour: contract.flavour,
   };
+}
+
+/**
+ * One Wild Hunt, dressed as a Bounty so it can ride the road every other fight rides.
+ *
+ * A hunt is not posted on the board — it is taken at the gate — but everything downstream of
+ * *taking* a contract is the same machinery: `takeBounty` finds the encounter, the
+ * pre-combat screen locks the deck, `finishCombat` resolves it, and `resolveCombat` pays the
+ * spoils and advances the bounty seed. Inventing a second path for hunts would have meant a
+ * second place where a subjugation is claimed, and the first one is nine steps long.
+ *
+ * It also buys the repeatability for free, which is the part worth pointing at.
+ * `resolveCombat` advances `bountySeed` after **every** finished fight, and
+ * `claimSubjugation` salts its roll by how many beasts are already in the roster — so the
+ * second Saltglass Seal is rolled off a different seed than the first without hunts having
+ * to arrange anything.
+ *
+ * Pays its tier, exactly like a story contract, with the same seeded spread. Never wagered:
+ * a wager is a bet against a person, and an animal has not agreed to anything.
+ */
+export function huntBounty(hunt: Hunt, seed: number): Bounty {
+  const rng = makeRng((seed ^ hashText(hunt.encounterId)) >>> 0);
+  const pay = TIER_PAY[hunt.tier];
+  const encounter = encounterById(hunt.encounterId);
+  return {
+    id: `hunt_${hunt.encounterId}`,
+    title: encounter?.name ?? hunt.encounterId,
+    difficulty: hunt.tier,
+    enemySeed: hunt.encounterId,
+    spoils: {
+      ducats: pay.ducats + nextInt(rng, TIER_SPREAD[hunt.tier] + 1),
+      marrowShards: pay.marrowShards,
+      ...(TIER_CORES[hunt.tier] > 0
+        ? { reagents: { [REAGENTS[nextInt(rng, REAGENTS.length)]!.id]: TIER_CORES[hunt.tier] } }
+        : {}),
+    },
+    flavour: encounter?.blurb ?? 'Standing work, past the gate.',
+  };
+}
+
+/**
+ * One roaming pack, dressed as a Bounty.
+ *
+ * Same argument as `huntBounty`, one step further out: a pack is not posted anywhere at all
+ * — you walked into it — and it still rides the ordinary contract road, because that road is
+ * what pays the spoils, offers the Schematics, records the Ledger, and above all closes the
+ * open-contract failsafe. A fight started outside it could be abandoned by closing the tab.
+ *
+ * Pays Marrow Shards and a little coin: shards are the Ascension currency, and the point of
+ * the packs is to be the faucet for one. No wager — a wager is a bet against a person, and
+ * these did not agree to anything either.
+ */
+export function packBounty(pack: PackDef, seed: number): Bounty {
+  const rng = makeRng((seed ^ hashText(pack.encounterId)) >>> 0);
+  const pay = TIER_PAY[pack.tier];
+  return {
+    id: `pack_${pack.encounterId}`,
+    title: pack.name,
+    difficulty: pack.tier,
+    enemySeed: pack.encounterId,
+    spoils: {
+      // Deliberately under a contract's purse. Packs are a material faucet, not an income:
+      // the road should never be the efficient way to earn Ducats.
+      ducats: Math.round(pay.ducats * 0.4) + nextInt(rng, 10),
+      // At least one, whatever the tier says. A Novice contract pays no shards because it is
+      // errand work in a lit ward; a pack is neither, and paying nothing would leave the
+      // whole feature rewarding nothing the player wanted.
+      marrowShards: Math.max(1, pay.marrowShards),
+    },
+    flavour: pack.blurb,
+  };
+}
+
+/** Every hunt as a Bounty, in registry order. The gate panel's whole data source. */
+export function huntBoard(seed: number): Bounty[] {
+  return HUNTS.map((h) => huntBounty(h, seed));
 }
 
 /**

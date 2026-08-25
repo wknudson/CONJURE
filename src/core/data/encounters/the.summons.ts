@@ -21,7 +21,7 @@ import { registerEncounter, registerEncounterScript } from './registry.js';
 import type { Ctx } from '../../engine/context.js';
 import { emit, newCause } from '../../engine/context.js';
 import { dockIntoForm, summonUnit } from '../../engine/spawn.js';
-import { beginSubjugation } from '../../engine/subjugation.js';
+import { sealAt25 } from './seal.js';
 import { clearIntents } from '../../engine/intents.js';
 import { canPlace, unitsOf } from '../../engine/board.js';
 
@@ -54,7 +54,7 @@ const script: EncounterScript = {
 
   onCommanderHpChanged(ctx, side) {
     if (side !== 'enemy') return;
-    maybeSeal(ctx);
+    sealAt25(ctx);
   },
 
   onTurnStart(ctx, side) {
@@ -67,7 +67,7 @@ const script: EncounterScript = {
     } else if (ctx.state.encounter.bossPhase === 2) {
       boardTheColossus(ctx);
     }
-    maybeSeal(ctx);
+    sealAt25(ctx);
   },
 };
 
@@ -109,14 +109,6 @@ function boardTheColossus(ctx: Ctx): boolean {
   state.encounter.firedGates.push(GROWN_GATE);
   clearIntents(ctx);
   return true;
-}
-
-/** The Harpoon Protocol, at a quarter strength — the trial's threshold, unchanged. */
-function maybeSeal(ctx: Ctx): void {
-  const cmd = ctx.state.players.enemy;
-  if (cmd.hp <= 0) return;
-  if (cmd.hp > Math.floor(cmd.maxHp * 0.25)) return;
-  beginSubjugation(ctx);
 }
 
 registerEncounterScript(ENCOUNTER_ID, script);

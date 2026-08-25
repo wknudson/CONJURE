@@ -582,6 +582,6 @@ cards in all seven schools. A new character is handed a **seven-card** Hero Deck
 colourless staples — a strike, a shove, a wall, a ward, a tithe, a beam and a finisher —
 which the Companion's eight-spell Grimoire fuses to fifteen at the bell
 (`core/data/cards/starter.ts`, `docs/07_deck_building.md` §4). The catalog behind it is
-173 base cards (`docs/08_card_catalog.md`), and between them they exercise every core
+214 base cards (`docs/08_card_catalog.md`), and between them they exercise every core
 system: summoning, a 2×2 Behemoth, displacement and collisions, Mark attachment, cascading
 detonations, the blood tithe economy, obstacles, persistent armor, and a global finisher.

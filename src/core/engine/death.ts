@@ -83,7 +83,14 @@ export function killEntity(
     // One tally, at the only place a unit actually leaves the board. Devoured, shoved
     // into a wall, burned by a hazard or cut down — the Ledger counts them all the same,
     // because the player killed it either way.
-    if (live.side === 'enemy') ctx.state.defeated.push(live.defId);
+    if (live.side === 'enemy') {
+      ctx.state.defeated.push(live.defId);
+      // Progress, for the Pacifist Lockout's purposes. That counter is normally reset only
+      // by portrait damage, and in a rout there is no portrait to damage — so a player
+      // methodically clearing a pack would have read as six rounds of doing nothing and
+      // been billed escalating unblockable damage for it.
+      if (ctx.state.encounter.rout) ctx.state.commanderDamagedThisRound = true;
+    }
     lightPyre(ctx, live, at);
     payBounty(ctx, live.defId, at);
     deathburst(ctx, live, at);
@@ -242,9 +249,31 @@ function payTo(
 }
 
 /**
+ * Everything still standing for a side that is genuinely fighting for it.
+ *
+ * Feral bodies are excluded, and that exclusion is the whole subtlety. Wildlife is filed
+ * under `'enemy'` because the engine has two sides and no third, but it belongs to nobody —
+ * counting it would make a rout wait on a wolf that is also biting the things you are trying
+ * to kill, and that is a fight that never ends.
+ */
+function livingSoldiers(ctx: Ctx, side: 'player' | 'enemy'): number {
+  let n = 0;
+  for (const unit of Object.values(ctx.state.units)) {
+    if (unit.side !== side) continue;
+    if (unit.keywords.includes('Feral')) continue;
+    n += 1;
+  }
+  return n;
+}
+
+/**
  * Win/loss evaluation, including the mutual-KO rule: if both commanders hit 0
  * in the same step, both revive at 1 HP, the board is wiped of non-obstacle units and
  * marks, all armor is purged, and combat continues in sudden death.
+ *
+ * A **rout** fight is decided the other way round: there is no enemy commander worth the
+ * name, so the pack itself is the opposition and clearing it is the win. The player still
+ * loses the ordinary way — the Pact is the Pact wherever you are standing.
  */
 export function checkLethal(ctx: Ctx): void {
   if (ctx.state.result) return;
@@ -253,6 +282,16 @@ export function checkLethal(ctx: Ctx): void {
   const enemy = ctx.state.players.enemy;
   const playerDead = player.hp <= 0;
   const enemyDead = enemy.hp <= 0;
+
+  // Checked before the commander rules so a pack cleared by the same blow that would have
+  // killed the player still reads as the rout it was. Losing to a pack you had already
+  // beaten is the kind of ordering accident nobody could diagnose from the outside.
+  if (ctx.state.encounter.rout && !ctx.state.result) {
+    if (livingSoldiers(ctx, 'enemy') === 0) {
+      finish(ctx, 'victory');
+      return;
+    }
+  }
 
   if (!playerDead && !enemyDead) return;
 

@@ -97,6 +97,64 @@ export const LOOK: LookConfig = {
 };
 
 /**
+ * The ambient half of the look, per area.
+ *
+ * `LOOK` is module-level and deliberately survives a teardown, which is what makes the tuning
+ * panel usable — you nudge the fog, walk into a shop and back out, and it is still nudged.
+ * That same persistence is why the ambience cannot live there once there is more than one
+ * place: the first crossing into the wilds would permanently retune the ward.
+ *
+ * So the values that describe *a place* live here keyed by area, and everything that
+ * describes the *camera and the film* — distance, bloom, tilt-shift, facing — stays global,
+ * because those are properties of how the game is shot rather than of where you are standing.
+ */
+export interface AmbientDef {
+  sunIntensity: number;
+  sunColor: string;
+  ambientIntensity: number;
+  skyColor: string;
+  groundBounce: string;
+  fogColor: string;
+  fogDensity: number;
+}
+
+export const AMBIENT: Record<string, AmbientDef> = {
+  ashfall_ward: {
+    sunIntensity: 1.25,
+    sunColor: '#8fa3c8',
+    ambientIntensity: 0.95,
+    skyColor: '#5d6b8a',
+    groundBounce: '#3d2e21',
+    fogColor: '#2b2630',
+    fogDensity: 0.03,
+  },
+  /**
+   * The Chalk Verge: open country under the same Lid.
+   *
+   * Brighter and thinner than the ward, and that is doing a job rather than being pretty.
+   * Ashfall has ten gas lamps carrying its light, and they are also its safe-zone tell — the
+   * verge has neither, so the same fog density and the same weak sun would leave a road with
+   * nothing on it at all. The moon does the work here: a colder, stronger key, a lifted
+   * ambient, and half the fog so the treeline reads as distance instead of as a wall.
+   */
+  chalk_verge: {
+    sunIntensity: 1.75,
+    sunColor: '#a8bcd8',
+    ambientIntensity: 1.35,
+    skyColor: '#6d7f9e',
+    groundBounce: '#4a4636',
+    fogColor: '#232a2c',
+    fogDensity: 0.016,
+  },
+};
+
+/** An area's ambience, or the ward's if nobody wrote one. */
+export function ambientFor(areaId: string): AmbientDef {
+  return AMBIENT[areaId] ?? AMBIENT.ashfall_ward!;
+}
+
+
+/**
  * What the panel needs to reach in order to make a change visible.
  *
  * Passed in rather than imported so `look.ts` stays free of scene knowledge: this file
@@ -116,8 +174,12 @@ export interface LookHandles {
   onColliders(show: boolean): void;
 }
 
-export function buildLookGui(handles: LookHandles): GUI {
-  const gui = new GUI({ title: 'Ashfall Ward — Look' });
+export function buildLookGui(handles: LookHandles, areaId = 'ashfall_ward', areaName = 'Ashfall Ward'): GUI {
+  const gui = new GUI({ title: `${areaName} — Look` });
+  // Bound to the area's own ambience, so tuning the road does not retune the ward. The
+  // camera and film folders below stay on `LOOK`, because those describe how the game is
+  // shot rather than where you are standing.
+  const amb = ambientFor(areaId);
 
   const cam = gui.addFolder('Camera');
   cam.add(LOOK, 'fov', 15, 70, 1).onChange(handles.onCamera);
@@ -126,15 +188,15 @@ export function buildLookGui(handles: LookHandles): GUI {
 
   const light = gui.addFolder('Lighting');
   light.add(LOOK, 'exposure', 0.2, 2.5, 0.05).name('exposure (master)').onChange(handles.onExposure);
-  light.add(LOOK, 'sunIntensity', 0, 4, 0.05).onChange(handles.onSun);
-  light.addColor(LOOK, 'sunColor').onChange(handles.onSun);
-  light.add(LOOK, 'ambientIntensity', 0, 2, 0.05).onChange(handles.onAmbient);
-  light.addColor(LOOK, 'skyColor').onChange(handles.onAmbient);
-  light.addColor(LOOK, 'groundBounce').onChange(handles.onAmbient);
+  light.add(amb, 'sunIntensity', 0, 4, 0.05).onChange(handles.onSun);
+  light.addColor(amb, 'sunColor').onChange(handles.onSun);
+  light.add(amb, 'ambientIntensity', 0, 2, 0.05).onChange(handles.onAmbient);
+  light.addColor(amb, 'skyColor').onChange(handles.onAmbient);
+  light.addColor(amb, 'groundBounce').onChange(handles.onAmbient);
 
   const atmo = gui.addFolder('Atmosphere');
-  atmo.addColor(LOOK, 'fogColor').onChange(handles.onFog);
-  atmo.add(LOOK, 'fogDensity', 0, 0.12, 0.001).onChange(handles.onFog);
+  atmo.addColor(amb, 'fogColor').onChange(handles.onFog);
+  atmo.add(amb, 'fogDensity', 0, 0.12, 0.001).onChange(handles.onFog);
 
   const gas = gui.addFolder('Gaslamp');
   gas.addColor(LOOK, 'lampColor').onChange(handles.onLamps);

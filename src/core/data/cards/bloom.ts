@@ -496,4 +496,144 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
       onHit: { status: 'toxin', stacks: 2 },
     },
   },
+
+  // -------------------------------------------------------------- the second bloodline
+  //
+  // Bloom carries more new company than any other school: the Thorn Warden founded it, the
+  // Moss Aurochs walks the Tallow Levels, and four of the five new hybrid bloodlines are half
+  // Bloom, because Bloom was the school with the fewest fusion partners already spoken for.
+  // Three cards, chosen for what the shelf could not do: reach a body it had not already
+  // poisoned, hold ground without a wall, and turn the poison into a real number.
+
+  /**
+   * Poison with no delivery cost, drifting where it is thrown.
+   *
+   * Bloom's toxin cards all attach to something — a cloud on a tile, a snare on a body, a
+   * lash that has to connect. Pollen Drift is a Pip that poisons a 2x2 block wherever it
+   * lands, no target required to already be there and nothing standing in the way, which
+   * makes it the school's only genuine opener.
+   *
+   * Toxin 1 and no damage at all. It is a fuse, and everything else in the colour is a match:
+   * Blight Bloom, Creeping Decay, and the Boar all read what is already rotting.
+   */
+  pollen_drift: {
+    id: 'pollen_drift',
+    name: 'Pollen Drift',
+    cost: { pips: 1, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Poisons everything in a 2x2 block (Toxin 1). No damage.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 2 },
+    effect: {
+      op: 'applyStatus',
+      status: 'toxin',
+      stacks: 1,
+      area: { shape: 'square', size: 2 },
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * The rot, called in all at once.
+   *
+   * Bloom's poison is the slowest clock in the game and its whole weakness is that a fight
+   * can end before the arithmetic does. Blight Harvest is the school's permission to stop
+   * waiting: 40 through plate to a poisoned body, and it eats the Toxin to do it.
+   *
+   * `requiresStatus` rather than an `ifMet` fallback, and the difference is deliberate. A
+   * card that punishes you for casting it early is one design; a card that simply is not
+   * offered until the board is ready is a cleaner one, and Bloom already has enough cards
+   * that ask the player to be patient without also asking them to be careful.
+   */
+  blight_harvest: {
+    id: 'blight_harvest',
+    name: 'Blight Harvest',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Consumes the poison on a Toxin-ridden target for 40 damage through any armor.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false, requiresStatus: 'toxin' },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'clearStatus', status: 'toxin', area: { shape: 'target' } },
+        { op: 'damage', amount: 40, dtype: 'true', area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * Ground held by growing through it, rather than by building on it.
+   *
+   * The Briar Rampart is a wall: it occupies tiles, it can be broken, and an enemy answers it
+   * by breaking it. Taproot answers the same question the other way — nothing to break,
+   * because there is nothing there. Everything in the block is Entangled and stays where it
+   * is, and the ground is still walkable for anyone who was not standing in it.
+   *
+   * Three Pips because holding an army still for a turn is what Bloom's slow clock is worth,
+   * and because Entangle on a 2x2 catches a formation rather than a body.
+   */
+  taproot: {
+    id: 'taproot',
+    name: 'Taproot',
+    cost: { pips: 3, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Roots everything in a 2x2 block in place (Entangle 1) and deals 10 toxic damage there.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 2 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'toxic', area: { shape: 'square', size: 2 } },
+        { op: 'applyStatus', status: 'entangle', stacks: 1, area: { shape: 'square', size: 2 } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * A body that poisons the ground it came from.
+   *
+   * Bloom's bodies are all thorns — they hurt what touches them. The Toad hurts what stands
+   * near where it dies, which is a different threat: an enemy can decline to attack a Briar
+   * Wolf, and cannot decline to be adjacent to a Toad that something else killed.
+   *
+   * Two Toxin on death, in a school whose every other card reads Toxin. Killing it is a
+   * favour to the Bloom player roughly as often as it is not, which is exactly the awkward
+   * question a two-Pip body should pose.
+   */
+  mire_toad: {
+    id: 'mire_toad',
+    name: 'Mire Toad',
+    cost: { pips: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'hero',
+    kind: 'minion',
+    text: 'When it dies, every adjacent enemy is badly poisoned (Toxin 2).',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'mire_toad' },
+    keywords: [],
+    unit: {
+      atk: 20,
+      hp: 50,
+      mov: 2,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 1,
+      archetype: 'bruiser',
+      escalationBonus: { atk: 0, hp: 0 },
+      attackDtype: 'toxic',
+      deathburst: { status: 'toxin', stacks: 2 },
+    },
+  },
 };

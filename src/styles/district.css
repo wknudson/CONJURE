@@ -318,6 +318,28 @@ body.is-talking .district-help {
   grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 12px;
 }
+/* --- the Wildlands Gate: same panel, grouped by region ---------------------- */
+
+.district-board__note {
+  margin: -4px 0 16px;
+  max-width: 62ch;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #b9a88a;
+}
+.district-board__region {
+  margin: 18px 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8e7f66;
+  border-bottom: 1px solid rgba(142, 127, 102, 0.28);
+  padding-bottom: 5px;
+}
+.district-board__region:first-of-type {
+  margin-top: 4px;
+}
+
 .district-board .bounty-card.is-locked {
   opacity: 0.42;
   cursor: not-allowed;

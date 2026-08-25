@@ -370,3 +370,148 @@ export class Warden implements Updatable {
     this.onAlertChange?.(false);
   }
 }
+
+/**
+ * A minion pack, wandering its patch of road until somebody walks into it.
+ *
+ * Built on the `Warden`'s shape rather than the `Hotspot`'s, and the difference is the whole
+ * point: a Hotspot waits for Space, and nothing about meeting a pack should involve pressing
+ * a key to agree to it. Like the Warden it is `Updatable` only, it never reaches for global
+ * state, and everything it knows about the player is injected by the screen each frame.
+ *
+ * Three bodies are drawn per pack rather than one, tinted apart, so what you see coming is a
+ * group. They are decoration hung off one position — the fight is the fight, and a pack that
+ * modelled its members individually out here would be promising a tactical situation the
+ * arena does not inherit.
+ */
+export class Pack implements Updatable {
+  readonly walkers: Walker[] = [];
+  /** The fight walking into this one starts. Carried so the screen can re-arm by identity. */
+  readonly encounterId: string;
+  readonly position: THREE.Vector3;
+
+  /** Injected by the screen, exactly as the Warden's are. */
+  playerAt = new THREE.Vector3();
+  onContact: (() => void) | null = null;
+
+  private readonly home: THREE.Vector2;
+  private readonly target = new THREE.Vector2();
+  private pause = 0;
+  private spent = false;
+
+  /**
+   * Under the player's six, and under the Warden's chase.
+   *
+   * `collision.ts` states the anti-tunneling proof in terms of the fastest thing on the
+   * board against a dt clamped to 0.05: at six units a second the longest step is 0.3, which
+   * is inside the smallest collider radius. A pack quicker than that could cross a wall
+   * between two frames, so this is a bound rather than a taste.
+   */
+  private static readonly SPEED = 2.0;
+  /** How close is close enough to have walked into them. */
+  private static readonly CONTACT = 1.6;
+  /** Offsets for the two hangers-on, so the group reads as a group. */
+  private static readonly FLANK: readonly [number, number][] = [
+    [-0.95, 0.55],
+    [0.9, -0.5],
+  ];
+
+  constructor(
+    encounterId: string,
+    art: ActorArt,
+    height: number,
+    homeX: number,
+    homeZ: number,
+    private readonly roam: number,
+    private readonly colliders: ColliderSet,
+    private readonly rng: () => number,
+  ) {
+    this.encounterId = encounterId;
+    for (let i = 0; i < 3; i++) {
+      const w = new Walker(art, height * (i === 0 ? 1 : 0.92));
+      w.position.set(homeX, 0, homeZ);
+      this.walkers.push(w);
+    }
+    this.position = this.walkers[0]!.position;
+    this.home = new THREE.Vector2(homeX, homeZ);
+    this.target.set(homeX, homeZ);
+    this.pickTarget();
+  }
+
+  /** Somewhere else on its patch that it can actually stand. */
+  private pickTarget(): void {
+    for (let tries = 0; tries < 12; tries++) {
+      const a = this.rng() * Math.PI * 2;
+      const r = this.roam * (0.35 + this.rng() * 0.65);
+      const x = this.home.x + Math.cos(a) * r;
+      const z = this.home.y + Math.sin(a) * r;
+      if (!this.colliders.blocked(x, z, 0.4)) {
+        this.target.set(x, z);
+        return;
+      }
+    }
+    // Nothing free within reach — go home and try again from there.
+    this.target.copy(this.home);
+  }
+
+  /**
+   * Whether a point is far enough from this pack to be worth retreating to.
+   *
+   * The screen tracks the last such point and writes *that* as the return position, because
+   * writing the tile you collided on means arriving back inside contact range and starting
+   * the same fight again — at one Pact if you lost it.
+   */
+  clearOf(x: number, z: number, margin = 3): boolean {
+    return Math.hypot(x - this.position.x, z - this.position.z) > Pack.CONTACT + margin;
+  }
+
+  update(dt: number, _t: number, cameraYaw: number): void {
+    const before = { x: this.position.x, z: this.position.z };
+
+    if (this.pause > 0) {
+      this.pause -= dt;
+      this.walkers[0]!.step(0, 0, cameraYaw);
+    } else {
+      const dx = this.target.x - this.position.x;
+      const dz = this.target.y - this.position.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 0.5) {
+        // A beat of standing about, then somewhere new. Without the pause a pack reads as a
+        // patrol rather than as something loitering.
+        this.pause = 0.8 + this.rng() * 2.2;
+        this.pickTarget();
+      } else {
+        this.colliders.move(
+          this.position as unknown as { x: number; z: number },
+          (dx / dist) * Pack.SPEED * dt,
+          (dz / dist) * Pack.SPEED * dt,
+          0.4,
+        );
+      }
+    }
+
+    const movedX = this.position.x - before.x;
+    const movedZ = this.position.z - before.z;
+    this.walkers[0]!.step(movedX, movedZ, cameraYaw);
+
+    // The hangers-on trail the leader at a fixed offset. Not collided: they are dressing on
+    // one body, and three colliding bodies in a roam circle spend their lives stuck on each
+    // other rather than wandering.
+    for (let i = 0; i < Pack.FLANK.length; i++) {
+      const [ox, oz] = Pack.FLANK[i]!;
+      const w = this.walkers[i + 1]!;
+      w.position.set(this.position.x + ox, 0, this.position.z + oz);
+      w.step(movedX, movedZ, cameraYaw);
+    }
+
+    if (this.spent || !this.onContact) return;
+    const d = Math.hypot(this.playerAt.x - this.position.x, this.playerAt.z - this.position.z);
+    if (d < Pack.CONTACT) {
+      // Latched, because `update` runs every frame and the player is still standing there
+      // during the frames it takes the screen to hand off. The Warden's catch guards the
+      // same way, one level up, with `inputLocked`.
+      this.spent = true;
+      this.onContact();
+    }
+  }
+}

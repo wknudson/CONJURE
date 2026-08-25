@@ -51,14 +51,31 @@ describe('declaration', () => {
   });
 
   it('keeps the whole vocabulary reachable across the catalogue', () => {
+    // An **existence** check: does the game, somewhere in its catalogue, emit each category
+    // the renderer draws a badge for. So it stops as soon as it has seen them.
+    //
+    // It did not, and that made it the slowest test in the suite by an order of magnitude:
+    // a full AI turn planned for every encounter at six seeds, all of it after the question
+    // had already been answered. It cost about four minutes, which was survivable while the
+    // catalogue held 34 encounters and stopped being so at 46 — the Wild Hunts pushed it
+    // past the global deadline, and the honest reading is that the loop was always doing
+    // roughly ten times the work its assertions needed.
+    //
+    // The scan is unchanged in the case that matters. If a category has genuinely gone
+    // missing, `found` never turns true, every encounter and every seed is still walked, and
+    // the failure says the same thing it always did.
     const seen = new Set<string>();
-    for (let e = 0; e < ENCOUNTERS.length; e += 1) {
+    const found = (): boolean => (seen.has('attack') || seen.has('commander')) && seen.has('move');
+
+    outer: for (let e = 0; e < ENCOUNTERS.length; e += 1) {
       for (let seed = 1; seed <= 6; seed += 1) {
         for (const intent of afterEnemyDeclares(e, seed).getBoard().intents) {
           seen.add(intent.kind);
         }
+        if (found()) break outer;
       }
     }
+
     // Every category the renderer draws a badge for has to be something the game emits.
     expect(seen.has('attack') || seen.has('commander'), 'no hostile intent anywhere').toBe(true);
     expect(seen.has('move'), 'nothing ever telegraphs a reposition').toBe(true);

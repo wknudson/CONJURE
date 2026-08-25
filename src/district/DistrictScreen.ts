@@ -37,7 +37,7 @@ import { ColliderSet } from './collision.js';
 import { DistrictWorld } from './world.js';
 import { buildPostChain, type PostChain } from './post.js';
 import { DistrictHud } from './hud.js';
-import { DialogueBox, GATE_SEALED, VEX_INTRO, VEX_REPEAT } from './dialogue.js';
+import { DialogueBox, VEX_INTRO, VEX_REPEAT } from './dialogue.js';
 import {
   FACING,
   actorArtFromTextures,
@@ -47,41 +47,65 @@ import {
   Walker,
   type ActorArt,
 } from './sprites3d.js';
-import { makeWardenTexture } from './textures.js';
+import { makeMinionTexture, makeWardenTexture } from './textures.js';
 import {
   CompanionFollower,
   DoorHotspot,
   Hotspot,
   NPC,
+  Pack,
   Warden,
   type Interactable,
   type Updatable,
 } from './entities.js';
-import {
-  BOARD_POS,
-  DOORS,
-  GATE_POS,
-  SPAWN,
-  VEX_POS,
-  WARDEN_WAYPOINTS,
-  isSafeAt,
-  type DoorKey,
-} from './map.js';
+import { isSafeAt, type AreaDef, type DoorKey, type ExitSpec } from './map.js';
+import { huntAvailable } from '../core/data/hunts.js';
+import { hashText, makeRng, nextInt } from '../core/util/rng.js';
 import { flagForDoor, tutorialActive } from './quest.js';
 
-const MAP_ID = 'ashfall_ward';
 const MOVE_SPEED = 6;
 const ORBIT_SPEED = 1.6;
 const COMMANDER_HEIGHT = 2.1;
 const COMPANION_HEIGHT = 1.5;
 
+/**
+ * The colour a lustrous companion is multiplied by.
+ *
+ * Warm gold with the blue pulled down, so any beast reads as gilded regardless of its own
+ * palette — a tint keyed to the species' school would be invisible on half of them.
+ */
+const SHINY_TINT = 0xffe9a8;
+
 export interface DistrictOpts {
+  /**
+   * Which place this is.
+   *
+   * The screen was Ashfall Ward and is now whichever area it is handed — the shops, the
+   * Dispatcher and the Warden are all built from `area.props` and simply absent where the
+   * props are. One screen rather than a base class and two leaves: of ~800 lines here, about
+   * 120 are ward content, and `unmount`'s disposal ordering is the kind of thing that breaks
+   * when a subclass owns a resource the base never tears down.
+   */
+  area: AreaDef;
   global: GlobalGameState;
   /** The species standing beside the player — picks the follower's art and the door line. */
   companionId: string;
   companionLevel: number;
+  /** Whether the beast beside you is lustrous. Tints the follower, nothing more. */
+  companionShiny?: boolean;
   gender: Gender;
   bounties: Bounty[];
+  /**
+   * The Wild Hunts, and when each was last walked.
+   *
+   * Handed in the same way `bounties` is — composed once per district entry, so the panel
+   * renders from data rather than reaching into a profile the district has never been
+   * allowed to see. `hunts` is the raw stamp map; the panel does the cooldown arithmetic
+   * against a clock it reads itself, because a countdown has to tick while the panel is
+   * open and a value captured at mount would be stale by the time anybody read it.
+   */
+  huntBoard: Bounty[];
+  hunts: Readonly<Record<string, number>>;
   collection: Collection;
   deck: string[];
   notice?: { title: string; body: string };
@@ -92,12 +116,24 @@ export interface DistrictOpts {
   onVivarium: () => void;
   onJournal: () => void;
   onBounty: (bounty: Bounty) => void;
+  /** Walking out of one area and into another. */
+  onTravel: (exit: ExitSpec) => void;
+  /**
+   * Walking into a pack.
+   *
+   * Separate from `onBounty` because a pack is not a contract the player accepted -- it is a
+   * fight that happened to them -- and because the guided lap must not count it: taking one
+   * would otherwise tick `bounty_taken` and skip a step of the tutorial the player never did.
+   */
+  onPack: (encounterId: string) => void;
   onChange?: () => void;
   onLeave: () => void;
 }
 
 export class DistrictScreen implements Screen {
   private readonly opts: DistrictOpts;
+  /** Shorthand: this is read on nearly every line below. */
+  private readonly area: AreaDef;
 
   private root: HTMLElement | null = null;
   private canvas: HTMLCanvasElement | null = null;
@@ -130,6 +166,22 @@ export class DistrictScreen implements Screen {
   private readonly lastSafePos = new THREE.Vector3();
   private nearest: Interactable | null = null;
   private seizedTimer = 0;
+  private readonly packs: Pack[] = [];
+  /**
+   * The last place worth being put back to.
+   *
+   * In the ward that is the last pavement tile, and the Warden's catch uses it. Out on the
+   * road there is no pavement, so it is the last spot clear of every pack -- which is what
+   * stops a fight you just walked into being a fight you immediately walk into again.
+   */
+  private readonly lastRefuge = new THREE.Vector3();
+  /**
+   * How long before the packs are allowed to notice you.
+   *
+   * Covers the case the refuge cannot: a tab closed while standing on top of one. Without it
+   * that save reopens straight into the same fight, forever.
+   */
+  private packArming = 1.5;
   /** Local mirror of the profile's ledger, so the panel updates the instant a flag fires. */
   private flags: TutorialFlag[];
 
@@ -139,6 +191,7 @@ export class DistrictScreen implements Screen {
 
   constructor(opts: DistrictOpts) {
     this.opts = opts;
+    this.area = opts.area;
     this.flags = [...opts.tutorial];
   }
 
@@ -164,10 +217,10 @@ export class DistrictScreen implements Screen {
     renderer.toneMappingExposure = LOOK.exposure;
     this.renderer = renderer;
 
-    const colliders = new ColliderSet();
+    const colliders = new ColliderSet(this.area);
     this.colliderSet = colliders;
     const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
-    const world = new DistrictWorld(colliders, maxAnisotropy);
+    const world = new DistrictWorld(this.area, colliders, maxAnisotropy);
     this.world = world;
 
     const camera = new THREE.PerspectiveCamera(
@@ -190,7 +243,7 @@ export class DistrictScreen implements Screen {
 
     this.buildInteractables();
     this.installInput();
-    this.gui = buildLookGui(this.lookHandles());
+    this.gui = buildLookGui(this.lookHandles(), this.area.id, this.area.name);
 
     this.hud.renderTutorial(this.flags);
 
@@ -271,7 +324,7 @@ export class DistrictScreen implements Screen {
      ============================================================ */
 
   private buildInteractables(): void {
-    for (const door of DOORS) {
+    for (const door of this.area.props.doors ?? []) {
       const hotspot = new DoorHotspot(door.key, door.x, door.z, `Enter ${door.name}`, () =>
         this.openDoor(door.key, door.returnZ),
       );
@@ -279,15 +332,29 @@ export class DistrictScreen implements Screen {
       this.interactables.push(hotspot);
     }
 
-    const board = new Hotspot(BOARD_POS.x, BOARD_POS.z, 'Read the Bounty Board', () =>
-      this.hud!.openBoard(this.opts.bounties, this.flags),
-    );
-    this.interactables.push(board);
+    if (this.area.props.board) {
+      const at = this.area.props.board;
+      const board = new Hotspot(at.x, at.z, 'Read the Bounty Board', () =>
+        this.hud!.openBoard(this.opts.bounties, this.flags),
+      );
+      this.interactables.push(board);
+    }
 
-    const gate = new Hotspot(GATE_POS.x, GATE_POS.z + 2.4, 'Inspect the warded gate', () =>
-      this.dialogue!.start(GATE_SEALED),
-    );
-    this.interactables.push(gate);
+    // Every way out of here. The ward's gate used to open a panel of hunts; it is a road
+    // now, and the panel moved to a signpost on the far side where the cooldowns are still
+    // worth reading.
+    for (const exit of this.area.exits) {
+      this.interactables.push(new Hotspot(exit.x, exit.z, exit.label, () => this.travel(exit)));
+    }
+
+    // The hunts board, where an area posts one.
+    if (this.area.props.huntSignpost) {
+      const at = this.area.props.huntSignpost;
+      const signpost = new Hotspot(at.x, at.z, 'Read the hunting notices', () =>
+        this.hud!.openHunts(this.opts.huntBoard, this.opts.hunts),
+      );
+      this.interactables.push(signpost);
+    }
   }
 
   /**
@@ -305,16 +372,27 @@ export class DistrictScreen implements Screen {
     // to does not look exactly like the player.
     const vexGender: Gender = gender === 'male' ? 'female' : 'male';
 
-    const [hFront, hBack, hSide, hSideAlt, cFront, cBack, cSide, vFront, vBack, vSide] =
-      await Promise.all([
-        ...facings.map((f) => loadCommanderSprite(gender, f)),
-        loadCompanionSprite(companionId, 'front'),
-        loadCompanionSprite(companionId, 'back'),
-        loadCompanionSprite(companionId, 'side'),
-        loadCommanderSprite(vexGender, 'front'),
-        loadCommanderSprite(vexGender, 'back'),
-        loadCommanderSprite(vexGender, 'side'),
-      ]);
+    // The beast is fetched apart from the people, and allowed to fail.
+    //
+    // Not every species has art: the campaign hands out bloodlines faster than they can be
+    // painted, and a bound Chimera used to take the whole street down with it — one 404
+    // rejected the batch, so the ward opened with no Commander, no Vex and no Warden, and
+    // input never unlocked. A beast nobody has drawn yet should cost exactly one beast.
+    const beast = await Promise.all([
+      loadCompanionSprite(companionId, 'front').catch(() => null),
+      loadCompanionSprite(companionId, 'back').catch(() => null),
+      loadCompanionSprite(companionId, 'side').catch(() => null),
+    ]);
+
+    const [hFront, hBack, hSide, hSideAlt, vFront, vBack, vSide] = await Promise.all([
+      ...facings.map((f) => loadCommanderSprite(gender, f)),
+      loadCommanderSprite(vexGender, 'front'),
+      loadCommanderSprite(vexGender, 'back'),
+      loadCommanderSprite(vexGender, 'side'),
+    ]);
+    // Front is the one that must exist — the other two fall back to it, exactly as a
+    // species with only a front sprite already renders on the creation screen.
+    const [cFront, cBack, cSide] = [beast[0], beast[1] ?? beast[0], beast[2] ?? beast[0]];
 
     // The walk art, fetched apart from the rest and allowed to fail at every step.
     //
@@ -351,14 +429,17 @@ export class DistrictScreen implements Screen {
           },
           anis,
         );
-    const beastArt = buildActorArt({ front: cFront!, back: cBack!, side: cSide! }, anis);
+    const beastArt = cFront
+      ? buildActorArt({ front: cFront, back: cBack!, side: cSide! }, anis)
+      : null;
     const vexArt = buildActorArt({ front: vFront!, back: vBack!, side: vSide! }, anis);
     const wardenArt = actorArtFromTextures(
       makeWardenTexture('front'),
       makeWardenTexture('back'),
       makeWardenTexture('side'),
     );
-    this.heroArt.push(heroArt, beastArt, vexArt, wardenArt);
+    this.heroArt.push(heroArt, vexArt, wardenArt);
+    if (beastArt) this.heroArt.push(beastArt);
 
     const start = this.restorePosition();
 
@@ -366,49 +447,108 @@ export class DistrictScreen implements Screen {
     this.player.position.set(start.x, 0, start.z);
     this.world.scene.add(this.player.sprite);
     this.world.billboards.push(this.player.sprite);
-    this.playerSafe = isSafeAt(start.x, start.z);
+    this.playerSafe = isSafeAt(this.area, start.x, start.z);
     // Seeded from the spawn unless the restored spot is genuinely pavement. Copying the
     // start position blind would make an alley the Commander logged out in count as
     // sanctuary — and the Warden's catch teleports you here, so the first thing it would
     // do is drop you back into the cone that caught you.
     this.lastSafePos.set(
-      this.playerSafe ? start.x : SPAWN.x,
+      this.playerSafe ? start.x : this.area.spawn.x,
       0,
-      this.playerSafe ? start.z : SPAWN.z,
+      this.playerSafe ? start.z : this.area.spawn.z,
     );
+    // Seeded to the spawn rather than to wherever we came in: on a road with no pavement the
+    // arrival tile is as likely as any other to be next to something.
+    this.lastRefuge.set(this.area.spawn.x, 0, this.area.spawn.z);
 
-    this.follower = new CompanionFollower(
-      beastArt,
-      COMPANION_HEIGHT,
-      start.x - 1.4,
-      start.z + 1.2,
-      colliders,
-    );
-    this.world.scene.add(this.follower.walker.sprite);
-    this.world.billboards.push(this.follower.walker.sprite);
-    this.updatables.push(this.follower);
+    // No art, no follower. The Commander walks the ward alone rather than beside a hole,
+    // and everything downstream already treats the follower as optional.
+    if (beastArt) {
+      this.follower = new CompanionFollower(
+        beastArt,
+        COMPANION_HEIGHT,
+        start.x - 1.4,
+        start.z + 1.2,
+        colliders,
+      );
+      // A lustrous beast walks the ward wearing it. Cosmetic, like the tank treatment the
+      // Vivarium gives it — see `CompanionInstance.shiny`.
+      if (this.opts.companionShiny) this.follower.walker.sprite.setTint(SHINY_TINT);
+      this.world.scene.add(this.follower.walker.sprite);
+      this.world.billboards.push(this.follower.walker.sprite);
+      this.updatables.push(this.follower);
+    }
 
-    this.vex = new NPC(
-      vexArt,
-      COMMANDER_HEIGHT,
-      VEX_POS.x,
-      VEX_POS.z,
-      'Talk to Dispatcher Vex',
-      () => this.talkToVex(),
-      1.3,
-    );
-    this.world.scene.add(this.vex.walker.sprite);
-    this.world.billboards.push(this.vex.walker.sprite);
-    this.updatables.push(this.vex);
-    this.interactables.push(this.vex);
+    // The Dispatcher, where an area has one to stand.
+    const npc = this.area.props.npcs?.[0];
+    if (npc && vexArt) {
+      this.vex = new NPC(
+        vexArt,
+        COMMANDER_HEIGHT,
+        npc.x,
+        npc.z,
+        'Talk to Dispatcher Vex',
+        () => this.talkToVex(),
+        1.3,
+      );
+      this.world.scene.add(this.vex.walker.sprite);
+      this.world.billboards.push(this.vex.walker.sprite);
+      this.updatables.push(this.vex);
+      this.interactables.push(this.vex);
+    }
 
-    this.warden = new Warden(wardenArt, 2.5, WARDEN_WAYPOINTS, colliders);
-    this.world.scene.add(this.warden.walker.sprite);
-    this.world.scene.add(this.warden.cone);
-    this.world.billboards.push(this.warden.walker.sprite);
-    this.updatables.push(this.warden);
-    this.warden.onCatch = () => this.seize();
-    this.warden.onAlertChange = (on) => this.hud?.setAlert(on);
+    const beat = this.area.props.patrols?.[0];
+    if (beat && wardenArt) {
+      this.warden = new Warden(wardenArt, 2.5, beat, colliders);
+      this.world.scene.add(this.warden.walker.sprite);
+      this.world.scene.add(this.warden.cone);
+      this.world.billboards.push(this.warden.walker.sprite);
+      this.updatables.push(this.warden);
+      this.warden.onCatch = () => this.seize();
+      this.warden.onAlertChange = (on) => this.hud?.setAlert(on);
+    }
+
+    // The roaming packs.
+    //
+    // Skipped where the fight is on cooldown, which reuses the hunt clock already in the
+    // save rather than inventing a second one -- and means a road you have just cleared
+    // reads as cleared. That is also the third of the four things standing between the
+    // player and an immediate re-trigger on the way back from a fight.
+    const specs = this.area.props.packs ?? [];
+    if (specs.length > 0) {
+      const now = Date.now();
+      for (const spec of specs) {
+        const last = this.opts.hunts[spec.encounterId];
+        if (!huntAvailable(last, now)) continue;
+
+        const seed = hashText(spec.encounterId);
+        const art = actorArtFromTextures(
+          makeMinionTexture('front', seed),
+          makeMinionTexture('back', seed),
+          makeMinionTexture('side', seed),
+        );
+        this.heroArt.push(art);
+
+        const rng = makeRng(seed >>> 0);
+        const pack = new Pack(
+          spec.encounterId,
+          art,
+          1.9,
+          spec.x,
+          spec.z,
+          spec.roam,
+          colliders,
+          () => nextInt(rng, 10_000) / 10_000,
+        );
+        pack.onContact = () => this.ambush(spec.encounterId);
+        for (const w of pack.walkers) {
+          this.world.scene.add(w.sprite);
+          this.world.billboards.push(w.sprite);
+        }
+        this.packs.push(pack);
+        this.updatables.push(pack);
+      }
+    }
 
     // Compile what the ward will need before it needs it, then let the player move.
     this.world.warmupShaders(() => this.post!.composer.render());
@@ -448,7 +588,7 @@ export class DistrictScreen implements Screen {
   private openDoor(key: DoorKey, returnZ: number): void {
     // Written before the hand-off, not only on unmount: a tab closed inside the Artificer
     // should still come back to his doorstep rather than to the plaza.
-    this.writePosition(returnZ);
+    this.writePosition({ x: this.player?.position.x ?? 0, z: returnZ });
 
     const flag = flagForDoor(key);
     if (flag) this.raiseFlag(flag);
@@ -476,25 +616,41 @@ export class DistrictScreen implements Screen {
   /**
    * Where the Commander will be standing when they next see this street.
    *
-   * A door sets `overrideZ` to a stride clear of itself, and that has to survive the
-   * `unmount` that follows immediately after — otherwise the second write puts them back
-   * on the hotspot and the prompt to enter the shop they just left is the first thing they
-   * see. Once a door has spoken, later writes are ignored.
+   * A door pins a spot a stride clear of itself, and that has to survive the `unmount` that
+   * follows immediately after — otherwise the second write puts them back on the hotspot and
+   * the prompt to enter the shop they just left is the first thing they see. Once something
+   * has pinned a position, later writes are ignored.
+   *
+   * Generalised from a bare `overrideZ` to a whole position and a destination, because
+   * travel needs the same latch for the same reason and needs to move the player to a
+   * different **area** as well as a different tile.
    */
-  private writePosition(overrideZ?: number): void {
+  private writePosition(pin?: { x: number; z: number; mapId?: string }): void {
     if (!this.player) return;
-    if (overrideZ === undefined && this.returnZ !== null) return;
-    if (overrideZ !== undefined) this.returnZ = overrideZ;
+    if (!pin && this.positionPinned) return;
+    if (pin) this.positionPinned = true;
 
     this.opts.global.overworld.playerPos = {
-      x: this.player.position.x,
-      y: overrideZ ?? this.player.position.z,
-      mapId: MAP_ID,
+      x: pin?.x ?? this.player.position.x,
+      y: pin?.z ?? this.player.position.z,
+      mapId: pin?.mapId ?? this.area.id,
     };
     this.opts.onChange?.();
   }
 
-  private returnZ: number | null = null;
+  private positionPinned = false;
+
+  /**
+   * Out of this area and into the one the exit names.
+   *
+   * The arrival is written **before** the hand-off, for the reason `openDoor` writes its
+   * own: `unmount` runs immediately after and would otherwise overwrite the destination with
+   * wherever the player happened to be standing when they pressed Space.
+   */
+  private travel(exit: ExitSpec): void {
+    this.writePosition({ x: exit.arrive.x, z: exit.arrive.z, mapId: exit.to });
+    this.opts.onTravel(exit);
+  }
 
   /**
    * Where to put the Commander down.
@@ -509,10 +665,10 @@ export class DistrictScreen implements Screen {
    */
   private restorePosition(): { x: number; z: number } {
     const saved = this.opts.global.overworld.playerPos;
-    if (saved && saved.mapId === MAP_ID && !this.colliderSet?.blocked(saved.x, saved.y)) {
+    if (saved && saved.mapId === this.area.id && !this.colliderSet?.blocked(saved.x, saved.y)) {
       return { x: saved.x, z: saved.y };
     }
-    return { x: SPAWN.x, z: SPAWN.z };
+    return { x: this.area.spawn.x, z: this.area.spawn.z };
   }
 
   /* ============================================================
@@ -578,13 +734,23 @@ export class DistrictScreen implements Screen {
 
     const world = this.world!;
     const camera = this.camera!;
-    const anchor = this.player?.position ?? new THREE.Vector3(SPAWN.x, 0, SPAWN.z);
+    const anchor = this.player?.position ?? new THREE.Vector3(this.area.spawn.x, 0, this.area.spawn.z);
 
     if (this.warden) {
       this.warden.playerAt.copy(anchor);
       this.warden.playerSafe = this.playerSafe;
     }
     if (this.vex) this.vex.playerAt = anchor;
+    if (this.packArming > 0) this.packArming -= dt;
+    for (const pack of this.packs) {
+      pack.playerAt.copy(anchor);
+      // Armed only once the screen has settled, and never while something else has the
+      // player's attention.
+      pack.onContact =
+        this.packArming > 0 || this.inputLocked || this.hud?.boardIsOpen
+          ? null
+          : () => this.ambush(pack.encounterId);
+    }
 
     for (const u of this.updatables) u.update(dt, this.elapsed, this.cameraYaw);
 
@@ -652,15 +818,27 @@ export class DistrictScreen implements Screen {
     player.step(dx, dz, this.cameraYaw);
     this.follower?.notePlayer(player.position.x, player.position.z);
 
-    // The Sidewalk Immunity check, every frame.
-    this.playerSafe = isSafeAt(player.position.x, player.position.z);
-    this.hud?.setZone(this.playerSafe);
-    if (this.playerSafe) this.lastSafePos.copy(player.position);
+    // The Sidewalk Immunity check, every frame -- where the area has the rule at all. An
+    // area with no pavement is not an area where you are permanently in danger; it is one
+    // where the rule does not apply, and the chip should say the second thing by not being
+    // there.
+    if (this.area.safety === 'sidewalk') {
+      this.playerSafe = isSafeAt(this.area, player.position.x, player.position.z);
+      this.hud?.setZone(this.playerSafe);
+      if (this.playerSafe) this.lastSafePos.copy(player.position);
+      this.lastRefuge.copy(this.lastSafePos);
+    } else {
+      this.playerSafe = true; // nothing out here is hunting by warrant
+      this.hud?.hideZone();
+      if (this.packs.every((p) => p.clearOf(player.position.x, player.position.z))) {
+        this.lastRefuge.copy(player.position);
+      }
+    }
   }
 
   private updateCamera(): void {
     const camera = this.camera;
-    const anchor = this.player?.position ?? new THREE.Vector3(SPAWN.x, 0, SPAWN.z);
+    const anchor = this.player?.position ?? new THREE.Vector3(this.area.spawn.x, 0, this.area.spawn.z);
     if (!camera) return;
 
     const pitch = THREE.MathUtils.degToRad(LOOK.cameraPitch);
@@ -704,6 +882,21 @@ export class DistrictScreen implements Screen {
    * would punish the one player who went to find out what the rule meant, which is
    * precisely the player who was doing it right.
    */
+  /**
+   * Walked into a pack.
+   *
+   * The position written is the **refuge**, not the tile the collision happened on. Writing
+   * the collision tile means arriving back inside the pack's contact radius, which re-starts
+   * the fight on the first frame -- and after a loss `rescuePlayer` puts the player there at
+   * a tenth of their Pact, so it is a death loop rather than an annoyance.
+   */
+  private ambush(encounterId: string): void {
+    if (this.inputLocked || !this.player) return;
+    this.inputLocked = true;
+    this.writePosition({ x: this.lastRefuge.x, z: this.lastRefuge.z });
+    this.opts.onPack(encounterId);
+  }
+
   private seize(): void {
     if (this.inputLocked || !this.player) return;
     this.inputLocked = true;

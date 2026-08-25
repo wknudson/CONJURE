@@ -50,6 +50,31 @@ export const GEAR_STOCK: readonly GearStock[] = [
     price: 340,
     pitch: 'Ground for reading a seam. Every pressing comes off the bench cheaper.',
   },
+  {
+    relicId: 'relic_warrant_glass',
+    price: 260,
+    pitch: 'Ground for serving papers. A bodyguard stops being a wall.',
+  },
+  {
+    relicId: 'relic_periscope',
+    price: 280,
+    pitch: 'A mirror-box on a stalk. Fight from inside the cloud and stay in it.',
+  },
+  {
+    relicId: 'relic_survey_plate',
+    price: 300,
+    pitch: 'Every alley in the ward, etched. You arrive already knowing one more thing.',
+  },
+  {
+    relicId: 'relic_survey_prism',
+    price: 400,
+    pitch: 'The whole survey, stacked and read at once. Two more things.',
+  },
+  {
+    relicId: 'relic_sighting_rig',
+    price: 420,
+    pitch: 'Assessor issue. See past their screen, and keep your own.',
+  },
   // ---------------------------------------------------------------- vestment
   {
     relicId: 'relic_coat',
@@ -60,6 +85,31 @@ export const GEAR_STOCK: readonly GearStock[] = [
     relicId: 'relic_lead_coat',
     price: 300,
     pitch: 'Lined against the green. Nothing they brew will settle in you.',
+  },
+  {
+    relicId: 'relic_splinter_mantle',
+    price: 200,
+    pitch: 'Quilted deep. When their ice goes, none of it reaches you.',
+  },
+  {
+    relicId: 'relic_earthed_mail',
+    price: 240,
+    pitch: 'Copper through every ring. Their lightning armours you.',
+  },
+  {
+    relicId: 'relic_cinder_cloth',
+    price: 260,
+    pitch: 'Cut from flue-lining. It has burned already and did not mind.',
+  },
+  {
+    relicId: 'relic_foundry_plate',
+    price: 280,
+    pitch: 'Cast for the drop-hammer floor. Being hit by things is the job.',
+  },
+  {
+    relicId: 'relic_brigandine',
+    price: 300,
+    pitch: 'Plate under canvas. Some of everything, for the shift you cannot plan.',
   },
   // ---------------------------------------------------------------- trinket
   {
@@ -77,11 +127,61 @@ export const GEAR_STOCK: readonly GearStock[] = [
     price: 360,
     pitch: 'Worn smooth on one side. Hold nine cards where the table says seven.',
   },
+  {
+    relicId: 'relic_wound_cell',
+    price: 240,
+    pitch: 'Wound the night before. Open with two in hand you have not paid for.',
+  },
+  {
+    relicId: 'relic_scald_flask',
+    price: 280,
+    pitch: 'Sealed badly on purpose. Your steam stops being scenery.',
+  },
+  {
+    relicId: 'relic_leyline_tap',
+    price: 280,
+    pitch: 'Bled off the conduit below. Cold will do where charge is wanted.',
+  },
+  {
+    relicId: 'relic_rime_ampoule',
+    price: 300,
+    pitch: 'Cold with a grudge. What you freeze stays frozen a turn longer.',
+  },
+  {
+    relicId: 'relic_twin_cell',
+    price: 420,
+    pitch: 'Two cells, one spindle. Bank ten, and start ahead.',
+  },
   // ---------------------------------------------------------------- treads
   {
     relicId: 'relic_boots',
     price: 240,
     pitch: 'Bolted through at the ankle. Nothing moves your Companion but your Companion.',
+  },
+  {
+    relicId: 'relic_crampons',
+    price: 200,
+    pitch: 'Spiked through the sole. Ice is just floor again.',
+  },
+  {
+    relicId: 'relic_sabatons',
+    price: 240,
+    pitch: 'Never quite touching down. Rubble and current stop mattering.',
+  },
+  {
+    relicId: 'relic_kickplates',
+    price: 320,
+    pitch: 'Braced both ways. Push harder, and mind the wall less.',
+  },
+  {
+    relicId: 'relic_ferrocrete',
+    price: 360,
+    pitch: 'Poured around the whole line. Nothing moves — read that twice.',
+  },
+  {
+    relicId: 'relic_piston_heels',
+    price: 360,
+    pitch: 'Sprung steel and no subtlety. They go two tiles further than they expect.',
   },
   // ---------------------------------------------------------------- will
   {
@@ -93,6 +193,31 @@ export const GEAR_STOCK: readonly GearStock[] = [
     relicId: 'relic_gloves',
     price: 420,
     pitch: 'Stitched with something that remembers. Your passive fires twice.',
+  },
+  {
+    relicId: 'relic_covenant',
+    price: 240,
+    pitch: 'Sworn over a burned field. What the fire leaves, the spores take.',
+  },
+  {
+    relicId: 'relic_rosary',
+    price: 280,
+    pitch: 'A bead a body, and you have never lost count. Some of it comes back.',
+  },
+  {
+    relicId: 'relic_earthing_creed',
+    price: 300,
+    pitch: 'A discipline, not a tool. Earth it through them, not around.',
+  },
+  {
+    relicId: 'relic_ashfall_oath',
+    price: 300,
+    pitch: 'Sworn downwind, where it costs something. Everything you rot, rots deeper.',
+  },
+  {
+    relicId: 'relic_communion',
+    price: 400,
+    pitch: 'Take it in, hand it back with interest. Both halves of the bargain.',
   },
 ];
 

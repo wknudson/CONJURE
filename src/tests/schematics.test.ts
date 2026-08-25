@@ -56,6 +56,15 @@ describe('a fight teaches what it fought you with', () => {
     // this change that is most of the progression gone. If a new encounter trips this, its
     // enemy deck is entirely un-obtainable and that is worth knowing at build time.
     for (const encounter of ENCOUNTERS) {
+      // A fight with no deck is exempt, and the exemption is the rule working rather than a
+      // hole in it. A roaming pack fights with bodies and nothing else — that is the whole
+      // promise of one — and bodies are deliberately **not** obtainable cards: minions come
+      // from the Vanguard's point-buy, so a Schematic for one would be selling something no
+      // deck can hold. What a pack pays out is materials, which is what it was built to pay.
+      if (encounter.enemyDeck.length === 0) {
+        expect(schematicPool(encounter), `${encounter.id} has no deck to teach from`).toEqual([]);
+        continue;
+      }
       expect(schematicPool(encounter).length, `${encounter.id} teaches nothing`).toBeGreaterThan(0);
     }
   });
@@ -197,18 +206,10 @@ describe('what the loop can actually reach', () => {
     'anchor_rally',
     // Bloom: no encounter is fought against it. (The Rot-Root Snare *is* reachable now --
     // the Duelist lays it, because a Mark is Hero kit whatever its blast is made of.)
-    'spore_cloud',
-    'noxious_cloud',
-    'verdant_swell',
     'verdant_collapse',
     // Surge: same story.
-    'thunderhead',
-    'static_charge',
     // Bulwark: same story.
-    'seismic_slam',
-    'tectonic_plate',
     'avalanche_slam',
-    'petrifying_mantle',
     // Dusk: the Trial is Pyre and the Duelist plays colourless, so none of this is on offer.
     'blood_and_bone_rally',
     // Frost spells the Glacial Field happens not to run.
@@ -228,22 +229,23 @@ describe('what the loop can actually reach', () => {
     // doing exactly that, wave by wave: Wave 1's nest and Assembly took five plans off
     // this list, and Wave 2's Middle Ring — the treant, the minders, the cistern, the
     // masked Whisperers, the village — took another twelve, and Wave 3's wildland
-    // apexes a further handful. What remains is what no authored fight yet casts.)
+    // apexes a further handful.
+    //
+    // The Wild Hunts took twelve more, and they took the *specific* twelve this comment
+    // kept predicting. The gap was never really about cards: it was that no shipped fight
+    // was fought **against** Bloom, Bulwark or Surge, so their plans had nowhere to drop
+    // from. A hunt is a fight against a beast of a school, which is exactly the missing
+    // shape — the Thorn Warden's grove teaches the Bloom half, the Vault Boar's road the
+    // Bulwark half, and the Conduit Kite's pylon the Surge half. What remains below is what
+    // no authored fight yet casts.)
     'slag_cairn',
     'rime_lance',
-    'whiteout',
     'deep_winter',
     'hail_spire',
-    'tesla_pylon',
     'hammer_fall',
     'siege_break',
     'iron_gate',
     'battlement',
-    'blight_bloom',
-    // Dusk's decay shelf, the three that closed the last catalog gap. Same story again: no
-    // shipped fight is against a Dusk deck, so they are draftable onto a Mortis and not yet
-    // forgeable by anyone.
-    'charnel_pillar',
   ]);
 
   const reachable = (): Set<string> => {

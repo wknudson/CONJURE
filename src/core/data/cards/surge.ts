@@ -597,4 +597,112 @@ export const SURGE_CARDS: Record<string, CardDef> = {
       // tests caught it at two stacks. Same trap the Arc Mark's docblock records dodging.
     },
   },
+
+  // -------------------------------------------------------------- the second bloodline
+  //
+  // Surge now speaks for the Storm Lynx and the Conduit Kite, which nests on the Magistracy's
+  // own pylons. Three cards to split the shelf on: the cheapest possible setup, a payoff that
+  // eats the charge it finds, and the one thing a school about electricity was missing —
+  // ground that is live.
+
+  /**
+   * Charge with no damage attached, which is the whole idea.
+   *
+   * Surge's problem is that its setup cards all want to be damage cards too, so the player
+   * pays twice for a state the school then charges them a third time to cash in. Induction
+   * is a Pip for three Charged bodies and *nothing else* — no damage at all — which reads as
+   * a bad card right up until the turn it is followed by a Discharge or a spliced Plasma Arc.
+   *
+   * Charged does nothing on its own; fire sets it off and frost conducts through it. A line
+   * of three prepared bodies is the most leverage a Pip buys anywhere in the game, and it is
+   * only leverage — a player who never follows up has wasted a card, correctly.
+   */
+  induction: {
+    id: 'induction',
+    name: 'Induction',
+    cost: { pips: 1, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Leaves everything in a 3-tile line Charged. No damage.',
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'applyStatus',
+      status: 'charged',
+      stacks: 1,
+      area: { shape: 'line', length: 3 },
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * The bank emptied into one body.
+   *
+   * `requiresStatus` makes it unplayable without a Charged target, which is the honest
+   * version of a payoff card: Aetheric Overload already established that a card whose whole
+   * point is cashing a setup should be *ungreyed* only when the setup exists, rather than
+   * castable and wasted.
+   *
+   * It eats the charge and pays 60, which is the largest single-target number in the school,
+   * and it earths 20 into everything adjacent to where the body was standing — so a Capacitor
+   * Dump into a cluster the Induction line prepared is the deck's best turn. Three Pips and
+   * a card spent on setup is what that costs.
+   */
+  capacitor_dump: {
+    id: 'capacitor_dump',
+    name: 'Capacitor Dump',
+    cost: { pips: 3, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Consumes the Charge on a Charged target for 60 shock damage, earthing 20 into everything adjacent.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false, requiresStatus: 'charged' },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'clearStatus', status: 'charged', area: { shape: 'target' } },
+        { op: 'damage', amount: 60, dtype: 'shock', area: { shape: 'target' } },
+        { op: 'damage', amount: 20, dtype: 'shock', area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /**
+   * The corposant that gives the gaslamp its name, as a two-Pip burst.
+   *
+   * A ring rather than a line, and the school's only card that charges *and* hurts in the
+   * same breath without asking for a target to already be prepared. It is the answer to
+   * having been closed on: everything adjacent takes 20 and comes away Charged, which means
+   * the counter-attack next turn is worth far more.
+   *
+   * No target at all — it goes off around the caster. That is the cost. A Surge Companion is
+   * a backline body and this card only pays when it is not, so casting it is an admission
+   * that the plan has already gone wrong, and a decent way to make that pay.
+   */
+  elmos_fire: {
+    id: 'elmos_fire',
+    name: "St. Elmo's Fire",
+    cost: { pips: 2, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 shock damage to everything adjacent to the caster and leaves it all Charged.',
+    target: { kind: 'none' },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'shock', area: { shape: 'adjacent8' } },
+        { op: 'applyStatus', status: 'charged', stacks: 1, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    // Goes off around the caster, so its reach is one tile — but it is still stated, because
+    // every Companion card's origin is its body and `elements.test.ts` holds that line.
+    range: 1,
+  },
 };

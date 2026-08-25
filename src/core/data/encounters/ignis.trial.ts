@@ -14,7 +14,7 @@ import { registerEncounter, registerEncounterScript } from './registry.js';
 import type { Ctx } from '../../engine/context.js';
 import { emit, newCause } from '../../engine/context.js';
 import { dockIntoForm, summonUnit } from '../../engine/spawn.js';
-import { beginSubjugation } from '../../engine/subjugation.js';
+import { sealAt25 } from './seal.js';
 import { clearIntents } from '../../engine/intents.js';
 import { canPlace, entityAt, unitsOf } from '../../engine/board.js';
 import { toCardSnapshot } from '../../engine/views.js';
@@ -57,7 +57,7 @@ const script: EncounterScript = {
 
   onCommanderHpChanged(ctx, side) {
     if (side !== 'enemy') return;
-    maybeSeal(ctx);
+    sealAt25(ctx);
   },
 
   onTurnStart(ctx, side) {
@@ -72,7 +72,7 @@ const script: EncounterScript = {
       // It was boxed in when it tried to grow. Try again now that the board has moved.
       growIntoBehemoth(ctx);
     }
-    maybeSeal(ctx);
+    sealAt25(ctx);
   },
 };
 
@@ -170,20 +170,6 @@ function evictAndSpawn(
   if (!canPlace(state, anchor, 1)) return false;
   summonUnit(ctx, 'grave_sentinel', 'enemy', anchor);
   return true;
-}
-
-/**
- * The enrage, at a quarter strength.
- *
- * The threshold and the decision to have one belong to the encounter; everything the
- * protocol then does -- sealing, purging, dealing the Rite -- belongs to the engine, and
- * `beginSubjugation` is idempotent, so this may be called as loosely as it likes.
- */
-function maybeSeal(ctx: Ctx): void {
-  const cmd = ctx.state.players.enemy;
-  if (cmd.hp <= 0) return;
-  if (cmd.hp > Math.floor(cmd.maxHp * 0.25)) return;
-  beginSubjugation(ctx);
 }
 
 registerEncounterScript(ENCOUNTER_ID, script);
