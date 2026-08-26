@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { scenario, findUnit } from './scenario.js';
-import { hasLoS, hasLoSToPortrait, supercoverLine } from '../core/engine/los.js';
+import { hasLoS, supercoverLine } from '../core/engine/los.js';
 import { legalAttacks } from '../core/engine/targeting.js';
 
 /**
  * Occluders are obstacles, Guardian units, and 2x2 Behemoths — the doc's shadow-cone
- * casters. Melee (range 1-2) may only strike the portrait from the enemy's home rows;
- * ranged (3+) needs a clear straight or diagonal vector.
+ * casters. Melee (range 1-2) needs no line at all; ranged (3+) needs a clear straight or
+ * diagonal vector.
  */
 describe('line of sight', () => {
   it('returns only the cells strictly between two points', () => {
@@ -59,43 +59,37 @@ describe('line of sight', () => {
     expect(hasLoS(state, { x: 2, y: 4 }, { x: 2, y: 0 })).toBe(true);
   });
 
+  /**
+   * A Commander is not a thing that can be swung at. The Hero stands off the grid as the
+   * Architect and has no body; the way to a Pact is its Companion's Bound Form, whose
+   * wounds are redirected to the portrait by `dealDamage`.
+   *
+   * This used to be a reach rule — melee from the enemy's home rows, ranged down a clear
+   * vector to a virtual portrait row — so the cases below are deliberately the ones that
+   * *used to succeed*. If a portrait branch is ever put back behind a profile check, this
+   * is what says so.
+   */
   describe('portrait targeting', () => {
-    it('denies a melee unit the portrait from the neutral clash row', () => {
-      const state = scenario({
-        units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 2 } }],
-      });
-      const imp = findUnit(state, 'scout_imp', 'player');
-      const targets = legalAttacks(state, imp);
-      expect(targets.some((t) => t.kind === 'portrait')).toBe(false);
+    it('offers no portrait to a melee unit, wherever it stands', () => {
+      // Row 0 is the enemy's back row: standing here was the whole of the old requirement.
+      for (const y of [0, 1, 2, 3, 4]) {
+        const state = scenario({
+          units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y } }],
+        });
+        const imp = findUnit(state, 'scout_imp', 'player');
+        expect(
+          legalAttacks(state, imp).some((t) => t.kind === 'portrait'),
+          `melee from row ${y}`,
+        ).toBe(false);
+      }
     });
 
-    it('allows a melee unit the portrait from the enemy home rows', () => {
-      const state = scenario({
-        units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 } }],
-      });
-      const imp = findUnit(state, 'scout_imp', 'player');
-      const targets = legalAttacks(state, imp);
-      expect(targets.some((t) => t.kind === 'portrait' && t.side === 'enemy')).toBe(true);
-    });
-
-    it('lets a ranged unit reach the portrait through a clear lane', () => {
+    it('offers no portrait to a ranged unit down a wholly clear lane', () => {
       const state = scenario({
         units: [{ def: 'marrow_wisp', side: 'player', at: { x: 2, y: 3 }, rangeMax: 4 }],
       });
-      expect(hasLoSToPortrait(state, { x: 2, y: 3 }, 'enemy')).toBe(true);
-    });
-
-    it('denies a ranged shot at the portrait when a Guardian screens every vector', () => {
-      // Guardians on the shooter's column and both diagonal exits.
-      const state = scenario({
-        units: [
-          { def: 'marrow_wisp', side: 'player', at: { x: 2, y: 3 }, rangeMax: 4 },
-          { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 0 } },
-          { def: 'grave_sentinel', side: 'enemy', at: { x: 1, y: 0 } },
-          { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 0 } },
-        ],
-      });
-      expect(hasLoSToPortrait(state, { x: 2, y: 3 }, 'enemy')).toBe(false);
+      const wisp = findUnit(state, 'marrow_wisp', 'player');
+      expect(legalAttacks(state, wisp).some((t) => t.kind === 'portrait')).toBe(false);
     });
   });
 });

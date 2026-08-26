@@ -154,7 +154,6 @@ export interface CommanderModel {
   hp: number;
   maxHp: number;
   armor: number;
-  targetable: boolean;
 }
 
 /** How much bigger a unit looks per Escalation stack. */
@@ -771,7 +770,6 @@ export class BoardRenderer {
       maxHp: c.maxHp,
       armor: c.armor,
       name: c.name,
-      targetable: c.targetable,
       pulse,
     });
   }

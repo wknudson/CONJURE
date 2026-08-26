@@ -105,6 +105,9 @@ export const SALTGLASS_RIOT: EncounterDef = registerEncounter({
     ['scout_imp', 2, 0],
     ['siege_ox', 5, 0],
   ],
+  // What came up the harbor steps with the crowd. Off the default lane: the siege ox
+  // already stands in it.
+  enemyCompanion: { unitCardId: 'crab_bound', at: { x: 4, y: 0 } },
   // The gale off the sea, blowing up the board into the crowd's faces.
   weather: { kind: 'gale', wind: { x: 0, y: 1 } },
   // Crates, bollards, and the customs house corner.
@@ -256,6 +259,8 @@ export const CELLAR_CLEARANCE: EncounterDef = registerEncounter({
     ['ember_hound', 4, 1],
     ['ember_moth', 2, 0],
   ],
+  // What lives in the inn's flue, and what the pit stock answer to.
+  enemyCompanion: { unitCardId: 'salamander_bound' },
   // The fire hazards the blurb is nervous about: two casks of spirit, mid-cellar. A
   // volatile cask is an obstacle whose behaviour lives on its card, per `props`.
   props: [

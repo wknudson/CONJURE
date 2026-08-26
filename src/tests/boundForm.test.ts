@@ -7,6 +7,7 @@ import { enumerateActions } from '../core/ai/enumerate.js';
 import { checkInvariants } from './replay.js';
 import { CombatSession } from '../core/session.js';
 import { ENCOUNTERS } from '../core/data/encounters/index.js';
+import { CARDS } from '../core/data/cards/index.js';
 import type { GameState } from '../core/types/state.js';
 import type { Coord } from '../contract/ids.js';
 
@@ -211,9 +212,33 @@ describe('the Companion takes the field', () => {
     expect(body.anchor.x).toBe(st.players.player.companionColumn);
   });
 
-  it('gives the enemy a body only when the encounter asks for one', () => {
-    // Having a body is a property of the fight, not of being the enemy. A duelist mirrors
-    // you; something else may still command wholly from off the board.
+  it('gives every fight with a Commander a body to reach them through', () => {
+    // The invariant the whole rule rests on. A Commander cannot be attacked, so a fight
+    // that names one and fields no Bound Form for them is a Pact nothing can reach — an
+    // unwinnable fight, authored silently. A rout is the one exception, because it has no
+    // Commander behind the pack in the first place.
+    for (const enc of ENCOUNTERS) {
+      if (enc.victory === 'rout') {
+        expect(enc.enemyCompanion, `${enc.id} is a rout and must field none`).toBeUndefined();
+        continue;
+      }
+
+      expect(
+        enc.enemyCompanion,
+        `${enc.id} has an enemy Commander and no Bound Form — the fight is unwinnable`,
+      ).toBeDefined();
+
+      // A typo'd id fails the same way, one step later: `placeOpeningUnit` quietly places
+      // nothing and the Pact is just as unreachable.
+      const card = CARDS[enc.enemyCompanion!.unitCardId];
+      expect(card, `${enc.id} names a card that does not exist`).toBeDefined();
+      expect(card!.keywords, `${enc.id} names a body that is not a Bound Form`).toContain(
+        'BoundForm',
+      );
+    }
+  });
+
+  it('stands that body on the field, and only that one', () => {
     for (const enc of ENCOUNTERS) {
       const session = new CombatSession(enc, 7);
       const st = session.debugState;
@@ -226,6 +251,7 @@ describe('the Companion takes the field', () => {
         expect(theirs[0]!.defId).toBe(enc.enemyCompanion.unitCardId);
         expect(st.players.enemy.companionUnitId).toBe(theirs[0]!.id);
       } else {
+        // Routs only, per the test above: a pack has no Pact for a body to stand in for.
         expect(theirs.length, `${enc.id} should field none`).toBe(0);
         expect(st.players.enemy.companionUnitDefId).toBeUndefined();
       }
@@ -317,13 +343,20 @@ describe('the mirror', () => {
     expect(res.state.units[theirs.id]!.hp).toBe(res.state.units[theirs.id]!.maxHp);
   });
 
-  it('leaves their portrait attackable too, so both routes are open', () => {
-    // True symmetry: the body is a second way in, not a replacement for the first.
-    const { st } = mirror();
-    const striker = addUnit(st, { def: 'scout_imp', side: 'player', at: { x: 2, y: 1 } });
+  it('closes the portrait route, leaving the body as the only way in', () => {
+    // True symmetry: neither Hero is a target, so the two bodies are the whole fight. A
+    // striker standing in their back row — the old melee requirement — is offered their
+    // Bound Form and nothing else.
+    const { st, theirs } = mirror();
+    const striker = addUnit(st, {
+      def: 'scout_imp',
+      side: 'player',
+      at: { x: theirs.anchor.x, y: theirs.anchor.y + 1 },
+    });
 
     const targets = legalAttacks(st, st.units[striker.id]!);
-    expect(targets.some((t) => t.kind === 'portrait' && t.side === 'enemy')).toBe(true);
+    expect(targets.some((t) => t.kind === 'portrait')).toBe(false);
+    expect(targets.some((t) => t.kind === 'unit' && t.id === theirs.id)).toBe(true);
   });
 
   it('anchors their ranged Companion cards to their body', () => {

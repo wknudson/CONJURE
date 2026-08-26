@@ -103,18 +103,25 @@ describe('Adept profile', () => {
   });
 
   it('still takes a winning line without second-guessing it', () => {
-    // Lookahead must never re-rank a lethal action out of first place.
+    // Lookahead must never re-rank a lethal action out of first place. The line is a
+    // swing at the player's Bound Form, which is the only route to their Pact.
     const state = scenario({
       width: 8,
       height: 8,
       playerHp: 20,
-      units: [{ def: 'scout_imp', side: 'enemy', at: { x: 3, y: 6 } }],
+      units: [
+        { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 6 } },
+        { def: 'scout_imp', side: 'player', at: { x: 3, y: 7 }, keywords: ['BoundForm'] },
+      ],
     });
+    const body = findUnit(state, 'scout_imp', 'player');
+    state.players.player.companionUnitId = body.id;
+    state.players.player.companionUnitDefId = 'ignis_bound';
     state.activeSide = 'enemy';
 
     const commands = planTurn(state, 'enemy', ADEPT_AI);
     const lethal = commands.some(
-      (c) => c.type === 'attack' && c.target.kind === 'portrait' && c.target.side === 'player',
+      (c) => c.type === 'attack' && c.target.kind === 'unit' && c.target.id === body.id,
     );
     expect(lethal).toBe(true);
   });

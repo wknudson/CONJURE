@@ -178,12 +178,13 @@ export const TERMS: Record<string, GlossaryEntry> = {
   territory: {
     title: 'Territory',
     body: 'You summon into your two blue-tinted rows. The red rows belong to the enemy.',
-    detail: 'Melee units must reach the enemy\'s red rows to strike their Commander.',
+    detail: 'Their Companion stands in those red rows, and it is the only way to their Pact.',
   },
   commander: {
     title: 'Enemy Commander',
-    body: 'Stands beyond their back row. Reduce them to 0 HP to win.',
-    detail: 'Melee has to be standing in the red rows to reach them. Ranged units need a clear line.',
+    body: 'Their Pact. Reduce it to 0 HP to win.',
+    detail:
+      'They cannot be attacked. Their Companion’s Bound Form is on the board, and every wound it takes comes off this pool.',
   },
   collision: {
     title: 'Collision',

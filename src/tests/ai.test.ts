@@ -13,13 +13,19 @@ function enemyTurn(state: ReturnType<typeof scenario>) {
 
 describe('novice AI', () => {
   it('always takes a lethal line when one exists', () => {
-    // Player commander at 2 HP, enemy minion in the player home rows with 5 ATK.
+    // Player commander at 2 HP, and their Bound Form standing where an enemy imp with
+    // 5 ATK can reach it. The body keeps no health of its own, so the swing is lethal.
     const state = enemyTurn(
       scenario({
         playerHp: 20,
-        units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 4 }, atk: 50 }],
+        units: [
+          { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, atk: 50 },
+          { def: 'scout_imp', side: 'player', at: { x: 2, y: 4 }, keywords: ['BoundForm'] },
+        ],
       }),
     );
+    state.players.player.companionUnitId = findUnit(state, 'scout_imp', 'player').id;
+    state.players.player.companionUnitDefId = 'ignis_bound';
 
     const plan = planTurn(state, 'enemy', NOVICE_AI);
     const res = run(state, ...plan);

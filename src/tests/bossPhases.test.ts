@@ -12,6 +12,7 @@ import { makeCtx } from '../core/engine/context.js';
 import { killEntity } from '../core/engine/death.js';
 import { beginSubjugation } from '../core/engine/subjugation.js';
 import { summonUnit } from '../core/engine/spawn.js';
+import { dealDamage } from '../core/engine/damage.js';
 
 /** Puts a scenario onto the Ignis trial script. */
 function ignisScenario(opts: Parameters<typeof scenario>[0] = {}): GameState {
@@ -23,6 +24,21 @@ function ignisScenario(opts: Parameters<typeof scenario>[0] = {}): GameState {
 }
 
 /**
+ * The Alpha's body on the grid.
+ *
+ * Every fight with a Commander fields one, and it is the only route to the Pact behind
+ * it: no attack may name a portrait, so a test that wants to damage the boss has to have
+ * something to swing at.
+ */
+function alphaBody(state: GameState, at = { x: 2, y: 1 }) {
+  const ctx = makeCtx(state);
+  const id = summonUnit(ctx, 'ignis_drake_bound', 'enemy', at)!;
+  state.players.enemy.companionUnitId = id;
+  state.players.enemy.companionUnitDefId = 'ignis_drake_bound';
+  return state.units[id]!;
+}
+
+/**
  * A sealed trial with a Rite in hand and something to tether.
  *
  * Built by calling the protocol directly rather than by beating the boss down to a
@@ -31,13 +47,10 @@ function ignisScenario(opts: Parameters<typeof scenario>[0] = {}): GameState {
  */
 function sealedTrial(): { state: GameState; anchor: { id: string }; riteId: string } {
   const state = ignisScenario({ enemyHp: 100 });
-  const ctx = makeCtx(state);
   // The Alpha's body, which is what the seal and the punitive stack both attach to.
-  const boss = summonUnit(ctx, 'ignis_drake_bound', 'enemy', { x: 2, y: 1 });
-  state.players.enemy.companionUnitId = boss!;
-  state.players.enemy.companionUnitDefId = 'ignis_drake_bound';
+  alphaBody(state);
 
-  beginSubjugation(ctx);
+  beginSubjugation(makeCtx(state));
 
   const anchor = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 5 } });
   // The Rite was dealt to the top of the deck; move it to hand so it can be cast.
@@ -56,11 +69,12 @@ describe('Ignis trial phase gates', () => {
       units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 120 }],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
+    const boss = alphaBody(state);
 
     const res = run(state, {
       type: 'attack',
       attacker: imp.id,
-      target: { kind: 'portrait', side: 'enemy' },
+      target: { kind: 'unit', id: boss.id },
     });
 
     expect(res.state.players.enemy.hp).toBe(220);
@@ -74,21 +88,24 @@ describe('Ignis trial phase gates', () => {
       units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 120 }],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
+    const boss = alphaBody(state);
 
     const first = applyCommand(state, {
       type: 'attack',
       attacker: imp.id,
-      target: { kind: 'portrait', side: 'enemy' },
+      target: { kind: 'unit', id: boss.id },
     });
 
-    // Reset the attacker so it can swing again, then hit through the threshold.
+    // Reset the attacker so it can swing again, then hit through the threshold. The gate
+    // grew the drake into its enraged form, so the body to swing at is a new one.
     const next = first.state;
     next.units[imp.id]!.attackedThisTurn = false;
+    const grown = next.units[next.players.enemy.companionUnitId!]!;
 
     const second = applyCommand(next, {
       type: 'attack',
       attacker: imp.id,
-      target: { kind: 'portrait', side: 'enemy' },
+      target: { kind: 'unit', id: grown.id },
     });
 
     expect(eventsOf(second.events, 'bossPhaseShift')).toHaveLength(0);
@@ -96,32 +113,68 @@ describe('Ignis trial phase gates', () => {
     expect(second.state.players.enemy.hp).toBe(100);
   });
 
-  it('spawns a phase-2 add, evicting a player minion and refunding a marrow', () => {
-    // A player minion is squatting on the first spawn site (1,1).
+  it('grows the drake into its enraged form at the gate', () => {
     const state = ignisScenario({
       enemyHp: 240,
-      units: [
-        { def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 120 },
-        { def: 'grave_sentinel', side: 'player', at: { x: 1, y: 1 }, hp: 60 },
-      ],
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 120 }],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
-    const squatter = findUnit(state, 'grave_sentinel', 'player');
+    const boss = alphaBody(state);
 
     const res = run(state, {
       type: 'attack',
       attacker: imp.id,
-      target: { kind: 'portrait', side: 'enemy' },
+      target: { kind: 'unit', id: boss.id },
     });
 
-    // Forced Eviction returns it to hand with a marrow refund.
-    expect(res.state.units[squatter.id]).toBeUndefined();
-    const returned = eventsOf(res.events, 'cardReturnedToHand');
+    const grown = res.state.units[res.state.players.enemy.companionUnitId!];
+    expect(grown?.defId).toBe('ignis_behemoth_bound');
+    expect(grown?.footprint).toBe(2);
+    expect(res.state.units[boss.id], 'the smaller body is gone').toBeUndefined();
+  });
+
+  it('spawns a phase-2 add instead when the drake is boxed in, refunding a marrow', () => {
+    // Enemy bodies wall off every anchor a 2x2 could take, so the transformation has
+    // nowhere to go and the phase calls for help instead. Enemy rather than terrain
+    // deliberately: `evictAndSpawn` clears a *player* unit out of the way and refuses to
+    // touch one of its own, which is what makes the drake genuinely stuck.
+    //
+    // The gate is crossed by damage dealt straight to the Pact rather than by a swing, so
+    // the only player body on the board is the squatter whose eviction is under test.
+    const state = ignisScenario({
+      enemyHp: 240,
+      // A player minion squatting on the first add site (1,1).
+      units: [{ def: 'grave_sentinel', side: 'player', at: { x: 1, y: 1 }, hp: 60 }],
+    });
+    const squatter = findUnit(state, 'grave_sentinel', 'player');
+    const boss = alphaBody(state);
+    for (const at of [
+      { x: 1, y: 0 },
+      { x: 3, y: 1 },
+      { x: 2, y: 2 },
+      { x: 3, y: 2 },
+    ]) {
+      addUnit(state, { def: 'ember_moth', side: 'enemy', at });
+    }
+
+    const ctx = makeCtx(state);
+    dealDamage(ctx, {
+      target: { kind: 'portrait', side: 'enemy' },
+      amount: 120,
+      dtype: 'true',
+      cause: 'spell',
+    });
+
+    expect(state.units[boss.id], 'it could not grow').toBeDefined();
+
+    // Forced Eviction returns the squatter to hand with a marrow refund.
+    expect(state.units[squatter.id]).toBeUndefined();
+    const returned = eventsOf(ctx.events, 'cardReturnedToHand');
     expect(returned).toHaveLength(1);
     expect(returned[0]!.refundedMarrow).toBe(1);
 
     // An enemy add now occupies the spawn site.
-    const add = Object.values(res.state.units).find(
+    const add = Object.values(state.units).find(
       (u) => u.side === 'enemy' && u.anchor.x === 1 && u.anchor.y === 1,
     );
     expect(add).toBeDefined();
@@ -135,11 +188,12 @@ describe('Ignis trial phase gates', () => {
     });
     state.encounter.firedGates.push('phase2'); // already past the 50% gate
     const imp = findUnit(state, 'scout_imp', 'player');
+    const boss = alphaBody(state);
 
     const res = run(state, {
       type: 'attack',
       attacker: imp.id,
-      target: { kind: 'portrait', side: 'enemy' },
+      target: { kind: 'unit', id: boss.id },
     });
 
     expect(eventsOf(res.events, 'subjugationBegan')).toHaveLength(1);
@@ -155,30 +209,31 @@ describe('Ignis trial phase gates', () => {
     expect(player.hand).not.toContain(injected[0]!.card.instanceId);
   });
 
-  it('stops taking damage once it is sealed, by either route', () => {
+  it('stops taking damage once it is sealed', () => {
     const state = ignisScenario({
       enemyHp: 120,
       units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 20 }],
     });
     state.encounter.firedGates.push('phase2');
     const imp = findUnit(state, 'scout_imp', 'player');
+    const boss = alphaBody(state);
 
     const sealed = run(state, {
       type: 'attack',
       attacker: imp.id,
-      target: { kind: 'portrait', side: 'enemy' },
+      target: { kind: 'unit', id: boss.id },
     });
     const after = sealed.state.players.enemy.hp;
 
-    // A second swing at the face, and a swing at the beast's own body, which redirects
-    // onto the same pool. Neither may move the number.
+    // The body is the only route to the pool, and the seal closes it. A second swing must
+    // not move the number.
     const again = run(sealed.state, { type: 'endTurn' }, { type: 'endTurn' });
     const stillThere = again.state.units[imp.id];
     if (stillThere) {
       const hit = run(again.state, {
         type: 'attack',
         attacker: imp.id,
-        target: { kind: 'portrait', side: 'enemy' },
+        target: { kind: 'unit', id: boss.id },
       });
       expect(hit.state.players.enemy.hp).toBe(after);
     }
@@ -435,8 +490,16 @@ describe('the beast hunting its anchor', () => {
     beginSubjugation(ctx);
 
     const anchor = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 1, y: 6 } });
-    // A hunter standing where the player's territory rows are already in melee reach of
-    // the portrait, so face damage is genuinely on the table as an alternative.
+    // The player's Bound Form, and a hunter already in reach of it, so Pact damage is
+    // genuinely on the table as an alternative to the tether.
+    const body = addUnit(state, {
+      def: 'scout_imp',
+      side: 'player',
+      at: { x: 2, y: 7 },
+      keywords: ['BoundForm'],
+    });
+    state.players.player.companionUnitId = body.id;
+    state.players.player.companionUnitDefId = 'ignis_bound';
     const hunter = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 7 }, atk: 30 });
 
     const sub = state.encounter.subjugation;
@@ -444,7 +507,7 @@ describe('the beast hunting its anchor', () => {
     sub.anchorUnitId = anchor.id;
     state.units[anchor.id]!.statuses.anchor = 1;
     state.activeSide = 'enemy';
-    return { state, anchor, hunter };
+    return { state, anchor, hunter, body };
   };
 
   it('strikes the anchor rather than the face it could reach instead', () => {
@@ -459,18 +522,19 @@ describe('the beast hunting its anchor', () => {
     ).toEqual({ kind: 'unit', id: anchor.id });
   });
 
-  it('goes back to the face once the tether is gone', () => {
+  it('goes back to the Pact once the tether is gone', () => {
     // The same board with the tether released: the override must be the only thing that
-    // was redirecting it, not some accident of the geometry.
-    const { state, hunter } = hunt();
+    // was redirecting it, not some accident of the geometry. The Pact is reached through
+    // the player's Bound Form, which is the only route there is.
+    const { state, hunter, body } = hunt();
     state.encounter.subjugation.active = false;
     state.encounter.subjugation.anchorUnitId = null;
 
     const plan = planTurn(state, 'enemy');
     const strike = plan.find((c) => c.type === 'attack' && c.attacker === hunter.id);
     expect(strike && strike.type === 'attack' && strike.target).toEqual({
-      kind: 'portrait',
-      side: 'player',
+      kind: 'unit',
+      id: body.id,
     });
   });
 });

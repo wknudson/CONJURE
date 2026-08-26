@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { scenario } from './scenario.js';
+import { addUnit, scenario } from './scenario.js';
 import { threatMap } from '../core/engine/threat.js';
 import { coordKey } from '../contract/ids.js';
 
@@ -60,21 +60,31 @@ describe('threat projection', () => {
     expect(map.damageByTile.get(coordKey({ x: 2, y: 2 }))).toBe(50);
   });
 
-  it('flags melee that can already reach the player Commander', () => {
-    // Standing in the player's home rows is the whole melee requirement.
-    const near = scenario({
-      width: 6,
-      height: 6,
-      units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 4 } }],
-    });
+  it('flags whatever can already reach the player Bound Form', () => {
+    // The body is the only route to a Pact — no attack may name a portrait — so "threatens
+    // your Commander" is exactly "can reach the thing standing in for them".
+    const withBody = (foe: { def: string; at: { x: number; y: number } }) => {
+      const state = scenario({
+        width: 6,
+        height: 6,
+        units: [{ def: foe.def, side: 'enemy', at: foe.at }],
+      });
+      const body = addUnit(state, {
+        def: 'scout_imp',
+        side: 'player',
+        at: { x: 2, y: 5 },
+        keywords: ['BoundForm'],
+      });
+      state.players.player.companionUnitId = body.id;
+      state.players.player.companionUnitDefId = 'ignis_bound';
+      return state;
+    };
+
+    const near = withBody({ def: 'scout_imp', at: { x: 2, y: 4 } });
     expect(threatMap(near, 'player').commanderThreats).toHaveLength(1);
 
-    const far = scenario({
-      width: 6,
-      height: 6,
-      units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 0 } }],
-    });
-    // MOV 2 from row 0 cannot reach row 4 this turn.
+    // MOV 2 from row 0 cannot reach the back row this turn.
+    const far = withBody({ def: 'grave_sentinel', at: { x: 2, y: 0 } });
     expect(threatMap(far, 'player').commanderThreats).toHaveLength(0);
   });
 

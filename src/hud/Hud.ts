@@ -597,11 +597,6 @@ export class Hud {
     this.endTurnBtn.disabled = !on;
   }
 
-  /** The enemy Commander is drawn on the board; the HUD only tints its health bar. */
-  setEnemyTargetable(on: boolean): void {
-    this.enemyFill.parentElement?.classList.toggle('is-targetable', on);
-  }
-
   /**
    * Queues a notice rather than overwriting the current one.
    *

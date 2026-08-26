@@ -183,14 +183,20 @@ describe('action economy', () => {
 
 describe('pacifist lockout', () => {
   it('does nothing while commanders are trading damage', () => {
+    // Through the enemy's Bound Form, which is the only route to a Pact: the body keeps
+    // no health of its own, so the blow is Pact damage and the clock stays at zero.
     const state = scenario({
-      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 10 }],
+      units: [
+        { def: 'scout_imp', side: 'player', at: { x: 2, y: 1 }, atk: 10 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 0 }, keywords: ['BoundForm'] },
+      ],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
+    const body = findUnit(state, 'scout_imp', 'enemy');
 
     const res = run(
       state,
-      { type: 'attack', attacker: imp.id, target: { kind: 'portrait', side: 'enemy' } },
+      { type: 'attack', attacker: imp.id, target: { kind: 'unit', id: body.id } },
       { type: 'endTurn' },
       { type: 'endTurn' },
     );

@@ -101,7 +101,6 @@ function harness(opts: {
       painted = o;
     },
     setSelectedCard: () => {},
-    setEnemyTargetable: () => {},
     askChannel: () => {},
     setAwaitingFallen: () => {},
     notice: () => {},

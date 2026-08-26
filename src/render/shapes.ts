@@ -350,7 +350,6 @@ export function drawCommander(
     maxHp: number;
     armor: number;
     name: string;
-    targetable: boolean;
     pulse: number;
   },
 ): void {
@@ -372,27 +371,6 @@ export function drawCommander(
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.restore();
-
-  if (o.targetable) {
-    ctx.save();
-    ctx.globalAlpha = 0.35 + 0.4 * o.pulse;
-    ctx.beginPath();
-    ctx.ellipse(
-      centre.x,
-      centre.y,
-      (cam.tileW / 2) * (1.0 + 0.12 * o.pulse),
-      (cam.tileH / 2) * (1.0 + 0.12 * o.pulse),
-      0,
-      0,
-      Math.PI * 2,
-    );
-    ctx.strokeStyle = PALETTE.danger;
-    ctx.lineWidth = 3;
-    ctx.shadowColor = PALETTE.danger;
-    ctx.shadowBlur = 16;
-    ctx.stroke();
-    ctx.restore();
-  }
 
   // Companions float; Heroes and bosses are grounded prisms.
   if (o.kind === 'companion') {

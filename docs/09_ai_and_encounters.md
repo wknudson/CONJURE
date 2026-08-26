@@ -415,8 +415,9 @@ where 2200 costs noticeably more thinking time for no additional wins.
 
 **The AI never uses RNG to break a utility tie.** `compareActions` sorts by utility, then:
 
-1. **Highest `y` first** — deepest into the player's half. A portrait attack is keyed
-   `y = 99`, so a face hit wins every tie it is in.
+1. **Highest `y` first** — deepest into the player's half. The `y = 99` key for a portrait
+   attack is retained for exhaustiveness only: no attack may name a portrait, so a swing at
+   a Pact is a swing at its Bound Form and sorts by that body's actual anchor.
 2. **Lowest `x`** — leftmost.
 3. The command's own stable tag, so the comparator is a total order.
 

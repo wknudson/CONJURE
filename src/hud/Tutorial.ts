@@ -24,7 +24,7 @@ const STEPS: TutorialStep[] = [
   {
     anchor: null,
     title: 'You and the enemy Commander',
-    body: 'You both stand beside the board, not on it. Reduce their health to zero to win — but they are trying to do the same to you. Everything on the grid is a means to that end.',
+    body: 'You both stand beside the board, not on it, and neither of you can be struck. Reduce their health to zero to win — but they are trying to do the same to you. Everything on the grid is a means to that end.',
   },
   {
     anchor: '.dial__pips',
@@ -41,7 +41,7 @@ const STEPS: TutorialStep[] = [
   {
     anchor: 'canvas.board',
     title: 'The board is territory',
-    body: 'The blue rows nearest you are yours — you summon there. The red rows are theirs. Melee units have to reach those red rows before they can strike the enemy Commander.',
+    body: 'The blue rows nearest you are yours — you summon there. The red rows are theirs, and somewhere in them stands their Companion: the Commander’s body on the board, and the only thing whose wounds they feel.',
     place: 'right',
   },
   {

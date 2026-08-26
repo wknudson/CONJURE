@@ -6,7 +6,7 @@
  * way the feature fails silently if it is the one that gets forgotten:
  *
  *  1. the win rule itself;
- *  2. the enemy portrait becoming untargetable, or there is still an abstraction to punch;
+ *  2. the HUD not offering a Commander that is not there;
  *  3. the Pacifist Lockout counting kills as progress, or the *player* dies on a clock in a
  *     fight where nothing can damage a portrait;
  *  4. the HUD hiding a bar it would otherwise divide by zero to draw.
@@ -15,7 +15,7 @@
 import { describe, expect, it } from 'vitest';
 import type { GameState } from '../core/types/state.js';
 import { checkLethal } from '../core/engine/death.js';
-import { canHitPortrait } from '../core/engine/targeting.js';
+import { legalAttacks } from '../core/engine/targeting.js';
 import { makeCtx } from '../core/engine/context.js';
 import { toBoardView } from '../core/engine/views.js';
 import { addUnit, findUnit, run, scenario } from './scenario.js';
@@ -93,22 +93,22 @@ describe('winning by rout', () => {
 });
 
 describe('the missing commander', () => {
-  it('cannot be attacked, because it is not there', () => {
+  it('cannot be attacked, because no commander can be', () => {
+    // Standing in the enemy's home row used to be the whole of what put a portrait in
+    // reach. Nothing puts one in reach now, so a rout needs no rule of its own for it —
+    // which is why the ordinary fight below answers the same way.
     const state = routFight();
     const hero = findUnit(state, 'vanguard_footman', 'player');
-    // Standing in the enemy's home row is what normally puts the portrait in reach.
     hero.anchor = { x: 2, y: 0 };
-    expect(canHitPortrait(state, hero, 'enemy')).toBe(false);
+    expect(legalAttacks(state, hero).some((t) => t.kind === 'portrait')).toBe(false);
   });
 
-  it('is still reachable in an ordinary fight from the same spot', () => {
-    // The guard is scoped to the rout rather than to the geometry — proof that turning the
-    // flag off restores the behaviour exactly.
+  it('answers the same in an ordinary fight from the same spot', () => {
     const state = routFight();
     state.encounter.rout = false;
     const hero = findUnit(state, 'vanguard_footman', 'player');
     hero.anchor = { x: 2, y: 0 };
-    expect(canHitPortrait(state, hero, 'enemy')).toBe(true);
+    expect(legalAttacks(state, hero).some((t) => t.kind === 'portrait')).toBe(false);
   });
 
   it('tells the screen not to draw a bar for it', () => {

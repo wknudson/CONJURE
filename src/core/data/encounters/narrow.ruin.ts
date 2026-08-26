@@ -9,9 +9,10 @@
  * corridor is an area-denial puzzle with one answer — get something in the way, or shove
  * it — and a marksman covering the only lane means the approach has to be bought.
  *
- * The Warden fights wholly from off the board, deliberately: with the Duelist and the
- * Trial both embodied, this is the encounter that keeps the older shape in play, and
- * keeps the global-cast fallback exercised in something a player actually meets.
+ * The Warden is embodied, like every Commander: a Hero cannot be swung at, so the only
+ * way to the Pact at the end of the corridor is the body standing in it. In four columns
+ * that is the whole puzzle — the turret denies the lane, and the thing you actually have
+ * to reach is behind it.
  */
 
 import type { EncounterDef } from './registry.js';
@@ -46,6 +47,9 @@ export const NARROW_RUIN: EncounterDef = registerEncounter({
     'dark_tithe',
   ],
   enemyOpeningBoard: [['arc_turret', 1, 1]],
+  // The Warden is emplaced and so is what they are bound to. In a four-wide hall a
+  // tortoise is a second wall, and the only door to the Pact behind it.
+  enemyCompanion: { unitCardId: 'tortoise_bound' },
   // Blowing down the hall toward the player: the Warden's shots carry, and the player's
   // fall short until they close. The corridor is the pressure; the wind is the reason
   // standing still in it is worse than advancing.

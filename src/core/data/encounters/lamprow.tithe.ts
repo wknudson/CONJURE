@@ -3,7 +3,9 @@
  *
  * A cramped yard behind the lighters' hall, and a gutter crew defending it with what a
  * kitchen holds. The first fight of the campaign, so it is deliberately the gentlest
- * board in the catalogue: small, close, one screen of cover, no enemy Companion.
+ * board in the catalogue: small, close, one screen of cover, and a Bound Form that is
+ * plainly the thing to break — which is the rule the whole campaign runs on, taught on
+ * the smallest board it can be taught on.
  *
  * The crack (see `campaign.ts`): the arrears ledger shows the debt already paid, twice.
  */
@@ -46,8 +48,10 @@ export const LAMPROW_TITHE: EncounterDef = registerEncounter({
     ['scout_imp', 4, 0],
     ['marrow_wisp', 2, 0],
   ],
-  // No enemyCompanion: a gutter crew has no bound beast, and the first story fight
-  // should not teach the mirror-Pact rule yet.
+  // The crew's dog, and the whole of the way to their Pact — a Commander cannot be swung
+  // at, so the first story fight is where that gets taught rather than where it is spared.
+  // Placed off the default lane because the scout at (4,0) already has it.
+  enemyCompanion: { unitCardId: 'jackal_bound', at: { x: 5, y: 0 } },
   // An overturned cart and a stack of crates split the yard without walling it.
   terrain: [
     { at: { x: 2, y: 2 }, kind: 'cover' },

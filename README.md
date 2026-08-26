@@ -65,9 +65,9 @@ the field.
 - **Click a card**, then **click a highlighted tile** to play it.
 - **Click your own unit** to see its legal moves (cyan) and attacks (red), then click a
   destination or target.
-- **Click the enemy Commander** — who stands beyond their back row — when a selected unit
-  can reach them. Melee has to be standing in the enemy's two home rows to do that, which
-  is why the Commanders are drawn on the field rather than tucked into the HUD.
+- **A Commander cannot be attacked.** Neither yours nor theirs. Every Commander fields a
+  Companion, and that Bound Form is the Pact's body on the grid — break it and the health
+  bar above it drops. There is no way around the board to the face.
 - Hold **Shift** to expand damage predictions across every affected tile.
 - **T** toggles the danger zone — every tile the enemy could strike next turn.
 - A unit gets **one move and one attack** each turn, in either order, so it can strike
@@ -202,7 +202,7 @@ follows, and each is asserted by a test:
 | Pip cap | 8, enforced only during end-of-turn cleanup | `docs/02_combat_lexicon.md` §2 + `core/engine/deck.ts` |
 | Opening hand | 5 cards and 3 banked Pips (frontal contact), then draw 4/turn | `core/engine/setup.ts` + `core/engine/deck.ts` |
 | Status tick order | Toxin → Burn → Freeze/Entangle → hazards → Growth | `docs/02_combat_lexicon.md` §8 |
-| Melee Commander reach | Standing in the enemy's two home rows is the whole requirement | `docs/02_combat_lexicon.md` §3 |
+| Reaching a Commander | Only through their Companion's Bound Form; no attack may name a portrait | `docs/02_combat_lexicon.md` §3 |
 | Obstacles | Terrain, not allies — either side may break a pillar to open a lane | Adapted |
 | Action economy | One move and one attack per turn, in either order | Mewgenics |
 | Arena shape | Set per encounter, with its own terrain | Pirate101 |
@@ -283,8 +283,10 @@ archetype buys its range with a weakness you can see and play around.
 | **Cinder Lobber** | 2–4, ignores line of sight entirely | Cannot hit what is adjacent — walking into its face beats it |
 | **Arc Turret** | 5, hits hardest | Never moves, so where it lands is the whole decision |
 
-The profiles apply to the Commander too. Otherwise reach carefully priced against units
-would be unpriced against the thing that actually ends the game.
+The profiles are the whole of what reach buys, because there is nothing off the board to
+shoot at. A Commander is reached through their Companion's body, which stands on the grid
+like anything else — so a marksman's line and a mortar's blind spot price the game-ending
+shot exactly as they price every other one.
 
 ### The ground itself
 
@@ -486,19 +488,19 @@ straight to your shared 400 HP pool. It cannot be bled for a blood tithe, cannot
 a Mark (one attached to it could never detonate), and never Grows. Cards that would do those
 things simply do not offer it as a target rather than being wasted on it.
 
-That gives the enemy a second, on-grid route to your Pact, and the HUD treats it as one:
-a declared blow on the Companion counts as incoming Pact damage in the forecast, and a foe
-that can reach it is flagged as a threat to your Commander.
+That body is the **only** route to your Pact, and the HUD treats it as one: a declared blow
+on the Companion counts as incoming Pact damage in the forecast, and a foe that can reach it
+is flagged as a threat to your Commander.
 
-**The enemy fights the same way.** A duelist fields their own Companion — their spells are
+**The enemy fights the same way.** Every Commander fields a Companion — their spells are
 cast from it, their Pact bleeds when it is struck, and shoving it into a wall costs them
-what it would cost you. Their portrait stays attackable alongside it: the body is a second
-route to the same pool, not a replacement, since anything else would be asymmetric while
-your own portrait remains reachable.
+what it would cost you. Their portrait is not attackable, and neither is yours: the symmetry
+is that *neither* Hero is a target, and the fight is decided by the two bodies standing
+between them.
 
-One difference is worth knowing. A blow declared against a body is committed to the *tile*,
-so moving it makes the blow miss; a blow declared against a portrait cannot be dodged. The
-embodied defender has an option the off-grid one does not.
+That also means a blow at a Pact is always committed to a *tile*, so moving the body makes
+it miss. There is no undodgeable swing at a face any more — the defender always has the
+option, on both sides.
 
 The Ignis Trial goes further: the drake **is** the unit. At half health it grows into a
 2×2 enraged form that hits harder, moves slower, and blocks line of sight through itself —

@@ -50,6 +50,9 @@ export const LAMPLIGHTER_ESCORT: EncounterDef = registerEncounter({
     ['hollowed_husk', 4, 1],
     ['ash_ghoul', 2, 0],
   ],
+  // Whatever it is that walks ahead of them in the dark. A Commander is only reachable
+  // through their Companion, so the beast is the fight.
+  enemyCompanion: { unitCardId: 'jackal_bound' },
   // The dark stretch itself: fog cuts vision to lamplight distances.
   weather: { kind: 'fog' },
   // Doorways and a parked barrow along the unlit run.
@@ -92,6 +95,8 @@ export const DEBT_COLLECTED_MINOR: EncounterDef = registerEncounter({
     ['marrow_wisp', 4, 1],
     ['marrow_wisp', 2, 0],
   ],
+  // Something the pressmen keep below, and the only way to the crew's Pact.
+  enemyCompanion: { unitCardId: 'shade_bound' },
   // The press and the paper stacks: a cellar is mostly furniture.
   terrain: [
     { at: { x: 2, y: 2 }, kind: 'wall' },
@@ -169,6 +174,9 @@ export const POSTER_WORK: EncounterDef = registerEncounter({
     ['scout_imp', 1, 1],
     ['scout_imp', 4, 1],
   ],
+  // The bird that watches the fence with them. The lightest Companion in the campaign,
+  // on the lightest opposition in it.
+  enemyCompanion: { unitCardId: 'heron_bound' },
   // The lookout: arrives, grabs what matters, runs for the edge.
   scavenger: true,
   // The fence line itself, mid-board.
@@ -211,6 +219,8 @@ export const GUTTER_DISPUTE: EncounterDef = registerEncounter({
     ['marrow_wisp', 2, 0],
   ],
   turfwar: { count: 2, unitCardId: 'marrow_hound' },
+  // What the crew brought to move stone with, and what they are bound to.
+  enemyCompanion: { unitCardId: 'ram_bound' },
   // The collapse itself: rubble to fight over, and geodes in it worth the fighting.
   terrain: [
     { at: { x: 2, y: 3 }, kind: 'wall' },
@@ -252,6 +262,8 @@ export const CLINIC_QUOTA: EncounterDef = registerEncounter({
     ['briar_wolf', 4, 1],
     ['sap_wisp', 2, 0],
   ],
+  // The largest of the patients' beasts, and the one the minders answer to.
+  enemyCompanion: { unitCardId: 'aurochs_bound' },
   // The clinic's floor plan: two doorways, defended.
   terrain: [
     { at: { x: 0, y: 3 }, kind: 'wall' },

@@ -10,7 +10,6 @@
 import type { Coord, Side, UnitId } from '../../contract/ids.js';
 import { coordKey } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
-import { portraitRow } from '../types/state.js';
 import { allEntities } from './board.js';
 import { cellsOf } from '../util/grid.js';
 import { isUnit } from '../types/units.js';
@@ -137,28 +136,6 @@ export function hasLoS(
 
   const blockers = occluderCells(state, ignoreIds, viewer);
   return supercoverLine(from, to).every((c) => !blockers.has(coordKey(c)));
-}
-
-/**
- * Can `from` see the enemy commander's portrait?
- *
- * The portrait sits on a virtual row past the board edge. A ranged attacker needs a clear
- * straight or diagonal vector to it; Guardians and Barricades are what deny this.
- */
-export function hasLoSToPortrait(
-  state: GameState,
-  from: Coord,
-  targetSide: Side,
-  ignoreIds: UnitId[] = [],
-  viewer?: Side,
-): boolean {
-  const row = portraitRow(state, targetSide);
-  const candidates: Coord[] = [
-    { x: from.x, y: row },
-    { x: from.x - 1, y: row },
-    { x: from.x + 1, y: row },
-  ];
-  return candidates.some((c) => hasLoS(state, from, c, ignoreIds, viewer));
 }
 
 /** Tiles the given origin cannot see — the renderer's shadow-cone fog. */

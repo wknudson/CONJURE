@@ -36,7 +36,7 @@ obstacle as it was at that moment.
 |---|---|
 | `playCard` | play a card from hand at a chosen target |
 | `moveUnit` | spend a unit's move |
-| `attack` | strike a unit, obstacle, or commander portrait |
+| `attack` | strike a unit or an obstacle. **Never a commander portrait** — see §3 |
 | `attackTile` | a declared attack landing on a now-empty tile — costs the action, deals nothing |
 | `bloodTithe` | open one of your own units for Marrow. The body **stays on the board**, wounded and Exhausted |
 | `channel` | spend a unit's **attack** to extract Marrow instead of swinging |
@@ -145,9 +145,14 @@ out loud, at the tile where it happened.
 
 **Hero and Companion share one HP pool.** At zero, you lose.
 
-The Commander is off-grid, standing beyond the back row, and is a legal damage target via
-`{ kind: 'portrait', side }`. `portraitRow` gives it a virtual row — `height` for the
-player, `-1` for the enemy — used for melee reach and ranged LoS vectors.
+The Commander is off-grid, standing beyond the back row. It is a legal **damage** target via
+`{ kind: 'portrait', side }` — that is how the Bound Form redirect, status ticks, Resonance
+armour and healing all address a Pact — but it is never an **attack** target. `legalAttacks`
+does not offer it at any range, from any tile, to either side.
+
+The way to a Pact is the Companion's Bound Form below. Every fight that has a Commander
+fields one for them (`EncounterDef.enemyCompanion`, required outside a `victory: 'rout'`),
+because a Commander with no body is a Pact nothing can reach.
 
 ### Bound Forms
 
@@ -218,9 +223,9 @@ the two lists together.
 | **Distance** | Chebyshev throughout — diagonals count as one step |
 
 A short arena cannot afford two-deep territories on both sides: at height 4 they would
-consume the whole board, leaving no neutral ground and putting every tile within melee
-reach of a portrait. The fallback keeps the three-zone structure — yours / neutral /
-theirs — intact at every supported size.
+consume the whole board, leaving no neutral ground and every opening body already in contact.
+The fallback keeps the three-zone structure — yours / neutral / theirs — intact at every
+supported size.
 
 ### Hazards
 

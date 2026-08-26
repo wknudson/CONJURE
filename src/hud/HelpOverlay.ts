@@ -14,7 +14,10 @@ const SECTIONS: { heading: string; rows: [string, string][] }[] = [
     rows: [
       ['Your goal', 'Reduce the enemy Commander to 0 HP. They stand beyond their back row.'],
       ['How you lose', 'Your Hero and Companion share 40 HP. At zero, the run ends.'],
-      ['Reaching them', 'Melee must be standing in the enemy\'s two red rows. Ranged needs a clear line.'],
+      [
+        'Reaching them',
+        'A Commander cannot be attacked. Break their Companion\'s Bound Form on the board — every wound it takes comes off their pool.',
+      ],
     ],
   },
   {
@@ -79,7 +82,6 @@ const SECTIONS: { heading: string; rows: [string, string][] }[] = [
 const CONTROLS: [string, string][] = [
   ['Click a card', 'Then click a highlighted tile to play it'],
   ['Click your unit', 'Cyan tiles are moves, red outlines are attacks'],
-  ['Click the enemy Commander', 'Attacks them, if the selected unit can reach'],
   ['Hold Shift', 'Expands damage predictions across every affected tile'],
   ['C', 'Channels the selected unit: gives up its attack to extract Marrow (or use the ✦ Channel button)'],
   ['T', 'Toggles the danger zone — every tile the enemy can strike'],

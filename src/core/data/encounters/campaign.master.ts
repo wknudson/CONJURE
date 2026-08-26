@@ -495,6 +495,9 @@ export const RELOCATION_TRAIN: EncounterDef = registerEncounter({
     ['scout_imp', 1, 1],
     ['shieldbearer', 4, 1],
   ],
+  // The Interference, given a shape to be broken. The waves keep coming; this is the
+  // thing that has to fall for them to stop.
+  enemyCompanion: { unitCardId: 'geist_bound' },
   // The convoy itself, strung down the road. Scenery in the rough pass; the doc's
   // protect-the-wagons objective needs the same engine work the Night Freight does.
   props: [

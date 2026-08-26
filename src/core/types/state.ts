@@ -391,8 +391,3 @@ export function startingZone(state: GameState, side: Side): number[] {
 export function inBounds(state: GameState, c: Coord): boolean {
   return c.x >= 0 && c.y >= 0 && c.x < state.width && c.y < state.height;
 }
-
-/** The off-grid portrait's virtual row, used for melee reach and ranged LoS vectors. */
-export function portraitRow(state: GameState, side: Side): number {
-  return side === 'player' ? state.height : -1;
-}

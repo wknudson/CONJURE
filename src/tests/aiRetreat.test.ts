@@ -59,15 +59,19 @@ describe('AI retreat', () => {
       units: [
         { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 5 }, hp: 10 },
         { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, atk: 60, keywords: [] },
+        { def: 'sap_wisp', side: 'player', at: { x: 2, y: 6 }, keywords: ['BoundForm'] },
       ],
     });
+    const body = findUnit(state, 'sap_wisp', 'player');
+    state.players.player.companionUnitId = body.id;
+    state.players.player.companionUnitDefId = 'ignis_bound';
     state.activeSide = 'enemy';
 
     const commands = planTurn(state, 'enemy', NOVICE_AI);
-    const hitFace = commands.some(
-      (c) => c.type === 'attack' && c.target.kind === 'portrait' && c.target.side === 'player',
+    const hitPact = commands.some(
+      (c) => c.type === 'attack' && c.target.kind === 'unit' && c.target.id === body.id,
     );
-    expect(hitFace, 'a 1 HP imp should still take the winning swing').toBe(true);
+    expect(hitPact, 'a 1 HP imp should still take the winning swing').toBe(true);
   });
 
   it('still presses forward when nothing threatens it', () => {

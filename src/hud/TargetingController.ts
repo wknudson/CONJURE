@@ -28,7 +28,6 @@ export interface TargetingCallbacks {
   commit(action: Action): void;
   setOverlays(overlays: Overlays): void;
   setSelectedCard(id: CardInstanceId | null): void;
-  setEnemyTargetable(on: boolean): void;
   notice(text: string): void;
   /** A standing warning about what the hovered target would cost. Null clears it. */
   warn(text: string | null): void;
@@ -67,7 +66,6 @@ export class TargetingController {
     this.cb.warn(null);
     this.cb.setAwaitingFallen(null);
     this.cb.setSelectedCard(null);
-    this.cb.setEnemyTargetable(false);
     this.cb.setInspected(null);
     this.cb.setOverlays(emptyOverlays());
   }
@@ -340,26 +338,6 @@ export class TargetingController {
     }
   }
 
-  /** Attacking the enemy Commander, who stands beside the board rather than on it. */
-  onEnemyCommanderClick(): void {
-    if (!this.enabled) return;
-
-    if (this.mode.kind !== 'unit') {
-      this.cb.notice('Select one of your units first, then click the enemy Commander');
-      return;
-    }
-
-    const ref = this.rules
-      .getLegalAttacks(this.mode.unit)
-      .find((r): r is Extract<TargetRef, { kind: 'portrait' }> => r.kind === 'portrait');
-    if (!ref) {
-      this.cb.notice('That unit cannot reach the enemy Commander — get into their back rows');
-      return;
-    }
-    this.cb.commit({ type: 'attack', attacker: this.mode.unit, target: ref });
-    this.reset();
-  }
-
   onCancel(): void {
     if (!this.enabled) return;
     this.reset();
@@ -579,7 +557,6 @@ export class TargetingController {
         break;
       case 'entities':
         overlays.highlight = spec.refs.flatMap((ref) => this.refCells(ref));
-        this.cb.setEnemyTargetable(spec.refs.some((r) => r.kind === 'portrait'));
         break;
       case 'lines':
         overlays.highlight = dedupe(spec.origins.map((o) => o.from));
@@ -604,7 +581,6 @@ export class TargetingController {
 
     const attacks = this.rules.getLegalAttacks(unitId);
     overlays.attack = attacks.flatMap((ref) => this.refCells(ref));
-    this.cb.setEnemyTargetable(attacks.some((r) => r.kind === 'portrait'));
 
     // The ring, before the targets: a player counting tiles wants the shape underneath,
     // and the legal targets drawn on top of it.

@@ -36,12 +36,6 @@
   margin-bottom: 4px;
 }
 
-/* Mirrors the glow on the Commander model when a unit can reach them. */
-.enemy-bar__track.is-targetable {
-  border-color: var(--danger);
-  box-shadow: 0 0 14px rgba(248, 113, 113, 0.5);
-}
-
 .enemy-bar__track,
 .pact__track {
   position: relative;
@@ -163,22 +157,6 @@
 
 .portrait--enemy {
   cursor: default;
-}
-
-.portrait--enemy.is-targetable {
-  cursor: crosshair;
-}
-
-.portrait--enemy.is-targetable .portrait__frame {
-  border-color: var(--danger);
-  box-shadow: 0 0 20px rgba(248, 113, 113, 0.55);
-  animation: targetable 1.1s ease-in-out infinite;
-}
-
-@keyframes targetable {
-  50% {
-    transform: scale(1.06);
-  }
 }
 
 .portrait--hero .portrait__frame {

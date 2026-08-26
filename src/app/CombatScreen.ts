@@ -230,11 +230,6 @@ export class CombatScreen implements Screen {
       commit: (action) => this.commit(action),
       setOverlays: (o) => this.setOverlays(o),
       setSelectedCard: (id) => this.hud?.setSelectedCard(id),
-      setEnemyTargetable: (on) => {
-        this.hud?.setEnemyTargetable(on);
-        const boss = this.renderer?.commanders.find((c) => c.side === 'enemy');
-        if (boss) boss.targetable = on;
-      },
       notice: (text) => this.hud?.flashNotice(text),
       warn: (text) => this.hud?.setTargetWarning(text),
       askChannel: (card, affordable, then) => {
@@ -473,7 +468,7 @@ export class CombatScreen implements Screen {
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;
     const overCommander = this.renderer.commanderAt(x, y);
-    this.canvas.style.cursor = overCommander?.targetable ? 'pointer' : 'crosshair';
+    this.canvas.style.cursor = 'crosshair';
     const tile = overCommander ? null : this.cam.screenToTile(x, y);
 
     // Deployment owns the board while it runs, and the targeting controller is asleep —
@@ -510,7 +505,7 @@ export class CombatScreen implements Screen {
         `<div class="tooltip__title">${escapeHtml(commander.name)}</div>
          <div class="tooltip__body">${
            isFoe
-             ? 'Defeat them to win. Melee must be standing in their two red rows to strike.'
+             ? 'Defeat them to win. They cannot be struck directly — break their Bound Form and this pool bleeds with it.'
              : commander.kind === 'companion'
                ? 'Your Companion. Its lane is marked on the board — the first Companion card you play each turn fires its passive there.'
                : 'You. Your Hero and Companion share this health pool.'
@@ -592,10 +587,12 @@ export class CombatScreen implements Screen {
     }
 
     // Commanders stand beside the grid, so test them before falling through to tiles.
+    // Only your own are ever drawn there now — an embodied enemy Commander is represented
+    // by their Bound Form on the board — and neither of yours is a target, so the click
+    // clears the selection rather than doing anything to them.
     const commander = this.renderer.commanderAt(x, y);
     if (commander) {
-      if (commander.side === 'enemy') this.targeting?.onEnemyCommanderClick();
-      else this.targeting?.onCancel();
+      this.targeting?.onCancel();
       return;
     }
 
@@ -1042,7 +1039,7 @@ export class CombatScreen implements Screen {
    * Places the Hero, Companion and enemy Commander one row beyond each end of the grid.
    * They are on the field but never on it, which is what makes melee reach legible.
    */
-  private syncCommanders(board: ReturnType<CombatSession['getBoard']>, targetable = false): void {
+  private syncCommanders(board: ReturnType<CombatSession['getBoard']>): void {
     if (!this.renderer) return;
 
     const nearRow = board.height + 0.35;
@@ -1067,7 +1064,6 @@ export class CombatScreen implements Screen {
         hp: board.player.hp,
         maxHp: board.player.maxHp,
         armor: board.player.armor,
-        targetable: false,
       },
       ...(embodied
         ? []
@@ -1081,7 +1077,6 @@ export class CombatScreen implements Screen {
               hp: board.player.hp,
               maxHp: board.player.maxHp,
               armor: board.player.armor,
-              targetable: false,
             },
           ]),
       // The enemy Commander is drawn off-grid only while nothing represents it on the
@@ -1103,7 +1098,6 @@ export class CombatScreen implements Screen {
               hp: board.enemy.hp,
               maxHp: board.enemy.maxHp,
               armor: board.enemy.armor,
-              targetable,
             },
           ]),
     ];

@@ -15,7 +15,7 @@ import { coordKey } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
 import type { Unit } from '../types/units.js';
 import { canPlace, unitsOf, opposite } from './board.js';
-import { canHitPortrait, canStrike } from './targeting.js';
+import { canStrike } from './targeting.js';
 import { cellsAt, DIRS_8, add } from '../util/grid.js';
 
 export interface ThreatMap {
@@ -107,19 +107,11 @@ export function threatMap(state: GameState, side: Side): ThreatMap {
     const tiles = new Set<string>();
 
     for (const anchor of anchors) {
-      // Melee reaches a Commander by standing in their home rows; ranged needs a line.
-      // Defer to the targeting rule rather than restating it: the old ranged branch
-      // asked only whether the unit was on the board, which is true of every unit, so
-      // every ranged foe was permanently flagged as a threat to the Commander.
-      if (!commanderThreats.includes(foe.id)) {
-        if (canHitPortrait(state, { ...foe, anchor }, side)) commanderThreats.push(foe.id);
-      }
-
       for (const t of strikeableFrom(state, foe, anchor)) {
         tiles.add(coordKey(t));
-        // The Bound Form is a second, on-grid route to the same Pact. A foe that can
-        // strike it threatens the Commander just as surely as one with a clear shot at
-        // the portrait, and the HUD would otherwise call that tile merely dangerous.
+        // The Bound Form is the *only* route to a Pact — the portrait itself cannot be
+        // swung at — so a foe that can reach the body is exactly a foe that threatens the
+        // Commander. The HUD would otherwise call that tile merely dangerous.
         if (!commanderThreats.includes(foe.id) && boundFormOccupies(state, side, t)) {
           commanderThreats.push(foe.id);
         }

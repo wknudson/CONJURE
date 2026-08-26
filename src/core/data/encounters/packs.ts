@@ -6,8 +6,10 @@
  * twelve chances to make one accidentally unwinnable.
  *
  * Every one of these is a **rout** (`victory: 'rout'`): there is no enemy Commander, no Bound
- * Form, no deck, and no portrait to aim at. Clear the bodies and it is over. See
- * `data/packs.ts` for what a pack is and `engine/death.ts` for how the rule reads.
+ * Form and no deck. Clear the bodies and it is over. It is also the one shape of fight that
+ * may leave `enemyCompanion` unset — everywhere else a Commander without a Companion is a
+ * Pact nothing can reach. See `data/packs.ts` for what a pack is and `engine/death.ts` for
+ * how the rule reads.
  *
  * ## The reinforcement roll happens once, at setup
  *
@@ -122,9 +124,10 @@ function packEncounter(pack: PackDef): EncounterDef {
     width: 7,
     height: 6,
     playerHp: 400,
-    // Never shown and never reachable: `victory: 'rout'` hides the bar and refuses the
-    // portrait as a target. Authored at the ordinary figure anyway, because the field is
-    // required and a zero would read as "already won" to anything that forgets why.
+    // Never shown and never reachable: `victory: 'rout'` hides the bar, and there is no
+    // Bound Form standing in for a Pact that is not there. Authored at the ordinary figure
+    // anyway, because the field is required and a zero would read as "already won" to
+    // anything that forgets why.
     enemyHp: 400,
     playerName: 'Hero',
     companionName: 'Companion',

@@ -44,6 +44,8 @@ export const CURFEW_BREAKERS: EncounterDef = registerEncounter({
     ['shieldbearer', 4, 1],
     ['scout_imp', 2, 0],
   ],
+  // The Assembly holds ground and so does this: the Pact's body, planted in the street.
+  enemyCompanion: { unitCardId: 'crab_bound' },
   // Loose dogs in the scuffle: feral bodies that maul whichever side is nearest.
   // TODO(worldbuild): 'marrow_hound' as the crowd's dogs until a street-dog unit exists.
   turfwar: { count: 2, unitCardId: 'marrow_hound' },

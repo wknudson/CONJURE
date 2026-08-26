@@ -141,16 +141,22 @@ describe('counter and trades', () => {
 
 describe('lethal and sudden death', () => {
   it('ends in victory when the enemy commander reaches 0', () => {
+    // Through their Bound Form, which is the only route: a Commander is never an attack
+    // target, and the body keeps no health of its own, so the blow lands on the Pact.
     const state = scenario({
       enemyHp: 20,
-      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 50 }],
+      units: [
+        { def: 'scout_imp', side: 'player', at: { x: 2, y: 1 }, atk: 50 },
+        { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 0 }, keywords: ['BoundForm'] },
+      ],
     });
     const imp = findUnit(state, 'scout_imp', 'player');
+    const body = findUnit(state, 'scout_imp', 'enemy');
 
     const res = run(state, {
       type: 'attack',
       attacker: imp.id,
-      target: { kind: 'portrait', side: 'enemy' },
+      target: { kind: 'unit', id: body.id },
     });
 
     expect(res.state.result).toBe('victory');

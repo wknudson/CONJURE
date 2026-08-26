@@ -52,18 +52,17 @@ export function isAetherPlated(unit: Unit): boolean {
 /**
  * Whether a damage request is aimed at something the seal protects.
  *
- * Both routes to the beast are covered, and they are genuinely two routes: the Alpha's
- * body is a Bound Form, so a blow against it is redirected onto the enemy pool, while a
- * ranged shot at the portrait targets that pool directly. Sealing one and not the other
- * would leave the phase winnable by shooting past the beast at the thing behind it.
+ * The pool is sealed however it is addressed. No attack names a portrait any more — the
+ * Alpha's body is a Bound Form and every blow against it is redirected onto the enemy
+ * pool — but spells, scripts and status ticks still address the pool directly, so the
+ * portrait arm below is what stops the phase being won by a burn tick left running.
  */
 export function isSealed(state: GameState, target: TargetRef): boolean {
   if (!state.encounter.subjugation.sealed) return false;
 
-  // The enemy pool, however it is reached. Both routes matter and they are genuinely
-  // two: the Alpha's body is a Bound Form, so a blow against it is redirected onto the
-  // pool, while a ranged shot at the portrait targets the pool directly. Sealing one and
-  // not the other would leave the phase winnable by shooting past the beast.
+  // The enemy pool, however it is reached: the Bound Form redirect arrives here as a
+  // portrait request, and so does anything that damages a Pact without going through a
+  // body at all.
   if (target.kind === 'portrait') return target.side === 'enemy';
   if (target.kind !== 'unit') return false;
   return state.units[target.id]?.side === 'enemy' && isAetherPlated(state.units[target.id]!);

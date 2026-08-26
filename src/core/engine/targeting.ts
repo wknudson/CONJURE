@@ -23,9 +23,9 @@ import {
 } from './board.js';
 import { canAttack, canAct } from './movement.js';
 import { isClimaxed } from './growth.js';
-import { hasLoS, hasLoSToPortrait } from './los.js';
+import { hasLoS } from './los.js';
 import { DIRS_8, cellsAt, cellsOf } from '../util/grid.js';
-import { inBounds, portraitRow, startingZone, visionClamp } from '../types/state.js';
+import { inBounds, startingZone, visionClamp } from '../types/state.js';
 
 /**
  * Where a card is cast from.
@@ -284,17 +284,18 @@ export function lineCovers(state: GameState, from: Coord, dir: Coord, length: nu
 }
 
 /**
- * Everything a unit may attack: enemy entities in range with line of sight, plus the
- * enemy portrait when reachable.
+ * Everything a unit may attack: enemy entities in range with line of sight, and nothing
+ * else.
  *
- * Melee (range 1-2) must stand in the opponent's two home rows to strike the portrait.
- * Ranged (3+) needs a clear straight or diagonal vector to it.
+ * **A Commander is never on this list.** The Hero stands off the board as the Architect
+ * and has no body to swing at; the way to a Pact is its Companion's Bound Form, whose
+ * wounds `dealDamage` redirects to the portrait. A fight is won by breaking the body in
+ * front of you, not by walking around it.
  */
 export function legalAttacks(state: GameState, unit: Unit): TargetRef[] {
   if (!canAttack(unit)) return [];
 
   const out: TargetRef[] = [];
-  const foeSide = opposite(unit.side);
 
   for (const e of allEntities(state)) {
     if (e.id === unit.id) continue;
@@ -316,10 +317,6 @@ export function legalAttacks(state: GameState, unit: Unit): TargetRef[] {
     }
     if (!canStrike(state, unit, cellsOf(unit), cellsOf(e), [unit.id, e.id])) continue;
     out.push(refOf(e));
-  }
-
-  if (canHitPortrait(state, unit, foeSide)) {
-    out.push({ kind: 'portrait', side: foeSide });
   }
 
   return out;
@@ -389,7 +386,9 @@ export function threatensFrom(state: GameState, unit: Unit, anchor: Coord): bool
     if (foe.id === unit.id) continue;
     if (canStrike(state, unit, from, cellsOf(foe), [unit.id, foe.id])) return true;
   }
-  return canHitPortrait(state, { ...unit, anchor }, foeSide);
+  // No portrait clause. The enemy Commander is not a thing that can be threatened from a
+  // tile — their Bound Form is, and it is walked above like any other body.
+  return false;
 }
 
 /**
@@ -422,46 +421,6 @@ function onLine(from: Coord[], targets: Coord[]): boolean {
       return dx === 0 || dy === 0 || dx === dy;
     }),
   );
-}
-
-export function canHitPortrait(state: GameState, unit: Unit, targetSide: Side): boolean {
-  // A rout has no enemy commander worth the name. Nothing may aim at the space where one
-  // would have stood, because the pack is the whole of the opposition — an attack that
-  // "hit the enemy Commander" here would be a blow landing on an abstraction the fight has
-  // already said does not exist.
-  if (state.encounter.rout && targetSide === 'enemy') return false;
-
-  const cells = cellsOf(unit);
-
-  if (unit.rangeMax <= 2 && unit.attackProfile === undefined) {
-    // Melee: reaching the enemy's front or back row is the whole
-    // requirement — standing in their territory is what puts the portrait in reach.
-    const homeRows = startingZone(state, targetSide);
-    return cells.some((c) => homeRows.includes(c.y));
-  }
-
-  // The portrait stands one row beyond the board's edge. Everything ranged measures
-  // against that virtual row, so the profiles apply to the Commander exactly as they do
-  // to a unit: a mortar lobs at the face within its envelope and cannot hit it from
-  // point-blank, and a marksman needs a straight line to it.
-  const row = portraitRow(state, targetSide);
-  const mid = Math.floor((state.width - 1) / 2);
-  const portraitCells: Coord[] = [{ x: mid, y: row }];
-
-  // The sky applies to the Commander as much as to anything else. Without this a fogged
-  // board would blind every unit while leaving snipers a clear shot at the face.
-  const dist = Math.min(...cells.map((c) => Math.max(Math.abs(c.x - mid), Math.abs(c.y - row))));
-  const reach = effectiveRange(state, unit, { x: 0, y: row < 0 ? -1 : 1 });
-  if (dist > reach) return false;
-
-  if (unit.attackProfile === 'arcing') {
-    return dist >= unit.rangeMin;
-  }
-
-  if (unit.attackProfile === 'lineOnly' && !onLine(cells, portraitCells)) return false;
-
-  // Ranged: needs a clear vector to the off-grid portrait.
-  return cells.some((c) => hasLoSToPortrait(state, c, targetSide, [unit.id], unit.side));
 }
 
 /**

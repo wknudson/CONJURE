@@ -37,9 +37,16 @@ export interface EncounterDef {
   /**
    * The enemy's Companion, given a body on the board.
    *
-   * Without this their Commander stays entirely off-grid, which is how every fight
-   * worked before mirrors existed. With it, the enemy Pact has a second, reachable
-   * route — and their ranged Companion cards become anchored to it, exactly as yours are.
+   * **Required for every fight that has an enemy Commander**, which is every fight that is
+   * not a `victory: 'rout'`. A Commander cannot be struck: the Hero stands off the grid as
+   * the Architect, and the only route to their Pact is this body, whose wounds `dealDamage`
+   * redirects to the portrait. An encounter that names a Commander and no Companion is an
+   * unwinnable fight, and a test holds the two together so one cannot be authored.
+   *
+   * `at` is the tile it opens on, defaulting to the enemy's Companion lane on their back
+   * row. Give it explicitly when `enemyOpeningBoard` already stands something there.
+   *
+   * Their ranged Companion cards are anchored to it, exactly as yours are to yours.
    */
   enemyCompanion?: { unitCardId: string; at?: { x: number; y: number } };
   /**
@@ -91,10 +98,11 @@ export interface EncounterDef {
   /**
    * How this fight is won. Absent means the ordinary rule: drop the enemy commander.
    *
-   * `'rout'` is for a fight with **no commander to drop** -- a wandering pack, which has no
+   * `'rout'` is for a fight with **no commander to drop** — a wandering pack, which has no
    * hero behind it, no Bound Form and nothing to negotiate with. Clear every body and it is
-   * over. The enemy portrait is hidden and untargetable in that mode, so the pack really is
-   * the whole of the opposition rather than a screen in front of an abstract health bar.
+   * over. It is the one case that may leave `enemyCompanion` unset: there is no Pact behind
+   * the pack for a Companion to be the body of, so the pack really is the whole of the
+   * opposition rather than a screen in front of an abstract health bar.
    */
   victory?: 'rout';
   subjugationPrize?: string;
