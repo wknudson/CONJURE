@@ -55,6 +55,8 @@ fields, and they are named in the Adept row.
 | `collision` | **0** | **45** | `collision` event |
 | `advance` | **3** | — | row gained toward the enemy |
 | `firingPosition` | **8** | — | ending a move somewhere the unit can actually shoot from |
+| `pursue` | **6** | — | tile closed on the nearest hostile body, when nothing is in reach |
+| `armorChip` | **0.5** | — | fraction of a point credited for stripping armor rather than health |
 | `retreat` | **2.5** | **3.5** | old point of incoming damage stepped out of |
 | `retreatSurvival` | **0.5** | — | fraction of `kill` for leaving lethal range |
 | `developAtk` | **4** | — | old point of Attack summoned |
@@ -231,6 +233,105 @@ gained can be the row that disarms them.
 by stopping short of its own blind spot, or the archetype walks itself out of the fight
 every single time. It is consulted **only** for units whose reach is genuinely
 non-monotonic; for everything else closer is never worse and this would be noise.
+
+### Pursuit, and the stalemate it fixes
+
+`advance` is a **y-gradient**, not a distance to anything: the player scores by decreasing
+`y`, the enemy by increasing it. Almost every turn that points the right way, and it needs
+nothing cleverer — the enemy is, broadly, over there.
+
+It fails completely at the end of a fight. Two Bound Forms with the board otherwise clear
+each maximise `advance` by walking to *opposite* edges. They pass each other on the way,
+arrive eight tiles apart with nothing in reach, and stand there — one chipping the other's
+Pact with spells while a bloom Resonance heals it back. Neither can win and neither will
+move, because "forward" has run out and nothing in the matrix said "toward **them**".
+
+That state used to be invisible, because the player's body standing in the enemy's home
+rows could strike the portrait from there and simply end the fight. Once a Commander could
+only be reached through their Companion's body, the stalemate surfaced — as four encounters
+that no longer resolved, every one of them a bloom fight.
+
+`pursue` is **6**: per tile closed on the nearest hostile body, credited only to the unit
+that moved. Above `advance` so closing beats the gradient when they disagree, and below
+`firingPosition` so a constrained shooter is not talked out of its firing line.
+
+It is gated on **`threatensFrom`**, not on `legalAttacks`, and the distinction is the whole
+correctness of it: the question is whether the tile threatens anything *at all*, not whether
+this unit has a swing left. A body that has already attacked still threatens from where it
+stands, so strike-and-withdraw stays the retreat term's business rather than becoming
+strike-and-chase.
+
+Hostility is read the same way `legalAttacks` reads it — a Feral beast is an enemy of
+everything that is not also Feral, including the side whose record it sits in — and distance
+is `footprintDistance`, so a 2×2 Behemoth is measured from its nearest cell.
+
+### Fighting through armor
+
+`pursue` gets a body to the fight. It does not make it swing, and on its own it did not
+finish these fights — it moved *which* encounters stalled rather than how many.
+
+A blow that armor absorbs entirely reports `hpLoss: 0`. Both damage terms counted health and
+nothing else, so such a swing was worth exactly zero — and because zero sits **at** the pass
+threshold, `scoreAll` discarded it before it was even a candidate. Against a Pact sitting
+behind 160 armor, the AI had no scored attack available at all. It paced instead, every turn,
+while the armor was topped back up. Two bodies doing this to each other shuttled between the
+same pair of tiles for sixty turns.
+
+`armorChip` is **0.5**: armor stripped counts as progress toward the health behind it, at
+half rate. Applied to enemy units and the enemy portrait alike. It is *not* applied to damage
+against your own side — that term exists to protect the Pact's health, and armor exists to be
+spent, so treating its loss as a wound to avoid would teach the AI to hoard the one resource
+whose purpose is to be used up.
+
+The two weights are both load-bearing, and measurably so. With `armorChip` alone, four of the
+seven affected encounters still stall (two of them on every seed): the bodies swing, but never
+arrive. With `pursue` alone, the bodies arrive and decline to swing. Together, all seven
+resolve — and faster than the old portrait-hitting route did, because the AI is now fighting
+rather than walking: `clinic_quota` went from stalling to eleven turns, `ashwood_poacher` to
+nine.
+
+**What is still imperfect.** `pursue` and `retreat` trade against each other, so on a board
+holding *nothing but* the two Bound Forms and no armor to chew, they can still hover — pursuit
+pulls in, retreat pushes out. `src/tests/pursuit.test.ts` pins that cycle deliberately, so
+whoever finally makes the body commit sees the test fail and knows they changed something real
+rather than fixed something incidental.
+
+### The binder's side of the Harpoon Protocol
+
+Everything about a subjugation was written from the beast's point of view. It knew how to hunt
+an anchor; nothing knew how to *place* one. Three faults compounded, and each hid the next.
+
+**No score for casting the Rite.** A sealed beast cannot be damaged or killed, so the tether is
+not the best line on the board — it is the only one. The matrix scores damage and kills, and the
+Rite produces neither, so it was worth nothing: the planner held a free card with a legal target
+for a dozen turns while the fight ran out. `TETHER_SCORE` is **20,000**, the same magnitude as
+`ANCHOR_KILL_SCORE`, because it is the same event seen from the other side.
+
+**`anchorPressure` was not side-gated.** It was applied to whichever side happened to be
+planning, so the side that *owned* the tether was offered twenty thousand points for destroying
+it. This was invisible only because of the first fault — the binder never placed a tether, so it
+never had one to blow up — and it was primed to fire the moment the first fault was fixed. The
+term now branches on the anchor's owner: `anchorPressure` for the side hunting it,
+`anchorDefence` for the side holding it. The defensive mirror is deliberately simpler, because
+`setAnchor` spends the anchor's move and attack — it is pinned, so there is no positioning to
+reward and nothing to do but not lose it.
+
+**The Pacifist Lockout guarded the wrong flag.** It suspended on `subjugation.active` and meant
+`sealed`. The gap between the two is exactly where the hazard lived: after the seal, before the
+Rite is cast, the beast is already immune and the tether is not yet down, so the lockout's
+unblockable damage landed on the player alone. Every round spent looking for that card was a
+round the arena charged one side for. The function's own comment had described this hazard
+correctly for as long as it had been checking the wrong thing.
+
+Note the ordering constraint, because it is not obvious: fixing the lockout *alone* would have
+been worse than leaving it. `tickSubjugation` returns immediately unless the tether is live, so
+the sealed-but-untethered window has no timeout of its own — the lockout killing the player was
+the only thing ending it. Removing that without teaching the planner to cast the Rite converts a
+slow loss into a fight that never ends at all.
+
+Measured on `fouled_cistern`, the campaign's designated easy fight: it lost all eight balance
+seeds before, never once casting the Rite. It now **binds five of eight** and every seed resolves
+inside the harness's guard, where one previously ran past it.
 
 ### Splash on empty ground
 

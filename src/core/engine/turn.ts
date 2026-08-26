@@ -147,12 +147,19 @@ const LOCKOUT_DAMAGE = 10;
  * AIs — can trade board presence forever and the game never resolves.
  */
 function applyPacifistLockout(ctx: Ctx): void {
-  // Suspended while a tether is live. The lockout exists to break a stalemate between two
-  // sides who will not commit; a subjugation is the opposite of that -- it is a timed
-  // siege in which the beast is sealed and neither commander CAN be hurt. Left running it
-  // would fire on schedule and kill the player with unblockable damage the sealed Alpha
-  // is immune to, turning the doc's "try again" loop into a guaranteed loss.
-  if (ctx.state.encounter.subjugation.active) {
+  // Suspended from the moment the beast seals, not merely while a tether is live. The
+  // lockout exists to break a stalemate between two sides who will not commit; a
+  // subjugation is the opposite of that -- it is a timed siege in which the beast is sealed
+  // and neither commander CAN be hurt. Left running it fires on schedule and kills the
+  // player with unblockable damage the sealed Alpha is immune to, turning the doc's "try
+  // again" loop into a guaranteed loss.
+  //
+  // This guarded `active` and meant `sealed`, and the gap between the two is exactly where
+  // the hazard lived: after the seal, before the Rite is cast, the beast is already immune
+  // and the tether is not yet down. Every round spent looking for that card was a round the
+  // arena charged the player alone.
+  const sub = ctx.state.encounter.subjugation;
+  if (sub.sealed || sub.active) {
     ctx.state.commanderDamagedThisRound = false;
     return;
   }

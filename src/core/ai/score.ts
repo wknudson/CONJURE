@@ -13,6 +13,7 @@
 import type { Side } from '../../contract/ids.js';
 import type { GameEvent } from '../../contract/events.js';
 import type { GameState } from '../types/state.js';
+import type { Unit } from '../types/units.js';
 import type { Command } from '../types/commands.js';
 import { applyCommand } from '../engine/engine.js';
 import { unitsOf } from '../engine/board.js';
@@ -45,6 +46,21 @@ export interface UtilityWeights {
    * everything else `advance` already points the right way and this would be noise.
    */
   firingPosition: number;
+  /**
+   * Per tile closed on the nearest hostile body, for a unit that threatens nothing where
+   * it stands.
+   *
+   * `advance` is a y-gradient — it says "forward", which is the right answer almost every
+   * turn and the wrong one at the end of a fight. Two bodies with the board otherwise
+   * clear each maximise `advance` by walking to opposite edges, pass each other on the
+   * way, and stand there: a stalemate nothing in the matrix knew how to break, because
+   * "forward" had run out and nothing said "toward *them*".
+   *
+   * Priced above `advance` so closing beats the gradient when the two disagree, and under
+   * `firingPosition` so a mortar still prefers a tile it can actually shoot from to one
+   * step nearer a blind spot.
+   */
+  pursue: number;
   /** Board development: getting bodies onto the grid is how pressure is built. */
   developAtk: number;
   developHp: number;
@@ -62,6 +78,20 @@ export interface UtilityWeights {
   retreatSurvival: number;
   /** Per point of HP knocked off an enemy unit without killing it. */
   unitDamage: number;
+  /**
+   * Fraction of a point's value credited for stripping **armor** rather than health.
+   *
+   * Without it the AI cannot fight through armor at all. A blow fully absorbed reports
+   * `hpLoss: 0`, scores nothing, and — since zero sits at the pass threshold — is discarded
+   * before it is even a candidate. Against a Pact behind a hundred and sixty armor that
+   * means the AI declines every swing it has and walks instead, forever, while the armor is
+   * topped back up. It is the hole the chip-damage term was added to close, one layer down.
+   *
+   * Under 1 because armor is not health: it can be replaced, and taking it off wins nothing
+   * by itself. Well above 0 because getting through it is the only route to the thing that
+   * does.
+   */
+  armorChip: number;
 }
 
 /**
@@ -102,12 +132,19 @@ export const NOVICE_WEIGHTS: UtilityWeights = {
   // Must outweigh the two rows of `advance` a mortar gives up by stopping short of its
   // own blind spot, or the archetype walks itself out of the fight every time.
   firingPosition: 8,
+  // Double `advance`, so a unit with nothing in reach turns toward the enemy instead of
+  // walking to the far edge — and still under `firingPosition`, so a constrained shooter
+  // is not talked out of its firing line.
+  pursue: 6,
   developAtk: 4,
   developHp: 1.5,
   armorValue: 1.5,
   markSetup: 12,
   // Modest for a Novice: it will pull a wounded attacker back, but will not turtle.
   retreat: 2.5,
+  // Half. Enough that chewing through armor always beats standing still, never so much that
+  // stripping armor is mistaken for landing the blow behind it.
+  armorChip: 0.5,
   retreatSurvival: 0.5,
   unitDamage: 2,
 };
@@ -137,6 +174,15 @@ export const LETHAL_SCORE = 10_000;
  * higher. Above LETHAL_SCORE by design rather than by accident.
  */
 export const ANCHOR_KILL_SCORE = 20_000;
+
+/**
+ * Placing the tether, and losing it.
+ *
+ * The same magnitude as breaking one, because it is the same event seen from the other side:
+ * whoever is right about the anchor wins the phase, and no ordinary line on the board can be
+ * worth more than that to either of them.
+ */
+export const TETHER_SCORE = 20_000;
 
 /**
  * What a line is worth while the tether is live.
@@ -189,10 +235,66 @@ function anchorPressure(
   return score;
 }
 
+/**
+ * What the tether is worth to the side that placed it.
+ *
+ * The mirror of `anchorPressure`, and deliberately much simpler: the anchor is pinned the
+ * moment it is set — `setAnchor` spends its move and its attack — so there is no positioning
+ * to reward. All the binder can do is not lose it, which makes this a cost term rather than a
+ * progress one.
+ *
+ * Measured on health alone. Armor absorbing a blow meant for the anchor is armor doing its
+ * job, not a step toward losing the tether.
+ */
+function anchorDefence(events: GameEvent[], anchorId: string): number {
+  if (events.some((e) => e.t === 'unitDied' && e.unitId === anchorId)) {
+    // Losing it costs what taking it would have gained. The beast enrages, the Rite has to
+    // be found again, and the rounds already survived are gone.
+    return -TETHER_SCORE;
+  }
+
+  let score = 0;
+  for (const e of events) {
+    if (e.t !== 'damageDealt') continue;
+    if (e.target.kind !== 'unit' || e.target.id !== anchorId) continue;
+    score -= ANCHOR_CHIP * hpPoints(e.hpLoss);
+  }
+  return score;
+}
+
 /** Per point of health taken off the anchor. Well under a kill, well over a face hit. */
 const ANCHOR_CHIP = 60;
 /** Per tile closed on the anchor, when nothing can reach it yet. */
 const ANCHOR_APPROACH = 40;
+
+/**
+ * The nearest body this unit would want to break.
+ *
+ * "Hostile" is the same reading `legalAttacks` uses, and it has to be: a Feral beast
+ * belongs to nobody and is an enemy of everything that is not also Feral, including the
+ * side whose record it sits in. Judged by footprint distance so a 2x2 Behemoth is measured
+ * from its nearest cell rather than from its anchor corner.
+ */
+function nearestFoe(state: GameState, unit: Unit): Unit | undefined {
+  const mine = unit.keywords.includes('Feral');
+  let best: Unit | undefined;
+  let bestDist = Infinity;
+
+  for (const other of Object.values(state.units)) {
+    if (other.id === unit.id) continue;
+    const theirs = other.keywords.includes('Feral');
+    // A beast bites anything that is not a beast; everyone else fights the other side and
+    // any beast at all.
+    if (mine ? theirs : other.side === unit.side && !theirs) continue;
+    const d = footprintDistance(unit, other);
+    if (d < bestDist) {
+      bestDist = d;
+      best = other;
+    }
+  }
+
+  return best;
+}
 
 /**
  * Damage the opposing side could land on each tile next turn, for retreat scoring.
@@ -255,7 +357,22 @@ export function scoreAction(
   // the tether — it is worth nothing at all, and must never outrank it.
   const sub = state.encounter.subjugation;
   if (sub.active && sub.anchorUnitId) {
-    utility += anchorPressure(state, next, events, command, sub.anchorUnitId);
+    // Whose tether it is decides which way the term points, and this used to be missing:
+    // `anchorPressure` was applied to whoever happened to be planning, so the side that
+    // *owns* the anchor was being offered twenty thousand points for destroying it. It went
+    // unnoticed because the binder's AI never placed a tether in the first place — the
+    // moment it could, it would have blown its own up on the following turn.
+    const anchor = state.units[sub.anchorUnitId];
+    utility +=
+      anchor && anchor.side === side
+        ? anchorDefence(events, sub.anchorUnitId)
+        : anchorPressure(state, next, events, command, sub.anchorUnitId);
+  } else if (sub.sealed && !sub.active && next.encounter.subjugation.active) {
+    // Casting the Rite. A sealed beast cannot be damaged and cannot be killed, so the
+    // tether is not the best line available — it is the *only* line, and everything else on
+    // the board is worth nothing beside it. Priced with the beast's own override so neither
+    // side can be talked out of the one move that decides the phase.
+    utility += TETHER_SCORE;
   }
 
   // --- Kills and threat removal ---
@@ -280,11 +397,14 @@ export function scoreAction(
   // Without this, a hit that fails to kill scores nothing and the AI declines free
   // swings entirely, softening enemies only by accident.
   for (const e of events) {
-    if (e.t !== 'damageDealt' || e.target.kind !== 'unit' || e.hpLoss <= 0) continue;
+    if (e.t !== 'damageDealt' || e.target.kind !== 'unit') continue;
+    // Armor stripped is progress toward the health behind it: discounted, not ignored.
+    const progress = e.hpLoss + e.absorbedByArmor * weights.armorChip;
+    if (progress <= 0) continue;
     const victim = state.units[e.target.id] ?? next.units[e.target.id];
     if (!victim) continue;
     utility +=
-      (victim.side === foe ? weights.unitDamage : -weights.unitDamage) * hpPoints(e.hpLoss);
+      (victim.side === foe ? weights.unitDamage : -weights.unitDamage) * hpPoints(progress);
   }
 
   // --- Face damage ---
@@ -298,8 +418,16 @@ export function scoreAction(
   for (const e of events) {
     if (e.t !== 'damageDealt') continue;
     if (e.target.kind !== 'portrait') continue;
-    if (e.target.side === foe) utility += faceWeight * hpPoints(e.hpLoss);
-    else utility -= weights.face * hpPoints(e.hpLoss);
+    if (e.target.side === foe) {
+      // Their armor counts, at a discount: it is the wall in front of the only thing worth
+      // hitting, and taking a slice off it is the only progress available until it is gone.
+      utility += faceWeight * hpPoints(e.hpLoss + e.absorbedByArmor * weights.armorChip);
+    } else {
+      // Ours does not. This term protects the Pact's *health*, and armor exists precisely
+      // to be spent — treating its loss as a wound to avoid would teach the AI to hoard the
+      // one resource whose whole purpose is to be used up.
+      utility -= weights.face * hpPoints(e.hpLoss);
+    }
   }
 
     // --- Position ---
@@ -326,6 +454,22 @@ export function scoreAction(
         }
       }
 
+      // Close on something worth breaking, when nothing is in reach from here.
+      //
+      // Gated on `threatensFrom` rather than on `legalAttacks` deliberately: the question
+      // is whether this tile threatens anything *at all*, not whether this unit still has
+      // a swing left. A body that has already attacked still threatens from where it
+      // stands, so strike-and-withdraw is left to the retreat term below rather than
+      // being turned into strike-and-chase.
+      if (weights.pursue > 0 && !threatensFrom(state, unit, unit.anchor)) {
+        const moved = next.units[unit.id];
+        const quarry = nearestFoe(state, unit);
+        if (moved && quarry) {
+          const gained = footprintDistance(unit, quarry) - footprintDistance(moved, quarry);
+          if (gained > 0) utility += weights.pursue * gained;
+        }
+      }
+
       // Strike and withdraw. Independent actions let a unit attack and then step out of
       // reach, so a unit that has already swung this turn values safety instead of
       // ground. Deliberately weighted below the face-damage term: the AI should still
@@ -335,7 +479,22 @@ export function scoreAction(
       // 3-HP Pact at a comfortable 40. And it is worth pulling back whether or not it
       // has swung, because what is at risk is not a minion but the game.
       const isBody = unit.keywords.includes('BoundForm');
-      if ((isBody || unit.attackedThisTurn) && weights.retreat > 0) {
+      // A body that *is* the army cannot afford to hide.
+      //
+      // Retreat buys time for the rest of your line to do the work. With nothing else on
+      // the board there is no rest of the line, so the time buys nothing: a lone Bound
+      // Form backing away forever is not defending a plan, it is declining to have one.
+      // Left in, it produced fights that were already decided and simply could not finish
+      // — a hiding body chipped down over sixty turns, or two of them hovering just out of
+      // each other's reach while the clock ran out.
+      //
+      // Feral bodies do not count as company. A wolf filed under your side belongs to
+      // nobody and is as likely to bite you, so a body alone with one is still alone.
+      const hasCompany = unitsOf(state, side).some(
+        (u) => u.id !== unit.id && !u.keywords.includes('Feral'),
+      );
+      const mayHide = !isBody || hasCompany;
+      if (mayHide && (isBody || unit.attackedThisTurn) && weights.retreat > 0) {
         const danger = incomingDamageAt(state, side);
         const effective = isBody
           ? state.players[side].hp + state.players[side].armor
