@@ -388,3 +388,33 @@ body.is-talking .district-help {
   max-width: 34em;
   line-height: 1.8;
 }
+/* The ring closing. The letter-spacing collapse is the combat banner's sweep, ported so
+   the two reads of "a fight is starting" are the same read. */
+.district-overlay__battle {
+  font-size: 54px;
+  font-weight: 800;
+  letter-spacing: 7px;
+  color: #ffe9dd;
+  text-shadow:
+    0 0 30px rgba(224, 68, 34, 0.75),
+    0 0 70px rgba(224, 68, 34, 0.4);
+  animation: district-battle-sweep 1.2s ease-out both;
+}
+@keyframes district-battle-sweep {
+  0% {
+    opacity: 0;
+    letter-spacing: 34px;
+  }
+  20% {
+    opacity: 1;
+    letter-spacing: 9px;
+  }
+  75% {
+    opacity: 1;
+    letter-spacing: 7px;
+  }
+  100% {
+    opacity: 1;
+    letter-spacing: 5px;
+  }
+}

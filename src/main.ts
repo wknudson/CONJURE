@@ -56,7 +56,7 @@ import {
   packBounty,
   type Bounty,
 } from './core/data/bounties.js';
-import { isPack, packByEncounter } from './core/data/packs.js';
+import { isPack, packByEncounter, reinforceSquad, type PackDef } from './core/data/packs.js';
 import { isHunt } from './core/data/hunts.js';
 import { storyContractByEncounter } from './core/data/campaign.js';
 import {
@@ -82,6 +82,7 @@ import { VivariumScreen } from './app/VivariumScreen.js';
 import { hashText, makeRng } from './core/util/rng.js';
 import { NOVICE_AI, profileByName } from './core/ai/controller.js';
 import type { EncounterDef } from './core/data/encounters/registry.js';
+import { encounterById } from './core/data/encounters/index.js';
 import type { CombatResult } from './contract/events.js';
 import { awardVanguardXp, unlockVanguard } from './core/data/roster.js';
 
@@ -454,10 +455,46 @@ function showArea(areaId: string, companionId: string): void {
       // `onBounty`: that path records `bounty_taken` and would tick a step of the guided lap
       // the player never walked. Everything after the hand-off is the ordinary road, because
       // that road is what pays the spoils and closes the abandon failsafe.
-      onPack: (encounterId) => {
+      onPack: (encounterId, pulled) => {
         const pack = packByEncounter(encounterId);
         if (!pack) return;
-        takeBounty(packBounty(pack, global.overworld.bountySeed), companionId);
+        const encounter = encounterById(encounterId);
+        if (!encounter) {
+          pendingNotice = {
+            title: 'Contract Void',
+            body: 'The posting names a place nobody can find any more. Try another.',
+          };
+          showDistrict(companionId);
+          return;
+        }
+
+        // The ring closed on more than the one that jumped you. Each extra pack sends the
+        // squad its reinforcement budget buys, and pays its own spoils — they die in this
+        // fight and go off the road on this fight's clock, so declining their purse would
+        // make every pull a straight loss.
+        const extras = pulled
+          .map((id) => packByEncounter(id))
+          .filter((p): p is PackDef => p !== undefined);
+        const bounty = packBounty(pack, global.overworld.bountySeed);
+        for (const other of extras) {
+          const theirs = packBounty(other, global.overworld.bountySeed).spoils;
+          bounty.spoils.ducats = (bounty.spoils.ducats ?? 0) + (theirs.ducats ?? 0);
+          bounty.spoils.marrowShards =
+            (bounty.spoils.marrowShards ?? 0) + (theirs.marrowShards ?? 0);
+        }
+
+        // Straight to the fight. An ambush that stops to ask which cards you would like is
+        // not an ambush, so the pre-combat beat is skipped and the deck is the one this
+        // Companion already fights with — `deckFor`, the same list PreCombat itself opens
+        // on, rather than `lastRun` which may belong to another beast entirely.
+        const deck = deckFor(companionId);
+        const seed = Math.floor(Math.random() * 1e9);
+        profile().lastRun = { encounterId, seed, companionId, deck: [...deck] };
+        persist();
+        startCombat(encounter, companionId, deck, seed, bounty, {
+          wave2: extras.map(reinforceSquad),
+          pulled: extras.map((p) => p.encounterId),
+        });
       },
       onBounty: (bounty) => {
         // Any real contract counts, not only the Novice one. The board steers a new
@@ -610,6 +647,13 @@ function startCombat(
   deck: string[],
   seed: number,
   bounty: Bounty,
+  /**
+   * What the Combat Ring dragged in, when the road picked this fight rather than the board.
+   *
+   * `wave2` is the squads, in the engine's own terms. `pulled` is the pack ids, kept only
+   * so the win can put them on the same cooldown as the pack that started it.
+   */
+  ring?: { wave2: string[][]; pulled: string[] },
 ): void {
   const global = profile().state;
   const carry = carryFor(
@@ -655,19 +699,25 @@ function startCombat(
     return;
   }
   openContract(global, bounty);
+  // The ring's pulls are deliberately *not* written here. This handle exists so a boot that
+  // finds a fight open can collect on it, and `forfeitIfAbandoned` forfeits rather than
+  // resuming — so a fight abandoned mid-ring is settled as a loss, and there is nothing
+  // for a remembered wave to be restored into.
   global.combat = { encounterId: encounter.id, seed };
   persist();
 
   screens.go(
     new CombatScreen(
       encounter,
-      (result, played, outcome) => finishCombat(result, played, outcome, companionId),
+      (result, played, outcome) =>
+        finishCombat(result, played, outcome, companionId, ring?.pulled ?? []),
       companionId,
       seed,
       printedDeck(profile().collection, deck),
       profileByName(saveFile.difficulty) ?? NOVICE_AI,
       carry,
       profile().roster,
+      ring?.wave2,
     ),
   );
 }
@@ -679,6 +729,8 @@ function finishCombat(
   played: EncounterDef,
   outcome: CombatOutcome,
   companionId: string,
+  /** Packs the Combat Ring dragged into this fight. Empty for anything off the board. */
+  pulled: string[] = [],
 ): void {
   // Read the contract before `resolveCombat` closes it — the receipt is itemised from
   // what was actually accepted, not from whatever the board offers next.
@@ -753,6 +805,12 @@ function finishCombat(
   // cleared is gone for a while and then it is back. A pack is stamped on a win only, so
   // being driven off leaves it standing on the road where you left it.
   if (won && (isHunt(played.id) || isPack(played.id))) p.hunts[played.id] = Date.now();
+  // A pack the ring dragged in was in the fight and went down in it, so it goes off the
+  // road on the same clock. Only on a win, exactly like the host: driving them off leaves
+  // every one of them standing where you left it.
+  if (won) {
+    for (const id of pulled) if (isPack(id)) p.hunts[id] = Date.now();
+  }
 
   const offer = won
     ? rollSchematicOffer(

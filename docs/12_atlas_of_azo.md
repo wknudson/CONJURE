@@ -213,13 +213,30 @@ be a lie. Its light comes from the packs and the banked fire at the trailhead.
 |---|---|---|
 | Spawn / trailhead | `(34, 22)` | also where a **lost** fight puts you back |
 | Hunt signpost | `(26, 14)` | the twelve Wild Hunts, and the only place the cooldowns are legible |
-| Chalk-Road Scavengers | `(-30, -12)`, roam 7 | novice pack |
-| The Verge Strays | `(0, 12)`, roam 8 | novice pack |
-| Spoil-Heap Hollows | `(30, -14)`, roam 7 | adept pack |
+| Chalk-Road Scavengers | `(-10, 0)`, roam 9 | novice pack |
+| The Verge Strays | `(0, 8)`, roam 9 | novice pack |
+| Spoil-Heap Hollows | `(6, -4)`, roam 9 | adept pack |
 | Crates | ×3 | spoil and abandoned kit |
 
-The three roam circles are spread so they cannot overlap: two packs converging on one player is
-a fight the feature does not model, and the contact handler is first-come.
+The three roam circles **overlap deliberately**, and they used to be spread precisely so they
+could not — two packs converging on one player was a fight nothing modelled, and the contact
+handler was first-come. The **Combat Ring** models it now:
+
+- Walk into a pack off the pavement and your input locks while a ring of light expands from
+  the contact point to five units over **2.5 seconds**.
+- Any other pack the ring reaches in that window is **pulled in** — capped at two, and a
+  third is ignored rather than queued, because being jumped by four things at once is a loss
+  with extra steps.
+- The word **BATTLE** flashes and the fight starts immediately. There is no pre-combat beat
+  for a pack: an ambush that stops to ask which cards you would like is not an ambush.
+- Each pulled pack sends the squad its reinforcement budget buys, arriving together at the
+  start of **Round 2**, and pays its own spoils. You are compensated **+1 banked Pip and +1
+  card per pack pulled**, at the start of your round-two turn.
+- Win and every pack that was in the fight goes off the road on the same ten-minute clock.
+  Lose and all of them are still standing where you left them.
+
+Out here nothing suppresses a pack's cone, because there is no `S` to stand on. That is what
+makes the verge the place the mechanic is taught.
 
 ### 2.3 The crossing
 

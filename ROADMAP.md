@@ -119,8 +119,7 @@ the offering was worth any Marrow.
 Master AI tier (2-turn lookahead) · the cross-school reactions as *reactions* rather than as
 cards (§6.1) · **more encounters**, so the new shelves can actually be forged and not merely
 drafted (§6.2) · arcane's shelf, which pads six of Lexis's eight slots (§6.2) · Frost and
-Arcane Auras · overworld slice (sidewalk immunity, aggro, combat circle) · flanking and facing ·
-per-unit initiative.
+Arcane Auras · flanking and facing · per-unit initiative.
 
 ---
 
@@ -233,9 +232,13 @@ is worth wrapping.
 **Tasks**
 1. One hand-authored alleyway zone (same iso renderer, bigger grid, camera follow):
    sidewalk tiles (safe) vs. street tiles (danger) — the Sidewalk Immunity rule.
-2. 2–3 roaming duelists with vision cones; aggro on street, never from sidewalk.
-3. **Combat Circle**: on contact, expanding ring for 2.5s; any second mob touched joins
-   as Wave 2 on round 2, player compensated +1 Pip and +1 draw.
+2. ✅ Roaming packs with vision cones and a chase; aggro off the pavement, never from it.
+3. ✅ **Combat Circle**: on contact, expanding ring for 2.5s; any second mob touched joins
+   as Wave 2 on round 2, player compensated +1 Pip and +1 draw. Two deviations from the
+   edge cases below, both deliberate: a **third** mob is ignored rather than queued as its
+   own encounter, and contact locks input immediately, so there is no fleeing a ring
+   half-drawn — the circle is not a window to escape through, it is the road deciding how
+   big the fight is.
 4. Contact advantage: frontal = neutral; player rear-ambush = +1 pip, draw 6.
 5. Transition: snapshot the overworld position, run the encounter, return with results
    (defeated duelists stay down for the session).

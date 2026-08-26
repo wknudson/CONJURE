@@ -383,6 +383,11 @@ export class Warden implements Updatable {
  * group. They are decoration hung off one position — the fight is the fight, and a pack that
  * modelled its members individually out here would be promising a tactical situation the
  * arena does not inherit.
+ *
+ * It hunts, on the Warden's pattern: a cone it can see you through, a beat of grace, then a
+ * run at you. The cone goes dark the moment you are on sanctioned pavement, which is the
+ * same rule the Warden keeps and for the same reason — the walkway has to be worth
+ * something. On the verge, where nothing is paved, it never goes dark at all.
  */
 export class Pack implements Updatable {
   readonly walkers: Walker[] = [];
@@ -392,12 +397,28 @@ export class Pack implements Updatable {
 
   /** Injected by the screen, exactly as the Warden's are. */
   playerAt = new THREE.Vector3();
+  /**
+   * Whether pack aggro is suppressed — the player is on sanctioned pavement.
+   *
+   * Deliberately its own flag rather than the screen's `playerSafe`, which is pinned true
+   * in an area with no walkways because it means "no Warden may see you here". Out on the
+   * verge that is exactly backwards for a pack: nothing there needs a warrant.
+   */
+  playerSafe = false;
   onContact: (() => void) | null = null;
+
+  /** What it is doing about you, on the Warden's three-state pattern. */
+  state: 'ROAM' | 'ALERT' | 'CHASE' = 'ROAM';
+  readonly cone: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  readonly aggroRing: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
 
   private readonly home: THREE.Vector2;
   private readonly target = new THREE.Vector2();
+  private readonly heading = new THREE.Vector2(0, 1);
   private pause = 0;
   private spent = false;
+  private detect = 0;
+  private coneAlpha = 0;
 
   /**
    * Under the player's six, and under the Warden's chase.
@@ -408,6 +429,10 @@ export class Pack implements Updatable {
    * between two frames, so this is a bound rather than a taste.
    */
   private static readonly SPEED = 2.0;
+  /** A shorter beat than the Warden's: a pack is not deciding whether it is allowed. */
+  private static readonly GRACE = 0.3;
+  /** How far past its own sight it will keep running before losing interest. */
+  private static readonly GIVE_UP = 1.6;
   /** How close is close enough to have walked into them. */
   private static readonly CONTACT = 1.6;
   /** Offsets for the two hangers-on, so the group reads as a group. */
@@ -436,6 +461,77 @@ export class Pack implements Updatable {
     this.home = new THREE.Vector2(homeX, homeZ);
     this.target.set(homeX, homeZ);
     this.pickTarget();
+
+    // The Warden's recipe, because it is the established visual language for "this thing
+    // can see you": additive and unlit so the bloom pass finds it, no depth write so it
+    // lies over the ground rather than fighting it.
+    this.cone = new THREE.Mesh(new THREE.BufferGeometry(), Pack.sightMaterial('#c2603a'));
+    this.cone.renderOrder = 2;
+    this.aggroRing = new THREE.Mesh(new THREE.BufferGeometry(), Pack.sightMaterial('#c2603a'));
+    this.aggroRing.renderOrder = 2;
+    this.aggroRing.rotation.x = -Math.PI / 2;
+    this.rebuildCone();
+  }
+
+  private static sightMaterial(color: string): THREE.MeshBasicMaterial {
+    return new THREE.MeshBasicMaterial({
+      color: new THREE.Color(color),
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+    });
+  }
+
+  /** Re-cut the cone and the ring after the tuning panel moves the numbers. */
+  rebuildCone(): void {
+    const half = THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2;
+    this.cone.geometry.dispose();
+    this.cone.geometry = new THREE.CircleGeometry(LOOK.packVisionRange, 28, -half, half * 2);
+    this.aggroRing.geometry.dispose();
+    this.aggroRing.geometry = new THREE.RingGeometry(
+      LOOK.packVisionRange * 0.96,
+      LOOK.packVisionRange,
+      40,
+    );
+  }
+
+  /** Can it see you from where it is standing, facing the way it is facing? */
+  sees(): boolean {
+    if (this.playerSafe) return false; // Sanctioned pavement, same rule as the Warden's.
+    const dx = this.playerAt.x - this.position.x;
+    const dz = this.playerAt.z - this.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > LOOK.packVisionRange || dist < 0.001) return false;
+    const dot = (dx * this.heading.x + dz * this.heading.y) / dist;
+    return dot > Math.cos(THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2);
+  }
+
+  /**
+   * Stand still for a while.
+   *
+   * Used by the ring: the pack that jumped you should be standing where the ring opened,
+   * not wandering off its own ambush while the circle draws.
+   */
+  holdStill(seconds: number): void {
+    this.pause = Math.max(this.pause, seconds);
+    this.state = 'ROAM';
+  }
+
+  /** Turn and come running — what a pulled pack does when the circle catches it. */
+  answerTheCall(x: number, z: number): void {
+    this.pause = 0;
+    this.state = 'CHASE';
+    this.target.set(x, z);
+  }
+
+  /** Frees the cone and ring geometry. The walkers' art is owned by the screen. */
+  dispose(): void {
+    this.cone.geometry.dispose();
+    this.cone.material.dispose();
+    this.aggroRing.geometry.dispose();
+    this.aggroRing.material.dispose();
   }
 
   /** Somewhere else on its patch that it can actually stand. */
@@ -465,12 +561,66 @@ export class Pack implements Updatable {
     return Math.hypot(x - this.position.x, z - this.position.z) > Pack.CONTACT + margin;
   }
 
+  private rangeToPlayer(): number {
+    return Math.hypot(this.playerAt.x - this.position.x, this.playerAt.z - this.position.z);
+  }
+
+  /** Points the heading at a spot without moving, so the cone tracks what it is watching. */
+  private faceToward(tx: number, tz: number): void {
+    const dx = tx - this.position.x;
+    const dz = tz - this.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > 0.001) this.heading.set(dx / dist, dz / dist);
+  }
+
+  /** One step toward a spot, through the collider layer, heading updated to match. */
+  private driveToward(tx: number, tz: number, speed: number, dt: number): void {
+    const dx = tx - this.position.x;
+    const dz = tz - this.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 0.001) return;
+    this.heading.set(dx / dist, dz / dist);
+    this.colliders.move(
+      this.position as unknown as { x: number; z: number },
+      (dx / dist) * speed * dt,
+      (dz / dist) * speed * dt,
+      0.4,
+    );
+  }
+
   update(dt: number, _t: number, cameraYaw: number): void {
     const before = { x: this.position.x, z: this.position.z };
 
-    if (this.pause > 0) {
+    if (this.state === 'CHASE') {
+      // Straight at you, through the collider layer so it slides along walls instead of
+      // grinding into them — the Warden's chase does the same, for the same reason.
+      const lost = !this.sees() && this.rangeToPlayer() > LOOK.packVisionRange * Pack.GIVE_UP;
+      if (this.playerSafe || lost) {
+        this.state = 'ROAM';
+        this.detect = 0;
+        this.pickTarget();
+      } else {
+        this.driveToward(this.playerAt.x, this.playerAt.z, LOOK.packChaseSpeed, dt);
+      }
+    } else if (this.state === 'ALERT') {
+      // Facing you, deciding. A beat of grace is what makes stepping back onto pavement a
+      // real escape rather than a reflex test.
+      this.faceToward(this.playerAt.x, this.playerAt.z);
+      this.detect += dt;
+      this.walkers[0]!.step(0, 0, cameraYaw);
+      if (!this.sees()) {
+        this.state = 'ROAM';
+        this.detect = 0;
+      } else if (this.detect >= Pack.GRACE) {
+        this.state = 'CHASE';
+      }
+    } else if (this.pause > 0) {
       this.pause -= dt;
       this.walkers[0]!.step(0, 0, cameraYaw);
+      if (this.sees()) {
+        this.state = 'ALERT';
+        this.detect = 0;
+      }
     } else {
       const dx = this.target.x - this.position.x;
       const dz = this.target.y - this.position.z;
@@ -481,12 +631,11 @@ export class Pack implements Updatable {
         this.pause = 0.8 + this.rng() * 2.2;
         this.pickTarget();
       } else {
-        this.colliders.move(
-          this.position as unknown as { x: number; z: number },
-          (dx / dist) * Pack.SPEED * dt,
-          (dz / dist) * Pack.SPEED * dt,
-          0.4,
-        );
+        this.driveToward(this.target.x, this.target.y, Pack.SPEED, dt);
+      }
+      if (this.sees()) {
+        this.state = 'ALERT';
+        this.detect = 0;
       }
     }
 
@@ -504,6 +653,20 @@ export class Pack implements Updatable {
       w.step(movedX, movedZ, cameraYaw);
     }
 
+    // The cone and its ring, on one alpha so suppression fades both together. Drawn at the
+    // pack's own feet, pointing wherever it last steered.
+    const want = this.playerSafe ? 0 : LOOK.packConeOpacity;
+    this.coneAlpha += (want - this.coneAlpha) * Math.min(1, dt * 6);
+    this.cone.material.opacity = this.coneAlpha;
+    this.cone.material.color.set(this.state === 'ROAM' ? '#c2603a' : '#e04422');
+    this.cone.position.set(this.position.x, 0.06, this.position.z);
+    this.cone.rotation.set(-Math.PI / 2, 0, Math.atan2(-this.heading.y, this.heading.x));
+
+    const ringWant = LOOK.packConeOpacity > 0 ? LOOK.packAggroRingOpacity / LOOK.packConeOpacity : 0;
+    this.aggroRing.material.opacity = this.coneAlpha * ringWant;
+    this.aggroRing.material.color.copy(this.cone.material.color);
+    this.aggroRing.position.set(this.position.x, 0.05, this.position.z);
+
     if (this.spent || !this.onContact) return;
     const d = Math.hypot(this.playerAt.x - this.position.x, this.playerAt.z - this.position.z);
     if (d < Pack.CONTACT) {
@@ -513,5 +676,106 @@ export class Pack implements Updatable {
       this.spent = true;
       this.onContact();
     }
+  }
+}
+
+/**
+ * The Combat Ring: the beat between walking into a pack and the fight starting.
+ *
+ * A circle of light thrown out from where the contact happened, growing for two and a half
+ * seconds. Anything roaming that it touches in that window is in the fight too — which is
+ * the whole mechanic, and the reason the ring is a visible thing rather than a radius check
+ * done instantly and silently. The player watches the second pack get caught, so when it
+ * arrives on round two it is something they saw happen rather than something the game did
+ * to them.
+ *
+ * An `Updatable` like everything else out here, owned by the screen, and it reaches for
+ * nothing: the candidate packs are handed in, and the answer goes out through `onDone`.
+ */
+export class CombatRing implements Updatable {
+  /** How far the circle finally reaches, in world units. */
+  static readonly RADIUS = 5;
+  /** How long it takes to get there. Long enough to watch, short enough not to wait. */
+  static readonly DURATION = 2.5;
+  /**
+   * How many extra mobs one ring can catch.
+   *
+   * Two, and the third is simply ignored rather than queued into a wave three. A player
+   * jumped by four things at once has not been given a tactical situation, they have been
+   * given a loss with extra steps — and the compensation is priced per pull, so an
+   * unbounded pull is an unbounded promise.
+   */
+  static readonly MAX_PULLS = 2;
+
+  readonly mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  /** Encounter ids of the packs caught, in the order the circle reached them. */
+  readonly pulled: string[] = [];
+
+  private elapsed = 0;
+  private finished = false;
+
+  constructor(
+    private readonly originX: number,
+    private readonly originZ: number,
+    private readonly candidates: readonly Pack[],
+    private readonly onDone: (pulled: string[]) => void,
+  ) {
+    this.mesh = new THREE.Mesh(
+      new THREE.BufferGeometry(),
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color('#e04422'),
+        transparent: true,
+        opacity: 0.5,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    this.mesh.renderOrder = 3;
+    this.mesh.rotation.x = -Math.PI / 2;
+    this.mesh.position.set(originX, 0.07, originZ);
+    this.cutTo(0.01);
+  }
+
+  /** The circle as it stands right now — an annulus, so it reads as a ring and not a disc. */
+  private cutTo(radius: number): void {
+    this.mesh.geometry.dispose();
+    this.mesh.geometry = new THREE.RingGeometry(Math.max(0.01, radius * 0.82), radius, 48);
+  }
+
+  /** How far the edge has travelled. Linear, because the player is timing it by eye. */
+  radiusAt(t: number): number {
+    return (Math.min(t, CombatRing.DURATION) / CombatRing.DURATION) * CombatRing.RADIUS;
+  }
+
+  update(dt: number): void {
+    if (this.finished) return;
+    this.elapsed += dt;
+    const radius = this.radiusAt(this.elapsed);
+    this.cutTo(radius);
+    // Brightest as it goes out, fading as it thins — a ring at full alpha for the whole
+    // two and a half seconds reads as a bug rather than as an expanding edge.
+    this.mesh.material.opacity = 0.5 * (1 - this.elapsed / (CombatRing.DURATION * 1.4));
+
+    for (const pack of this.candidates) {
+      if (this.pulled.length >= CombatRing.MAX_PULLS) break;
+      if (this.pulled.includes(pack.encounterId)) continue;
+      const d = Math.hypot(pack.position.x - this.originX, pack.position.z - this.originZ);
+      if (d > radius) continue;
+      this.pulled.push(pack.encounterId);
+      // It turns and comes in. Being caught by the circle has to look like a decision the
+      // pack made, not like the ground claiming it.
+      pack.answerTheCall(this.originX, this.originZ);
+    }
+
+    if (this.elapsed >= CombatRing.DURATION) {
+      this.finished = true;
+      this.onDone([...this.pulled]);
+    }
+  }
+
+  dispose(): void {
+    this.mesh.geometry.dispose();
+    this.mesh.material.dispose();
   }
 }

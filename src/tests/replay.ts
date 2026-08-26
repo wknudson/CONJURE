@@ -32,6 +32,12 @@ export interface Recording {
    */
   companionId?: string;
   deck?: string[];
+  /**
+   * Squads a Combat Ring pulled in, if this fight was one the road picked. Part of the
+   * setup for the same reason the deck is: the same encounter and seed with a wave behind
+   * it is a different battle.
+   */
+  wave2?: string[][];
   steps: Step[];
   events: GameEvent[];
   finalHash: string;
@@ -77,7 +83,7 @@ export function replay(
   seed: number,
   steps: Step[],
   ai?: AiProfile,
-  setup?: { companionId?: string; deck?: string[] },
+  setup?: { companionId?: string; deck?: string[]; wave2?: string[][] },
 ): { events: GameEvent[]; finalHash: string; state: GameState } {
   // Reproducing a game means reproducing how it was set up, deck included — the seed
   // fixes the shuffle, but not what is being shuffled.
@@ -87,6 +93,9 @@ export function replay(
     ai,
     setup?.companionId,
     setup?.deck,
+    undefined,
+    undefined,
+    setup?.wave2,
   );
   const events: GameEvent[] = [];
 

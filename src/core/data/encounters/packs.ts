@@ -23,9 +23,7 @@
 import type { Ctx } from '../../engine/context.js';
 import type { EncounterDef, EncounterScript } from './registry.js';
 import { registerEncounter, registerEncounterScript } from './registry.js';
-import { PACKS, type PackDef } from '../packs.js';
-import { CARDS } from '../cards/index.js';
-import { rosterPointsOf } from '../roster.js';
+import { PACKS, reinforceSquad, type PackDef } from '../packs.js';
 import { placeOpeningUnit } from '../../engine/spawn.js';
 import { nextInt } from '../../util/rng.js';
 import { emit, newCause } from '../../engine/context.js';
@@ -67,6 +65,18 @@ function reinforceScript(pack: PackDef): EncounterScript {
     setup(ctx: Ctx) {
       const gates = ctx.state.encounter.firedGates;
       if (gates.some((g) => g.startsWith(ROLLED))) return;
+
+      // A ring pull *is* this fight's reinforcement, and a second one on top would be two
+      // surprises where the player was promised one. Suppressed without taking the draws:
+      // the parity rule below protects a recorded fight against its own replay, and a
+      // pulled fight differs from an unpulled one in a setup input — the way two fights
+      // with different decks differ — so its stream is legitimately its own. Skipping
+      // deterministically on that input is what replay actually needs.
+      if (ctx.state.encounter.wave2) {
+        gates.push(`${ROLLED}:never`);
+        return;
+      }
+
       const coming = nextInt(ctx.state.rng, 100) < pack.reinforce.chance;
       const round = REINFORCE_FIRST + nextInt(ctx.state.rng, REINFORCE_LAST - REINFORCE_FIRST + 1);
       // Both draws happen whether or not the reinforcements are coming, so the stream is
@@ -86,23 +96,16 @@ function reinforceScript(pack: PackDef): EncounterScript {
 
       gates.push(ARRIVED);
 
-      // Spend the budget down the priority list. Not Feral: these are part of the pack, so
-      // the AI commands them and — the part that matters — they count toward the rout.
-      let budget = pack.reinforce.points;
+      // Not Feral: these are part of the pack, so the AI commands them and — the part that
+      // matters — they count toward the rout. The squad comes from `reinforceSquad` so the
+      // list the overworld hands a ring pull and the list that walks in here are one list.
       let placed = 0;
       newCause(ctx);
-      for (const defId of pack.reinforce.unitCardIds) {
-        const def = CARDS[defId];
-        if (!def) continue;
-        const cost = rosterPointsOf(def);
-        while (budget >= cost && placed < OPENING.length) {
-          const [x, y] = OPENING[placed]!;
-          const id = placeOpeningUnit(ctx, defId, 'enemy', { x, y });
-          placed += 1;
-          if (!id) break;
-          budget -= cost;
-        }
-        if (budget <= 0) break;
+      for (const defId of reinforceSquad(pack)) {
+        if (placed >= OPENING.length) break;
+        const [x, y] = OPENING[placed]!;
+        placeOpeningUnit(ctx, defId, 'enemy', { x, y });
+        placed += 1;
       }
 
       if (placed > 0) {

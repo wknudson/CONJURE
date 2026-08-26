@@ -15,6 +15,7 @@ import { CARDS } from '../data/cards/index.js';
 import { creditRefund, spawnHazard } from './reactions.js';
 import { applyStatusTo } from './status.js';
 import { dealDamage } from './damage.js';
+import { wavePending } from './wave.js';
 import { inBounds } from '../types/state.js';
 import { DIRS_8 } from '../util/grid.js';
 import { STAT_SCALE } from '../scale.js';
@@ -274,6 +275,11 @@ function livingSoldiers(ctx: Ctx, side: 'player' | 'enemy'): number {
  * A **rout** fight is decided the other way round: there is no enemy commander worth the
  * name, so the pack itself is the opposition and clearing it is the win. The player still
  * loses the ordinary way — the Pact is the Pact wherever you are standing.
+ *
+ * One exception, and it is the Combat Ring's: a fight the ring pulled extra mobs into is
+ * not over while those mobs are still owed. Clearing the opening line on round one would
+ * otherwise hand the player a victory over an army they watched get dragged in and never
+ * had to face.
  */
 export function checkLethal(ctx: Ctx): void {
   if (ctx.state.result) return;
@@ -287,7 +293,7 @@ export function checkLethal(ctx: Ctx): void {
   // killed the player still reads as the rout it was. Losing to a pack you had already
   // beaten is the kind of ordering accident nobody could diagnose from the outside.
   if (ctx.state.encounter.rout && !ctx.state.result) {
-    if (livingSoldiers(ctx, 'enemy') === 0) {
+    if (livingSoldiers(ctx, 'enemy') === 0 && !wavePending(ctx.state)) {
       finish(ctx, 'victory');
       return;
     }

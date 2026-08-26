@@ -68,8 +68,22 @@ export class CombatSession implements RulesQuery {
      * issue `finishDeployment` — there is no other way out of it.
      */
     roster?: string[],
+    /**
+     * Squads the overworld's Combat Ring dragged in, one array of card ids per pulled mob.
+     *
+     * Absent for every fight reached from the Bounty Board — a ring only closes on the road.
+     */
+    wave2?: string[][],
   ) {
-    const { state, events } = createCombat(encounter, seed, companionId, deck, carry, roster);
+    const { state, events } = createCombat(
+      encounter,
+      seed,
+      companionId,
+      deck,
+      carry,
+      roster,
+      wave2,
+    );
     this.state = state;
     this.openingEvents = events;
     this.ai = ai;

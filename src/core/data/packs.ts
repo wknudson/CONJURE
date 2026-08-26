@@ -29,6 +29,8 @@
  */
 
 import type { BountyDifficulty } from './bounties.js';
+import { CARDS } from './cards/index.js';
+import { rosterPointsOf } from './roster.js';
 
 export interface PackDef {
   /** The encounter walking into one starts. Registered in `encounters/packs.ts`. */
@@ -97,4 +99,36 @@ export function packByEncounter(encounterId: string): PackDef | undefined {
 
 export function isPack(encounterId: string): boolean {
   return PACKS.some((p) => p.encounterId === encounterId);
+}
+
+/**
+ * The bodies a pack's reinforcement budget actually buys, as card ids.
+ *
+ * Pure and RNG-free, which is the point of pulling it out of the arrival code: the
+ * overworld needs to know what a pulled pack *is* in order to hand it to the engine, and it
+ * has no combat state to spend a budget against. The arrival path calls this too, so the
+ * squad the ring promises and the squad that walks in can never be two different lists.
+ *
+ * Spent greedily down `unitCardIds`, which the field documents as a priority rather than a
+ * set — the first entries are what the pack would rather have.
+ */
+export function reinforceSquad(pack: PackDef): string[] {
+  const out: string[] = [];
+  let budget = pack.reinforce.points;
+
+  for (const defId of pack.reinforce.unitCardIds) {
+    const def = CARDS[defId];
+    if (!def) continue;
+    const cost = rosterPointsOf(def);
+    // A zero-cost body would spend nothing and repeat forever. Nothing on the ladder costs
+    // zero, so this is a guard against a future card rather than a live case.
+    if (cost <= 0) continue;
+    while (budget >= cost) {
+      out.push(defId);
+      budget -= cost;
+    }
+    if (budget <= 0) break;
+  }
+
+  return out;
 }

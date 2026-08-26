@@ -48,6 +48,12 @@ export interface LookConfig {
   coneOpacity: number;
   visionRange: number;
   visionAngle: number;
+
+  packConeOpacity: number;
+  packVisionRange: number;
+  packVisionAngle: number;
+  packChaseSpeed: number;
+  packAggroRingOpacity: number;
 }
 
 export const LOOK: LookConfig = {
@@ -94,6 +100,23 @@ export const LOOK: LookConfig = {
   coneOpacity: 0.16,
   visionRange: 8,
   visionAngle: 80,
+
+  // The roaming packs hunt on their own numbers, not the Warden's. Shorter sight and a
+  // wider arc: a Warden is looking *for* you down a street, a pack notices you walk past.
+  packVisionRange: 6,
+  packVisionAngle: 100,
+  packConeOpacity: 0.12,
+  /**
+   * How fast a pack runs you down.
+   *
+   * **Must stay at or below 6.** The collision layer's anti-tunneling proof is stated for
+   * the fastest mover on the board at 6 units per second against the frame delta clamped
+   * to 0.05 — a step of 0.3, comfortably inside the smallest collider radius. A pack that
+   * outran that would walk through walls. Below the player's own 6 as well, so running is
+   * always a real option rather than a formality.
+   */
+  packChaseSpeed: 5.2,
+  packAggroRingOpacity: 0.1,
 };
 
 /**
@@ -171,6 +194,7 @@ export interface LookHandles {
   onLamps(): void;
   onSigns(): void;
   onVision(): void;
+  onPackVision(): void;
   onColliders(show: boolean): void;
 }
 
@@ -227,6 +251,15 @@ export function buildLookGui(handles: LookHandles, areaId = 'ashfall_ward', area
   warden.add(LOOK, 'visionRange', 3, 20, 0.5).onChange(handles.onVision);
   warden.add(LOOK, 'visionAngle', 20, 180, 1).onChange(handles.onVision);
   warden.add(LOOK, 'coneOpacity', 0, 0.6, 0.01);
+
+  const packs = gui.addFolder('Packs');
+  packs.add(LOOK, 'packVisionRange', 2, 16, 0.5).onChange(handles.onPackVision);
+  packs.add(LOOK, 'packVisionAngle', 30, 240, 1).onChange(handles.onPackVision);
+  packs.add(LOOK, 'packConeOpacity', 0, 0.6, 0.01);
+  packs.add(LOOK, 'packAggroRingOpacity', 0, 0.6, 0.01);
+  // Capped at 6 in the widget as well as in the comment: the tunneling bound is not a
+  // matter of taste, and a slider that could break collision would eventually be dragged.
+  packs.add(LOOK, 'packChaseSpeed', 1, 6, 0.1);
 
   // Two ways to stop the walk sprite flickering on a diagonal, side by side so they can be
   // felt rather than argued about. Neither makes the diagonal *correct* — there is no

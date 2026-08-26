@@ -179,6 +179,22 @@ export interface EncounterState {
   /** The weather this fight is being had in, if any. */
   weather?: Weather;
   /**
+   * Squads dragged into this fight by the overworld's Combat Ring — one array of unit
+   * card ids per mob that was pulled in, arriving together at the start of Round 2.
+   *
+   * One array per mob rather than one flat list, because the compensation the player is
+   * owed is *per mob pulled*, not per body: `wave2.length` is the number of extra fights
+   * they walked into, and that is the number the Pip and the card are paid against.
+   *
+   * Expressed as card ids and nothing else. The engine has never heard of a roaming pack
+   * and does not learn about one here — the district decides who got dragged in, and hands
+   * over the only part of that the arena can use.
+   *
+   * Absent from every ordinary fight, so a state that never saw a ring serialises and
+   * hashes exactly as it did before rings existed.
+   */
+  wave2?: string[][];
+  /**
    * The Harpoon Protocol: a cornered Alpha seals itself, and the trial stops being a
    * damage race and becomes a siege around one tethered unit.
    *

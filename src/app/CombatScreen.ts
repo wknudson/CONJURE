@@ -188,8 +188,23 @@ export class CombatScreen implements Screen {
      * the pre-overhaul path, and the one every legacy test still takes.
      */
     roster?: string[],
+    /**
+     * Squads the overworld's Combat Ring dragged in, one array of card ids per pulled mob.
+     *
+     * Absent for every fight reached from the Bounty Board — a ring only closes on the road.
+     */
+    wave2?: string[][],
   ) {
-    this.session = new CombatSession(encounter, seed, ai, companionId, deck, carry, roster);
+    this.session = new CombatSession(
+      encounter,
+      seed,
+      ai,
+      companionId,
+      deck,
+      carry,
+      roster,
+      wave2,
+    );
     this.cam = new IsoCamera(encounter.width, encounter.height);
   }
 

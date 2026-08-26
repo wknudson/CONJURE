@@ -501,6 +501,19 @@ export class DistrictHud {
     this.overlay.classList.add('is-shown', 'is-passive');
   }
 
+  /**
+   * The Combat Ring closing. One word, and then the arena.
+   *
+   * The screen swaps underneath this rather than the camera diving into the ground: the
+   * district is a three.js scene and the fight is a 2D canvas, so there is no shot that
+   * could carry from one into the other. A flash covering the cut is honest about that —
+   * and a word arriving hard is a better beat than a zoom pretending to be seamless.
+   */
+  showBattle(): void {
+    this.overlay.innerHTML = '<div class="district-overlay__battle">BATTLE</div>';
+    this.overlay.classList.add('is-shown', 'is-passive');
+  }
+
   hideOverlay(): void {
     this.overlay.classList.remove('is-shown', 'is-passive');
     this.overlay.innerHTML = '';

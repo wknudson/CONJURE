@@ -101,15 +101,23 @@ export const CHALK_VERGE: AreaDef = defineArea({
   ],
   props: {
     /**
-     * Three packs, beating three separate pockets of the road.
+     * Three packs, working one shared stretch of road.
      *
-     * Spread so their roam circles do not overlap: two packs converging on one player is a
-     * fight this feature does not model, and the contact handler is first-come.
+     * The circles **overlap deliberately**, and they used to be spread precisely so they
+     * could not: two packs converging on one player was a fight nothing modelled, and the
+     * contact handler was first-come. The Combat Ring is what models it — walk into one
+     * here and the circle it opens can reach a second, which arrives on round two and is
+     * paid for with a Pip and a card. Capped at two, so the road can be unkind without
+     * being unsurvivable.
+     *
+     * Homes are on open chalk with better than four fifths of each circle walkable, and no
+     * pair is further apart than their roam radii sum to — which is what makes a pull
+     * something that actually happens rather than something that theoretically could.
      */
     packs: [
-      { encounterId: 'pack_chalk_scavengers', x: -30, z: -12, roam: 7 },
-      { encounterId: 'pack_verge_stray_dogs', x: 0, z: 12, roam: 8 },
-      { encounterId: 'pack_spoil_heap_hollows', x: 30, z: -14, roam: 7 },
+      { encounterId: 'pack_chalk_scavengers', x: -10, z: 0, roam: 9 },
+      { encounterId: 'pack_verge_stray_dogs', x: 0, z: 8, roam: 9 },
+      { encounterId: 'pack_spoil_heap_hollows', x: 6, z: -4, roam: 9 },
     ],
     /** The notices, nailed to a post where the road forks. */
     huntSignpost: { x: 26, z: 14 },

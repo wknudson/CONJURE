@@ -490,6 +490,16 @@ export function createCombat(
    * a fight that opens on turn one the way it always has.
    */
   roster?: string[],
+  /**
+   * Squads the overworld's Combat Ring dragged in, one array of card ids per pulled mob.
+   *
+   * A separate parameter rather than a field on `CombatCarry`, because the carry is the
+   * player's side of the ledger by definition — health, armour, pips, cards — and this is
+   * the only thing the overworld has ever had to say about the *enemy*. Folding it in there
+   * would make that promise false for one field and leave the next reader guessing which
+   * kind it was.
+   */
+  wave2?: readonly (readonly string[])[],
 ): StepResult {
   validateEncounter(encounter);
 
@@ -633,6 +643,10 @@ export function createCombat(
       chainCancelled: false,
       subjugation: { sealed: false, active: false, anchorUnitId: null, turnsSurvived: 0 },
       ...(encounter.weather ? { weather: encounter.weather } : {}),
+      // Copied rather than kept, so the arena cannot be reached back through by whoever
+      // built the list. Spread conditionally: a fight with no ring behind it has no field
+      // at all, and hashes as it did before rings existed.
+      ...(wave2 && wave2.length > 0 ? { wave2: wave2.map((squad) => [...squad]) } : {}),
     },
     nextId: 0,
     suddenDeath: false,

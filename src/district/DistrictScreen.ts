@@ -49,6 +49,7 @@ import {
 } from './sprites3d.js';
 import { makeMinionTexture, makeWardenTexture } from './textures.js';
 import {
+  CombatRing,
   CompanionFollower,
   DoorHotspot,
   Hotspot,
@@ -119,13 +120,16 @@ export interface DistrictOpts {
   /** Walking out of one area and into another. */
   onTravel: (exit: ExitSpec) => void;
   /**
-   * Walking into a pack.
+   * Walking into a pack, and whoever else the Combat Ring closed on.
    *
    * Separate from `onBounty` because a pack is not a contract the player accepted -- it is a
    * fight that happened to them -- and because the guided lap must not count it: taking one
    * would otherwise tick `bounty_taken` and skip a step of the tutorial the player never did.
+   *
+   * `pulled` is the other packs the ring caught, in the order it caught them, and is empty
+   * far more often than not -- one mob is the ordinary case and two is the road being unkind.
    */
-  onPack: (encounterId: string) => void;
+  onPack: (encounterId: string, pulled: string[]) => void;
   onChange?: () => void;
   onLeave: () => void;
 }
@@ -182,6 +186,12 @@ export class DistrictScreen implements Screen {
    * that save reopens straight into the same fight, forever.
    */
   private packArming = 1.5;
+  /** The circle currently closing, if the player has just walked into something. */
+  private ring: CombatRing | null = null;
+  /** Counts the BATTLE flash down; at zero the fight is handed over. */
+  private battleTimer = 0;
+  /** Who is in that fight, settled the moment the circle stopped growing. */
+  private pendingFight: { encounterId: string; pulled: string[] } | null = null;
   /** Local mirror of the profile's ledger, so the panel updates the instant a flag fires. */
   private flags: TutorialFlag[];
 
@@ -298,6 +308,12 @@ export class DistrictScreen implements Screen {
 
     for (const art of this.heroArt) disposeActorArt(art);
     this.heroArt.length = 0;
+
+    // Geometry cut per-pack rather than shared, so it is freed per-pack too. `world.dispose`
+    // clears the scene but does not own what was hung on it from out here.
+    for (const pack of this.packs) pack.dispose();
+    this.ring?.dispose();
+    this.ring = null;
 
     this.post?.dispose();
     this.world?.dispose();
@@ -545,6 +561,10 @@ export class DistrictScreen implements Screen {
           this.world.scene.add(w.sprite);
           this.world.billboards.push(w.sprite);
         }
+        // The cone and its ring lie flat on the road, so they are scene furniture rather
+        // than billboards — nothing about them should turn to face the camera.
+        this.world.scene.add(pack.cone);
+        this.world.scene.add(pack.aggroRing);
         this.packs.push(pack);
         this.updatables.push(pack);
       }
@@ -742,8 +762,14 @@ export class DistrictScreen implements Screen {
     }
     if (this.vex) this.vex.playerAt = anchor;
     if (this.packArming > 0) this.packArming -= dt;
+    // Pack aggro answers to the pavement, not to `this.playerSafe`. That flag is pinned
+    // true in an area with no walkways, because what it means is "no Warden may see you
+    // here" — and out on the verge nothing hunting you needs a warrant.
+    const onWalkway =
+      this.area.safety === 'sidewalk' && isSafeAt(this.area, anchor.x, anchor.z);
     for (const pack of this.packs) {
       pack.playerAt.copy(anchor);
+      pack.playerSafe = onWalkway;
       // Armed only once the screen has settled, and never while something else has the
       // player's attention.
       pack.onContact =
@@ -769,6 +795,17 @@ export class DistrictScreen implements Screen {
       if (this.seizedTimer <= 0) {
         this.hud?.hideOverlay();
         this.inputLocked = false;
+      }
+    }
+
+    // The flash, and then the fight. Handed over under full cover rather than on the frame
+    // the ring closed, so the screen swap happens behind the word instead of beside it.
+    if (this.battleTimer > 0) {
+      this.battleTimer -= dt;
+      if (this.battleTimer <= 0 && this.pendingFight) {
+        const { encounterId, pulled } = this.pendingFight;
+        this.pendingFight = null;
+        this.opts.onPack(encounterId, pulled);
       }
     }
 
@@ -883,7 +920,13 @@ export class DistrictScreen implements Screen {
    * precisely the player who was doing it right.
    */
   /**
-   * Walked into a pack.
+   * Walked into a pack: open the circle.
+   *
+   * Input locks here rather than when the fight starts, and the two and a half seconds in
+   * between are the mechanic — the ring is drawing, and anything else on this road that it
+   * reaches is in the fight too. Locking immediately is also what makes fleeing a
+   * non-question: the circle is not a window to escape through, it is the moment the road
+   * decided how big this fight is going to be.
    *
    * The position written is the **refuge**, not the tile the collision happened on. Writing
    * the collision tile means arriving back inside the pack's contact radius, which re-starts
@@ -891,10 +934,28 @@ export class DistrictScreen implements Screen {
    * a tenth of their Pact, so it is a death loop rather than an annoyance.
    */
   private ambush(encounterId: string): void {
-    if (this.inputLocked || !this.player) return;
+    if (this.inputLocked || !this.player || this.ring) return;
     this.inputLocked = true;
     this.writePosition({ x: this.lastRefuge.x, z: this.lastRefuge.z });
-    this.opts.onPack(encounterId);
+
+    // The one that jumped you stands its ground. A pack that wandered off its own ambush
+    // while the circle drew would leave the ring centred on nothing.
+    const host = this.packs.find((p) => p.encounterId === encounterId);
+    host?.holdStill(CombatRing.DURATION + 1);
+
+    const ring = new CombatRing(
+      this.player.position.x,
+      this.player.position.z,
+      this.packs.filter((p) => p !== host),
+      (pulled) => {
+        this.hud?.showBattle();
+        this.battleTimer = 0.9;
+        this.pendingFight = { encounterId, pulled };
+      },
+    );
+    this.ring = ring;
+    this.world?.scene.add(ring.mesh);
+    this.updatables.push(ring);
   }
 
   private seize(): void {
@@ -944,6 +1005,9 @@ export class DistrictScreen implements Screen {
       onLamps: () => this.world?.applyLamps(),
       onSigns: () => this.world?.applySigns(),
       onVision: () => this.warden?.rebuildCone(),
+      onPackVision: () => {
+        for (const pack of this.packs) pack.rebuildCone();
+      },
       onColliders: (show) => this.world?.setCollidersVisible(show),
     };
   }

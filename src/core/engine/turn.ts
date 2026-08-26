@@ -25,6 +25,7 @@ import { checkLethal } from './death.js';
 import { dealDamage } from './damage.js';
 import { encounterDefById, getEncounterScript } from '../data/encounters/registry.js';
 import { runWildlife } from '../data/encounters/wildlife.js';
+import { payWaveCompensation, runWave2 } from './wave.js';
 import { opposite } from './board.js';
 
 export function beginTurn(ctx: Ctx, side: Side): void {
@@ -45,6 +46,10 @@ export function beginTurn(ctx: Ctx, side: Side): void {
   // The opening hand of 5 dealt during setup IS turn one's draw. Drawing again here
   // would immediately overdraw past the hand limit of 7 and burn two cards.
   if (ctx.state.turn > 1) drawCards(ctx, side, DRAW_PER_TURN);
+  // What the ring owes for a multi-pull, paid on top of that income rather than folded
+  // into it: one Pip and one card per mob dragged in. Self-guards on the round, so this
+  // does not need to know which turn it is.
+  if (side === 'player') payWaveCompensation(ctx);
   startOfTurnStatuses(ctx, side);
 
   const script = getEncounterScript(ctx.state.encounter.id);
@@ -54,6 +59,9 @@ export function beginTurn(ctx: Ctx, side: Side): void {
   // rather than from a script so that an encounter can have beasts without having to be
   // a program — opting in is a field on the definition.
   if (side === 'enemy' && !ctx.state.result) {
+    // The pulled squads land before the beasts move, so the board is whole before anything
+    // on it takes a step.
+    runWave2(ctx);
     const def = encounterDefById(ctx.state.encounter.id);
     if (def) runWildlife(ctx, def);
   }
