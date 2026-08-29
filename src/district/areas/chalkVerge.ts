@@ -66,8 +66,8 @@ const GRID: readonly string[] = [
   'T#,,,,,,,,,,,,,,,,,,,,#T', //  2  the north track
   'T#,,,,RR,,,,,,,,RR,,,,#T', //  3
   'T#,,,,RR,,,,,,,,RR,,,,#T', //  4
-  'T#,,,,,,,,,,,,,,,,,,,,#T', //  5
-  'T#..,,,,,,TT,,,,,,,,..#T', //  6  the middle thicket
+  ',#,,,,,,,,,,,,,,,,,,,,#T', //  5  the west cut, out onto the Chalk Road
+  ',#..,,,,,,TT,,,,,,,,..#T', //  6  the middle thicket
   'T#..,,,,,,TT,,,,,,,,..#T', //  7
   'T#,,,,,,,,,,,,,,,,,,,,#T', //  8
   'T#,,,,RR,,,,,,,,RR,,,,#T', //  9
@@ -97,6 +97,15 @@ export const CHALK_VERGE: AreaDef = defineArea({
       label: 'Back through the gate',
       // South of Ashfall's gate hotspot, a stride clear so the prompt does not re-raise.
       arrive: { x: 4, z: -12.4 },
+    },
+    {
+      // West, deeper out. No gate and no wall: the Verge *is* the road's first wild stretch,
+      // so the two are the same ground and the join is only where the fields start.
+      to: 'chalk_road',
+      x: -46,
+      z: -8,
+      label: 'Follow the road west',
+      arrive: { x: 56, z: 2 },
     },
   ],
   props: {

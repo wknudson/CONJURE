@@ -14,6 +14,7 @@ import { useConsumable } from '../core/overworld/run.js';
 import type { Bounty } from '../core/data/bounties.js';
 import { encounterById } from '../core/data/encounters/index.js';
 import type { TutorialFlag } from '../app/save.js';
+import type { AreaDef } from './map.js';
 import { LOCKED_REASON, bountyAvailable, currentObjective, pipStates, tutorialActive } from './quest.js';
 import { companionById } from '../core/data/companions.js';
 import { huntByEncounter, huntCooldownLabel, huntCooldownRemaining } from '../core/data/hunts.js';
@@ -51,9 +52,23 @@ export class DistrictHud {
   private readonly ledger: HTMLDivElement;
   private readonly boardPanel: HTMLDivElement;
   private readonly overlay: HTMLDivElement;
+  private readonly mapPanel: HTMLDivElement;
+  private readonly mapCanvas: HTMLCanvasElement;
+  private readonly mapCaption: HTMLDivElement;
+  private help: HTMLDivElement | null = null;
 
   private zoneSafe: boolean | null = null;
   private boardOpen = false;
+  private mapOpen = false;
+  /**
+   * The ground, drawn once and kept.
+   *
+   * The tiles never move, so redrawing six hundred of them every frame to put one dot on
+   * top would be the most expensive thing on the glass. Baked per area and blitted.
+   */
+  private mapGround: HTMLCanvasElement | null = null;
+  private mapGroundFor = '';
+  private mapCell = 0;
   /** Repaints the gate's countdowns while it is open. Cleared by `closeBoard`. */
   private huntTimer: number | undefined;
 
@@ -99,9 +114,24 @@ export class DistrictHud {
     this.overlay = el('div', 'district-overlay');
     root.appendChild(this.overlay);
 
+    this.mapPanel = el('div', 'district-panel district-map');
+    this.mapPanel.innerHTML =
+      '<div class="district-map__cap"></div>' +
+      '<canvas class="district-map__canvas"></canvas>' +
+      '<div class="district-map__key">' +
+      '<span class="district-map__swatch is-safe"></span>walkway' +
+      '<span class="district-map__swatch is-you"></span>you' +
+      '<span class="district-map__swatch is-exit"></span>road out' +
+      '<span class="district-map__swatch is-pack"></span>pack' +
+      '</div>';
+    root.appendChild(this.mapPanel);
+    this.mapCanvas = this.mapPanel.querySelector('.district-map__canvas')!;
+    this.mapCaption = this.mapPanel.querySelector('.district-map__cap')!;
+
     const help = el('div', 'district-panel district-help');
+    this.help = help;
     help.textContent =
-      'WASD / arrows - move\nQ / E - orbit camera\nSpace - interact / advance\nI - satchel\nPanel (top right) - tune the look';
+      'WASD / arrows - move\nQ / E - orbit camera\nSpace - interact / advance\nM - map\nI - satchel\nPanel (top right) - tune the look';
     root.appendChild(help);
 
     this.setZone(true);
@@ -468,6 +498,140 @@ export class DistrictHud {
     }
   }
 
+  /* ------------------------------------------------------------ the map */
+
+  get mapIsOpen(): boolean {
+    return this.mapOpen;
+  }
+
+  toggleMap(): void {
+    this.mapOpen = !this.mapOpen;
+    this.mapPanel.classList.toggle('is-open', this.mapOpen);
+  }
+
+  closeMap(): void {
+    this.mapOpen = false;
+    this.mapPanel.classList.remove('is-open');
+  }
+
+  /**
+   * The area from above, with whatever is moving on it.
+   *
+   * Deliberately drawn from the `AreaDef` rather than from the scene: the grid *is* the
+   * map, so there is no second description of the ward to fall out of step with the one
+   * the collision and the paving already read. Anything the map shows wrong is the area
+   * file being wrong, which is the only failure mode worth having.
+   *
+   * Called every frame while it is open, so the ground is baked once and blitted — six
+   * hundred tiles redrawn to move one dot would be the most expensive thing on the glass.
+   */
+  drawMap(area: AreaDef, view: MapView): void {
+    if (!this.mapOpen) return;
+
+    const ground = this.bakeMapGround(area);
+    const cell = this.mapCell;
+    const ctx = this.mapCanvas.getContext('2d');
+    if (!ctx) return;
+
+    this.mapCanvas.width = ground.width;
+    this.mapCanvas.height = ground.height;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, ground.width, ground.height);
+    ctx.drawImage(ground, 0, 0);
+
+    // World units to map pixels. The grid is the same grid `tileAt` reads, so a marker
+    // landing on the wrong square means the position is wrong, not the drawing.
+    const px = (x: number): number => ((x + area.halfX) / 4) * cell;
+    const pz = (z: number): number => ((z + area.halfZ) / 4) * cell;
+
+    const dot = (x: number, z: number, r: number, fill: string, ring?: string): void => {
+      ctx.beginPath();
+      ctx.arc(px(x), pz(z), r, 0, Math.PI * 2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (ring) {
+        ctx.strokeStyle = ring;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    };
+
+    // Where the roads leave. Drawn under everything that moves.
+    for (const exit of area.exits) {
+      const x = px(exit.x);
+      const z = pz(exit.z);
+      ctx.save();
+      ctx.translate(x, z);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#63e0c4';
+      ctx.fillRect(-3.5, -3.5, 7, 7);
+      ctx.restore();
+    }
+
+    // What is roaming, and how far it wanders. The circle is the roam radius from the
+    // area file, so an overlap you can see here is an overlap the Combat Ring can use.
+    for (const pack of view.packs) {
+      const spec = (area.props.packs ?? []).find((p) => p.encounterId === pack.encounterId);
+      if (spec) {
+        ctx.beginPath();
+        ctx.arc(px(spec.x), pz(spec.z), (spec.roam / 4) * cell, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(224, 68, 34, 0.28)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      dot(pack.x, pack.z, 3, pack.hunting ? '#ff6a45' : '#c2603a', '#1b1720');
+    }
+
+    if (view.warden) {
+      dot(view.warden.x, view.warden.z, 3.2, view.warden.alerted ? '#ff6a45' : '#d8b13a', '#1b1720');
+    }
+
+    // You, and which way you are looking — the camera's yaw rather than the body's, because
+    // the map is oriented to the screen and that is the heading a player is steering by.
+    const hx = px(view.player.x);
+    const hz = pz(view.player.z);
+    ctx.beginPath();
+    ctx.moveTo(hx + Math.sin(view.yaw) * 7, hz + Math.cos(view.yaw) * 7);
+    ctx.lineTo(hx - Math.sin(view.yaw) * 4, hz - Math.cos(view.yaw) * 4);
+    ctx.strokeStyle = 'rgba(246, 236, 216, 0.55)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    dot(view.player.x, view.player.z, 3.6, '#f6ecd8', '#1b1720');
+
+    this.mapCaption.textContent = area.name.toUpperCase();
+  }
+
+  /**
+   * The tiles, once.
+   *
+   * Colour is read off the legend the same way the paving is: `safe` decides the bright
+   * one, because the whole point of looking at a map of this game is seeing where the rule
+   * changes. Everything else is told apart by `tex`, so a new ground type shows up here
+   * without the map having to be taught about it.
+   */
+  private bakeMapGround(area: AreaDef): HTMLCanvasElement {
+    if (this.mapGround && this.mapGroundFor === area.id) return this.mapGround;
+
+    const cell = Math.max(6, Math.min(16, Math.floor(Math.min(520 / area.cols, 360 / area.rows))));
+    const canvas = document.createElement('canvas');
+    canvas.width = area.cols * cell;
+    canvas.height = area.rows * cell;
+    const ctx = canvas.getContext('2d')!;
+
+    for (let row = 0; row < area.rows; row++) {
+      for (let col = 0; col < area.cols; col++) {
+        const def = area.legend[area.grid[row]![col]!];
+        ctx.fillStyle = def ? mapTileColor(def) : '#12151b';
+        ctx.fillRect(col * cell, row * cell, cell, cell);
+      }
+    }
+
+    this.mapGround = canvas;
+    this.mapGroundFor = area.id;
+    this.mapCell = cell;
+    return canvas;
+  }
+
   /* ------------------------------------------------------------ overlays */
 
   /**
@@ -501,22 +665,42 @@ export class DistrictHud {
     this.overlay.classList.add('is-shown', 'is-passive');
   }
 
-  /**
-   * The Combat Ring closing. One word, and then the arena.
-   *
-   * The screen swaps underneath this rather than the camera diving into the ground: the
-   * district is a three.js scene and the fight is a 2D canvas, so there is no shot that
-   * could carry from one into the other. A flash covering the cut is honest about that —
-   * and a word arriving hard is a better beat than a zoom pretending to be seamless.
+  /*
+   * There was a `showBattle()` here: the word BATTLE, thrown up full-screen to cover the
+   * swap from this three.js street to the 2D combat canvas. It is gone because there is no
+   * longer a swap to cover — the board is laid on the ground the ring closed on and the same
+   * scene carries straight through. `combat/Descent.ts` is what replaced it.
    */
-  showBattle(): void {
-    this.overlay.innerHTML = '<div class="district-overlay__battle">BATTLE</div>';
-    this.overlay.classList.add('is-shown', 'is-passive');
-  }
 
   hideOverlay(): void {
     this.overlay.classList.remove('is-shown', 'is-passive');
     this.overlay.innerHTML = '';
+  }
+
+  /**
+   * Puts the walk-time furniture away while a fight is on.
+   *
+   * The combat HUD is the full one — a hand, two gauges, the pip dial, the trays — and it
+   * arrives on top of a screen that is still wearing the objective panel, the zone chip, the
+   * interact prompt and the walking help. Two HUDs at once is unreadable, and the walking one
+   * is answering questions nobody is asking mid-turn.
+   *
+   * Hidden rather than destroyed: the street is still there underneath and the player is
+   * coming back to it, usually within a minute.
+   */
+  setCombat(on: boolean): void {
+    for (const node of [
+      this.objective,
+      this.zoneChip,
+      this.alert,
+      this.prompt,
+      this.ledger,
+      this.help,
+    ]) {
+      node?.classList.toggle('is-hidden-in-combat', on);
+    }
+    // The map is a walking tool and its own overlay; a fight is not the time for it.
+    if (on) this.closeMap();
   }
 
   destroy(): void {
@@ -533,6 +717,40 @@ export class DistrictHud {
       node.remove();
     }
     document.body.classList.remove('is-talking');
+  }
+}
+
+/** What the screen hands the map each frame. Positions in world units, as everything is. */
+export interface MapView {
+  player: { x: number; z: number };
+  /** Camera yaw, because the map is oriented to the screen rather than to the body. */
+  yaw: number;
+  packs: readonly { encounterId: string; x: number; z: number; hunting: boolean }[];
+  warden?: { x: number; z: number; alerted: boolean };
+}
+
+/**
+ * One tile's colour on the map.
+ *
+ * `safe` wins over everything, and brightly: a map of this game is mostly a map of where
+ * the rule changes, so the pavement has to be the thing the eye lands on first. Below that
+ * it goes by `tex`, which means a ground type added to an area shows up here without the
+ * map being taught about it — the `default` is a legible grey rather than a hole.
+ */
+function mapTileColor(def: { safe: boolean; walk: boolean; tex: string }): string {
+  if (!def.walk) return def.tex === 'water' ? '#16202b' : '#3d3830';
+  if (def.safe) return '#b6a887';
+  switch (def.tex) {
+    case 'chalk':
+      return '#6e6a5e';
+    case 'field':
+      return '#3a3426';
+    case 'grass':
+      return '#2a3327';
+    case 'weeds':
+      return '#2f3238';
+    default:
+      return '#282c33';
   }
 }
 

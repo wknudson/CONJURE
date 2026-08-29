@@ -19,7 +19,8 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { CombatRing, Pack } from '../district/entities.js';
 import { ColliderSet } from '../district/collision.js';
-import { CHALK_VERGE } from '../district/areas/chalkVerge.js';
+import { AREAS, CHALK_VERGE, LAMPROW } from '../district/areas/index.js';
+import { isSafeAt } from '../district/map.js';
 import { LOOK } from '../district/look.js';
 import { buildActorArt, type ActorArt } from '../district/sprites3d.js';
 
@@ -47,6 +48,52 @@ function pack(x = 0, z = 0, roam = 6): Pack {
 function run(p: Pack, seconds: number, step = 0.05): void {
   for (let t = 0; t < seconds; t += step) p.update(step, t, 0);
 }
+
+describe('a pack goes off the street when a board stands on it', () => {
+  it('takes every body and both sight marks with it', () => {
+    const p = pack();
+    expect(
+      p.walkers.every((w) => w.sprite.visible),
+      'three bodies on the road to begin with',
+    ).toBe(true);
+
+    p.setVisible(false);
+    // The bug this exists for: a fight starting against a pack draws it *twice* -- once as the
+    // squad on the grid, and once as the three roaming bodies that walked into you, frozen
+    // mid-stride inside the arena where no card can touch them and no turn can move them. They
+    // are the same creatures, and only the copy the player can play against should be on
+    // screen.
+    expect(p.walkers.some((w) => w.sprite.visible), 'no bodies').toBe(false);
+    // The cone and the ring are about "walk in here and a fight starts", which by now has
+    // happened. Leaving a patrol arc lying across a battlefield describes a rule that is not
+    // currently running.
+    expect(p.cone.visible, 'no vision cone').toBe(false);
+    expect(p.aggroRing.visible, 'no aggro ring').toBe(false);
+  });
+
+  it('comes back, because one path returns to the same street', () => {
+    // A Warden who cannot serve a second contract falls through to the old escort instead of a
+    // fight, and that path never leaves this screen. If restoring were skipped, the ward would
+    // simply be missing every pack in it from then on.
+    const p = pack();
+    p.setVisible(false);
+    p.setVisible(true);
+    expect(p.walkers.every((w) => w.sprite.visible)).toBe(true);
+    expect(p.cone.visible).toBe(true);
+    expect(p.aggroRing.visible).toBe(true);
+  });
+
+  it('is still a live pack while it is invisible, because the fight is not the sprite', () => {
+    // Visibility is presentation and nothing else touches state. Worth pinning: the tempting
+    // shortcut is to fold "hidden" into "spent" or to stop updating, and a pack that quietly
+    // forgot it could see you would re-trigger its own ambush the moment the board came down.
+    const p = pack();
+    p.playerAt.set(0, 0, 3);
+    p.playerSafe = false;
+    p.setVisible(false);
+    expect(p.sees(), 'it can still see you; it is simply not drawn').toBe(true);
+  });
+});
 
 describe('a pack notices you', () => {
   it('sees you standing in front of it, off the pavement', () => {
@@ -203,28 +250,56 @@ describe('the Combat Ring', () => {
   });
 });
 
-describe('the Verge is one shared stretch of road', () => {
-  it('overlaps every pair of roam circles, so a pull can actually happen', () => {
-    // The reason the packs were moved. If this drifts back apart the ring still works and
-    // never fires, which is the worst kind of broken: a feature that silently does nothing.
-    const specs = CHALK_VERGE.props.packs ?? [];
-    expect(specs.length).toBeGreaterThanOrEqual(2);
+describe('every stretch of road packs share', () => {
+  const shared = AREAS.filter((a) => (a.props.packs ?? []).length >= 2);
 
-    for (let i = 0; i < specs.length; i++) {
-      for (let j = i + 1; j < specs.length; j++) {
-        const a = specs[i]!;
-        const b = specs[j]!;
-        const d = Math.hypot(a.x - b.x, a.z - b.z);
-        expect(d, `${a.encounterId} and ${b.encounterId} can never meet`).toBeLessThan(
-          a.roam + b.roam,
-        );
-      }
-    }
+  it('is somewhere that actually has packs sharing it', () => {
+    expect(shared.length, 'no area fields two packs — the ring has nothing to fire on').toBeGreaterThan(0);
   });
 
-  it('has no pavement to hide on, so the cones never go dark', () => {
+  for (const area of shared) {
+    it(`${area.id}: overlaps every pair of roam circles, so a pull can actually happen`, () => {
+      // If these drift apart the ring still works and never fires, which is the worst kind
+      // of broken: a feature that silently does nothing. Asked of every area rather than of
+      // the Verge alone, because the next map to field two packs will not think to ask.
+      const specs = area.props.packs ?? [];
+      for (let i = 0; i < specs.length; i++) {
+        for (let j = i + 1; j < specs.length; j++) {
+          const a = specs[i]!;
+          const b = specs[j]!;
+          const d = Math.hypot(a.x - b.x, a.z - b.z);
+          expect(d, `${a.encounterId} and ${b.encounterId} can never meet`).toBeLessThan(
+            a.roam + b.roam,
+          );
+        }
+      }
+    });
+  }
+
+  it('has no pavement to hide on, out on the Verge', () => {
     // Stated in the area's own data rather than assumed: `safety: 'none'` is what makes the
     // verge the place this mechanic is demonstrated.
     expect(CHALK_VERGE.safety).toBe('none');
+  });
+
+  it('but does in Lamprow, where the packs reach the curb', () => {
+    // The other half of the rule, and the reason Lamprow exists as walkable ground: a ward
+    // with pavement AND packs is the only place a player can watch a cone die at a kerbstone.
+    // Both circles have to actually cross the boundary or the lesson never comes up.
+    expect(LAMPROW.safety).toBe('sidewalk');
+    const specs = LAMPROW.props.packs ?? [];
+    expect(specs.length).toBeGreaterThanOrEqual(2);
+
+    // The High Street's south kerb: rows 10-11 are the flags, so z = 8 is where they end.
+    const KERB_Z = 8;
+    for (const spec of specs) {
+      expect(
+        spec.z - spec.roam,
+        `${spec.encounterId} never comes up as far as the pavement`,
+      ).toBeLessThan(KERB_Z);
+      expect(isSafeAt(LAMPROW, spec.x, spec.z), `${spec.encounterId} lives on danger ground`).toBe(
+        false,
+      );
+    }
   });
 });

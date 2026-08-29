@@ -809,6 +809,21 @@ export function companionById(id: string): CompanionDef | undefined {
   return COMPANIONS.find((c) => c.id === id);
 }
 
+/**
+ * The species behind a Bound Form, found from the stat block on the board.
+ *
+ * The other direction of `unitCardId`, and it exists because a renderer is handed a fight
+ * rather than a character: `EncounterDef.enemyCompanion` names a unit card, and what the
+ * screen needs from it is a species -- for `artId`, so an enemy Commander can be drawn as the
+ * beast it actually is instead of a coloured prism.
+ *
+ * A miss is ordinary and not an error. Plenty of unit cards are nobody's Bound Form, and a
+ * test arena may name one that no species claims; the caller falls back to a silhouette.
+ */
+export function companionByUnitCard(unitCardId: string): CompanionDef | undefined {
+  return COMPANIONS.find((c) => c.unitCardId === unitCardId);
+}
+
 export const DEFAULT_COMPANION = COMPANIONS[0]!;
 
 /**

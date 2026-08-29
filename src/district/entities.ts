@@ -89,8 +89,10 @@ export class NPC implements Interactable, Updatable {
     label: string,
     private readonly action: () => void,
     phase = 0,
+    /** False for art with its own shadow painted in. See `BillboardSprite`. */
+    castsShadow = true,
   ) {
-    this.walker = new Walker(art, height);
+    this.walker = new Walker(art, height, castsShadow);
     this.walker.position.set(x, 0, z);
     this.position = this.walker.position;
     this.interactLabel = label;
@@ -271,6 +273,20 @@ export class Warden implements Updatable {
     const half = THREE.MathUtils.degToRad(LOOK.visionAngle) / 2;
     this.cone.geometry.dispose();
     this.cone.geometry = new THREE.CircleGeometry(LOOK.visionRange, 28, -half, half * 2);
+  }
+
+  /**
+   * Put the body away, or bring it back.
+   *
+   * Called when a board stands on this street. The Warden is either on that board or is not
+   * in this fight, and in both cases a figure frozen mid-stride at the edge of the arena is
+   * the loudest possible statement that the grid is pasted onto a world still going about its
+   * business. The cone goes with it: a patrol arc lying across a battlefield is describing a
+   * rule that is not currently running.
+   */
+  setVisible(v: boolean): void {
+    this.walker.sprite.visible = v;
+    this.cone.visible = v;
   }
 
   /* Set by the screen each frame — the Warden does not reach for global state. */
@@ -526,6 +542,25 @@ export class Pack implements Updatable {
     this.target.set(x, z);
   }
 
+  /**
+   * Off the street, because they are on the board now.
+   *
+   * The one that jumped you is *represented twice* the moment a fight starts: once as the
+   * three roaming bodies that walked into you, and once as the squad standing on the grid.
+   * Freezing the roamers — which is what the screen does to everything while a board is up —
+   * left three figures standing in the arena that no card could touch and no turn could move.
+   * They are the same creatures; only one of the two copies should be on screen, and it is
+   * the one the player can play against.
+   *
+   * The cone and the aggro ring go too. Their whole subject is "walk in here and a fight
+   * starts", which is a thing that has already happened.
+   */
+  setVisible(v: boolean): void {
+    for (const w of this.walkers) w.sprite.visible = v;
+    this.cone.visible = v;
+    this.aggroRing.visible = v;
+  }
+
   /** Frees the cone and ring geometry. The walkers' art is owned by the screen. */
   dispose(): void {
     this.cone.geometry.dispose();
@@ -715,8 +750,15 @@ export class CombatRing implements Updatable {
   private finished = false;
 
   constructor(
-    private readonly originX: number,
-    private readonly originZ: number,
+    /**
+     * Where the contact happened, and therefore where the board goes.
+     *
+     * Public because the circle is the thing that decided the shape of this fight, and the
+     * grid is laid inside it — reading the player's position instead would put the board
+     * wherever they had drifted to over the two and a half seconds it took to draw.
+     */
+    readonly originX: number,
+    readonly originZ: number,
     private readonly candidates: readonly Pack[],
     private readonly onDone: (pulled: string[]) => void,
   ) {

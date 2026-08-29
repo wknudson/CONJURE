@@ -16,6 +16,7 @@ import { PALETTE } from './palette.js';
 import type { Gender } from '../core/data/characterLook.js';
 import { companionById } from '../core/data/companions.js';
 import type { School } from '../contract/ids.js';
+import { folkSheetSrc, type FolkSheetId } from './folk.js';
 
 /** A school's colour on the stage. The same six the enrolment crests use. */
 export const SCHOOL_COLOR: Record<string, string> = {
@@ -407,6 +408,33 @@ export function walkFrameCell(index: number): { x: number; y: number } {
 /** The one load. Cached beside the standing facings, keyed so it cannot collide with them. */
 export async function loadCommanderWalkSheet(gender: Gender): Promise<HTMLImageElement> {
   return loadHeroImage(`${gender}:walk-sheet`, commanderWalkSheetSrc(gender));
+}
+
+/* ------------------------------------------------------------------------------------ *
+ * The townsfolk sheets.
+ *
+ * Four more sheets, but read very differently from the walk sheet above: those twenty cells
+ * are one person moving, these forty-eight are forty-eight people standing. What they share
+ * is this loader, so there is one answer to "is this already decoding?" for every sheet in
+ * the game. Where each person sits inside their sheet is `render/folk.ts`.
+ * ------------------------------------------------------------------------------------ */
+
+/**
+ * Loads one townsfolk sheet.
+ *
+ * Sheets are fetched **individually and on demand**, never as a set. Three of the four are
+ * about four megabytes on disk and some sixteen decoded, and a street with three people on it
+ * usually names one sheet — pulling all four into every ward would cost twelve megabytes of
+ * download and a heap of texture memory to draw nobody extra. A wilderness area, which names
+ * none, fetches none.
+ *
+ * Keyed into the same cache as the Commander's art, which is what gets it the dedupe and the
+ * eviction-on-failure: a transient 404 must not be replayed to every later caller, because
+ * the district rebuilds on every shop errand and that would turn one blip into a permanently
+ * empty town.
+ */
+export async function loadFolkSheet(id: FolkSheetId): Promise<HTMLImageElement> {
+  return loadHeroImage(`folk:${id}`, folkSheetSrc(id));
 }
 
 /** The sheet if it is already decoded, for a draw path that cannot await one. */

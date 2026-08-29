@@ -29,6 +29,7 @@ import {
   loadCommanderWalk,
   loadCommanderWalkSheet,
   loadCompanionSprite,
+  loadFolkSheet,
   type HeroFacing,
 } from '../render/sprites.js';
 
@@ -37,17 +38,27 @@ import { ColliderSet } from './collision.js';
 import { DistrictWorld } from './world.js';
 import { buildPostChain, type PostChain } from './post.js';
 import { DistrictHud } from './hud.js';
-import { DialogueBox, VEX_INTRO, VEX_REPEAT } from './dialogue.js';
+import { DialogueBox, FOLK_LINES, VEX_INTRO, VEX_REPEAT } from './dialogue.js';
 import {
   FACING,
+  actorArtFromOne,
   actorArtFromTextures,
   buildActorArt,
   buildSheetActorArt,
   disposeActorArt,
+  pickFacing,
   Walker,
   type ActorArt,
 } from './sprites3d.js';
-import { makeMinionTexture, makeWardenTexture } from './textures.js';
+import { makeMinionTexture, makeWardenTexture, sheetFrameTexture } from './textures.js';
+import {
+  FOLK_SHEETS,
+  folkBox,
+  folkHeight,
+  folkSheetOf,
+  type FolkId,
+  type FolkSheetId,
+} from '../render/folk.js';
 import {
   CombatRing,
   CompanionFollower,
@@ -60,6 +71,13 @@ import {
   type Updatable,
 } from './entities.js';
 import { isSafeAt, type AreaDef, type DoorKey, type ExitSpec } from './map.js';
+import { WorldCombat } from './combat/WorldCombat.js';
+import { Descent, frameBoard } from './combat/Descent.js';
+import type { CombatResult } from '../contract/events.js';
+import type { CombatOutcome } from '../core/overworld/run.js';
+import type { EncounterDef } from '../core/data/encounters/registry.js';
+import type { CombatCarry } from '../core/engine/setup.js';
+import type { AiProfile } from '../core/ai/controller.js';
 import { huntAvailable } from '../core/data/hunts.js';
 import { hashText, makeRng, nextInt } from '../core/util/rng.js';
 import { flagForDoor, tutorialActive } from './quest.js';
@@ -76,6 +94,40 @@ const COMPANION_HEIGHT = 1.5;
  * palette — a tint keyed to the species' school would be invisible on half of them.
  */
 const SHINY_TINT = 0xffe9a8;
+
+/**
+ * The fight a Warden serves on you.
+ *
+ * A `PackDef` in `core/data/packs.ts`, so it is a registered encounter with balance coverage
+ * and a costed warband, rather than a hand-cut arena nothing checks. It is the one pack in the
+ * game that is never placed on a map — there is nothing to walk into, only somebody who has
+ * decided to stop asking.
+ */
+const WARDEN_ENCOUNTER = 'warden_writ';
+
+/**
+ * Everything a fight needs that only the profile can answer.
+ *
+ * The district knows a pack was walked into and where it happened. It does not know which
+ * deck this Companion fights with, what the spoils are worth, whether a contract is already
+ * open, or how a result is settled — and it must not learn, because that is the overworld's
+ * ledger and this is a renderer. So the screen asks upward for a fight and is handed the
+ * pieces the engine needs, with `onFinish` closing the loop back into the save.
+ *
+ * That boundary is the reason combat can happen *in* the district without the district
+ * gaining a single line about economy or persistence.
+ */
+export interface WorldFight {
+  encounter: EncounterDef;
+  seed: number;
+  deck: string[];
+  ai?: AiProfile;
+  carry?: CombatCarry;
+  roster?: string[];
+  /** Squads the Combat Ring dragged in, one array of card ids per pulled mob. */
+  wave2?: string[][];
+  onFinish: (result: CombatResult, encounter: EncounterDef, outcome: CombatOutcome) => void;
+}
 
 export interface DistrictOpts {
   /**
@@ -129,7 +181,7 @@ export interface DistrictOpts {
    * `pulled` is the other packs the ring caught, in the order it caught them, and is empty
    * far more often than not -- one mob is the ordinary case and two is the road being unkind.
    */
-  onPack: (encounterId: string, pulled: string[]) => void;
+  onPack: (encounterId: string, pulled: string[]) => WorldFight | null;
   onChange?: () => void;
   onLeave: () => void;
 }
@@ -152,7 +204,16 @@ export class DistrictScreen implements Screen {
   private player: Walker | null = null;
   private follower: CompanionFollower | null = null;
   private warden: Warden | null = null;
-  private vex: NPC | null = null;
+  /**
+   * Everyone standing in this ward, the Dispatcher included.
+   *
+   * A list rather than the single `vex` field it replaces. That field was written when Ashfall
+   * was the only populated area and Vex the only person in it; the screen consequently built
+   * `props.npcs[0]` and dropped the rest on the floor, so an area file could declare a market
+   * full of traders and get one. Everything the old field did — the look-at wiring below,
+   * teardown — is done for the list.
+   */
+  private readonly npcs: NPC[] = [];
 
   private readonly interactables: Interactable[] = [];
   private readonly updatables: Updatable[] = [];
@@ -188,10 +249,32 @@ export class DistrictScreen implements Screen {
   private packArming = 1.5;
   /** The circle currently closing, if the player has just walked into something. */
   private ring: CombatRing | null = null;
-  /** Counts the BATTLE flash down; at zero the fight is handed over. */
-  private battleTimer = 0;
-  /** Who is in that fight, settled the moment the circle stopped growing. */
-  private pendingFight: { encounterId: string; pulled: string[] } | null = null;
+  /**
+   * The fight currently standing on this street, if any.
+   *
+   * There is no screen swap any more: the board is laid on the district's own ground, the
+   * district keeps drawing, and this is the thing that owns the engine while it is up.
+   */
+  private combat: WorldCombat | null = null;
+  /** The camera's journey from the walk framing into the tactical one. */
+  private descent: Descent | null = null;
+  /** Where the camera holds once the descent has landed. */
+  /**
+   * A quarter-turn the player asked for with a button rather than by holding a key.
+   *
+   * Null while nothing is easing. `updatePlayer` walks the yaw toward it and clears it, and
+   * touching Q or E cancels it — a held key and a queued turn fighting over the same number
+   * is how a camera ends up drifting after the player has let go.
+   */
+  private yawGoal: number | null = null;
+
+  private combatCam: {
+    target: THREE.Vector3;
+    yaw: number;
+    pitch: number;
+    fov: number;
+    distance: number;
+  } | null = null;
   /** Local mirror of the profile's ledger, so the panel updates the instant a flag fires. */
   private flags: TutorialFlag[];
 
@@ -253,6 +336,45 @@ export class DistrictScreen implements Screen {
 
     this.buildInteractables();
     this.installInput();
+
+    if (import.meta.env.DEV) {
+      // Dev handle, matching the one `CombatScreen` has carried since the board was built:
+      // it lets a headless session force a frame and inspect state.
+      //
+      // Earned rather than convenient. Every lighting decision in this district was settled by
+      // sampling the framebuffer with `gl.readPixels` after forcing a frame, and by reading the
+      // baked ground canvas back out of the scene — which caught, among other things, three
+      // areas whose authored intent of "enclosed and dim" had quietly produced near-black, and
+      // a combat grid measured adding 212 of 255 luma to the road under it. None of that is
+      // reachable from a test, because none of it exists until something has drawn.
+      //
+      // Everything mutable is a function rather than a captured value, and not only because a
+      // fight comes and goes: this runs before `loadActors` has resolved, so at the moment it is
+      // installed there is no player, no follower and no pack yet. A snapshot here would be a
+      // handle onto an empty street. That ordering is deliberate — `loadActors` awaits every
+      // sprite in the ward, and a hidden tab stalls image decoding, so a handle installed at
+      // the end of it does not exist in exactly the headless session it is for.
+      //
+      // Stripped from production by the `DEV` guard.
+      (window as unknown as Record<string, unknown>).__district = {
+        frame: () => this.loop(),
+        renderer: this.renderer,
+        post: this.post,
+        world: this.world,
+        camera: this.camera,
+        area: this.area,
+        player: () => this.player,
+        follower: () => this.follower,
+        packs: () => this.packs,
+        warden: () => this.warden,
+        combat: () => this.combat,
+        cameraYaw: () => this.cameraYaw,
+        setCameraYaw: (v: number) => void (this.cameraYaw = v),
+        /** Walks into a pack by identity, so a fight can be opened without a collision. */
+        ambush: (encounterId: string) => this.ambush(encounterId),
+      };
+    }
+
     this.gui = buildLookGui(this.lookHandles(), this.area.id, this.area.name);
 
     this.hud.renderTutorial(this.flags);
@@ -314,6 +436,9 @@ export class DistrictScreen implements Screen {
     for (const pack of this.packs) pack.dispose();
     this.ring?.dispose();
     this.ring = null;
+    // Before the world is disposed: the board hangs groups on that scene and the HUD it owns
+    // is parented to a root this method is about to let go of.
+    this.endFight();
 
     this.post?.dispose();
     this.world?.dispose();
@@ -495,23 +620,73 @@ export class DistrictScreen implements Screen {
       this.updatables.push(this.follower);
     }
 
-    // The Dispatcher, where an area has one to stand.
-    const npc = this.area.props.npcs?.[0];
-    if (npc && vexArt) {
-      this.vex = new NPC(
-        vexArt,
-        COMMANDER_HEIGHT,
-        npc.x,
-        npc.z,
-        'Talk to Dispatcher Vex',
-        () => this.talkToVex(),
-        1.3,
-      );
-      this.world.scene.add(this.vex.walker.sprite);
-      this.world.billboards.push(this.vex.walker.sprite);
-      this.updatables.push(this.vex);
-      this.interactables.push(this.vex);
+    // The people of the ward.
+    //
+    // The townsfolk sheets are fetched here rather than in the batch above, and only the ones
+    // this area actually names — the same rule the walk art and the companion are already
+    // fetched under, for the same reason. Three of the four sheets are about four megabytes,
+    // so pulling the set into every street would cost twelve to draw nobody extra; and folded
+    // into the `Promise.all`, one missing file would open the ward with no Commander, no Vex
+    // and no unlock. A sheet that fails to load costs exactly the people on it.
+    const specs = this.area.props.npcs ?? [];
+    const sheets = new Map<FolkSheetId, HTMLImageElement | null>();
+    for (const id of new Set(specs.map((n) => n.art).filter((a): a is FolkId => !!a))) {
+      const sheet = folkSheetOf(id);
+      if (!sheets.has(sheet)) sheets.set(sheet, await loadFolkSheet(sheet).catch(() => null));
     }
+    if (this.disposed || !this.world) return;
+
+    // One cut per distinct person on this street, not one per body — a market with two
+    // stalls of the same trade uploads one texture and hangs both bodies off it.
+    const folkArt = new Map<FolkId, ActorArt>();
+    for (const spec of specs) {
+      if (!spec.art || folkArt.has(spec.art)) continue;
+      const sheet = sheets.get(folkSheetOf(spec.art));
+      if (!sheet) continue;
+      const box = folkBox(spec.art);
+      const art = actorArtFromOne(
+        sheetFrameTexture(
+          sheet,
+          box.x,
+          box.y,
+          box.w,
+          box.h,
+          anis,
+          FOLK_SHEETS[folkSheetOf(spec.art)].pixelArt,
+        ),
+      );
+      folkArt.set(spec.art, art);
+      this.heroArt.push(art);
+    }
+
+    specs.forEach((spec, i) => {
+      // No `art` means the Dispatcher, who is drawn from the hero bearings rather than off a
+      // sheet and whose script is the tutorial. Ashfall's entry predates all of this and is
+      // still written `{id: 'vex', x, z}`.
+      const art = spec.art ? folkArt.get(spec.art) : vexArt;
+      if (!art) return; // Their sheet did not load. One absent person, not an absent ward.
+
+      const script = FOLK_LINES[spec.says ?? spec.id];
+      const npc = new NPC(
+        art,
+        spec.art ? folkHeight(spec.art) : COMMANDER_HEIGHT,
+        spec.x,
+        spec.z,
+        spec.label ?? 'Talk to Dispatcher Vex',
+        spec.art ? () => this.dialogue?.start(script ?? []) : () => this.talkToVex(),
+        // Offset per body, so four people on one street do not breathe in lockstep — which
+        // reads as a row of copies rather than as a crowd.
+        1.3 + i * 0.7,
+        // The pixel sheets are drawn with their own ground shadow. A billboard casting a
+        // second one puts two under the same boots, pointing different ways.
+        !(spec.art && FOLK_SHEETS[folkSheetOf(spec.art)].pixelArt),
+      );
+      this.world!.scene.add(npc.walker.sprite);
+      this.world!.billboards.push(npc.walker.sprite);
+      this.updatables.push(npc);
+      this.interactables.push(npc);
+      this.npcs.push(npc);
+    });
 
     const beat = this.area.props.patrols?.[0];
     if (beat && wardenArt) {
@@ -520,7 +695,7 @@ export class DistrictScreen implements Screen {
       this.world.scene.add(this.warden.cone);
       this.world.billboards.push(this.warden.walker.sprite);
       this.updatables.push(this.warden);
-      this.warden.onCatch = () => this.seize();
+      this.warden.onCatch = () => this.arrest();
       this.warden.onAlertChange = (on) => this.hud?.setAlert(on);
     }
 
@@ -530,10 +705,10 @@ export class DistrictScreen implements Screen {
     // save rather than inventing a second one -- and means a road you have just cleared
     // reads as cleared. That is also the third of the four things standing between the
     // player and an immediate re-trigger on the way back from a fight.
-    const specs = this.area.props.packs ?? [];
-    if (specs.length > 0) {
+    const packSpecs = this.area.props.packs ?? [];
+    if (packSpecs.length > 0) {
       const now = Date.now();
-      for (const spec of specs) {
+      for (const spec of packSpecs) {
         const last = this.opts.hunts[spec.encounterId];
         if (!huntAvailable(last, now)) continue;
 
@@ -573,6 +748,7 @@ export class DistrictScreen implements Screen {
     // Compile what the ward will need before it needs it, then let the player move.
     this.world.warmupShaders(() => this.post!.composer.render());
     if (!this.opts.notice) this.inputLocked = false;
+
   }
 
   /* ============================================================
@@ -700,6 +876,19 @@ export class DistrictScreen implements Screen {
       if (e.repeat) return;
       this.keys.add(e.code);
 
+      // A fight gets first refusal on every key. One listener rather than two competing ones:
+      // the district is still watching for the map and for Escape, and two independent
+      // handlers racing for the same key is how one of them ends up unreachable.
+      if (this.combat) {
+        // The map stays available -- it takes no action and looking at where you are is never
+        // the wrong thing to allow -- but everything else belongs to the board.
+        if (e.code !== 'KeyM' && this.combat.handleKey(e.code)) {
+          e.preventDefault();
+          return;
+        }
+        if (e.code !== 'KeyM' && e.code !== 'KeyQ' && e.code !== 'KeyE') return;
+      }
+
       if (e.code === 'Space') {
         e.preventDefault();
         if (this.dialogue?.open) this.dialogue.advance();
@@ -712,8 +901,16 @@ export class DistrictScreen implements Screen {
         this.hud?.toggleSatchel();
         return;
       }
+      if (e.code === 'KeyM') {
+        // Deliberately not gated on `inputLocked`: the map is the one thing worth being
+        // able to look at while something else has the screen, and it takes no action.
+        e.preventDefault();
+        this.hud?.toggleMap();
+        return;
+      }
       if (e.code === 'Escape') {
         if (this.hud?.boardIsOpen) this.hud.closeBoard();
+        else if (this.hud?.mapIsOpen) this.hud.closeMap();
         return;
       }
     };
@@ -725,6 +922,7 @@ export class DistrictScreen implements Screen {
       camera.updateProjectionMatrix();
       this.renderer.setSize(this.width(), this.height());
       this.post.setSize(this.width(), this.height());
+      this.combat?.resize();
     };
 
     addEventListener('keydown', this.onKeyDown);
@@ -760,7 +958,7 @@ export class DistrictScreen implements Screen {
       this.warden.playerAt.copy(anchor);
       this.warden.playerSafe = this.playerSafe;
     }
-    if (this.vex) this.vex.playerAt = anchor;
+    for (const npc of this.npcs) npc.playerAt = anchor;
     if (this.packArming > 0) this.packArming -= dt;
     // Pack aggro answers to the pavement, not to `this.playerSafe`. That flag is pinned
     // true in an area with no walkways, because what it means is "no Warden may see you
@@ -778,7 +976,14 @@ export class DistrictScreen implements Screen {
           : () => this.ambush(pack.encounterId);
     }
 
-    for (const u of this.updatables) u.update(dt, this.elapsed, this.cameraYaw);
+    // Nothing on the street moves while a fight is up. A pack wandering past the arena --
+    // or the Warden walking through it -- would be the loudest possible reminder that the
+    // board is pasted onto a world still going about its business.
+    if (!this.combat) {
+      for (const u of this.updatables) u.update(dt, this.elapsed, this.cameraYaw);
+    } else {
+      this.ring?.update(dt);
+    }
 
     world.updateLamps(this.elapsed);
     world.updateImpactLights(dt);
@@ -786,9 +991,40 @@ export class DistrictScreen implements Screen {
     world.trackSun(anchor.x, anchor.y, anchor.z);
     world.updateOccluders(dt, camera, anchor);
     for (const b of world.billboards) b.faceCamera(camera);
+    // The board's own bodies, which come and go as the fight does — so they are asked for
+    // each frame rather than pushed onto `world.billboards`, which nothing removes from.
+    if (this.combat) {
+      for (const sprite of this.combat.billboards) {
+        (sprite as unknown as { faceCamera(c: THREE.Camera): void }).faceCamera(camera);
+      }
+    }
 
     this.updateInteraction();
     this.dialogue?.update(dt);
+
+    // Drawn from the live scene rather than from a snapshot, so the dot moves while you
+    // walk and the packs move while they roam — which is the whole use of having it open.
+    if (this.hud?.mapIsOpen) {
+      this.hud.drawMap(this.area, {
+        player: { x: anchor.x, z: anchor.z },
+        yaw: this.cameraYaw,
+        packs: this.packs.map((p) => ({
+          encounterId: p.encounterId,
+          x: p.position.x,
+          z: p.position.z,
+          hunting: p.state !== 'ROAM',
+        })),
+        ...(this.warden
+          ? {
+              warden: {
+                x: this.warden.position.x,
+                z: this.warden.position.z,
+                alerted: this.warden.state === 'CHASE' || this.warden.state === 'ALERT',
+              },
+            }
+          : {}),
+      });
+    }
 
     if (this.seizedTimer > 0) {
       this.seizedTimer -= dt;
@@ -798,14 +1034,51 @@ export class DistrictScreen implements Screen {
       }
     }
 
-    // The flash, and then the fight. Handed over under full cover rather than on the frame
-    // the ring closed, so the screen swap happens behind the word instead of beside it.
-    if (this.battleTimer > 0) {
-      this.battleTimer -= dt;
-      if (this.battleTimer <= 0 && this.pendingFight) {
-        const { encounterId, pulled } = this.pendingFight;
-        this.pendingFight = null;
-        this.opts.onPack(encounterId, pulled);
+    // The fight, if one is standing on this street. There is no hand-off and no flash: the
+    // board is on the ground the ring closed on, and the same scene carries straight through.
+    if (this.combat) {
+      // Whose yaw the fight is being watched from this frame: the descent's while it is
+      // squaring up on the board, and the player's for every frame after that.
+      let yaw = this.cameraYaw;
+      if (this.descent) {
+        const cam = this.descent.update(dt);
+        yaw = cam.yaw;
+        this.combatCam = {
+          target: cam.target,
+          yaw: cam.yaw,
+          pitch: cam.pitch,
+          fov: cam.fov,
+          distance: cam.distance,
+        };
+        world.setFogScale(cam.fogScale);
+        this.combat.reveal = this.descent.reveal;
+        if (this.descent.finished) {
+          // The camera is the player's again, continuing from where the descent left it rather
+          // than from whatever the walk yaw happened to be -- otherwise letting go of the
+          // board snaps the view back through most of a turn.
+          this.cameraYaw = cam.yaw;
+          this.descent = null;
+        }
+      }
+      this.combat.update(dt, yaw);
+
+      // The Commander and their beast look at the fight.
+      //
+      // Standing still, a `Walker` holds whichever frame it last walked on -- so the body that
+      // ran into an ambush spends the whole battle facing whatever direction it happened to be
+      // running, which is most often straight out of the arena. Set every frame and
+      // camera-relative, because which of the four painted views reads as "facing up the
+      // board" changes as the camera orbits round it.
+      const upTheBoard = pickFacing(0, -1, yaw);
+      this.player?.face(upTheBoard);
+      this.follower?.walker.face(upTheBoard);
+
+      // The beast is on the board now, so it is not also at your shoulder. Toggled per frame
+      // rather than once at the opening bell because the Bound Form is *summoned* -- there are
+      // a few seconds at the start of a fight where the Companion legitimately has no body yet,
+      // and standing beside you is the right place to be for those.
+      if (this.follower) {
+        this.follower.walker.sprite.visible = !this.combat.companionEmbodied;
       }
     }
 
@@ -815,9 +1088,21 @@ export class DistrictScreen implements Screen {
 
   private updatePlayer(dt: number): void {
     // Orbit stays live even mid-conversation: it cannot change any state, and locking it
-    // makes the world feel frozen rather than the player feel busy.
+    // makes the world feel frozen rather than the player feel busy. It stays live during a
+    // fight for the same reason and one more -- see `updateCamera`.
+    const held = this.keys.has('KeyQ') || this.keys.has('KeyE');
     if (this.keys.has('KeyQ')) this.cameraYaw -= ORBIT_SPEED * dt;
     if (this.keys.has('KeyE')) this.cameraYaw += ORBIT_SPEED * dt;
+    if (held) this.yawGoal = null;
+    else if (this.yawGoal !== null) {
+      const remaining = this.yawGoal - this.cameraYaw;
+      if (Math.abs(remaining) < 0.002) {
+        this.cameraYaw = this.yawGoal;
+        this.yawGoal = null;
+      } else {
+        this.cameraYaw += remaining * Math.min(1, dt * 7);
+      }
+    }
 
     const player = this.player;
     if (!player) return;
@@ -859,6 +1144,11 @@ export class DistrictScreen implements Screen {
     // area with no pavement is not an area where you are permanently in danger; it is one
     // where the rule does not apply, and the chip should say the second thing by not being
     // there.
+    // The zone rule is suspended while a fight is on. The Commander has been placed at the
+    // edge of the board, which may well be off the pavement, and flipping the chip to EXPOSED
+    // mid-turn would be the HUD reporting on a rule that is not currently running.
+    if (this.combat) return;
+
     if (this.area.safety === 'sidewalk') {
       this.playerSafe = isSafeAt(this.area, player.position.x, player.position.z);
       this.hud?.setZone(this.playerSafe);
@@ -873,11 +1163,53 @@ export class DistrictScreen implements Screen {
     }
   }
 
+  /**
+   * Turn the view a quarter, eased.
+   *
+   * The keyboard's Q and E are a continuous hold and want no easing; a button press is a
+   * discrete request and snapping to it would read as a cut. Accumulated onto any turn still
+   * in flight rather than onto the current yaw, so pressing the arrow twice quickly is half a
+   * turn and not a quarter interrupted.
+   */
+  private nudgeOrbit(steps: number): void {
+    this.yawGoal = (this.yawGoal ?? this.cameraYaw) + (steps * Math.PI) / 2;
+  }
+
   private updateCamera(): void {
     const camera = this.camera;
-    const anchor = this.player?.position ?? new THREE.Vector3(this.area.spawn.x, 0, this.area.spawn.z);
     if (!camera) return;
 
+    // A fight overrides the framing entirely: the camera belongs to the board, not to the
+    // player, and it is held rather than followed. `combatCam` is written by the descent and
+    // then simply stops changing, which is what makes the tactical view feel like a stage.
+    const cam = this.combatCam;
+    if (cam) {
+      const pitch = THREE.MathUtils.degToRad(cam.pitch);
+      const horizontal = Math.cos(pitch) * cam.distance;
+      const height = Math.sin(pitch) * cam.distance;
+      // Everything about the framing is the board's except which side you are looking from.
+      // The descent owns the yaw while it is running -- it is turning the camera to square up
+      // on the grid, and taking input mid-turn would fight it -- and hands it back on arrival,
+      // after which Q and E walk round the arena exactly as they walk round the street. That
+      // is the one camera gesture this game has always had, and a fight is a bad moment to
+      // take it away: half the board's read is which bodies are behind which, and a fixed
+      // stage cannot answer that.
+      const yaw = this.descent ? cam.yaw : this.cameraYaw;
+      // The shake `Fx` asked for, spent on the camera rather than on the overlay canvas — so
+      // the world and the marks drawn over it shake together. See `OverlayCanvas`'s note.
+      const shake = this.combat?.shake ?? { x: 0, y: 0 };
+      camera.fov = cam.fov;
+      camera.updateProjectionMatrix();
+      camera.position.set(
+        cam.target.x + Math.sin(yaw) * horizontal + shake.x * 0.02,
+        height + shake.y * 0.02,
+        cam.target.z + Math.cos(yaw) * horizontal,
+      );
+      camera.lookAt(cam.target.x, 0.8, cam.target.z);
+      return;
+    }
+
+    const anchor = this.player?.position ?? new THREE.Vector3(this.area.spawn.x, 0, this.area.spawn.z);
     const pitch = THREE.MathUtils.degToRad(LOOK.cameraPitch);
     const horizontal = Math.cos(pitch) * LOOK.cameraDistance;
     const height = Math.sin(pitch) * LOOK.cameraDistance;
@@ -947,10 +1279,177 @@ export class DistrictScreen implements Screen {
       this.player.position.x,
       this.player.position.z,
       this.packs.filter((p) => p !== host),
+      (pulled) => this.beginFight(encounterId, pulled),
+    );
+    this.ring = ring;
+    this.world?.scene.add(ring.mesh);
+    this.updatables.push(ring);
+  }
+
+  /**
+   * The circle has closed. Lay a board on the ground inside it.
+   *
+   * Everything the engine needs that only the profile can answer comes back through
+   * `onPack` — the deck, the seed, the carry, the roster, the reinforcement squads, and the
+   * callback that settles the result into the save. It can decline — most often because a
+   * contract is already open against this character — and returns `false` when it does, so a
+   * caller with a sensible non-combat outcome can take it. The Warden has one.
+   */
+  private beginFight(encounterId: string, pulled: string[]): boolean {
+    const player = this.player;
+    const world = this.world;
+    if (!player || !world || !this.camera || this.combat) return false;
+
+    const fight = this.opts.onPack(encounterId, pulled);
+    if (!fight) {
+      this.inputLocked = false;
+      return false;
+    }
+
+    // Centred on the ring, not on the player: the ring is what the player watched decide how
+    // big this fight was going to be, and the board belongs inside it.
+    const at = { x: this.ring?.originX ?? player.position.x, z: this.ring?.originZ ?? player.position.z };
+
+    const combat = new WorldCombat({
+      root: this.root!,
+      scene: world.scene,
+      camera: this.camera,
+      area: this.area,
+      at,
+      maxAnisotropy: this.renderer!.capabilities.getMaxAnisotropy(),
+      encounter: fight.encounter,
+      seed: fight.seed,
+      companionId: this.opts.companionId,
+      ...(this.opts.companionShiny !== undefined
+        ? { companionShiny: this.opts.companionShiny }
+        : {}),
+      deck: fight.deck,
+      ...(fight.ai ? { ai: fight.ai } : {}),
+      ...(fight.carry ? { carry: fight.carry } : {}),
+      ...(fight.roster ? { roster: fight.roster } : {}),
+      ...(fight.wave2 ? { wave2: fight.wave2 } : {}),
+      onRotate: (steps) => this.nudgeOrbit(steps),
+      onFinish: (result, encounter, outcome) => {
+        this.endFight();
+        fight.onFinish(result, encounter, outcome);
+      },
+    });
+    this.combat = combat;
+    this.hud?.setCombat(true);
+
+    // Anything built inside the footprint gets out of the way. In a dense ward the search
+    // cannot always find a window with nothing in it, and fading a terrace corner is a better
+    // answer than drawing the grid through it.
+    const a = combat.board.centreOf({ x: 0, y: 0 });
+    const b = combat.board.centreOf({ x: combat.board.w - 1, y: combat.board.h - 1 });
+    world.setArena({
+      x0: Math.min(a.x, b.x) - 2,
+      z0: Math.min(a.z, b.z) - 2,
+      x1: Math.max(a.x, b.x) + 2,
+      z1: Math.max(a.z, b.z) + 2,
+    });
+
+    // Everything that was hunting this street goes off it.
+    //
+    // Not an aesthetic choice. The pack that jumped you is now standing on the grid as a
+    // squad, and its three roaming bodies were still on the road beside them -- the same
+    // creatures drawn twice, one copy playable and one frozen mid-stride inside the arena. The
+    // Warden goes for the same reason where it is in the fight, and where it is not, because
+    // a patrol walking past a battlefield is the loudest possible reminder that the board is
+    // pasted onto a world still going about its business.
+    //
+    // `endFight` puts them back, which matters for the one path that returns to this same
+    // screen instance: a Warden who cannot serve a second contract falls through to `seize`.
+    for (const pack of this.packs) pack.setVisible(false);
+    this.warden?.setVisible(false);
+
+    // The Commander and their beast take their places at the near edge — off the grid but on
+    // the field, which is the same geometry the 2D board draws its portraits in. They are the
+    // bodies that were walking a moment ago, which is most of the point of fighting here.
+    const stand = combat.heroStand();
+    player.position.set(stand.x, 0, stand.z);
+    this.follower?.snapTo(stand.x - 1.6, stand.z + 0.8);
+
+    const framing = frameBoard(
+      combat.board,
+      this.width() / Math.max(1, this.height()),
+      (world.scene.fog as THREE.FogExp2).density,
+    );
+    this.descent = new Descent(framing, {
+      yaw: this.cameraYaw,
+      target: new THREE.Vector3(player.position.x, 0, player.position.z),
+    });
+
+    // The circle has done its job; the grid is the thing on the ground now.
+    if (this.ring) {
+      world.scene.remove(this.ring.mesh);
+      const i = this.updatables.indexOf(this.ring);
+      if (i >= 0) this.updatables.splice(i, 1);
+      this.ring.dispose();
+      this.ring = null;
+    }
+    return true;
+  }
+
+  /**
+   * The fight is over. Give the street back.
+   *
+   * Called before the result is handed upward, because what happens next is usually a screen
+   * change and this has to have let go of the scene by then. Everything it undoes was set by
+   * `beginFight`, in the same order.
+   */
+  private endFight(): void {
+    if (!this.combat) return;
+    this.combat.dispose();
+    this.combat = null;
+    this.hud?.setCombat(false);
+    // Whatever the fight did to the follower, it walks the road again after it.
+    if (this.follower) this.follower.walker.sprite.visible = true;
+    for (const pack of this.packs) pack.setVisible(true);
+    this.warden?.setVisible(true);
+    this.descent = null;
+    this.combatCam = null;
+    this.world?.setArena(null);
+    this.world?.setFogScale(1);
+    if (this.camera) {
+      this.camera.fov = LOOK.fov;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  /**
+   * Caught off the pavement, and no longer simply escorted back.
+   *
+   * The Warden used to `seize()`: a flash, a teleport to the last flagstone, nothing owed.
+   * That was a deliberate choice — a lesson rather than a tax — and the lesson survives,
+   * because losing this fight still ends at `lastRefuge`, which in a ward with pavement *is*
+   * the last flagstone. What changes is that the rule now has something behind it.
+   *
+   * The circle is opened on the **Warden**, not on the player, and the packs stay candidates
+   * for it. That is not an oversight: a Warden only ever catches you off the pavement, which
+   * is precisely where packs are live — so an arrest that drags a gutter crew in with it comes
+   * free, out of machinery that already exists, and is the best thing that can happen in this
+   * ward.
+   */
+  private arrest(): void {
+    const warden = this.warden;
+    if (this.inputLocked || !this.player || !warden || this.ring) return;
+    this.inputLocked = true;
+    this.writePosition({ x: this.lastRefuge.x, z: this.lastRefuge.z });
+
+    this.hud?.setAlert(false);
+    this.world?.spawnImpactLight(warden.position, '#d8b13a', 1.6);
+    warden.reset();
+
+    const ring = new CombatRing(
+      warden.position.x,
+      warden.position.z,
+      this.packs,
       (pulled) => {
-        this.hud?.showBattle();
-        this.battleTimer = 0.9;
-        this.pendingFight = { encounterId, pulled };
+        // A Warden who catches you while a contract is already open cannot serve a second
+        // one, and the old escort is exactly the right thing to do instead: back onto the
+        // flags, nothing owed. The lesson was never the fight.
+        if (!this.beginFight(WARDEN_ENCOUNTER, pulled)) this.seize();
       },
     );
     this.ring = ring;

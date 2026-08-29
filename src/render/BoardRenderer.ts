@@ -13,12 +13,10 @@ import { PALETTE, schoolOf } from './palette.js';
 import type { School } from '../contract/ids.js';
 import {
   drawBasePlate,
-  drawBoundMark,
+  drawBodyFurniture,
   drawBoundary,
   drawCommander,
   drawCover,
-  drawMark,
-  drawStatBar,
   drawTile,
   drawUnitBody,
   fillTile,
@@ -154,6 +152,16 @@ export interface CommanderModel {
   hp: number;
   maxHp: number;
   armor: number;
+  /**
+   * The painted body, if it has decoded.
+   *
+   * Resolved by the screen rather than looked up here, because the renderer is handed a fight
+   * and not a character: which bearing the Hero wears and which species stands beside them are
+   * facts about the save, and `BoardView` deliberately carries neither. `CombatScreen` knows
+   * both and re-resolves this every time it syncs, so the art appears the moment it loads
+   * without anything having to wait for it.
+   */
+  art?: HTMLImageElement | null;
 }
 
 /** How much bigger a unit looks per Escalation stack. */
@@ -771,6 +779,7 @@ export class BoardRenderer {
       armor: c.armor,
       name: c.name,
       pulse,
+      art: c.art ?? null,
     });
   }
 
@@ -1015,28 +1024,9 @@ export class BoardRenderer {
       });
     }
 
-    if (view.mark) {
-      const brandY = centre.y - (footprint === 2 ? 70 : 30) * cam.zoom;
-      drawMark(ctx, { x: centre.x, y: brandY }, view.mark.school, pulse, cam.zoom);
-    }
-
-    // The Bound Form's health is the Pact's, shown on the gauge above. A bar here
-    // would read as a second, separate pool -- and one that never moves.
-    if (view.snapshot?.keywords.includes('BoundForm')) {
-      drawBoundMark(ctx, centre, cam.zoom, pulse, view.snapshot.side === 'player');
-    } else {
-      drawStatBar(ctx, centre, view.hp, view.maxHp, view.armor, view.atk, cam.zoom);
-    }
-
-    if (view.escalation > 0) {
-      ctx.fillStyle = '#FDE047';
-      ctx.font = `700 ${Math.round(11 * cam.zoom)}px ui-sans-serif, system-ui, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.fillText(`▲${view.escalation}`, centre.x, centre.y + 40 * cam.zoom);
-      ctx.textAlign = 'left';
-    }
-
-    this.drawStatusChips(view, centre);
+    // The brand, the numbers and the statuses, all of which the district's board wears too.
+    // Shared rather than duplicated: see `drawBodyFurniture`.
+    drawBodyFurniture(ctx, centre, cam.zoom, view, pulse);
 
     ctx.restore();
 
@@ -1075,42 +1065,6 @@ export class BoardRenderer {
       ctx.restore();
     }
   }
-
-  private drawStatusChips(view: EntityView, centre: { x: number; y: number }): void {
-    if (view.statuses.length === 0) return;
-    const { ctx, cam } = this;
-    // Every status the game can apply has a face here. `brittle` and `charged` were the
-    // two that fell through to the `•` default — the first is what Superconduct leaves
-    // and the second is half of three reactions, so both were invisible exactly when they
-    // mattered most.
-    const icons: Record<string, string> = {
-      burn: '🔥',
-      toxin: '☠',
-      chill: '❄',
-      freeze: '❄',
-      entangle: '🌿',
-      stun: '💫',
-      brittle: '🜃',
-      charged: '⚡',
-      aetherPlated: '🛡',
-      anchor: '⚓',
-    };
-
-    ctx.save();
-    ctx.font = `${Math.round(12 * cam.zoom)}px ui-sans-serif, system-ui, sans-serif`;
-    ctx.textAlign = 'center';
-    let dx = -((view.statuses.length - 1) * 14 * cam.zoom) / 2;
-    for (const s of view.statuses) {
-      ctx.fillText(
-        `${icons[s.kind] ?? '•'}${s.stacks > 1 ? s.stacks : ''}`,
-        centre.x + dx,
-        centre.y + 40 * cam.zoom,
-      );
-      dx += 16 * cam.zoom;
-    }
-    ctx.restore();
-  }
-
 
   /**
    * The flight a shot would take, in the school's own colour.

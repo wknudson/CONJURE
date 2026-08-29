@@ -16,6 +16,36 @@ export interface ScreenPoint {
   y: number;
 }
 
+/**
+ * The whole of what a screen effect needs from a camera.
+ *
+ * Extracted so `Fx` can be pointed at something other than this projection. It draws in
+ * screen pixels and asks the camera two questions: where is this tile, and how far is the
+ * frame currently shaken. Neither answer is isometric — a perspective camera in the
+ * district answers both by projecting the tile's world position — so nothing about the
+ * detonations, tracers, blooms or damage floaters is specific to the 2D board, and none of
+ * it needs writing twice.
+ *
+ * `IsoCamera` satisfies this as written; this interface is a description of what it already
+ * does, not a new obligation on it.
+ */
+export interface FxCamera {
+  /** Centre of a tile in CSS pixels, lifted by `elevPx` screen pixels. */
+  tileCenter(c: Coord, elevPx?: number): ScreenPoint;
+  /** The current frame offset. Mutable: `Fx.screenShake` drives it directly. */
+  shake: ScreenPoint;
+  /**
+   * How wide and tall one tile currently reads on screen, in CSS pixels.
+   *
+   * Blast radii and particle spread are scaled off these so an effect stays proportional to
+   * the board rather than to the window — a detonation is "about one and a half tiles
+   * across", which has to survive a zoom. A perspective camera answers by projecting two
+   * neighbouring tile centres and measuring between them.
+   */
+  readonly tileW: number;
+  readonly tileH: number;
+}
+
 /** Below roughly this, tiles are too small to read or click accurately. */
 const MIN_READABLE_ZOOM = 0.45;
 

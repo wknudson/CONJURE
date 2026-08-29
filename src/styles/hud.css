@@ -284,21 +284,56 @@
  * you cannot scroll to negative offset. `safe` keeps the centring while there is room and
  * silently becomes `flex-start` the moment there is not. The bare `center` above it is the
  * fallback for anything that does not parse the keyword.
+ *
+ * ## And the padding is what stops it clipping the card you are looking at
+ *
+ * A hovered card grows *upward*: `transform-origin: bottom center` with `scale(1.55)` on a
+ * 142px card puts its top edge 78px up, and `translateY(-26px)` takes it to 104. It also
+ * widens 104px to 161px, so the first and last cards grow ~29px sideways. All of that used to
+ * be cut off by the scroll box, which is a hand you cannot read.
+ *
+ * `overflow-y: visible` is not available: CSS forbids one axis being `visible` while the other
+ * scrolls -- it computes to `auto`. So the room is made *inside* the box with padding, and taken
+ * back out with an equal negative margin so nothing on screen moves. The box simply extends up
+ * over the board, where the hand draws nothing anyway.
+ *
+ * The padding is deliberately **vertical only**. Side padding was tried and had to come out: it
+ * is subtracted from the content width, and seven cards at 764px fit the hand's 806px with only
+ * 21px to spare -- so 34px of it each side pushed the row into scrolling on a window where it
+ * previously did not, which is a worse bug than the one being fixed. The consequence is that the
+ * outermost card still loses a few pixels of its *side* to the box when the hand is full, exactly
+ * as it did before. That is the lesser half of this: a card's cost, name and art are along its
+ * top edge, and the top is what was unreadable.
+ *
+ * `pointer-events` is then mandatory rather than tidy. That strip lies over the board and over
+ * the End Turn button, and everything under `.hud > *` takes pointer events -- so without this
+ * the hand would silently swallow clicks on your own front rank. Cards opt back in. The one
+ * thing it costs is *dragging* the scrollbar; the wheel still scrolls, because the event
+ * bubbles from the card under the cursor.
  */
 .hand {
   display: flex;
   align-items: flex-end;
   gap: 6px;
-  min-height: 142px;
+  /* 142 of card plus the padding below: `box-sizing` is `border-box`, so the padding has to
+     be paid for here or the cards get squashed into what is left. */
+  min-height: 264px;
   flex: 1 1 auto;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  /* Room for the scrollbar so it never sits on top of a card's bottom edge. */
-  padding-bottom: 2px;
+  /* Headroom for the hovered card and its shadow, cancelled by the margin below.
+     The 2px at the bottom is for the scrollbar, so it never sits on a card's bottom edge. */
+  padding: 120px 0 2px;
+  margin: -120px 0 0;
+  pointer-events: none;
   scrollbar-width: thin;
   justify-content: center;
   justify-content: safe center;
+}
+
+.hand > * {
+  pointer-events: auto;
 }
 
 .end-turn {

@@ -31,7 +31,7 @@ import { VictoryScreen } from './app/VictoryScreen.js';
 import { DeckBuilderScreen } from './app/DeckBuilderScreen.js';
 import type { DeckBuilderResult } from './app/DeckBuilderScreen.js';
 import { PreCombatScreen } from './app/PreCombatScreen.js';
-import { DistrictScreen } from './district/DistrictScreen.js';
+import { DistrictScreen, type WorldFight } from './district/DistrictScreen.js';
 import { DEFAULT_AREA, areaById } from './district/areas/index.js';
 import { tutorialActive } from './district/quest.js';
 import { ShopScreen } from './app/ShopScreen.js';
@@ -457,7 +457,7 @@ function showArea(areaId: string, companionId: string): void {
       // that road is what pays the spoils and closes the abandon failsafe.
       onPack: (encounterId, pulled) => {
         const pack = packByEncounter(encounterId);
-        if (!pack) return;
+        if (!pack) return null;
         const encounter = encounterById(encounterId);
         if (!encounter) {
           pendingNotice = {
@@ -465,7 +465,7 @@ function showArea(areaId: string, companionId: string): void {
             body: 'The posting names a place nobody can find any more. Try another.',
           };
           showDistrict(companionId);
-          return;
+          return null;
         }
 
         // The ring closed on more than the one that jumped you. Each extra pack sends the
@@ -491,10 +491,21 @@ function showArea(areaId: string, companionId: string): void {
         const seed = Math.floor(Math.random() * 1e9);
         profile().lastRun = { encounterId, seed, companionId, deck: [...deck] };
         persist();
-        startCombat(encounter, companionId, deck, seed, bounty, {
-          wave2: extras.map(reinforceSquad),
-          pulled: extras.map((p) => p.encounterId),
-        });
+        // `'defer'`: the contract, the stake and the failsafe handle are all opened here as
+        // they always were, but the fight itself is handed back to the district to be played
+        // on the road it started on rather than swapped to a board of its own.
+        return startCombat(
+          encounter,
+          companionId,
+          deck,
+          seed,
+          bounty,
+          {
+            wave2: extras.map(reinforceSquad),
+            pulled: extras.map((p) => p.encounterId),
+          },
+          'defer',
+        );
       },
       onBounty: (bounty) => {
         // Any real contract counts, not only the Novice one. The board steers a new
@@ -654,7 +665,20 @@ function startCombat(
    * so the win can put them on the same cooldown as the pack that started it.
    */
   ring?: { wave2: string[][]; pulled: string[] },
-): void {
+  /**
+   * Whether to open the 2D board, or hand the fight back to be played where it started.
+   *
+   * `'screen'` is every fight reached from the Bounty Board: it swaps to `CombatScreen` and
+   * returns nothing. `'defer'` is the road, where `DistrictScreen` lays the board on the
+   * ground it is already rendering and needs the pieces rather than a screen.
+   *
+   * Everything above this line runs either way, and that is the point of the switch being
+   * here rather than of there being two functions: the contract, the stake, the failsafe
+   * handle and the save all happen *before* the player can see a single turn, and a second
+   * copy of that ordering is a second chance to let the first turn be a free look.
+   */
+  present: 'screen' | 'defer' = 'screen',
+): WorldFight | null {
   const global = profile().state;
   const carry = carryFor(
     global.overworld,
@@ -696,7 +720,7 @@ function startCombat(
             body: 'Another fight is already open against your name. Finish it first.',
           };
     showDistrict(companionId);
-    return;
+    return null;
   }
   openContract(global, bounty);
   // The ring's pulls are deliberately *not* written here. This handle exists so a boot that
@@ -706,20 +730,37 @@ function startCombat(
   global.combat = { encounterId: encounter.id, seed };
   persist();
 
+  const opened = {
+    encounter,
+    seed,
+    deck: printedDeck(profile().collection, deck),
+    ai: profileByName(saveFile.difficulty) ?? NOVICE_AI,
+    carry,
+    roster: profile().roster,
+    ...(ring?.wave2 ? { wave2: ring.wave2 } : {}),
+    onFinish: (result: CombatResult, played: EncounterDef, outcome: CombatOutcome) =>
+      finishCombat(result, played, outcome, companionId, ring?.pulled ?? []),
+  };
+  if (present === 'defer') return opened;
+
   screens.go(
     new CombatScreen(
       encounter,
-      (result, played, outcome) =>
-        finishCombat(result, played, outcome, companionId, ring?.pulled ?? []),
+      opened.onFinish,
       companionId,
       seed,
-      printedDeck(profile().collection, deck),
-      profileByName(saveFile.difficulty) ?? NOVICE_AI,
+      opened.deck,
+      opened.ai,
       carry,
-      profile().roster,
+      opened.roster,
       ring?.wave2,
+      // The bearing the Hero is painted in. Read from the character rather than the board,
+      // which does not carry it -- the same place the district reads it to put a body on the
+      // street. Without it the fight draws a prism where the Commander should be standing.
+      { gender: profile().characterLook.gender },
     ),
   );
+  return null;
 }
 
 // Nothing about the fight is carried past its end any more: with the rematch gone, the

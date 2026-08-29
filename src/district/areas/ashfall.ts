@@ -71,7 +71,7 @@ const GRID: readonly string[] = [
   '#ccccccccSSSScccccc#', // 16
   '##cccccSSSSSSSScccc#', // 17  the plaza
   '###ccccSSSSSSSScc###', // 18
-  '####################', // 19
+  '###VVVVVVVVVVVV#ccVV', // 19  the south wall, and the gate to Lamprow
 ];
 
 /** Half the ward's span, for writing positions in world units below. */
@@ -119,13 +119,72 @@ export const ASHFALL: AreaDef = defineArea({
       // not immediately offer to send you back.
       arrive: { x: 34, z: 22 },
     },
+    {
+      // South out of the plaza, into Lamprow. A second sealed crossing rather than an open
+      // one: this is still the Magistracy's ground on both sides, and the wall it is cut
+      // through is the same argument the yard wall makes.
+      to: 'lamprow',
+      x: 26,
+      z: 35.6,
+      label: 'Through the south gate to Lamprow',
+      // The wall on row 19, south of where you stand to read it — the orientation the gate
+      // mesh is built for.
+      gate: { x: 26, z: 38 },
+      // Onto Lamprow's High Street, a stride clear of its own way back.
+      arrive: { x: -36, z: 4 },
+    },
+    {
+      // East, off the cross-street into the Bonemarket. Gateless, like every crossing inside
+      // the city: a gate is the Magistracy sealing something, and it does not seal a market.
+      to: 'bonemarket',
+      x: 38,
+      z: 10,
+      label: 'East into the Bonemarket',
+      arrive: { x: -38, z: 2 },
+    },
+    {
+      // West, down the cart lane to the works. The ward is named for what blows back up it.
+      to: 'cinderworks',
+      x: -38,
+      z: -2,
+      label: 'West, down to the Cinderworks',
+      arrive: { x: 42, z: 2 },
+    },
+    {
+      // West again, further south. Two ways off the same edge, because Ward Seven is not
+      // somewhere the ward would put on the same road as its foundry.
+      to: 'ward_seven',
+      x: -38,
+      z: 26,
+      label: 'West into Ward Seven',
+      arrive: { x: 34, z: 6 },
+    },
   ],
   props: {
     doors: DOORS,
     /** The bounty board, on the plaza between the spawn and the cross-street. */
     board: { x: 12, z: 29 },
     /** The Dispatcher, close enough to the spawn to be the obvious first thing. */
-    npcs: [{ id: 'vex', x: -2, z: 27 }],
+    /**
+     * The Dispatcher, and the sentry on the south gate.
+     *
+     * Vex is first and unchanged — no `art`, no `label`, no `says`, which is what the screen
+     * reads as "this one is the Dispatcher" and draws from the hero bearings. The sentry is
+     * on the last flagstone before the gate to Lamprow, and on pavement, because everybody in
+     * Ashfall's guided lap is.
+     */
+    npcs: [
+      { id: 'vex', x: -2, z: 27 },
+      {
+        id: 'ashfall_gate_guard',
+        x: 18,
+        z: 34,
+        art: 'town_guard',
+        label: 'Talk to the gate sentry',
+      },
+      { id: 'ashfall_smith', x: 2, z: 22, art: 'blacksmith', label: 'Talk to the smith' },
+      { id: 'ashfall_cobbler', x: -2, z: 34, art: 'cobbler', label: 'Talk to the cobbler' },
+    ],
     /** The Warden's beat, clockwise around the open warehouse yard. */
     patrols: [
       [
@@ -177,8 +236,9 @@ export const ASHFALL: AreaDef = defineArea({
       { text: "VANE'S LIGHT IS OUR DARK", wallX: WEST_X, wallZ: 15.95, dx: 3.0, facesSouth: false, tint: '#b7ae9d' },
       // The last line before the Spire, per the doc: fresh paint on the wall nearest the
       // board that posts The Summons. TODO(worldbuild): should live on the Highcourt
-      // approach once one exists, and ideally only appear late-campaign — the world does
-      // not read campaign state yet.
+      // approach — which exists now, `areas/highcourt.ts`, so that half of the wait is over
+      // — and ideally only appear late-campaign, which is still blocked: the world does not
+      // read campaign state.
       { text: "DON'T CARRY IT IN", wallX: EAST_X, wallZ: 15.95, dx: -3.2, facesSouth: false, tint: '#a4543a' },
     ],
     waterRows: WATER_ROWS,

@@ -21,8 +21,11 @@ import {
   splitRun,
   tileAt,
 } from '../district/map.js';
-import { AREAS, ASHFALL, areaById } from '../district/areas/index.js';
+import { AREAS, ASHFALL, CHALK_ROAD, LAMPROW, areaById } from '../district/areas/index.js';
+import { GROUND_TEXES } from '../district/textures.js';
 import { ColliderSet } from '../district/collision.js';
+import { FOLK_LINES } from '../district/dialogue.js';
+import { FOLK_IDS, isFolkId } from '../render/folk.js';
 
 const SPAWN = ASHFALL.spawn;
 const DOORS = ASHFALL.props.doors ?? [];
@@ -31,6 +34,44 @@ const VEX_POS = ASHFALL.props.npcs![0]!;
 const WARDEN_WAYPOINTS = ASHFALL.props.patrols![0]!;
 
 const ALL: TutorialFlag[] = ['intro', 'artificer', 'journal', 'bounty_taken', 'complete'];
+
+describe('the world is populated', () => {
+  const cast = AREAS.flatMap((a) => (a.props.npcs ?? []).map((n) => ({ area: a.id, ...n })));
+
+  it('uses every drawing on every sheet', () => {
+    // All forty-eight, deliberately. An unused sprite is not a bug, but it is a decision, and
+    // this is the line that makes dropping one a decision somebody has to take on purpose
+    // rather than a thing that quietly happens while an area is edited.
+    const placed = new Set(cast.map((n) => n.art).filter(Boolean));
+    expect([...FOLK_IDS].filter((id) => !placed.has(id))).toEqual([]);
+  });
+
+  it('gives everybody their own name, and their own script', () => {
+    // Two people can share a `says` on purpose -- a market row agreeing about the weigh-house
+    // -- but nobody may share an `id`, which is what the screen keys them by.
+    const ids = cast.map((n) => n.id);
+    expect(ids).toHaveLength(new Set(ids).size);
+  });
+
+  it('leaves the Wildlands and the Chalk Road empty', () => {
+    // Not an oversight, and this is where that is written down. The atlas says nothing lives
+    // out here, and that the Road carries no notices because "the notices are posted where
+    // somebody is accountable for them". A townsperson on the Rimefields would be the map
+    // contradicting the only thing those areas exist to say.
+    const uninhabited = [
+      'chalk_verge',
+      'chalk_road',
+      'caldera',
+      'ashwood',
+      'rimefields',
+      'storm_shelf',
+      'bone_bastion',
+    ];
+    for (const id of uninhabited) {
+      expect(areaById(id)?.props.npcs ?? [], id).toEqual([]);
+    }
+  });
+});
 
 describe('the guided lap', () => {
   it('opens by pointing at the Dispatcher', () => {
@@ -231,6 +272,78 @@ describe('every area', () => {
           const at = area.props.huntSignpost;
           expect(isWalkable(area, at.x, at.z), 'signpost').toBe(true);
         }
+        // NPCs were not in this list while there was one of them, standing on a tile
+        // somebody had checked by eye. There are thirty-one now, placed across eleven areas
+        // nobody has ever walked, and a person inside a wall is unreachable rather than
+        // merely wrong -- their whole content is behind an interact prompt you cannot get
+        // close enough to raise.
+        for (const n of area.props.npcs ?? []) {
+          expect(isWalkable(area, n.x, n.z), `${area.id}: npc ${n.id}`).toBe(true);
+        }
+      });
+
+      it('gives every one of its people art, a prompt and something to say', () => {
+        for (const n of area.props.npcs ?? []) {
+          // No `art` means the Dispatcher, who is drawn from the hero bearings and whose
+          // script is the tutorial. Exactly one such person exists and the screen special
+          // cases them; anybody else without art would render as Vex's twin.
+          if (!n.art) {
+            expect(n.id, `${area.id}: only the Dispatcher may go without art`).toBe('vex');
+            continue;
+          }
+          expect(isFolkId(n.art), `${area.id}: ${n.id} art '${n.art}'`).toBe(true);
+          expect(n.label, `${area.id}: ${n.id} needs a prompt`).toBeTruthy();
+          // The cross-file link that fails silently: a `says` with no entry gives a person
+          // an interact prompt that opens an empty box.
+          const key = n.says ?? n.id;
+          expect(FOLK_LINES[key], `${area.id}: ${n.id} has no script under '${key}'`).toBeDefined();
+          expect(FOLK_LINES[key]!.length, `${area.id}: ${n.id} script is empty`).toBeGreaterThan(0);
+        }
+      });
+
+      it('keeps its people clear of each other and of the furniture', () => {
+        // `NPC.interactRadius` is 2.8 and a `Hotspot`'s is 2.6. Two overlapping prompts is
+        // not a cosmetic problem: the screen offers the nearest interactable, so a door
+        // standing inside somebody's radius becomes a door you cannot reliably open.
+        const npcs = area.props.npcs ?? [];
+        for (let i = 0; i < npcs.length; i++) {
+          for (let j = i + 1; j < npcs.length; j++) {
+            const a = npcs[i]!;
+            const b = npcs[j]!;
+            expect(
+              Math.hypot(a.x - b.x, a.z - b.z),
+              `${area.id}: ${a.id} and ${b.id} share a prompt`,
+            ).toBeGreaterThan(5.6);
+          }
+        }
+        const hotspots = [
+          ...(area.props.doors ?? []).map((d) => ({ what: 'a door', x: d.x, z: d.z })),
+          ...area.exits.map((e) => ({ what: `the ${e.to} exit`, x: e.x, z: e.z })),
+          ...(area.props.board ? [{ what: 'the board', ...area.props.board }] : []),
+          ...(area.props.huntSignpost
+            ? [{ what: 'the signpost', ...area.props.huntSignpost }]
+            : []),
+        ];
+        for (const n of npcs) {
+          for (const h of hotspots) {
+            expect(
+              Math.hypot(n.x - h.x, n.z - h.z),
+              `${area.id}: ${n.id} stands on ${h.what}`,
+            ).toBeGreaterThan(5.4);
+          }
+        }
+      });
+
+      it('does not stand anybody inside a roaming pack', () => {
+        // A townsperson in a roam circle is a person you must walk into a fight to talk to.
+        for (const n of area.props.npcs ?? []) {
+          for (const pk of area.props.packs ?? []) {
+            expect(
+              Math.hypot(n.x - pk.x, n.z - pk.z),
+              `${area.id}: ${n.id} is inside ${pk.encounterId}`,
+            ).toBeGreaterThan(pk.roam);
+          }
+        }
       });
 
       it('agrees with itself about how big it is', () => {
@@ -240,12 +353,114 @@ describe('every area', () => {
         expect(area.halfX).toBe((area.cols * 4) / 2);
         expect(area.halfZ).toBe((area.rows * 4) / 2);
       });
+
+      it('paints every tile it declares', () => {
+        // `TileDef.tex` is a plain string and `bakeGround` ends in a bare `else`, so a
+        // misspelled paint does not fail -- it silently lays cobbles, and the first anyone
+        // hears of it is a road that looks like a street. Fail where the mistake is.
+        for (const [ch, def] of Object.entries(area.legend)) {
+          expect(GROUND_TEXES, `'${ch}' asks for an unknown paint '${def.tex}'`).toContain(
+            def.tex,
+          );
+        }
+      });
+
+      it('gives its Warden ground it is allowed to look at', () => {
+        // Was asked of Ashfall alone, back when Ashfall was the only ward with a patrol.
+        // A beat that ran along the pavement would be a beat with no teeth: the Warden may
+        // never see you there, so it would spend its life somewhere it cannot do its job.
+        for (const beat of area.props.patrols ?? []) {
+          for (const wp of beat) {
+            expect(isWalkable(area, wp.x, wp.z), `${area.id} waypoint walkable`).toBe(true);
+            if (area.safety === 'sidewalk') {
+              expect(isSafeAt(area, wp.x, wp.z), `${area.id} waypoint must not be pavement`).toBe(
+                false,
+              );
+            }
+          }
+        }
+      });
+
+      it('has somewhere safe to put a seized player back', () => {
+        // `lastSafePos` is seeded from the spawn. An area with a patrol and an unsafe spawn
+        // drops a seized player onto danger ground and lets the Warden take them again on
+        // the next frame.
+        if ((area.props.patrols ?? []).length > 0 && area.safety === 'sidewalk') {
+          expect(isSafeAt(area, area.spawn.x, area.spawn.z), `${area.id} spawn`).toBe(true);
+        }
+      });
     });
   }
 
   it('has unique ids, because a save stores one', () => {
     const ids = AREAS.map((a) => a.id);
     expect(new Set(ids).size, ids.join(', ')).toBe(ids.length);
+  });
+});
+
+describe('the Lamprow grid', () => {
+  const HIGH_STREET_Z = [2, 6]; // the two rows of flags
+  const KERB_Z = 8; // where they end and the Sink begins
+
+  it('runs one unbroken safe lane from one end of the ward to the other', () => {
+    // The whole reason the ward is on the map: a walkway long enough to matter, so that
+    // stepping off it is a decision rather than an accident of where the paving stopped.
+    for (const z of HIGH_STREET_Z) {
+      for (let x = -42; x <= 34; x += 2) {
+        expect(isSafeAt(LAMPROW, x, z), `the High Street breaks at (${x}, ${z})`).toBe(true);
+      }
+    }
+  });
+
+  it('opens onto the ward at the west end of that lane', () => {
+    const back = LAMPROW.exits[0]!;
+    expect(back.to).toBe('ashfall_ward');
+    expect(isSafeAt(LAMPROW, back.x, back.z), 'the way out is on the flags').toBe(true);
+  });
+
+  it('puts every lamp on the flags, because the light is the safe zone', () => {
+    // A lamp standing on danger ground would be the map telling a lie the rules do not back.
+    for (const lamp of LAMPROW.props.lamps ?? []) {
+      expect(isSafeAt(LAMPROW, lamp.x, lamp.z), `lamp at (${lamp.x}, ${lamp.z})`).toBe(true);
+    }
+  });
+
+  it('keeps the Sink below the kerb, and its crews on it', () => {
+    for (const spec of LAMPROW.props.packs ?? []) {
+      expect(spec.z, `${spec.encounterId} should live below the flags`).toBeGreaterThan(KERB_Z);
+      expect(isWalkable(LAMPROW, spec.x, spec.z)).toBe(true);
+      expect(isSafeAt(LAMPROW, spec.x, spec.z)).toBe(false);
+    }
+  });
+});
+
+describe('the Chalk Road grid', () => {
+  it('is a corridor rather than a room', () => {
+    // The shape is the mechanic: a long sightline with things set in it to break the line.
+    expect(CHALK_ROAD.cols).toBeGreaterThan(CHALK_ROAD.rows * 2);
+  });
+
+  it('offers no sanctioned ground at all', () => {
+    expect(CHALK_ROAD.safety).toBe('none');
+    for (const [ch, def] of Object.entries(CHALK_ROAD.legend)) {
+      expect(def.safe, `'${ch}' claims to be safe out on the road`).toBe(false);
+    }
+  });
+
+  it('never blocks the road itself', () => {
+    // Waystones sit in the rows either side. The middle lane has to stay open end to end or
+    // the artery is a dead end with scenery in it.
+    for (let x = -58; x <= 62; x += 2) {
+      expect(isWalkable(CHALK_ROAD, x, 2), `the road is blocked at x=${x}`).toBe(true);
+    }
+  });
+
+  it('runs out of both ends, now that the Rimefields are walkable', () => {
+    // This asserted the *opposite* until the Wildlands landed: the west end was hedge, and the
+    // test said so while naming the work that would open it. A road with a wall across one end
+    // is a cul-de-sac, and the Ring's whole shape depends on this one being a through route.
+    expect(isWalkable(CHALK_ROAD, -62, 2), 'the west end').toBe(true);
+    expect(isWalkable(CHALK_ROAD, 62, 2), 'the east end').toBe(true);
   });
 });
 
@@ -259,6 +474,12 @@ describe('the ward grid', () => {
     // The whole guided lap has to be walkable without once stepping off the walkway.
     // Leaving it is a choice the player makes, and that is the only way the rule teaches.
     expect(isSafeAt(ASHFALL, SPAWN.x, SPAWN.z), 'spawn').toBe(true);
+    // Every one of them, not just Vex. Ashfall gained a gate sentry, and the ward's whole
+    // argument is that its business can be done without stepping off the flags -- one person
+    // standing on danger ground is the map quietly withdrawing that promise.
+    for (const npc of ASHFALL.props.npcs ?? []) {
+      expect(isSafeAt(ASHFALL, npc.x, npc.z), npc.id).toBe(true);
+    }
     expect(isSafeAt(ASHFALL, VEX_POS.x, VEX_POS.z), 'Vex').toBe(true);
     for (const door of DOORS) {
       expect(isSafeAt(ASHFALL, door.x, door.z), door.key).toBe(true);

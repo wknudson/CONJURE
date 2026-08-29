@@ -756,6 +756,30 @@ without having to be a program: opting in is a field, not code.
 > the turn machine reads cannot fall out of step with the one that ships. The turn machine
 > only ever has an id to hand.
 
+### One encounter, two presentations
+
+Nothing about an `EncounterDef` says how it is drawn, and since the district gained the
+ability to hold a fight there are two answers:
+
+| Reached from | Drawn by | Notes |
+|---|---|---|
+| The Bounty Board | `app/CombatScreen.ts` — the 2D isometric canvas | Unchanged |
+| The road (a pack, or the Warden) | `district/combat/WorldCombat.ts` — in the three.js district, on the ground the Combat Ring closed on | No screen swap |
+
+Both drive the **same** `CombatSession`, `Sequencer`, animation handlers, `Hud`,
+`TargetingController` and `Fx`. That was possible without touching the engine because none of
+those layers ever knew about the projection: `EntityViewMap` stores fractional *tile*
+coordinates, `TargetingController` speaks only `Coord`, and `Fx` asks its camera four questions
+that a perspective camera can answer as well as an isometric one. See `docs/12` §2.6.
+
+The one thing an arena's **size** now also decides is whether it can be seated on real district
+ground. Every roaming pack shares a 7×6 arena and every area that roams packs can seat it
+cleanly; a larger arena in a dense ward falls back to fading the buildings it cannot avoid.
+`worldBoard.test.ts` is where that is enforced.
+
+`warden_writ` joins the registry through the same `PackDef` route the roaming packs use, and is
+the only one never placed on a map — it is served on you rather than walked into.
+
 ### Continental Apex Bosses
 
 There are none, and there is no continent system. `ignis_trial` is the shipped boss and the

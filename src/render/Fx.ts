@@ -4,7 +4,7 @@
  */
 
 import type { Coord, DamageType } from '../contract/ids.js';
-import type { IsoCamera } from './IsoCamera.js';
+import type { FxCamera } from './IsoCamera.js';
 import { schoolOf } from './palette.js';
 import { tween, easeOutQuad, linear } from '../anim/tween.js';
 
@@ -104,7 +104,11 @@ export class Fx {
   private shakePhase = 0;
 
   constructor(
-    private readonly cam: IsoCamera,
+    // `FxCamera` rather than `IsoCamera`: everything below works in screen pixels and asks
+    // the camera only where a tile is and how far the frame is shaken. That makes the whole
+    // of this file reusable over the district's perspective camera, which is why the fight
+    // out in the world has no effects layer of its own.
+    private readonly cam: FxCamera,
     private readonly floaterLayer: HTMLElement,
   ) {}
 

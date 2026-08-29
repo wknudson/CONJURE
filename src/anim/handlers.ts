@@ -15,8 +15,20 @@ import type { Fx } from '../render/Fx.js';
 import { FLOATER_FOR_DTYPE } from '../render/Fx.js';
 import type { Sfx } from '../sound/Sfx.js';
 import type { Hud } from '../hud/Hud.js';
-import type { BoardRenderer } from '../render/BoardRenderer.js';
+import type { TetherModel } from '../render/BoardRenderer.js';
 import { schoolOf, statusColor } from '../render/palette.js';
+
+/**
+ * Somewhere to hang the tether.
+ *
+ * Named as a sink rather than typed as the renderer because that is the whole of what the
+ * handlers below do with it: assign a model, or clear it. Whoever draws the cable reads the
+ * field on its own frame. `BoardRenderer` satisfies this with the public field it already
+ * has, and so does the board out in the district — which is the point.
+ */
+export interface TetherSink {
+  tether: TetherModel | null;
+}
 
 export interface CombatView {
   views: EntityViewMap;
@@ -28,7 +40,7 @@ export interface CombatView {
    * present the Aetheric Tether, which `BoardView` does not carry and which cannot be
    * added to it without editing the core.
    */
-  renderer: BoardRenderer;
+  renderer: TetherSink;
 }
 
 /** Held beat before a death resolves, so removing a piece has weight. */

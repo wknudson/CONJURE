@@ -539,7 +539,12 @@ export class DistrictWorld {
       // street, so a tenth of one still reads as a wall — the two south-facing doors put
       // the camera directly behind their own building, and at 0.16 the Commander was a
       // silhouette behind a grey pane rather than someone standing in a doorway.
-      const want = this.occHit.has(s.hit) ? 0.04 : 1;
+      //
+      // The arena is folded into the same `want` rather than faded by a second pass. It has
+      // to be: this loop runs every frame and writes `1` to everything it does not consider
+      // occluded, so an arena fade applied from outside would be undone on the next frame.
+      // One place decides how visible a building is.
+      const want = this.occHit.has(s.hit) || this.inArena(s.hit) ? 0.04 : 1;
       for (const mat of s.mats) {
         if (Math.abs(mat.opacity - want) < 0.005) {
           mat.opacity = want;
@@ -554,6 +559,57 @@ export class DistrictWorld {
         mat.depthWrite = !clear;
       }
     }
+  }
+
+  /* ============================================================
+     The combat arena
+     ============================================================ */
+
+  /**
+   * A patch of ground that must be clear to fight on.
+   *
+   * Set while a board is standing on the street, so anything built inside its footprint
+   * fades out of the way. In a dense ward the placement search cannot always find a window
+   * with nothing in it — Ashfall's worst case clips the corner of one terrace — and the
+   * honest answer is to move the terrace out of the shot rather than to draw the grid
+   * through it.
+   *
+   * Consumed by `updateOccluders`, which is the one place that decides a building's opacity.
+   * Null clears it and the street comes back on its own over the next few frames.
+   */
+  private arena: { x0: number; z0: number; x1: number; z1: number } | null = null;
+
+  setArena(rect: { x0: number; z0: number; x1: number; z1: number } | null): void {
+    this.arena = rect;
+  }
+
+  private inArena(hit: THREE.Mesh): boolean {
+    const a = this.arena;
+    if (!a) return false;
+    const geo = hit.geometry as THREE.BoxGeometry;
+    const { width, depth } = geo.parameters;
+    const p = hit.position;
+    return (
+      p.x - width / 2 < a.x1 &&
+      p.x + width / 2 > a.x0 &&
+      p.z - depth / 2 < a.z1 &&
+      p.z + depth / 2 > a.z0
+    );
+  }
+
+  /**
+   * Thins the fog while a fight is on, and puts it back afterwards.
+   *
+   * Not a nicety. The walk camera sits twenty-two units out; framing a whole arena needs
+   * roughly twice that, and at Lamprow's authored density of 0.036 an exponential fog has
+   * eaten most of the board's contrast by the time it is all in shot. The area's own look is
+   * still the look — this scales it for the one situation the area was not tuned for.
+   *
+   * A multiplier rather than an absolute, so each area keeps its own character: the Chalk
+   * Road stays the clearest place in the game and Lamprow stays the thickest.
+   */
+  setFogScale(scale: number): void {
+    (this.scene.fog as THREE.FogExp2).density = this.amb.fogDensity * scale;
   }
 
   /* ============================================================

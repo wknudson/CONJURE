@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
-    "cards:catalog": "tsx scripts/generate-card-catalog.ts"
+    "cards:catalog": "tsx scripts/generate-card-catalog.ts",
+    "folk:measure": "tsx scripts/measure-folk-sheets.ts"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

@@ -49,7 +49,7 @@ export class BillboardSprite extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshL
    * Sizing by scale lets `setTexture` correct it per frame at no cost, and the mirror is the
    * sign of the same number it was always the sign of.
    */
-  constructor(texture: THREE.Texture, worldHeight: number) {
+  constructor(texture: THREE.Texture, worldHeight: number, castsShadow = true) {
     const material = new THREE.MeshLambertMaterial({
       map: texture,
       transparent: false,
@@ -64,7 +64,10 @@ export class BillboardSprite extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshL
     this.worldHeight = worldHeight;
     this.worldWidth = worldHeight * aspectOf(texture);
     this.applyScale();
-    this.castShadow = true;
+    // Off for art that already has a shadow painted into it. The townsfolk sheets are drawn
+    // with their own ground contact, and a plane throwing a second one puts two shadows under
+    // one pair of boots pointing in different directions.
+    this.castShadow = castsShadow;
     this.receiveShadow = false;
   }
 
@@ -288,6 +291,19 @@ export interface ActorArt {
    * pavement goes past.
    */
   walkGaitCycles: number;
+  /**
+   * Whether `side` is a genuine profile that may be flipped for the other bearing.
+   *
+   * True for everything drawn in four views, and the flip against `SIDE_ART_FACES` is what
+   * gets both side facings out of one drawing. False for art that has **no side view at
+   * all** — a townsperson cut from a sheet is one front-on portrait standing in for all
+   * three facings, and mirroring it does not turn them round, it just swaps the bard's lute
+   * into his other hand and reverses the guard's halberd every time the player walks past.
+   *
+   * Stated on the art because it is a fact about the art. The alternative was a flag on
+   * every body that owns some, which is the same fact written down in more places.
+   */
+  mirrorSide?: boolean;
 }
 
 export function buildActorArt(
@@ -374,6 +390,21 @@ export function actorArtFromTextures(
   return { front, back, side, sideWalk: [], walkGaitCycles: 1 };
 }
 
+/**
+ * One drawing, standing in for every facing.
+ *
+ * What a townsperson gets. The sheets hold a single front-on portrait each, so there is no
+ * back and no profile to give: the same texture answers all three, the walk is empty, and
+ * `mirrorSide` is off so turning toward the player changes which way they *look* without
+ * flipping what they are holding.
+ *
+ * `disposeActorArt` already de-dupes through a Set, so one texture named three times here is
+ * still released exactly once.
+ */
+export function actorArtFromOne(tex: THREE.Texture): ActorArt {
+  return { front: tex, back: tex, side: tex, sideWalk: [], walkGaitCycles: 1, mirrorSide: false };
+}
+
 export function disposeActorArt(art: ActorArt): void {
   // A Set because the walk order reuses one frame for both footfalls, so the same texture
   // appears twice in `sideWalk` and must still be released exactly once.
@@ -399,10 +430,10 @@ export class Walker {
   private smoothZ = 0;
   private moving = false;
 
-  constructor(art: ActorArt, height: number) {
+  constructor(art: ActorArt, height: number, castsShadow = true) {
     this.art = art;
     this.height = height;
-    this.sprite = new BillboardSprite(art.front, height);
+    this.sprite = new BillboardSprite(art.front, height, castsShadow);
   }
 
   get position(): THREE.Vector3 {
@@ -482,8 +513,10 @@ export class Walker {
     this.sprite.position.y = this.bob;
 
     const sideways = this.facing === 'left' || this.facing === 'right';
-    // The one flip, taken against the one declared fact about the art. Nothing else mirrors.
-    this.sprite.setMirrored(sideways && this.facing !== SIDE_ART_FACES);
+    // The one flip, taken against the one declared fact about the art. Nothing else mirrors —
+    // and art that declares it has no side view is never flipped at all.
+    const mayMirror = this.art.mirrorSide !== false;
+    this.sprite.setMirrored(mayMirror && sideways && this.facing !== SIDE_ART_FACES);
 
     if (this.facing === 'up') {
       this.sprite.setTexture(this.art.back);

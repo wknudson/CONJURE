@@ -352,6 +352,77 @@ body.is-talking .district-help {
   color: #e8a33c;
 }
 
+/* --- the map ---------------------------------------------------------------- */
+
+/* Centred and inert: you can keep walking with it up, and the dot keeps moving. That is
+   the whole point of it as a tool — a map you have to stand still to read tells you about
+   a place you are not currently in. */
+.district-map {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  padding: 12px 14px 10px;
+  z-index: 22;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 0.14s ease-out,
+    transform 0.14s ease-out;
+}
+.district-map.is-open {
+  display: flex;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.district-map__cap {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: #cbb98f;
+}
+.district-map__canvas {
+  display: block;
+  border: 1px solid rgba(203, 185, 143, 0.28);
+  background: #12151b;
+  image-rendering: pixelated;
+}
+.district-map__key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #8b8578;
+}
+.district-map__swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-left: 8px;
+}
+.district-map__swatch:first-child {
+  margin-left: 0;
+}
+.district-map__swatch.is-safe {
+  background: #b6a887;
+}
+.district-map__swatch.is-you {
+  background: #f6ecd8;
+  border-radius: 50%;
+}
+.district-map__swatch.is-exit {
+  background: #63e0c4;
+  transform: rotate(45deg);
+  border-radius: 0;
+}
+.district-map__swatch.is-pack {
+  background: #c2603a;
+  border-radius: 50%;
+}
+
 /* --- overlays: the notice, and the Warden's hand ---------------------------- */
 
 .district-overlay {
@@ -388,18 +459,6 @@ body.is-talking .district-help {
   max-width: 34em;
   line-height: 1.8;
 }
-/* The ring closing. The letter-spacing collapse is the combat banner's sweep, ported so
-   the two reads of "a fight is starting" are the same read. */
-.district-overlay__battle {
-  font-size: 54px;
-  font-weight: 800;
-  letter-spacing: 7px;
-  color: #ffe9dd;
-  text-shadow:
-    0 0 30px rgba(224, 68, 34, 0.75),
-    0 0 70px rgba(224, 68, 34, 0.4);
-  animation: district-battle-sweep 1.2s ease-out both;
-}
 @keyframes district-battle-sweep {
   0% {
     opacity: 0;
@@ -418,3 +477,76 @@ body.is-talking .district-help {
     letter-spacing: 5px;
   }
 }
+
+/*
+ * The walking HUD, out of the way while a fight is on.
+ *
+ * A fight in the district brings the full combat HUD with it — a hand, two gauges, the pip
+ * dial and the trays — on top of a screen still wearing the objective panel, the zone chip
+ * and the interact prompt. `DistrictHud.setCombat` toggles this rather than tearing the
+ * panels down, because the street is still there underneath and the player is coming back
+ * to it.
+ */
+.is-hidden-in-combat {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+/* ==================================================================
+   A fight standing on the street
+   ================================================================== */
+
+/*
+ * The overlay the board's floating half is drawn on.
+ *
+ * Two children: a transparent 2D canvas carrying the effects layer and the tactical badges,
+ * and the `.floaters` div that `Fx` appends damage numbers to — the same one and the same
+ * `board.css` styles the 2D board uses, because it is literally the same `Fx`.
+ *
+ * Stacked above the district's own panels (z 10–22) and below the combat HUD, which follows
+ * it in the DOM. It takes pointer events, because it is the topmost thing over the board and
+ * therefore what a click on a tile lands on; the HUD above it still gets its own clicks.
+ */
+.world-combat__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+
+.world-combat__fx {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+
+/*
+ * The combat furniture, above the overlay it is drawn over.
+ *
+ * Scoped to the district so the 2D board's own stacking is left exactly as it was — inside
+ * `.screen--combat` these elements have no z-index and rely on DOM order, and they should
+ * carry on doing that.
+ */
+.screen--district .hud,
+.screen--district .deploy,
+.screen--district .grave,
+.screen--district .channel {
+  z-index: 31;
+}
+
+/* The board wants a crosshair over it, the same as the 2D one does. */
+.screen--district .world-combat__overlay {
+  cursor: crosshair;
+}
+
+/*
+ * A rule that is deliberately absent: the rotate arrows are NOT hidden in the district.
+ *
+ * They were hidden for a while, on the reasoning that a grid rotating under a fixed world
+ * would give away that it is not really there. True, and beside the point: what the player
+ * wants from those two buttons is to see the fight from the other side, and out here the
+ * honest way to give them that is to walk the camera round the arena — which is the gesture
+ * the district has always had on Q and E. So they stay, wired to the orbit, and the tooltip
+ * says "the view" rather than "the board" because that is what it moves in both renderers.
+ */

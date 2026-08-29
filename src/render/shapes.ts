@@ -10,6 +10,14 @@ import type { Coord } from '../contract/ids.js';
 import type { UnitArchetype } from '../contract/snapshots.js';
 import { PALETTE, schoolOf, type SchoolColors } from './palette.js';
 import type { IsoCamera } from './IsoCamera.js';
+// The painted bodies, reused rather than reimplemented. `drawCommander` there is the *other*
+// function of this name -- it blits a bitmap, where the one below draws a prism -- so it is
+// aliased at the import to keep the two apart at every call site in this file.
+import {
+  COMMANDER_HEIGHT_TILES,
+  drawCommander as drawHeroBitmap,
+  drawCompanionBitmap,
+} from './sprites.js';
 
 type Ctx2D = CanvasRenderingContext2D;
 
@@ -351,6 +359,15 @@ export function drawCommander(
     armor: number;
     name: string;
     pulse: number;
+    /**
+     * The painted body, when there is one decoded.
+     *
+     * Null is ordinary rather than exceptional: the art arrives on a fetch, a species may not
+     * be painted yet, and a test arena has no character behind it at all. Every one of those
+     * falls through to the prism and the orb below, which is what shipped before this and is
+     * still the honest thing to draw when nobody knows what the body looks like.
+     */
+    art?: HTMLImageElement | null;
   },
 ): void {
   const colors = schoolOf(o.school as never);
@@ -372,8 +389,21 @@ export function drawCommander(
   ctx.stroke();
   ctx.restore();
 
-  // Companions float; Heroes and bosses are grounded prisms.
-  if (o.kind === 'companion') {
+  // The painted body, where there is one. Only the *body* is swapped: the dais above and the
+  // name plate and gauge below are what say "this one stands off the grid and this is its
+  // health", and they are as necessary over a bitmap as over a prism.
+  //
+  // `unit` is pixels per tile, derived from the height the prism already occupied rather than
+  // picked -- so turning the art on does not resize anybody. `blit` inside these takes its
+  // origin at the feet, which is exactly where the dais is drawn.
+  if (o.art) {
+    const unit = height / COMMANDER_HEIGHT_TILES;
+    ctx.save();
+    ctx.translate(centre.x, centre.y);
+    if (o.kind === 'companion' || o.kind === 'boss') drawCompanionBitmap(ctx, unit, o.art);
+    else drawHeroBitmap(ctx, unit, o.art);
+    ctx.restore();
+  } else if (o.kind === 'companion') {
     const lift = (34 + Math.sin(o.pulse * Math.PI * 2) * 4) * z;
     ctx.save();
     ctx.beginPath();
@@ -597,6 +627,117 @@ export function drawStatBar(
 
   ctx.textAlign = 'left';
 }
+
+/**
+ * Everything a body wears above itself: its brand, its numbers, its statuses.
+ *
+ * Extracted from `BoardRenderer` when the district's board needed the same set, and shared
+ * rather than copied because that list is a *rule* — the Bound Form shows a bound mark instead
+ * of a bar because its health is the Pact's and a second gauge would read as a second pool —
+ * and a rule written twice is a rule that will eventually be two different rules. Both
+ * renderers pass a projected centre and a zoom, which is all of the camera this needs.
+ *
+ * The view is taken structurally rather than as an `EntityView`, so this file stays free of
+ * the render layer above it.
+ */
+export function drawBodyFurniture(
+  ctx: Ctx2D,
+  centre: { x: number; y: number },
+  z: number,
+  view: {
+    snapshot: { side: string; keywords: readonly string[]; footprint?: number } | null;
+    mark: { school: string } | null;
+    hp: number;
+    maxHp: number;
+    armor: number;
+    atk: number;
+    escalation: number;
+    statuses: readonly { kind: string; stacks: number }[];
+  },
+  pulse: number,
+  /**
+   * How far above `centre` the brand hangs, in screen pixels — the one measurement here that
+   * a caller may have to make for itself.
+   *
+   * Everything else on a body is anchored just *below* its feet, where `centre` is, and a fixed
+   * offset in `z` units is right for any camera. The brand is the exception: it hangs over the
+   * body's head, so its offset depends on how tall a body reads relative to a tile, and that
+   * ratio is not a constant across renderers. On the 2D board a tile is 116 pixels and a body
+   * is drawn 54 tall, and 30 clears it. Out in the district a tile is four world units wide and
+   * a body is 1.9 tall, so the same figure lands mid-torso — over the body it is branding, but
+   * looking like part of it rather than a mark laid on it.
+   *
+   * Omitted, the 2D board's own figure is used, which is what it has always drawn.
+   */
+  brandLift?: number,
+): void {
+  const footprint = view.snapshot?.footprint ?? 1;
+
+  if (view.mark) {
+    const lift = brandLift ?? (footprint === 2 ? 70 : 30) * z;
+    drawMark(ctx, { x: centre.x, y: centre.y - lift }, view.mark.school, pulse, z);
+  }
+
+  // The Bound Form's health is the Pact's, shown on the gauge above. A bar here would read as
+  // a second, separate pool -- and one that never moves.
+  if (view.snapshot?.keywords.includes('BoundForm')) {
+    drawBoundMark(ctx, centre, z, pulse, view.snapshot.side === 'player');
+  } else {
+    drawStatBar(ctx, centre, view.hp, view.maxHp, view.armor, view.atk, z);
+  }
+
+  if (view.escalation > 0) {
+    ctx.fillStyle = '#FDE047';
+    ctx.font = `700 ${Math.round(11 * z)}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(`▲${view.escalation}`, centre.x, centre.y + 40 * z);
+    ctx.textAlign = 'left';
+  }
+
+  drawStatusChips(ctx, centre, z, view.statuses);
+}
+
+/**
+ * The little row of glyphs under a body.
+ *
+ * Every status the game can apply has a face here. `brittle` and `charged` were the two that
+ * fell through to the bullet default — the first is what Superconduct leaves and the second
+ * is half of three reactions, so both were invisible exactly when they mattered most.
+ */
+function drawStatusChips(
+  ctx: Ctx2D,
+  centre: { x: number; y: number },
+  z: number,
+  statuses: readonly { kind: string; stacks: number }[],
+): void {
+  if (statuses.length === 0) return;
+  ctx.save();
+  ctx.font = `${Math.round(12 * z)}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  let dx = -((statuses.length - 1) * 14 * z) / 2;
+  for (const st of statuses) {
+    ctx.fillText(
+      `${STATUS_ICON[st.kind] ?? '•'}${st.stacks > 1 ? st.stacks : ''}`,
+      centre.x + dx,
+      centre.y + 40 * z,
+    );
+    dx += 16 * z;
+  }
+  ctx.restore();
+}
+
+const STATUS_ICON: Record<string, string> = {
+  burn: '🔥',
+  toxin: '☠',
+  chill: '❄',
+  freeze: '❄',
+  entangle: '🌿',
+  stun: '💫',
+  brittle: '🜃',
+  charged: '⚡',
+  aetherPlated: '🛡',
+  anchor: '⚓',
+};
 
 export function roundRect(
   ctx: Ctx2D,

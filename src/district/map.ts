@@ -18,6 +18,8 @@
  * negotiable.
  */
 
+import type { FolkId } from '../render/folk.js';
+
 /**
  * World units per tile, global to every area.
  *
@@ -118,10 +120,30 @@ export interface Vec2 {
   readonly z: number;
 }
 
+/**
+ * Somebody standing in a ward with something to say.
+ *
+ * Everything past the position is optional, and absent means *the Dispatcher* — which is what
+ * the one NPC that predates this interface is, and why Ashfall's `{id: 'vex', x, z}` still
+ * reads correctly with no art, label or script of its own.
+ */
 export interface NpcSpec {
+  /** Identity, and the key their dialogue is filed under. Unique within an area. */
   readonly id: string;
   readonly x: number;
   readonly z: number;
+  /** Which drawing off the townsfolk sheets. Absent means the Dispatcher's own art. */
+  readonly art?: FolkId;
+  /** The interact prompt: "Talk to the miller". Absent means the Dispatcher's. */
+  readonly label?: string;
+  /**
+   * Which script they read, as a key into `FOLK_LINES`.
+   *
+   * Separate from `id` so two people can share a script — a market with four traders saying
+   * the same thing about the weigh-house is a market, not a bug — and defaulted to `id` by
+   * the screen when it is left out.
+   */
+  readonly says?: string;
 }
 
 /** A wandering minion pack. See `data/packs.ts` for what it fights as. */

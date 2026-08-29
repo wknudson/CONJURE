@@ -749,8 +749,8 @@ const TEMPLATE = `
           <span class="speed__gauge"><i class="speed__needle"></i></span>
           <span class="speed__label">Normal</span>
         </button>
-        <button class="rotate rotate--ccw" data-tip="Rotate left|Turns the board a quarter-turn anticlockwise.|Press Q.">⟲</button>
-        <button class="rotate rotate--cw" data-tip="Rotate right|Turns the board a quarter-turn clockwise.|Press E.">⟳</button>
+        <button class="rotate rotate--ccw" data-tip="Rotate left|Turns the view a quarter-turn anticlockwise.|Press Q.">⟲</button>
+        <button class="rotate rotate--cw" data-tip="Rotate right|Turns the view a quarter-turn clockwise.|Press E.">⟳</button>
         <button class="help" data-tip="Help|Opens the rules reference.|Press H at any time.">?</button>
         <button class="mute" title="Toggle sound">🔊</button>
       </div>

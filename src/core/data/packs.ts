@@ -91,6 +91,97 @@ export const PACKS: readonly PackDef[] = [
     members: ['ash_ghoul', 'ash_ghoul', 'hollowed_husk', 'grave_sentinel', 'carrion_crow'],
     reinforce: { points: REINFORCE_POINTS, chance: 60, unitCardIds: ['ash_ghoul', 'hollowed_husk', 'carrion_crow'] },
   },
+
+  /* ---- Lamprow: the two crews working the Sink, below the lamps ---- */
+
+  {
+    encounterId: 'pack_lamprow_gutter_crew',
+    name: 'The Lampwick Gutter Crew',
+    blurb:
+      'They work the ditch under the lamps and they know exactly how far the light reaches. ' +
+      'So do you, now.',
+    tier: 'novice',
+    // 3 + 3 + 2 + 2 = 10. Two ranged bodies: a crew that has learned to fight from where the
+    // pavement is not, which is the whole argument of the ward it lives in.
+    members: ['cinder_lobber', 'longshot_stalker', 'vanguard_footman', 'scout_imp'],
+    reinforce: { points: REINFORCE_POINTS, chance: 50, unitCardIds: ['cinder_lobber', 'scout_imp', 'vanguard_footman'] },
+  },
+  {
+    encounterId: 'pack_lamprow_tithe_takers',
+    name: 'The Tithe-Takers',
+    blurb:
+      'Collectors for a debt nobody can produce the paper for. They are very calm about it, ' +
+      'which is worse.',
+    tier: 'adept',
+    // 4 + 2 + 2 + 2 = 10. Slow and armoured — they do not need to catch you, only to be
+    // between you and the way back up onto the flags.
+    members: ['slag_iron_golem', 'quarry_hand', 'shieldbearer', 'vanguard_footman'],
+    reinforce: { points: REINFORCE_POINTS, chance: 55, unitCardIds: ['scrap_metal_mortar', 'quarry_hand'] },
+  },
+
+  /* ---- The Chalk Road: three crews on one stretch, close enough to hear each other ---- */
+
+  {
+    encounterId: 'pack_road_waywatch',
+    name: 'The Waywatch',
+    blurb:
+      'They collect a toll the Magistracy never set, on a road the Magistracy never mends. ' +
+      'The arrangement has held for years.',
+    tier: 'novice',
+    // 2 x 5 = 10. The plainest fight on the road, and the one most likely to be the *second*
+    // thing a ring drags in.
+    members: ['vanguard_footman', 'vanguard_footman', 'scout_imp', 'briar_wolf', 'briar_wolf'],
+    reinforce: { points: REINFORCE_POINTS, chance: 45, unitCardIds: ['longshot_stalker', 'vanguard_footman'] },
+  },
+  {
+    encounterId: 'pack_hedgerow_vermin',
+    name: 'Hedgerow Vermin',
+    blurb:
+      'Field things that came out of the strips and did not go back in. The hedges are full ' +
+      'of them and the hedges run the length of the road.',
+    tier: 'novice',
+    // 2 x 5 = 10.
+    members: ['sporeback_boar', 'sporeback_boar', 'mire_toad', 'briar_wolf', 'sap_wisp'],
+    reinforce: { points: REINFORCE_POINTS, chance: 55, unitCardIds: ['sporeback_boar', 'mire_toad', 'sap_wisp'] },
+  },
+  {
+    encounterId: 'pack_freight_pickers',
+    name: 'The Freight-Pickers',
+    blurb:
+      'Three of them and not one willing to come closer than they have to. Whatever fell off ' +
+      'the wagon, they intend to keep it.',
+    tier: 'adept',
+    // 4 + 3 + 3 = 10, and the only pack in the game that fields three bodies instead of five,
+    // every one of them ranged. A genuinely different shape: it cannot screen itself, so it
+    // has to be reached — which is the interesting case when a ring pulls it into somebody
+    // else's fight.
+    members: ['arc_dynamo', 'clockwork_bombardier', 'scrap_metal_mortar'],
+    reinforce: { points: REINFORCE_POINTS, chance: 60, unitCardIds: ['clockwork_bombardier', 'voltaic_coil'] },
+  },
+  {
+    /**
+     * The Warden's detail, and the one entry here that does not roam.
+     *
+     * Filed as a pack because a pack is exactly what it is mechanically — one warband of
+     * somebody else, costed on the same ten-point ladder, won by clearing the board — and
+     * filing it here is what earns it the budget re-derivation in `packs.test.ts` and the
+     * eight balance playouts, neither of which a hand-cut encounter would get.
+     *
+     * It is never placed from an area's `packs` list. It is what a Warden serves on you when
+     * their cone catches you off the pavement, which used to be an arrest and is now a fight.
+     */
+    encounterId: 'warden_writ',
+    name: "The Warden's Writ",
+    blurb:
+      'A Warden with a seal in one hand and three of the watch behind him. He has stopped ' +
+      'asking where you are supposed to be.',
+    tier: 'adept',
+    // 4 + 2 + 2 + 2 = 10. Bulwark and neutral only: a city watch is armour and numbers, and
+    // an elemental body in the middle of it would read as somebody else's warband.
+    members: ['anvil_lord', 'vanguard_footman', 'vanguard_footman', 'vanguard_footman'],
+    // A marksman first, then another body. The Magistracy is not short of either.
+    reinforce: { points: REINFORCE_POINTS, chance: 50, unitCardIds: ['longshot_stalker', 'vanguard_footman'] },
+  },
 ];
 
 export function packByEncounter(encounterId: string): PackDef | undefined {

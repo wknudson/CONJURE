@@ -35,6 +35,14 @@ import type { CommanderModel } from '../render/BoardRenderer.js';
 import type { Coord } from '../contract/ids.js';
 import type { GameState } from '../core/types/state.js';
 import { calculateProjectedDamage } from '../hud/projection.js';
+import type { Gender } from '../core/data/characterLook.js';
+import { companionByUnitCard } from '../core/data/companions.js';
+import {
+  commanderSpriteIfLoaded,
+  companionSpriteIfLoaded,
+  loadCommanderSprite,
+  loadCompanionSprite,
+} from '../render/sprites.js';
 
 /** Below this share of the Pact, the presentation turns to panic. */
 /**
@@ -176,7 +184,7 @@ export class CombatScreen implements Screen {
       encounter: EncounterDef,
       outcome: CombatOutcome,
     ) => void,
-    companionId?: string,
+    private readonly companionId?: string,
     seed = Math.floor(Math.random() * 1e9),
     deck?: string[],
     ai?: AiProfile,
@@ -194,7 +202,26 @@ export class CombatScreen implements Screen {
      * Absent for every fight reached from the Bounty Board — a ring only closes on the road.
      */
     wave2?: string[][],
+    /**
+     * Everything the *presentation* needs that the rules do not.
+     *
+     * An options object rather than a tenth positional parameter: nine is already past the
+     * point where a call site reads as a list of undefineds, and the fields below are about how
+     * the fight looks rather than how it plays. Every one is optional, and absent means the
+     * screen falls back to what it drew before -- which is what keeps the legacy test call
+     * sites and the headless harness working untouched.
+     */
+    look?: {
+      /**
+       * Which bearing the Hero wears.
+       *
+       * `BoardView` does not carry it and should not: it is a fact about the character, not
+       * about the board. Without it the Hero is a prism, which is what it was.
+       */
+      gender?: Gender;
+    },
   ) {
+    this.look = look ?? {};
     this.session = new CombatSession(
       encounter,
       seed,
@@ -206,7 +233,21 @@ export class CombatScreen implements Screen {
       wave2,
     );
     this.cam = new IsoCamera(encounter.width, encounter.height);
+
+    // Fetched here rather than awaited: the board opens on the frame it is asked for, and
+    // `syncCommanders` re-reads the cache on every unlock, so a decode that lands two seconds
+    // later simply appears. A species nobody has painted 404s and costs exactly one silhouette.
+    if (this.look.gender) void loadCommanderSprite(this.look.gender, 'front').catch(() => null);
+    if (companionId) void loadCompanionSprite(companionId, 'front').catch(() => null);
+    const enemyBeast = encounter.enemyCompanion?.unitCardId;
+    const enemySpecies = enemyBeast ? companionByUnitCard(enemyBeast) : undefined;
+    if (enemySpecies) void loadCompanionSprite(enemySpecies.id, 'front').catch(() => null);
+    this.enemySpeciesId = enemySpecies?.id ?? null;
   }
+
+  private readonly look: { gender?: Gender };
+  /** The species standing in for the enemy Commander, when the encounter names one. */
+  private readonly enemySpeciesId: string | null;
 
   mount(root: HTMLElement): void {
     const el = document.createElement('div');
@@ -1069,6 +1110,15 @@ export class CombatScreen implements Screen {
       (u) => u.side === 'enemy' && u.keywords.includes('BoundForm'),
     );
 
+    // Read from the sprite caches on every sync rather than held on the instance: these are
+    // synchronous cache lookups, this runs once per input unlock rather than per frame, and it
+    // means the first sync after a decode picks the art up with no further plumbing.
+    const heroArt = this.look.gender ? commanderSpriteIfLoaded(this.look.gender, 'front') : null;
+    const beastArt = this.companionId ? companionSpriteIfLoaded(this.companionId, 'front') : null;
+    const enemyArt = this.enemySpeciesId
+      ? companionSpriteIfLoaded(this.enemySpeciesId, 'front')
+      : null;
+
     this.renderer.commanders = [
       {
         side: 'player',
@@ -1079,6 +1129,7 @@ export class CombatScreen implements Screen {
         hp: board.player.hp,
         maxHp: board.player.maxHp,
         armor: board.player.armor,
+        art: heroArt,
       },
       ...(embodied
         ? []
@@ -1092,6 +1143,7 @@ export class CombatScreen implements Screen {
               hp: board.player.hp,
               maxHp: board.player.maxHp,
               armor: board.player.armor,
+              art: beastArt,
             },
           ]),
       // The enemy Commander is drawn off-grid only while nothing represents it on the
@@ -1113,6 +1165,7 @@ export class CombatScreen implements Screen {
               hp: board.enemy.hp,
               maxHp: board.enemy.maxHp,
               armor: board.enemy.armor,
+              art: enemyArt,
             },
           ]),
     ];
