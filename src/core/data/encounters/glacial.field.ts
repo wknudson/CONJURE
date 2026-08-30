@@ -29,17 +29,32 @@ export const GLACIAL_FIELD: EncounterDef = registerEncounter({
   companionSchool: 'frost',
   enemyName: 'Glacier Duelist',
   enemySchool: 'frost',
+  /**
+   * Two bodies in twelve cards, and it was four.
+   *
+   * Retuned when attacking started costing a Pip. A third of this deck was minions —
+   * `rimeguard` twice, a Grave Sentinel and a Scout Imp — and the deck reshuffles with no
+   * fatigue, so it printed a body every third draw forever. Under free attacks the player
+   * cleared them as fast as they arrived. Under a per-swing cost they cannot: measured over
+   * eight seeds the enemy reached **twelve to fifteen bodies against the player's one**, and
+   * two of those eight could not finish inside the sixty-turn guard.
+   *
+   * Halving the body count is the retune that fits what this fight is *about*. The header
+   * above calls it a field of fog and pillars, where "reach counts for nothing and the fight
+   * is fought at arm's length" — that is an argument about sight and distance, not an
+   * attrition race, and the swarm was drowning the thing the encounter was built to say.
+   */
   enemyDeck: [
     'glacial_spike',
     'glacial_spike',
     'flash_freeze',
+    'flash_freeze',
+    'brittle_touch',
     'brittle_touch',
     'frost_nova',
     'rimeguard',
-    'rimeguard',
     'ice_barricade',
     'grave_sentinel',
-    'scout_imp',
     'shield_bash',
     'aegis_ward',
   ],

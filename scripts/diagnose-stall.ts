@@ -58,8 +58,13 @@ function probe(id: string, seed: number): string {
   );
 }
 
-const ids = process.argv.slice(2);
+// Eight seeds, matching `balance.test.ts`. Three was what this used at first and it was not
+// enough: it reported `glacial_field` reaching a decision on every seed it tried while the gate,
+// which runs eight, still had one stalling at the 60-turn guard.
+const args = process.argv.slice(2);
+const seeds = Number(args.find((a) => /^\d+$/.test(a))) || 8;
+const ids = args.filter((a) => !/^\d+$/.test(a));
 for (const id of ids.length ? ids : ['fouled_cistern']) {
-  for (const seed of [1, 2, 3]) console.log(probe(id, seed));
+  for (let seed = 1; seed <= seeds; seed++) console.log(probe(id, seed));
   console.log('');
 }
