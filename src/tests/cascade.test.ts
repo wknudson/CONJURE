@@ -39,8 +39,10 @@ describe('marks and cascades', () => {
     expect(dets).toHaveLength(1);
     expect(dets[0]!.mark).toBe('cinder_mark');
 
-    // Host: 3 from Flame Surge. Adjacent bystander: 4 from the detonation.
-    expect(res.state.units[host.id]!.hp).toBe(100 - 30);
+    // Host: 30 from Flame Surge, plus 10 because a branded body takes more from every
+    // blow -- including the one that sets its own Mark off. The bystander carries no Mark,
+    // so the detonation reaches it unbranded at a flat 40.
+    expect(res.state.units[host.id]!.hp).toBe(100 - 40);
     expect(res.state.units[bystander.id]!.hp).toBe(80 - 40);
   });
 
@@ -66,8 +68,9 @@ describe('marks and cascades', () => {
     );
 
     expect(eventsOf(res.events, 'markDetonated')).toHaveLength(0);
-    // 3 damage fully absorbed: armor 5 -> 2, HP untouched, mark still attached.
-    expect(res.state.units[host.id]!.armor).toBe(20);
+    // 40 fully absorbed -- 30 from the Surge and 10 from the host's own brand: armor
+    // 50 -> 10, HP untouched, so the mark never trips and stays attached.
+    expect(res.state.units[host.id]!.armor).toBe(10);
     expect(res.state.units[host.id]!.hp).toBe(100);
     expect(res.state.units[host.id]!.mark).toBeDefined();
   });
@@ -76,19 +79,20 @@ describe('marks and cascades', () => {
     const state = scenario({
       units: [
         { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 100, mark: 'cinder_mark' },
-        // Armor 40 exactly absorbs the 40-damage blast, so this mark must NOT chain.
+        // The 40-damage blast arrives as 50, because this body is branded too. Armor 50
+        // absorbs it exactly, so no HP is lost and this mark must NOT chain.
         {
           def: 'grave_sentinel',
           side: 'enemy',
           at: { x: 3, y: 2 },
           hp: 100,
-          armor: 40,
+          armor: 50,
           mark: 'cinder_mark',
         },
       ],
       hand: ['flame_surge'],
     });
-    const shielded = Object.values(state.units).find((u) => u.armor === 40)!;
+    const shielded = Object.values(state.units).find((u) => u.armor === 50)!;
 
     const res = run(
       state,
