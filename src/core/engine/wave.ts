@@ -3,7 +3,7 @@
  *
  * When the overworld's ring closes around more than one roaming mob, the extra mobs are
  * not a bigger opening board — they are a *second fight arriving late*. They come in at
- * Round 2, and the player is paid for having been jumped by them: one banked Pip and one
+ * Round 2, and the player is paid for having been jumped by them: one banked Bone and one
  * card per mob dragged in.
  *
  * Engine-level rather than an encounter script, and this is the whole reason the module
@@ -20,7 +20,7 @@
 import type { Ctx } from './context.js';
 import type { GameState } from '../types/state.js';
 import { emit, newCause } from './context.js';
-import { drawCards, gainPips } from './deck.js';
+import { drawCards, gainBones } from './deck.js';
 import { placeOpeningUnit } from './spawn.js';
 
 /** The compensation has been paid. */
@@ -69,10 +69,10 @@ export function wavePending(state: GameState): boolean {
 }
 
 /**
- * Pays for having been jumped: one Pip and one card per mob the ring pulled in.
+ * Pays for having been jumped: one Bone and one card per mob the ring pulled in.
  *
  * Called on the player's turn only, and it self-guards on the round so the caller does not
- * have to know which one. It lands *after* the turn's ordinary Pip and draw, so the two
+ * have to know which one. It lands *after* the turn's ordinary Bone and draw, so the two
  * read as income plus a bonus rather than as one strange number.
  *
  * A hand already at its limit burns the extra card for Marrow, which is the ordinary
@@ -87,7 +87,7 @@ export function payWaveCompensation(ctx: Ctx): void {
   if (state.encounter.firedGates.includes(PAID)) return;
 
   state.encounter.firedGates.push(PAID);
-  gainPips(ctx, 'player', squads.length);
+  gainBones(ctx, 'player', squads.length);
   drawCards(ctx, 'player', squads.length);
 }
 

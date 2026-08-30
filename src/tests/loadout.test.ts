@@ -109,7 +109,7 @@ describe('Lead-Lined Trenchcoat', () => {
 
 describe('Alchemist’s Mortar', () => {
   const raising = (card: string, bonus: number) => {
-    const state = scenario({ width: 6, height: 7, hand: [card], pips: 8, marrow: 4 });
+    const state = scenario({ width: 6, height: 7, hand: [card], bones: 8, marrow: 4 });
     state.players.player.bonusObstacleHp = bonus;
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     return state;
@@ -180,7 +180,7 @@ describe('Blood-Ink Ledger', () => {
     // Dark Tithe bleeds through the `tithe` op, which routes into the same `applyTithe` as
     // the command. The Ledger is a rule about tithing, so it applies to both — a relic
     // that skipped this would be worthless to the deck most likely to want it.
-    const state = scenario({ width: 6, height: 7, hand: ['dark_tithe'], pips: 4 });
+    const state = scenario({ width: 6, height: 7, hand: ['dark_tithe'], bones: 4 });
     state.players.player.bonusTitheMarrow = 1;
     const victim = addUnit(state, {
       def: 'marrow_wisp',

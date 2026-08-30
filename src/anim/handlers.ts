@@ -371,9 +371,9 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
 
   // ---------------------------------------------------------------- resources & cards
 
-  seq.on('pipGained', (e, { view }) => {
+  seq.on('boneGained', (e, { view }) => {
     view.hud.setResources(e.side, e.total, undefined);
-    if (e.side === 'player') view.sfx.play('pip');
+    if (e.side === 'player') view.sfx.play('bone');
   });
 
   seq.on('marrowExtracted', async (e, { view, t }) => {
@@ -390,7 +390,7 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     await tween(t(200), easeOutQuad, () => {});
   });
 
-  seq.on('pipRefunded', async (e, { view, t }) => {
+  seq.on('boneRefunded', async (e, { view, t }) => {
     // The dial moves for both sides; only the player is told about it. An enemy refund
     // still has to reach the HUD or its bank would drift from the truth.
     view.hud.setResources(e.side, e.total, undefined);
@@ -398,14 +398,14 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
 
     // Anchored to the tile the reaction fired on, not the portrait: the refund is the
     // reward for a setup that landed *there*, and the eye is already looking at it.
-    view.fx.label(e.at, `+${e.amount} PIP`, 'refund');
+    view.fx.label(e.at, `+${e.amount} BONE`, 'refund');
     view.fx.label(e.at, e.name.toUpperCase(), 'refund', -20);
     view.sfx.play('chime');
     await tween(t(200), easeOutQuad, () => {});
   });
 
   seq.on('resourcesChanged', (e, { view }) => {
-    view.hud.setResources(e.side, e.pips, e.marrow);
+    view.hud.setResources(e.side, e.bones, e.marrow);
   });
 
   seq.on('cardDrawn', (e, { view }) => {

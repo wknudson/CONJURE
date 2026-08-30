@@ -383,7 +383,7 @@ export class WorldCombat {
     }
 
     // `overlays.badges` is deliberately not drawn. It carries a body's range profile for the
-    // 2D board's corner pips, and out here the same fact is already on the ground: the reach
+    // 2D board's corner bones, and out here the same fact is already on the ground: the reach
     // ring is a tile layer, which is a better answer to "how far does this thing reach" than
     // two numbers floating over its head.
 

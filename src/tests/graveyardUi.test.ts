@@ -39,13 +39,13 @@ function withPyre(): CombatSession {
 }
 
 /** Slips a card into hand on the live state, and returns its instance id. */
-function give(session: CombatSession, defId: string, pips: number, marrow = 0): string {
+function give(session: CombatSession, defId: string, bones: number, marrow = 0): string {
   const st = session.debugState;
   st.nextId += 1;
   const id = `rv${st.nextId}`;
   st.players.player.cards[id] = { instanceId: id, defId };
   st.players.player.hand.push(id);
-  st.players.player.pips = pips;
+  st.players.player.bones = bones;
   st.players.player.marrow = marrow;
   return id;
 }
@@ -119,7 +119,7 @@ describe('a variable price on the card face', () => {
     const id = give(session, 'aetheric_resurgence', 8);
 
     const snap = toCardSnapshot(session.debugState, 'player', id);
-    expect(snap.cost.pips, 'the printed price is zero').toBe(0);
+    expect(snap.cost.bones, 'the printed price is zero').toBe(0);
     expect(snap.xCost).toEqual({ max: 5 });
   });
 
@@ -144,8 +144,8 @@ describe('a variable price on the card face', () => {
 
 describe('the ceiling the picker offers', () => {
   /** What the picker computes: the card's own max, against what the purse can pay. */
-  const ceiling = (max: number, pips: number, marrow: number): number =>
-    Math.max(1, Math.min(max, pips + marrow));
+  const ceiling = (max: number, bones: number, marrow: number): number =>
+    Math.max(1, Math.min(max, bones + marrow));
 
   it('never offers more than the reducer will accept', () => {
     const session = withPyre();

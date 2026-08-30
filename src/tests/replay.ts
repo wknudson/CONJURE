@@ -128,7 +128,7 @@ export function checkInvariants(state: GameState, where: string): string[] {
     if (c.hp < 0) say(`${side} commander HP went negative (${c.hp})`);
     if (c.hp > c.maxHp) say(`${side} commander HP ${c.hp} exceeds max ${c.maxHp}`);
     if (c.armor < 0) say(`${side} commander armor negative (${c.armor})`);
-    if (c.pips < 0 || c.marrow < 0) say(`${side} has negative resources`);
+    if (c.bones < 0 || c.marrow < 0) say(`${side} has negative resources`);
 
     // Every card id referenced by a zone must exist in the instance table.
     for (const zone of ['hand', 'deck', 'discard'] as const) {
@@ -213,7 +213,7 @@ export function checkInvariants(state: GameState, where: string): string[] {
 /**
  * Invariants that only hold for a side whose cleanup has just run.
  *
- * Checked against the *inactive* side only. The rules allow the Pip bank to overflow
+ * Checked against the *inactive* side only. The rules allow the Bone bank to overflow
  * freely during a turn and caps it during end-of-turn cleanup, so the side that has just
  * started — and already taken its +1 — is legitimately allowed to be sitting on nine.
  */
@@ -222,7 +222,7 @@ export function checkCleanupInvariants(state: GameState, where: string): string[
   const side = state.activeSide === 'player' ? 'enemy' : 'player';
   const c = state.players[side];
 
-  if (c.pips > 8) bad.push(`${where}: ${side} banked ${c.pips} pips, over the cap of 8`);
+  if (c.bones > 8) bad.push(`${where}: ${side} banked ${c.bones} bones, over the cap of 8`);
   if (c.hand.length > c.handLimit + 1) {
     // +1 tolerance: an ephemeral overlay is allowed to exceed the limit.
     bad.push(`${where}: ${side} holds ${c.hand.length} cards, over limit ${c.handLimit}`);

@@ -27,9 +27,9 @@ const STEPS: TutorialStep[] = [
     body: 'You both stand beside the board, not on it, and neither of you can be struck. Reduce their health to zero to win — but they are trying to do the same to you. Everything on the grid is a means to that end.',
   },
   {
-    anchor: '.dial__pips',
-    title: 'Pips are your magic',
-    body: 'You gain one at the start of every turn, and unspent Pips carry over. Cheap cards now, or bank them for something devastating later.',
+    anchor: '.dial__bones',
+    title: 'Bones are your magic',
+    body: 'You gain one at the start of every turn, and unspent Bones carry over. Cheap cards now, or bank them for something devastating later.',
     place: 'above',
   },
   {

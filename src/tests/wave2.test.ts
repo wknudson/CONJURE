@@ -98,7 +98,7 @@ describe('the ring delivers what it showed', () => {
 
 describe('the compensation for being jumped', () => {
   for (const pulls of [1, 2]) {
-    it(`pays +${pulls} Pip and +${pulls} card at the start of the player's round two`, () => {
+    it(`pays +${pulls} Bone and +${pulls} card at the start of the player's round two`, () => {
       const host = PACKS[0]!.encounterId;
       const withRing = fight(host, pulls);
       const without = new CombatSession(encounterById(host)!, 7, NOVICE_AI, 'ignis');
@@ -114,8 +114,8 @@ describe('the compensation for being jumped', () => {
       const b = run(without);
 
       // Measured against the same fight without a ring rather than against a literal, so
-      // the assertion survives a change to Pip income or the per-turn draw.
-      expect(a.players.player.pips - b.players.player.pips).toBe(pulls);
+      // the assertion survives a change to Bone income or the per-turn draw.
+      expect(a.players.player.bones - b.players.player.bones).toBe(pulls);
       expect(a.players.player.hand.length - b.players.player.hand.length).toBe(pulls);
       expect(a.encounter.firedGates).toContain('wave2:paid');
       // Sanity: the ordinary turn-two draw still happened underneath the bonus.

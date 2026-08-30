@@ -16,7 +16,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   glacial_spike: {
     id: 'glacial_spike',
     name: 'Glacial Spike',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -38,7 +38,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   frost_nova: {
     id: 'frost_nova',
     name: 'Frost Nova',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -60,7 +60,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   brittle_touch: {
     id: 'brittle_touch',
     name: 'Rime Touch',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -84,7 +84,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   flash_freeze: {
     id: 'flash_freeze',
     name: 'Flash Freeze',
-    cost: { pips: 1, marrow: 2 },
+    cost: { bones: 1, marrow: 2 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -106,7 +106,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   coolant_pillar: {
     id: 'coolant_pillar',
     name: 'Coolant Pillar',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'obstacle',
@@ -122,7 +122,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   ice_barricade: {
     id: 'ice_barricade',
     name: 'Ice Barricade',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'frost',
     source: 'hero',
     kind: 'obstacle',
@@ -137,7 +137,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   rimeguard: {
     id: 'rimeguard',
     name: 'Rimeguard',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'frost',
     source: 'hero',
     kind: 'minion',
@@ -162,7 +162,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   /**
    * Chill, spread rather than stacked.
    *
-   * A Pip for five tiles of one stack is a bad rate against any single body and a very
+   * A Bone for five tiles of one stack is a bad rate against any single body and a very
    * good one against a line that has bunched up, which is the decision the card exists to
    * pose. Chill is the school's whole engine -- three stacks is a Freeze, and a Freeze is
    * what Shatter and Vaporize are both waiting for -- so a cheap way to start it
@@ -171,7 +171,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   creeping_rime: {
     id: 'creeping_rime',
     name: 'Creeping Rime',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -194,7 +194,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   glacial_stalker: {
     id: 'glacial_stalker',
     name: 'Glacial Stalker',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'frost',
     source: 'hero',
     kind: 'minion',
@@ -220,7 +220,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
    *
    * A Freeze applied and then tested would always find one, so the `ifMet` runs before the
    * `applyStatus` and the card reads exactly as it is written: it hits something already
-   * held down, or it holds it down. Never both, which is what keeps three Pips from buying
+   * held down, or it holds it down. Never both, which is what keeps three Bones from buying
    * a lock and a kill in one turn.
    *
    * **Pierce is the `true` damage type.** Armor is bypassed by a property of the blow in
@@ -230,7 +230,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   rime_lock: {
     id: 'rime_lock',
     name: 'Rime Lock',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -268,7 +268,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   rime_lance: {
     id: 'rime_lance',
     name: 'Rime Lance',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -301,7 +301,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   whiteout: {
     id: 'whiteout',
     name: 'Whiteout',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -333,7 +333,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   deep_winter: {
     id: 'deep_winter',
     name: 'Deep Winter',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -359,7 +359,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   hail_spire: {
     id: 'hail_spire',
     name: 'Hail Spire',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'obstacle',
@@ -377,8 +377,8 @@ export const FROST_CARDS: Record<string, CardDef> = {
   /**
    * A body that does the school's setup for free.
    *
-   * Every Frost card wants stacks on the board and every one of them costs a Pip. This costs
-   * a Pip once and then chills whatever it bites for the rest of the fight — which makes it
+   * Every Frost card wants stacks on the board and every one of them costs a Bone. This costs
+   * a Bone once and then chills whatever it bites for the rest of the fight — which makes it
    * the cheapest route to a Freeze in the game, and the reason a Boreas warband wants two.
    *
    * Ten attack, so it will never finish anything itself. The Fox is a setup body, and the
@@ -388,7 +388,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   rime_fox: {
     id: 'rime_fox',
     name: 'Rime Fox',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'frost',
     source: 'hero',
     kind: 'minion',
@@ -417,12 +417,12 @@ export const FROST_CARDS: Record<string, CardDef> = {
    * trade with. And when it does finally go down it chills everything adjacent — the
    * deathburst is the school's answer to being killed by a cluster.
    *
-   * Four Pips: Tier 3, one copy, four roster points. Bought as the plan.
+   * Four Bones: Tier 3, one copy, four roster points. Bought as the plan.
    */
   glacier_warden: {
     id: 'glacier_warden',
     name: 'Glacier Warden',
-    cost: { pips: 4, marrow: 0 },
+    cost: { bones: 4, marrow: 0 },
     school: 'frost',
     source: 'hero',
     kind: 'minion',
@@ -454,19 +454,19 @@ export const FROST_CARDS: Record<string, CardDef> = {
   /**
    * The opener the school did not have.
    *
-   * Frost's cheapest card was Rime Touch at a Pip, and it is a single-target Brittle — fine
+   * Frost's cheapest card was Rime Touch at a Bone, and it is a single-target Brittle — fine
    * as a follow-up and useless as a first move, because there is nothing to make Brittle
    * yet. Chill is what a Frost deck actually wants on turn one, on as many bodies as
    * possible, and Cold Snap is that and nothing else.
    *
    * Ten damage down a 3-tile line is not the point and is priced as if it is not. Three
-   * Chills for a Pip is the point: Chill three times over is a Freeze, so this is one third
+   * Chills for a Bone is the point: Chill three times over is a Freeze, so this is one third
    * of a lockdown on every body the line touches.
    */
   cold_snap: {
     id: 'cold_snap',
     name: 'Cold Snap',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -492,14 +492,14 @@ export const FROST_CARDS: Record<string, CardDef> = {
    * behind it. This is the other answer: 20 plate on the caster, and a ring of cold that
    * Chills whatever was close enough to be the reason plate was needed.
    *
-   * Two Pips buys both halves deliberately. Either alone is a weak card; together they are
+   * Two Bones buys both halves deliberately. Either alone is a weak card; together they are
    * the turn a Frost player takes when the line has arrived and Deep Winter is still two
    * draws away.
    */
   hoarfrost_veil: {
     id: 'hoarfrost_veil',
     name: 'Hoarfrost Veil',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -527,14 +527,14 @@ export const FROST_CARDS: Record<string, CardDef> = {
    * table fires on the deck's own terms.
    *
    * The conditional half is enormous on purpose (50 and the ice goes) because the setup cost
-   * is enormous: three Chills, or a Flash Freeze at two Pips. Against an unfrozen body it is
-   * 20 impact, which is a fair three-Pip nothing and exactly the punishment for casting it
+   * is enormous: three Chills, or a Flash Freeze at two Bones. Against an unfrozen body it is
+   * 20 impact, which is a fair three-Bone nothing and exactly the punishment for casting it
    * early.
    */
   calving: {
     id: 'calving',
     name: 'Calving',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -571,7 +571,7 @@ export const FROST_CARDS: Record<string, CardDef> = {
   hoarhound: {
     id: 'hoarhound',
     name: 'Hoarhound',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'frost',
     source: 'hero',
     kind: 'minion',

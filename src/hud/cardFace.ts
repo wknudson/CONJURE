@@ -3,7 +3,7 @@
  *
  * The hand had a card component and the Artificer had `forge-print`, a second, smaller
  * card drawn from the same data with different markup. Two renderers for one object is
- * how a card comes to cost 2 Pips in the hand and 2 Pips in the forge and show its
+ * how a card comes to cost 2 Bones in the hand and 2 Bones in the forge and show its
  * keywords in only one of them — and the forge is precisely where a player is deciding
  * whether to spend Shards on a printing, so it is the worst place to show them less.
  *
@@ -215,7 +215,7 @@ export function cardFaceHtml(
         <div class="card__text">${escapeHtml(face.text)}</div>
         ${
           face.xCost
-            ? `<div class="card__xnote" data-tip="Variable cost|You name X when you play it. Up to ${face.xCost.max}, and never zero.|Marrow can pay it, the same as any other Pip cost.">Costs X · up to ${face.xCost.max}</div>`
+            ? `<div class="card__xnote" data-tip="Variable cost|You name X when you play it. Up to ${face.xCost.max}, and never zero.|Marrow can pay it, the same as any other Bone cost.">Costs X · up to ${face.xCost.max}</div>`
             : ''
         }
         ${keywords}

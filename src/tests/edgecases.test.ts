@@ -57,11 +57,11 @@ describe('deployment edges', () => {
 
 describe('resource and card edges', () => {
   it('treats Cataclysmic Core as untargetable when no marks are on the board', () => {
-    const bare = scenario({ pips: 8, hand: ['cataclysmic_core'] });
+    const bare = scenario({ bones: 8, hand: ['cataclysmic_core'] });
     expect(legalCardTargets(bare, 'player', 'cataclysmic_core')).toHaveLength(0);
 
     const withMark = scenario({
-      pips: 8,
+      bones: 8,
       units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, mark: 'cinder_mark' }],
       hand: ['cataclysmic_core'],
     });
@@ -88,7 +88,7 @@ describe('resource and card edges', () => {
   });
 
   it('rejects a card the commander cannot afford', () => {
-    const state = scenario({ pips: 0, marrow: 0, hand: ['magma_brute'] });
+    const state = scenario({ bones: 0, marrow: 0, hand: ['magma_brute'] });
     const card = handCard(state, 'player', 'magma_brute');
     expect(() => applyCommand(state, play(card, atTile(2, 4)))).toThrow(IllegalCommandError);
   });
@@ -334,7 +334,7 @@ describe('opening setup', () => {
 
     // Turn one must still offer something to actually do.
     expect(session.getPlayableCards().length).toBeGreaterThan(0);
-    expect(board.player.pips).toBeGreaterThanOrEqual(3);
+    expect(board.player.bones).toBeGreaterThanOrEqual(3);
   });
 
   it('lets a deployed Vanguard act immediately', () => {

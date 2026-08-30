@@ -31,8 +31,8 @@ export type ReviveSite = 'pyre' | 'anchor' | 'startingZone';
 
 /** How much health a raised body comes back with. */
 export type ReviveHp =
-  /** A share of its ceiling per Pip of X actually paid. */
-  | { mode: 'perPipPercent'; percent: number }
+  /** A share of its ceiling per Bone of X actually paid. */
+  | { mode: 'perBonePercent'; percent: number }
   /** A flat share of its ceiling. */
   | { mode: 'percent'; percent: number }
   /** An exact number, however large the body. */
@@ -152,12 +152,12 @@ export type EffectNode =
    */
   | { op: 'ifMet'; cond: PlayCondition; then: EffectNode; otherwise?: EffectNode }
   /**
-   * Pips paid straight into the bank, clamped at the ceiling like every other credit.
+   * Bones paid straight into the bank, clamped at the ceiling like every other credit.
    *
    * Distinct from a reaction refund: this is a card buying tempo outright, so it does not
-   * touch `reactionPipsThisTurn` and is not bounded by the two-per-turn cascade budget.
+   * touch `reactionBonesThisTurn` and is not bounded by the two-per-turn cascade budget.
    */
-  | { op: 'gainPips'; amount: number }
+  | { op: 'gainBones'; amount: number }
   /**
    * Lays terrain on the tiles an area covers.
    *
@@ -195,8 +195,8 @@ export type PlayCondition =
    * a body and so has no single "the target" to ask about.
    */
   | { kind: 'targetStatus'; status: StatusKind; stacks?: number; area?: AreaSpec }
-  /** The caster is holding at least this many Pips, *after* the card's own cost. */
-  | { kind: 'pipsAtLeast'; pips: number }
+  /** The caster is holding at least this many Bones, *after* the card's own cost. */
+  | { kind: 'bonesAtLeast'; bones: number }
   /**
    * A shove earlier in this same card was stopped by something solid.
    *
@@ -405,9 +405,9 @@ export interface UnitStatBlock {
    */
   platesEachTurn?: number;
   /**
-   * Pips this body pays its owner at the two moments worth paying for.
+   * Bones this body pays its owner at the two moments worth paying for.
    *
-   * Paid through `creditRefund`, which is the one thing in the game that hands a Pip over
+   * Paid through `creditRefund`, which is the one thing in the game that hands a Bone over
    * as a reward rather than as income — the same payment a reaction makes, announced the
    * same way on screen. It does **not** spend the reaction budget: that counter exists so
    * a cascade cannot fund itself, and a body striking once a turn is not a cascade.
@@ -428,22 +428,22 @@ export interface UnitStatBlock {
  *
  * Two different kinds of demand, deliberately:
  *
- *  - `pips` is generic energy. Marrow substitutes for it freely, and does so first,
- *    because Marrow evaporates at end of turn while Pips bank — so a card priced purely
- *    in Pips is still payable entirely out of a sacrifice, which is what keeps the ramp
+ *  - `bones` is generic energy. Marrow substitutes for it freely, and does so first,
+ *    because Marrow evaporates at end of turn while Bones bank — so a card priced purely
+ *    in Bones is still payable entirely out of a sacrifice, which is what keeps the ramp
  *    economy intact.
- *  - `marrow` is a strict requirement. Pips cannot cover it at any price. A card that
+ *  - `marrow` is a strict requirement. Bones cannot cover it at any price. A card that
  *    asks for Marrow is asking the player to have opened something up this turn, and no
  *    amount of patient banking substitutes for that.
  */
 export interface CardCost {
-  pips: number;
+  bones: number;
   marrow: number;
 }
 
 /** Sorting, rarity tiers, and anywhere a card needs one comparable number. */
 export function cardCostTotal(cost: CardCost): number {
-  return cost.pips + cost.marrow;
+  return cost.bones + cost.marrow;
 }
 
 /**
@@ -526,9 +526,9 @@ export interface CardDef {
    * for — which is exactly how Rank 2 printings leaked before `isObtainable` caught them.
    */
   /**
-   * A variable price, paid in Pips at cast time.
+   * A variable price, paid in Bones at cast time.
    *
-   * The card's own `cost.pips` is **ignored** when this is set: X *is* the price. A
+   * The card's own `cost.bones` is **ignored** when this is set: X *is* the price. A
    * declared X of zero is illegal — a free revival would make every death a 20%-health
    * inconvenience rather than a loss — and `max` is the ceiling the player may declare.
    *
@@ -609,7 +609,7 @@ export interface CardDef {
  */
 export interface CardModifier {
   /** Cheaper (negative) or dearer. Never takes a card below zero. */
-  pipCostDelta?: number;
+  boneCostDelta?: number;
   /** Added to every damage number the card deals. */
   bonusDamage?: number;
   /** Grants Retain: it stays in hand at end of turn. */

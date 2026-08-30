@@ -32,7 +32,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   spore_cloud: {
     id: 'spore_cloud',
     name: 'Spore Cloud',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -59,7 +59,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   creeping_briar: {
     id: 'creeping_briar',
     name: 'Creeping Briar',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bloom',
     source: 'hero',
     kind: 'minion',
@@ -95,7 +95,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   noxious_cloud: {
     id: 'noxious_cloud',
     name: 'Noxious Cloud',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -121,7 +121,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   briar_wolf: {
     id: 'briar_wolf',
     name: 'Briar Wolf',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'hero',
     kind: 'minion',
@@ -154,7 +154,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   root_snare: {
     id: 'root_snare',
     name: 'Root Snare',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -195,7 +195,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   sap_draught: {
     id: 'sap_draught',
     name: 'Sap Draught',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -209,7 +209,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   /**
    * The answer to "what does Bloom do on turn one".
    *
-   * Ordinary damage and one stack of rot, at the ordinary two-Pip rate. Nothing clever, and
+   * Ordinary damage and one stack of rot, at the ordinary two-Bone rate. Nothing clever, and
    * that is the point: every other card in this school asks the player to spend a turn
    * setting up, and a shelf where *nothing* trades on impact cannot open a game.
    *
@@ -220,7 +220,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   thornlash: {
     id: 'thornlash',
     name: 'Thornlash',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -252,7 +252,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   strangling_vines: {
     id: 'strangling_vines',
     name: 'Strangling Vines',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -283,7 +283,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   blight_bloom: {
     id: 'blight_bloom',
     name: 'Blight Bloom',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -305,18 +305,18 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
    * The first Bloom card that spends its own Toxin.
    *
    * Every other card in the school lays stacks and hopes an ally brings fire. This one
-   * cashes them itself, and at a Pip it is the cheapest payoff in the game — but only
+   * cashes them itself, and at a Bone it is the cheapest payoff in the game — but only
    * against a target already rotting, which is a board state Bloom had to work two turns to
    * reach.
    *
    * `true` damage on the paid branch, because armour has had two turns to matter and the
    * whole promise of Toxin is that plate does not answer it. The unpaid branch is a
-   * consolation, not a card: 10 is what a Pip buys when the setup is not there.
+   * consolation, not a card: 10 is what a Bone buys when the setup is not there.
    */
   spore_burst: {
     id: 'spore_burst',
     name: 'Spore Burst',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -350,7 +350,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   briar_rampart: {
     id: 'briar_rampart',
     name: 'Briar Rampart',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'obstacle',
@@ -376,7 +376,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   sap_wisp: {
     id: 'sap_wisp',
     name: 'Sap Wisp',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bloom',
     source: 'hero',
     kind: 'minion',
@@ -411,7 +411,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   sporeback_boar: {
     id: 'sporeback_boar',
     name: 'Sporeback Boar',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'hero',
     kind: 'minion',
@@ -443,7 +443,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   bramble_sentinel: {
     id: 'bramble_sentinel',
     name: 'Bramble Sentinel',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'hero',
     kind: 'minion',
@@ -476,7 +476,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   verdant_colossus: {
     id: 'verdant_colossus',
     name: 'Verdant Colossus',
-    cost: { pips: 4, marrow: 0 },
+    cost: { bones: 4, marrow: 0 },
     school: 'bloom',
     source: 'hero',
     kind: 'minion',
@@ -509,7 +509,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
    * Poison with no delivery cost, drifting where it is thrown.
    *
    * Bloom's toxin cards all attach to something — a cloud on a tile, a snare on a body, a
-   * lash that has to connect. Pollen Drift is a Pip that poisons a 2x2 block wherever it
+   * lash that has to connect. Pollen Drift is a Bone that poisons a 2x2 block wherever it
    * lands, no target required to already be there and nothing standing in the way, which
    * makes it the school's only genuine opener.
    *
@@ -519,7 +519,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   pollen_drift: {
     id: 'pollen_drift',
     name: 'Pollen Drift',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -551,7 +551,7 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
   blight_harvest: {
     id: 'blight_harvest',
     name: 'Blight Harvest',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -577,13 +577,13 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
    * because there is nothing there. Everything in the block is Entangled and stays where it
    * is, and the ground is still walkable for anyone who was not standing in it.
    *
-   * Three Pips because holding an army still for a turn is what Bloom's slow clock is worth,
+   * Three Bones because holding an army still for a turn is what Bloom's slow clock is worth,
    * and because Entangle on a 2x2 catches a formation rather than a body.
    */
   taproot: {
     id: 'taproot',
     name: 'Taproot',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -610,12 +610,12 @@ export const BLOOM_CARDS: Record<string, CardDef> = {
    *
    * Two Toxin on death, in a school whose every other card reads Toxin. Killing it is a
    * favour to the Bloom player roughly as often as it is not, which is exactly the awkward
-   * question a two-Pip body should pose.
+   * question a two-Bone body should pose.
    */
   mire_toad: {
     id: 'mire_toad',
     name: 'Mire Toad',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'hero',
     kind: 'minion',

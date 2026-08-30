@@ -17,7 +17,7 @@ export const RANGED_CARDS: Record<string, CardDef> = {
   longshot_stalker: {
     id: 'longshot_stalker',
     name: 'Longshot Stalker',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'minion',
@@ -48,7 +48,7 @@ export const RANGED_CARDS: Record<string, CardDef> = {
   cinder_lobber: {
     id: 'cinder_lobber',
     name: 'Cinder Lobber',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'pyre',
     source: 'hero',
     kind: 'minion',
@@ -78,7 +78,7 @@ export const RANGED_CARDS: Record<string, CardDef> = {
   arc_turret: {
     id: 'arc_turret',
     name: 'Arc Turret',
-    cost: { pips: 4, marrow: 0 },
+    cost: { bones: 4, marrow: 0 },
     school: 'arcane',
     source: 'hero',
     kind: 'minion',

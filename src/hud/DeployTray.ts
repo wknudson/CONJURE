@@ -2,7 +2,7 @@
  * The deployment tray — the bridge between a bought Vanguard and the board it stands on.
  *
  * Its own component rather than a mode inside `Hud`, because the deployment phase is not a
- * turn: there are no cards, no Pips and no End Turn, and the one thing the player can do
+ * turn: there are no cards, no Bones and no End Turn, and the one thing the player can do
  * has no counterpart once the fight starts. Keeping it separate means the HUD is simply
  * hidden while this is up, instead of learning a second set of rules about itself.
  *

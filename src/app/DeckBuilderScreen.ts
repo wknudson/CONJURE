@@ -45,7 +45,7 @@ import type { CombatBoons } from '../core/engine/setup.js';
 import { MIN_ARENA } from '../core/engine/setup.js';
 import type { School } from '../contract/ids.js';
 import { KIND_WORD, cardFaceHtml, faceOfDef } from '../hud/cardFace.js';
-import { filterBarHtml, matchesPips, pipPills, wireFilterBar } from '../hud/filterBar.js';
+import { filterBarHtml, matchesBones, bonePills, wireFilterBar } from '../hud/filterBar.js';
 
 /**
  * Every capability a loadout can grant, in the player's words.
@@ -67,8 +67,8 @@ import { filterBarHtml, matchesPips, pipPills, wireFilterBar } from '../hud/filt
 export const BOON_LABELS: Record<keyof CombatBoons, string> = {
   // Measured and counted things first.
   armor: 'Persistent Armor',
-  pips: 'Opening Pips',
-  maxPips: 'Pip ceiling',
+  bones: 'Opening Bones',
+  maxBones: 'Bone ceiling',
   extraOpeningCards: 'Opening cards',
   bonusHandLimit: 'Hand limit',
   bonusObstacleHp: 'Obstacle health',
@@ -105,11 +105,11 @@ const BOON_ORDER = Object.keys(BOON_LABELS) as (keyof CombatBoons)[];
 /**
  * Ceilings are stated, not added.
  *
- * `maxPips` is an absolute — the relic that carries it says "the ceiling is 10", not "+10".
+ * `maxBones` is an absolute — the relic that carries it says "the ceiling is 10", not "+10".
  * Rendering every number with a `+` read as the latter, which overstated the Galvanic
- * Battery by roughly nine Pips.
+ * Battery by roughly nine Bones.
  */
-const CEILINGS: ReadonlySet<keyof CombatBoons> = new Set(['maxPips']);
+const CEILINGS: ReadonlySet<keyof CombatBoons> = new Set(['maxBones']);
 import { RELIC_SLOT_ORDER } from '../core/overworld/state.js';
 import type { CardModifier } from '../core/types/cards.js';
 import {
@@ -396,7 +396,7 @@ export class DeckBuilderScreen implements Screen {
         <div class="vanguard__head">
           <span class="vanguard__title">Vanguard Assembly</span>
           <span class="vanguard__note">
-            Bought once, before the contract. These bodies cost no Pips in the fight —
+            Bought once, before the contract. These bodies cost no Bones in the fight —
             you deploy them onto Anchor Tiles before the first turn.
           </span>
           <div class="vanguard__budget">
@@ -684,7 +684,7 @@ export class DeckBuilderScreen implements Screen {
       .filter(belongsInCase)
       .filter((d) => f.school === 'all' || d.school === f.school)
       .filter((d) => f.kind === 'all' || d.kind === f.kind)
-      .filter((d) => matchesPips(d.cost.pips, f.cost))
+      .filter((d) => matchesBones(d.cost.bones, f.cost))
       .sort(
         (a, b) => cardCostTotal(a.cost) - cardCostTotal(b.cost) || a.name.localeCompare(b.name),
       );
@@ -770,7 +770,7 @@ export class DeckBuilderScreen implements Screen {
           })),
         ],
       },
-      { name: 'cost', label: 'Pips', active: this.filters.cost, pills: pipPills() },
+      { name: 'cost', label: 'Bones', active: this.filters.cost, pills: bonePills() },
       {
         name: 'kind',
         label: 'Variant',
@@ -874,7 +874,7 @@ export class DeckBuilderScreen implements Screen {
     host.innerHTML = curve
       .map(
         (n, cost) => `
-        <div class="curve__col" data-tip="Cost ${cost}|${n} card${n === 1 ? '' : 's'} at ${cost} Pips">
+        <div class="curve__col" data-tip="Cost ${cost}|${n} card${n === 1 ? '' : 's'} at ${cost} Bones">
           <div class="curve__bar" style="height:${(n / peak) * 100}%"></div>
           <div class="curve__label">${cost}${cost === 6 ? '+' : ''}</div>
         </div>`,
@@ -962,10 +962,10 @@ export class DeckBuilderScreen implements Screen {
     row.addEventListener('click', () => this.openSocketPicker(slot));
 
     const badges: string[] = [];
-    if (mod?.pipCostDelta) {
-      const sign = mod.pipCostDelta > 0 ? '+' : '';
+    if (mod?.boneCostDelta) {
+      const sign = mod.boneCostDelta > 0 ? '+' : '';
       badges.push(
-        `<span class="grimoire-mod grimoire-mod--cost" data-tip="Cost roll|This copy costs ${Math.abs(mod.pipCostDelta)} Pip less than the printed card.">${sign}${mod.pipCostDelta} PIP</span>`,
+        `<span class="grimoire-mod grimoire-mod--cost" data-tip="Cost roll|This copy costs ${Math.abs(mod.boneCostDelta)} Bone less than the printed card.">${sign}${mod.boneCostDelta} BONE</span>`,
       );
     }
     if (mod?.bonusDamage) {

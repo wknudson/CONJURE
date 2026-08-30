@@ -112,7 +112,7 @@ describe('what a crystal is', () => {
 });
 
 describe('crystals and reactions', () => {
-  it('burning a chilled unit vaporises it, and pays the pip back', () => {
+  it('burning a chilled unit vaporises it, and pays the bone back', () => {
     // The integration the whole terrain layer is for: scenery feeding the reaction
     // engine, which feeds the economy.
     const { state, striker, id } = crystalAt('magma_crystal');
@@ -124,7 +124,7 @@ describe('crystals and reactions', () => {
       keywords: [],
     });
     state.units[foe.id]!.statuses.chill = 2;
-    state.players.player.pips = 4;
+    state.players.player.bones = 4;
 
     const res = breakIt(state, striker.id, id);
 

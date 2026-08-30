@@ -17,7 +17,7 @@ import { CARDS } from '../data/cards/index.js';
 import { makeCtx, emit } from './context.js';
 import { DEFAULT_COMPANION, companionById } from '../data/companions.js';
 import { rosterBudgetFor } from '../data/roster.js';
-import { HAND_LIMIT, OPENING_HAND, PIP_CAP, drawCards } from './deck.js';
+import { HAND_LIMIT, OPENING_HAND, BONE_CAP, drawCards } from './deck.js';
 import { placeOpeningUnit, spawnObstacle } from './spawn.js';
 import { beginTurn } from './turn.js';
 import { resolveGrimoire } from '../data/grimoire.js';
@@ -89,19 +89,19 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       companionSchool,
       heroColumn,
       companionColumn,
-      reactionPipsThisTurn: 0,
+      reactionBonesThisTurn: 0,
       roster: [],
       hp,
       maxHp: hp,
       armor: 0,
-      pips: 0,
+      bones: 0,
       marrow: 0,
       deck,
       hand: [],
       discard: [],
       cards,
       handLimit: HAND_LIMIT,
-      pipCap: PIP_CAP,
+      boneCap: BONE_CAP,
       ignoresFog: false,
       immuneToBurn: false,
       immuneToToxin: false,
@@ -186,18 +186,18 @@ export function validateEncounter(encounter: EncounterDef): void {
 export interface CombatBoons {
   /** Persistent Armor on the Commander at the opening bell. */
   armor?: number;
-  /** Added to the starting Pip bank. */
-  pips?: number;
+  /** Added to the starting Bone bank. */
+  bones?: number;
   /** Drawn on top of the ordinary opening hand. */
   extraOpeningCards?: number;
   /**
-   * Raises the Pip ceiling for the whole fight.
+   * Raises the Bone ceiling for the whole fight.
    *
    * The ceiling rather than a delta, so two sources of the same relic are one relic and
    * the number here is the number the cleanup uses. Ignored when lower than the default:
    * gear bends a rule in the player's favour or not at all.
    */
-  maxPips?: number;
+  maxBones?: number;
   /**
    * Line of sight is no longer broken by fog or steam.
    *
@@ -239,7 +239,7 @@ export interface CombatBoons {
   bonusHandLimit?: number;
   /** Resonance fires on the first *two* Companion cards each turn rather than one. */
   doubleResonance?: boolean;
-  /** Spliced cards cost 1 Pip less, never below one. Marrow is untouched. */
+  /** Spliced cards cost 1 Bone less, never below one. Marrow is untouched. */
   discountHybrids?: boolean;
   /**
    * Collision damage this side's units shrug off, per hit.
@@ -308,7 +308,7 @@ export interface CombatBoons {
 /**
  * What a run carries into a fight.
  *
- * Deliberately expressed in the engine's own terms — health, armour, pips, cards — and
+ * Deliberately expressed in the engine's own terms — health, armour, bones, cards — and
  * not as a buff id or an overworld reference. A `createCombat` that knew what
  * "ironbrew" meant would be a combat engine you could not test without an overworld, and
  * adding a fourth brew would mean editing the reducer. The overworld translates; the
@@ -494,7 +494,7 @@ export function createCombat(
    * Squads the overworld's Combat Ring dragged in, one array of card ids per pulled mob.
    *
    * A separate parameter rather than a field on `CombatCarry`, because the carry is the
-   * player's side of the ledger by definition — health, armour, pips, cards — and this is
+   * player's side of the ledger by definition — health, armour, bones, cards — and this is
    * the only thing the overworld has ever had to say about the *enemy*. Folding it in there
    * would make that promise false for one field and leave the next reader guessing which
    * kind it was.
@@ -558,11 +558,11 @@ export function createCombat(
   player.commander.deck = shuffle(rng, player.commander.deck);
   enemy.commander.deck = shuffle(rng, enemy.commander.deck);
 
-  // Frontal contact opens symmetric at 3 Pips. beginTurn adds the first
+  // Frontal contact opens symmetric at 3 Bones. beginTurn adds the first
   // turn's +1 on top, so the player acts meaningfully from turn one.
-  const opening = encounter.startingPips ?? 3;
-  player.commander.pips = opening + (carry?.boons?.pips ?? 0);
-  enemy.commander.pips = opening;
+  const opening = encounter.startingBones ?? 3;
+  player.commander.bones = opening + (carry?.boons?.bones ?? 0);
+  enemy.commander.bones = opening;
 
   // A raised ceiling has to land before the health is clamped against it, or levelling a
   // Companion would buy a bigger gauge that the first clamp immediately spent.
@@ -579,8 +579,8 @@ export function createCombat(
 
   // Only upward. A relic may raise the ceiling; nothing in the data may lower it, so a
   // malformed save cannot hand the player a worse fight than the rules give them.
-  const ceiling = carry?.boons?.maxPips ?? 0;
-  if (ceiling > player.commander.pipCap) player.commander.pipCap = ceiling;
+  const ceiling = carry?.boons?.maxBones ?? 0;
+  if (ceiling > player.commander.boneCap) player.commander.boneCap = ceiling;
 
   if (carry?.boons?.ignoreFog) player.commander.ignoresFog = true;
   if (carry?.boons?.immuneToBurn) player.commander.immuneToBurn = true;
@@ -616,7 +616,7 @@ export function createCombat(
   player.commander.bonusFreezeStacks += Math.max(0, carry?.boons?.bonusFreezeStacks ?? 0);
   player.commander.bonusShoveDistance += Math.max(0, carry?.boons?.bonusShoveDistance ?? 0);
 
-  // Only ever upward, like the Pip ceiling: gear bends a rule in the player's favour or
+  // Only ever upward, like the Bone ceiling: gear bends a rule in the player's favour or
   // not at all, so a malformed carry cannot hand them a smaller hand than the rules give.
   player.commander.handLimit += Math.max(0, carry?.boons?.bonusHandLimit ?? 0);
 

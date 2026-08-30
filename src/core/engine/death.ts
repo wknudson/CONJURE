@@ -237,7 +237,7 @@ function payTo(
   const side = ctx.state.activeSide;
   const cmd = ctx.state.players[side];
   cmd.marrow += marrow;
-  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
+  emit(ctx, { t: 'resourcesChanged', side, bones: cmd.bones, marrow: cmd.marrow });
   emit(ctx, {
     t: 'marrowExtracted',
     side,

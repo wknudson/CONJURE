@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addUnit, eventsOf, scenario } from './scenario.js';
 import { MAX_CHAIN_DEPTH, dealDamage, nextDepth, atChainLimit } from '../core/engine/damage.js';
 import { REACTIONS, findReaction } from '../core/data/reactions.js';
-import { REACTION_PIP_CAP, REACTION_PIP_REFUND } from '../core/engine/reactions.js';
+import { REACTION_BONE_CAP, REACTION_BONE_REFUND } from '../core/engine/reactions.js';
 import { makeCtx } from '../core/engine/context.js';
 import { pushUnit } from '../core/engine/displacement.js';
 
@@ -368,8 +368,8 @@ describe('Arc is a reaction like any other', () => {
 
   it('pays the standard refund, under the standard cap', () => {
     const { state, target } = storm();
-    state.players.player.reactionPipsThisTurn = 0;
-    const pipsBefore = state.players.player.pips;
+    state.players.player.reactionBonesThisTurn = 0;
+    const bonesBefore = state.players.player.bones;
 
     const ctx = makeCtx(state);
     dealDamage(ctx, {
@@ -379,15 +379,15 @@ describe('Arc is a reaction like any other', () => {
       cause: 'spell',
     });
 
-    expect(ctx.state.players.player.pips).toBe(pipsBefore + REACTION_PIP_REFUND);
-    expect(ctx.state.players.player.reactionPipsThisTurn).toBe(1);
-    expect(eventsOf(ctx.events, 'pipRefunded')).toHaveLength(1);
+    expect(ctx.state.players.player.bones).toBe(bonesBefore + REACTION_BONE_REFUND);
+    expect(ctx.state.players.player.reactionBonesThisTurn).toBe(1);
+    expect(eventsOf(ctx.events, 'boneRefunded')).toHaveLength(1);
   });
 
   it('stops paying once the turn’s cap is spent, like every other reaction', () => {
     const { state, target } = storm();
-    state.players.player.reactionPipsThisTurn = REACTION_PIP_CAP;
-    const pipsBefore = state.players.player.pips;
+    state.players.player.reactionBonesThisTurn = REACTION_BONE_CAP;
+    const bonesBefore = state.players.player.bones;
 
     const ctx = makeCtx(state);
     dealDamage(ctx, {
@@ -397,7 +397,7 @@ describe('Arc is a reaction like any other', () => {
       cause: 'spell',
     });
 
-    expect(ctx.state.players.player.pips, 'a cascade must not fund itself').toBe(pipsBefore);
+    expect(ctx.state.players.player.bones, 'a cascade must not fund itself').toBe(bonesBefore);
   });
 
   it('needs the hit to land, which the old special case did not', () => {

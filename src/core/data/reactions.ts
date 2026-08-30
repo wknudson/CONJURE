@@ -149,7 +149,7 @@ export const REACTIONS: ReactionDef[] = [
    *
    * Two things change by making it a `ReactionDef` rather than a special case:
    *
-   *  - It **emits `reactionTriggered` and pays the Pip refund**, under the same 2/turn cap
+   *  - It **emits `reactionTriggered` and pays the Bone refund**, under the same 2/turn cap
    *    as everything else. Setting up a storm arc is as much work as setting up a Vaporize
    *    and is now paid the same.
    *  - It **requires the hit to land.** `conductShock` ran regardless of `hpLoss`, so a

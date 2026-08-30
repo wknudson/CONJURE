@@ -58,7 +58,7 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## The cards
 
-Columns: **Cost** is `P` Pips and `M` Marrow (Marrow is a strict requirement; Pips can be paid out of Marrow but never the reverse). **Tier** is derived from cost and keywords by `tierOf()` and sets the copy limit. **Stats** is the unit stat block or the obstacle HP. **Riders** is every optional behaviour hanging off it. **Flags** notes setup/splice-only cards, starter deck membership, and `R2` where the Forge sells a Rank 2 printing.
+Columns: **Cost** is `P` Bones and `M` Marrow (Marrow is a strict requirement; Bones can be paid out of Marrow but never the reverse). **Tier** is derived from cost and keywords by `tierOf()` and sets the copy limit. **Stats** is the unit stat block or the obstacle HP. **Riders** is every optional behaviour hanging off it. **Flags** notes setup/splice-only cards, starter deck membership, and `R2` where the Forge sells a Rank 2 printing.
 
 ### `starter.ts`
 
@@ -86,7 +86,7 @@ The Hero's own colour: Marks, abilities and constructs, never a Spell. — **12 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
 | **Scrap Phalanx** | `scrap_phalanx` | minion | 2P | 2 | hero | 10 atk, 60 hp, 1 mov, rng 1, bruiser | — | empty tile (ownTerritory) | Guardian | — | Guardian: blocks line of sight behind it. Sixty health of bolted-together plate, and almost no interest in moving. |
-| **Cull the Weak** | `cull_the_weak` | ability | 1M | 1 | hero | — | — | global | — | starter deck, R2 | Costs 1 Marrow, which no amount of banked Pips will cover. Deals 40 damage through any armor to the enemy with the least health. |
+| **Cull the Weak** | `cull_the_weak` | ability | 1M | 1 | hero | — | — | global | — | starter deck, R2 | Costs 1 Marrow, which no amount of banked Bones will cover. Deals 40 damage through any armor to the enemy with the least health. |
 | **Grapple Line** | `grapple_line` | ability | 1P | 1 | hero | — | — | line 4 | — | starter deck, R2 | Deals 10 physical damage down a 4-tile line, then drags everything caught 2 tiles back toward the near end. Triggers standard Collision Damage (30 / 20). |
 | **Aether Beam** | `aether_beam` | ability | 2P | 2 | companion | — | — | line 4 — range 4, linear, LoS | — | starter deck, R2 | A line of light drawn through the arena. 30 damage to everything standing in it, yours included. |
 | **Arc Mark** | `arc_mark` | mark | 1P | 1 | companion | — | — | entity (any, +obstacles) — range 4, LoS | — | — | Attach to a unit or obstacle (max 1 per target). When it loses health to shock or spell damage, deals 30 shock damage in a cross around it — and shock leaves everything it touches Charged. |
@@ -213,8 +213,8 @@ Surge expansion — charge and chain. — **20 cards** (7 minion, 12 spell, 1 ob
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
 | **Static Hare** | `static_hare` | minion | 1P | 1 | hero | 10 atk, 20 hp, 3 mov, rng 1, skirmisher | — | empty tile (ownTerritory) | Haste | — | Haste. Whatever survives its bite is left Charged. Fire Overloads a Charged target; frost Superconducts. |
 | **Storm Rod** | `storm_rod` | minion | 1P | 1 | hero | 10 atk, 40 hp, 0 mov, rng 1, caster | deathburst charged 1 | empty tile (ownTerritory) | — | — | Cannot move, ever. When it dies, every adjacent enemy is left Charged. |
-| **Storm Wisp** | `storm_wisp` | minion | 1P | 1 | hero | 10 atk, 20 hp, 2 mov, rng 1, skirmisher | refund 1P on attack | empty tile (ownTerritory) | Haste | — | Haste. Whenever it attacks, you are paid 1 Pip. |
-| **Voltaic Coil** | `voltaic_coil` | minion | 2P | 2 | hero | 20 atk, 50 hp, 1 mov, rng 1, bruiser | refund 1P on death | empty tile (ownTerritory) | — | — | When it dies — however it dies — you are paid 1 Pip. |
+| **Storm Wisp** | `storm_wisp` | minion | 1P | 1 | hero | 10 atk, 20 hp, 2 mov, rng 1, skirmisher | refund 1P on attack | empty tile (ownTerritory) | Haste | — | Haste. Whenever it attacks, you are paid 1 Bone. |
+| **Voltaic Coil** | `voltaic_coil` | minion | 2P | 2 | hero | 20 atk, 50 hp, 1 mov, rng 1, bruiser | refund 1P on death | empty tile (ownTerritory) | — | — | When it dies — however it dies — you are paid 1 Bone. |
 | **Voltaic Hound** | `voltaic_hound` | minion | 2P | 2 | hero | 30 atk, 20 hp, 3 mov, rng 1, skirmisher | — | empty tile (ownTerritory) | Haste | — | Haste. Can move and attack the turn it is deployed. Fast, vicious, and made of paper. |
 | **Clockwork Bombardier** | `clockwork_bombardier` | minion | 3P | 2 | hero | 10 atk, 40 hp, 1 mov, rng 2-4, sniper | arcing | empty tile (ownTerritory) | — | — | Lobber. Fires 2-4 tiles, arcing over cover, and cannot depress its aim onto anything adjacent. Whatever survives a shell is left Charged. |
 | **Arc Dynamo** | `arc_dynamo` | minion | 4P | 3 | hero | 50 atk, 60 hp, 1 mov, rng 1-3, sniper | — | empty tile (ownTerritory) | — | — | Strikes up to 3 tiles away, and whatever survives is left Charged. Slow to move, and the whole reason to bring a Discharge. |
@@ -226,7 +226,7 @@ Surge expansion — charge and chain. — **20 cards** (7 minion, 12 spell, 1 ob
 | **Chain Bolt** | `chain_bolt` | spell | 2P | 2 | companion | — | — | line 3 — range 5, linear, LoS | — | R2 | Deals 30 shock damage down a 3-tile line, and shock leaves everything it touches Charged. Fires only along a rank, file or diagonal. |
 | **Discharge** | `discharge` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Against a Charged target, deals 40 shock damage and 20 more to everything adjacent. Otherwise only 20. |
 | **St. Elmo's Fire** | `elmos_fire` | spell | 2P | 2 | companion | — | — | none — range 1 | — | R2 | Deals 20 shock damage to everything adjacent to the caster and leaves it all Charged. |
-| **Thunderhead** | `thunderhead` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 30 shock damage. If you still hold 3 or more Pips, it earths outward for 20 more to everything adjacent. |
+| **Thunderhead** | `thunderhead` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 30 shock damage. If you still hold 3 or more Bones, it earths outward for 20 more to everything adjacent. |
 | **Capacitor Dump** | `capacitor_dump` | spell | 3P | 2 | companion | — | — | entity (enemy, has charged) — range 4, LoS | — | R2 | Consumes the Charge on a Charged target for 60 shock damage, earthing 20 into everything adjacent. |
 | **Paralytic Arc** | `paralytic_arc` | spell | 2P+1M | 2 | companion | — | — | entity (enemy, has charged) — range 4, LoS | — | R2 | Costs 1 Marrow, and can only be aimed at a Charged unit. Deals 20 shock damage and Stuns it: no moving, no swinging. |
 | **Tempest Break** | `tempest_break` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 30 shock damage in a 3x3 around the target tile, and shock leaves every survivor Charged. |
@@ -264,7 +264,7 @@ Bulwark expansion — plate and hold. — **20 cards** (7 minion, 11 spell, 2 ob
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
-| **Shieldbearer** | `shieldbearer` | minion | 1P | 1 | hero | 10 atk, 50 hp, 1 mov, rng 1, bruiser | — | empty tile (ownTerritory) | Guardian | — | Guardian: blocks line of sight behind it. A Pip for a sightline, and almost no threat at all. |
+| **Shieldbearer** | `shieldbearer` | minion | 1P | 1 | hero | 10 atk, 50 hp, 1 mov, rng 1, bruiser | — | empty tile (ownTerritory) | Guardian | — | Guardian: blocks line of sight behind it. A Bone for a sightline, and almost no threat at all. |
 | **Concussive Blow** | `concussive_blow` | minion | 2P | 2 | hero | 20 atk, 40 hp, 1 mov, rng 1, bruiser | onHit stun 1; escalate +10/+10 | empty tile (ownTerritory) | — | — | A slab of a thing with a hammer. Whatever it wounds is Stunned: no moving, no swinging. |
 | **Quarry Hand** | `quarry_hand` | minion | 2P | 2 | hero | 20 atk, 50 hp, 2 mov, rng 1, bruiser | — | empty tile (ownTerritory) | Guardian | — | Guardian. Enemies must come through it before they reach what is behind it. |
 | **Siege Ox** | `siege_ox` | minion | 2P | 2 | hero | 30 atk, 50 hp, 1 mov, rng 1, bruiser | onHit brittle 1 | empty tile (ownTerritory) | — | — | Whatever survives its charge is left Brittle, taking +20 damage from every hit until it wears off. |
@@ -280,7 +280,7 @@ Bulwark expansion — plate and hold. — **20 cards** (7 minion, 11 spell, 2 ob
 | **Seismic Slam** | `seismic_slam` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Every unit around the target tile is thrown 1 tile directly away from it. Deals no damage of its own — only what they hit. Triggers standard Collision Damage (30 / 20). |
 | **Siege Break** | `siege_break` | spell | 2P | 2 | companion | — | — | entity (any, +obstacles) — range 4, LoS | — | R2 | Deals 50 impact damage to any unit or construct, yours included. The answer to a wall you cannot walk around. |
 | **Crag Slam** | `crag_slam` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 40 impact damage to everything orthogonally beside the target tile, then shoves them 1 tile away. Shatters anything Frozen. |
-| **Hammer Fall** | `hammer_fall` | spell | 2P+1M | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Costs 1 Marrow, which no amount of banked Pips will cover. Deals 30 impact damage and Stuns: no moving, no swinging. |
+| **Hammer Fall** | `hammer_fall` | spell | 2P+1M | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Costs 1 Marrow, which no amount of banked Bones will cover. Deals 30 impact damage and Stuns: no moving, no swinging. |
 | **Sinkhole** | `sinkhole` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Collapses the ground: everything within a tile of the point is dragged 1 tile into it and takes 20 impact damage. Bodies arriving on the same tile collide. |
 | **Battlement** | `battlement` | obstacle | 2P | 2 | companion | 40 hp, cover | — | empty tile (any) — range 3, LoS | — | R2 | Raises 40 HP of cover on an empty tile. Blocks line of sight but not movement — your own units may stand in it and shoot out. |
 | **Iron Gate** | `iron_gate` | obstacle | 2P | 2 | companion | 80 hp | leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises an 80 HP gate on an empty tile. Blocks movement and line of sight, and leaves rough ground when it finally breaks. |
@@ -295,7 +295,7 @@ Dusk expansion — drain, decay, the graveyard. — **15 cards** (5 minion, 8 sp
 | **Hollow Wraith** | `hollow_wraith` | minion | 0 | 1 | hero | 40 atk, 40 hp, 2 mov, rng 1, bruiser | dmg true | empty tile (ownTerritory) | — | setup only | Its strikes pass through armor entirely — and, being no longer physical, they no longer Shatter ice. |
 | **Ash-Ghoul** | `ash_ghoul` | minion | 1P | 1 | hero | 20 atk, 20 hp, 0 mov, rng 1, bruiser | tithe +1M | empty tile (ownTerritory) | Dormant | — | Dormant: cannot act the turn it is summoned, and so cannot be tithed until the next one. Cannot move, ever. Bled for +1 Marrow above the usual. |
 | **Carrion Crow** | `carrion_crow` | minion | 1P | 1 | hero | 10 atk, 20 hp, 4 mov, rng 1, skirmisher | tithe +1M | empty tile (ownTerritory) | — | — | Bleeds well. Yields extra Marrow when tithed. |
-| **Hollowed Husk** | `hollowed_husk` | minion | 1P | 1 | hero | 0 atk, 40 hp, 1 mov, rng 1, bruiser | refund 2P on death | empty tile (ownTerritory) | Guardian | — | Guardian. It cannot strike. When it dies, you are paid 2 Pips. |
+| **Hollowed Husk** | `hollowed_husk` | minion | 1P | 1 | hero | 0 atk, 40 hp, 1 mov, rng 1, bruiser | refund 2P on death | empty tile (ownTerritory) | Guardian | — | Guardian. It cannot strike. When it dies, you are paid 2 Bones. |
 | **Pall** | `pall` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 10 damage through any armor to the target and everything orthogonally beside it, and leaves it all poisoned (Toxin 1). |
 | **Shadow Siphon** | `shadow_siphon` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Spends an allied unit whole. The weakest enemy loses 30 health through any armor, and your Pact recovers 30. |
 | **Smoke Bomb** | `smoke_bomb` | spell | 1P | 1 | hero | — | — | empty tile (any) | — | R2 | A held breath of black smoke. Blocks line of sight; anyone may walk into it. |
@@ -343,7 +343,7 @@ Splice products. Obtainable only at the bench. — **24 cards** (23 spell, 1 obs
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
-| **Aetheric Overload** | `aetheric_overload` | spell | 0 | 1 | companion | — | — | entity (ally, has charged) — range 4 | — | splice only | Spends a Charged allied unit whole. You are paid 3 Pips. |
+| **Aetheric Overload** | `aetheric_overload` | spell | 0 | 1 | companion | — | — | entity (ally, has charged) — range 4 | — | splice only | Spends a Charged allied unit whole. You are paid 3 Bones. |
 | **Bone Bastion** | `bone_bastion` | spell | 1P | 1 | companion | — | — | entity (ally, unexhausted) — range 4 | — | splice only | Bleed an un-exhausted friendly minion for 30: extracts 1 Marrow and plates your Pact with Persistent Armor equal to the health taken. |
 | **Icebreaker** | `icebreaker` | spell | 1P | 1 | companion | — | — | adjacent enemy — range 1 | — | splice only, R2 | A 30 damage blow to an adjacent enemy. Against a Frozen one this Shatters: all of its Armor is stripped and everything beside it takes 40. |
 | **Black Ice** | `black_ice` | spell | 2P | 2 | companion | — | — | entity (enemy, has freeze) — range 4, LoS | — | splice only, R2 | Can only be aimed at a Frozen unit. Deals 40 damage through any armor, and everything adjacent takes Chill 2. |
@@ -382,8 +382,8 @@ The Aura attach cards, their Detonations and Revival. — **11 cards** (9 spell,
 | **Petrifying Mantle** | `petrifying_mantle` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Sets an ally in stone. +10 Persistent Armor per stack, to two. At Climax nothing shoves it. |
 | **Static Charge** | `static_charge` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Charges an ally. +1 MOV per stack, to two. At Climax it stops going around things. |
 | **Verdant Swell** | `verdant_swell` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Roots an ally deeper. +20 Max HP per stack, to two. At Climax it drinks what it wounds. |
-| **The Blood & Bone Rally** | `blood_and_bone_rally` | spell | 3M | 2 | hero | — | — | fallen (startingZone) | — | R2 | Costs 3 Marrow, which no bank of Pips will cover. Raises a fallen Vanguard in your starting zone at 10 health, wearing Persistent Armor equal to everything it lost. |
-| **Aetheric Resurgence** | `aetheric_resurgence` | ability | X (max 5) | 1 | hero | — | — | fallen (pyre) | — | — | X Pips, up to 5. Raises a fallen Vanguard on the exact tile it fell, at 20% of its health per Pip spent. Nothing may be standing there. |
+| **The Blood & Bone Rally** | `blood_and_bone_rally` | spell | 3M | 2 | hero | — | — | fallen (startingZone) | — | R2 | Costs 3 Marrow, which no bank of Bones will cover. Raises a fallen Vanguard in your starting zone at 10 health, wearing Persistent Armor equal to everything it lost. |
+| **Aetheric Resurgence** | `aetheric_resurgence` | ability | X (max 5) | 1 | hero | — | — | fallen (pyre) | — | — | X Bones, up to 5. Raises a fallen Vanguard on the exact tile it fell, at 20% of its health per Bone spent. Nothing may be standing there. |
 | **The Anchor Rally** | `anchor_rally` | ability | 3P | 2 | hero | — | — | fallen (anchor) | — | — | Raises a fallen Vanguard on an Anchor Tile at half health, quickened: +1 MOV this turn. |
 
 ---

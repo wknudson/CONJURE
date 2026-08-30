@@ -680,7 +680,7 @@ export class DistrictHud {
   /**
    * Puts the walk-time furniture away while a fight is on.
    *
-   * The combat HUD is the full one — a hand, two gauges, the pip dial, the trays — and it
+   * The combat HUD is the full one — a hand, two gauges, the bone dial, the trays — and it
    * arrives on top of a screen that is still wearing the objective panel, the zone chip, the
    * interact prompt and the walking help. Two HUDs at once is unreadable, and the walking one
    * is answering questions nobody is asking mid-turn.

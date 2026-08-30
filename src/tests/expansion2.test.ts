@@ -37,8 +37,8 @@ import { newRun, type GlobalGameState } from '../core/overworld/state.js';
  * hits something, a wound worn as plate.
  */
 
-const board = (hand: string[] = [], pips = 8, marrow = 4) =>
-  scenario({ width: 6, height: 8, hand, pips, marrow });
+const board = (hand: string[] = [], bones = 8, marrow = 4) =>
+  scenario({ width: 6, height: 8, hand, bones, marrow });
 
 /** Every base printing filed under an elemental school, hybrids excluded. */
 const monoOf = (school: string) =>
@@ -370,10 +370,10 @@ describe('Bulwark', () => {
     expect(res.state.obstacles[gateId]?.hp, 'fifty off an eighty-point gate').toBe(30);
   });
 
-  it('Hammer Fall demands the Marrow no bank of Pips will cover', () => {
-    // Eight Pips and no Marrow. Marrow is a strict requirement: Pips substitute for it at
+  it('Hammer Fall demands the Marrow no bank of Bones will cover', () => {
+    // Eight Bones and no Marrow. Marrow is a strict requirement: Bones substitute for it at
     // no price, so the card is simply unaffordable.
-    const broke = scenario({ width: 6, height: 8, hand: ['hammer_fall'], pips: 8, marrow: 0 });
+    const broke = scenario({ width: 6, height: 8, hand: ['hammer_fall'], bones: 8, marrow: 0 });
     const foe = addUnit(broke, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 3 } });
     const card = handCard(broke, 'player', 'hammer_fall');
     expect(() => run(broke, play(card, atUnit(foe.id)))).toThrow(/cannot afford/);
@@ -602,7 +602,7 @@ describe('the eight fusions, cast', () => {
   it('Bone Bastion wears the wound as plate on the Pact', () => {
     // Starting on zero Marrow on purpose: the default fixture opens at the cap, where the
     // Marrow the tithe pays would clamp and the assertion would prove nothing.
-    const state = scenario({ width: 6, height: 8, hand: ['bone_bastion'], pips: 8, marrow: 0 });
+    const state = scenario({ width: 6, height: 8, hand: ['bone_bastion'], bones: 8, marrow: 0 });
     const body = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 6 } });
     const before = state.players.player.marrow;
 

@@ -177,7 +177,7 @@ describe('marks and cascades', () => {
 
   it('detonates every mark on the board with +2 bonus damage via Cataclysmic Core', () => {
     const state = scenario({
-      pips: 8,
+      bones: 8,
       marrow: 2,
       units: [
         { def: 'grave_sentinel', side: 'enemy', at: { x: 0, y: 0 }, hp: 200, mark: 'cinder_mark' },

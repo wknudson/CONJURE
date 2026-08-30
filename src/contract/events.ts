@@ -46,16 +46,16 @@ export type GameEvent = EventBase &
     | { t: 'combatStarted'; grid: { width: number; height: number }; encounterName: string }
     | { t: 'turnStarted'; side: Side; turn: number }
     | { t: 'phaseChanged'; phase: Phase; side: Side }
-    | { t: 'pipGained'; side: Side; amount: number; total: number }
+    | { t: 'boneGained'; side: Side; amount: number; total: number }
     /**
-     * A Pip paid back for landing an elemental reaction.
+     * A Bone paid back for landing an elemental reaction.
      *
-     * Separate from `pipGained` because the two are the same arithmetic but different
+     * Separate from `boneGained` because the two are the same arithmetic but different
      * news: turn income is expected and silent, a refund is a reward for a setup that
      * worked and is worth saying out loud, at the tile where it happened.
      */
     | {
-        t: 'pipRefunded';
+        t: 'boneRefunded';
         side: Side;
         amount: number;
         total: number;
@@ -63,7 +63,7 @@ export type GameEvent = EventBase &
         name: string;
         at: Coord;
       }
-    | { t: 'resourcesChanged'; side: Side; pips: number; marrow: number }
+    | { t: 'resourcesChanged'; side: Side; bones: number; marrow: number }
     | { t: 'cardDrawn'; side: Side; card: CardSnapshot }
     | { t: 'cardBurned'; side: Side; card: CardSnapshot }
     | { t: 'cardDiscarded'; side: Side; cardId: CardInstanceId }
@@ -152,11 +152,11 @@ export type GameEvent = EventBase &
     /** A unit spent its attack extracting Marrow instead of swinging. */
     /**
      * A body gave up its swing. What it produced depends on its class — see
-     * `data/economy.ts`. `marrow` predates the Pip economy and is kept so the animation
-     * and the AI's existing term keep working; `pips` and `draw` are what the class ladder
+     * `data/economy.ts`. `marrow` predates the Bone economy and is kept so the animation
+     * and the AI's existing term keep working; `bones` and `draw` are what the class ladder
      * added.
      */
-    | { t: 'unitChannelled'; unitId: UnitId; side: Side; marrow: number; pips: number; draw: number }
+    | { t: 'unitChannelled'; unitId: UnitId; side: Side; marrow: number; bones: number; draw: number }
     | { t: 'unitDied'; unitId: UnitId; at: Coord; footprint: 1 | 2; cause: DamageCause }
     /**
      * Something left the board without dying — a scavenger that reached the edge.

@@ -70,26 +70,26 @@ export function wireFilterBar(
 }
 
 /**
- * The Pip pills every card shelf uses.
+ * The Bone pills every card shelf uses.
  *
  * The top one is a **bucket**, not a number: everything at or above it lands there, so
  * nothing priced past the last pill can be filtered into invisibility.
  */
-export const PIP_MAX = 5;
+export const BONE_MAX = 5;
 
-export function pipPills(): FilterPill[] {
+export function bonePills(): FilterPill[] {
   return [
     { key: 'all', label: 'Any' },
-    ...[0, 1, 2, 3, 4, PIP_MAX].map((c) => ({
+    ...[0, 1, 2, 3, 4, BONE_MAX].map((c) => ({
       key: String(c),
-      label: c === PIP_MAX ? `${c}+` : String(c),
+      label: c === BONE_MAX ? `${c}+` : String(c),
     })),
   ];
 }
 
-/** Whether a card at `pips` passes the chosen Pip pill. */
-export function matchesPips(pips: number, active: string): boolean {
+/** Whether a card at `bones` passes the chosen Bone pill. */
+export function matchesBones(bones: number, active: string): boolean {
   if (active === 'all') return true;
   const want = Number(active);
-  return want === PIP_MAX ? pips >= PIP_MAX : pips === want;
+  return want === BONE_MAX ? bones >= BONE_MAX : bones === want;
 }

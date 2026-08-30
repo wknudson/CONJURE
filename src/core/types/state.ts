@@ -66,10 +66,10 @@ export interface CommanderState {
   immuneToShatterSplash: boolean;
   /** Tiles added to every shove this side's cards deal out. */
   bonusShoveDistance: number;
-  /** Spliced cards cost this side 1 Pip less, never below one. */
+  /** Spliced cards cost this side 1 Bone less, never below one. */
   discountHybrids: boolean;
-  /** Pips refunded by elemental reactions this turn, capped so cascades cannot self-fund. */
-  reactionPipsThisTurn: number;
+  /** Bones refunded by elemental reactions this turn, capped so cascades cannot self-fund. */
+  reactionBonesThisTurn: number;
   /**
    * The Companion's body on the board, if this side has one. A side without one casts
    * from nowhere in particular, exactly as every side did before Bound Forms existed.
@@ -81,7 +81,7 @@ export interface CommanderState {
   maxHp: number;
   armor: number;
   /** Banked. The cap of 8 is enforced only during end-of-turn cleanup. */
-  pips: number;
+  bones: number;
   /** Ephemeral. Zeroed at end of turn. */
   marrow: number;
   /**
@@ -101,13 +101,13 @@ export interface CommanderState {
   cards: Record<CardInstanceId, CardInstance>;
   handLimit: number;
   /**
-   * The most Pips this side may bank through end of turn.
+   * The most Bones this side may bank through end of turn.
    *
-   * A field rather than the `PIP_CAP` constant read directly, for the same reason
+   * A field rather than the `BONE_CAP` constant read directly, for the same reason
    * `handLimit` is one: gear can move it, and a rule that gear bends has to be a value
    * somebody can hold rather than a number compiled into the cleanup.
    */
-  pipCap: number;
+  boneCap: number;
   /**
    * Smoke does not blind this side.
    *
@@ -184,7 +184,7 @@ export interface EncounterState {
    *
    * One array per mob rather than one flat list, because the compensation the player is
    * owed is *per mob pulled*, not per body: `wave2.length` is the number of extra fights
-   * they walked into, and that is the number the Pip and the card are paid against.
+   * they walked into, and that is the number the Bone and the card are paid against.
    *
    * Expressed as card ids and nothing else. The engine has never heard of a roaming pack
    * and does not learn about one here — the district decides who got dragged in, and hands
@@ -343,7 +343,7 @@ export interface GameState {
    * "somebody attacked" would silently change the rout rule and the ordinary one together.
    *
    * This exists because the Pacifist Lockout could not tell *unwilling* from *unable* once a
-   * swing started costing a Pip: two sides banking Pips look exactly like two sides refusing to
+   * swing started costing a Bone: two sides banking Bones look exactly like two sides refusing to
    * engage, and the lockout would kill them both with unblockable damage for a drought the
    * economy created.
    */

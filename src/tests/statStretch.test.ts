@@ -33,7 +33,7 @@ import type { GameState } from '../core/types/state.js';
  *
  * Every health number in the game is now authored ten times larger, so that a level can
  * buy a *small* improvement instead of a 33% one. The interesting half of that change is
- * not the multiplication -- it is the boundary. Pips, Marrow, hand size, movement, range
+ * not the multiplication -- it is the boundary. Bones, Marrow, hand size, movement, range
  * and status stacks are counted rather than measured, and a hand of seventy cards is not
  * a finer-grained game, it is a broken one.
  *
@@ -79,7 +79,7 @@ describe('the data layer', () => {
 
   it('left card costs where they were', () => {
     for (const def of Object.values(CARDS)) {
-      expect(def.cost.pips, `${def.id} pips`).toBeLessThanOrEqual(8);
+      expect(def.cost.bones, `${def.id} bones`).toBeLessThanOrEqual(8);
       expect(def.cost.marrow, `${def.id} marrow`).toBeLessThanOrEqual(4);
     }
   });

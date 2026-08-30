@@ -17,7 +17,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   vanguard_footman: {
     id: 'vanguard_footman',
     name: 'Vanguard Footman',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'neutral',
     source: 'hero',
     kind: 'minion',
@@ -41,7 +41,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   scout_imp: {
     id: 'scout_imp',
     name: 'Scout Imp',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'arcane',
     source: 'hero',
     kind: 'minion',
@@ -64,7 +64,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   marrow_wisp: {
     id: 'marrow_wisp',
     name: 'Marrow Wisp',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'arcane',
     source: 'hero',
     kind: 'minion',
@@ -90,7 +90,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   grave_sentinel: {
     id: 'grave_sentinel',
     name: 'Grave Sentinel',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'minion',
@@ -113,7 +113,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   magma_brute: {
     id: 'magma_brute',
     name: 'Magma Brute',
-    cost: { pips: 4, marrow: 0 },
+    cost: { bones: 4, marrow: 0 },
     school: 'pyre',
     source: 'hero',
     kind: 'minion',
@@ -147,7 +147,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   flame_surge: {
     id: 'flame_surge',
     name: 'Flame Surge',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
@@ -163,7 +163,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   cataclysmic_core: {
     id: 'cataclysmic_core',
     name: 'Cataclysmic Core',
-    cost: { pips: 5, marrow: 0 },
+    cost: { bones: 5, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
@@ -176,7 +176,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   dark_tithe: {
     id: 'dark_tithe',
     name: 'Dark Tithe',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'neutral',
     source: 'hero',
     kind: 'ability',
@@ -198,7 +198,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   shield_bash: {
     id: 'shield_bash',
     name: 'Shield Bash',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'neutral',
     source: 'hero',
     kind: 'ability',
@@ -220,7 +220,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   stone_barricade: {
     id: 'stone_barricade',
     name: 'Stone Barricade',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'neutral',
     source: 'hero',
     kind: 'obstacle',
@@ -235,7 +235,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   aegis_ward: {
     id: 'aegis_ward',
     name: 'Aegis Ward',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'arcane',
     source: 'hero',
     kind: 'ability',
@@ -249,7 +249,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
   rite_of_subjugation: {
     id: 'rite_of_subjugation',
     name: 'Rite of Subjugation',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'arcane',
     source: 'companion',
     kind: 'ability',

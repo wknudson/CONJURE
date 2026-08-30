@@ -40,7 +40,7 @@ describe('the set as data', () => {
   });
 
   it('caps the heavy ones at a single copy', () => {
-    // A four-Pip Guardian/Counter wall is Tier 3 by cost alone, and two of them would
+    // A four-Bone Guardian/Counter wall is Tier 3 by cost alone, and two of them would
     // make a narrow lane simply impassable.
     expect(TIER_COPY_LIMIT[tierOf(CARDS.slag_iron_golem!)]).toBe(1);
     expect(TIER_COPY_LIMIT[tierOf(CARDS.ash_ghoul!)]).toBe(3);
@@ -177,7 +177,7 @@ describe('Clockwork Bombardier', () => {
     expect(charged.units[foe.id]!.statuses.charged).toBe(1);
 
     // Now a fire card into the charge.
-    charged.players.player.pips = 8;
+    charged.players.player.bones = 8;
     charged.players.player.cards.torch = { instanceId: 'torch', defId: 'flame_surge' };
     charged.players.player.hand.push('torch');
     addUnit(charged, { def: 'ignis_bound', side: 'player', at: { x: 4, y: 3 }, titheBonus: 0 });
@@ -215,7 +215,7 @@ describe('Clockwork Bombardier', () => {
 describe('Seismic Slam', () => {
   /** Four bodies ringing (2,3), one of them backed against the top wall. */
   const ringed = () => {
-    const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], pips: 6 });
+    const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], bones: 6 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 90 });
     const east = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 3 }, hp: 90 });
@@ -238,7 +238,7 @@ describe('Seismic Slam', () => {
 
   it('deals no damage of its own', () => {
     // Everything it produces comes from what the bodies hit on the way out.
-    const state = scenario({ width: 8, height: 8, hand: ['seismic_slam'], pips: 6 });
+    const state = scenario({ width: 8, height: 8, hand: ['seismic_slam'], bones: 6 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 4, y: 5 }, titheBonus: 0 });
     const lone = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 4, y: 3 }, hp: 90 });
     const card = handCard(state, 'player', 'seismic_slam');
@@ -253,7 +253,7 @@ describe('Seismic Slam', () => {
     // `adjacent8` is a shape, not an allegiance. Verified in a real fight: aimed beside
     // your own line it shoves your own line, collisions and all. That is the card's
     // restraint, and the reason it is aimed at a tile rather than at an enemy.
-    const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], pips: 6 });
+    const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], bones: 6 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 4, y: 5 }, titheBonus: 0 });
     const friend = addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 5 }, hp: 90 });
     const card = handCard(state, 'player', 'seismic_slam');
@@ -266,7 +266,7 @@ describe('Seismic Slam', () => {
   it('turns a wall into the damage', () => {
     // A unit already against the board edge has nowhere to go, so the shove becomes a
     // collision — which is the card's entire reason to exist.
-    const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], pips: 6 });
+    const state = scenario({ width: 6, height: 8, hand: ['seismic_slam'], bones: 6 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     const pinned = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 0 }, hp: 90 });
     const card = handCard(state, 'player', 'seismic_slam');
@@ -280,7 +280,7 @@ describe('Seismic Slam', () => {
 
 describe('Slag-Iron Golem', () => {
   it('goes down as an 8 HP body with both keywords', () => {
-    const state = scenario({ width: 6, height: 8, hand: ['slag_iron_golem'], pips: 8 });
+    const state = scenario({ width: 6, height: 8, hand: ['slag_iron_golem'], bones: 8 });
     const card = handCard(state, 'player', 'slag_iron_golem');
 
     const res = run(state, play(card, atTile(2, 6)));
@@ -370,7 +370,7 @@ describe('Ash-Ghoul', () => {
 
   it('cannot be bled on the turn it lands', () => {
     // Dormant is the real price. `canAct` refuses anything summoned this turn without
-    // Haste, and the tithe asks `canAct` — so one Pip buys the Marrow *next* turn, if the
+    // Haste, and the tithe asks `canAct` — so one Bone buys the Marrow *next* turn, if the
     // thing is still standing.
     const { state, ghoul } = planted(true);
     expect(canAct(state.units[ghoul.id]!)).toBe(false);
@@ -391,8 +391,8 @@ describe('Ash-Ghoul', () => {
   });
 
   it('is worth the same as a Wisp, bought differently', () => {
-    // The Wisp pays its premium for a Pip and can walk. This pays the same premium for a
-    // Pip and cannot move or act for a turn — the same fuel, priced in tempo instead of
+    // The Wisp pays its premium for a Bone and can walk. This pays the same premium for a
+    // Bone and cannot move or act for a turn — the same fuel, priced in tempo instead of
     // mobility.
     expect(CARDS.ash_ghoul!.unit!.titheBonus).toBe(CARDS.marrow_wisp!.unit!.titheBonus);
     expect(CARDS.ash_ghoul!.unit!.mov).toBe(0);
@@ -414,7 +414,7 @@ describe('the summon path', () => {
       width: 6,
       height: 8,
       hand: ['clockwork_bombardier', 'briar_wolf'],
-      pips: 8,
+      bones: 8,
     });
 
     const bombardier = handCard(state, 'player', 'clockwork_bombardier');
@@ -429,7 +429,7 @@ describe('the summon path', () => {
   });
 
   it('leaves a body with no rider without one', () => {
-    const state = scenario({ width: 6, height: 8, hand: ['scrap_phalanx'], pips: 8 });
+    const state = scenario({ width: 6, height: 8, hand: ['scrap_phalanx'], bones: 8 });
     const card = handCard(state, 'player', 'scrap_phalanx');
 
     const res = run(state, play(card, atTile(2, 6)));

@@ -154,8 +154,8 @@ describe('carrying a run into a fight', () => {
     });
 
     it('kinetic_capacitor opens with a bigger bank', () => {
-      const plain = createCombat(NOVICE_DUELIST, 7).state.players.player.pips;
-      expect(withBuff('kinetic_capacitor').players.player.pips).toBe(plain + 2);
+      const plain = createCombat(NOVICE_DUELIST, 7).state.players.player.bones;
+      expect(withBuff('kinetic_capacitor').players.player.bones).toBe(plain + 2);
     });
 
     it('quicksilver opens with a wider hand', () => {
@@ -166,7 +166,7 @@ describe('carrying a run into a fight', () => {
     it('gives the enemy nothing', () => {
       const plain = createCombat(NOVICE_DUELIST, 7).state;
       const buffed = withBuff('kinetic_capacitor');
-      expect(buffed.players.enemy.pips).toBe(plain.players.enemy.pips);
+      expect(buffed.players.enemy.bones).toBe(plain.players.enemy.bones);
       expect(buffed.players.enemy.armor).toBe(plain.players.enemy.armor);
     });
   });
@@ -286,7 +286,7 @@ describe('the loop, closed', () => {
     useConsumable(g, 0);
 
     const carry = carryFor(g.overworld);
-    expect(carry.boons).toEqual({ pips: 2 });
+    expect(carry.boons).toEqual({ bones: 2 });
     expect(JSON.stringify(carry)).not.toContain('kinetic_capacitor');
   });
 });

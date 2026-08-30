@@ -16,7 +16,7 @@ import {
 import { carryFor } from '../core/overworld/run.js';
 import { createCombat, type CombatBoons } from '../core/engine/setup.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
-import { MIN_DISCOUNTED_PIPS, HAND_LIMIT, drawCards, effectiveCost } from '../core/engine/deck.js';
+import { MIN_DISCOUNTED_BONES, HAND_LIMIT, drawCards, effectiveCost } from '../core/engine/deck.js';
 import { toCardSnapshot } from '../core/engine/views.js';
 import { pushUnit } from '../core/engine/displacement.js';
 import { makeCtx } from '../core/engine/context.js';
@@ -180,7 +180,7 @@ describe('Ironclad Boots', () => {
 describe('Aether-Weave Gloves', () => {
   /** A Companion board with two Companion cards in hand. */
   const board = (twice: boolean) => {
-    const state = scenario({ width: 6, height: 8, hand: ['spore_cloud', 'spore_cloud'], pips: 8 });
+    const state = scenario({ width: 6, height: 8, hand: ['spore_cloud', 'spore_cloud'], bones: 8 });
     state.players.player.maxHp = 400;
     state.players.player.hp = 200;
     state.players.player.companionSchool = 'bloom';
@@ -244,20 +244,20 @@ describe('Aether-Weave Gloves', () => {
 
 describe("Splicer's Goggles", () => {
   const goggled = (on: boolean) => {
-    const state = scenario({ width: 6, height: 8, hand: ['galvanic_spores'], pips: 8, marrow: 4 });
+    const state = scenario({ width: 6, height: 8, hand: ['galvanic_spores'], bones: 8, marrow: 4 });
     state.players.player.discountHybrids = on;
     addUnit(state, { def: 'sylva_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 90 });
     return state;
   };
 
-  it('takes a Pip off a spliced card and nothing else', () => {
+  it('takes a Bone off a spliced card and nothing else', () => {
     const plain = goggled(false);
     const cheap = goggled(true);
     const def = CARDS.galvanic_spores!;
 
     expect(effectiveCost(plain, 'player', def)).toEqual(def.cost);
-    expect(effectiveCost(cheap, 'player', def).pips).toBe(def.cost.pips - 1);
+    expect(effectiveCost(cheap, 'player', def).bones).toBe(def.cost.bones - 1);
   });
 
   it('never touches the Marrow half', () => {
@@ -269,10 +269,10 @@ describe("Splicer's Goggles", () => {
     expect(effectiveCost(cheap, 'player', def).marrow).toBe(def.cost.marrow);
   });
 
-  it('floors at one Pip', () => {
+  it('floors at one Bone', () => {
     const cheap = goggled(true);
-    const cheapest = { ...CARDS.galvanic_spores!, cost: { pips: 1, marrow: 0 } };
-    expect(effectiveCost(cheap, 'player', cheapest).pips).toBe(MIN_DISCOUNTED_PIPS);
+    const cheapest = { ...CARDS.galvanic_spores!, cost: { bones: 1, marrow: 0 } };
+    expect(effectiveCost(cheap, 'player', cheapest).bones).toBe(MIN_DISCOUNTED_BONES);
   });
 
   it('leaves an ordinary card alone', () => {
@@ -282,14 +282,14 @@ describe("Splicer's Goggles", () => {
 
   it('actually charges the lower price', () => {
     const state = goggled(true);
-    const before = state.players.player.pips;
+    const before = state.players.player.bones;
     const card = handCard(state, 'player', 'galvanic_spores');
 
     const res = run(state, play(card, atTile(2, 3)));
 
-    // Cost is 2 Pips + 1 Marrow; the discount makes it 1 Pip. Marrow covers generic Pips
-    // first, so what actually leaves the Pip bank is what matters here.
-    expect(res.state.players.player.pips).toBeGreaterThan(before - CARDS.galvanic_spores!.cost.pips);
+    // Cost is 2 Bones + 1 Marrow; the discount makes it 1 Bone. Marrow covers generic Bones
+    // first, so what actually leaves the Bone bank is what matters here.
+    expect(res.state.players.player.bones).toBeGreaterThan(before - CARDS.galvanic_spores!.cost.bones);
   });
 
   it('reads the discounted price on the face of the card', () => {
@@ -300,8 +300,8 @@ describe("Splicer's Goggles", () => {
     const plain = goggled(false);
     const plainId = handCard(plain, 'player', 'galvanic_spores');
 
-    expect(toCardSnapshot(cheap, 'player', id).cost.pips).toBe(
-      toCardSnapshot(plain, 'player', plainId).cost.pips - 1,
+    expect(toCardSnapshot(cheap, 'player', id).cost.bones).toBe(
+      toCardSnapshot(plain, 'player', plainId).cost.bones - 1,
     );
   });
 });

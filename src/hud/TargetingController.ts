@@ -152,12 +152,12 @@ export class TargetingController {
    * The most X this purse could pay right now.
    *
    * Marrow counts: X is a generic price, and the economy settles generic prices out of
-   * Marrow before it touches the Pip bank. A ceiling that ignored it would hide plays the
+   * Marrow before it touches the Bone bank. A ceiling that ignored it would hide plays the
    * engine would happily accept.
    */
   private affordableX(max: number): number {
     const p = this.rules.getBoard().player;
-    return Math.max(1, Math.min(max, p.pips + p.marrow));
+    return Math.max(1, Math.min(max, p.bones + p.marrow));
   }
 
   private beginTargeting(id: CardInstanceId, x?: number): void {
@@ -209,8 +209,8 @@ export class TargetingController {
 
     // Names the pool that is actually missing. A strict Marrow cost cannot be solved by
     // banking, so telling the player they are "2 short" of a total would send them off to
-    // save Pips that will never buy it.
-    const shortfall = describeShortfall(card.cost, board.player.pips, board.player.marrow);
+    // save Bones that will never buy it.
+    const shortfall = describeShortfall(card.cost, board.player.bones, board.player.marrow);
     if (shortfall) return `${card.name} ${shortfall}`;
 
     switch (card.kind) {

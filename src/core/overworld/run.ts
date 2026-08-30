@@ -33,7 +33,7 @@ export const BUFF_EFFECTS: Record<BuffId, CombatBoons> = {
   /** Armour to soak the first exchange. */
   ironbrew: { armor: 50 },
   /** Opens on a bigger bank, so a turn-one Power Tier play is briefly possible. */
-  kinetic_capacitor: { pips: 2 },
+  kinetic_capacitor: { bones: 2 },
   /** A wider opening hand: more options rather than more power. */
   quicksilver: { extraOpeningCards: 2 },
 };
@@ -43,7 +43,7 @@ export const BUFF_EFFECTS: Record<BuffId, CombatBoons> = {
  *
  * Two sources of advantage meet here and nowhere else: the brew in hand, and the
  * Companion standing beside you. Both are translated into the engine's own words —
- * armour, pips, cards, a ceiling — so `createCombat` is handed numbers and never learns
+ * armour, bones, cards, a ceiling — so `createCombat` is handed numbers and never learns
  * that either a brew or a Companion level exists.
  *
  * The two add rather than override. A levelled Companion and an Ironbrew are separate
@@ -113,11 +113,11 @@ export function carryFor(
 
   const armor =
     (brew?.armor ?? 0) + (companion?.startingArmor ?? 0) + (gear.armor ?? 0) + (knack.armor ?? 0);
-  const pips =
-    (brew?.pips ?? 0) + (companion?.bonusPips ?? 0) + (gear.pips ?? 0) + (knack.pips ?? 0);
+  const bones =
+    (brew?.bones ?? 0) + (companion?.bonusBones ?? 0) + (gear.bones ?? 0) + (knack.bones ?? 0);
   const extraOpeningCards =
     (brew?.extraOpeningCards ?? 0) + (gear.extraOpeningCards ?? 0) + (knack.extraOpeningCards ?? 0);
-  const maxPips = Math.max(gear.maxPips ?? 0, knack.maxPips ?? 0);
+  const maxBones = Math.max(gear.maxBones ?? 0, knack.maxBones ?? 0);
   const obstacleHp = (gear.bonusObstacleHp ?? 0) + (knack.bonusObstacleHp ?? 0);
   const titheMarrow = (gear.bonusTitheMarrow ?? 0) + (knack.bonusTitheMarrow ?? 0);
   const titheHeal = (gear.healOnTithe ?? 0) + (knack.healOnTithe ?? 0);
@@ -132,9 +132,9 @@ export function carryFor(
 
   const boons: CombatBoons = {
     ...(armor ? { armor } : {}),
-    ...(pips ? { pips } : {}),
+    ...(bones ? { bones } : {}),
     ...(extraOpeningCards ? { extraOpeningCards } : {}),
-    ...(maxPips ? { maxPips } : {}),
+    ...(maxBones ? { maxBones } : {}),
     ...(gear.ignoreFog || knack.ignoreFog ? { ignoreFog: true } : {}),
     ...(gear.immuneToBurn || knack.immuneToBurn ? { immuneToBurn: true } : {}),
     ...(gear.immuneToToxin || knack.immuneToToxin ? { immuneToToxin: true } : {}),

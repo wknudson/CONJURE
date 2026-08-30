@@ -135,7 +135,7 @@ describe('pressing them', () => {
 
 describe('Cryo-Combustion', () => {
   const aimed = (statuses: Record<string, number> = {}) => {
-    const state = scenario({ width: 6, height: 8, hand: ['cryo_combustion'], pips: 8 });
+    const state = scenario({ width: 6, height: 8, hand: ['cryo_combustion'], bones: 8 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 3 }, hp: 140 });
     Object.assign(state.units[foe.id]!.statuses, statuses);
@@ -195,7 +195,7 @@ describe('Cryo-Combustion', () => {
 
 describe('Galvanic Spores', () => {
   it('lays both fuses on the same cross', () => {
-    const state = scenario({ width: 6, height: 8, hand: ['galvanic_spores'], pips: 8, marrow: 4 });
+    const state = scenario({ width: 6, height: 8, hand: ['galvanic_spores'], bones: 8, marrow: 4 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 90 });
     const corner = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 90 });
@@ -218,7 +218,7 @@ describe('Galvanic Spores', () => {
 
 describe('Aetheric Defibrillator', () => {
   const withOffering = () => {
-    const state = scenario({ width: 6, height: 8, hand: ['aetheric_defibrillator'], pips: 8 });
+    const state = scenario({ width: 6, height: 8, hand: ['aetheric_defibrillator'], bones: 8 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     const offering = addUnit(state, {
       def: 'marrow_wisp',

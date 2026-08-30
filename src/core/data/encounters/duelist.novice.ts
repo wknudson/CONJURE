@@ -75,7 +75,7 @@ export const NOVICE_DUELIST: EncounterDef = registerEncounter({
    * put a second unit on an occupied tile. Four here plus that one is the ten.
    *
    * So the duel is symmetric in both halves now. They deploy a warband and hold a Hero
-   * Deck, exactly as you do, and neither of you can buy a body with Pips mid-fight.
+   * Deck, exactly as you do, and neither of you can buy a body with Bones mid-fight.
    *
    * Rows 0-1 are theirs; (3,1) belongs to the free Footman and the back row is left clear
    * for the Companion body to place itself into.

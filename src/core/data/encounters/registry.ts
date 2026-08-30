@@ -19,10 +19,10 @@ export interface EncounterDef {
   playerHp: number;
   enemyHp: number;
   /**
-   * Banked Pips both sides open with. The contact table sets frontal (neutral)
-   * engagement at 3 Pips and 5 cards; without it turn one is a dead turn.
+   * Banked Bones both sides open with. The contact table sets frontal (neutral)
+   * engagement at 3 Bones and 5 cards; without it turn one is a dead turn.
    */
-  startingPips?: number;
+  startingBones?: number;
   playerName: string;
   companionName: string;
   /** Default Companion when the player has not chosen one. */

@@ -189,7 +189,7 @@ describe('the upgrade from one character to three', () => {
         collection: { unlocked: ['scout_imp', 'shield_bash'], ascended: ['shield_bash'] },
         decks: {},
         activeCompanionId: 'boreas',
-        companions: { boreas: { level: 3, bonusMaxHp: 4, startingArmor: 0, bonusPips: 0 } },
+        companions: { boreas: { level: 3, bonusMaxHp: 4, startingArmor: 0, bonusBones: 0 } },
         difficulty: 'Adept',
         record: { wins: 4, losses: 1, bound: 0 },
         overworld,

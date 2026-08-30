@@ -83,7 +83,7 @@ describe('channelling', () => {
     // body that cannot be traded away was "a turn with no downside at all". True while a swing
     // was free — giving up nothing costs nothing.
     //
-    // A swing costs a Pip now, so channelling trades a paid action for a Pip and the downside
+    // A swing costs a Bone now, so channelling trades a paid action for a Bone and the downside
     // is the swing itself. Leaving the bar in place also made the endgame unresolvable: the
     // last body standing is usually the Bound Form, and one that cannot channel can only ever
     // spend. Four shipped encounters stopped reaching a decision because of it.
@@ -116,10 +116,10 @@ describe('channelling', () => {
 
 describe('the AI and channelling', () => {
   /** A side with an unaffordable card, one idle unit, and no enemy in reach. */
-  function starved(pips: number) {
-    const state = scenario({ width: 6, height: 8, pips: 0 });
+  function starved(bones: number) {
+    const state = scenario({ width: 6, height: 8, bones: 0 });
     const cmd = state.players.enemy;
-    cmd.pips = pips;
+    cmd.bones = bones;
     cmd.marrow = 0;
     giveCard(state, 'enemy', 'grave_sentinel'); // costs 2
     addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 } });
@@ -132,11 +132,11 @@ describe('the AI and channelling', () => {
     expect(actions.some((a) => a.type === 'channel')).toBe(true);
   });
 
-  it('channels with nothing to spend it on, because Pips bank', () => {
+  it('channels with nothing to spend it on, because Bones bank', () => {
     // This asserted the opposite, and was right to: Channel used to pay only Marrow, Marrow is
     // wiped at end of turn, and banking one that buys nothing cost a swing for nothing.
     //
-    // Channel pays **Pips** now, and Pips carry over. At zero the side cannot attack at all, so
+    // Channel pays **Bones** now, and Bones carry over. At zero the side cannot attack at all, so
     // sitting a body down is not hoarding — it is the only way out of the hole, and refusing it
     // would leave the AI standing still until the fight timed out. That is exactly what it did
     // when this gate was left in place: attacks fell by 41% and channels did not move.
@@ -156,7 +156,7 @@ describe('the AI and channelling', () => {
   it('offers the swing and the channel for the same body, because that is the decision', () => {
     // The inverse of what this used to assert. Channel was a consolation for having nothing to
     // hit, so a body with a target was deliberately never offered as a channeller. Now that a
-    // swing costs a Pip and sitting down makes one, "strike or fund the strike" is the choice
+    // swing costs a Bone and sitting down makes one, "strike or fund the strike" is the choice
     // the turn is made of, and an enumeration that hides half of it cannot plan the turn.
     const state = starved(1);
     addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 } });
@@ -169,9 +169,9 @@ describe('the AI and channelling', () => {
     expect(actions.some((a) => a.type === 'channel' && a.unit === swinger.id)).toBe(true);
   });
 
-  it('still swings rather than channels when the swing is worth more than a Pip', () => {
+  it('still swings rather than channels when the swing is worth more than a Bone', () => {
     // The preference the old enumeration hard-coded now lives where it belongs: in the score.
-    // `pipValue` sits under `face`, so a body with something worth hitting hits it.
+    // `boneValue` sits under `face`, so a body with something worth hitting hits it.
     const state = starved(4);
     addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 } });
 

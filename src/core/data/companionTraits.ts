@@ -76,9 +76,9 @@ export const COMPANION_TRAITS: Record<string, CompanionTrait> = {
   deep_reserve: {
     id: 'deep_reserve',
     name: 'Deep Reserve',
-    text: 'Banks the cold. Pip ceiling raised to 9.',
+    text: 'Banks the cold. Bone ceiling raised to 9.',
     baseId: 'boreas',
-    boons: { maxPips: 9 },
+    boons: { maxBones: 9 },
   },
 
   rimed_lungs: {
@@ -100,9 +100,9 @@ const VOLTARA_TRAITS: Record<string, CompanionTrait> = {
   storm_lungs: {
     id: 'storm_lungs',
     name: 'Storm Lungs',
-    text: 'Breathes the air off a lightning strike. Holds 9 Pips instead of 8.',
+    text: 'Breathes the air off a lightning strike. Holds 9 Bones instead of 8.',
     baseId: 'voltara',
-    boons: { maxPips: 9 },
+    boons: { maxBones: 9 },
   },
 
   earthed_pelt: {
@@ -198,18 +198,18 @@ const SYLVA_TRAITS: Record<string, CompanionTrait> = {
  */
 const FERRUM_TRAITS: Record<string, CompanionTrait> = {
   /**
-   * The first knack in the game on the Pip axis.
+   * The first knack in the game on the Bone axis.
    *
-   * `CombatBoons.pips` has existed since the brews and neither a trait nor a relic had
-   * ever asked for it. An extra opening Pip is a whole turn-one card on a school whose
+   * `CombatBoons.bones` has existed since the brews and neither a trait nor a relic had
+   * ever asked for it. An extra opening Bone is a whole turn-one card on a school whose
    * cheapest plays are walls.
    */
   iron_reserves: {
     id: 'iron_reserves',
     name: 'Iron Reserves',
-    text: 'Comes to the field already braced. Start every fight with 1 extra Pip.',
+    text: 'Comes to the field already braced. Start every fight with 1 extra Bone.',
     baseId: 'ferrum',
-    boons: { pips: 1 },
+    boons: { bones: 1 },
   },
 
   /**
@@ -522,9 +522,9 @@ const SECOND_BLOODLINE_TRAITS: Record<string, CompanionTrait> = {
   pylon_nest: {
     id: 'pylon_nest',
     name: 'Pylon Nest',
-    text: 'Roosts on the grid and bleeds it. Opens every contract with an extra Pip in hand.',
+    text: 'Roosts on the grid and bleeds it. Opens every contract with an extra Bone in hand.',
     baseId: 'kite',
-    boons: { pips: 1 },
+    boons: { bones: 1 },
   },
   earthing_claws: {
     id: 'earthing_claws',

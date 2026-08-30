@@ -47,7 +47,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   aether_beam: {
     id: 'aether_beam',
     name: 'Aether Beam',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'arcane',
     source: 'companion',
     kind: 'ability',
@@ -81,7 +81,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   grapple_line: {
     id: 'grapple_line',
     name: 'Grapple Line',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'arcane',
     source: 'hero',
     kind: 'ability',
@@ -113,7 +113,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   scrap_phalanx: {
     id: 'scrap_phalanx',
     name: 'Scrap Phalanx',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'arcane',
     source: 'hero',
     kind: 'minion',
@@ -132,7 +132,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
       // Bleeds at the flat rate and no more. There is no longer a gate on being worth
       // something — every body pays the same base, and a premium is what marks the
       // a rule — so this number alone decides whether a wall can be cashed in. One keeps
-      // the option honest without making a 2-Pip body a Marrow engine.
+      // the option honest without making a 2-Bone body a Marrow engine.
       // Unreachable while the card carries no Growth keyword; the stat block requires
       // the field regardless. Zeroed rather than guessed, so a future grant of Growth
       // has to state what this thing actually grows into.
@@ -143,8 +143,8 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   /**
    * The finisher.
    *
-   * Priced entirely in Marrow, which Pips cannot substitute for at any price — so this is
-   * castable only on a turn you have already opened something up. Free in Pips and lethal
+   * Priced entirely in Marrow, which Bones cannot substitute for at any price — so this is
+   * castable only on a turn you have already opened something up. Free in Bones and lethal
    * to anything nearly dead, gated behind having made the sacrifice first.
    *
    * `true` damage, so armor is not an answer to it. The victim is whoever has the least
@@ -155,11 +155,11 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   cull_the_weak: {
     id: 'cull_the_weak',
     name: 'Cull the Weak',
-    cost: { pips: 0, marrow: 1 },
+    cost: { bones: 0, marrow: 1 },
     school: 'arcane',
     source: 'hero',
     kind: 'ability',
-    text: 'Costs 1 Marrow, which no amount of banked Pips will cover. Deals 40 damage through any armor to the enemy with the least health.',
+    text: 'Costs 1 Marrow, which no amount of banked Bones will cover. Deals 40 damage through any armor to the enemy with the least health.',
     target: { kind: 'global' },
     effect: { op: 'damage', amount: 40, dtype: 'true', area: { shape: 'lowestHpEnemy' } },
     keywords: [],
@@ -183,7 +183,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   volatile_cask: {
     id: 'volatile_cask',
     name: 'Volatile Munitions Cask',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'arcane',
     source: 'hero',
     kind: 'obstacle',
@@ -218,7 +218,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   alchemists_barricade: {
     id: 'alchemists_barricade',
     name: "Alchemist's Barricade",
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'arcane',
     source: 'hero',
     kind: 'obstacle',
@@ -258,7 +258,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   rime_mark: {
     id: 'rime_mark',
     name: 'Rime Mark',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'arcane',
     source: 'companion',
     kind: 'mark',
@@ -284,7 +284,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   arc_mark: {
     id: 'arc_mark',
     name: 'Arc Mark',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'arcane',
     source: 'companion',
     kind: 'mark',
@@ -310,7 +310,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   tremor_mark: {
     id: 'tremor_mark',
     name: 'Tremor Mark',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'arcane',
     source: 'companion',
     kind: 'mark',
@@ -325,7 +325,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   cinder_mark: {
     id: 'cinder_mark',
     name: 'Cinder Mark',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'arcane',
     source: 'companion',
     kind: 'mark',
@@ -341,7 +341,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   soul_splinter_mark: {
     id: 'soul_splinter_mark',
     name: 'Soul Splinter Mark',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'arcane',
     source: 'companion',
     kind: 'mark',
@@ -368,7 +368,7 @@ export const ARCANE_CARDS: Record<string, CardDef> = {
   rot_root_snare: {
     id: 'rot_root_snare',
     name: 'Rot-Root Snare',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'arcane',
     source: 'companion',
     kind: 'mark',

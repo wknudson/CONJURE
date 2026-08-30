@@ -292,7 +292,7 @@ describe('the three dormant mechanics have a user', () => {
   });
 
   it('draws Aether Beam down a line, through friend and foe alike', () => {
-    const state = scenario({ width: 7, height: 7, hand: ['aether_beam'], pips: 6 });
+    const state = scenario({ width: 7, height: 7, hand: ['aether_beam'], bones: 6 });
     // A Bound Form to cast from — a companion-source card is thrown from a body.
     addUnit(state, {
       def: 'lexis_bound',
@@ -315,7 +315,7 @@ describe('the three dormant mechanics have a user', () => {
   });
 
   it('raises cover from a card for the first time', () => {
-    const state = scenario({ width: 7, height: 7, hand: ['smoke_bomb'], pips: 6 });
+    const state = scenario({ width: 7, height: 7, hand: ['smoke_bomb'], bones: 6 });
     const card = Object.keys(state.players.player.cards)[0]!;
 
     const out = run(state, {
@@ -334,7 +334,7 @@ describe('the three dormant mechanics have a user', () => {
   });
 
   it('blocks sight with the smoke without blocking the ground', () => {
-    const state = scenario({ width: 7, height: 7, hand: ['smoke_bomb'], pips: 6 });
+    const state = scenario({ width: 7, height: 7, hand: ['smoke_bomb'], bones: 6 });
     const card = Object.keys(state.players.player.cards)[0]!;
     const out = run(state, {
       type: 'playCard',

@@ -14,7 +14,7 @@ import type { ChosenTarget } from '../core/types/cards.js';
 import { applyCommand } from '../core/engine/engine.js';
 import { makeRng } from '../core/util/rng.js';
 import { CARDS } from '../core/data/cards/index.js';
-import { HAND_LIMIT, PIP_CAP } from '../core/engine/deck.js';
+import { HAND_LIMIT, BONE_CAP } from '../core/engine/deck.js';
 import { flankColumns } from '../core/engine/setup.js';
 import { growthCapFor } from '../core/engine/growth.js';
 import type { RosterEntry } from '../core/types/state.js';
@@ -41,7 +41,7 @@ export function scenario(opts: {
   enemyHp?: number;
   playerArmor?: number;
   enemyArmor?: number;
-  pips?: number;
+  bones?: number;
   marrow?: number;
   units?: UnitSpec[];
   obstacles?: { at: Coord; hp?: number; mark?: string; side?: Side }[];
@@ -70,7 +70,7 @@ export function scenario(opts: {
         'Hero',
         opts.playerHp ?? 400,
         opts.playerArmor ?? 0,
-        opts.pips ?? 10,
+        opts.bones ?? 10,
         opts.marrow ?? 0,
         width,
       ),
@@ -130,7 +130,7 @@ function blankCommander(
   name: string,
   hp: number,
   armor: number,
-  pips: number,
+  bones: number,
   marrow: number,
   width: number,
 ) {
@@ -142,18 +142,18 @@ function blankCommander(
     // the legacy path — no anchors, no deployment phase, turn one straight away.
     roster: [] as RosterEntry[],
     resonancesThisTurn: 0,
-    reactionPipsThisTurn: 0,
+    reactionBonesThisTurn: 0,
     hp,
     maxHp: hp,
     armor,
-    pips,
+    bones,
     marrow,
     deck: [] as string[],
     hand: [] as string[],
     discard: [] as string[],
     cards: {},
     handLimit: HAND_LIMIT,
-    pipCap: PIP_CAP,
+    boneCap: BONE_CAP,
     ignoresFog: false,
     immuneToBurn: false,
     immuneToToxin: false,

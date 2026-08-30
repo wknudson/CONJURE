@@ -69,7 +69,7 @@ export class Hud {
   private enemyBar!: HTMLElement;
   private enemyFill!: HTMLElement;
   private enemyText!: HTMLElement;
-  private pipRing!: HTMLElement;
+  private boneRing!: HTMLElement;
   private marrowRing!: HTMLElement;
   private turnLabel!: HTMLElement;
   private weatherEl!: HTMLElement;
@@ -93,7 +93,7 @@ export class Hud {
   private helpBtn!: HTMLButtonElement;
   private threatWarnEl!: HTMLElement;
   private enemyHandEl!: HTMLElement;
-  private enemyPipsEl!: HTMLElement;
+  private enemyBonesEl!: HTMLElement;
   private inspectEl!: HTMLElement;
   private tooltip!: Tooltip;
   private noticeQueue: string[] = [];
@@ -130,7 +130,7 @@ export class Hud {
     this.enemyBar = q('.enemy-bar');
     this.enemyFill = q('.enemy-bar__fill');
     this.enemyText = q('.enemy-bar__text');
-    this.pipRing = q('.dial__pips');
+    this.boneRing = q('.dial__bones');
     this.marrowRing = q('.dial__marrow');
     this.turnLabel = q('.status__turn');
     this.weatherEl = q('.weather-badge');
@@ -150,7 +150,7 @@ export class Hud {
     this.helpBtn = q<HTMLButtonElement>('.help');
     this.threatWarnEl = q('.status__threat-warning');
     this.enemyHandEl = q('.enemy-read__hand');
-    this.enemyPipsEl = q('.enemy-read__pips');
+    this.enemyBonesEl = q('.enemy-read__bones');
     this.inspectEl = q('.inspect');
 
     this.endTurnBtn.addEventListener('click', () => this.cb.onEndTurn());
@@ -194,7 +194,7 @@ export class Hud {
   /**
    * The winch gauge. `null` hides it; a number shows that many rounds held.
    *
-   * Pips rather than a bar: three is a small enough number that discrete notches read
+   * Bones rather than a bar: three is a small enough number that discrete notches read
    * faster than a fill, and each one landing is a beat the player is meant to feel. The
    * whole element pulses when the count rises, which is why the previous value is kept.
    */
@@ -367,7 +367,7 @@ export class Hud {
     this.setCommanderHp('enemy', board.enemy.hp);
     this.setCommanderArmor('player', board.player.armor);
     this.setCommanderArmor('enemy', board.enemy.armor);
-    this.setResources('player', board.player.pips, board.player.marrow);
+    this.setResources('player', board.player.bones, board.player.marrow);
     this.setTurn(board.turn, board.activeSide);
     this.setPhase(board.phase, board.activeSide);
     this.syncHand(hand, playable);
@@ -383,9 +383,9 @@ export class Hud {
    */
   private setEnemyRead(board: BoardView): void {
     this.enemyHandEl.textContent = String(board.enemy.handCount);
-    this.enemyPipsEl.textContent = String(board.enemy.pips);
+    this.enemyBonesEl.textContent = String(board.enemy.bones);
     // Flagged once the bank could pay for the most expensive thing in the game.
-    this.enemyPipsEl.parentElement?.classList.toggle('is-loaded', board.enemy.pips >= 5);
+    this.enemyBonesEl.parentElement?.classList.toggle('is-loaded', board.enemy.bones >= 5);
   }
 
   /**
@@ -547,25 +547,25 @@ export class Hud {
   }
 
   /**
-   * The dual-ring dial: heavy sockets for banked Pips, ethereal beads for Marrow.
+   * The dual-ring dial: heavy sockets for banked Bones, ethereal beads for Marrow.
    *
    * Either ring may be passed `undefined` to leave it alone. Events that move only one
-   * resource — a Pip refund, a shattered geode — know nothing reliable about the other,
+   * resource — a Bone refund, a shattered geode — know nothing reliable about the other,
    * and writing a stale value would make the untouched ring flicker to the wrong count.
    */
-  setResources(side: Side, pips: number | undefined, marrow: number | undefined): void {
+  setResources(side: Side, bones: number | undefined, marrow: number | undefined): void {
     if (side !== 'player') return;
 
-    if (pips !== undefined) this.renderPips(pips);
+    if (bones !== undefined) this.renderBones(bones);
     if (marrow !== undefined) this.renderMarrow(marrow);
   }
 
-  private renderPips(pips: number): void {
-    this.pipRing.replaceChildren();
+  private renderBones(bones: number): void {
+    this.boneRing.replaceChildren();
     for (let i = 0; i < 8; i++) {
       const socket = document.createElement('span');
-      socket.className = `socket${i < pips ? ' is-filled' : ''}`;
-      this.pipRing.appendChild(socket);
+      socket.className = `socket${i < bones ? ' is-filled' : ''}`;
+      this.boneRing.appendChild(socket);
     }
   }
 
@@ -690,8 +690,8 @@ const TEMPLATE = `
         <span class="enemy-read__item" data-tip="Enemy hand|How many cards the enemy is holding.|You cannot see what they are, but a full hand means options.">
           <span class="enemy-read__icon">🂠</span><span class="enemy-read__hand">0</span>
         </span>
-        <span class="enemy-read__item" data-tip="Enemy Pips|Banked magic the enemy has available.|A high bank means a Power Tier card may be coming.">
-          <span class="enemy-read__icon">◈</span><span class="enemy-read__pips">0</span>
+        <span class="enemy-read__item" data-tip="Enemy Bones|Banked magic the enemy has available.|A high bank means a Power Tier card may be coming.">
+          <span class="enemy-read__icon">◈</span><span class="enemy-read__bones">0</span>
         </span>
       </div>
     </div>
@@ -741,7 +741,7 @@ const TEMPLATE = `
         <button class="threat-toggle" data-tip="Danger zone|Highlights every tile the enemy could strike on their next turn.|Press T to toggle. Red tiles are reachable; deeper red means more attackers.">
           <span class="threat-toggle__dot"></span> Threat
         </button>
-        <button class="channel is-hidden" data-tip="Channel|Gives up the selected unit's attack to make Pips instead.|A swing costs 1 Pip; sitting a body down makes one. Melee brace for a Pip, ranged sight for a card, elites focus for two. It keeps its move. Press C.">✦ Channel</button>
+        <button class="channel is-hidden" data-tip="Channel|Gives up the selected unit's attack to make Bones instead.|A swing costs 1 Bone; sitting a body down makes one. Melee brace for a Bone, ranged sight for a card, elites focus for two. It keeps its move. Press C.">✦ Channel</button>
       </div>
       <div class="hand"></div>
       <div class="right-controls">
@@ -758,7 +758,7 @@ const TEMPLATE = `
       <!-- The resource dial, mirroring the Pact in the opposite corner. -->
       <div class="corner corner--right">
         <div class="dial">
-          <div class="dial__pips" data-tip="pips"></div>
+          <div class="dial__bones" data-tip="bones"></div>
           <div class="dial__marrow is-empty" data-tip="marrow"></div>
         </div>
       </div>

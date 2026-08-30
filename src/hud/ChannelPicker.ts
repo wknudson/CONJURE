@@ -5,8 +5,8 @@
  * follow the ordinary click-then-target flow: X has to be settled *before* a target is
  * chosen, or the preview would be showing the result of a cost nobody has picked.
  *
- * A row of pips rather than a slider. X tops out at five, and five discrete choices read
- * faster as five things to click than as a track to drag — and each pip is a Pip, which
+ * A row of bones rather than a slider. X tops out at five, and five discrete choices read
+ * faster as five things to click than as a track to drag — and each bone is a Bone, which
  * is the same unit the player is spending.
  */
 
@@ -37,8 +37,8 @@ export class ChannelPicker {
    * Asks for an X and calls back with it, or with null if the player backed out.
    *
    * `affordable` is the *live* ceiling — what the purse can actually pay right now —
-   * and is clamped against the card's own maximum. Offering a sixth pip on a card that
-   * caps at five, or a fourth on three Pips, would be offering a play the reducer will
+   * and is clamped against the card's own maximum. Offering a sixth bone on a card that
+   * caps at five, or a fourth on three Bones, would be offering a play the reducer will
    * throw on.
    */
   ask(card: CardSnapshot, affordable: number, onPick: (choice: ChannelChoice | null) => void): void {
@@ -54,7 +54,7 @@ export class ChannelPicker {
       <div class="xcost__sheet" role="dialog" aria-label="Channel how much power">
         <div class="xcost__title">Channel how much power?</div>
         <div class="xcost__card">${escapeHtml(card.name)}</div>
-        <div class="xcost__pips"></div>
+        <div class="xcost__bones"></div>
         <div class="xcost__read"></div>
         <div class="xcost__actions">
           <button class="xcost__cancel" type="button">Back</button>
@@ -82,25 +82,25 @@ export class ChannelPicker {
     const el = this.root;
     if (!el) return;
 
-    const pips = el.querySelector<HTMLElement>('.xcost__pips')!;
-    pips.replaceChildren();
+    const bones = el.querySelector<HTMLElement>('.xcost__bones')!;
+    bones.replaceChildren();
     const max = card.xCost?.max ?? 1;
     for (let i = 1; i <= max; i++) {
-      const pip = document.createElement('button');
-      pip.type = 'button';
-      pip.className = 'xcost__pip';
-      pip.classList.toggle('is-lit', i <= this.x);
+      const bone = document.createElement('button');
+      bone.type = 'button';
+      bone.className = 'xcost__bone';
+      bone.classList.toggle('is-lit', i <= this.x);
       // Beyond the purse. Shown rather than hidden: what you cannot afford this turn is
       // information about the card, and hiding it would make the same card look different
       // from one turn to the next.
-      pip.classList.toggle('is-beyond', i > this.ceiling);
-      pip.disabled = i > this.ceiling;
-      pip.textContent = String(i);
-      pip.addEventListener('click', () => {
+      bone.classList.toggle('is-beyond', i > this.ceiling);
+      bone.disabled = i > this.ceiling;
+      bone.textContent = String(i);
+      bone.addEventListener('click', () => {
         this.x = i;
         this.render(card);
       });
-      pips.appendChild(pip);
+      bones.appendChild(bone);
     }
 
     const read = el.querySelector<HTMLElement>('.xcost__read')!;

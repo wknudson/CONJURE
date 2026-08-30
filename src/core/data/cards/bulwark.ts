@@ -38,7 +38,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   concussive_blow: {
     id: 'concussive_blow',
     name: 'Concussive Blow',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'hero',
     kind: 'minion',
@@ -75,7 +75,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   seismic_slam: {
     id: 'seismic_slam',
     name: 'Seismic Slam',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -93,7 +93,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
    *
    * Guardian *and* Counter is the expensive combination: attacking it head-on costs the
    * attacker its full Attack in return, and going around it means giving up the sightline
-   * it is blocking. At four Pips it is Tier 3 and capped at one copy, which is correct —
+   * it is blocking. At four Bones it is Tier 3 and capped at one copy, which is correct —
    * two of these on a narrow board would make a lane simply impassable.
    *
    * No Growth. It is already the largest body a Hero can field outside a Behemoth, and
@@ -102,7 +102,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   slag_iron_golem: {
     id: 'slag_iron_golem',
     name: 'Slag-Iron Golem',
-    cost: { pips: 4, marrow: 0 },
+    cost: { bones: 4, marrow: 0 },
     school: 'bulwark',
     source: 'hero',
     kind: 'minion',
@@ -118,7 +118,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
       rangeMax: 1,
       footprint: 1,
       archetype: 'bruiser',
-      // Worth something as an offering, but nowhere near four Pips back: a body this
+      // Worth something as an offering, but nowhere near four Bones back: a body this
       // expensive should be spent by fighting with it, not by cashing it in.
       // Unreachable without the Growth keyword; the stat block demands the field anyway.
       escalationBonus: { atk: 0, hp: 0 },
@@ -128,16 +128,16 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   // ------------------------------------------------------------ the expansion shelf
 
   /**
-   * Both halves of what Bulwark does, on one Pip.
+   * Both halves of what Bulwark does, on one Bone.
    *
    * Plate on a body of your choosing and a shove on everything around it -- the school's
-   * two verbs, and the reason the card is a Pip rather than two: neither half is large,
+   * two verbs, and the reason the card is a Bone rather than two: neither half is large,
    * and the value is entirely in aiming them at the same tile.
    */
   tectonic_plate: {
     id: 'tectonic_plate',
     name: 'Tectonic Plate',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -170,7 +170,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   stone_heart_golem: {
     id: 'stone_heart_golem',
     name: 'Stone-Heart Golem',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'bulwark',
     source: 'hero',
     kind: 'minion',
@@ -202,7 +202,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   avalanche_slam: {
     id: 'avalanche_slam',
     name: 'Avalanche Slam',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -235,7 +235,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   /**
    * Plate, bought plainly.
    *
-   * Forty armour for a Pip and no rider, which reads as strictly worse than Tectonic
+   * Forty armour for a Bone and no rider, which reads as strictly worse than Tectonic
    * Plate's thirty-and-a-shove until the shove is the problem: the Plate scatters the
    * cluster you were about to Slam, and half the time an armour card is cast on a body you
    * want left exactly where it is standing.
@@ -245,7 +245,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   bastion_stance: {
     id: 'bastion_stance',
     name: 'Bastion Stance',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -261,21 +261,21 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
    *
    * A Stun on demand is the strongest thing a card can do to a single body — a turn taken
    * off the board with no way to answer it — so it is gated the way the game gates
-   * everything unanswerable: **one Marrow**, which no bank of Pips will cover. The player
+   * everything unanswerable: **one Marrow**, which no bank of Bones will cover. The player
    * has to have opened something up this turn.
    *
-   * Concussive Blow reaches the same effect for two flat Pips and asks the body to walk up,
+   * Concussive Blow reaches the same effect for two flat Bones and asks the body to walk up,
    * survive a round in the open and actually wound. This is that Stun bought instead of
    * earned, and the Marrow is the difference.
    */
   hammer_fall: {
     id: 'hammer_fall',
     name: 'Hammer Fall',
-    cost: { pips: 2, marrow: 1 },
+    cost: { bones: 2, marrow: 1 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
-    text: 'Costs 1 Marrow, which no amount of banked Pips will cover. Deals 30 impact damage and Stuns: no moving, no swinging.',
+    text: 'Costs 1 Marrow, which no amount of banked Bones will cover. Deals 30 impact damage and Stuns: no moving, no swinging.',
     target: { kind: 'entity', side: 'enemy', includeObstacles: false },
     effect: {
       op: 'seq',
@@ -304,7 +304,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   phalanx_step: {
     id: 'phalanx_step',
     name: 'Phalanx Step',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -330,7 +330,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   crag_slam: {
     id: 'crag_slam',
     name: 'Crag Slam',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -363,7 +363,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   siege_break: {
     id: 'siege_break',
     name: 'Siege Break',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -389,7 +389,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   iron_gate: {
     id: 'iron_gate',
     name: 'Iron Gate',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'obstacle',
@@ -416,7 +416,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   battlement: {
     id: 'battlement',
     name: 'Battlement',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'obstacle',
@@ -433,18 +433,18 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   /**
    * The cheapest Guardian in the game.
    *
-   * Ten attack means it will never kill anything, and that is the entire design: a Pip buys
+   * Ten attack means it will never kill anything, and that is the entire design: a Bone buys
    * a sightline, not a threat. Everything Bulwark wants to do needs a body nobody can shoot
-   * past, and until now the cheapest was three Pips.
+   * past, and until now the cheapest was three Bones.
    */
   shieldbearer: {
     id: 'shieldbearer',
     name: 'Shieldbearer',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bulwark',
     source: 'hero',
     kind: 'minion',
-    text: 'Guardian: blocks line of sight behind it. A Pip for a sightline, and almost no threat at all.',
+    text: 'Guardian: blocks line of sight behind it. A Bone for a sightline, and almost no threat at all.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'shieldbearer' },
     keywords: ['Guardian'],
@@ -473,7 +473,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   siege_ox: {
     id: 'siege_ox',
     name: 'Siege Ox',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'hero',
     kind: 'minion',
@@ -502,13 +502,13 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
    * keeps it fair is what it cannot do: one movement, one tile of reach, and no Guardian —
    * it holds the tile it is standing on and has no opinion about any other.
    *
-   * Four Pips puts it at Tier 3, one copy a deck and four roster points. It is meant to be
+   * Four Bones puts it at Tier 3, one copy a deck and four roster points. It is meant to be
    * the whole plan, not part of one.
    */
   anvil_lord: {
     id: 'anvil_lord',
     name: 'Anvil Lord',
-    cost: { pips: 4, marrow: 0 },
+    cost: { bones: 4, marrow: 0 },
     school: 'bulwark',
     source: 'hero',
     kind: 'minion',
@@ -541,7 +541,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
    *
    * Bulwark plates itself, plates its lane through the Shield Oath, and welds plate onto
    * bodies that bring their own — and had no way to hand 30 points to the one unit that
-   * needs it this turn. Deadweight is that card and nothing else, at a Pip.
+   * needs it this turn. Deadweight is that card and nothing else, at a Bone.
    *
    * The Exhaust is the price and it is a real one: the plated body gives up its turn. This is
    * for the Anvil Lord holding a door, not for the skirmisher who was about to strike, and
@@ -550,7 +550,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   deadweight: {
     id: 'deadweight',
     name: 'Deadweight',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -582,7 +582,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   sinkhole: {
     id: 'sinkhole',
     name: 'Sinkhole',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -608,13 +608,13 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
    * anything; a body shoved one tile and left Brittle takes more from every blow after,
    * which is the Bulwark player's answer to an armoured line that shrugs off collisions.
    *
-   * Two Pips, and the Brittle is the whole purchase. The push is there so the card still does
+   * Two Bones, and the Brittle is the whole purchase. The push is there so the card still does
    * something on a turn when nothing is worth softening.
    */
   counterweight: {
     id: 'counterweight',
     name: 'Counterweight',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -647,7 +647,7 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
   quarry_hand: {
     id: 'quarry_hand',
     name: 'Quarry Hand',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'hero',
     kind: 'minion',

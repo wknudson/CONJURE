@@ -35,7 +35,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   static_arc: {
     id: 'static_arc',
     name: 'Static Arc',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -65,7 +65,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   voltaic_hound: {
     id: 'voltaic_hound',
     name: 'Voltaic Hound',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'surge',
     source: 'hero',
     kind: 'minion',
@@ -105,7 +105,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   clockwork_bombardier: {
     id: 'clockwork_bombardier',
     name: 'Clockwork Bombardier',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'surge',
     source: 'hero',
     kind: 'minion',
@@ -138,7 +138,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   arc_lash: {
     id: 'arc_lash',
     name: 'Arc Lash',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'surge',
     source: 'hero',
     kind: 'spell',
@@ -165,7 +165,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   arcing_step: {
     id: 'arcing_step',
     name: 'Arcing Step',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -186,8 +186,8 @@ export const SURGE_CARDS: Record<string, CardDef> = {
    * A generator, and the closest real thing to an Echo.
    *
    * The brief pays this out in Echo. **Echo does not exist** -- there is no such resource
-   * anywhere in the engine -- so the Wisp pays a Pip, through `creditRefund`: the one
-   * thing in the game that hands a Pip over as a *reward* rather than as income, which is
+   * anywhere in the engine -- so the Wisp pays a Bone, through `creditRefund`: the one
+   * thing in the game that hands a Bone over as a *reward* rather than as income, which is
    * how a reaction and Voltara's Storm Tithe both pay. It does not spend the reaction
    * budget, because that counter exists to stop a cascade funding itself and a body
    * swinging once a turn is not a cascade.
@@ -198,11 +198,11 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   storm_wisp: {
     id: 'storm_wisp',
     name: 'Storm Wisp',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'surge',
     source: 'hero',
     kind: 'minion',
-    text: 'Haste. Whenever it attacks, you are paid 1 Pip.',
+    text: 'Haste. Whenever it attacks, you are paid 1 Bone.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'storm_wisp' },
     keywords: ['Haste'],
@@ -227,17 +227,17 @@ export const SURGE_CARDS: Record<string, CardDef> = {
    * would make the card fire on a total the board never displayed.
    *
    * The second half is Arc's shape written out as an ordinary effect rather than as a
-   * forced reaction. Arc proper is weather-gated and pays a Pip back; a card that could
-   * summon one on a clear day would be a storm in a bottle at two Pips.
+   * forced reaction. Arc proper is weather-gated and pays a Bone back; a card that could
+   * summon one on a clear day would be a storm in a bottle at two Bones.
    */
   thunderhead: {
     id: 'thunderhead',
     name: 'Thunderhead',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
-    text: 'Deals 30 shock damage. If you still hold 3 or more Pips, it earths outward for 20 more to everything adjacent.',
+    text: 'Deals 30 shock damage. If you still hold 3 or more Bones, it earths outward for 20 more to everything adjacent.',
     target: { kind: 'entity', side: 'enemy', includeObstacles: false },
     effect: {
       op: 'seq',
@@ -245,7 +245,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
         { op: 'damage', amount: 30, dtype: 'shock', area: { shape: 'target' } },
         {
           op: 'ifMet',
-          cond: { kind: 'pipsAtLeast', pips: 3 },
+          cond: { kind: 'bonesAtLeast', bones: 3 },
           then: { op: 'damage', amount: 20, dtype: 'shock', area: { shape: 'adjacent8' } },
         },
       ],
@@ -268,7 +268,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
    *
    * Every other Surge card lays `charged` and hands the payoff to a Pyre or Frost ally.
    * This one reads it: a Charged target takes the full jolt and everything around it takes
-   * the spill, and an uncharged one takes a Pip's worth of nothing much.
+   * the spill, and an uncharged one takes a Bone's worth of nothing much.
    *
    * The conditional is checked against the chosen body at the moment the node runs, so a
    * Static Arc earlier in the same turn arms this — but a Static Arc later in the same
@@ -277,7 +277,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   discharge: {
     id: 'discharge',
     name: 'Discharge',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -308,13 +308,13 @@ export const SURGE_CARDS: Record<string, CardDef> = {
    * rather than a colourless one: the card is unplayable, greyed out, unclickable, until
    * something on the board is Charged.
    *
-   * That second gate is the reason it is only two Pips. A card that demanded both the
+   * That second gate is the reason it is only two Bones. A card that demanded both the
    * Marrow and the setup and still cost three would never be worth the slot.
    */
   paralytic_arc: {
     id: 'paralytic_arc',
     name: 'Paralytic Arc',
-    cost: { pips: 2, marrow: 1 },
+    cost: { bones: 2, marrow: 1 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -351,7 +351,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   chain_bolt: {
     id: 'chain_bolt',
     name: 'Chain Bolt',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -369,7 +369,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
    *
    * Arcing Step gives one ally two tiles and a charge; this gives every ally beside a tile
    * one tile each. Same school, same status, different shape — and the cross rather than
-   * the full ring because a card that hastened eight bodies for a Pip would decide games on
+   * the full ring because a card that hastened eight bodies for a Bone would decide games on
    * the turn it was drawn.
    *
    * The `charged` is not a drawback here even though it lands on your own units: nothing in
@@ -379,7 +379,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   galvanic_rally: {
     id: 'galvanic_rally',
     name: 'Galvanic Rally',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -400,7 +400,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   /**
    * The school's finisher, and the widest charge in the game.
    *
-   * Three Pips for a 3x3 of damage and charge, centred on the tile — an odd `square` centres
+   * Three Bones for a 3x3 of damage and charge, centred on the tile — an odd `square` centres
    * on its origin, which is the convention that makes this read as a storm breaking over a
    * point rather than as a Behemoth's footprint.
    *
@@ -413,7 +413,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   tempest_break: {
     id: 'tempest_break',
     name: 'Tempest Break',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -440,7 +440,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   tesla_pylon: {
     id: 'tesla_pylon',
     name: 'Tesla Pylon',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'obstacle',
@@ -457,14 +457,14 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   /**
    * The cheapest way to arm something.
    *
-   * A Pip, three movement, and Haste: it exists to run at whatever needs charging and
+   * A Bone, three movement, and Haste: it exists to run at whatever needs charging and
    * connect this turn. Ten attack will not kill anything, and the Hare is not trying to —
    * it is trying to make somebody else's card hit for forty.
    */
   static_hare: {
     id: 'static_hare',
     name: 'Static Hare',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'surge',
     source: 'hero',
     kind: 'minion',
@@ -494,21 +494,21 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   /**
    * A body that pays for the card that summoned it, eventually.
    *
-   * A Pip back when it dies, which is the other half of the Wisp's bargain — that one pays
-   * on every swing and this one pays once, for going down. Two Pips in and one Pip out
-   * makes a Coil a one-Pip body that spent a turn as a wall first.
+   * A Bone back when it dies, which is the other half of the Wisp's bargain — that one pays
+   * on every swing and this one pays once, for going down. Two Bones in and one Bone out
+   * makes a Coil a one-Bone body that spent a turn as a wall first.
    *
    * `refunds.onDeath` fires whatever killed it, including a tithe, which is the interaction
-   * worth knowing: bleeding your own Coil pays Marrow *and* a Pip.
+   * worth knowing: bleeding your own Coil pays Marrow *and* a Bone.
    */
   voltaic_coil: {
     id: 'voltaic_coil',
     name: 'Voltaic Coil',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'surge',
     source: 'hero',
     kind: 'minion',
-    text: 'When it dies — however it dies — you are paid 1 Pip.',
+    text: 'When it dies — however it dies — you are paid 1 Bone.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'voltaic_coil' },
     keywords: [],
@@ -537,7 +537,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   storm_rod: {
     id: 'storm_rod',
     name: 'Storm Rod',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'surge',
     source: 'hero',
     kind: 'minion',
@@ -563,7 +563,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
    *
    * Fifty attack out to three tiles, and every survivor left Charged — a Dynamo behind a
    * Guardian arms the enemy line from safety and then a Discharge collects. It is the
-   * school's whole plan in one body, which is what four Pips and a single copy a deck are
+   * school's whole plan in one body, which is what four Bones and a single copy a deck are
    * for.
    *
    * One movement. It sets up where you put it and does not reposition.
@@ -571,7 +571,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   arc_dynamo: {
     id: 'arc_dynamo',
     name: 'Arc Dynamo',
-    cost: { pips: 4, marrow: 0 },
+    cost: { bones: 4, marrow: 0 },
     school: 'surge',
     source: 'hero',
     kind: 'minion',
@@ -610,17 +610,17 @@ export const SURGE_CARDS: Record<string, CardDef> = {
    *
    * Surge's problem is that its setup cards all want to be damage cards too, so the player
    * pays twice for a state the school then charges them a third time to cash in. Induction
-   * is a Pip for three Charged bodies and *nothing else* — no damage at all — which reads as
+   * is a Bone for three Charged bodies and *nothing else* — no damage at all — which reads as
    * a bad card right up until the turn it is followed by a Discharge or a spliced Plasma Arc.
    *
    * Charged does nothing on its own; fire sets it off and frost conducts through it. A line
-   * of three prepared bodies is the most leverage a Pip buys anywhere in the game, and it is
+   * of three prepared bodies is the most leverage a Bone buys anywhere in the game, and it is
    * only leverage — a player who never follows up has wasted a card, correctly.
    */
   induction: {
     id: 'induction',
     name: 'Induction',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -647,13 +647,13 @@ export const SURGE_CARDS: Record<string, CardDef> = {
    *
    * It eats the charge and pays 60, which is the largest single-target number in the school,
    * and it earths 20 into everything adjacent to where the body was standing — so a Capacitor
-   * Dump into a cluster the Induction line prepared is the deck's best turn. Three Pips and
+   * Dump into a cluster the Induction line prepared is the deck's best turn. Three Bones and
    * a card spent on setup is what that costs.
    */
   capacitor_dump: {
     id: 'capacitor_dump',
     name: 'Capacitor Dump',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -673,7 +673,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   },
 
   /**
-   * The corposant that gives the gaslamp its name, as a two-Pip burst.
+   * The corposant that gives the gaslamp its name, as a two-Bone burst.
    *
    * A ring rather than a line, and the school's only card that charges *and* hurts in the
    * same breath without asking for a target to already be prepared. It is the answer to
@@ -687,7 +687,7 @@ export const SURGE_CARDS: Record<string, CardDef> = {
   elmos_fire: {
     id: 'elmos_fire',
     name: "St. Elmo's Fire",
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',

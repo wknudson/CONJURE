@@ -702,7 +702,7 @@ export class CombatScreen implements Screen {
   /**
    * Raises the tray and puts the screen into placement mode.
    *
-   * The HUD is hidden rather than disabled: during deployment there is no hand, no Pip to
+   * The HUD is hidden rather than disabled: during deployment there is no hand, no Bone to
    * spend and no turn to end, so leaving it up would be showing the player four controls
    * that all refuse them.
    */

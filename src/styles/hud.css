@@ -197,7 +197,7 @@
   margin-bottom: 8px;
 }
 
-/* The dual-ring dial: heavy sockets for banked Pips, ethereal beads for Marrow. */
+/* The dual-ring dial: heavy sockets for banked Bones, ethereal beads for Marrow. */
 .dial {
   display: flex;
   flex-direction: column;
@@ -205,7 +205,7 @@
   gap: 5px;
 }
 
-.dial__pips {
+.dial__bones {
   display: flex;
   gap: 6px;
 }
@@ -225,7 +225,7 @@
   box-shadow: 0 0 9px rgba(252, 211, 77, 0.6);
 }
 
-/* Crimson, not ember: Pips are the warm banked gold above, and the two rings have to be
+/* Crimson, not ember: Bones are the warm banked gold above, and the two rings have to be
    tellable apart at a glance mid-fight. Marrow is the visceral one. */
 .dial__marrow {
   display: flex;
@@ -834,7 +834,7 @@
   .corner--left { width: 150px; }
   .corner--right { width: 74px; }
 
-  .corner--right .dial__pips {
+  .corner--right .dial__bones {
     flex-wrap: wrap;
     justify-content: flex-end;
     width: 66px;
@@ -972,7 +972,7 @@
 
    `#fcd34d` rather than a token: `--lamp` is defined on the Safehouse screens and does
    not exist here, so it resolved to nothing — the needle came out transparent and the
-   gauge ring fell back to white. This is the pip socket's own lit amber, which is the
+   gauge ring fell back to white. This is the bone socket's own lit amber, which is the
    colour it should have been regardless: the gauge is meant to read as part of the dial
    two panels over. */
 .speed.is-fast {
@@ -1001,7 +1001,7 @@
 
    It takes the bottom of the screen where the hand normally sits, because it is the same
    question in the same place: what do I put down, and where. The HUD is hidden outright
-   while this is up — during deployment there is no hand, no Pip and no turn to end, so
+   while this is up — during deployment there is no hand, no Bone and no turn to end, so
    leaving those controls visible would show the player four things that all refuse them.
 */
 
@@ -1378,16 +1378,16 @@
   color: var(--text-dim);
 }
 
-.xcost__pips {
+.xcost__bones {
   display: flex;
   justify-content: center;
   gap: 8px;
   margin: 16px 0 10px;
 }
 
-/* One pip per point of X, because each one *is* a Pip — the same unit being spent. Five
+/* One bone per point of X, because each one *is* a Bone — the same unit being spent. Five
    discrete things to click read faster than a track to drag at this range. */
-.xcost__pip {
+.xcost__bone {
   width: 38px;
   height: 38px;
   border-radius: 10px;
@@ -1401,12 +1401,12 @@
   transition: transform 110ms ease, border-color 110ms ease, background 110ms ease;
 }
 
-.xcost__pip:not(:disabled):hover {
+.xcost__bone:not(:disabled):hover {
   transform: translateY(-2px);
   border-color: rgba(103, 232, 249, 0.5);
 }
 
-.xcost__pip.is-lit {
+.xcost__bone.is-lit {
   border-color: var(--accent);
   background: rgba(103, 232, 249, 0.18);
   color: var(--text);
@@ -1415,7 +1415,7 @@
 
 /* Beyond the purse — shown rather than hidden, so the same card looks the same from one
    turn to the next and the player can see what a bigger bank would buy. */
-.xcost__pip.is-beyond {
+.xcost__bone.is-beyond {
   opacity: 0.28;
   cursor: not-allowed;
 }

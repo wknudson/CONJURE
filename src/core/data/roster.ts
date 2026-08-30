@@ -1,9 +1,9 @@
 /**
- * The Vanguard Roster — point-buy, and the end of the Pip Tax.
+ * The Vanguard Roster — point-buy, and the end of the Bone Tax.
  *
- * A minion used to cost Pips out of the same pool as the spell it existed to enable, so
+ * A minion used to cost Bones out of the same pool as the spell it existed to enable, so
  * buying a board meant not casting anything. Minions are now bought once, before the
- * dungeon, out of a budget that competes with nothing: the deck keeps the spells, and Pips
+ * dungeon, out of a budget that competes with nothing: the deck keeps the spells, and Bones
  * buy magic and only magic.
  *
  * Nothing here is engine vocabulary. The roster resolves to a list of def ids before
@@ -110,7 +110,7 @@ export function fieldableBehemoths(arenaBudget: number): number {
  * | | |
  * |---|---|
  * | footprint 2 | **6** — a Behemoth is most of a warband |
- * | total cost >= 4 | **4** — elite. Asked before reach, so a 4-Pip ranged body is elite rather than merely ranged |
+ * | total cost >= 4 | **4** — elite. Asked before reach, so a 4-Bone ranged body is elite rather than merely ranged |
  * | reaches past 1 | **3** — ranged |
  * | otherwise | **2** — basic melee |
  */

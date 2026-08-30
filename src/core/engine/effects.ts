@@ -77,7 +77,7 @@ export function applyTithe(ctx: Ctx, unit: Unit, damage: number, marrow: number)
   // Announced before the wound so the payout reads first: the Marrow is why the player
   // did this, and the damage is the price. `damageDealt` reports what actually landed.
   emit(ctx, { t: 'unitTithed', unitId: unit.id, side, marrow: extracted, damage });
-  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
+  emit(ctx, { t: 'resourcesChanged', side, bones: cmd.bones, marrow: cmd.marrow });
   healCommander(ctx, side, cmd.healOnTithe);
 
   const outcome = dealDamage(ctx, {
@@ -98,8 +98,8 @@ export function applyTithe(ctx: Ctx, unit: Unit, damage: number, marrow: number)
 /**
  * How much health a raised body comes back with, clamped to at least one.
  *
- * `perPipPercent` reads the X actually paid rather than the card's ceiling, which is the
- * whole shape of Aetheric Resurgence: five Pips is a whole body, one Pip is a warm corpse,
+ * `perBonePercent` reads the X actually paid rather than the card's ceiling, which is the
+ * whole shape of Aetheric Resurgence: five Bones is a whole body, one Bone is a warm corpse,
  * and the decision is what the rest of the turn is worth.
  */
 function reviveHealth(maxHp: number, hp: ReviveHp, x: number): number {
@@ -181,15 +181,15 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       return;
     }
 
-    case 'gainPips': {
+    case 'gainBones': {
       if (node.amount <= 0) return;
       const cmd = ctx.state.players[play.side];
-      const before = cmd.pips;
+      const before = cmd.bones;
       // Clamped at the ceiling on the way in rather than at cleanup, so the card cannot
-      // advertise three Pips and hand over four that the end of turn then takes back.
-      cmd.pips = Math.min(cmd.pipCap, cmd.pips + node.amount);
-      if (cmd.pips > before) {
-        emit(ctx, { t: 'pipGained', side: play.side, amount: cmd.pips - before, total: cmd.pips });
+      // advertise three Bones and hand over four that the end of turn then takes back.
+      cmd.bones = Math.min(cmd.boneCap, cmd.bones + node.amount);
+      if (cmd.bones > before) {
+        emit(ctx, { t: 'boneGained', side: play.side, amount: cmd.bones - before, total: cmd.bones });
       }
       return;
     }
@@ -402,7 +402,7 @@ export function executeEffect(ctx: Ctx, node: EffectNode, play: CardPlayContext)
       emit(ctx, {
         t: 'resourcesChanged',
         side: play.side,
-        pips: cmd.pips,
+        bones: cmd.bones,
         marrow: cmd.marrow,
       });
       return;
@@ -599,10 +599,10 @@ function conditionHolds(ctx: Ctx, cond: PlayCondition, play: CardPlayContext): b
       const ref = chosenRef(play);
       return !!ref && carries(ref);
     }
-    case 'pipsAtLeast':
+    case 'bonesAtLeast':
       // After the cost, because the cost is already paid by the time an effect runs. That
       // is the reading a player can check: the number on their own bank as the card lands.
-      return ctx.state.players[play.side].pips >= cond.pips;
+      return ctx.state.players[play.side].bones >= cond.bones;
     case 'collided':
       return play.collided === true;
   }

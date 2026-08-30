@@ -46,7 +46,7 @@ export const VERDANT_GROWTH_HEAL = 20;
  *  - Ash Fertilizer (Treant)     — when Wildfire goes off, Leech (1) to allies in the blast.
  *  - Flash Freeze (Mantis)       — when Superconduct chains, Chill (1) to the collateral.
  *  - Icebreaker (Juggernaut)     — when Shatter triggers, Fortify the nearest ally 30 Armor.
- *  - Winter's Grasp (Gargoyle)   — when a Soul Mark detonates, bank a Pip.
+ *  - Winter's Grasp (Gargoyle)   — when a Soul Mark detonates, bank a Bone.
  *  - Momentum Transfer (Dynamo)  — when a Kinetic Arc triggers, Haste the lowest-HP ally.
  *  - Aether Siphon (Geist)       — when an Overloaded unit is tithed, draw 1 and make 1 Echo.
  *  - Marrow Shield (Sovereign)   — when a Devour triggers, Fortify the Pact 20 Armor.
@@ -120,11 +120,11 @@ export const RESONANCE: Partial<Record<School, ResonanceDef>> = {
   surge: {
     school: 'surge',
     name: 'Storm Tithe',
-    text: 'Your first Companion card each turn pays a Pip back.',
+    text: 'Your first Companion card each turn pays a Bone back.',
     apply(ctx, side) {
-      // Paid through the reaction refund rather than through `gainPips`, so it reads on
+      // Paid through the reaction refund rather than through `gainBones`, so it reads on
       // screen as a reward for doing the thing rather than as turn income — and so the
-      // amount is the one number the game already means by "a Pip back".
+      // amount is the one number the game already means by "a Bone back".
       //
       // Anchored at the Companion's own body, which is where the player is looking when
       // a Companion card resolves. A side with no body on the board falls back to the

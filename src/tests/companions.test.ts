@@ -93,7 +93,7 @@ describe('Verdant Growth', () => {
 
   /** A wounded Sylva board with one Companion card in hand. */
   const board = (hand: string[], hp: number) => {
-    const state = scenario({ width: 6, height: 8, hand, pips: 8 });
+    const state = scenario({ width: 6, height: 8, hand, bones: 8 });
     // `scenario` sets maxHp to whatever hp it is given, so asking for 20 would produce a
     // Pact that is *full at 20* and has nothing to heal. Wound it against a real ceiling.
     state.players.player.maxHp = 400;
@@ -158,7 +158,7 @@ describe('Verdant Growth', () => {
 
 describe('Soul Siphon', () => {
   const siphoning = (hand: string[] = []) => {
-    const state = scenario({ width: 6, height: 8, hand, pips: 8 });
+    const state = scenario({ width: 6, height: 8, hand, bones: 8 });
     state.players.player.maxHp = 400;
     state.players.player.hp = 200;
     state.players.player.healOnTithe = 10;
@@ -221,7 +221,7 @@ describe('Soul Siphon', () => {
 
 describe('Toxic Bloom', () => {
   const poisoning = (bonus: number) => {
-    const state = scenario({ width: 6, height: 8, hand: ['spore_cloud'], pips: 8 });
+    const state = scenario({ width: 6, height: 8, hand: ['spore_cloud'], bones: 8 });
     state.players.player.bonusToxinStacks = bonus;
     addUnit(state, { def: 'sylva_bound', side: 'player', at: { x: 2, y: 5 }, titheBonus: 0 });
     const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 120 });

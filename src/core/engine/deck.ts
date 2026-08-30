@@ -4,8 +4,8 @@
  * Adjudications used here. See `docs/02_combat_lexicon.md`:
  *  - An empty deck reshuffles the discard pile for free, with no fatigue.
  *  - Hand size is 7. Overdrawing BURNS the drawn card and grants 1 Marrow.
- *  - Pips bank up to 8, but the cap is enforced only during end-of-turn cleanup, so
- *    in-turn Pip + Marrow totals may freely exceed 8.
+ *  - Bones bank up to 8, but the cap is enforced only during end-of-turn cleanup, so
+ *    in-turn Bone + Marrow totals may freely exceed 8.
  */
 
 import type { CardInstanceId, Side } from '../../contract/ids.js';
@@ -18,7 +18,7 @@ import type { CardCost, CardDef } from '../types/cards.js';
 import { shuffle } from '../util/rng.js';
 import { toCardSnapshot } from './views.js';
 
-export const PIP_CAP = 8;
+export const BONE_CAP = 8;
 export const HAND_LIMIT = 7;
 export const DRAW_PER_TURN = 4;
 export const OPENING_HAND = 5;
@@ -46,7 +46,7 @@ function drawOne(ctx: Ctx, side: Side): void {
     cmd.discard.push(id);
     cmd.marrow += 1;
     emit(ctx, { t: 'cardBurned', side, card: toCardSnapshot(ctx.state, side, id) });
-    emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
+    emit(ctx, { t: 'resourcesChanged', side, bones: cmd.bones, marrow: cmd.marrow });
     return;
   }
 
@@ -54,23 +54,23 @@ function drawOne(ctx: Ctx, side: Side): void {
   emit(ctx, { t: 'cardDrawn', side, card: toCardSnapshot(ctx.state, side, id) });
 }
 
-export function gainPips(ctx: Ctx, side: Side, amount: number): void {
+export function gainBones(ctx: Ctx, side: Side, amount: number): void {
   const cmd = ctx.state.players[side];
-  cmd.pips += amount;
-  emit(ctx, { t: 'pipGained', side, amount, total: cmd.pips });
+  cmd.bones += amount;
+  emit(ctx, { t: 'boneGained', side, amount, total: cmd.bones });
 }
 
 /**
  * Two demands, settled in a fixed order.
  *
- * `marrow` is strict: Pips cannot cover it at any price, so a card asking for Marrow is
- * asking the player to have opened something up this turn. `pips` is generic energy, and
+ * `marrow` is strict: Bones cannot cover it at any price, so a card asking for Marrow is
+ * asking the player to have opened something up this turn. `bones` is generic energy, and
  * whatever Marrow is left over after the strict cost may still pay it — Marrow first,
- * because it evaporates at end of turn while Pips bank.
+ * because it evaporates at end of turn while Bones bank.
  *
- * The consequence worth naming: a card priced `{ pips: 3, marrow: 0 }` is still payable
+ * The consequence worth naming: a card priced `{ bones: 3, marrow: 0 }` is still payable
  * entirely out of a sacrifice, which is what keeps the ramp economy alive. A card priced
- * `{ pips: 1, marrow: 2 }` cannot be bought with patience at any Pip total.
+ * `{ bones: 1, marrow: 2 }` cannot be bought with patience at any Bone total.
  */
 export function spendResources(ctx: Ctx, side: Side, cost: CardCost): boolean {
   const cmd = ctx.state.players[side];
@@ -78,9 +78,9 @@ export function spendResources(ctx: Ctx, side: Side, cost: CardCost): boolean {
 
   const spent = costBreakdown(cmd.marrow, cost);
   cmd.marrow -= spent.marrow;
-  cmd.pips -= spent.pips;
+  cmd.bones -= spent.bones;
 
-  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
+  emit(ctx, { t: 'resourcesChanged', side, bones: cmd.bones, marrow: cmd.marrow });
   return true;
 }
 
@@ -94,17 +94,17 @@ export function spendResources(ctx: Ctx, side: Side, cost: CardCost): boolean {
  */
 export function costBreakdown(marrowOnHand: number, cost: CardCost): CardCost {
   // The strict cost is Marrow by definition; the generic cost takes what Marrow is left
-  // before the Pip bank is touched, since Marrow evaporates and Pips do not.
+  // before the Bone bank is touched, since Marrow evaporates and Bones do not.
   const afterStrict = marrowOnHand - cost.marrow;
-  const genericFromMarrow = Math.max(0, Math.min(cost.pips, afterStrict));
+  const genericFromMarrow = Math.max(0, Math.min(cost.bones, afterStrict));
   return {
     marrow: cost.marrow + genericFromMarrow,
-    pips: cost.pips - genericFromMarrow,
+    bones: cost.bones - genericFromMarrow,
   };
 }
 
 /** The floor a discount may never take a card below. Free hybrids would be a loop. */
-export const MIN_DISCOUNTED_PIPS = 1;
+export const MIN_DISCOUNTED_BONES = 1;
 
 /**
  * What a card actually costs this side, after whatever their gear is doing.
@@ -127,28 +127,28 @@ export function effectiveCost(
   /** What this particular copy rolled, if it came out of a Grimoire. */
   mods?: CardModifier,
 ): CardCost {
-  // X *is* the price. The printed `cost.pips` is neither a floor under it nor added to
+  // X *is* the price. The printed `cost.bones` is neither a floor under it nor added to
   // it — a card that charged both would be asking twice for the same thing.
-  if (def.xCost) return { pips: Math.max(0, x ?? 0), marrow: def.cost.marrow };
+  if (def.xCost) return { bones: Math.max(0, x ?? 0), marrow: def.cost.marrow };
 
-  const rolled = mods?.pipCostDelta ?? 0;
+  const rolled = mods?.boneCostDelta ?? 0;
   // A roll can take a card to free but never below it, and never touches Marrow — the
   // same rule the hybrid discount keeps, and for the same reason: Marrow is a strict
   // requirement rather than a price, so discounting it would be discounting a demand.
-  const base = Math.max(0, def.cost.pips + rolled);
+  const base = Math.max(0, def.cost.bones + rolled);
 
   if (!def.spliceOnly || !state.players[side].discountHybrids) {
-    return rolled === 0 ? def.cost : { pips: base, marrow: def.cost.marrow };
+    return rolled === 0 ? def.cost : { bones: base, marrow: def.cost.marrow };
   }
   return {
-    pips: Math.max(MIN_DISCOUNTED_PIPS, base - 1),
+    bones: Math.max(MIN_DISCOUNTED_BONES, base - 1),
     marrow: def.cost.marrow,
   };
 }
 
 export function canAfford(state: GameState, side: Side, cost: CardCost): boolean {
   const cmd = state.players[side];
-  return affordable(cmd.pips, cmd.marrow, cost);
+  return affordable(cmd.bones, cmd.marrow, cost);
 }
 
 /**
@@ -158,10 +158,10 @@ export function canAfford(state: GameState, side: Side, cost: CardCost): boolean
  * drifting copy of the two-tier arithmetic — the same reason `canStrike` is one function
  * rather than three.
  */
-export function affordable(pips: number, marrow: number, cost: CardCost): boolean {
+export function affordable(bones: number, marrow: number, cost: CardCost): boolean {
   // The strict cost first, then the generic cost against everything still standing.
   if (marrow < cost.marrow) return false;
-  return pips + (marrow - cost.marrow) >= cost.pips;
+  return bones + (marrow - cost.marrow) >= cost.bones;
 }
 
 export function discardCard(ctx: Ctx, side: Side, id: CardInstanceId): void {
@@ -182,7 +182,7 @@ export function resolvePlayedCard(ctx: Ctx, side: Side, id: CardInstanceId): voi
   cmd.discard.push(id);
 }
 
-/** End-of-turn cleanup: discard non-Retain cards, expire Marrow, cap the Pip bank. */
+/** End-of-turn cleanup: discard non-Retain cards, expire Marrow, cap the Bone bank. */
 export function endOfTurnCleanup(ctx: Ctx, side: Side): void {
   const cmd = ctx.state.players[side];
 
@@ -199,6 +199,6 @@ export function endOfTurnCleanup(ctx: Ctx, side: Side): void {
   }
 
   cmd.marrow = 0;
-  cmd.pips = Math.min(cmd.pips, cmd.pipCap);
-  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
+  cmd.bones = Math.min(cmd.bones, cmd.boneCap);
+  emit(ctx, { t: 'resourcesChanged', side, bones: cmd.bones, marrow: cmd.marrow });
 }

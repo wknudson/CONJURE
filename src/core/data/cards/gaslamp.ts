@@ -20,7 +20,7 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
   pressure_valve_release: {
     id: 'pressure_valve_release',
     name: 'Pressure Valve Release',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
@@ -36,7 +36,7 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
     keywords: [],
     range: 3,
     needsLoS: true,
-    // Its Ascension used to buy a deeper cone and a longer shove, and cost a Pip more for
+    // Its Ascension used to buy a deeper cone and a longer shove, and cost a Bone more for
     // them. All three are things Ascension may no longer touch: a Rank 2 that re-priced a
     // card or re-shaped its blast was a second card wearing the first one's name. The
     // ascended printing is now derived — 33 fire in the same 3-deep cone, same shove, same
@@ -53,7 +53,7 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
   scrap_metal_mortar: {
     id: 'scrap_metal_mortar',
     name: 'Scrap-Metal Mortar',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'bulwark',
     source: 'hero',
     kind: 'minion',
@@ -93,7 +93,7 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
   aetheric_tether: {
     id: 'aetheric_tether',
     name: 'Aetheric Tether',
-    cost: { pips: 1, marrow: 1 },
+    cost: { bones: 1, marrow: 1 },
     school: 'arcane',
     source: 'companion',
     kind: 'ability',
@@ -118,7 +118,7 @@ export const GASLAMP_CARDS: Record<string, CardDef> = {
   harvest_the_weak: {
     id: 'harvest_the_weak',
     name: 'Harvest the Weak',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'spell',

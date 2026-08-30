@@ -58,7 +58,7 @@ describe('point-buy', () => {
     expect(rosterPointsOf(CARDS.scout_imp!), 'basic melee').toBe(2);
   });
 
-  it('asks cost before reach, so a 4-Pip archer is elite rather than merely ranged', () => {
+  it('asks cost before reach, so a 4-Bone archer is elite rather than merely ranged', () => {
     // The one ordering that is not obvious. Arc Turret reaches and costs 4, and pricing it
     // at 3 would make the ranged class the only class worth buying.
     expect((CARDS.arc_turret!.unit!.rangeMax ?? 1)).toBeGreaterThan(1);

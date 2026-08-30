@@ -201,7 +201,7 @@ describe('Ignis trial phase gates', () => {
     const injected = eventsOf(res.events, 'cardInjected');
     expect(injected).toHaveLength(1);
     expect(injected[0]!.card.defId).toBe('rite_of_subjugation');
-    expect(injected[0]!.card.cost).toEqual({ pips: 0, marrow: 0 });
+    expect(injected[0]!.card.cost).toEqual({ bones: 0, marrow: 0 });
 
     // On top of the draw pile, not in hand: it is guaranteed, but still has to be drawn.
     const player = res.state.players.player;

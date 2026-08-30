@@ -450,7 +450,7 @@ describe('the roll', () => {
     for (let seed = 1; seed <= 40; seed++) {
       const beast = tameCompanion(makeRng(seed), 'voltara', 1);
       for (const mod of Object.values(beast.spellModifiers) as CardModifier[]) {
-        if (mod.pipCostDelta !== undefined) expect(mod.pipCostDelta).toBe(-1);
+        if (mod.boneCostDelta !== undefined) expect(mod.boneCostDelta).toBe(-1);
         if (mod.bonusDamage !== undefined) expect(mod.bonusDamage).toBe(10);
         if (mod.grantRetain !== undefined) expect(mod.grantRetain).toBe(true);
         expect(Object.keys(mod).length, 'one roll per spell').toBe(1);
@@ -488,12 +488,12 @@ describe('the fusion', () => {
 
   it('stamps a roll onto the Grimoire copies and nothing else', () => {
     const hero = ['shield_bash', 'shield_bash', 'aegis_ward', 'stone_barricade', 'grapple_line'];
-    const { state } = fight(hero, { flame_surge: { pipCostDelta: -1 } });
+    const { state } = fight(hero, { flame_surge: { boneCostDelta: -1 } });
     const player = state.players.player;
 
     const surges = Object.values(player.cards).filter((c) => c.defId === 'flame_surge');
     expect(surges.length, 'Ignis carries two').toBe(2);
-    for (const c of surges) expect(c.mods).toEqual({ pipCostDelta: -1 });
+    for (const c of surges) expect(c.mods).toEqual({ boneCostDelta: -1 });
 
     // Nothing from the Hero half ever carries one: that half is not what you caught.
     for (const c of Object.values(player.cards)) {
@@ -509,7 +509,7 @@ describe('the fusion', () => {
     // test is a card in both halves, and Mortis supplies one.)
     const hero = ['harvest_the_weak', 'shield_bash', 'aegis_ward', 'stone_barricade', 'cull_the_weak'];
     const { state } = createCombat(NOVICE_DUELIST, 7, 'mortis', hero, {
-      spellModifiers: { harvest_the_weak: { pipCostDelta: -1 } },
+      spellModifiers: { harvest_the_weak: { boneCostDelta: -1 } },
     });
     const player = state.players.player;
 
@@ -542,32 +542,32 @@ describe('a roll changes the fight, not just the save', () => {
     return { id, inst: p.cards[id]! };
   }
 
-  it('takes a Pip off the price, on the face and at the till', () => {
+  it('takes a Bone off the price, on the face and at the till', () => {
     const plain = createCombat(NOVICE_DUELIST, 7, 'ignis').state;
     const rolled = createCombat(NOVICE_DUELIST, 7, 'ignis', undefined, {
-      spellModifiers: { flame_surge: { pipCostDelta: -1 } },
+      spellModifiers: { flame_surge: { boneCostDelta: -1 } },
     }).state;
 
-    const base = CARDS.flame_surge!.cost.pips;
-    expect(toCardSnapshot(plain, 'player', grimoireCard(plain, 'flame_surge').id).cost.pips).toBe(base);
+    const base = CARDS.flame_surge!.cost.bones;
+    expect(toCardSnapshot(plain, 'player', grimoireCard(plain, 'flame_surge').id).cost.bones).toBe(base);
     expect(
-      toCardSnapshot(rolled, 'player', grimoireCard(rolled, 'flame_surge').id).cost.pips,
+      toCardSnapshot(rolled, 'player', grimoireCard(rolled, 'flame_surge').id).cost.bones,
       'and the face shows what the till will charge',
     ).toBe(base - 1);
   });
 
   it('never takes a card below free', () => {
     const state = createCombat(NOVICE_DUELIST, 7, 'mortis', undefined, {
-      spellModifiers: { harvest_the_weak: { pipCostDelta: -1 } },
+      spellModifiers: { harvest_the_weak: { boneCostDelta: -1 } },
     }).state;
     const { id } = grimoireCard(state, 'harvest_the_weak');
-    expect(CARDS.harvest_the_weak!.cost.pips, 'already free').toBe(0);
-    expect(toCardSnapshot(state, 'player', id).cost.pips).toBe(0);
+    expect(CARDS.harvest_the_weak!.cost.bones, 'already free').toBe(0);
+    expect(toCardSnapshot(state, 'player', id).cost.bones).toBe(0);
   });
 
   it('leaves Marrow alone, because Marrow is a demand rather than a price', () => {
     const state = createCombat(NOVICE_DUELIST, 7, 'mortis', undefined, {
-      spellModifiers: { marrow_burst: { pipCostDelta: -1 } },
+      spellModifiers: { marrow_burst: { boneCostDelta: -1 } },
     }).state;
     const { id } = grimoireCard(state, 'marrow_burst');
     expect(toCardSnapshot(state, 'player', id).cost.marrow).toBe(CARDS.marrow_burst!.cost.marrow);
@@ -577,7 +577,7 @@ describe('a roll changes the fight, not just the save', () => {
     // Cull the Weak: a global cast at the lowest-HP enemy, so it needs no Companion body
     // to be thrown from and lands the same way every time.
     const cast = (mods?: CardModifier) => {
-      const st = scenario({ width: 6, height: 8, pips: 8, marrow: 4 });
+      const st = scenario({ width: 6, height: 8, bones: 8, marrow: 4 });
       const victim = addUnit(st, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 120 });
       st.nextId += 1;
       const id = `g${st.nextId}`;
@@ -598,7 +598,7 @@ describe('a roll changes the fight, not just the save', () => {
   });
 
   it('keeps a rolled-Retain card in hand at end of turn', () => {
-    const st = scenario({ width: 6, height: 8, pips: 8 });
+    const st = scenario({ width: 6, height: 8, bones: 8 });
     st.nextId += 1;
     const kept = `g${st.nextId}`;
     st.players.player.cards[kept] = { instanceId: kept, defId: 'flame_surge', mods: { grantRetain: true } };

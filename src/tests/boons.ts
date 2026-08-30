@@ -13,9 +13,9 @@ import type { CombatBoons } from '../core/engine/setup.js';
  */
 export const ALL_BOONS: Record<keyof CombatBoons, true> = {
   armor: true,
-  pips: true,
+  bones: true,
   extraOpeningCards: true,
-  maxPips: true,
+  maxBones: true,
   ignoreFog: true,
   immuneToBurn: true,
   ignoreIceSlip: true,

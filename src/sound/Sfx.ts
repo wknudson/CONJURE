@@ -7,7 +7,7 @@
  */
 
 export type Cue =
-  | 'pip'
+  | 'bone'
   | 'chime'
   | 'card'
   | 'rasp'
@@ -183,12 +183,12 @@ export class Sfx {
     const t = ctx.currentTime;
 
     switch (cue) {
-      case 'pip':
+      case 'bone':
         this.tone(t, 'sine', 520, 780, 0.09, 0.35);
         break;
       case 'chime':
-        // A reward, not an accrual: two rising notes where 'pip' has one, so a reaction
-        // refund is audibly better news than the Pip that arrives every turn anyway.
+        // A reward, not an accrual: two rising notes where 'bone' has one, so a reaction
+        // refund is audibly better news than the Bone that arrives every turn anyway.
         this.tone(t, 'sine', 660, 990, 0.10, 0.30);
         this.tone(t + 0.07, 'sine', 990, 1320, 0.16, 0.22);
         break;

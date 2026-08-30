@@ -481,7 +481,7 @@ body.is-talking .district-help {
 /*
  * The walking HUD, out of the way while a fight is on.
  *
- * A fight in the district brings the full combat HUD with it — a hand, two gauges, the pip
+ * A fight in the district brings the full combat HUD with it — a hand, two gauges, the bone
  * dial and the trays — on top of a screen still wearing the objective panel, the zone chip
  * and the interact prompt. `DistrictHud.setCombat` toggles this rather than tearing the
  * panels down, because the street is still there underneath and the player is coming back

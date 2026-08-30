@@ -24,7 +24,7 @@ function sessionOn(state: GameState): CombatSession {
 describe('an area displacement', () => {
   /** Four bodies around a tile, and the gravity bomb that drags them onto it. */
   function gravity() {
-    const state = scenario({ width: 7, height: 7, pips: 8, marrow: 4 });
+    const state = scenario({ width: 7, height: 7, bones: 8, marrow: 4 });
     for (const at of [
       { x: 3, y: 2 },
       { x: 3, y: 4 },
@@ -74,7 +74,7 @@ describe('an area displacement', () => {
   });
 
   it('says nothing about displacement for a cast that moves nobody', () => {
-    const state = scenario({ width: 6, height: 6, pips: 8 });
+    const state = scenario({ width: 6, height: 6, bones: 8 });
     const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 200 });
     const card = giveCard(state, 'player', 'flame_surge');
 

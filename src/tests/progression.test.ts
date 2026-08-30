@@ -97,7 +97,7 @@ describe('what ascension is allowed to touch', () => {
   });
 
   it('leaves the action economy exactly where it was', () => {
-    // The whole reason progression was made vertical. A Rank 2 that cost a Pip less, or
+    // The whole reason progression was made vertical. A Rank 2 that cost a Bone less, or
     // drew an extra card, is a *different tempo* — and tempo is what a player reads the
     // board with.
     expect(scaled({ op: 'drawCards', amount: 2 })).toMatchObject({ amount: 2 });
@@ -259,7 +259,7 @@ describe('the wild variance roll', () => {
   it('makes a wild modifier likelier the cleaner the capture', () => {
     const rate = (affinity: number) =>
       Array.from({ length: 300 }, (_, i) => rollWildModifier(makeRng(i + 1), affinity)).filter(
-        (m) => m.startingArmor > 0 || m.bonusPips > 0,
+        (m) => m.startingArmor > 0 || m.bonusBones > 0,
       ).length;
     expect(rate(AFFINITY_MAX)).toBeGreaterThan(rate(0));
   });
@@ -267,14 +267,14 @@ describe('the wild variance roll', () => {
   it('rolls one gift or none, never a spreadsheet of small ones', () => {
     for (let seed = 1; seed <= 200; seed++) {
       const m = rollWildModifier(makeRng(seed), 2);
-      const given = [m.startingArmor, m.bonusPips].filter((n) => n > 0).length;
+      const given = [m.startingArmor, m.bonusBones].filter((n) => n > 0).length;
       expect(given, `seed ${seed}`).toBeLessThanOrEqual(1);
     }
   });
 
   it('leaves plenty of beasts with nothing, or the gift is the baseline', () => {
     const plain = Array.from({ length: 200 }, (_, i) => rollWildModifier(makeRng(i + 1), 0)).filter(
-      (m) => m.startingArmor === 0 && m.bonusPips === 0,
+      (m) => m.startingArmor === 0 && m.bonusBones === 0,
     ).length;
     expect(plain).toBeGreaterThan(60);
   });
