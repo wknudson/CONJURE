@@ -986,306 +986,616 @@ export function makeCrateTexture(): THREE.Texture {
 /* ============================================================
    Dressing — the furniture of a ward
 
-   One factory per kind in `district/dressing.ts`, on the same terms as `makeCrateTexture`
-   above: a small canvas, nearest-filtered, no smoothing. They are deliberately blocky. The
-   environment in this game is pixel art and the actors are painted, and a prop drawn to split
-   the difference ends up belonging to neither.
+   One factory per kind in `district/dressing.ts`. Small canvases, nearest-filtered, no
+   smoothing: the environment in this game is pixel art and these belong to it.
 
-   Everything here is drawn facing south, because that is what `DressingSpec.yaw` measures from.
+   Drawn to three rules, which is the difference between a shape and a prop:
+
+   1. **One light, and it is the scene's.** `world.ts` puts the sun at `(-12, 18, +10)` — west,
+      high, slightly in front — so on a billboard that reads as light from the upper left. Every
+      highlight here is up-left and every shadow down-right. A prop lit from the other side
+      reads as pasted on, and at this size that is the only cue the eye has.
+   2. **Four tones per material, never one.** A flat fill is what makes a barrel a brown
+      rectangle. `ramp()` derives highlight/light/mid/shadow from a single base so a material is
+      one decision rather than four.
+   3. **A dark edge, and a contact shadow.** Cheap, and it does more than either deserves: the
+      edge separates the prop from whatever ground it stands on, and the shadow stops it
+      floating. `outline()` finds the silhouette rather than being drawn by hand, so it is right
+      for free whatever shape is above it.
+
+   Everything is drawn facing south, because that is what `DressingSpec.yaw` measures from.
    ============================================================ */
 
-/** Staves and two hoops. Oil in Lamprow, beer at Fenwick's, brine at Saltglass. */
-export function makeBarrelTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(16, 18);
-  // Edge to edge: this is a `box` form, so any transparent pixel is a hole cut through the
-  // barrel by `alphaTest` rather than a rounded side.
-  ctx.fillStyle = '#4a3524';
-  ctx.fillRect(0, 0, 16, 18);
-  ctx.fillStyle = '#5b4229';
-  for (let x = 2; x < 15; x += 3) ctx.fillRect(x, 1, 2, 16);
-  ctx.fillStyle = '#2e2a25';
-  ctx.fillRect(0, 3, 16, 2);
-  ctx.fillRect(0, 13, 16, 2);
-  return canvasTexture(c);
+/** A material's tones, from one base colour. Index 0 is the highlight, 4 the outline. */
+type Ramp = readonly [string, string, string, string, string];
+
+/**
+ * Five tones from one hex.
+ *
+ * Scaled in RGB rather than converted to HSL: at these sizes the difference is invisible and
+ * the arithmetic is four lines instead of forty. The steps are deliberately wide — a subtle
+ * ramp reads as one colour on a 16px canvas seen from 22 units away.
+ */
+function ramp(hex: string): Ramp {
+  const n = parseInt(hex.slice(1), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const at = (k: number): string => {
+    const c = (v: number): number => Math.max(0, Math.min(255, Math.round(v * k)));
+    return `rgb(${c(r)},${c(g)},${c(b)})`;
+  };
+  return [at(1.42), at(1.18), at(1), at(0.74), at(0.42)];
 }
 
-/** Slumped grain sacks. The mill's output, and the toll's subject. */
-export function makeSacksTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(18, 16);
-  // Filled, for the same reason as the barrel above.
-  ctx.fillStyle = '#7a6c4f';
-  ctx.fillRect(0, 0, 18, 16);
-  ctx.fillStyle = '#8d7f5f';
-  ctx.fillRect(1, 5, 8, 11);
-  ctx.fillRect(9, 7, 8, 9);
-  ctx.fillStyle = '#6d6046';
-  ctx.fillRect(2, 1, 6, 4);
-  ctx.fillRect(10, 2, 6, 4);
-  ctx.fillStyle = '#5d5238';
-  ctx.fillRect(1, 15, 16, 1);
-  return canvasTexture(c);
-}
-
-/** A bale, banded twice. Fodder country. */
-export function makeHaybaleTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(18, 14);
-  ctx.fillStyle = '#a08a4e';
-  ctx.fillRect(0, 0, 18, 14);
-  ctx.fillStyle = '#8d7940';
-  for (let y = 2; y < 14; y += 3) ctx.fillRect(0, y, 18, 1);
-  ctx.fillStyle = '#4a3d22';
-  ctx.fillRect(4, 1, 1, 13);
-  ctx.fillRect(13, 1, 1, 13);
-  return canvasTexture(c);
-}
-
-/** Striped cloth stretched over a stall row. Hangs above head height. */
-export function makeAwningTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(24, 12);
-  const stripe = ['#7d3f34', '#b8a68a'];
-  for (let x = 0; x < 24; x += 4) {
-    ctx.fillStyle = stripe[(x / 4) % 2]!;
-    ctx.fillRect(x, 0, 4, 10);
-  }
-  // A sagging hem, so it reads as cloth rather than as a painted board.
-  ctx.fillStyle = '#3a3029';
-  for (let x = 0; x < 24; x += 4) ctx.fillRect(x, 9 + ((x / 4) % 2), 4, 2);
-  return canvasTexture(c);
-}
-
-/** Post and rail. What makes a field a field. */
-export function makeFenceTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(20, 14);
-  ctx.fillStyle = '#4b3d2c';
-  ctx.fillRect(1, 0, 3, 14);
-  ctx.fillRect(16, 0, 3, 14);
-  ctx.fillStyle = '#5d4c36';
-  ctx.fillRect(0, 3, 20, 2);
-  ctx.fillRect(0, 8, 20, 2);
-  return canvasTexture(c);
-}
-
-/** Livestock hurdles — lower than a fence and closer barred. */
-export function makePensTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(20, 11);
-  ctx.fillStyle = '#4b3d2c';
-  for (let x = 0; x < 20; x += 4) ctx.fillRect(x, 0, 2, 11);
-  ctx.fillStyle = '#5d4c36';
-  ctx.fillRect(0, 2, 20, 2);
-  ctx.fillRect(0, 7, 20, 2);
-  return canvasTexture(c);
-}
-
-/** A parked cart, wheel on. Hand cart, coal cart, freight — never moving. */
-export function makeCartTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(22, 18);
-  ctx.fillStyle = '#4f3f2b';
-  ctx.fillRect(2, 4, 18, 7);
-  ctx.fillStyle = '#614d34';
-  ctx.fillRect(3, 5, 16, 2);
-  ctx.fillStyle = '#3a3029';
-  ctx.fillRect(1, 11, 20, 1);
-  // Shafts, so it is a cart and not a box on wheels.
-  ctx.fillRect(19, 6, 3, 1);
-  ctx.fillStyle = '#2b2521';
-  ctx.beginPath();
-  ctx.arc(7, 14, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#4a3f33';
-  ctx.beginPath();
-  ctx.arc(7, 14, 1.5, 0, Math.PI * 2);
-  ctx.fill();
-  return canvasTexture(c);
-}
-
-/** An open fire in an iron basket. Its light is not gaslight, which is the point. */
-export function makeBrazierTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(16, 20);
-  ctx.fillStyle = '#2b2521';
-  ctx.fillRect(4, 12, 2, 8);
-  ctx.fillRect(10, 12, 2, 8);
-  ctx.fillRect(3, 8, 10, 5);
-  ctx.fillStyle = '#d9643a';
-  ctx.fillRect(5, 4, 6, 5);
-  ctx.fillStyle = '#f0a85c';
-  ctx.fillRect(6, 2, 4, 4);
-  ctx.fillStyle = '#ffe0a0';
-  ctx.fillRect(7, 1, 2, 2);
-  return canvasTexture(c);
-}
-
-/** A stone rim and a crossbeam. The reason a hamlet is where it is. */
-export function makeWellTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(18, 20);
-  ctx.fillStyle = '#6b6459';
-  ctx.fillRect(1, 10, 16, 10);
-  ctx.fillStyle = '#7a7367';
-  for (let y = 11; y < 20; y += 3) for (let x = 2; x < 17; x += 4) ctx.fillRect(x, y, 3, 2);
-  ctx.fillStyle = '#100e0c';
-  ctx.fillRect(4, 9, 10, 3);
-  ctx.fillStyle = '#4b3d2c';
-  ctx.fillRect(2, 0, 2, 11);
-  ctx.fillRect(14, 0, 2, 11);
-  ctx.fillRect(1, 0, 16, 2);
-  return canvasTexture(c);
-}
-
-/** Low, long, and full of water. */
-export function makeTroughTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(20, 10);
-  ctx.fillStyle = '#4b3d2c';
-  ctx.fillRect(0, 2, 20, 8);
-  ctx.fillStyle = '#2f4148';
-  ctx.fillRect(2, 3, 16, 3);
-  ctx.fillStyle = '#3d525a';
-  ctx.fillRect(3, 3, 6, 1);
-  return canvasTexture(c);
-}
-
-/** A drying frame — nets, hides, herbs. Open enough to see through. */
-export function makeRackTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(20, 22);
-  ctx.fillStyle = '#4b3d2c';
-  ctx.fillRect(1, 0, 2, 22);
-  ctx.fillRect(17, 0, 2, 22);
-  ctx.fillRect(0, 1, 20, 2);
-  ctx.fillStyle = '#6d6450';
-  for (let x = 4; x < 17; x += 4) ctx.fillRect(x, 3, 1, 12 + ((x * 5) % 5));
-  ctx.fillStyle = '#8a7f66';
-  for (let x = 4; x < 17; x += 4) ctx.fillRect(x - 1, 6 + ((x * 3) % 4), 3, 2);
-  return canvasTexture(c);
-}
-
-/** A line strung between windows. Strung high; you walk under it. */
-export function makeWashingTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(26, 12);
-  ctx.fillStyle = '#3a352c';
-  ctx.fillRect(0, 1, 26, 1);
-  const cloth = ['#8f8574', '#6e7a72', '#94836a', '#5f6570'];
-  for (let i = 0; i < 4; i++) {
-    ctx.fillStyle = cloth[i]!;
-    ctx.fillRect(2 + i * 6, 2, 5, 6 + ((i * 3) % 4));
-  }
-  return canvasTexture(c);
-}
-
-/** Stacked stones. The only mark people leave on the wilds. */
-export function makeCairnTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(14, 16);
-  const grey = ['#6f6a61', '#5d5951', '#7b756a'];
-  const rows: [number, number, number][] = [
-    [2, 12, 4],
-    [3, 10, 4],
-    [4, 8, 3],
-    [5, 5, 3],
-  ];
-  rows.forEach((r, i) => {
-    ctx.fillStyle = grey[i % 3]!;
-    ctx.fillRect(r[0], r[1], r[2] + 2, 4);
-  });
-  return canvasTexture(c);
-}
-
-/** Spoil, slag, salt — a heap of what came out and was not wanted. */
-export function makeSpoilheapTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(24, 12);
-  ctx.fillStyle = '#4c4239';
-  ctx.beginPath();
-  ctx.moveTo(0, 12);
-  ctx.lineTo(8, 2);
-  ctx.lineTo(16, 5);
-  ctx.lineTo(24, 12);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = '#5d5148';
-  ctx.fillRect(7, 4, 3, 2);
-  ctx.fillRect(14, 7, 3, 2);
-  return canvasTexture(c);
-}
-
-/** Cut timber, stacked to season. End-on, so the rounds show. */
-export function makeLogpileTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(20, 14);
-  ctx.fillStyle = '#3f3225';
-  ctx.fillRect(0, 2, 20, 12);
-  ctx.fillStyle = '#7d6a4e';
-  for (let y = 3; y < 14; y += 4) {
-    for (let x = 1; x < 19; x += 4) {
-      ctx.beginPath();
-      ctx.arc(x + 1.5, y + 1.5, 1.6, 0, Math.PI * 2);
-      ctx.fill();
+/**
+ * Traces a one-pixel edge around everything already drawn.
+ *
+ * Reads the alpha back rather than being drawn by hand, so it fits whatever shape it is given
+ * and cannot fall out of step with it. Called last, always — anything drawn afterwards would
+ * sit on top of its own outline.
+ */
+function outline(ctx: CanvasRenderingContext2D, w: number, h: number, colour: string): void {
+  const src = ctx.getImageData(0, 0, w, h).data;
+  const solid = (x: number, y: number): boolean =>
+    x >= 0 && y >= 0 && x < w && y < h && src[(y * w + x) * 4 + 3]! > 128;
+  ctx.fillStyle = colour;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (solid(x, y)) continue;
+      if (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1)) {
+        ctx.fillRect(x, y, 1, 1);
+      }
     }
   }
+}
+
+/** A soft dark ellipse under a prop, so it sits on the ground instead of hovering over it. */
+function contact(ctx: CanvasRenderingContext2D, cx: number, y: number, w: number): void {
+  ctx.fillStyle = 'rgba(12,10,9,0.42)';
+  ctx.fillRect(cx - w / 2, y, w, 1);
+  ctx.fillStyle = 'rgba(12,10,9,0.22)';
+  ctx.fillRect(cx - w / 2 - 1, y - 1, w + 2, 1);
+}
+
+/**
+ * A standing cylinder — barrel, bollard, post.
+ *
+ * The whole trick is four vertical bands, widest at the lit edge: that is what a round thing
+ * looks like when you only have four colours, and it is why a barrel drawn as stripes on a flat
+ * fill never reads as round no matter how many stripes it has.
+ */
+function cylinder(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, t: Ramp): void {
+  const bands: [number, number][] = [
+    [0, 0.22],
+    [0.22, 0.58],
+    [0.58, 0.84],
+    [0.84, 1],
+  ];
+  const tone = [t[1], t[0], t[2], t[3]];
+  bands.forEach(([a, b], i) => {
+    ctx.fillStyle = tone[i]!;
+    ctx.fillRect(x + Math.round(w * a), y, Math.max(1, Math.round(w * (b - a))), h);
+  });
+}
+
+/** A heap: lit on the upper left, dark on the lower right, irregular along the top. */
+function mound(ctx: CanvasRenderingContext2D, cx: number, base: number, w: number, h: number, t: Ramp, rng: () => number): void {
+  for (let i = 0; i < w; i++) {
+    const x = cx - w / 2 + i;
+    const across = i / (w - 1);
+    // A cosine profile, roughed up a little so it is a heap and not a hill on a graph.
+    const top = base - Math.round(h * Math.cos((across - 0.5) * Math.PI) * (0.82 + rng() * 0.3));
+    ctx.fillStyle = across < 0.34 ? t[1] : across < 0.62 ? t[2] : t[3];
+    ctx.fillRect(x, top, 1, base - top);
+    if (across < 0.5 && rng() < 0.4) {
+      ctx.fillStyle = t[0]!;
+      ctx.fillRect(x, top, 1, 1);
+    }
+  }
+}
+
+/** Staves, hoops, and a lid you can see the near edge of. */
+export function makeBarrelTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(18, 22);
+  const wood = ramp('#6b4a2c');
+  const iron = ramp('#3c3a38');
+  cylinder(ctx, 1, 2, 16, 19, wood);
+  // Hoops, dark against the staves and following the same lit edge.
+  for (const y of [4, 11, 18]) {
+    ctx.fillStyle = iron[2]!;
+    ctx.fillRect(1, y, 16, 2);
+    ctx.fillStyle = iron[1]!;
+    ctx.fillRect(2, y, 4, 1);
+  }
+  // The lid, seen slightly from above — the camera looks down at 50 degrees.
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(2, 1, 14, 2);
+  ctx.fillStyle = wood[0]!;
+  ctx.fillRect(3, 1, 5, 1);
+  contact(ctx, 9, 21, 15);
+  outline(ctx, 18, 22, wood[4]!);
   return canvasTexture(c);
 }
 
-/** A burn mark on the ground. A thing happened here and is over. */
-export function makeScorchTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(24, 24);
-  const rng = mulberry32(9137);
-  ctx.clearRect(0, 0, 24, 24);
-  ctx.fillStyle = 'rgba(20,16,14,0.85)';
+/** Two sacks, slumped, tied at the neck. */
+export function makeSacksTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(22, 18);
+  const hemp = ramp('#9a8760');
+  const sack = (x: number, y: number, w: number, h: number): void => {
+    ctx.fillStyle = hemp[2]!;
+    ctx.fillRect(x, y + 2, w, h - 2);
+    ctx.fillStyle = hemp[1]!;
+    ctx.fillRect(x, y + 2, Math.ceil(w * 0.4), h - 2);
+    ctx.fillStyle = hemp[0]!;
+    ctx.fillRect(x + 1, y + 3, 2, Math.max(1, h - 6));
+    ctx.fillStyle = hemp[3]!;
+    ctx.fillRect(x + w - 2, y + 3, 2, h - 3);
+    // The tied neck, which is the thing that says sack rather than bag of nothing.
+    ctx.fillStyle = hemp[3]!;
+    ctx.fillRect(x + Math.floor(w / 2) - 2, y, 4, 3);
+    ctx.fillStyle = hemp[1]!;
+    ctx.fillRect(x + Math.floor(w / 2) - 1, y, 2, 2);
+  };
+  sack(1, 3, 11, 15);
+  sack(11, 6, 10, 12);
+  contact(ctx, 11, 17, 20);
+  outline(ctx, 22, 18, hemp[4]!);
+  return canvasTexture(c);
+}
+
+/** A bale, banded twice, with the cut ends showing. */
+export function makeHaybaleTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(22, 16);
+  const straw = ramp('#a8904a');
+  const rng = mulberry32(3311);
+  ctx.fillStyle = straw[2]!;
+  ctx.fillRect(1, 1, 20, 14);
+  ctx.fillStyle = straw[1]!;
+  ctx.fillRect(1, 1, 20, 5);
+  ctx.fillStyle = straw[0]!;
+  ctx.fillRect(2, 1, 12, 2);
+  ctx.fillStyle = straw[3]!;
+  ctx.fillRect(1, 12, 20, 3);
+  // Cut stems, so the face has grain rather than being a flat slab.
+  for (let i = 0; i < 26; i++) {
+    ctx.fillStyle = rng() < 0.5 ? straw[0]! : straw[3]!;
+    ctx.fillRect(2 + ((rng() * 18) | 0), 2 + ((rng() * 12) | 0), 2, 1);
+  }
+  const twine = ramp('#4a3a1e');
+  for (const x of [5, 15]) {
+    ctx.fillStyle = twine[2]!;
+    ctx.fillRect(x, 1, 2, 14);
+    ctx.fillStyle = twine[1]!;
+    ctx.fillRect(x, 1, 1, 14);
+  }
+  contact(ctx, 11, 15, 20);
+  outline(ctx, 22, 16, straw[4]!);
+  return canvasTexture(c);
+}
+
+/** Striped cloth over a stall, sagging between its poles. */
+export function makeAwningTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(28, 14);
+  const red = ramp('#8d4436');
+  const cream = ramp('#c3b394');
+  for (let x = 0; x < 28; x += 4) {
+    const t = (x / 4) % 2 === 0 ? red : cream;
+    // Each stripe sags a pixel toward the middle, which is what makes it cloth.
+    const sag = Math.round(Math.sin((x / 28) * Math.PI) * 2);
+    ctx.fillStyle = t[2]!;
+    ctx.fillRect(x, 1 + sag, 4, 9);
+    ctx.fillStyle = t[1]!;
+    ctx.fillRect(x, 1 + sag, 4, 3);
+    ctx.fillStyle = t[3]!;
+    ctx.fillRect(x, 8 + sag, 4, 2);
+  }
+  // The scalloped hem.
+  for (let x = 0; x < 28; x += 4) {
+    const sag = Math.round(Math.sin((x / 28) * Math.PI) * 2);
+    ctx.fillStyle = ((x / 4) % 2 === 0 ? red : cream)[3]!;
+    ctx.fillRect(x + 1, 10 + sag, 2, 2);
+  }
+  outline(ctx, 28, 14, red[4]!);
+  return canvasTexture(c);
+}
+
+/** Post and rail, the posts rounded and the rails running behind them. */
+export function makeFenceTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(24, 16);
+  const wood = ramp('#6a5333');
+  // Rails first, so the posts read as standing in front of them.
+  for (const y of [4, 9]) {
+    ctx.fillStyle = wood[2]!;
+    ctx.fillRect(0, y, 24, 3);
+    ctx.fillStyle = wood[1]!;
+    ctx.fillRect(0, y, 24, 1);
+    ctx.fillStyle = wood[3]!;
+    ctx.fillRect(0, y + 2, 24, 1);
+  }
+  for (const x of [2, 19]) cylinder(ctx, x, 0, 4, 16, wood);
+  contact(ctx, 12, 15, 22);
+  outline(ctx, 24, 16, wood[4]!);
+  return canvasTexture(c);
+}
+
+/** Livestock hurdles: lower than a fence, closer barred, and woven. */
+export function makePensTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(24, 13);
+  const wood = ramp('#6a5333');
+  for (const y of [3, 8]) {
+    ctx.fillStyle = wood[2]!;
+    ctx.fillRect(0, y, 24, 2);
+    ctx.fillStyle = wood[1]!;
+    ctx.fillRect(0, y, 24, 1);
+  }
+  for (let x = 1; x < 24; x += 5) cylinder(ctx, x, 0, 3, 13, wood);
+  contact(ctx, 12, 12, 22);
+  outline(ctx, 24, 13, wood[4]!);
+  return canvasTexture(c);
+}
+
+/** A parked cart: bed, spoked wheel, shafts down. */
+export function makeCartTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(26, 20);
+  const wood = ramp('#6b512f');
+  const iron = ramp('#39373a');
+  // Bed and side board.
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(2, 4, 22, 8);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(2, 4, 22, 3);
+  ctx.fillStyle = wood[0]!;
+  ctx.fillRect(3, 4, 9, 1);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(2, 10, 22, 2);
+  // Planking.
+  ctx.fillStyle = wood[3]!;
+  for (let x = 6; x < 24; x += 5) ctx.fillRect(x, 5, 1, 6);
+  // Shaft, angled down to the ground the way a parked cart rests.
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(23, 8, 3, 2);
+  // Wheel: rim, hub, four spokes. The spokes are what stop it being a dark circle.
+  const cx = 8;
+  const cy = 14;
+  ctx.fillStyle = iron[2]!;
   ctx.beginPath();
-  ctx.arc(12, 12, 9, 0, Math.PI * 2);
+  ctx.arc(cx, cy, 5, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = 'rgba(46,36,28,0.6)';
-  for (let i = 0; i < 40; i++) {
-    const a = rng() * Math.PI * 2;
-    const r = 8 + rng() * 4;
-    ctx.fillRect(12 + Math.cos(a) * r, 12 + Math.sin(a) * r, 2, 2);
+  ctx.fillStyle = wood[3]!;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = iron[1]!;
+  ctx.fillRect(cx - 4, cy, 9, 1);
+  ctx.fillRect(cx, cy - 4, 1, 9);
+  ctx.fillStyle = iron[0]!;
+  ctx.fillRect(cx - 1, cy - 1, 2, 2);
+  contact(ctx, 13, 19, 22);
+  outline(ctx, 26, 20, wood[4]!);
+  return canvasTexture(c);
+}
+
+/** An iron basket with a fire in it. The only prop that is its own light source. */
+export function makeBrazierTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 24);
+  const iron = ramp('#3a3634');
+  // Legs, splayed.
+  ctx.fillStyle = iron[2]!;
+  ctx.fillRect(4, 15, 2, 8);
+  ctx.fillRect(14, 15, 2, 8);
+  ctx.fillStyle = iron[1]!;
+  ctx.fillRect(4, 15, 1, 8);
+  // The basket, tapering, with bars.
+  ctx.fillStyle = iron[2]!;
+  ctx.fillRect(3, 10, 14, 6);
+  ctx.fillStyle = iron[1]!;
+  ctx.fillRect(3, 10, 14, 2);
+  ctx.fillStyle = iron[3]!;
+  for (let x = 5; x < 17; x += 3) ctx.fillRect(x, 11, 1, 5);
+  // Fire: three tones, the hottest smallest and highest. Drawn after the iron so it spills over
+  // the rim, which is what stops it looking like a bowl with paint in it.
+  ctx.fillStyle = '#8c2f14';
+  ctx.fillRect(4, 6, 12, 5);
+  ctx.fillStyle = '#d9643a';
+  ctx.fillRect(6, 3, 8, 7);
+  ctx.fillStyle = '#f0a85c';
+  ctx.fillRect(8, 1, 4, 7);
+  ctx.fillStyle = '#ffe8b0';
+  ctx.fillRect(9, 0, 2, 4);
+  contact(ctx, 10, 23, 14);
+  outline(ctx, 20, 24, iron[4]!);
+  return canvasTexture(c);
+}
+
+/** A stone rim, a crossbeam, and a bucket over the dark. */
+export function makeWellTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(22, 24);
+  const stone = ramp('#7a7266');
+  const wood = ramp('#6a5333');
+  const rng = mulberry32(771);
+  // Posts and beam.
+  for (const x of [2, 17]) cylinder(ctx, x, 2, 3, 12, wood);
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(1, 1, 20, 3);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(1, 1, 20, 1);
+  // The bucket, hanging.
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(9, 6, 4, 4);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(9, 6, 1, 4);
+  // The rim, coursed, each stone shaded on its own.
+  for (let y = 14; y < 23; y += 3) {
+    for (let x = 1; x < 21; x += 4) {
+      ctx.fillStyle = rng() < 0.5 ? stone[2]! : stone[1]!;
+      ctx.fillRect(x, y, 3, 2);
+      ctx.fillStyle = stone[3]!;
+      ctx.fillRect(x, y + 2, 4, 1);
+    }
+  }
+  // The shaft. Black, because that is the point of a well.
+  ctx.fillStyle = '#0d0c0b';
+  ctx.fillRect(5, 13, 12, 3);
+  contact(ctx, 11, 23, 20);
+  outline(ctx, 22, 24, stone[4]!);
+  return canvasTexture(c);
+}
+
+/** Low, long, and holding water that catches the sky. */
+export function makeTroughTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(24, 12);
+  const wood = ramp('#6a5333');
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(0, 2, 24, 9);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(0, 2, 24, 2);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(0, 9, 24, 2);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(1, 4, 1, 6);
+  ctx.fillRect(22, 4, 1, 6);
+  // Water, lighter along the far edge where the sky is in it.
+  ctx.fillStyle = '#31474f';
+  ctx.fillRect(2, 3, 20, 4);
+  ctx.fillStyle = '#4a6b74';
+  ctx.fillRect(2, 3, 20, 1);
+  ctx.fillStyle = '#6d949c';
+  ctx.fillRect(4, 3, 6, 1);
+  contact(ctx, 12, 11, 22);
+  outline(ctx, 24, 12, wood[4]!);
+  return canvasTexture(c);
+}
+
+/** A drying frame with things hung off it — nets, hides, herbs. */
+export function makeRackTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(24, 26);
+  const wood = ramp('#6a5333');
+  const rng = mulberry32(4242);
+  for (const x of [1, 20]) cylinder(ctx, x, 0, 3, 26, wood);
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(0, 1, 24, 3);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(0, 1, 24, 1);
+  // What is hanging. Varied lengths and two cloths, so it is a rack in use.
+  const cloth = [ramp('#7d7360'), ramp('#6b6a52'), ramp('#8a7a5c')];
+  for (let i = 0; i < 5; i++) {
+    const x = 4 + i * 4;
+    const len = 8 + ((rng() * 11) | 0);
+    const t = cloth[(rng() * cloth.length) | 0]!;
+    ctx.fillStyle = t[2]!;
+    ctx.fillRect(x, 4, 3, len);
+    ctx.fillStyle = t[1]!;
+    ctx.fillRect(x, 4, 1, len);
+    ctx.fillStyle = t[3]!;
+    ctx.fillRect(x + 2, 4, 1, len);
+  }
+  contact(ctx, 12, 25, 20);
+  outline(ctx, 24, 26, wood[4]!);
+  return canvasTexture(c);
+}
+
+/** A line strung between windows, hung high enough to walk under. */
+export function makeWashingTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(30, 14);
+  ctx.fillStyle = '#2e2a24';
+  // The line dips, because a taut washing line is a wire.
+  for (let x = 0; x < 30; x++) {
+    ctx.fillRect(x, 1 + Math.round(Math.sin((x / 30) * Math.PI) * 2), 1, 1);
+  }
+  const cloths = ['#8f8574', '#6e7a72', '#94836a', '#5f6570', '#7f7462'];
+  for (let i = 0; i < 5; i++) {
+    const x = 2 + i * 6;
+    const t = ramp(cloths[i]!);
+    const dip = 1 + Math.round(Math.sin((x / 30) * Math.PI) * 2);
+    const len = 6 + ((i * 3) % 5);
+    ctx.fillStyle = t[2]!;
+    ctx.fillRect(x, dip, 5, len);
+    ctx.fillStyle = t[1]!;
+    ctx.fillRect(x, dip, 2, len);
+    ctx.fillStyle = t[3]!;
+    ctx.fillRect(x + 4, dip, 1, len);
+    // A pegged corner, so it hangs from the line rather than floating below it.
+    ctx.fillStyle = t[0]!;
+    ctx.fillRect(x + 1, dip, 1, 1);
+  }
+  outline(ctx, 30, 14, '#1d1a16');
+  return canvasTexture(c);
+}
+
+/** Stacked stones, each one lit on its own. */
+export function makeCairnTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(18, 20);
+  const stone = ramp('#6f6a61');
+  const rng = mulberry32(919);
+  // Widest at the bottom and offset a little each course, which is what makes it stacked by
+  // hand rather than a staircase.
+  // Deliberately not centred. A cairn built as a symmetric pyramid reads as a ziggurat; the
+  // courses lean, because somebody put these here one at a time and did not measure.
+  const courses: [number, number, number][] = [
+    [2, 15, 14],
+    [4, 11, 11],
+    [3, 8, 9],
+    [6, 5, 7],
+    [5, 2, 4],
+  ];
+  for (const [x, y, w] of courses) {
+    const h = 3 + ((rng() * 2) | 0);
+    ctx.fillStyle = stone[2]!;
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = stone[1]!;
+    ctx.fillRect(x, y, Math.ceil(w * 0.45), h - 1);
+    ctx.fillStyle = stone[0]!;
+    ctx.fillRect(x + 1, y, 2, 1);
+    ctx.fillStyle = stone[3]!;
+    ctx.fillRect(x, y + h - 1, w, 1);
+  }
+  contact(ctx, 9, 19, 15);
+  outline(ctx, 18, 20, stone[4]!);
+  return canvasTexture(c);
+}
+
+/** What came out of the ground and was not wanted. */
+export function makeSpoilheapTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(28, 14);
+  const spoil = ramp('#584c40');
+  const rng = mulberry32(1717);
+  mound(ctx, 14, 13, 26, 11, spoil, rng);
+  // Lumps in it, so the heap has grain rather than being a smooth cone.
+  for (let i = 0; i < 12; i++) {
+    ctx.fillStyle = rng() < 0.5 ? spoil[0]! : spoil[3]!;
+    ctx.fillRect(3 + ((rng() * 22) | 0), 5 + ((rng() * 8) | 0), 2, 1);
+  }
+  contact(ctx, 14, 13, 26);
+  outline(ctx, 28, 14, spoil[4]!);
+  return canvasTexture(c);
+}
+
+/** Cut timber, stacked end-on to season. */
+export function makeLogpileTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(24, 18);
+  const bark = ramp('#4a3a28');
+  const cut = ramp('#9a7c52');
+  const rng = mulberry32(2323);
+  ctx.fillStyle = bark[3]!;
+  ctx.fillRect(1, 2, 22, 15);
+  // Rounds, offset course by course so they nest the way stacked logs do.
+  for (let row = 0; row < 4; row++) {
+    const y = 3 + row * 4;
+    const off = row % 2 ? 2 : 0;
+    for (let x = 2 + off; x < 22; x += 4) {
+      ctx.fillStyle = bark[2]!;
+      ctx.beginPath();
+      ctx.arc(x + 1.5, y + 1.5, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = rng() < 0.5 ? cut[2]! : cut[1]!;
+      ctx.beginPath();
+      ctx.arc(x + 1.5, y + 1.5, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      // The heartwood, one pixel, up-left of centre so even a log is lit.
+      ctx.fillStyle = cut[0]!;
+      ctx.fillRect(x + 1, y + 1, 1, 1);
+    }
+  }
+  contact(ctx, 12, 17, 22);
+  outline(ctx, 24, 18, bark[4]!);
+  return canvasTexture(c);
+}
+
+/** A burn mark. Nothing here is lit, because nothing here is standing up. */
+export function makeScorchTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(28, 28);
+  const rng = mulberry32(9137);
+  // Three rings rather than one disc, so the edge breaks up instead of drawing a circle.
+  const rings: [number, string][] = [
+    [11, 'rgba(24,19,16,0.80)'],
+    [8, 'rgba(14,11,9,0.88)'],
+    [5, 'rgba(8,6,5,0.94)'],
+  ];
+  for (const [r, colour] of rings) {
+    ctx.fillStyle = colour;
+    for (let a = 0; a < 96; a++) {
+      const th = (a / 96) * Math.PI * 2;
+      const rr = r * (0.82 + rng() * 0.3);
+      ctx.fillRect(14 + Math.cos(th) * rr, 14 + Math.sin(th) * rr * 0.8, 3, 2);
+    }
+  }
+  // Ash flecks at the rim, which is where the eye reads the edge.
+  ctx.fillStyle = 'rgba(96,86,74,0.5)';
+  for (let i = 0; i < 22; i++) {
+    const th = rng() * Math.PI * 2;
+    const rr = 9 + rng() * 4;
+    ctx.fillRect(14 + Math.cos(th) * rr, 14 + Math.sin(th) * rr * 0.8, 1, 1);
   }
   return canvasTexture(c);
 }
 
-/** Quay and processional. Stops a cart, not a person walking round it. */
+/** Quay and processional. Iron, capped, and scuffed where carts have hit it. */
 export function makeBollardTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(8, 12);
-  ctx.fillStyle = '#3a3a40';
-  ctx.fillRect(2, 2, 4, 10);
-  ctx.fillStyle = '#4b4b53';
-  ctx.fillRect(2, 3, 2, 8);
-  ctx.fillStyle = '#2b2b30';
-  ctx.fillRect(1, 0, 6, 3);
+  const { c, ctx } = makeCanvas(12, 18);
+  const iron = ramp('#43434c');
+  cylinder(ctx, 3, 3, 6, 14, iron);
+  // The domed cap, wider than the shaft.
+  ctx.fillStyle = iron[2]!;
+  ctx.fillRect(2, 1, 8, 3);
+  ctx.fillStyle = iron[1]!;
+  ctx.fillRect(2, 1, 4, 2);
+  ctx.fillStyle = iron[0]!;
+  ctx.fillRect(3, 1, 2, 1);
+  // A scuff, because a bollard exists to be hit.
+  ctx.fillStyle = iron[0]!;
+  ctx.fillRect(4, 9, 1, 3);
+  contact(ctx, 6, 17, 9);
+  outline(ctx, 12, 18, iron[4]!);
   return canvasTexture(c);
 }
 
 /**
- * A carved marker, with a line on it.
+ * A carved marker, with a line cut into it.
  *
  * The wilds have no walls, so they have no graffiti, so they have had nothing to say. This is
- * how the Chalk Road and the barrows get a voice — and the atlas already asked for it, placing
+ * how the Chalk Road and the barrows get a voice — and the atlas asked for it first, placing
  * waystone pairs at rows 5 and 7 of the road.
  */
 export function makeWaystoneTexture(text: string): THREE.Texture {
-  const w = Math.max(20, 10 + text.length * 6);
-  const { c, ctx } = makeCanvas(w, 26);
-  ctx.fillStyle = '#6a6459';
-  ctx.fillRect(2, 2, w - 4, 24);
-  ctx.fillStyle = '#787166';
-  ctx.fillRect(3, 3, w - 6, 4);
-  ctx.font = 'bold 8px monospace';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#3b352d';
-  // Same deterministic jitter as the graffiti, so a carved line reads as cut by hand.
-  let h = 7;
-  for (let i = 0; i < text.length; i++) {
-    h = (Math.imul(h, 31) + text.charCodeAt(i)) >>> 0;
-    ctx.fillText(text[i]!, 5 + i * 6, 15 + (((h >>> 3) % 3) - 1));
+  const w = Math.max(24, 12 + text.length * 6);
+  const h = 30;
+  const { c, ctx } = makeCanvas(w, h);
+  const stone = ramp('#6f6a5f');
+  const rng = mulberry32(555);
+  // A tapered slab, wider at the foot, so it reads as set into the ground.
+  for (let y = 2; y < h - 1; y++) {
+    const inset = Math.round(((h - y) / h) * 3);
+    ctx.fillStyle = stone[2]!;
+    ctx.fillRect(1 + inset, y, w - 2 - inset * 2, 1);
+    ctx.fillStyle = stone[1]!;
+    ctx.fillRect(1 + inset, y, Math.max(2, (w - inset * 2) >> 2), 1);
   }
+  ctx.fillStyle = stone[0]!;
+  ctx.fillRect(4, 2, Math.max(3, w >> 3), 2);
+  // Weathering, so the face is stone rather than card.
+  for (let i = 0; i < w; i++) {
+    ctx.fillStyle = rng() < 0.5 ? stone[1]! : stone[3]!;
+    ctx.fillRect(2 + ((rng() * (w - 4)) | 0), 3 + ((rng() * (h - 6)) | 0), 2, 1);
+  }
+  // The cut. Drawn twice — a dark groove and a lit lower lip — because that is the difference
+  // between letters carved into stone and letters printed on it.
+  ctx.font = 'bold 9px monospace';
+  ctx.textBaseline = 'middle';
+  let jitter = 7;
+  for (let i = 0; i < text.length; i++) {
+    jitter = (Math.imul(jitter, 31) + text.charCodeAt(i)) >>> 0;
+    const dy = ((jitter >>> 3) % 3) - 1;
+    ctx.fillStyle = 'rgba(28,25,21,0.92)';
+    ctx.fillText(text[i]!, 6 + i * 6, h / 2 + dy);
+    ctx.fillStyle = stone[0]!;
+    ctx.fillText(text[i]!, 6 + i * 6, h / 2 + dy + 1);
+    ctx.fillStyle = 'rgba(28,25,21,0.92)';
+    ctx.fillText(text[i]!, 6 + i * 6, h / 2 + dy);
+  }
+  contact(ctx, w / 2, h - 1, w - 4);
+  outline(ctx, w, h, stone[4]!);
   return canvasTexture(c);
 }
 
-/**
- * Which factory draws which kind.
- *
- * Here rather than in `dressing.ts` because that module is deliberately free of the DOM —
- * `map.ts` and the tests import it under node, where `document.createElement` does not exist.
- * The registry holds the facts about a prop; this holds its picture, and a test walks the two
- * against each other so a kind can never be declared without being drawable.
- *
- * `waystone` is absent on purpose: its picture depends on the line carved into it, so it is
- * built per instance by `makeWaystoneTexture` rather than shared from here.
- */
 export const DRESSING_ART: Record<Exclude<DressingId, 'waystone'>, () => THREE.Texture> = {
   barrel: makeBarrelTexture,
   sacks: makeSacksTexture,
