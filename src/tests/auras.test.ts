@@ -56,9 +56,14 @@ const PER_STACK_HP = AURAS.aura_overgrowth!.passiveStat.maxHp!;
 const SIPHON_BLEED = AURAS.aura_marrow_siphon!.upkeep!.selfDamage!;
 
 describe('the registry', () => {
-  it('ships one Aura for each of the five launch schools', () => {
+  it('ships one Aura for every school, with none doubled up', () => {
+    // Was five, and the two missing ones were a known gap rather than a decision: the combat
+    // overhaul designed Rime Shell and Written Path and left them unbuilt, so a Hero who had
+    // tamed a Frost or an Arcane bloodline had no Aura at all and the pairing was a different
+    // size depending on who they walked in with. Both are built now.
     const schools = ALL_AURAS.map((a) => a.school).sort();
-    expect(schools).toEqual(['bloom', 'bulwark', 'dusk', 'pyre', 'surge']);
+    expect(schools).toEqual(['arcane', 'bloom', 'bulwark', 'dusk', 'frost', 'pyre', 'surge']);
+    expect(new Set(schools).size, 'no school gets two').toBe(schools.length);
   });
 
   it('caps every Aura at three, because that is the name of the mechanic', () => {

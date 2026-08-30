@@ -9,11 +9,12 @@ import type { Side, UnitId } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
 import type { Command } from '../types/commands.js';
 import { CARDS } from '../data/cards/index.js';
+import { ATTACK_PIP_COST, channelYieldFor } from '../data/economy.js';
 import { affordable, canAfford } from '../engine/deck.js';
 import { legalCardTargets, legalAttacks, titheCandidates } from '../engine/targeting.js';
-import { legalMoves, canMove, canAttack } from '../engine/movement.js';
+import { legalMoves, canMove } from '../engine/movement.js';
 import { unitsOf } from '../engine/board.js';
-import { CHANNEL_MARROW } from '../engine/engine.js';
+import { CHANNEL_MARROW, channelRefusal } from '../engine/engine.js';
 
 /**
  * Every command the side could legally issue right now.
@@ -43,23 +44,23 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
   }
 
   // 2. Attacks — enumerated before moves so equal-utility ties favour acting.
-  // The first unit found with nothing to swing at is remembered for the Channel block:
-  // legalAttacks is the most expensive call in this function and it is already being
-  // made here, so asking it twice would double the cost of the AI's hottest path.
-  let idleUnit: UnitId | undefined;
+  //
+  // Filtered by what the side can pay. A swing costs a Pip now, and an unaffordable one
+  // throws `IllegalCommandError` out of `applyCommand` — which `session.ts` swallows and the
+  // playout harness treats as the end of the plan. Enumerating attacks the commander cannot
+  // fund therefore did not merely waste a candidate, it truncated the turn.
+  //
+  // Every body that could channel is collected rather than only the first idle one. That was
+  // right when Channel was a consolation for having nothing to hit; it is wrong now that
+  // giving up a swing is the thing that pays for somebody else's.
+  const canPayForAttack = cmd.pips >= ATTACK_PIP_COST;
+  const channelCandidates: UnitId[] = [];
   for (const unit of mine) {
-    const targets = legalAttacks(state, unit);
+    const targets = canPayForAttack ? legalAttacks(state, unit) : [];
     for (const target of targets) {
       out.push({ type: 'attack', attacker: unit.id, target });
     }
-    if (
-      targets.length === 0 &&
-      idleUnit === undefined &&
-      canAttack(unit) &&
-      !unit.keywords.includes('BoundForm')
-    ) {
-      idleUnit = unit.id;
-    }
+    if (channelRefusal(state, unit.id) === null) channelCandidates.push(unit.id);
   }
 
   // 3. Moves. Retreats are pruned to keep the candidate list focused — a minion walking
@@ -105,19 +106,32 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
     }
   }
 
-  // 5. Channels — offered only when the Marrow actually completes a purchase this turn.
+  // 5. Channels.
   //
-  // Marrow expires at end of turn, so extracting it only to leave it unspent is worse
-  // than doing nothing: the unit gave up its swing for it. The gate is therefore not
-  // "could I use Marrow" but "does this Marrow, right now, make an unaffordable card
-  // affordable". Without that the AI channels every idle unit until it hits the action
-  // cap, hoarding Marrow it cannot spend and quadrupling its own planning time.
+  // The old gate was "does this Marrow, right now, make an unaffordable card affordable",
+  // and it was correct for what Channel used to be: Marrow expires at end of turn, so
+  // extracting it and leaving it unspent was worse than standing still. **Pips bank.** Under
+  // the Pip economy that reasoning inverts — a body that channels has funded a swing that can
+  // be taken this turn or next, so channelling is at worst weakly correct and the AI must be
+  // allowed to consider it whenever it has a body to sit down.
   //
-  // Only one candidate is offered even so: every idle unit extracts the same Marrow, so
-  // the choice of which one is not a decision worth searching.
-  if (idleUnit !== undefined && marrowWouldUnlock) {
-    out.push({ type: 'channel', unit: idleUnit });
+  // Bounded by *class* rather than by unit. Every melee body yields the same Pip, so which one
+  // channels is not a decision worth searching — but a melee, a ranged and an elite yield three
+  // different things, and that difference is the whole point of the ladder. At most one
+  // candidate per distinct yield keeps the branching factor at three where offering every idle
+  // body would have quadrupled the AI's hottest path, which is the cost the old comment was
+  // right to be afraid of.
+  const offered = new Set<string>();
+  for (const id of channelCandidates) {
+    const def = CARDS[state.units[id]?.defId ?? ''];
+    const yielded = def ? channelYieldFor(def) : null;
+    if (!yielded) continue;
+    const shape = `${yielded.pips}/${yielded.marrow}/${yielded.draw}`;
+    if (offered.has(shape)) continue;
+    offered.add(shape);
+    out.push({ type: 'channel', unit: id });
   }
+  void marrowWouldUnlock;
 
   return out;
 }

@@ -141,6 +141,52 @@ out loud, at the tile where it happened.
 
 ---
 
+## 2.5 The Action Economy
+
+Every body gets **one move and one attack per turn, in either order**. Striking and then
+withdrawing is legal; movement cannot be split around a swing.
+
+**A swing costs 1 Pip. A body that gives up its swing makes one.**
+
+| Class | Points | Channel yields | Verb |
+|---|---|---|---|
+| melee | 2 | 1 Pip, 1 Marrow | Brace |
+| ranged | 3 | 1 card, 1 Marrow | Sight |
+| elite | 4 | 2 Pips, 1 Marrow | Focus |
+| Behemoth | 6 | — cannot channel | — |
+
+Income is **`1 + bodies/3`** per turn, counting the bodies that could spend it. Ferals are
+outside the economy entirely: nothing commands them, so they neither pay to strike nor earn.
+
+Net Pips for a side attacking with a fraction `f` of `N` bodies is `income + N(1 - 2f)`. On a
+six-body warband: attack with half and you bank +3 a turn, which funds a card and a half;
+attack with three quarters and you break even and cast nothing; attack with everything and you
+run -3, which is a burst paid for out of the bank. Army size cancels at the halfway point, so
+the shape holds from a 4x6 ambush to a 12x12 field.
+
+**What is not charged**, and why:
+
+- **A Counter riposte.** It is a reaction, not an action, it fires on somebody else's turn, and
+  its owner never chose to spend anything.
+- **A whiff** (`attackTile`). Being outplayed already costs the action; billing the miss too
+  would punish one mistake twice, and this command exists precisely so the whiff is *visible*.
+- **A Feral's bite.** See above.
+
+### Why this reverses "Pips buy magic, and only magic"
+
+`docs/07_deck_building.md` and the combat overhaul both state that pillar, and it was written
+about *bodies costing Pips to summon* — a one-off purchase against a trickle, where "a 3-Pip
+ranged body is three turns of the entire economy." Buying a board meant casting nothing.
+
+This is the opposite shape: a **cycle**, where the warband funds itself. A board is now what
+lets you cast at all. The complaint the pillar answered does not apply to it, but the pillar as
+written does contradict it, and the contradiction is deliberate rather than drift.
+
+The problem it solves: attacking was free and unbounded, so a turn was ten or more free unit
+actions against one or two card plays, and the deck was a garnish on a turn that was already
+full. Measured over the shipped encounters, attacks ran 0.63 a turn against 1.16 cards, with
+Pips left unspent every turn and nothing to spend a body's idleness on.
+
 ## 3. The Pact
 
 **Hero and Companion share one HP pool.** At zero, you lose.

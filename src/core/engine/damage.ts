@@ -11,6 +11,7 @@ import type { Ctx } from './context.js';
 import { emit } from './context.js';
 import { prepareReaction, resolveReaction } from './reactions.js';
 import { applyStatusTo } from './status.js';
+import { MARKS } from '../data/marks.js';
 import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import { getEntity, opposite } from './board.js';
@@ -231,6 +232,14 @@ function damageEntity(ctx: Ctx, entity: Entity, req: DamageRequest): DamageOutco
   // Brittle: frozen-through flesh takes more from everything, before armor is applied.
   if (isUnit(entity) && (entity.statuses.brittle ?? 0) > 0 && req.dtype !== 'true') {
     amount += BRITTLE_BONUS;
+  }
+
+  // A branded body takes more from every blow, for as long as the brand sits on it. Applied
+  // beside Brittle and on the same terms — before armor, and never against `true` damage, which
+  // by definition ignores what the body is wearing or suffering.
+  if (isUnit(entity) && entity.mark && req.dtype !== 'true') {
+    const brand = MARKS[entity.mark.defId]?.brand?.moreDamageTaken ?? 0;
+    amount += brand;
   }
 
   // Elemental reactions resolve around the damage write: the bonus and the status

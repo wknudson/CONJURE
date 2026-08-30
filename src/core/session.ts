@@ -25,7 +25,7 @@ import type { GameState } from './types/state.js';
 import type { Command } from './types/commands.js';
 import type { ChosenTarget } from './types/cards.js';
 import type { EncounterDef } from './data/encounters/registry.js';
-import { applyCommand, channelRefusal, deployRefusal } from './engine/engine.js';
+import { applyCommand, attackRefusal, channelRefusal, deployRefusal } from './engine/engine.js';
 import { deepClone } from './util/clone.js';
 import { createCombat, type CombatCarry } from './engine/setup.js';
 import { toBoardView, toCardSnapshot } from './engine/views.js';
@@ -207,11 +207,28 @@ export class CombatSession implements RulesQuery {
     return legalMoves(this.state, unit).map((m) => m.to);
   }
 
+  /**
+   * What this body may hit right now, affordability included.
+   *
+   * The Pip cost is asked here and not inside `legalAttacks`, which is pure geometry and reach
+   * and is called by the threat map and the AI's enumeration for questions where "can the
+   * commander pay" is the wrong one — a threat ring does not stop existing because the enemy is
+   * broke.
+   *
+   * It has to be asked *somewhere* on this path, though: this is the method the HUD offers
+   * targets from, so without it the player would be shown a swing that throws when clicked.
+   */
   getLegalAttacks(unitId: UnitId): TargetRef[] {
     const unit = this.state.units[unitId];
     if (!unit || unit.side !== 'player') return [];
     if (this.state.activeSide !== 'player') return [];
+    if (attackRefusal(this.state, unitId) !== null) return [];
     return legalAttacks(this.state, unit);
+  }
+
+  /** Why this body cannot swing, for the prompt under a greyed-out target. */
+  whyCannotAttack(unitId: UnitId): string | null {
+    return attackRefusal(this.state, unitId);
   }
 
   /**

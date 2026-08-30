@@ -330,8 +330,12 @@ describe('Surge', () => {
     expect(res.state.units[ally.id]!.statuses.charged, 'and a charge to set off').toBe(1);
   });
 
-  it('the Storm Wisp is paid a Pip for swinging', () => {
-    const state = board([], 0);
+  it('the Storm Wisp is paid a Pip for swinging, so its swing is free', () => {
+    // Opened with one Pip rather than none, because a swing costs one now. The refund then
+    // hands it straight back: the Wisp exactly funds its own attack, which is the whole reason
+    // `refunds.onAttack` had to start respecting the reaction cap. Uncapped, a second Wisp made
+    // attacking profitable rather than free.
+    const state = board([], 1);
     const wisp = addUnit(state, { def: 'storm_wisp', side: 'player', at: { x: 3, y: 4 } });
     addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 3 }, armor: 300 });
     const foe = Object.values(state.units).find((u) => u.side === 'enemy')!;
@@ -342,7 +346,8 @@ describe('Surge', () => {
       target: { kind: 'unit', id: foe.id },
     });
 
-    // Paid whether or not it drew blood: a Wisp held off by plate has still discharged.
+    // Paid whether or not it drew blood: a Wisp held off by plate has still discharged. One in,
+    // one out, one back — net unchanged.
     expect(res.state.players.player.pips).toBe(1);
     expect(eventsOf(res.events, 'pipRefunded').length).toBe(1);
   });

@@ -19,8 +19,9 @@ import type { Ctx } from './context.js';
 import { emit, makeCtx, newCause } from './context.js';
 import { deepClone } from '../util/clone.js';
 import { CARDS } from '../data/cards/index.js';
+import { ATTACK_PIP_COST, channelYieldFor } from '../data/economy.js';
 import { dtypeOf } from '../data/elements.js';
-import { canAfford, effectiveCost, resolvePlayedCard, spendResources } from './deck.js';
+import { canAfford, drawCards, effectiveCost, resolvePlayedCard, spendResources } from './deck.js';
 import { applyTithe, executeEffect, TITHE_DAMAGE, TITHE_MARROW } from './effects.js';
 import { canAct, canAttack, canMove, findMove, licenseFor, setAnchor } from './movement.js';
 import { legalAttacks, legalCardTargets } from './targeting.js';
@@ -34,7 +35,7 @@ import { placeOpeningUnit } from './spawn.js';
 import { canPlace } from './board.js';
 import { cellsAt, cellsOf, footprintDistance } from '../util/grid.js';
 import { coordEq } from '../../contract/ids.js';
-import { creditRefund, spawnHazard } from './reactions.js';
+import { creditCappedRefund, spawnHazard } from './reactions.js';
 import { resonanceFor } from '../data/resonance.js';
 import { fieldableBehemoths, rosterBudgetFor, rosterPointsOf } from '../data/roster.js';
 import { declareIntents } from './intents.js';
@@ -517,11 +518,45 @@ function layTrail(ctx: Ctx, unit: Unit, leaving: Coord[]): void {
   }
 }
 
+/**
+ * Why this body cannot swing, in the player's words, or null if it can.
+ *
+ * Exported for the same reason `channelRefusal` is: the HUD must be able to say *why* an
+ * attack is unavailable. Affordability lives here rather than in `canAttack` deliberately —
+ * `canAttack` answers "has this body still got its action", which the targeting layer and the
+ * AI both ask, and folding a resource check into it would grey out attacks for a reason that
+ * has nothing to do with the unit.
+ *
+ * **Feral beasts are exempt.** They sit in the enemy's unit list for bookkeeping and nothing
+ * commands them (`ai/enumerate.ts` filters them out of `mine`); billing a commander for a
+ * wolf's hunger would spend a pool its owner never agreed to. It would also crash the game —
+ * `feral.ts` strikes from inside `beginTurn` with no catch, so a broke commander would throw
+ * an IllegalCommandError straight out of the turn transition.
+ */
+export function attackRefusal(state: GameState, unitId: string): string | null {
+  const unit = state.units[unitId];
+  if (!unit) return `no unit ${unitId}`;
+  if (unit.side !== state.activeSide) return 'not your unit';
+  if (!canAttack(unit)) return `${unit.name} cannot attack`;
+  // A body with no attack is not an attacker. `legalAttacks` never checked this, so the two
+  // shipped `atk: 0` units could legally swing for nothing — which was free and harmless
+  // before, and is now a Pip spent on a blow that cannot land.
+  if (unit.atk <= 0) return `${unit.name} has nothing to strike with`;
+  if (unit.keywords.includes('Feral')) return null;
+  if (state.players[unit.side].pips < ATTACK_PIP_COST) {
+    // The hint names the way out, and only when this body actually has one — the Bound Form
+    // and Behemoths cannot channel, and telling them to would be advice that refuses itself.
+    return channelRefusal(state, unitId) === null
+      ? `not enough Pips to strike — ${unit.name} could channel instead`
+      : `not enough Pips for ${unit.name} to strike`;
+  }
+  return null;
+}
+
 function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
-  const attacker = ctx.state.units[attackerId];
-  if (!attacker) throw new IllegalCommandError(`no unit ${attackerId}`);
-  if (attacker.side !== ctx.state.activeSide) throw new IllegalCommandError('not your unit');
-  if (!canAttack(attacker)) throw new IllegalCommandError(`${attacker.name} cannot attack`);
+  const refusal = attackRefusal(ctx.state, attackerId);
+  if (refusal) throw new IllegalCommandError(refusal);
+  const attacker = ctx.state.units[attackerId]!;
 
   const legal = legalAttacks(ctx.state, attacker);
   const ok = legal.some((l) =>
@@ -533,6 +568,22 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
   if (!ok) throw new IllegalCommandError('illegal attack target');
 
   emit(ctx, { t: 'attackDeclared', attackerId, target });
+
+  // Charged *after* the target is validated, so an illegal swing bills nobody — the same
+  // ordering `playCard` uses, where the target is checked before `spendResources`.
+  //
+  // A Feral pays nothing: see `attackRefusal`.
+  if (!attacker.keywords.includes('Feral')) {
+    const cmd = ctx.state.players[attacker.side];
+    cmd.pips -= ATTACK_PIP_COST;
+    emit(ctx, { t: 'resourcesChanged', side: attacker.side, pips: cmd.pips, marrow: cmd.marrow });
+  }
+
+  // Any swing counts as engaging, whether or not it reaches a portrait. Deliberately its own
+  // flag rather than `commanderDamagedThisRound`, which means "a Pact was hurt" and is asserted
+  // as such — a rout widens that one to include a kill, and an ordinary fight does not. See
+  // `applyPacifistLockout`.
+  ctx.state.engagedThisRound = true;
 
   // Attacking spends only the attack. A unit that has not yet moved may still withdraw
   // afterwards — striking and retreating is the point of independent actions.
@@ -577,9 +628,12 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
   // What the body earns its owner for swinging. Paid whether or not the blow drew blood:
   // this is a generator striking, not a reaction landing, and a Storm Wisp held off by
   // plate has still discharged.
+  // Capped now, where it was not before. See `creditCappedRefund`: an on-attack refund is
+  // bounded only by how many bodies you own, so with a swing costing a Pip it would have paid
+  // for itself and then some.
   const perStrike = stats?.refunds?.onAttack ?? 0;
   for (let i = 0; i < perStrike; i++) {
-    creditRefund(ctx, attacker.side, { id: attacker.defId, name: attacker.name }, attacker.anchor);
+    if (!creditCappedRefund(ctx, attacker.side, { id: attacker.defId, name: attacker.name }, attacker.anchor)) break;
   }
 }
 
@@ -643,6 +697,17 @@ function applyOnHit(ctx: Ctx, attackerId: string, target: TargetRef, hpLoss: num
  * bought by moving the target out of the way, so it has to be visible rather than a
  * silently skipped action.
  */
+/**
+ * A declared blow landing on ground the target has left.
+ *
+ * **Not charged a Pip**, deliberately, where a real swing is. Being outplayed already costs the
+ * attacker the action; billing them for the miss as well would punish the same mistake twice,
+ * and the whole reason this command exists rather than silently skipping is that the whiff
+ * should be *visible* — a resource quietly draining is the opposite of visible.
+ *
+ * The same reasoning is why a Counter riposte is free: it is a reaction, not an action, it
+ * fires on somebody else's turn, and its owner never chose to spend anything.
+ */
 function attackTile(ctx: Ctx, attackerId: string, at: { x: number; y: number }): void {
   const attacker = ctx.state.units[attackerId];
   if (!attacker) return;
@@ -683,7 +748,17 @@ export function channelRefusal(state: GameState, unitId: string): string | null 
   if (unit.side !== state.activeSide) return 'not your unit';
   if (unit.attackedThisTurn) return 'unit has already attacked';
   if (!canAct(unit)) return 'unit cannot act';
-  if (unit.keywords.includes('BoundForm')) return 'the Bound Form cannot channel';
+  // The Bound Form may channel now, and the reason it could not is the reason it can.
+  //
+  // It was barred because "extracting Marrow for free with the one unit that cannot be traded
+  // away is a turn with no downside at all" — true when a swing cost nothing, so giving one up
+  // cost nothing either. A swing costs a Pip now, so channelling trades a paid action for a
+  // Pip and the downside is the swing itself.
+  //
+  // Leaving the bar in place made the endgame unresolvable: the last body standing is usually
+  // the Bound Form, and a Bound Form that cannot channel is a body that can only ever spend.
+  if (!channelYieldFor(CARDS[unit.defId] ?? ({} as never)))
+    return `${unit.name} is too large to channel`;
   return null;
 }
 
@@ -695,10 +770,24 @@ function channel(ctx: Ctx, unitId: string): void {
   const side = ctx.state.activeSide;
   const cmd = ctx.state.players[side];
   unit.attackedThisTurn = true;
-  cmd.marrow += CHANNEL_MARROW;
+
+  // Per class, read off the same ladder that prices the body for the roster, so what a unit
+  // costs and what it generates can never drift apart. Marrow is unchanged — dropping it would
+  // orphan the fourteen cards that demand Marrow strictly, which Pips can never cover.
+  const yielded = channelYieldFor(CARDS[unit.defId] ?? ({} as never))!;
+  cmd.marrow += yielded.marrow;
+  cmd.pips += yielded.pips;
+  if (yielded.draw > 0) drawCards(ctx, side, yielded.draw);
 
   newCause(ctx);
-  emit(ctx, { t: 'unitChannelled', unitId, side, marrow: CHANNEL_MARROW });
+  emit(ctx, {
+    t: 'unitChannelled',
+    unitId,
+    side,
+    marrow: yielded.marrow,
+    pips: yielded.pips,
+    draw: yielded.draw,
+  });
   emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
 }
 

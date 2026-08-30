@@ -9,9 +9,14 @@ intent and `docs/02_combat_lexicon.md` was the record of shipped behaviour; now
 **`docs/02_combat_lexicon.md` is authoritative** and this document is the reasoning behind
 it. Where the two disagree, the Lexicon wins — and so does the code.
 
-Two things are still genuinely open, and they are marked in place: the **Frost** and
-**Arcane** Auras (§7) are designed and unbuilt. Everything else once marked `[proposal]`
-has since shipped.
+Everything once marked `[proposal]` has now shipped. The **Frost** and **Arcane** Auras
+(§7) were the last two open items and were built with the Pip economy — Rime Shell and
+Written Path are in `data/auras.ts` with cards in `cards/auras.ts`, so every school has an
+Aura and the Hero's own colour is one they can deck rather than draft.
+
+The Aura magnitudes in §7 are the *original* ones and are now low: they were doubled when
+attacking started costing a Pip, because an Aura has to be the difference between a swing
+worth its cost and one that is not. `data/auras.ts` is authoritative.
 
 Every claim about pre-overhaul behaviour carries a `file:line` as it stood at the time.
 Some of those lines have since moved or the code they pointed at is gone — that is expected
@@ -823,8 +828,8 @@ this turn.
 | **surge** | **Static Charge** | **+1 MOV** per stack | **`overload`** |
 | **bulwark** | **Petrifying Mantle** | **+1 Persistent Armor** per stack | **`heavyFootprint`** |
 | **dusk** | **Marrow Siphon** | Host takes **1 True damage** at turn start and generates **1 Marrow** | **`hollow`** |
-| frost **[proposal]** | *Rime Shell* | +1 Max HP, +1 armour per stack | `rimeShell` |
-| arcane **[proposal]** | *Written Path* | +1 MOV per stack | `blink` |
+| frost **[shipped]** | *Rime Shell* | +20 Max HP, +10 armour per stack | `rimeShell` |
+| arcane **[shipped]** | *Written Path* | +1 MOV per stack | `blink` |
 
 Stats apply incrementally as `escalationBonus` does now, so a snapshot is always the truth.
 Events: `auraAttached`, `auraStacked`.

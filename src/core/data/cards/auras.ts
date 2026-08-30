@@ -85,6 +85,40 @@ export const AURA_CARDS: Record<string, CardDef> = {
    * bleeds its host every turn forever, and the Marrow it pays is the only Marrow in the
    * game that asks for neither an action nor a card.
    */
+  /**
+   * Frost and Arcane, the two Auras the overhaul designed and did not build.
+   *
+   * Priced at 2 Pips like the other four that pay a stat outright. Rime Shell pays both halves
+   * of survival because that is frost's whole argument; the Written Path pays reach, and is the
+   * only Aura the Hero can put in their own deck — `deckRules` allows `neutral` and `arcane`,
+   * so the Hero's colour is the one they may build with rather than draft.
+   */
+  rime_shell: {
+    id: 'rime_shell',
+    name: 'Rime Shell',
+    cost: { pips: 2, marrow: 0 },
+    school: 'frost',
+    source: 'hero',
+    kind: 'spell',
+    text: 'Plates an ally in ice. +20 Max HP and +10 Armor per stack, to two. At Climax it re-forms.',
+    target: ALLY_UNIT,
+    effect: { op: 'attachAura', aura: 'aura_rime_shell' },
+    keywords: [],
+  },
+
+  written_path: {
+    id: 'written_path',
+    name: 'Written Path',
+    cost: { pips: 2, marrow: 0 },
+    school: 'arcane',
+    source: 'hero',
+    kind: 'spell',
+    text: 'Writes an ally a road. +1 MOV per stack, to two. At Climax it steps to anywhere it sees.',
+    target: ALLY_UNIT,
+    effect: { op: 'attachAura', aura: 'aura_written_path' },
+    keywords: [],
+  },
+
   marrow_siphon: {
     id: 'marrow_siphon',
     name: 'Marrow Siphon',

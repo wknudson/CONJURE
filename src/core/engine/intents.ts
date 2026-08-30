@@ -19,6 +19,7 @@
  * How much gets declared is a difficulty setting, not a constant — see `AiProfile.telegraph`.
  */
 
+import { pipIncomeFor } from '../data/economy.js';
 import type { Coord, UnitId } from '../../contract/ids.js';
 import { coordKey } from '../../contract/ids.js';
 import type { Command } from '../types/commands.js';
@@ -257,6 +258,15 @@ export function clearIntents(ctx: Ctx): void {
  * Deliberately does not simulate the upkeep draw: what the enemy will hold next turn
  * depends on a shuffle that has not happened, and promising a card play from a card it
  * does not have yet would be a lie.
+ *
+ * It *does* credit next turn's Pip income, and must. A swing costs a Pip, so a plan drawn
+ * against this turn's bank would declare blows the enemy cannot fund — and an unaffordable
+ * declared attack is dropped in silence by `session.ts`, which is the same lie in the other
+ * direction. The player would see four arrows, plan a Freeze around the third, and watch two of
+ * them never arrive.
+ *
+ * Income is the one part of next turn that *is* knowable: it is a function of the bodies
+ * standing, and this clone already knows those.
  */
 export function boardForNextEnemyTurn(state: GameState): GameState {
   const clone = deepClone(state);
@@ -266,6 +276,11 @@ export function boardForNextEnemyTurn(state: GameState): GameState {
     unit.attackedThisTurn = false;
     unit.summonedThisTurn = false;
   }
+  const paid = Object.values(clone.units).filter(
+    (u) => u.side === 'enemy' && !u.keywords.includes('Feral'),
+  ).length;
+  const cmd = clone.players.enemy;
+  cmd.pips = Math.min(cmd.pipCap, cmd.pips + pipIncomeFor(paid));
   clone.activeSide = 'enemy';
   clone.phase = 'action';
   return clone;

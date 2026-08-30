@@ -88,6 +88,7 @@ export function scenario(opts: {
     nextId: 0,
     suddenDeath: false,
     commanderDamagedThisRound: false,
+  engagedThisRound: false,
     stalledRounds: 0,
     causeCounter: 0,
     encountered: [],

@@ -4,6 +4,7 @@ import { applyCommand } from '../core/engine/engine.js';
 import { IllegalCommandError } from '../core/types/commands.js';
 import { CHANNEL_MARROW, channelRefusal } from '../core/engine/engine.js';
 import { enumerateActions } from '../core/ai/enumerate.js';
+import { planTurn } from '../core/ai/controller.js';
 import { canAttack } from '../core/engine/movement.js';
 
 /**
@@ -77,7 +78,15 @@ describe('channelling', () => {
     );
   });
 
-  it('refuses the Bound Form, which would bank a marrow at no risk', () => {
+  it('lets the Bound Form channel now that giving up a swing costs something', () => {
+    // This asserted a refusal, and the reason given was that extracting Marrow with the one
+    // body that cannot be traded away was "a turn with no downside at all". True while a swing
+    // was free — giving up nothing costs nothing.
+    //
+    // A swing costs a Pip now, so channelling trades a paid action for a Pip and the downside
+    // is the swing itself. Leaving the bar in place also made the endgame unresolvable: the
+    // last body standing is usually the Bound Form, and one that cannot channel can only ever
+    // spend. Four shipped encounters stopped reaching a decision because of it.
     const state = scenario({});
     const body = addUnit(state, {
       def: 'ignis_bound',
@@ -86,9 +95,8 @@ describe('channelling', () => {
       titheBonus: 0,
     });
 
-    expect(() => applyCommand(state, { type: 'channel', unit: body.id })).toThrow(
-      IllegalCommandError,
-    );
+    const after = applyCommand(state, { type: 'channel', unit: body.id }).state;
+    expect(after.units[body.id]!.attackedThisTurn, 'it gave up the swing').toBe(true);
   });
 
   it('can be done by several units in a turn', () => {
@@ -124,12 +132,16 @@ describe('the AI and channelling', () => {
     expect(actions.some((a) => a.type === 'channel')).toBe(true);
   });
 
-  it('refuses to hoard marrow that would expire unspent', () => {
-    // The bug this guards: marrow are wiped at end of turn, so banking one that buys
-    // nothing costs a swing for nothing. Left ungated the AI channels every idle unit
-    // until it hits its action cap, and quadruples its own planning time doing it.
+  it('channels with nothing to spend it on, because Pips bank', () => {
+    // This asserted the opposite, and was right to: Channel used to pay only Marrow, Marrow is
+    // wiped at end of turn, and banking one that buys nothing cost a swing for nothing.
+    //
+    // Channel pays **Pips** now, and Pips carry over. At zero the side cannot attack at all, so
+    // sitting a body down is not hoarding — it is the only way out of the hole, and refusing it
+    // would leave the AI standing still until the fight timed out. That is exactly what it did
+    // when this gate was left in place: attacks fell by 41% and channels did not move.
     const actions = enumerateActions(starved(0), 'enemy');
-    expect(actions.some((a) => a.type === 'channel')).toBe(false);
+    expect(actions.some((a) => a.type === 'channel')).toBe(true);
   });
 
   it('offers at most one channel, since every unit banks the same marrow', () => {
@@ -141,17 +153,32 @@ describe('the AI and channelling', () => {
     expect(channels).toHaveLength(1);
   });
 
-  it('prefers swinging to channelling when a target is in reach', () => {
+  it('offers the swing and the channel for the same body, because that is the decision', () => {
+    // The inverse of what this used to assert. Channel was a consolation for having nothing to
+    // hit, so a body with a target was deliberately never offered as a channeller. Now that a
+    // swing costs a Pip and sitting down makes one, "strike or fund the strike" is the choice
+    // the turn is made of, and an enumeration that hides half of it cannot plan the turn.
     const state = starved(1);
     addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 } });
 
     const actions = enumerateActions(state, 'enemy');
-    expect(actions.some((a) => a.type === 'attack')).toBe(true);
-    // The unit that can swing is not offered as a channeller.
-    const channelled = actions.flatMap((a) => (a.type === 'channel' ? [a.unit] : []));
-    for (const id of channelled) {
-      expect(state.units[id]!.anchor).not.toEqual({ x: 2, y: 1 });
-    }
+    const swinger = Object.values(state.units).find(
+      (u) => u.side === 'enemy' && u.anchor.x === 2 && u.anchor.y === 1,
+    )!;
+    expect(actions.some((a) => a.type === 'attack' && a.attacker === swinger.id)).toBe(true);
+    expect(actions.some((a) => a.type === 'channel' && a.unit === swinger.id)).toBe(true);
+  });
+
+  it('still swings rather than channels when the swing is worth more than a Pip', () => {
+    // The preference the old enumeration hard-coded now lives where it belongs: in the score.
+    // `pipValue` sits under `face`, so a body with something worth hitting hits it.
+    const state = starved(4);
+    addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 2 } });
+
+    const plan = planTurn(state, 'enemy');
+    const attacks = plan.filter((c) => c.type === 'attack').length;
+    const channels = plan.filter((c) => c.type === 'channel').length;
+    expect(attacks).toBeGreaterThan(channels);
   });
 });
 

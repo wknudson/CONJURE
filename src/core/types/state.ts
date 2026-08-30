@@ -334,6 +334,20 @@ export interface GameState {
   suddenDeath: boolean;
   /** Set whenever a commander actually loses HP; drives the Pacifist Lockout. */
   commanderDamagedThisRound: boolean;
+  /**
+   * Whether anybody swung this round, win or lose.
+   *
+   * Distinct from `commanderDamagedThisRound` on purpose. That flag means "a Pact was hurt",
+   * it is asserted as such (`rout.test.ts` pins that killing a minion does **not** set it in an
+   * ordinary fight), and a rout deliberately widens it to include a kill. Overloading it with
+   * "somebody attacked" would silently change the rout rule and the ordinary one together.
+   *
+   * This exists because the Pacifist Lockout could not tell *unwilling* from *unable* once a
+   * swing started costing a Pip: two sides banking Pips look exactly like two sides refusing to
+   * engage, and the lockout would kill them both with unblockable damage for a drought the
+   * economy created.
+   */
+  engagedThisRound: boolean;
   /** Consecutive full rounds in which neither commander took damage. */
   stalledRounds: number;
   /** Incremented per atomic resolution step; stamped onto events as causeId. */

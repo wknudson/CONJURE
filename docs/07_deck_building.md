@@ -438,7 +438,7 @@ that competes with nothing.
 
 A minion used to cost Pips out of the same pool as the spell it existed to enable, so
 buying a board meant not casting anything — the "Pip Tax". The deck keeps the spells now,
-and Pips buy magic and only magic
+and Pips bought magic and only magic — **until the Pip economy**, which made a swing cost one and a body that sits out make one. See `02_combat_lexicon.md` §2.5: the pillar was about bodies being *bought* out of the spell pool, and a cycle the warband funds itself is a different shape from a toll on summoning
 ([roster.ts:1](src/core/data/roster.ts:1)).
 
 ### The budget: you own a kit, you field an arena's worth of it

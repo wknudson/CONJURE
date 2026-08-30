@@ -150,7 +150,13 @@ export type GameEvent = EventBase &
     /** A body spent whole to make something else. Pays no Marrow -- see `consumeTarget`. */
     | { t: 'unitConsumed'; unitId: UnitId }
     /** A unit spent its attack extracting Marrow instead of swinging. */
-    | { t: 'unitChannelled'; unitId: UnitId; side: Side; marrow: number }
+    /**
+     * A body gave up its swing. What it produced depends on its class — see
+     * `data/economy.ts`. `marrow` predates the Pip economy and is kept so the animation
+     * and the AI's existing term keep working; `pips` and `draw` are what the class ladder
+     * added.
+     */
+    | { t: 'unitChannelled'; unitId: UnitId; side: Side; marrow: number; pips: number; draw: number }
     | { t: 'unitDied'; unitId: UnitId; at: Coord; footprint: 1 | 2; cause: DamageCause }
     /**
      * Something left the board without dying — a scavenger that reached the edge.

@@ -41,6 +41,22 @@ export interface MarkDef {
    * entry here is a pure control trap, which is a real card and not a broken one.
    */
   applies?: { status: StatusKind; stacks: number }[];
+  /**
+   * What the brand does **while it sits**, before it ever goes off.
+   *
+   * A Mark used to be a pure trap: it cost a Pip, attached, and then did nothing whatsoever
+   * until the host happened to lose HP to the right damage type. That made laying one a bet on
+   * a future you did not control, and it is the reason Marks were the cards nobody spent a turn
+   * on — you paid now and were paid maybe.
+   *
+   * A branded body takes this much extra from every blow. That turns a Mark into the thing that
+   * makes the *next* swing worth the Pip it costs, which is the job the card layer is supposed
+   * to be doing: setting up the attack rather than replacing it.
+   *
+   * Stated per Mark rather than as one constant, because a control trap and a fire trap should
+   * not brand equally hard. Zero or absent is a Mark that only ever detonates.
+   */
+  brand?: { moreDamageTaken: number };
   text: string;
 }
 

@@ -741,7 +741,7 @@ const TEMPLATE = `
         <button class="threat-toggle" data-tip="Danger zone|Highlights every tile the enemy could strike on their next turn.|Press T to toggle. Red tiles are reachable; deeper red means more attackers.">
           <span class="threat-toggle__dot"></span> Threat
         </button>
-        <button class="channel is-hidden" data-tip="Channel|Gives up the selected unit's attack to extract 1 Marrow.|It keeps its move. Shown only while a unit that can still attack is selected. Press C.">✦ Channel</button>
+        <button class="channel is-hidden" data-tip="Channel|Gives up the selected unit's attack to make Pips instead.|A swing costs 1 Pip; sitting a body down makes one. Melee brace for a Pip, ranged sight for a card, elites focus for two. It keeps its move. Press C.">✦ Channel</button>
       </div>
       <div class="hand"></div>
       <div class="right-controls">

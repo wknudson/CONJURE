@@ -35,6 +35,10 @@ export interface UtilityWeights {
   marrowEfficiency: number;
   /** Extracting Marrow by channelling. Deferred value, so priced under spending it. */
   channelValue: number;
+  /** What one banked Pip is worth. See the default for how it is priced. */
+  pipValue: number;
+  /** What one card drawn is worth. */
+  drawValue: number;
   counterRisk: number;
   friendlyCollateral: number;
   advance: number;
@@ -123,9 +127,31 @@ export const NOVICE_WEIGHTS: UtilityWeights = {
   // A Novice duelist "ignores collision damage" — it does not seek out shoves.
   collision: 0,
   marrowEfficiency: 10,
-  // Above the pass threshold so an idle unit channels rather than standing there, but
-  // well under a kill or a face hit so it never competes with actually fighting.
-  channelValue: 6,
+  /**
+   * What a body makes by giving up its swing, per Marrow.
+   *
+   * Was 6, and the comment explaining it named the reason it had to change: "above the pass
+   * threshold so an idle unit channels rather than standing there." It was only ever compared
+   * against **doing nothing**, because Channel was offered solely to units with no target.
+   *
+   * Now that a swing costs a Pip and every body is a channel candidate, this competes with
+   * attacking — and an ordinary attack is worth about **4** (`unitDamage: 2` against
+   * `hpPoints`, so a 20-damage hit scores 2 x 2). At 6 the AI sat down in front of targets it
+   * could have hit, and measured attacks fell from 0.63 a turn to 0.27.
+   */
+  channelValue: 1,
+  /**
+   * What one banked Pip is worth.
+   *
+   * A Pip is a means, not an end, and pricing it at what it buys is circular — spending one on
+   * an attack becomes value-neutral while making one is pure profit, which is exactly what the
+   * first attempt at this did. Scarcity is enforced by the affordability filter in
+   * `enumerate.ts`; this only has to make a body with nothing to hit prefer channelling to
+   * standing still, and keep a melee channel (1 + 2 = 3) just under an ordinary swing (4).
+   */
+  pipValue: 2,
+  /** A card in hand. Worth a little more than the Pip that pays half of one. */
+  drawValue: 3,
   counterRisk: 12,
   friendlyCollateral: 15,
   advance: 3,
@@ -547,8 +573,22 @@ export function scoreAction(
   // the Marrow still has to find a use before end of turn — but worth more than the zero
   // it would otherwise score, which would mean the AI never channelled at all.
   for (const e of events) {
-    if (e.t === 'unitChannelled') utility += weights.channelValue * e.marrow;
+    if (e.t !== 'unitChannelled') continue;
+    utility += weights.channelValue * e.marrow;
+    utility += weights.pipValue * e.pips;
+    utility += weights.drawValue * e.draw;
   }
+
+  // No Pip penalty on attacking, deliberately.
+  //
+  // The obvious move is to subtract `pipValue` per swing, and it double-charges: the
+  // affordability filter in `enumerate.ts` has already removed every attack the side cannot
+  // fund, so the score would be pricing a constraint that is enforced elsewhere. Measured, it
+  // took an ordinary attack from 4 utility to 1 and the AI stopped swinging.
+  //
+  // The consequence is that the AI attacks while it can afford to and channels when it cannot,
+  // rather than weighing the two every turn the way a player does. That is a poorer policy than
+  // a person's and a perfectly sane opponent, which is the trade being made.
 
   // --- Risk ---
   for (const e of events) {

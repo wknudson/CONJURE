@@ -301,6 +301,32 @@ function refundReactionPip(ctx: Ctx, def: ReactionDef, at: Coord): void {
 }
 
 /**
+ * `creditRefund`, but against the per-turn reaction budget.
+ *
+ * The uncapped door above is right for a passive that its own rule already fires once a turn.
+ * It is wrong for anything that scales with how many bodies you own — and `refunds.onAttack`
+ * does exactly that. Storm Wisp costs 1 Pip, has Haste, and pays 1 Pip per swing; with an
+ * attack costing 1 Pip, every Wisp swing became free and a second Wisp made them profitable.
+ * The budget the cascade rule already owns is the right ceiling: "beyond that a cascade would
+ * fund itself, which is a loop rather than a reward."
+ *
+ * Returns whether it paid, so a caller looping `onAttack: 2` can stop at the cap rather than
+ * spinning.
+ */
+export function creditCappedRefund(
+  ctx: Ctx,
+  side: Side,
+  source: { id: string; name: string },
+  at: Coord,
+): boolean {
+  const cmd = ctx.state.players[side];
+  if (cmd.reactionPipsThisTurn >= REACTION_PIP_CAP) return false;
+  cmd.reactionPipsThisTurn += 1;
+  creditRefund(ctx, side, source, at);
+  return true;
+}
+
+/**
  * Pays one Pip and announces it as a reward rather than as income.
  *
  * Split out of `refundReactionPip` so a passive can pay the same way a reaction does —

@@ -48,7 +48,11 @@ export type ClimaxTraitId =
   /** Bulwark. Immune to Shove and Pull, and shatters destructible obstacles by walking into them. */
   | 'heavyFootprint'
   /** Dusk. Frail-Strike: whatever it wounds takes more from every later blow that turn. */
-  | 'hollow';
+  | 'hollow'
+  /** Frost. Rime Shell: the plate re-forms, refunding a step of armour at the start of its turn. */
+  | 'rimeShell'
+  /** Arcane. Blink: once a turn it may step to any empty tile it can see. */
+  | 'blink';
 
 /** The stats an Aura can pay. Every field is per-stack and additive. */
 export interface AuraPassiveStat {
@@ -91,9 +95,14 @@ export const AURAS: Record<string, AuraDef> = {
     name: 'Conflagration',
     school: 'pyre',
     maxStacks: AURA_MAX_STACKS,
-    passiveStat: { atk: 10 },
+    // Raised from +10. An Aura is two paying stacks, so this is the difference between a
+        // supported swing and a bare one — and at +10 it was +20 on a body that hits for 20,
+        // which reads as "slightly better" rather than as the reason to spend a card. At +20 a
+        // fully-grown Conflagration doubles the body, and the swing it pays for is worth the
+        // Pip it costs.
+    passiveStat: { atk: 20 },
     climaxTrait: 'conflagration',
-    text: '+10 ATK per stack. At Climax: Ignite (2) on attack, and it leaves fire in its wake.',
+    text: '+20 ATK per stack. At Climax: Ignite (2) on attack, and it leaves fire in its wake.',
   },
 
   aura_overgrowth: {
@@ -101,9 +110,9 @@ export const AURAS: Record<string, AuraDef> = {
     name: 'Overgrowth',
     school: 'bloom',
     maxStacks: AURA_MAX_STACKS,
-    passiveStat: { maxHp: 20 },
+    passiveStat: { maxHp: 40 },
     climaxTrait: 'overgrowth',
-    text: '+20 Max HP per stack. At Climax: Leech, and a Toxin burst when it dies.',
+    text: '+40 Max HP per stack. At Climax: Leech, and a Toxin burst when it dies.',
   },
 
   aura_static_charge: {
@@ -121,9 +130,9 @@ export const AURAS: Record<string, AuraDef> = {
     name: 'Petrifying Mantle',
     school: 'bulwark',
     maxStacks: AURA_MAX_STACKS,
-    passiveStat: { armor: 10 },
+    passiveStat: { armor: 20 },
     climaxTrait: 'heavyFootprint',
-    text: '+10 Persistent Armor per stack. At Climax: Heavy Footprint — nothing shoves it.',
+    text: '+20 Persistent Armor per stack. At Climax: Heavy Footprint — nothing shoves it.',
   },
 
   /**
@@ -139,6 +148,40 @@ export const AURAS: Record<string, AuraDef> = {
     upkeep: { selfDamage: 10, marrow: 1 },
     climaxTrait: 'hollow',
     text: 'Each turn it bleeds 10 and yields 1 Marrow. At Climax: Hollow — its wounds fester.',
+  },
+
+  /**
+   * Frost, and Arcane below it. Designed in `combat_overhaul_vanguard_and_escalate.md` and left
+   * unbuilt with the note that they were the two genuinely open items in that document; the
+   * shipped five covered pyre, bloom, surge, bulwark and dusk, so a Hero who had tamed a Frost
+   * or an Arcane bloodline had no Aura at all and the pairing was a different size depending on
+   * who they walked in with.
+   *
+   * Rime Shell pays both halves of survival rather than one, because frost's whole argument is
+   * that it does not die: the plate is the stat and the Climax puts the plate back.
+   */
+  aura_rime_shell: {
+    defId: 'aura_rime_shell',
+    name: 'Rime Shell',
+    school: 'frost',
+    maxStacks: AURA_MAX_STACKS,
+    passiveStat: { maxHp: 20, armor: 10 },
+    climaxTrait: 'rimeShell',
+    text: '+20 Max HP and +10 Armor per stack. At Climax: the shell re-forms each turn.',
+  },
+
+  /**
+   * Arcane. The Hero's own colour, and the only Aura that pays in reach rather than in mass —
+   * the Written Path is a route, not a wall.
+   */
+  aura_written_path: {
+    defId: 'aura_written_path',
+    name: 'Written Path',
+    school: 'arcane',
+    maxStacks: AURA_MAX_STACKS,
+    passiveStat: { mov: 1 },
+    climaxTrait: 'blink',
+    text: '+1 MOV per stack. At Climax: Blink — once a turn it steps to any tile it can see.',
   },
 };
 

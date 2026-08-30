@@ -32,6 +32,8 @@ export const MARKS: Record<string, MarkDef> = {
     damage: 40,
     dtype: 'fire',
     blast: { shape: 'adjacent8' },
+    // A fire trap that already blasts for 40 brands lightly.
+    brand: { moreDamageTaken: 10 },
     text: 'Detonates for 40 fire damage to all adjacent when the host loses HP to fire or spell damage.',
   },
   /**
@@ -63,6 +65,8 @@ export const MARKS: Record<string, MarkDef> = {
       { status: 'entangle', stacks: 1 },
       { status: 'toxin', stacks: 1 },
     ],
+    // The one Mark with no blast at all, so the brand is the whole card: a snared body is a body worth hitting.
+    brand: { moreDamageTaken: 30 },
     text: 'When the host loses health to a physical or impact blow, roots burst out: everything adjacent is Entangled and takes 1 Toxin. Deals no damage of its own.',
   },
 
@@ -86,6 +90,7 @@ export const MARKS: Record<string, MarkDef> = {
     // A cross rather than a ring: the blast runs down the aisles, so standing on the
     // diagonal from a cask is the safe place to be.
     blast: { shape: 'plus', radius: 1 },
+    brand: { moreDamageTaken: 15 },
     text: 'When the cask is destroyed, it goes up: 30 impact damage in a cross around it.',
   },
 
@@ -110,6 +115,8 @@ export const MARKS: Record<string, MarkDef> = {
     dtype: 'frost',
     blast: { shape: 'adjacent8' },
     applies: [{ status: 'chill', stacks: 2 }],
+    // Ice that has not gone off yet is still ice, and its blast is the smallest of the six.
+    brand: { moreDamageTaken: 25 },
     text: 'When the host loses health to frost or spell damage, the cold spreads: 20 frost damage and 2 Chill to everything adjacent.',
   },
 
@@ -139,6 +146,7 @@ export const MARKS: Record<string, MarkDef> = {
     damage: 30,
     dtype: 'shock',
     blast: { shape: 'plus', radius: 1 },
+    brand: { moreDamageTaken: 15 },
     text: 'When the host loses health to shock or spell damage, the charge jumps: 30 shock damage in a cross around it, leaving everything it touches Charged.',
   },
 
@@ -162,6 +170,8 @@ export const MARKS: Record<string, MarkDef> = {
     damage: 40,
     dtype: 'impact',
     blast: { shape: 'plus', radius: 1 },
+    // Forty on detonation is already the top of the range.
+    brand: { moreDamageTaken: 10 },
     text: 'When the host loses health to a physical or impact blow, the ground gives: 40 impact damage in a cross around it. Shatters anything Frozen it catches.',
   },
 
@@ -184,6 +194,8 @@ export const MARKS: Record<string, MarkDef> = {
     damage: 50,
     dtype: 'decay',
     blast: { shape: 'lowestHpEnemy' },
+    // The biggest blast in the set brands least.
+    brand: { moreDamageTaken: 10 },
     text: 'When the host dies, deals 50 decay damage to the lowest-HP enemy.',
   },
 };
