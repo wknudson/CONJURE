@@ -14,7 +14,7 @@ import { VARIANT_PILLS, belongsInCase } from '../app/DeckBuilderScreen.js';
  * The duel, and the set of Marks it hands out.
  *
  * A Wandering Duelist is another Hero: they hold a Hero Deck and deploy a warband, and
- * neither of you can buy a body with Pips. Before this, their deck held five minions and
+ * neither of you can buy a body with Bones. Before this, their deck held five minions and
  * two Spells — so beating them taught plans for cards the player's half could never
  * contain, and the offer was mostly noise.
  */

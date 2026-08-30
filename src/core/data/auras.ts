@@ -99,7 +99,7 @@ export const AURAS: Record<string, AuraDef> = {
         // supported swing and a bare one — and at +10 it was +20 on a body that hits for 20,
         // which reads as "slightly better" rather than as the reason to spend a card. At +20 a
         // fully-grown Conflagration doubles the body, and the swing it pays for is worth the
-        // Pip it costs.
+        // Bone it costs.
     passiveStat: { atk: 20 },
     climaxTrait: 'conflagration',
     text: '+20 ATK per stack. At Climax: Ignite (2) on attack, and it leaves fire in its wake.',

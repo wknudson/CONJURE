@@ -44,7 +44,7 @@ describe('glossary coverage', () => {
 
   it('resolves glossary lookups case-insensitively for terms', () => {
     expect(lookup('Guardian')).toBeDefined();
-    expect(lookup('pips')).toBeDefined();
+    expect(lookup('bones')).toBeDefined();
     expect(lookup('BRITTLE')).toBeDefined();
     expect(lookup('minion')).toBeDefined();
     expect(lookup('not-a-real-term')).toBeUndefined();

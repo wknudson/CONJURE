@@ -89,7 +89,7 @@ export function resolveReaction(
   newCause(ctx);
   emit(ctx, { t: 'reactionTriggered', reaction: def.id, name: def.name, at: { ...at } });
 
-  refundReactionPip(ctx, def, at);
+  refundReactionBone(ctx, def, at);
 
   // Armor-piercing damage lands before the outcome, and separately from the triggering
   // blow, so plate cannot absorb it. Guarded on the chain flag like everything else: a
@@ -279,24 +279,24 @@ type DealDamageFn = (
 ) => unknown;
 
 /** Reactions are hard to set up, so landing one pays part of its cost back. */
-export const REACTION_PIP_REFUND = 1;
+export const REACTION_BONE_REFUND = 1;
 /** Two a turn. Beyond that a cascade would fund itself, which is a loop, not a reward. */
-export const REACTION_PIP_CAP = 2;
+export const REACTION_BONE_CAP = 2;
 
 /**
- * Pays a Pip back to whoever caused the reaction.
+ * Pays a Bone back to whoever caused the reaction.
  *
  * Credited to the active side rather than to the victim's opponent: a reaction fires
  * inside the acting side's resolution chain, and self-inflicted ones (shoving your own
  * burning unit into a chilled ally) are still your doing. This mirrors how `spawnHazard`
  * already decides ownership.
  */
-function refundReactionPip(ctx: Ctx, def: ReactionDef, at: Coord): void {
+function refundReactionBone(ctx: Ctx, def: ReactionDef, at: Coord): void {
   const side = ctx.state.activeSide;
   const cmd = ctx.state.players[side];
-  if (cmd.reactionPipsThisTurn >= REACTION_PIP_CAP) return;
+  if (cmd.reactionBonesThisTurn >= REACTION_BONE_CAP) return;
 
-  cmd.reactionPipsThisTurn += 1;
+  cmd.reactionBonesThisTurn += 1;
   creditRefund(ctx, side, { id: def.id, name: def.name }, at);
 }
 
@@ -305,8 +305,8 @@ function refundReactionPip(ctx: Ctx, def: ReactionDef, at: Coord): void {
  *
  * The uncapped door above is right for a passive that its own rule already fires once a turn.
  * It is wrong for anything that scales with how many bodies you own — and `refunds.onAttack`
- * does exactly that. Storm Wisp costs 1 Pip, has Haste, and pays 1 Pip per swing; with an
- * attack costing 1 Pip, every Wisp swing became free and a second Wisp made them profitable.
+ * does exactly that. Storm Wisp costs 1 Bone, has Haste, and pays 1 Bone per swing; with an
+ * attack costing 1 Bone, every Wisp swing became free and a second Wisp made them profitable.
  * The budget the cascade rule already owns is the right ceiling: "beyond that a cascade would
  * fund itself, which is a loop rather than a reward."
  *
@@ -320,20 +320,20 @@ export function creditCappedRefund(
   at: Coord,
 ): boolean {
   const cmd = ctx.state.players[side];
-  if (cmd.reactionPipsThisTurn >= REACTION_PIP_CAP) return false;
-  cmd.reactionPipsThisTurn += 1;
+  if (cmd.reactionBonesThisTurn >= REACTION_BONE_CAP) return false;
+  cmd.reactionBonesThisTurn += 1;
   creditRefund(ctx, side, source, at);
   return true;
 }
 
 /**
- * Pays one Pip and announces it as a reward rather than as income.
+ * Pays one Bone and announces it as a reward rather than as income.
  *
- * Split out of `refundReactionPip` so a passive can pay the same way a reaction does —
+ * Split out of `refundReactionBone` so a passive can pay the same way a reaction does —
  * Voltara's Storm Tithe is the first — without either re-deriving the amount or
  * re-inventing what the payment looks like on screen.
  *
- * Note what is deliberately **not** in here: `reactionPipsThisTurn`. That counter exists
+ * Note what is deliberately **not** in here: `reactionBonesThisTurn`. That counter exists
  * so a cascade cannot fund itself, and it is checked by the one caller that can fire more
  * than once in a turn. A passive limited to once per turn by its own rule does not need
  * the budget and must not spend it — a Resonance that ate one of the two reaction slots
@@ -347,19 +347,19 @@ export function creditRefund(
   at: Coord,
 ): void {
   const cmd = ctx.state.players[side];
-  // Deliberately unclamped, like every other Pip gain: the cap of 8 is applied once, at
+  // Deliberately unclamped, like every other Bone gain: the cap of 8 is applied once, at
   // end-of-turn cleanup, so a refund near the ceiling still banks for this turn's use.
-  cmd.pips += REACTION_PIP_REFUND;
+  cmd.bones += REACTION_BONE_REFUND;
 
-  // `pipRefunded` rather than `gainPips`, which would emit the generic `pipGained`: the
+  // `boneRefunded` rather than `gainBones`, which would emit the generic `boneGained`: the
   // presentation layer has to be able to tell a reward from ordinary turn income, and it
   // cannot do that from an event that describes both. It carries `total` for the same
-  // reason `pipGained` does, so the dial updates from one event either way.
+  // reason `boneGained` does, so the dial updates from one event either way.
   emit(ctx, {
-    t: 'pipRefunded',
+    t: 'boneRefunded',
     side,
-    amount: REACTION_PIP_REFUND,
-    total: cmd.pips,
+    amount: REACTION_BONE_REFUND,
+    total: cmd.bones,
     reaction: source.id,
     name: source.name,
     at: { ...at },

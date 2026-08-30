@@ -17,7 +17,7 @@ import { isObtainable, startingCollection } from '../core/data/collection.js';
 import { COMPANIONS, companionById } from '../core/data/companions.js';
 import { COMPANION_TRAITS, traitsFor } from '../core/data/companionTraits.js';
 import { RESONANCE, resonanceFor } from '../core/data/resonance.js';
-import { REACTION_PIP_CAP, REACTION_PIP_REFUND } from '../core/engine/reactions.js';
+import { REACTION_BONE_CAP, REACTION_BONE_REFUND } from '../core/engine/reactions.js';
 import { createCombat } from '../core/engine/setup.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
 import { legalMoves } from '../core/engine/movement.js';
@@ -81,7 +81,7 @@ describe('the new cards, as data', () => {
 describe('Static Arc', () => {
   /** Two enemies orthogonally beside (2,2), and one on the diagonal that must be spared. */
   const cluster = () => {
-    const state = scenario({ width: 6, height: 7, hand: ['static_arc'], pips: 6 });
+    const state = scenario({ width: 6, height: 7, hand: ['static_arc'], bones: 6 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, titheBonus: 0 });
     const north = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 }, hp: 90 });
     const east = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 3, y: 2 }, hp: 90 });
@@ -125,7 +125,7 @@ describe('Static Arc', () => {
 describe('the handoff Surge exists for', () => {
   /** One charged enemy, and a hand holding whichever card is about to read the charge. */
   const charged = (hand: string[], armor = 0) => {
-    const state = scenario({ width: 6, height: 7, hand, pips: 8, marrow: 4 });
+    const state = scenario({ width: 6, height: 7, hand, bones: 8, marrow: 4 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, titheBonus: 0 });
     const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 120, armor });
     foe.statuses.charged = 1;
@@ -161,24 +161,24 @@ describe('the handoff Surge exists for', () => {
     expect(res.state.units[foe.id]!.statuses.brittle).toBeGreaterThan(0);
   });
 
-  it('pays a Pip back for landing one, capped so a cascade cannot fund itself', () => {
+  it('pays a Bone back for landing one, capped so a cascade cannot fund itself', () => {
     const { state, foe } = charged(['glacial_spike']);
-    const before = state.players.player.pips;
+    const before = state.players.player.bones;
     const card = handCard(state, 'player', 'glacial_spike');
 
     const res = run(state, play(card, { kind: 'entity', ref: { kind: 'unit', id: foe.id } }));
 
-    const refunds = eventsOf(res.events, 'pipRefunded');
+    const refunds = eventsOf(res.events, 'boneRefunded');
     expect(refunds.length).toBeGreaterThan(0);
-    expect(refunds[0]!.amount).toBe(REACTION_PIP_REFUND);
-    expect(res.state.players.player.reactionPipsThisTurn).toBeLessThanOrEqual(REACTION_PIP_CAP);
-    expect(res.state.players.player.pips).toBeGreaterThan(before - CARDS.glacial_spike!.cost.pips);
+    expect(refunds[0]!.amount).toBe(REACTION_BONE_REFUND);
+    expect(res.state.players.player.reactionBonesThisTurn).toBeLessThanOrEqual(REACTION_BONE_CAP);
+    expect(res.state.players.player.bones).toBeGreaterThan(before - CARDS.glacial_spike!.cost.bones);
   });
 });
 
 describe('Spore Cloud', () => {
   const dosed = (hand: string[] = ['spore_cloud'], armor = 80) => {
-    const state = scenario({ width: 6, height: 7, hand, pips: 8 });
+    const state = scenario({ width: 6, height: 7, hand, bones: 8 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 2, y: 4 }, titheBonus: 0 });
     const foe = addUnit(state, {
       def: 'grave_sentinel',
@@ -361,7 +361,7 @@ describe('Storm Tithe', () => {
 
   /** A Voltara board with one Companion card in hand. */
   const board = (hand: string[]) => {
-    const state = scenario({ width: 6, height: 7, hand, pips: 6 });
+    const state = scenario({ width: 6, height: 7, hand, bones: 6 });
     state.players.player.companionSchool = 'surge';
     const body = addUnit(state, {
       def: 'voltara_bound',
@@ -375,18 +375,18 @@ describe('Storm Tithe', () => {
     return { state, body };
   };
 
-  it('pays a Pip back on the first Companion card', () => {
+  it('pays a Bone back on the first Companion card', () => {
     const { state } = board(['static_arc']);
-    const before = state.players.player.pips;
+    const before = state.players.player.bones;
     const card = handCard(state, 'player', 'static_arc');
 
     const res = run(state, play(card, atTile(2, 3)));
 
-    const tithe = eventsOf(res.events, 'pipRefunded').filter((e) => e.reaction === 'storm_tithe');
+    const tithe = eventsOf(res.events, 'boneRefunded').filter((e) => e.reaction === 'storm_tithe');
     expect(tithe.length).toBe(1);
-    expect(tithe[0]!.amount).toBe(REACTION_PIP_REFUND);
+    expect(tithe[0]!.amount).toBe(REACTION_BONE_REFUND);
     // Static Arc costs 1 and the tithe pays 1, so the first cast each turn is free.
-    expect(res.state.players.player.pips).toBe(before);
+    expect(res.state.players.player.bones).toBe(before);
   });
 
   it('lands the label on the Companion, where the player is looking', () => {
@@ -395,7 +395,7 @@ describe('Storm Tithe', () => {
 
     const res = run(state, play(card, atTile(2, 3)));
 
-    const tithe = eventsOf(res.events, 'pipRefunded').find((e) => e.reaction === 'storm_tithe')!;
+    const tithe = eventsOf(res.events, 'boneRefunded').find((e) => e.reaction === 'storm_tithe')!;
     expect(tithe.at).toEqual(state.units[body.id]!.anchor);
   });
 
@@ -407,7 +407,7 @@ describe('Storm Tithe', () => {
 
     const res = run(afterFirst, play(second, atTile(4, 3)));
 
-    expect(eventsOf(res.events, 'pipRefunded').filter((e) => e.reaction === 'storm_tithe')).toEqual(
+    expect(eventsOf(res.events, 'boneRefunded').filter((e) => e.reaction === 'storm_tithe')).toEqual(
       [],
     );
   });
@@ -421,7 +421,7 @@ describe('Storm Tithe', () => {
 
     const res = run(state, play(card, atTile(2, 3)));
 
-    expect(res.state.players.player.reactionPipsThisTurn).toBe(0);
+    expect(res.state.players.player.reactionBonesThisTurn).toBe(0);
   });
 });
 

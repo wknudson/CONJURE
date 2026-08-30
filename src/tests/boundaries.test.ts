@@ -48,7 +48,7 @@ function importsOf(source: string): string[] {
 describe('the combat engine', () => {
   it('never imports the overworld', () => {
     // The rule that keeps `createCombat` testable without a run existing at all. The
-    // engine is handed armour and pips through `CombatCarry`; it has never heard of a
+    // engine is handed armour and bones through `CombatCarry`; it has never heard of a
     // brew, and adding a fourth one must not mean editing the reducer.
     const offenders: string[] = [];
     for (const [path, source] of Object.entries(ENGINE)) {

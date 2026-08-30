@@ -141,7 +141,7 @@ export const CHALK_VERGE: AreaDef = defineArea({
      * could not: two packs converging on one player was a fight nothing modelled, and the
      * contact handler was first-come. The Combat Ring is what models it — walk into one
      * here and the circle it opens can reach a second, which arrives on round two and is
-     * paid for with a Pip and a card. Capped at two, so the road can be unkind without
+     * paid for with a Bone and a card. Capped at two, so the road can be unkind without
      * being unsurvivable.
      *
      * Homes are on open chalk with better than four fifths of each circle walkable, and no

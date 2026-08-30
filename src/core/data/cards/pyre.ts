@@ -22,7 +22,7 @@ export const PYRE_CARDS: Record<string, CardDef> = {
    * "Deal damage, and *also* do this if the board was already set up" was previously
    * unrepresentable: a card wanting it had to be split in two or flattened into an
    * unconditional version that was either overcosted or oppressive. Here the flat half is
-   * priced as an ordinary 2-Pip line and the conditional half is the payoff for having
+   * priced as an ordinary 2-Bone line and the conditional half is the payoff for having
    * spent a turn lighting something up.
    *
    * The condition carries an `area` rather than reading "the target", because a line
@@ -38,7 +38,7 @@ export const PYRE_CARDS: Record<string, CardDef> = {
   ashen_wake: {
     id: 'ashen_wake',
     name: 'Ashen Wake',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
@@ -80,7 +80,7 @@ export const PYRE_CARDS: Record<string, CardDef> = {
   ember_moth: {
     id: 'ember_moth',
     name: 'Ember Moth',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'pyre',
     source: 'hero',
     kind: 'minion',
@@ -115,7 +115,7 @@ export const PYRE_CARDS: Record<string, CardDef> = {
   pyre_pillar: {
     id: 'pyre_pillar',
     name: 'Pyre Pillar',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'obstacle',
@@ -144,14 +144,14 @@ export const PYRE_CARDS: Record<string, CardDef> = {
    * card whose value depends on where the Companion is standing rather than on where the
    * enemy is.
    *
-   * Twenty is modest for three Pips until the geometry lands — a well-placed cone catches
+   * Twenty is modest for three Bones until the geometry lands — a well-placed cone catches
    * five bodies, and every one of them is left Burning for the Ashen Wake or the Stoke that
    * follows.
    */
   cinder_gale: {
     id: 'cinder_gale',
     name: 'Cinder Gale',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
@@ -170,12 +170,12 @@ export const PYRE_CARDS: Record<string, CardDef> = {
   },
 
   /**
-   * A Pip that pays double on a fire already lit.
+   * A Bone that pays double on a fire already lit.
    *
    * The cheapest card in the school and the one that most rewards having played it second.
-   * Against a Burning target it is 30 through armour — better than a two-Pip spell — and
+   * Against a Burning target it is 30 through armour — better than a two-Bone spell — and
    * against anything else it is a stack of Burn and almost nothing, which is a fair price
-   * for a Pip and a bad opening move.
+   * for a Bone and a bad opening move.
    *
    * `true` on the paid branch because Burn itself ignores nothing and plate is the obvious
    * answer to a burn deck. This is the card that says plate is not enough.
@@ -183,7 +183,7 @@ export const PYRE_CARDS: Record<string, CardDef> = {
   stoke: {
     id: 'stoke',
     name: 'Stoke',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
@@ -214,7 +214,7 @@ export const PYRE_CARDS: Record<string, CardDef> = {
   slag_cairn: {
     id: 'slag_cairn',
     name: 'Slag Cairn',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'obstacle',
@@ -244,7 +244,7 @@ export const PYRE_CARDS: Record<string, CardDef> = {
   ember_hound: {
     id: 'ember_hound',
     name: 'Ember Hound',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'pyre',
     source: 'hero',
     kind: 'minion',
@@ -286,13 +286,13 @@ export const PYRE_CARDS: Record<string, CardDef> = {
    * that has been quietly cooking is worth a turn to detonate.
    *
    * Two Burn is a real requirement rather than a nicety, and the unfed branch is honest
-   * about it: 15 for two Pips is a bad card, and it should be, because the good branch is
+   * about it: 15 for two Bones is a bad card, and it should be, because the good branch is
    * 40 plus splash for the same price.
    */
   backdraft: {
     id: 'backdraft',
     name: 'Backdraft',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
@@ -331,7 +331,7 @@ export const PYRE_CARDS: Record<string, CardDef> = {
   emberfall: {
     id: 'emberfall',
     name: 'Emberfall',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
@@ -357,14 +357,14 @@ export const PYRE_CARDS: Record<string, CardDef> = {
    * the setup half the two cards above want: Emberfall lays ground nobody has to cross, and
    * this one decides they are crossing it.
    *
-   * A Pip, because the damage is a rounding error. What it buys is geometry, and units
+   * A Bone, because the damage is a rounding error. What it buys is geometry, and units
    * converging on one tile arrive in sequence and collide with whoever got there first —
    * `pullArea`'s own documented quirk, and half the reason to cast it.
    */
   chimney_draw: {
     id: 'chimney_draw',
     name: 'Chimney Draw',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
@@ -391,12 +391,12 @@ export const PYRE_CARDS: Record<string, CardDef> = {
    * cost what one Ember Hound does and light twice as much.
    *
    * Deliberately fragile — 20 health is one blow from almost anything. A Sprite that traded
-   * evenly with a real body would be the only one-Pip minion worth fielding.
+   * evenly with a real body would be the only one-Bone minion worth fielding.
    */
   soot_sprite: {
     id: 'soot_sprite',
     name: 'Soot Sprite',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'pyre',
     source: 'hero',
     kind: 'minion',
@@ -432,7 +432,7 @@ export const PYRE_CARDS: Record<string, CardDef> = {
   cinder_adder: {
     id: 'cinder_adder',
     name: 'Cinder Adder',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'pyre',
     source: 'hero',
     kind: 'minion',

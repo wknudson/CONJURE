@@ -9,7 +9,7 @@
  * system eats a card game.
  *
  * Each relic is therefore authored as a set of **capabilities**, in the engine's own
- * words, never as an id the reducer has to recognise. `createCombat` receives "the pip
+ * words, never as an id the reducer has to recognise. `createCombat` receives "the bone
  * ceiling is 9" and has never heard of a Galvanic Battery — the same rule that keeps
  * brews and Companion levels out of the engine.
  *
@@ -39,7 +39,7 @@ export interface RelicDef {
   /**
    * What it does, in the engine's vocabulary.
    *
-   * Additive fields stack across equipped relics; `maxPips` takes the highest rather than
+   * Additive fields stack across equipped relics; `maxBones` takes the highest rather than
    * summing, because two batteries should not be twice a battery.
    */
   boons: CombatBoons;
@@ -96,14 +96,14 @@ export const RELICS: Record<string, RelicDef> = {
   /**
    * The reward for having used the bench.
    *
-   * Only touches Pips. A hybrid's Marrow half is a strict requirement rather than a price
+   * Only touches Bones. A hybrid's Marrow half is a strict requirement rather than a price
    * — it asks you to have opened something up this turn, and gear does not do that for
-   * you. Floored at one Pip, because a free card is a loop rather than a discount.
+   * you. Floored at one Bone, because a free card is a loop rather than a discount.
    */
   relic_splicer_goggles: {
     id: 'relic_splicer_goggles',
     name: "Splicer's Goggles",
-    text: 'Ground to read a seam. Every spliced card costs 1 Pip less, never less than 1.',
+    text: 'Ground to read a seam. Every spliced card costs 1 Bone less, never less than 1.',
     slot: 'optics',
     boons: { discountHybrids: true },
   },
@@ -271,11 +271,11 @@ export const RELICS: Record<string, RelicDef> = {
   relic_battery: {
     id: 'relic_battery',
     name: 'Galvanic Battery',
-    text: 'Banks one more than the body should hold. Pip ceiling raised to 9.',
+    text: 'Banks one more than the body should hold. Bone ceiling raised to 9.',
     slot: 'trinket',
     // Stated as the ceiling it produces rather than as "+1", so two batteries are one
     // battery and the number in the data is the number the engine uses.
-    boons: { maxPips: 9 },
+    boons: { maxBones: 9 },
   },
 
   /**
@@ -316,9 +316,9 @@ export const RELICS: Record<string, RelicDef> = {
   relic_wound_cell: {
     id: 'relic_wound_cell',
     name: 'Wound Cell',
-    text: 'Wound tight the night before and left on the bench. Start every contract with 2 extra Pips.',
+    text: 'Wound tight the night before and left on the bench. Start every contract with 2 extra Bones.',
     slot: 'trinket',
-    boons: { pips: 2 },
+    boons: { bones: 2 },
   },
 
   relic_scald_flask: {
@@ -360,7 +360,7 @@ export const RELICS: Record<string, RelicDef> = {
   /**
    * A second cell on the same spindle.
    *
-   * `maxPips` is the one boon the schema asks you to state as an **absolute ceiling** rather
+   * `maxBones` is the one boon the schema asks you to state as an **absolute ceiling** rather
    * than as a delta — two batteries are one battery, and the number in the data is the
    * number the engine uses. So a second value on that axis is the field working exactly as
    * designed rather than an inflated one. It supersedes the Galvanic Battery outright, at
@@ -369,9 +369,9 @@ export const RELICS: Record<string, RelicDef> = {
   relic_twin_cell: {
     id: 'relic_twin_cell',
     name: 'Twin-Wound Battery',
-    text: 'Two cells on one spindle, and the spindle complains. Pip ceiling raised to 10, and you open with 1 extra.',
+    text: 'Two cells on one spindle, and the spindle complains. Bone ceiling raised to 10, and you open with 1 extra.',
     slot: 'trinket',
-    boons: { maxPips: 10, pips: 1 },
+    boons: { maxBones: 10, bones: 1 },
   },
 
   // ----------------------------------------------------------------- treads
@@ -587,7 +587,7 @@ export function boonsOfRelics(equipped: RelicLoadout): CombatBoons {
     const b = relic.boons;
 
     if (b.armor) out.armor = (out.armor ?? 0) + b.armor;
-    if (b.pips) out.pips = (out.pips ?? 0) + b.pips;
+    if (b.bones) out.bones = (out.bones ?? 0) + b.bones;
     if (b.extraOpeningCards) {
       out.extraOpeningCards = (out.extraOpeningCards ?? 0) + b.extraOpeningCards;
     }
@@ -597,7 +597,7 @@ export function boonsOfRelics(equipped: RelicLoadout): CombatBoons {
     }
     if (b.healOnTithe) out.healOnTithe = (out.healOnTithe ?? 0) + b.healOnTithe;
     if (b.bonusToxinStacks) out.bonusToxinStacks = (out.bonusToxinStacks ?? 0) + b.bonusToxinStacks;
-    if (b.maxPips) out.maxPips = Math.max(out.maxPips ?? 0, b.maxPips);
+    if (b.maxBones) out.maxBones = Math.max(out.maxBones ?? 0, b.maxBones);
     if (b.ignoreFog) out.ignoreFog = true;
     if (b.immuneToBurn) out.immuneToBurn = true;
     if (b.immuneToToxin) out.immuneToToxin = true;

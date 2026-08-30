@@ -11,32 +11,32 @@ import {
 } from './scenario.js';
 import { applyCommand } from '../core/engine/engine.js';
 import { IllegalCommandError } from '../core/types/commands.js';
-import { PIP_CAP } from '../core/engine/deck.js';
+import { BONE_CAP } from '../core/engine/deck.js';
 import { canMove, legalMoves } from '../core/engine/movement.js';
 import { GROWTH_CAP, GROWTH_CAP_BEHEMOTH } from '../core/engine/growth.js';
 
 describe('resources', () => {
-  it('caps the pip bank at 8 only during end-of-turn cleanup', () => {
-    const state = scenario({ pips: 12, marrow: 3 });
+  it('caps the bone bank at 8 only during end-of-turn cleanup', () => {
+    const state = scenario({ bones: 12, marrow: 3 });
     // In-turn overflow is legal: the combined pool may exceed 8.
-    expect(state.players.player.pips + state.players.player.marrow).toBe(15);
+    expect(state.players.player.bones + state.players.player.marrow).toBe(15);
 
     const res = run(state, { type: 'endTurn' });
-    expect(res.state.players.player.pips).toBe(PIP_CAP);
+    expect(res.state.players.player.bones).toBe(BONE_CAP);
   });
 
   it('expires all marrow at end of turn', () => {
-    const state = scenario({ pips: 2, marrow: 5 });
+    const state = scenario({ bones: 2, marrow: 5 });
     const res = run(state, { type: 'endTurn' });
     expect(res.state.players.player.marrow).toBe(0);
   });
 
-  it('spends marrow before pips, since marrow evaporate', () => {
-    const state = scenario({ pips: 5, marrow: 2, hand: ['grave_sentinel'] });
+  it('spends marrow before bones, since marrow evaporate', () => {
+    const state = scenario({ bones: 5, marrow: 2, hand: ['grave_sentinel'] });
     const res = run(state, play(handCard(state, 'player', 'grave_sentinel'), atTile(2, 4)));
     // Cost 2 taken entirely from marrow.
     expect(res.state.players.player.marrow).toBe(0);
-    expect(res.state.players.player.pips).toBe(5);
+    expect(res.state.players.player.bones).toBe(5);
   });
 
   it('burns an overdrawn card and grants a marrow instead of overfilling the hand', () => {

@@ -24,7 +24,7 @@ function defineCard(def: CardDef): string {
 const RANGED_BOLT = defineCard({
   id: 'test_ranged_bolt',
   name: 'Test Bolt',
-  cost: { pips: 1, marrow: 0 },
+  cost: { bones: 1, marrow: 0 },
   school: 'frost',
   source: 'companion',
   kind: 'spell',
@@ -39,7 +39,7 @@ const RANGED_BOLT = defineCard({
 const HERO_BOLT = defineCard({
   id: 'test_hero_bolt',
   name: 'Test Hero Bolt',
-  cost: { pips: 1, marrow: 0 },
+  cost: { bones: 1, marrow: 0 },
   school: 'arcane',
   source: 'hero',
   kind: 'spell',
@@ -220,7 +220,7 @@ describe('cast shape', () => {
     CARDS[id] = {
       id,
       name: 'Probe',
-      cost: { pips: 0, marrow: 0 },
+      cost: { bones: 0, marrow: 0 },
       school: 'arcane',
       source: 'companion',
       kind: 'spell',

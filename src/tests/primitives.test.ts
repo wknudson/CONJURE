@@ -23,7 +23,7 @@ function probe(effect: EffectNode, extra: Partial<CardDef> = {}): string {
   CARDS[id] = {
     id,
     name: 'Probe',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'arcane',
     source: 'hero',
     kind: 'spell',
@@ -36,7 +36,7 @@ function probe(effect: EffectNode, extra: Partial<CardDef> = {}): string {
   return id;
 }
 
-const board = () => scenario({ width: 7, height: 7, pips: 8 });
+const board = () => scenario({ width: 7, height: 7, bones: 8 });
 
 describe('cone', () => {
   const coneCard = () =>
@@ -186,7 +186,7 @@ describe('pullArea', () => {
 describe('drawCards', () => {
   it('draws through the ordinary path', () => {
     // The scenario builder starts with an empty deck; a draw test needs something in it.
-    const state = scenario({ width: 6, height: 6, pips: 8, deck: ['scout_imp', 'scout_imp'] });
+    const state = scenario({ width: 6, height: 6, bones: 8, deck: ['scout_imp', 'scout_imp'] });
     const id = giveCard(state, 'player', probe({ op: 'drawCards', amount: 2 }));
     const before = state.players.player.hand.length;
     const deckBefore = state.players.player.deck.length;
@@ -215,7 +215,7 @@ describe('extractMarrow scaled off a tithe', () => {
     );
 
   it('pays out the body it just spent', () => {
-    const state = scenario({ width: 6, height: 6, pips: 8, marrow: 0 });
+    const state = scenario({ width: 6, height: 6, bones: 8, marrow: 0 });
     const victim = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 30 });
     const id = giveCard(state, 'player', harvest(4));
 
@@ -224,7 +224,7 @@ describe('extractMarrow scaled off a tithe', () => {
   });
 
   it('caps what a fat target is worth', () => {
-    const state = scenario({ width: 6, height: 6, pips: 8, marrow: 0 });
+    const state = scenario({ width: 6, height: 6, bones: 8, marrow: 0 });
     const victim = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 4 }, hp: 90 });
     const id = giveCard(state, 'player', harvest(4));
 

@@ -129,7 +129,7 @@ describe('the roll reaching the Pact', () => {
   it('falls back to the standard body for a companion with no roll', () => {
     // A save from before the roster, or a bare progress object in a test.
     const g = character();
-    syncPactCeiling(g.overworld, { level: 1, bonusMaxHp: 0, startingArmor: 0, bonusPips: 0 });
+    syncPactCeiling(g.overworld, { level: 1, bonusMaxHp: 0, startingArmor: 0, bonusBones: 0 });
     expect(g.overworld.pact.maxHp).toBe(BASE_PACT_HP);
   });
 });
@@ -179,7 +179,7 @@ describe('the knack reaching the board', () => {
     g.overworld.equippedRelics = { ...emptyLoadout(), trinket: 'relic_battery' };
     const beast: CompanionInstance = { ...tameCompanion(makeRng(1), 'boreas', 1), traitId: 'deep_reserve' };
 
-    expect(carryFor(g.overworld, beast).boons?.maxPips, 'not 18').toBe(9);
+    expect(carryFor(g.overworld, beast).boons?.maxBones, 'not 18').toBe(9);
   });
 
   it('has no knack that touches a damage number', () => {

@@ -10,10 +10,10 @@
  * ten out of four hundred is one that gets meaningfully, gradually better. Small integers
  * cannot express a small improvement, so the integers stopped being small.
  *
- * **What does not stretch is everything that is counted rather than measured.** Pips,
+ * **What does not stretch is everything that is counted rather than measured.** Bones,
  * Marrow, cards in hand, card costs, movement, range, footprint, Anchor Tiles, status
  * stacks and Aura stacks are all *quantities of things*, and a hand of seventy cards or a
- * spell costing thirty Pips is not a finer-grained version of the same game — it is a
+ * spell costing thirty Bones is not a finer-grained version of the same game — it is a
  * different one. The rule of thumb: if it is spent, drawn, stepped or stacked, it stays
  * where it is. If it is a wound, it stretched.
  *

@@ -37,8 +37,8 @@ export interface CompanionProgress {
   bonusMaxHp: number;
   /** Armor on the Commander at the opening bell. Nothing grants this yet. */
   startingArmor: number;
-  /** Added to the starting Pip bank. Nothing grants this yet. */
-  bonusPips: number;
+  /** Added to the starting Bone bank. Nothing grants this yet. */
+  bonusBones: number;
 }
 
 /**
@@ -113,7 +113,7 @@ export interface CompanionInstance extends CompanionProgress {
 }
 
 export function newCompanion(): CompanionProgress {
-  return { level: 1, bonusMaxHp: 0, startingArmor: 0, bonusPips: 0 };
+  return { level: 1, bonusMaxHp: 0, startingArmor: 0, bonusBones: 0 };
 }
 
 // ---------------------------------------------------------------- the variance engine
@@ -143,24 +143,24 @@ export const AFFINITY_HP_FLOOR_STEP = 10;
  * Deliberately not a third stat roll bolted onto the first two. A beast rolls **one** of
  * these or none at all, so the answer to "what did it come out with" is a sentence rather
  * than a spreadsheet — and so the good rolls stay legible: an Ignis that opens every fight
- * with plate is a thing a player can want, where "+7 HP, +1 armour, +0 Pips" is noise.
+ * with plate is a thing a player can want, where "+7 HP, +1 armour, +0 Bones" is noise.
  *
- * Armour and Pips only. Max HP is already the constitution roll, and a second source
+ * Armour and Bones only. Max HP is already the constitution roll, and a second source
  * moving the same number would make two rolls fight over one gauge.
  */
 export interface WildModifier {
   startingArmor: number;
-  bonusPips: number;
+  bonusBones: number;
 }
 
 /** What each wild roll is worth, and how often it comes up. Weighted, not uniform. */
 const WILD_TABLE: { weight: number; mod: WildModifier }[] = [
   // Plate. The common one, and the one that reads immediately at the opening bell.
-  { weight: 5, mod: { startingArmor: 20, bonusPips: 0 } },
-  { weight: 3, mod: { startingArmor: 40, bonusPips: 0 } },
-  // A Pip is worth far more than twenty armour and is priced accordingly: turn one with
-  // an extra Pip is a turn that can open on a card nobody expects that early.
-  { weight: 2, mod: { startingArmor: 0, bonusPips: 1 } },
+  { weight: 5, mod: { startingArmor: 20, bonusBones: 0 } },
+  { weight: 3, mod: { startingArmor: 40, bonusBones: 0 } },
+  // A Bone is worth far more than twenty armour and is priced accordingly: turn one with
+  // an extra Bone is a turn that can open on a card nobody expects that early.
+  { weight: 2, mod: { startingArmor: 0, bonusBones: 1 } },
 ];
 
 const WILD_WEIGHT = WILD_TABLE.reduce((n, e) => n + e.weight, 0);
@@ -187,9 +187,9 @@ export function rollWildModifier(rng: RngState, affinity = 0): WildModifier {
   let pick = nextInt(rng, WILD_WEIGHT);
   for (const entry of WILD_TABLE) {
     pick -= entry.weight;
-    if (pick < 0) return got ? { ...entry.mod } : { startingArmor: 0, bonusPips: 0 };
+    if (pick < 0) return got ? { ...entry.mod } : { startingArmor: 0, bonusBones: 0 };
   }
-  return { startingArmor: 0, bonusPips: 0 };
+  return { startingArmor: 0, bonusBones: 0 };
 }
 
 /** The band a wild Companion's constitution falls in. Tight on purpose. */
@@ -221,13 +221,13 @@ export const MODIFIER_CHANCE = 0.25;
 /**
  * The table a Grimoire spell rolls on.
  *
- * Weighted by how much each is worth rather than uniformly: a Pip off is the roll players
+ * Weighted by how much each is worth rather than uniformly: a Bone off is the roll players
  * will chase, so it is the rarest, and Retain is the quiet one that makes a situational
  * card worth drafting. Every entry is a *delta*, so the table needs to know nothing about
  * the cards it is rolled against.
  */
 const MODIFIER_TABLE: { weight: number; mod: CardModifier }[] = [
-  { weight: 2, mod: { pipCostDelta: -1 } },
+  { weight: 2, mod: { boneCostDelta: -1 } },
   { weight: 4, mod: { bonusDamage: 10 } },
   { weight: 3, mod: { grantRetain: true } },
 ];

@@ -142,7 +142,7 @@ export const COMPANIONS: CompanionDef[] = [
     title: 'Storm Lynx',
     school: 'surge',
     blurb:
-      'Setup. Charge a cluster and let somebody else light it — fire Overloads, frost Superconducts. Storm Tithe pays a Pip back for the first card each turn.',
+      'Setup. Charge a cluster and let somebody else light it — fire Overloads, frost Superconducts. Storm Tithe pays a Bone back for the first card each turn.',
     // Three Static Arcs, because charging is the whole plan and one copy would make the
     // plan a coincidence. Arc Lash and the Hound are Hero cards and would be legal in any
     // deck; they are here because this is the deck that wants them.

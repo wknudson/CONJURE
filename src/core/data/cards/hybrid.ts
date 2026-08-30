@@ -41,7 +41,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   cryo_combustion: {
     id: 'cryo_combustion',
     name: 'Cryo-Combustion',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -74,7 +74,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   galvanic_spores: {
     id: 'galvanic_spores',
     name: 'Galvanic Spores',
-    cost: { pips: 2, marrow: 1 },
+    cost: { bones: 2, marrow: 1 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -112,7 +112,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   aetheric_defibrillator: {
     id: 'aetheric_defibrillator',
     name: 'Aetheric Defibrillator',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
@@ -149,7 +149,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   vaporize_blast: {
     id: 'vaporize_blast',
     name: 'Vaporize Blast',
-    cost: { pips: 2, marrow: 1 },
+    cost: { bones: 2, marrow: 1 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -186,7 +186,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   overload_strike: {
     id: 'overload_strike',
     name: 'Overload Strike',
-    cost: { pips: 2, marrow: 1 },
+    cost: { bones: 2, marrow: 1 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -218,7 +218,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   thermal_eruption: {
     id: 'thermal_eruption',
     name: 'Thermal Eruption',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
@@ -247,7 +247,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    *
    * The first `clearStatus` in the game, and the reason the op exists: the two stacks of
    * Burn are genuinely spent, so a Wasp cannot light a body once and cash the same fire
-   * twice. Without a target already alight it is a bad three-Pip bolt, which is the
+   * twice. Without a target already alight it is a bad three-Bone bolt, which is the
    * correct price for casting a payoff card into an empty board.
    *
    * Plasma Burst does not exist as a reaction and Arc is weather-gated. What is here is
@@ -256,7 +256,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   plasma_arc: {
     id: 'plasma_arc',
     name: 'Plasma Arc',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'spell',
@@ -296,7 +296,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   magma_shove: {
     id: 'magma_shove',
     name: 'Magma Shove',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -324,13 +324,13 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    * first, so it is self-contained -- and it scales, because the stacks a Bloom deck had
    * already laid are consumed along with them.
    *
-   * That is the whole design of paying three Pips for it: cast into a clean board it is
+   * That is the whole design of paying three Bones for it: cast into a clean board it is
    * mediocre, and cast into a Noxious Cloud it is the biggest number in the school.
    */
   scorched_earth: {
     id: 'scorched_earth',
     name: 'Scorched Earth',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -350,7 +350,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   },
 
   /**
-   * **Frost + Bulwark.** One Pip, and the whole card is the reaction.
+   * **Frost + Bulwark.** One Bone, and the whole card is the reaction.
    *
    * The effect list is a single physical blow, which is all Shatter has ever needed: a
    * physical hit on a Frozen body strips every point of its armour and throws 40 shrapnel
@@ -358,13 +358,13 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    * which is the most honest hybrid in the book -- it does nothing clever at all unless
    * the Frost half of your deck has already done its work.
    *
-   * Melee, deliberately. A one-Pip armour strip you could throw across the board would be
+   * Melee, deliberately. A one-Bone armour strip you could throw across the board would be
    * the answer to every plated body in the game; walking into contact is the cost.
    */
   icebreaker: {
     id: 'icebreaker',
     name: 'Icebreaker',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -379,27 +379,27 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   /**
    * **Surge + Dusk.** Free, and unplayable until it is not.
    *
-   * Zero Pips is only zero because the card cannot be cast at all without a Charged body
+   * Zero Bones is only zero because the card cannot be cast at all without a Charged body
    * of your own standing on the board -- `requiresStatus` means there is literally nothing
-   * else to click. Arcing Step charges one for a Pip; so does any Surge hit that lands on
+   * else to click. Arcing Step charges one for a Bone; so does any Surge hit that lands on
    * your own line.
    *
-   * Volatile Spark does not exist as a reaction. What it pays out does: three Pips,
+   * Volatile Spark does not exist as a reaction. What it pays out does: three Bones,
    * clamped at the ceiling on the way in so the card never advertises more than the bank
    * can hold.
    */
   aetheric_overload: {
     id: 'aetheric_overload',
     name: 'Aetheric Overload',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
-    text: 'Spends a Charged allied unit whole. You are paid 3 Pips.',
+    text: 'Spends a Charged allied unit whole. You are paid 3 Bones.',
     target: { kind: 'entity', side: 'ally', includeObstacles: false, requiresStatus: 'charged' },
     effect: {
       op: 'seq',
-      effects: [{ op: 'consumeTarget' }, { op: 'gainPips', amount: 3 }],
+      effects: [{ op: 'consumeTarget' }, { op: 'gainBones', amount: 3 }],
     },
     keywords: [],
     range: 4,
@@ -435,7 +435,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   soulfire: {
     id: 'soulfire',
     name: 'Soulfire',
-    cost: { pips: 2, marrow: 1 },
+    cost: { bones: 2, marrow: 1 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
@@ -470,7 +470,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   superconductor: {
     id: 'superconductor',
     name: 'Superconductor',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -492,7 +492,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   /**
    * **Frost + Dusk.** Through the ice, and through the plate.
    *
-   * Two Pips for forty through any armour is above rate, and the gate is why: it cannot be
+   * Two Bones for forty through any armour is above rate, and the gate is why: it cannot be
    * cast at all except at something already Frozen, which is two Frost cards or a Rime Lock
    * of setup. `true` damage because a frozen body has had every chance to be plated and the
    * whole point of a Dusk fusion is that plate is not an answer.
@@ -503,7 +503,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   black_ice: {
     id: 'black_ice',
     name: 'Black Ice',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -536,7 +536,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   permafrost: {
     id: 'permafrost',
     name: 'Permafrost',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -577,7 +577,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   kinetic_arc: {
     id: 'kinetic_arc',
     name: 'Kinetic Arc',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -613,12 +613,12 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    * becomes thirty armour on the thing you actually have to protect, and the Marrow is paid
    * on top.
    *
-   * One Pip, because the tithe is the cost. A body has to be standing there un-exhausted.
+   * One Bone, because the tithe is the cost. A body has to be standing there un-exhausted.
    */
   bone_bastion: {
     id: 'bone_bastion',
     name: 'Bone Bastion',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'spell',
@@ -640,7 +640,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    * **Bulwark + Bloom.** A wall that is also a snare.
    *
    * Bulwark raises constructs and Bloom roots things; this does both at the same tile, which
-   * is the only way either half is worth two Pips. The thicket goes up and everything
+   * is the only way either half is worth two Bones. The thicket goes up and everything
    * orthogonally beside it is caught in the same motion — so the enemy is held in place
    * *next to* the thing that poisons its row every turn.
    *
@@ -651,7 +651,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   iron_briar: {
     id: 'iron_briar',
     name: 'Iron Briar',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -687,7 +687,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   blight_siphon: {
     id: 'blight_siphon',
     name: 'Blight Siphon',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
@@ -734,12 +734,12 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    *
    * The heal is conditional on Burn *being there*, not on the damage landing, which is the
    * whole seam: the fire has to have been set earlier. A Funeral Pyre cast into a cold board
-   * is a mediocre three-Pip line, and that is the price of holding it.
+   * is a mediocre three-Bone line, and that is the price of holding it.
    */
   funeral_pyre: {
     id: 'funeral_pyre',
     name: 'Funeral Pyre',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',
@@ -776,7 +776,7 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
   killing_frost: {
     id: 'killing_frost',
     name: 'Killing Frost',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'spell',
@@ -812,13 +812,13 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    * Entangle and Charged on the same target is a genuinely nasty pair — one of them stops the
    * answer to the other.
    *
-   * Two Pips and almost no damage, because it is entirely a setup card. The Voltbriar Serpent
+   * Two Bones and almost no damage, because it is entirely a setup card. The Voltbriar Serpent
    * is the beast that wants it, and the Serpent's whole plan is that nothing gets to leave.
    */
   livewire_snare: {
     id: 'livewire_snare',
     name: 'Livewire Snare',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'spell',
@@ -845,14 +845,14 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    * target, and Toxin on everything around it, so the poison that killed one thing starts
    * killing its neighbours. The Murk Heron's book is half made of this idea.
    *
-   * `adjacentCross` rather than `adjacent8` and 2 Pips rather than 3, because the pairing
+   * `adjacentCross` rather than `adjacent8` and 2 Bones rather than 3, because the pairing
    * already has a heavy finisher and what it lacked was a cheap card that makes the *next*
    * one better. Cast it into a line and the whole line is rotting for the Blight Harvest.
    */
   rot_bloom: {
     id: 'rot_bloom',
     name: 'Rot Bloom',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
@@ -880,13 +880,13 @@ export const HYBRID_CARDS: Record<string, CardDef> = {
    * enemy turn.
    *
    * The Dolmen Crab's card, and the reason a Hedgefort is worth catching: Bulwark's walls
-   * hold ground and this one *taxes* it. Three Pips for a construct with upkeep attached is
+   * hold ground and this one *taxes* it. Three Bones for a construct with upkeep attached is
    * the going rate — the Pyre Pillar set it.
    */
   bramble_dolmen: {
     id: 'bramble_dolmen',
     name: 'Bramble Dolmen',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'obstacle',

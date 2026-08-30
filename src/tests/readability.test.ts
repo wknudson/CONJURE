@@ -125,7 +125,7 @@ describe('the impact preview', () => {
     // Bodies that *survive* the blow, deliberately. A status lands on what is left
     // standing, so previewing one on a corpse would be previewing something that never
     // happens — and a Scout Imp has exactly as much health as Static Arc deals.
-    const state = scenario({ width: 7, height: 7, pips: 8 });
+    const state = scenario({ width: 7, height: 7, bones: 8 });
     addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 } });
     addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 3 } });
     const card = giveCard(state, 'player', 'static_arc');
@@ -149,7 +149,7 @@ describe('the impact preview', () => {
     // Pyre one ignites whatever is standing in the Companion's lane — a body catching fire
     // several tiles from where the player aimed. It is a real consequence of the click and
     // there was no way to see it coming.
-    const state = scenario({ width: 7, height: 7, pips: 8 });
+    const state = scenario({ width: 7, height: 7, bones: 8 });
     addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 } });
     addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 3 } });
     const card = giveCard(state, 'player', 'static_arc');
@@ -168,7 +168,7 @@ describe('the impact preview', () => {
   });
 
   it('names which status, so the flash can be the right colour', () => {
-    const state = scenario({ width: 7, height: 7, pips: 8 });
+    const state = scenario({ width: 7, height: 7, bones: 8 });
     addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 } });
     const card = giveCard(state, 'player', 'glacial_spike');
 
@@ -185,7 +185,7 @@ describe('the impact preview', () => {
   it('carries the footprint of what a placement puts down', () => {
     // A 2x2 body covers three tiles the player never clicked. The spec has to say so, or
     // the highlight is quietly lying about where the thing goes.
-    const state = scenario({ width: 8, height: 8, pips: 8 });
+    const state = scenario({ width: 8, height: 8, bones: 8 });
     const card = giveCard(state, 'player', 'magma_brute');
     const spec = sessionOn(state).getLegalTargets(card);
 
@@ -195,7 +195,7 @@ describe('the impact preview', () => {
 
   it('carries the whole line a linear cast covers', () => {
     // `covers` is the engine's own geometry, handed over rather than recomputed in the UI.
-    const state = scenario({ width: 8, height: 8, pips: 8 });
+    const state = scenario({ width: 8, height: 8, bones: 8 });
     addUnit(state, { def: 'ignis_bound', side: 'player', at: { x: 3, y: 6 } });
     state.players.player.companionUnitId = Object.keys(state.units)[0]!;
     state.players.player.companionUnitDefId = 'ignis_bound';

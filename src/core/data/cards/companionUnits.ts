@@ -26,7 +26,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   ignis_bound: {
     id: 'ignis_bound',
     name: 'Ignis',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'minion',
@@ -65,7 +65,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   chimera_bound: {
     id: 'chimera_bound',
     name: 'Chimera of the Caldera',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'minion',
@@ -89,7 +89,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   wasp_bound: {
     id: 'wasp_bound',
     name: 'Cinder-Wasp Swarm',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'minion',
@@ -113,7 +113,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   tortoise_bound: {
     id: 'tortoise_bound',
     name: 'Obsidian Tortoise',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'minion',
@@ -137,7 +137,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   treant_bound: {
     id: 'treant_bound',
     name: 'Crimson Treant',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'minion',
@@ -161,7 +161,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   mantis_bound: {
     id: 'mantis_bound',
     name: 'Storm-Mantis',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'minion',
@@ -185,7 +185,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   juggernaut_bound: {
     id: 'juggernaut_bound',
     name: 'Glacial Juggernaut',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'minion',
@@ -209,7 +209,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   gargoyle_bound: {
     id: 'gargoyle_bound',
     name: 'Grave-Gargoyle',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'minion',
@@ -233,7 +233,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   dynamo_bound: {
     id: 'dynamo_bound',
     name: 'Kinetic Dynamo',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'minion',
@@ -257,7 +257,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   geist_bound: {
     id: 'geist_bound',
     name: 'Volatile Geist',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'minion',
@@ -281,7 +281,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   sovereign_bound: {
     id: 'sovereign_bound',
     name: 'Bone Bastion Sovereign',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'minion',
@@ -312,7 +312,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   umbra_bound: {
     id: 'umbra_bound',
     name: 'Umbra',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'minion',
@@ -343,7 +343,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   ignis_drake_bound: {
     id: 'ignis_drake_bound',
     name: 'Ignis, Ember Drake',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'minion',
@@ -372,7 +372,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   ignis_behemoth_bound: {
     id: 'ignis_behemoth_bound',
     name: 'Ignis Enraged',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'minion',
@@ -402,7 +402,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   colossus_bound: {
     id: 'colossus_bound',
     name: 'The Clockwork Colossus',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'minion',
@@ -428,7 +428,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   voltara_bound: {
     id: 'voltara_bound',
     name: 'Voltara',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'minion',
@@ -455,7 +455,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   mortis_bound: {
     id: 'mortis_bound',
     name: 'Mortis',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'minion',
@@ -481,7 +481,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   sylva_bound: {
     id: 'sylva_bound',
     name: 'Sylva',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'minion',
@@ -515,7 +515,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   ferrum_bound: {
     id: 'ferrum_bound',
     name: 'Ferrum',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'minion',
@@ -553,7 +553,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   lexis_bound: {
     id: 'lexis_bound',
     name: 'Ink Owl',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'arcane',
     source: 'companion',
     kind: 'minion',
@@ -577,7 +577,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   boreas_bound: {
     id: 'boreas_bound',
     name: 'Boreas',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'minion',
@@ -616,7 +616,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   salamander_bound: {
     id: 'salamander_bound',
     name: 'Flue Salamander',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'minion',
@@ -643,7 +643,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   seal_bound: {
     id: 'seal_bound',
     name: 'Saltglass Seal',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'minion',
@@ -668,7 +668,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   kite_bound: {
     id: 'kite_bound',
     name: 'Conduit Kite',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'minion',
@@ -693,7 +693,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   jackal_bound: {
     id: 'jackal_bound',
     name: 'Barrow Jackal',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'minion',
@@ -718,7 +718,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   aurochs_bound: {
     id: 'aurochs_bound',
     name: 'Moss Aurochs',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'bloom',
     source: 'companion',
     kind: 'minion',
@@ -745,7 +745,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   ram_bound: {
     id: 'ram_bound',
     name: 'Quarry Ram',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'minion',
@@ -772,7 +772,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   shade_bound: {
     id: 'shade_bound',
     name: 'Cinder Shade',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'minion',
@@ -797,7 +797,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   elk_bound: {
     id: 'elk_bound',
     name: 'Winterthorn Elk',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'frost',
     source: 'companion',
     kind: 'minion',
@@ -822,7 +822,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   serpent_bound: {
     id: 'serpent_bound',
     name: 'Voltbriar Serpent',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'surge',
     source: 'companion',
     kind: 'minion',
@@ -847,7 +847,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   heron_bound: {
     id: 'heron_bound',
     name: 'Murk Heron',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'minion',
@@ -872,7 +872,7 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
   crab_bound: {
     id: 'crab_bound',
     name: 'Dolmen Crab',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'bulwark',
     source: 'companion',
     kind: 'minion',

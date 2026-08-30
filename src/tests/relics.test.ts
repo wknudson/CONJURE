@@ -24,7 +24,7 @@ import {
 import { carryFor, resolveCombat } from '../core/overworld/run.js';
 import { createCombat } from '../core/engine/setup.js';
 import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
-import { PIP_CAP } from '../core/engine/deck.js';
+import { BONE_CAP } from '../core/engine/deck.js';
 
 /**
  * Relics.
@@ -84,8 +84,8 @@ describe('folding gear into capabilities', () => {
   it('takes the highest ceiling rather than summing it', () => {
     // Two batteries are one battery. Summing would make the ceiling a stacking stat,
     // which is the bloat the whole philosophy is against.
-    expect(boonsOfRelics(worn('relic_battery')).maxPips).toBe(
-      RELICS.relic_battery!.boons.maxPips,
+    expect(boonsOfRelics(worn('relic_battery')).maxBones).toBe(
+      RELICS.relic_battery!.boons.maxBones,
     );
   });
 
@@ -192,24 +192,24 @@ describe('what reaches the board', () => {
     expect(fightWith().players.player.armor, 'baseline').toBe(0);
   });
 
-  it('raises the Pip ceiling with the battery', () => {
-    expect(fightWith('relic_battery').players.player.pipCap).toBe(9);
-    expect(fightWith().players.player.pipCap).toBe(PIP_CAP);
+  it('raises the Bone ceiling with the battery', () => {
+    expect(fightWith('relic_battery').players.player.boneCap).toBe(9);
+    expect(fightWith().players.player.boneCap).toBe(BONE_CAP);
   });
 
   it('never lowers the ceiling, whatever the data says', () => {
     // Gear bends a rule in the player's favour or not at all, so a malformed carry cannot
     // hand them a worse fight than the rules give them.
     const { state } = createCombat(NOVICE_DUELIST, 7, undefined, undefined, {
-      boons: { maxPips: 2 },
+      boons: { maxBones: 2 },
     });
-    expect(state.players.player.pipCap).toBe(PIP_CAP);
+    expect(state.players.player.boneCap).toBe(BONE_CAP);
   });
 
   it('gives the enemy nothing', () => {
     const geared = fightWith('relic_coat', 'relic_battery');
     expect(geared.players.enemy.armor).toBe(0);
-    expect(geared.players.enemy.pipCap).toBe(PIP_CAP);
+    expect(geared.players.enemy.boneCap).toBe(BONE_CAP);
   });
 
   it('hands the engine numbers, never a relic id', () => {
@@ -220,7 +220,7 @@ describe('what reaches the board', () => {
 
     const carry = carryFor(g.overworld);
     expect(carry.boons?.armor).toBe(30);
-    expect(carry.boons?.maxPips).toBe(9);
+    expect(carry.boons?.maxBones).toBe(9);
     expect(JSON.stringify(carry)).not.toContain('relic_');
   });
 

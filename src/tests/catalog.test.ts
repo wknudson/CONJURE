@@ -75,8 +75,8 @@ const NEW_HYBRIDS = [
   'galvanic_spores',
 ];
 
-const board = (hand: string[] = [], pips = 8) =>
-  scenario({ width: 6, height: 8, hand, pips });
+const board = (hand: string[] = [], bones = 8) =>
+  scenario({ width: 6, height: 8, hand, bones });
 
 describe('the new shelf', () => {
   it('registers all eighteen, each under a real school', () => {
@@ -330,8 +330,8 @@ describe('Surge', () => {
     expect(res.state.units[ally.id]!.statuses.charged, 'and a charge to set off').toBe(1);
   });
 
-  it('the Storm Wisp is paid a Pip for swinging, so its swing is free', () => {
-    // Opened with one Pip rather than none, because a swing costs one now. The refund then
+  it('the Storm Wisp is paid a Bone for swinging, so its swing is free', () => {
+    // Opened with one Bone rather than none, because a swing costs one now. The refund then
     // hands it straight back: the Wisp exactly funds its own attack, which is the whole reason
     // `refunds.onAttack` had to start respecting the reaction cap. Uncapped, a second Wisp made
     // attacking profitable rather than free.
@@ -348,13 +348,13 @@ describe('Surge', () => {
 
     // Paid whether or not it drew blood: a Wisp held off by plate has still discharged. One in,
     // one out, one back — net unchanged.
-    expect(res.state.players.player.pips).toBe(1);
-    expect(eventsOf(res.events, 'pipRefunded').length).toBe(1);
+    expect(res.state.players.player.bones).toBe(1);
+    expect(eventsOf(res.events, 'boneRefunded').length).toBe(1);
   });
 
   it('the Thunderhead earths outward only on a full bank', () => {
-    const cast = (pips: number) => {
-      const state = board(['thunderhead'], pips);
+    const cast = (bones: number) => {
+      const state = board(['thunderhead'], bones);
       const mid = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 3 } });
       const beside = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 4, y: 3 } });
       const card = handCard(state, 'player', 'thunderhead');
@@ -362,7 +362,7 @@ describe('Surge', () => {
       return { mid: damageTo(res.events, mid.id), beside: damageTo(res.events, beside.id) };
     };
 
-    // Two Pips in hand pays the cost and leaves nothing, so the condition fails.
+    // Two Bones in hand pays the cost and leaves nothing, so the condition fails.
     expect(cast(2), 'bank empty after paying').toEqual({ mid: 30, beside: 0 });
     // Five leaves three, which is the threshold.
     expect(cast(5).beside, 'three still banked').toBe(20);
@@ -455,7 +455,7 @@ describe('Dusk', () => {
     expect(res.state.players.player.hp).toBe(230);
   });
 
-  it('the Hollowed Husk pays two Pips for dying', () => {
+  it('the Hollowed Husk pays two Bones for dying', () => {
     const state = board([], 0);
     const husk = addUnit(state, { def: 'hollowed_husk', side: 'player', at: { x: 3, y: 3 }, hp: 10 });
     const killer = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 2 } });
@@ -468,7 +468,7 @@ describe('Dusk', () => {
     });
 
     expect(res.state.units[husk.id]).toBeUndefined();
-    expect(res.state.players.player.pips, 'paid to its own side, on the enemy clock').toBe(2);
+    expect(res.state.players.player.bones, 'paid to its own side, on the enemy clock').toBe(2);
   });
 
   it('Grave Call trades a body for a Wraith that strikes through plate', () => {
@@ -675,10 +675,10 @@ describe('the pressings, cast', () => {
 
     const res = run(state, play(card, { kind: 'entity', ref: { kind: 'unit', id: charged.id } }));
     expect(res.state.units[charged.id], 'spent whole').toBeUndefined();
-    expect(res.state.players.player.pips).toBe(3);
+    expect(res.state.players.player.bones).toBe(3);
   });
 
-  it('never pays more Pips than the bank can hold', () => {
+  it('never pays more Bones than the bank can hold', () => {
     const state = board(['aetheric_overload'], 8);
     const charged = addUnit(state, { def: 'vanguard_footman', side: 'player', at: { x: 3, y: 4 } });
     charged.statuses.charged = 1;
@@ -687,7 +687,7 @@ describe('the pressings, cast', () => {
 
     // Clamped on the way in, so the card never advertises three and hands over one the
     // end of turn then takes back.
-    expect(res.state.players.player.pips).toBe(res.state.players.player.pipCap);
+    expect(res.state.players.player.bones).toBe(res.state.players.player.boneCap);
   });
 });
 

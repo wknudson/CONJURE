@@ -19,7 +19,7 @@ describe('Chill and Freeze', () => {
     const state = scenario({
       units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 } }],
       hand: ['glacial_spike', 'glacial_spike', 'glacial_spike'],
-      pips: 12,
+      bones: 12,
     });
     const foe = findUnit(state, 'scout_imp', 'enemy');
 
@@ -111,7 +111,7 @@ describe('Vaporize', () => {
       height: 6,
       units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['flame_surge'],
-      pips: 8,
+      bones: 8,
     });
     const foe = findUnit(state, 'grave_sentinel', 'enemy');
     state.units[foe.id]!.statuses.chill = 2;
@@ -140,7 +140,7 @@ describe('Vaporize', () => {
     const state = scenario({
       units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['flame_surge'],
-      pips: 8,
+      bones: 8,
     });
     state.units[findUnit(state, 'grave_sentinel', 'enemy').id]!.statuses.chill = 2;
 
@@ -176,7 +176,7 @@ describe('Vaporize biting through plate', () => {
       height: 6,
       units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['flame_surge'],
-      pips: 8,
+      bones: 8,
     });
     const foe = findUnit(state, 'grave_sentinel', 'enemy');
     state.units[foe.id]!.statuses.chill = 2;
@@ -235,7 +235,7 @@ describe('Shatter', () => {
     const state = scenario({
       units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['flame_surge'],
-      pips: 8,
+      bones: 8,
     });
     state.units[findUnit(state, 'grave_sentinel', 'enemy').id]!.statuses.freeze = 1;
 
@@ -257,7 +257,7 @@ describe('Shatter', () => {
       height: 6,
       units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 0 }, hp: 200, armor: 50, keywords: [] }],
       hand: ['shield_bash'],
-      pips: 8,
+      bones: 8,
     });
     const foe = findUnit(state, 'grave_sentinel', 'enemy');
     state.units[foe.id]!.statuses.freeze = 1;
@@ -278,7 +278,7 @@ describe('Surge reactions', () => {
       height: 7,
       units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 3, y: 3 }, hp: 300, keywords: [] }],
       hand: ['flame_surge'],
-      pips: 8,
+      bones: 8,
       ...extra,
     });
     const foe = findUnit(state, 'grave_sentinel', 'enemy');
@@ -292,7 +292,7 @@ describe('Surge reactions', () => {
       height: 6,
       units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['arc_lash'],
-      pips: 8,
+      bones: 8,
     });
     const foe = findUnit(state, 'grave_sentinel', 'enemy');
     const res = run(state, play(handCard(state, 'player', 'arc_lash'), atUnit(foe.id)));
@@ -368,7 +368,7 @@ describe('armor gating', () => {
     const state = scenario({
       units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, armor: 300, keywords: [] }],
       hand: ['flame_surge'],
-      pips: 8,
+      bones: 8,
     });
     const foe = findUnit(state, 'grave_sentinel', 'enemy');
     state.units[foe.id]!.statuses.chill = 2;
@@ -412,7 +412,7 @@ describe('Frost cards', () => {
       height: 6,
       units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 4 } }],
       hand: ['ice_barricade'],
-      pips: 8,
+      bones: 8,
     });
 
     const res = run(state, play(handCard(state, 'player', 'ice_barricade'), atTile(2, 2)));
@@ -424,15 +424,15 @@ describe('Frost cards', () => {
   });
 });
 
-describe('reaction pip refunds', () => {
+describe('reaction bone refunds', () => {
   /** A board where one Flame Surge into a Chilled target vaporizes. */
-  function vaporizeSetup(pips = 8) {
+  function vaporizeSetup(bones = 8) {
     const state = scenario({
       width: 6,
       height: 6,
       units: [{ def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 2 }, hp: 200, keywords: [] }],
       hand: ['flame_surge', 'flame_surge', 'flame_surge'],
-      pips,
+      bones,
     });
     const foe = findUnit(state, 'grave_sentinel', 'enemy');
     state.units[foe.id]!.statuses.chill = 2;
@@ -445,18 +445,18 @@ describe('reaction pip refunds', () => {
     dir: { x: 0 as number, y: -1 as number },
   });
 
-  it('pays a pip back for landing one', () => {
+  it('pays a bone back for landing one', () => {
     // Reactions take real setup — a status applied on an earlier turn, then the right
     // element into it. Refunding part of the cost is what makes that worth planning.
     const { state } = vaporizeSetup();
-    const before = state.players.player.pips;
+    const before = state.players.player.bones;
     const cost = 2; // Flame Surge
 
     const res = run(state, play(handCard(state, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
 
     expect(eventsOf(res.events, 'reactionTriggered').length).toBeGreaterThan(0);
-    expect(res.state.players.player.pips).toBe(before - cost + 1);
-    expect(res.state.players.player.reactionPipsThisTurn).toBe(1);
+    expect(res.state.players.player.bones).toBe(before - cost + 1);
+    expect(res.state.players.player.reactionBonesThisTurn).toBe(1);
   });
 
   it('stops paying after two in one turn, so a cascade cannot fund itself', () => {
@@ -470,36 +470,36 @@ describe('reaction pip refunds', () => {
       if (!alive) break;
       alive.statuses.chill = 2;
       alive.hp = 200;
-      const before = cur.players.player.pips;
+      const before = cur.players.player.bones;
       const res = run(cur, play(handCard(cur, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
       expect(eventsOf(res.events, 'reactionTriggered').length, `reaction ${i + 1}`).toBeGreaterThan(0);
-      spend.push(before - res.state.players.player.pips);
+      spend.push(before - res.state.players.player.bones);
       cur = res.state;
     }
 
     // Flame Surge costs 2: the refunded casts net 1, the third pays full freight.
     expect(spend).toEqual([1, 1, 2]);
-    expect(cur.players.player.reactionPipsThisTurn).toBe(2);
+    expect(cur.players.player.reactionBonesThisTurn).toBe(2);
   });
 
   it('resets the allowance each turn', () => {
     const { state } = vaporizeSetup();
     const after = run(state, play(handCard(state, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
-    expect(after.state.players.player.reactionPipsThisTurn).toBe(1);
+    expect(after.state.players.player.reactionBonesThisTurn).toBe(1);
 
     const cycled = run(after.state, { type: 'endTurn' }, { type: 'endTurn' });
-    expect(cycled.state.players.player.reactionPipsThisTurn).toBe(0);
+    expect(cycled.state.players.player.reactionBonesThisTurn).toBe(0);
   });
 
   it('announces the refund as its own event, naming the reaction and where it fired', () => {
-    // A distinct event rather than the generic `pipGained`: the presentation layer shows
+    // A distinct event rather than the generic `boneGained`: the presentation layer shows
     // a refund as a reward at the tile, and cannot tell one from turn income otherwise.
     const { state } = vaporizeSetup();
-    const before = state.players.player.pips;
+    const before = state.players.player.bones;
 
     const res = run(state, play(handCard(state, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
 
-    const refunds = eventsOf(res.events, 'pipRefunded');
+    const refunds = eventsOf(res.events, 'boneRefunded');
     expect(refunds).toHaveLength(1);
     expect(refunds[0]!.side).toBe('player');
     expect(refunds[0]!.amount).toBe(1);
@@ -507,8 +507,8 @@ describe('reaction pip refunds', () => {
     // `total` drives the dial straight from the event, so it must be the post-gain bank.
     expect(refunds[0]!.total).toBe(before - 2 + 1);
 
-    // The generic income event must NOT also fire, or the Pip would be announced twice.
-    expect(eventsOf(res.events, 'pipGained')).toHaveLength(0);
+    // The generic income event must NOT also fire, or the Bone would be announced twice.
+    expect(eventsOf(res.events, 'boneGained')).toHaveLength(0);
   });
 
   it('emits no refund event once the allowance is spent', () => {
@@ -522,7 +522,7 @@ describe('reaction pip refunds', () => {
       alive.statuses.chill = 2;
       alive.hp = 200;
       const res = run(cur, play(handCard(cur, 'player', 'flame_surge'), surgeAt({ x: 2, y: 2 })));
-      counts.push(eventsOf(res.events, 'pipRefunded').length);
+      counts.push(eventsOf(res.events, 'boneRefunded').length);
       cur = res.state;
     }
 
@@ -543,14 +543,14 @@ describe('reaction pip refunds', () => {
 
     const enemy = state.players.enemy;
     const card = giveCard(state, 'enemy', 'flame_surge');
-    enemy.pips = 8;
+    enemy.bones = 8;
     state.activeSide = 'enemy';
-    const before = enemy.pips;
+    const before = enemy.bones;
 
     const res = run(state, play(card, surgeAt({ x: 2, y: 2 })));
 
     expect(eventsOf(res.events, 'reactionTriggered').length).toBeGreaterThan(0);
-    expect(res.state.players.enemy.pips).toBe(before - 2 + 1);
-    expect(res.state.players.player.reactionPipsThisTurn).toBe(0);
+    expect(res.state.players.enemy.bones).toBe(before - 2 + 1);
+    expect(res.state.players.player.reactionBonesThisTurn).toBe(0);
   });
 });

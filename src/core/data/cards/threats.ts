@@ -32,7 +32,7 @@ export const THREAT_CARDS: Record<string, CardDef> = {
   scrap_titan: {
     id: 'scrap_titan',
     name: 'Scrap-Titan',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'neutral',
     source: 'hero',
     kind: 'minion',
@@ -68,7 +68,7 @@ export const THREAT_CARDS: Record<string, CardDef> = {
   marrow_hound: {
     id: 'marrow_hound',
     name: 'Marrow-Hound',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'minion',
@@ -104,7 +104,7 @@ export const THREAT_CARDS: Record<string, CardDef> = {
   plague_bearer: {
     id: 'plague_bearer',
     name: 'Plague-Bearer',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'bloom',
     source: 'hero',
     kind: 'minion',

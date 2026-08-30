@@ -83,7 +83,7 @@ export function effectOf(stock: StockItem): string {
 export function describeBoons(boons: CombatBoons): string {
   const parts: string[] = [];
   if (boons.armor) parts.push(`open with ${boons.armor} Armor`);
-  if (boons.pips) parts.push(`+${boons.pips} Pips`);
+  if (boons.bones) parts.push(`+${boons.bones} Bones`);
   if (boons.extraOpeningCards) parts.push(`+${boons.extraOpeningCards} opening cards`);
   return parts.length > 0 ? `${parts.join(', ')}.` : 'nothing at all.';
 }

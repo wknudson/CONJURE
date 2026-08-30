@@ -124,7 +124,7 @@ describe('pricing holds its shape', () => {
     // different kind of purchase from one that adds a number, and should read as one.
     // Anything that raises a ceiling or lifts a restriction. `relic_battery` was missing
     // from this list, which read as an oversight the moment a second ceiling-raiser joined
-    // it — raising the Pip cap is the same kind of purchase whichever piece does it.
+    // it — raising the Bone cap is the same kind of purchase whichever piece does it.
     const ruleBenders = [
       'relic_gloves',
       'relic_coin',

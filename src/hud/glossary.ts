@@ -1,7 +1,7 @@
 /**
  * Plain-language explanations for every term the game shows but never defines.
  *
- * A first-time player meets "Growth", "Guardian", "Pips" and "Marrow" within seconds
+ * A first-time player meets "Growth", "Guardian", "Bones" and "Marrow" within seconds
  * of starting, and nothing on screen says what any of them mean. Everything here is
  * surfaced on hover.
  */
@@ -67,21 +67,21 @@ export const KEYWORDS: Record<string, GlossaryEntry> = {
   },
   PowerTier: {
     title: 'Power Tier',
-    body: 'A high-cost finisher. Bank Pips across several turns to afford it.',
+    body: 'A high-cost finisher. Bank Bones across several turns to afford it.',
   },
 };
 
 export const TERMS: Record<string, GlossaryEntry> = {
-  pips: {
-    title: 'Pips — banked magic',
-    body: 'You gain 1 Pip at the start of every turn, and unspent Pips carry over.',
+  bones: {
+    title: 'Bones — banked magic',
+    body: 'You gain 1 Bone at the start of every turn, and unspent Bones carry over.',
     detail: 'The bank holds 8. Saving them is how you afford Power Tier cards like Cataclysmic Core.',
   },
   marrow: {
     title: 'Marrow — volatile magic',
     body: 'Volatile, unrefined energy torn from your own units during a turn, or from devouring and elemental reactions.',
     detail:
-      'Marrow is consumed before Pips when casting, and all unspent Marrow is lost at the end of the turn. Use it or lose it.',
+      'Marrow is consumed before Bones when casting, and all unspent Marrow is lost at the end of the turn. Use it or lose it.',
   },
   pact: {
     title: 'The Pact',

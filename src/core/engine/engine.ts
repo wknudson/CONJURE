@@ -19,7 +19,7 @@ import type { Ctx } from './context.js';
 import { emit, makeCtx, newCause } from './context.js';
 import { deepClone } from '../util/clone.js';
 import { CARDS } from '../data/cards/index.js';
-import { ATTACK_PIP_COST, channelYieldFor } from '../data/economy.js';
+import { ATTACK_BONE_COST, channelYieldFor } from '../data/economy.js';
 import { dtypeOf } from '../data/elements.js';
 import { canAfford, drawCards, effectiveCost, resolvePlayedCard, spendResources } from './deck.js';
 import { applyTithe, executeEffect, TITHE_DAMAGE, TITHE_MARROW } from './effects.js';
@@ -303,7 +303,7 @@ function playCard(ctx: Ctx, cardId: string, target: ChosenTarget, x?: number): v
   }
 
   // Validate the chosen target before spending anything. Without this a summon onto an
-  // occupied tile would consume the card and its Pips and quietly do nothing.
+  // occupied tile would consume the card and its Bones and quietly do nothing.
   const legal = legalCardTargets(ctx.state, side, def.id);
   if (!legal.some((t) => sameTarget(t, target))) {
     throw new IllegalCommandError(`illegal target for ${def.name}`);
@@ -540,15 +540,15 @@ export function attackRefusal(state: GameState, unitId: string): string | null {
   if (!canAttack(unit)) return `${unit.name} cannot attack`;
   // A body with no attack is not an attacker. `legalAttacks` never checked this, so the two
   // shipped `atk: 0` units could legally swing for nothing — which was free and harmless
-  // before, and is now a Pip spent on a blow that cannot land.
+  // before, and is now a Bone spent on a blow that cannot land.
   if (unit.atk <= 0) return `${unit.name} has nothing to strike with`;
   if (unit.keywords.includes('Feral')) return null;
-  if (state.players[unit.side].pips < ATTACK_PIP_COST) {
+  if (state.players[unit.side].bones < ATTACK_BONE_COST) {
     // The hint names the way out, and only when this body actually has one — the Bound Form
     // and Behemoths cannot channel, and telling them to would be advice that refuses itself.
     return channelRefusal(state, unitId) === null
-      ? `not enough Pips to strike — ${unit.name} could channel instead`
-      : `not enough Pips for ${unit.name} to strike`;
+      ? `not enough Bones to strike — ${unit.name} could channel instead`
+      : `not enough Bones for ${unit.name} to strike`;
   }
   return null;
 }
@@ -575,8 +575,8 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
   // A Feral pays nothing: see `attackRefusal`.
   if (!attacker.keywords.includes('Feral')) {
     const cmd = ctx.state.players[attacker.side];
-    cmd.pips -= ATTACK_PIP_COST;
-    emit(ctx, { t: 'resourcesChanged', side: attacker.side, pips: cmd.pips, marrow: cmd.marrow });
+    cmd.bones -= ATTACK_BONE_COST;
+    emit(ctx, { t: 'resourcesChanged', side: attacker.side, bones: cmd.bones, marrow: cmd.marrow });
   }
 
   // Any swing counts as engaging, whether or not it reaches a portrait. Deliberately its own
@@ -629,7 +629,7 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
   // this is a generator striking, not a reaction landing, and a Storm Wisp held off by
   // plate has still discharged.
   // Capped now, where it was not before. See `creditCappedRefund`: an on-attack refund is
-  // bounded only by how many bodies you own, so with a swing costing a Pip it would have paid
+  // bounded only by how many bodies you own, so with a swing costing a Bone it would have paid
   // for itself and then some.
   const perStrike = stats?.refunds?.onAttack ?? 0;
   for (let i = 0; i < perStrike; i++) {
@@ -700,7 +700,7 @@ function applyOnHit(ctx: Ctx, attackerId: string, target: TargetRef, hpLoss: num
 /**
  * A declared blow landing on ground the target has left.
  *
- * **Not charged a Pip**, deliberately, where a real swing is. Being outplayed already costs the
+ * **Not charged a Bone**, deliberately, where a real swing is. Being outplayed already costs the
  * attacker the action; billing them for the miss as well would punish the same mistake twice,
  * and the whole reason this command exists rather than silently skipping is that the whiff
  * should be *visible* — a resource quietly draining is the opposite of visible.
@@ -752,8 +752,8 @@ export function channelRefusal(state: GameState, unitId: string): string | null 
   //
   // It was barred because "extracting Marrow for free with the one unit that cannot be traded
   // away is a turn with no downside at all" — true when a swing cost nothing, so giving one up
-  // cost nothing either. A swing costs a Pip now, so channelling trades a paid action for a
-  // Pip and the downside is the swing itself.
+  // cost nothing either. A swing costs a Bone now, so channelling trades a paid action for a
+  // Bone and the downside is the swing itself.
   //
   // Leaving the bar in place made the endgame unresolvable: the last body standing is usually
   // the Bound Form, and a Bound Form that cannot channel is a body that can only ever spend.
@@ -773,10 +773,10 @@ function channel(ctx: Ctx, unitId: string): void {
 
   // Per class, read off the same ladder that prices the body for the roster, so what a unit
   // costs and what it generates can never drift apart. Marrow is unchanged — dropping it would
-  // orphan the fourteen cards that demand Marrow strictly, which Pips can never cover.
+  // orphan the fourteen cards that demand Marrow strictly, which Bones can never cover.
   const yielded = channelYieldFor(CARDS[unit.defId] ?? ({} as never))!;
   cmd.marrow += yielded.marrow;
-  cmd.pips += yielded.pips;
+  cmd.bones += yielded.bones;
   if (yielded.draw > 0) drawCards(ctx, side, yielded.draw);
 
   newCause(ctx);
@@ -785,10 +785,10 @@ function channel(ctx: Ctx, unitId: string): void {
     unitId,
     side,
     marrow: yielded.marrow,
-    pips: yielded.pips,
+    bones: yielded.bones,
     draw: yielded.draw,
   });
-  emit(ctx, { t: 'resourcesChanged', side, pips: cmd.pips, marrow: cmd.marrow });
+  emit(ctx, { t: 'resourcesChanged', side, bones: cmd.bones, marrow: cmd.marrow });
 }
 
 /**

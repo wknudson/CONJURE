@@ -261,7 +261,7 @@ describe('collection', () => {
 });
 
 describe('cost curve', () => {
-  it('buckets a deck by pip cost', () => {
+  it('buckets a deck by bone cost', () => {
     const curve = costCurve(['dark_tithe', 'scout_imp', 'scout_imp', 'grave_sentinel']);
     expect(curve[0]).toBe(1); // Dark Tithe is free
     expect(curve[1]).toBe(2);

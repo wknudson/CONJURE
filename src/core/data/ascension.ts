@@ -1,7 +1,7 @@
 /**
  * Ascension — Rank 1 to Rank 2, as arithmetic rather than as authorship.
  *
- * A Rank 2 printing used to be a hand-written diff: this card gets a Pip cheaper, that
+ * A Rank 2 printing used to be a hand-written diff: this card gets a Bone cheaper, that
  * one reaches a tile further, this third one draws an extra card. Five cards had one and
  * the other hundred-odd could never be upgraded at all, because upgrading them meant
  * somebody sitting down and inventing what "better" looked like.
@@ -25,8 +25,8 @@
  *
  * ## What does not, and why the exclusions are the interesting half
  *
- *  - **Economy.** Pips, Marrow, cards drawn, Marrow extracted. Ascension must not touch
- *    the action economy: a Rank 2 that cost one Pip less is a *different tempo*, and the
+ *  - **Economy.** Bones, Marrow, cards drawn, Marrow extracted. Ascension must not touch
+ *    the action economy: a Rank 2 that cost one Bone less is a *different tempo*, and the
  *    whole reason to make progression vertical was to leave tempo alone.
  *  - **Space.** Movement, range, shove and pull distance, area shape, cone depth, line
  *    length. A spell that reaches further is a spell aimed differently, and a player
@@ -133,10 +133,10 @@ export function ascendEffect(node: EffectNode): EffectNode {
     case 'shoveArea':
     case 'pullArea':
     case 'anchorTether':
-    // Pips are a *counted* quantity and the Stat Stretch left every one of them alone.
+    // Bones are a *counted* quantity and the Stat Stretch left every one of them alone.
     // Ascension follows the same line: a Rank 2 hits ten percent harder, it does not
     // quietly rewrite the economy.
-    case 'gainPips':
+    case 'gainBones':
     // Terrain has no number to raise. `turns` is a clock, not a magnitude.
     case 'spawnHazard':
     // Stacks are counted, and a Rank 2 that stripped *more* Burn would be strictly worse
@@ -211,7 +211,7 @@ function scaledValues(before: CardDef, after: CardDef): Scaled[] {
  *     Strike raises *both* of its 20s, so both are rewritten. Neither "the first" nor "all
  *     of them" gets both cards right; the count does.
  *  2. **Only values of ten or more.** Since the Stat Stretch every quantity a card *deals*
- *     is a multiple of ten, and everything it *counts* — Burn stacks, tiles, Pips — is a
+ *     is a multiple of ten, and everything it *counts* — Burn stacks, tiles, Bones — is a
  *     single digit. That makes the size of the number a reliable signal of which kind it is.
  */
 function ascendText(text: string, scaled: Scaled[]): string {

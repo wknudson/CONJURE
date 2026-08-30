@@ -57,7 +57,7 @@ describe('novice AI', () => {
   it('respects the per-turn action cap', () => {
     const state = enemyTurn(
       scenario({
-        pips: 8,
+        bones: 8,
         units: [
           { def: 'scout_imp', side: 'enemy', at: { x: 0, y: 1 } },
           { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 1 } },
@@ -66,7 +66,7 @@ describe('novice AI', () => {
         ],
       }),
     );
-    state.players.enemy.pips = 8;
+    state.players.enemy.bones = 8;
 
     const plan = planTurn(state, 'enemy', NOVICE_AI);
     // Cap of 8 actions plus the trailing endTurn.

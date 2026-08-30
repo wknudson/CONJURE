@@ -304,7 +304,7 @@ describe('it still plays like a unit', () => {
 
   it('can still be healed-adjacent effects and ordinary summons around it', () => {
     // Sanity: the exclusions are narrow. A summon card still finds its usual tiles.
-    const { state } = withBound({ extra: { hand: ['scout_imp'], pips: 5 } });
+    const { state } = withBound({ extra: { hand: ['scout_imp'], bones: 5 } });
     const card = handCard(state, 'player', 'scout_imp');
     const res = run(state, play(card, atTile(1, 7)));
     expect(findUnit(res.state, 'scout_imp', 'player')).toBeDefined();

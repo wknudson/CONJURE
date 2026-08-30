@@ -29,7 +29,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   ember_coat: {
     id: 'ember_coat',
     name: 'Ember Coat',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'pyre',
     source: 'hero',
     kind: 'spell',
@@ -42,7 +42,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   verdant_swell: {
     id: 'verdant_swell',
     name: 'Verdant Swell',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bloom',
     source: 'hero',
     kind: 'spell',
@@ -55,7 +55,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   static_charge: {
     id: 'static_charge',
     name: 'Static Charge',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'surge',
     source: 'hero',
     kind: 'spell',
@@ -68,7 +68,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   petrifying_mantle: {
     id: 'petrifying_mantle',
     name: 'Petrifying Mantle',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'bulwark',
     source: 'hero',
     kind: 'spell',
@@ -81,14 +81,14 @@ export const AURA_CARDS: Record<string, CardDef> = {
   /**
    * The only Aura you cast on something you are willing to lose.
    *
-   * Priced at one Pip rather than two because what it really costs is the body: a Siphon
+   * Priced at one Bone rather than two because what it really costs is the body: a Siphon
    * bleeds its host every turn forever, and the Marrow it pays is the only Marrow in the
    * game that asks for neither an action nor a card.
    */
   /**
    * Frost and Arcane, the two Auras the overhaul designed and did not build.
    *
-   * Priced at 2 Pips like the other four that pay a stat outright. Rime Shell pays both halves
+   * Priced at 2 Bones like the other four that pay a stat outright. Rime Shell pays both halves
    * of survival because that is frost's whole argument; the Written Path pays reach, and is the
    * only Aura the Hero can put in their own deck — `deckRules` allows `neutral` and `arcane`,
    * so the Hero's colour is the one they may build with rather than draft.
@@ -96,7 +96,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   rime_shell: {
     id: 'rime_shell',
     name: 'Rime Shell',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'frost',
     source: 'hero',
     kind: 'spell',
@@ -109,7 +109,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   written_path: {
     id: 'written_path',
     name: 'Written Path',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'arcane',
     source: 'hero',
     kind: 'spell',
@@ -122,7 +122,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   marrow_siphon: {
     id: 'marrow_siphon',
     name: 'Marrow Siphon',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'spell',
@@ -137,8 +137,8 @@ export const AURA_CARDS: Record<string, CardDef> = {
   /**
    * The first variable-cost card in the game.
    *
-   * X is the whole decision: five Pips is a whole body back on the exact tile it died on,
-   * one Pip is a warm corpse holding a lane. Sited on the pyre, so it is the only revival
+   * X is the whole decision: five Bones is a whole body back on the exact tile it died on,
+   * one Bone is a warm corpse holding a lane. Sited on the pyre, so it is the only revival
    * an enemy can deny — and denying it costs them a body standing on the spot.
    *
    * Same-fight only, by construction rather than by rule: a pyre is a coordinate on *this*
@@ -147,17 +147,17 @@ export const AURA_CARDS: Record<string, CardDef> = {
   aetheric_resurgence: {
     id: 'aetheric_resurgence',
     name: 'Aetheric Resurgence',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     xCost: { max: 5 },
     school: 'arcane',
     source: 'hero',
     kind: 'ability',
-    text: 'X Pips, up to 5. Raises a fallen Vanguard on the exact tile it fell, at 20% of its health per Pip spent. Nothing may be standing there.',
+    text: 'X Bones, up to 5. Raises a fallen Vanguard on the exact tile it fell, at 20% of its health per Bone spent. Nothing may be standing there.',
     target: { kind: 'fallen', site: 'pyre' },
     effect: {
       op: 'revive',
       site: 'pyre',
-      hp: { mode: 'perPipPercent', percent: 20 },
+      hp: { mode: 'perBonePercent', percent: 20 },
     },
     keywords: [],
   },
@@ -173,7 +173,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   anchor_rally: {
     id: 'anchor_rally',
     name: 'The Anchor Rally',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'arcane',
     source: 'hero',
     kind: 'ability',
@@ -189,7 +189,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   },
 
   /**
-   * Free in Pips, and paid for in blood you had to open something up for this turn.
+   * Free in Bones, and paid for in blood you had to open something up for this turn.
    *
    * The payoff loop Blood Magic was built toward: tithe a healthy body for the Marrow,
    * spend it raising a fallen one as a wall. It stands up at 1 health wearing everything
@@ -199,11 +199,11 @@ export const AURA_CARDS: Record<string, CardDef> = {
   blood_and_bone_rally: {
     id: 'blood_and_bone_rally',
     name: 'The Blood & Bone Rally',
-    cost: { pips: 0, marrow: 3 },
+    cost: { bones: 0, marrow: 3 },
     school: 'dusk',
     source: 'hero',
     kind: 'spell',
-    text: 'Costs 3 Marrow, which no bank of Pips will cover. Raises a fallen Vanguard in your starting zone at 10 health, wearing Persistent Armor equal to everything it lost.',
+    text: 'Costs 3 Marrow, which no bank of Bones will cover. Raises a fallen Vanguard in your starting zone at 10 health, wearing Persistent Armor equal to everything it lost.',
     target: { kind: 'fallen', site: 'startingZone' },
     effect: {
       op: 'revive',
@@ -223,7 +223,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   cataclysm: {
     id: 'cataclysm',
     name: 'Cataclysm',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'pyre',
     source: 'hero',
     kind: 'spell',
@@ -242,7 +242,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   verdant_collapse: {
     id: 'verdant_collapse',
     name: 'Verdant Collapse',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'bloom',
     source: 'hero',
     kind: 'spell',
@@ -265,7 +265,7 @@ export const AURA_CARDS: Record<string, CardDef> = {
   marrow_burst: {
     id: 'marrow_burst',
     name: 'Marrow Burst',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'spell',

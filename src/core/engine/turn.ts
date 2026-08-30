@@ -19,9 +19,9 @@ import { unitAt, unitsOf } from './board.js';
 import { pushUnit } from './displacement.js';
 import { walksFreely } from './movement.js';
 import { tickSubjugation } from './subjugation.js';
-import { DRAW_PER_TURN, drawCards, endOfTurnCleanup, gainPips } from './deck.js';
+import { DRAW_PER_TURN, drawCards, endOfTurnCleanup, gainBones } from './deck.js';
 import { refreshUnits, startOfTurnStatuses } from './status.js';
-import { pipIncomeFor } from '../data/economy.js';
+import { boneIncomeFor } from '../data/economy.js';
 import { checkLethal } from './death.js';
 import { dealDamage } from './damage.js';
 import { encounterDefById, getEncounterScript } from '../data/encounters/registry.js';
@@ -39,10 +39,10 @@ export function beginTurn(ctx: Ctx, side: Side): void {
 
   refreshUnits(ctx, side);
   ctx.state.players[side].resonancesThisTurn = 0;
-  ctx.state.players[side].reactionPipsThisTurn = 0;
+  ctx.state.players[side].reactionBonesThisTurn = 0;
   // Income, scaled by the bodies that could spend it.
   //
-  // This was a flat `+1` and called "the game's only source of Pip income" — true when
+  // This was a flat `+1` and called "the game's only source of Bone income" — true when
   // attacking was free, and false now that a swing costs one. A flat income is size-neutral at
   // the margin (army size cancels when half the warband attacks) but not at the edges, and the
   // edges are where the fights are: a three-body ambush on a 4x6 has no slack at all, and a
@@ -51,12 +51,12 @@ export function beginTurn(ctx: Ctx, side: Side): void {
   // Ferals are excluded for the same reason they pay nothing to attack — nothing commands them,
   // so they are not part of anybody's economy.
   const paid = unitsOf(ctx.state, side).filter((u) => !u.keywords.includes('Feral')).length;
-  gainPips(ctx, side, pipIncomeFor(paid));
+  gainBones(ctx, side, boneIncomeFor(paid));
   // The opening hand of 5 dealt during setup IS turn one's draw. Drawing again here
   // would immediately overdraw past the hand limit of 7 and burn two cards.
   if (ctx.state.turn > 1) drawCards(ctx, side, DRAW_PER_TURN);
   // What the ring owes for a multi-pull, paid on top of that income rather than folded
-  // into it: one Pip and one card per mob dragged in. Self-guards on the round, so this
+  // into it: one Bone and one card per mob dragged in. Self-guards on the round, so this
   // does not need to know which turn it is.
   if (side === 'player') payWaveCompensation(ctx);
   startOfTurnStatuses(ctx, side);
@@ -156,10 +156,10 @@ function runCurrents(ctx: Ctx): void {
  * Set high enough that competent play will never see it — it exists only so a game cannot
  * literally run forever if both sides refuse to engage.
  *
- * **What counts as engaging widened when attacking started costing Pips.** The counter used to
+ * **What counts as engaging widened when attacking started costing Bones.** The counter used to
  * watch commander damage alone, and a Commander is never a legal attack target — so it was
  * reset only by a Bound Form wound, a portrait-targeting card or a status tick. On a board
- * where both sides are banking Pips, none of those happen, and the lockout could not tell
+ * where both sides are banking Bones, none of those happen, and the lockout could not tell
  * *unwilling* from *unable*: it would kill both players with unblockable damage for a drought
  * the economy created. `attack()` now sets the flag on any swing.
  *
@@ -194,7 +194,7 @@ function applyPacifistLockout(ctx: Ctx): void {
   }
 
   // Either signal breaks the stall. A wound to a Pact is the original one; a swing is the one
-  // the Pip economy needed, because a Commander is never a legal attack target and so a round
+  // the Bone economy needed, because a Commander is never a legal attack target and so a round
   // of hard fighting between two warbands could reset nothing at all.
   if (ctx.state.commanderDamagedThisRound || ctx.state.engagedThisRound) {
     ctx.state.stalledRounds = 0;

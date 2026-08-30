@@ -28,7 +28,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   smoke_bomb: {
     id: 'smoke_bomb',
     name: 'Smoke Bomb',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'spell',
@@ -42,7 +42,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   smoke_bank: {
     id: 'smoke_bank',
     name: 'Smoke Bank',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'obstacle',
@@ -70,7 +70,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   galvanic_revenant: {
     id: 'galvanic_revenant',
     name: 'Galvanic Revenant',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'minion',
@@ -102,14 +102,14 @@ export const DUSK_CARDS: Record<string, CardDef> = {
    *
    * Dormant is the real price, and it is a stricter one than it looks. `canAct` refuses
    * anything summoned this turn without Haste, and the tithe asks `canAct` —
-   * so a Ghoul **cannot be cashed in on the turn it lands**. One Pip does not buy two
+   * so a Ghoul **cannot be cashed in on the turn it lands**. One Bone does not buy two
    * Marrow now; it buys two Marrow next turn, if the thing is still standing. A board that
    * can reach it has a turn in which to answer.
    */
   ash_ghoul: {
     id: 'ash_ghoul',
     name: 'Ash-Ghoul',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'minion',
@@ -119,7 +119,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
     keywords: ['Dormant'],
     unit: {
       // The whole point of the card, and the same premium the Marrow Wisp charges — bought
-      // here with immobility and a turn of waiting rather than with a Pip and mobility.
+      // here with immobility and a turn of waiting rather than with a Bone and mobility.
       titheBonus: 1,
       atk: 20,
       hp: 20,
@@ -129,7 +129,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
       footprint: 1,
       archetype: 'bruiser',
       // The whole point of the card, and the same number the Marrow Wisp pays — bought
-      // here with immobility and a turn of waiting rather than with a Pip and mobility.
+      // here with immobility and a turn of waiting rather than with a Bone and mobility.
       // Unreachable without the Growth keyword; the stat block demands the field anyway.
       escalationBonus: { atk: 0, hp: 0 },
     },
@@ -152,7 +152,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   shadow_siphon: {
     id: 'shadow_siphon',
     name: 'Shadow Siphon',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
@@ -174,22 +174,22 @@ export const DUSK_CARDS: Record<string, CardDef> = {
    * A wall that pays for its own death.
    *
    * Zero attack is not a drawback here, it is the entire design: the Husk exists to be
-   * shot, and Guardian is what makes the enemy shoot it. Two Pips come back when it falls,
+   * shot, and Guardian is what makes the enemy shoot it. Two Bones come back when it falls,
    * so a body that traded itself for two enemy turns of shooting has also funded the
    * answer.
    *
-   * **Hollow pays Pips, because Echo does not exist.** The brief's "+2 Echoes when killed"
+   * **Hollow pays Bones, because Echo does not exist.** The brief's "+2 Echoes when killed"
    * has no resource behind it anywhere in the engine; `creditRefund` is the real payment
    * of that shape, and it is the same one a landed reaction makes.
    */
   hollowed_husk: {
     id: 'hollowed_husk',
     name: 'Hollowed Husk',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'minion',
-    text: 'Guardian. It cannot strike. When it dies, you are paid 2 Pips.',
+    text: 'Guardian. It cannot strike. When it dies, you are paid 2 Bones.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'hollowed_husk' },
     keywords: ['Guardian'],
@@ -217,7 +217,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   grave_call: {
     id: 'grave_call',
     name: 'Grave Call',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
@@ -242,7 +242,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   hollow_wraith: {
     id: 'hollow_wraith',
     name: 'Hollow Wraith',
-    cost: { pips: 0, marrow: 0 },
+    cost: { bones: 0, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'minion',
@@ -303,7 +303,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   charnel_pillar: {
     id: 'charnel_pillar',
     name: 'Charnel Pillar',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'obstacle',
@@ -322,7 +322,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
    * The cash-in, at the cheapest price the game charges for one.
    *
    * The house pattern, fourth time it has been used and the first time for Dusk: Stoke reads
-   * Burn, Rime Lock reads Freeze, Spore Burst reads Toxin, and this reads Brittle. A Pip buys
+   * Burn, Rime Lock reads Freeze, Spore Burst reads Toxin, and this reads Brittle. A Bone buys
    * either a genuine finisher or a stack of setup, and which one it buys is a fact about the
    * board rather than about the card.
    *
@@ -334,7 +334,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   wither: {
     id: 'wither',
     name: 'Wither',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
@@ -366,7 +366,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   creeping_decay: {
     id: 'creeping_decay',
     name: 'Creeping Decay',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
@@ -395,7 +395,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
    * The cheapest thing in the school, and the one that makes its clock tick faster.
    *
    * Dusk's decay shelf is slow by design and slow decks need a card that costs almost
-   * nothing to keep the pressure on while the expensive half assembles. A Pall is a Pip for
+   * nothing to keep the pressure on while the expensive half assembles. A Pall is a Bone for
    * two bodies' worth of rot — 10 through plate, because a pall does not care what anyone is
    * wearing, and a Toxin stack on each so the Blight and the Creeping Decay find them
    * already rotting.
@@ -403,7 +403,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   pall: {
     id: 'pall',
     name: 'Pall',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
@@ -430,14 +430,14 @@ export const DUSK_CARDS: Record<string, CardDef> = {
    * to do — a Dusk player's Pact bleeds all game from its own tithes and there was no card
    * anywhere in the colour that put a single point back.
    *
-   * Priced at two Pips and 30 for 20, deliberately a losing trade in raw numbers. It is not
+   * Priced at two Bones and 30 for 20, deliberately a losing trade in raw numbers. It is not
    * bought for the damage; it is bought on the turn the Pact is low enough that the fight
    * ends without it.
    */
   last_rites: {
     id: 'last_rites',
     name: 'Last Rites',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
@@ -465,13 +465,13 @@ export const DUSK_CARDS: Record<string, CardDef> = {
    *
    * Raised at the starting zone rather than where it fell, at half health, stripped of
    * everything: no marks, no statuses, no Aura, no growth — that is what `revive` does by
-   * construction, and it is the reason three Pips is a fair price for a body that might have
+   * construction, and it is the reason three Bones is a fair price for a body that might have
    * cost four.
    */
   exhume: {
     id: 'exhume',
     name: 'Exhume',
-    cost: { pips: 3, marrow: 0 },
+    cost: { bones: 3, marrow: 0 },
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
@@ -488,9 +488,9 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   /**
    * A body bought to be spent.
    *
-   * One Pip, 20 health, and a `titheBonus` — the Crow exists to be bled. Dusk's economy runs
+   * One Bone, 20 health, and a `titheBonus` — the Crow exists to be bled. Dusk's economy runs
    * on Blood Magic and the school has never had a cheap body bred for it: tithing a Grave
-   * Sentinel works and costs two Pips of Vanguard budget to set up, which makes the Marrow
+   * Sentinel works and costs two Bones of Vanguard budget to set up, which makes the Marrow
    * expensive.
    *
    * It also flies, after a fashion — four movement and no attack worth the name. A Crow that
@@ -499,7 +499,7 @@ export const DUSK_CARDS: Record<string, CardDef> = {
   carrion_crow: {
     id: 'carrion_crow',
     name: 'Carrion Crow',
-    cost: { pips: 1, marrow: 0 },
+    cost: { bones: 1, marrow: 0 },
     school: 'dusk',
     source: 'hero',
     kind: 'minion',

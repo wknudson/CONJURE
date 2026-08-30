@@ -34,8 +34,8 @@ interface Tally {
   channels: number;
   moves: number;
   tithes: number;
-  /** Pips still banked when a turn ended — the economy's slack. */
-  pipsLeft: number[];
+  /** Bones still banked when a turn ended — the economy's slack. */
+  bonesLeft: number[];
   /** Longest run of rounds in which neither commander was hurt. See the Pacifist Lockout. */
   worstStall: number;
   result: string;
@@ -48,7 +48,7 @@ const EMPTY = (): Tally => ({
   channels: 0,
   moves: 0,
   tithes: 0,
-  pipsLeft: [],
+  bonesLeft: [],
   worstStall: 0,
   result: 'stalled',
 });
@@ -66,7 +66,7 @@ function playOut(encounterId: string, seed: number): Tally {
 
   while (!state.result && guard++ < 120) {
     const side: Side = state.activeSide;
-    const before = state.players[side].pips;
+    const before = state.players[side].bones;
     const plan = planTurn(state, side);
 
     for (const command of plan) {
@@ -87,7 +87,7 @@ function playOut(encounterId: string, seed: number): Tally {
         t.turns++;
         // Sampled before cleanup clamps it, which is the number that says "you had spending
         // power and no way to use it".
-        t.pipsLeft.push(before);
+        t.bonesLeft.push(before);
       }
     }
 
@@ -108,7 +108,7 @@ const mean = (xs: number[]): number => (xs.length ? xs.reduce((a, b) => a + b, 0
 
 console.log(
   `${'encounter'.padEnd(26)} ${'turns'.padStart(6)} ${'cards/t'.padStart(8)} ` +
-    `${'atk/t'.padStart(7)} ${'chan/t'.padStart(7)} ${'pips left'.padStart(10)} ${'stall'.padStart(6)}`,
+    `${'atk/t'.padStart(7)} ${'chan/t'.padStart(7)} ${'bones left'.padStart(10)} ${'stall'.padStart(6)}`,
 );
 console.log('-'.repeat(78));
 
@@ -120,20 +120,20 @@ for (const encounter of ENCOUNTERS) {
     cards: mean(runs.map((r) => r.cards)),
     attacks: mean(runs.map((r) => r.attacks)),
     channels: mean(runs.map((r) => r.channels)),
-    pips: mean(runs.flatMap((r) => r.pipsLeft)),
+    bones: mean(runs.flatMap((r) => r.bonesLeft)),
     stall: Math.max(...runs.map((r) => r.worstStall)),
   };
   totals.turns += turns;
   totals.cards += row.cards;
   totals.attacks += row.attacks;
   totals.channels += row.channels;
-  totals.pipsLeft.push(row.pips);
+  totals.bonesLeft.push(row.bones);
   totals.worstStall = Math.max(totals.worstStall, row.stall);
 
   console.log(
     `${encounter.id.padEnd(26)} ${turns.toFixed(1).padStart(6)} ${per(row.cards, turns).padStart(8)} ` +
       `${per(row.attacks, turns).padStart(7)} ${per(row.channels, turns).padStart(7)} ` +
-      `${row.pips.toFixed(1).padStart(10)} ${String(row.stall).padStart(6)}`,
+      `${row.bones.toFixed(1).padStart(10)} ${String(row.stall).padStart(6)}`,
   );
 }
 
@@ -141,7 +141,7 @@ console.log('-'.repeat(78));
 console.log(
   `${'ALL'.padEnd(26)} ${totals.turns.toFixed(1).padStart(6)} ` +
     `${per(totals.cards, totals.turns).padStart(8)} ${per(totals.attacks, totals.turns).padStart(7)} ` +
-    `${per(totals.channels, totals.turns).padStart(7)} ${mean(totals.pipsLeft).toFixed(1).padStart(10)} ` +
+    `${per(totals.channels, totals.turns).padStart(7)} ${mean(totals.bonesLeft).toFixed(1).padStart(10)} ` +
     `${String(totals.worstStall).padStart(6)}`,
 );
 console.log(

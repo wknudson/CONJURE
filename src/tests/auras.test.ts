@@ -416,7 +416,7 @@ describe('attachAura and detonateAura as card ops', () => {
     CARDS[id] = {
       id,
       name: id,
-      cost: { pips: 0, marrow: 0 },
+      cost: { bones: 0, marrow: 0 },
       school: 'arcane',
       source: 'hero',
       kind: 'spell',
@@ -430,7 +430,7 @@ describe('attachAura and detonateAura as card ops', () => {
 
   it('hangs an Aura through a played card', () => {
     opCard('probe_attach_aura', { op: 'attachAura', aura: 'aura_conflagration' }, ALLY_TARGET);
-    const state = scenario({ width: 6, height: 8, hand: ['probe_attach_aura'], pips: 4 });
+    const state = scenario({ width: 6, height: 8, hand: ['probe_attach_aura'], bones: 4 });
     const u = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 5 }, fresh: false });
 
     const card = handCard(state, 'player', 'probe_attach_aura');
@@ -462,7 +462,7 @@ describe('attachAura and detonateAura as card ops', () => {
 
   it('offers a Detonation only once the Aura has climaxed', () => {
     opCard('probe_detonate', { op: 'detonateAura' }, { ...ALLY_TARGET, requiresAura: 'climax' });
-    const state = scenario({ width: 6, height: 8, hand: ['probe_detonate'], pips: 4 });
+    const state = scenario({ width: 6, height: 8, hand: ['probe_detonate'], bones: 4 });
     const u = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 5 }, fresh: false });
     enchant(state, u.id, 'aura_conflagration');
 
@@ -478,7 +478,7 @@ describe('attachAura and detonateAura as card ops', () => {
 
   it('spends the Aura and hands its stats back', () => {
     opCard('probe_detonate2', { op: 'detonateAura' }, { ...ALLY_TARGET, requiresAura: 'climax' });
-    const state = scenario({ width: 6, height: 8, hand: ['probe_detonate2'], pips: 4 });
+    const state = scenario({ width: 6, height: 8, hand: ['probe_detonate2'], bones: 4 });
     const u = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 5 }, fresh: false });
     const baseAtk = state.units[u.id]!.atk;
     enchant(state, u.id, 'aura_conflagration');
@@ -506,7 +506,7 @@ describe('attachAura and detonateAura as card ops', () => {
       },
       { ...ALLY_TARGET, requiresAura: 'climax' },
     );
-    const state = scenario({ width: 6, height: 8, hand: ['probe_detonate_burst'], pips: 4, marrow: 0 });
+    const state = scenario({ width: 6, height: 8, hand: ['probe_detonate_burst'], bones: 4, marrow: 0 });
     const u = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 5 }, fresh: false });
     enchant(state, u.id, 'aura_conflagration');
     const climaxed = round(round(state));

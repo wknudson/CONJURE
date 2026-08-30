@@ -32,7 +32,7 @@ export const GLACIAL_FIELD: EncounterDef = registerEncounter({
   /**
    * Two bodies in twelve cards, and it was four.
    *
-   * Retuned when attacking started costing a Pip. A third of this deck was minions —
+   * Retuned when attacking started costing a Bone. A third of this deck was minions —
    * `rimeguard` twice, a Grave Sentinel and a Scout Imp — and the deck reshuffles with no
    * fatigue, so it printed a body every third draw forever. Under free attacks the player
    * cleared them as fast as they arrived. Under a per-swing cost they cannot: measured over

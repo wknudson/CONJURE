@@ -124,7 +124,7 @@ function assertComplete(listed: CardDef[]): void {
 function costCell(def: CardDef): string {
   if (def.xCost) return `X (max ${def.xCost.max})`;
   const parts: string[] = [];
-  if (def.cost.pips > 0) parts.push(`${def.cost.pips}P`);
+  if (def.cost.bones > 0) parts.push(`${def.cost.bones}P`);
   if (def.cost.marrow > 0) parts.push(`${def.cost.marrow}M`);
   return parts.length > 0 ? parts.join('+') : '0';
 }
@@ -337,7 +337,7 @@ function render(): string {
   p('## The cards');
   p();
   p(
-    'Columns: **Cost** is `P` Pips and `M` Marrow (Marrow is a strict requirement; Pips can be ' +
+    'Columns: **Cost** is `P` Bones and `M` Marrow (Marrow is a strict requirement; Bones can be ' +
       'paid out of Marrow but never the reverse). **Tier** is derived from cost and keywords by ' +
       '`tierOf()` and sets the copy limit. **Stats** is the unit stat block or the obstacle HP. ' +
       '**Riders** is every optional behaviour hanging off it. **Flags** notes setup/splice-only ' +

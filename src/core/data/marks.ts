@@ -57,7 +57,7 @@ export const MARKS: Record<string, MarkDef> = {
     // blow from anybody still springs it, which is the trigger the card was priced around.
     trigger: { kind: 'hpLoss', alignedTypes: ['physical', 'impact', 'toxic'] },
     // Deliberately none. The card is priced as control, and a snare that also hit would
-    // be doing two jobs for one Pip.
+    // be doing two jobs for one Bone.
     damage: 0,
     dtype: 'true',
     blast: { shape: 'adjacent8' },
@@ -97,7 +97,7 @@ export const MARKS: Record<string, MarkDef> = {
   /**
    * Frost's trap: it does not kill you, it makes you easy to kill.
    *
-   * Two Chill rather than damage worth the pip, because Chill is the school's whole
+   * Two Chill rather than damage worth the bone, because Chill is the school's whole
    * sentence — a third stack Freezes, and anything Frozen Shatters to the impact the
    * Tremor Mark deals. Two traps laid next to each other are a combination the player set
    * up rather than a number they rolled, and this is the only pair in the set that reads

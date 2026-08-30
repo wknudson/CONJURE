@@ -24,7 +24,7 @@ import { STAT_SCALE } from '../core/scale.js';
 
 /** A board with one rostered body standing on it, ready to be killed. */
 function withVanguard(def = 'grave_sentinel', opts: Record<string, unknown> = {}) {
-  const state = scenario({ width: 6, height: 8, pips: 8, marrow: 8, ...opts });
+  const state = scenario({ width: 6, height: 8, bones: 8, marrow: 8, ...opts });
   const unit = addUnit(state, { def, side: 'player', at: { x: 2, y: 5 }, fresh: false });
   state.players.player.roster = [{ defId: def, status: 'fielded', unitId: unit.id, level: 1 }];
   state.anchors = [{ x: 0, y: 7 }, { x: 1, y: 7 }];
@@ -101,15 +101,15 @@ describe('the X-cost pipeline', () => {
    * No Marrow on hand, deliberately.
    *
    * X is a *generic* price, and the economy pays generic prices out of Marrow before it
-   * touches the Pip bank — Marrow evaporates at end of turn and Pips do not. A fixture
-   * holding Marrow would therefore pay X out of it and leave the Pip total untouched,
-   * which is correct behaviour and useless for testing the Pip drain. It is pinned on its
+   * touches the Bone bank — Marrow evaporates at end of turn and Bones do not. A fixture
+   * holding Marrow would therefore pay X out of it and leave the Bone total untouched,
+   * which is correct behaviour and useless for testing the Bone drain. It is pinned on its
    * own two tests below.
    */
-  function readyToRaise(pips = 8, marrow = 0) {
+  function readyToRaise(bones = 8, marrow = 0) {
     const { state, unit } = withVanguard('grave_sentinel', {
       hand: ['aetheric_resurgence'],
-      pips,
+      bones,
       marrow,
     });
     slay(state, unit.id);
@@ -118,44 +118,44 @@ describe('the X-cost pipeline', () => {
 
   it('lets Marrow pay X, because X is a generic price like any other', () => {
     const { state, card } = readyToRaise(8, 5);
-    const pipsBefore = state.players.player.pips;
+    const bonesBefore = state.players.player.bones;
 
     const res = applyCommand(state, { type: 'playCard', card, target: fallen(), x: 3 });
 
     expect(res.state.players.player.marrow, 'Marrow goes first — it expires').toBe(2);
-    expect(res.state.players.player.pips, 'and the bank is untouched').toBe(pipsBefore);
+    expect(res.state.players.player.bones, 'and the bank is untouched').toBe(bonesBefore);
   });
 
   it('falls through to the bank once the Marrow runs out', () => {
     const { state, card } = readyToRaise(8, 2);
-    const pipsBefore = state.players.player.pips;
+    const bonesBefore = state.players.player.bones;
 
     const res = applyCommand(state, { type: 'playCard', card, target: fallen(), x: 5 });
 
     expect(res.state.players.player.marrow).toBe(0);
-    expect(res.state.players.player.pips).toBe(pipsBefore - 3);
+    expect(res.state.players.player.bones).toBe(bonesBefore - 3);
   });
 
-  it('drains exactly the Pips declared, and no more', () => {
+  it('drains exactly the Bones declared, and no more', () => {
     const { state, card } = readyToRaise();
-    const before = state.players.player.pips;
+    const before = state.players.player.bones;
 
     const res = applyCommand(state, { type: 'playCard', card, target: fallen(), x: 3 });
 
-    expect(res.state.players.player.pips).toBe(before - 3);
+    expect(res.state.players.player.bones).toBe(before - 3);
   });
 
   it('ignores the printed cost, which is zero and not a floor', () => {
     const { state, card } = readyToRaise();
-    const before = state.players.player.pips;
-    expect(CARDS.aetheric_resurgence!.cost.pips, 'printed price').toBe(0);
+    const before = state.players.player.bones;
+    expect(CARDS.aetheric_resurgence!.cost.bones, 'printed price').toBe(0);
 
     const res = applyCommand(state, { type: 'playCard', card, target: fallen(), x: 1 });
 
-    expect(res.state.players.player.pips).toBe(before - 1);
+    expect(res.state.players.player.bones).toBe(before - 1);
   });
 
-  it('gives 20% of the ceiling per Pip spent', () => {
+  it('gives 20% of the ceiling per Bone spent', () => {
     const maxHp = CARDS.grave_sentinel!.unit!.hp;
     for (const [x, share] of [[1, 0.2], [3, 0.6], [5, 1]] as const) {
       const { state, card } = readyToRaise();
@@ -202,9 +202,9 @@ describe('the X-cost pipeline', () => {
 
   it('charges nothing when the play is refused', () => {
     const { state, card } = readyToRaise();
-    const before = state.players.player.pips;
+    const before = state.players.player.bones;
     expect(() => applyCommand(state, { type: 'playCard', card, target: fallen(), x: 0 })).toThrow();
-    expect(state.players.player.pips).toBe(before);
+    expect(state.players.player.bones).toBe(before);
   });
 });
 
@@ -250,7 +250,7 @@ describe('an enemy on the pyre blocks Aetheric Resurgence', () => {
 
 describe('the two Rallies', () => {
   it('Anchor Rally raises at half health, quickened', () => {
-    const { state, unit } = withVanguard('grave_sentinel', { hand: ['anchor_rally'], pips: 6 });
+    const { state, unit } = withVanguard('grave_sentinel', { hand: ['anchor_rally'], bones: 6 });
     const maxHp = state.units[unit.id]!.maxHp;
     slay(state, unit.id);
     const card = handCard(state, 'player', 'anchor_rally');
@@ -265,7 +265,7 @@ describe('the two Rallies', () => {
 
   it('Anchor Rally does not care where the body fell', () => {
     // Which is what lets it raise a body that died in an earlier fight of the dungeon.
-    const { state, unit } = withVanguard('grave_sentinel', { hand: ['anchor_rally'], pips: 6 });
+    const { state, unit } = withVanguard('grave_sentinel', { hand: ['anchor_rally'], bones: 6 });
     slay(state, unit.id);
     delete state.players.player.roster[0]!.fellAt;
 
@@ -288,10 +288,10 @@ describe('the two Rallies', () => {
     expect(body.armor, 'armor equal to everything it lost').toBe(maxHp - STAT_SCALE);
   });
 
-  it('Blood & Bone cannot be bought with Pips at any total', () => {
+  it('Blood & Bone cannot be bought with Bones at any total', () => {
     const { state, unit } = withVanguard('grave_sentinel', {
       hand: ['blood_and_bone_rally'],
-      pips: 8,
+      bones: 8,
       marrow: 0,
     });
     slay(state, unit.id);
@@ -307,7 +307,7 @@ describe('what a raised body carries', () => {
   it('comes back stripped: no mark, no status, no Aura, no growth', () => {
     const { state, unit } = withVanguard('grave_sentinel', {
       hand: ['aetheric_resurgence'],
-      pips: 8,
+      bones: 8,
     });
     const live = state.units[unit.id]!;
     live.statuses.burn = 3;
@@ -332,7 +332,7 @@ describe('what a raised body carries', () => {
   it('is a new instance, not the old body restored', () => {
     const { state, unit } = withVanguard('grave_sentinel', {
       hand: ['aetheric_resurgence'],
-      pips: 8,
+      bones: 8,
     });
     slay(state, unit.id);
     const card = handCard(state, 'player', 'aetheric_resurgence');
@@ -346,7 +346,7 @@ describe('what a raised body carries', () => {
   it('may act the turn it stands up', () => {
     const { state, unit } = withVanguard('grave_sentinel', {
       hand: ['aetheric_resurgence'],
-      pips: 8,
+      bones: 8,
     });
     slay(state, unit.id);
     const card = handCard(state, 'player', 'aetheric_resurgence');
@@ -361,7 +361,7 @@ describe('what a raised body carries', () => {
   it('returns the roster entry to the field, and clears the pyre', () => {
     const { state, unit } = withVanguard('grave_sentinel', {
       hand: ['aetheric_resurgence'],
-      pips: 8,
+      bones: 8,
     });
     slay(state, unit.id);
     const card = handCard(state, 'player', 'aetheric_resurgence');
@@ -376,7 +376,7 @@ describe('what a raised body carries', () => {
   });
 
   it('offers nothing at all while the roster holds no dead', () => {
-    const { state } = withVanguard('grave_sentinel', { hand: ['anchor_rally'], pips: 6 });
+    const { state } = withVanguard('grave_sentinel', { hand: ['anchor_rally'], bones: 6 });
     expect(legalCardTargets(state, 'player', 'anchor_rally')).toEqual([]);
   });
 });
@@ -386,7 +386,7 @@ describe('the spec the Graveyard picker will read', () => {
     // Without a `fallen` variant on the UI-facing spec these three cards report
     // `entities: []` and read as unplayable — the engine would accept a target no
     // interface could ever offer.
-    const state = withVanguard('grave_sentinel', { hand: ['anchor_rally'], pips: 6 });
+    const state = withVanguard('grave_sentinel', { hand: ['anchor_rally'], bones: 6 });
     slay(state.state, state.unit.id);
 
     const session = sessionOver(state.state);
@@ -402,7 +402,7 @@ describe('the spec the Graveyard picker will read', () => {
   });
 
   it('round-trips a picked entry back into a legal play', () => {
-    const state = withVanguard('grave_sentinel', { hand: ['anchor_rally'], pips: 6 });
+    const state = withVanguard('grave_sentinel', { hand: ['anchor_rally'], bones: 6 });
     slay(state.state, state.unit.id);
 
     const session = sessionOver(state.state);

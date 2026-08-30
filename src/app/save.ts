@@ -1395,8 +1395,8 @@ function readSpellModifiers(
     const v = value as Partial<CardModifier>;
     const mod: CardModifier = {};
     // Clamped to what the table can actually roll, so a hand-edited -9 is a -1.
-    if (typeof v.pipCostDelta === 'number' && Number.isFinite(v.pipCostDelta)) {
-      mod.pipCostDelta = Math.max(-1, Math.min(1, Math.round(v.pipCostDelta)));
+    if (typeof v.boneCostDelta === 'number' && Number.isFinite(v.boneCostDelta)) {
+      mod.boneCostDelta = Math.max(-1, Math.min(1, Math.round(v.boneCostDelta)));
     }
     if (typeof v.bonusDamage === 'number' && Number.isFinite(v.bonusDamage)) {
       // The table rolls one *stretched* point. A pre-Stretch save holding a literal 1 is
@@ -1514,7 +1514,7 @@ function readRoster(
       // hand-edited bonus can no longer disagree with the level that was paid for.
       bonusMaxHp: (level - 1) * HP_PER_LEVEL,
       startingArmor: Math.max(0, Math.round(numberOr(saved.startingArmor, 0))),
-      bonusPips: Math.max(0, Math.round(numberOr(saved.bonusPips, 0))),
+      bonusBones: Math.max(0, Math.round(numberOr(saved.bonusBones, 0))),
       traitId,
       spellModifiers: readSpellModifiers(saved.spellModifiers, grimoire, instanceId),
       // Kept only when it is exactly `true`, and omitted otherwise rather than written as

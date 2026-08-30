@@ -245,7 +245,7 @@ export function tickAura(ctx: Ctx, unit: Unit): void {
       emit(ctx, {
         t: 'resourcesChanged',
         side: unit.side,
-        pips: cmd.pips,
+        bones: cmd.bones,
         marrow: cmd.marrow,
       });
     }

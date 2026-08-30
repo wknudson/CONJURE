@@ -26,7 +26,7 @@ describe('what the board notices', () => {
   });
 
   it("records nothing for the player own side", () => {
-    const state = scenario({ width: 6, height: 6, pips: 8 });
+    const state = scenario({ width: 6, height: 6, bones: 8 });
     const before = state.encountered.length;
     addUnit(state, { def: 'scout_imp', side: 'player', at: { x: 2, y: 4 }, hp: 50 });
     expect(state.encountered.length, 'yours are not threats').toBe(before);
@@ -34,7 +34,7 @@ describe('what the board notices', () => {
 
   it('records a kill by definition, not by instance', () => {
     // A list of `u7` would grow for ever and identify nothing. The Ledger is about kinds.
-    const state = scenario({ width: 6, height: 6, pips: 8 });
+    const state = scenario({ width: 6, height: 6, bones: 8 });
     const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 10 });
     const killer = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 3 }, hp: 200 });
 
@@ -47,7 +47,7 @@ describe('what the board notices', () => {
   it('un-counts a kill the player takes back', () => {
     // The reason the tally lives in `GameState`: snapshot/restore deep-clones it, so undo
     // rewinds the Ledger for free. A tally kept beside the state would have to remember.
-    const state = scenario({ width: 6, height: 6, pips: 8 });
+    const state = scenario({ width: 6, height: 6, bones: 8 });
     const victim = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 10 });
     const killer = addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 2, y: 3 }, hp: 200 });
 

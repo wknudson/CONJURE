@@ -20,7 +20,7 @@ const face = (id: string) => faceOfDef(CARDS[id]!);
 
 describe('a definition becomes a face', () => {
   it('carries the four things the brief names', () => {
-    // School colour, Pip cost, title, rules text.
+    // School colour, Bone cost, title, rules text.
     const f = face('flame_surge');
     const html = cardFaceHtml(f);
     expect(html).toContain(CARDS.flame_surge!.name);
@@ -67,7 +67,7 @@ describe('a snapshot becomes the same face', () => {
     instanceId: 'c1',
     defId: 'flame_surge',
     name: 'Flame Surge',
-    cost: { pips: 2, marrow: 0 },
+    cost: { bones: 2, marrow: 0 },
     school: 'pyre',
     source: 'companion',
     kind: 'spell',

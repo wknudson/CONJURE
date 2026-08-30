@@ -51,7 +51,7 @@ function grimoireHtml(beast: CompanionInstance): string {
       // animal drafted, and a socketed one was forged at a bench.
       const mod = socketed ? undefined : beast.spellModifiers?.[defId];
       const notes: string[] = [];
-      if (mod?.pipCostDelta) notes.push(`${mod.pipCostDelta > 0 ? '+' : ''}${mod.pipCostDelta} Pip`);
+      if (mod?.boneCostDelta) notes.push(`${mod.boneCostDelta > 0 ? '+' : ''}${mod.boneCostDelta} Bone`);
       if (mod?.bonusDamage) notes.push(`+${mod.bonusDamage} dmg`);
       if (mod?.grantRetain) notes.push('Retain');
       return `

@@ -110,7 +110,7 @@ describe('the set as a whole', () => {
 describe('Grapple Line', () => {
   /** Three enemies in a column at y=1,2,3, with the player's line thrown from y=4. */
   const hooked = () => {
-    const state = scenario({ width: 5, height: 6, hand: ['grapple_line'], pips: 5 });
+    const state = scenario({ width: 5, height: 6, hand: ['grapple_line'], bones: 5 });
     const near = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 }, hp: 90 });
     const far = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 2 }, hp: 90 });
     return { state, near, far };
@@ -185,7 +185,7 @@ describe('Grapple Line', () => {
 
 describe('Scrap Phalanx', () => {
   it('goes down as a 6 HP body that blocks sight', () => {
-    const state = scenario({ width: 5, height: 6, hand: ['scrap_phalanx'], pips: 5 });
+    const state = scenario({ width: 5, height: 6, hand: ['scrap_phalanx'], bones: 5 });
     const card = handCard(state, 'player', 'scrap_phalanx');
 
     const res = run(state, play(card, atTile(2, 4)));
@@ -199,7 +199,7 @@ describe('Scrap Phalanx', () => {
   });
 
   it('actually breaks a line, rather than merely claiming to', () => {
-    // Guardian is only worth two Pips if the LoS resolver honours it. Sighting past the
+    // Guardian is only worth two Bones if the LoS resolver honours it. Sighting past the
     // wall must fail, and sighting to a clear tile beside it must still succeed.
     const state = scenario({ width: 5, height: 6 });
     addUnit(state, { def: 'scrap_phalanx', side: 'player', at: { x: 2, y: 3 } });
@@ -217,7 +217,7 @@ describe('Scrap Phalanx', () => {
 
 describe('Cull the Weak', () => {
   const wounded = () => {
-    const state = scenario({ width: 5, height: 6, hand: ['cull_the_weak'], pips: 5, marrow: 1 });
+    const state = scenario({ width: 5, height: 6, hand: ['cull_the_weak'], bones: 5, marrow: 1 });
     const healthy = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 1 }, hp: 90 });
     const weak = addUnit(state, {
       def: 'scout_imp',
@@ -252,9 +252,9 @@ describe('Cull the Weak', () => {
     expect(res.state.units[weak.id]!.armor).toBe(60);
   });
 
-  it('cannot be paid for with Pips at any price', () => {
-    // A full Pip bank and no Marrow. The strict component is the whole point of the card.
-    const state = scenario({ width: 5, height: 6, hand: ['cull_the_weak'], pips: 8, marrow: 0 });
+  it('cannot be paid for with Bones at any price', () => {
+    // A full Bone bank and no Marrow. The strict component is the whole point of the card.
+    const state = scenario({ width: 5, height: 6, hand: ['cull_the_weak'], bones: 8, marrow: 0 });
     addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 1 } });
     const card = handCard(state, 'player', 'cull_the_weak');
 
@@ -263,7 +263,7 @@ describe('Cull the Weak', () => {
 
   it('refuses to be cast at an empty board rather than eating the Marrow', () => {
     // Marrow expires at end of turn and cannot be banked back, so a wasted cast here is
-    // strictly worse than a wasted Pip. No foes means no legal target.
+    // strictly worse than a wasted Bone. No foes means no legal target.
     const state = scenario({ width: 5, height: 6, hand: ['cull_the_weak'], marrow: 1 });
     expect(legalCardTargets(state, 'player', 'cull_the_weak')).toEqual([]);
 
@@ -273,14 +273,14 @@ describe('Cull the Weak', () => {
 
   it('leaves the older global guard alone', () => {
     // The new check must not have swallowed the detonate-with-nothing-to-detonate case.
-    const state = scenario({ width: 5, height: 6, hand: ['cataclysmic_core'], pips: 8 });
+    const state = scenario({ width: 5, height: 6, hand: ['cataclysmic_core'], bones: 8 });
     expect(legalCardTargets(state, 'player', 'cataclysmic_core')).toEqual([]);
   });
 });
 
 describe("Alchemist's Barricade", () => {
   it('raises an 8 HP construct on an empty tile', () => {
-    const state = scenario({ width: 5, height: 6, hand: ['alchemists_barricade'], pips: 5 });
+    const state = scenario({ width: 5, height: 6, hand: ['alchemists_barricade'], bones: 5 });
     const card = handCard(state, 'player', 'alchemists_barricade');
 
     const res = run(state, play(card, atTile(2, 3)));
@@ -333,14 +333,14 @@ describe("Alchemist's Barricade", () => {
 
 describe('the cost badge', () => {
   it('drops the leading zero on a purely Marrow price', () => {
-    // Cull the Weak is the first card in the game costing no Pips at all, so it is the
+    // Cull the Weak is the first card in the game costing no Bones at all, so it is the
     // first to reach this branch. `0+1✦` reads as a rendering fault rather than a price.
     expect(formatCost(CARDS.cull_the_weak!.cost)).toBe('1✦');
   });
 
   it('still writes both halves when both are demanded', () => {
-    expect(formatCost({ pips: 1, marrow: 2 })).toBe('1+2✦');
-    expect(formatCost({ pips: 2, marrow: 0 })).toBe('2');
+    expect(formatCost({ bones: 1, marrow: 2 })).toBe('1+2✦');
+    expect(formatCost({ bones: 2, marrow: 0 })).toBe('2');
   });
 });
 

@@ -230,7 +230,7 @@ describe('Exhaustion is the spend', () => {
 
 describe('the card op and the command agree', () => {
   it('routes Dark Tithe through the same rule, including the Exhaustion', () => {
-    const state = scenario({ width: 6, height: 8, hand: ['dark_tithe'], pips: 4, marrow: 0 });
+    const state = scenario({ width: 6, height: 8, hand: ['dark_tithe'], bones: 4, marrow: 0 });
     const victim = addUnit(state, {
       def: 'grave_sentinel',
       side: 'player',
@@ -249,7 +249,7 @@ describe('the card op and the command agree', () => {
   it('will not offer an exhausted body to a tithe card', () => {
     // `requireUnexhausted` reads `canAct`, which now carries Exhaustion — so the once-per
     // turn rule reaches card targeting without the cards knowing about it.
-    const state = scenario({ width: 6, height: 8, hand: ['dark_tithe'], pips: 4 });
+    const state = scenario({ width: 6, height: 8, hand: ['dark_tithe'], bones: 4 });
     const victim = addUnit(state, {
       def: 'grave_sentinel',
       side: 'player',

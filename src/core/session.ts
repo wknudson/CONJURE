@@ -210,7 +210,7 @@ export class CombatSession implements RulesQuery {
   /**
    * What this body may hit right now, affordability included.
    *
-   * The Pip cost is asked here and not inside `legalAttacks`, which is pure geometry and reach
+   * The Bone cost is asked here and not inside `legalAttacks`, which is pure geometry and reach
    * and is called by the threat map and the AI's enumeration for questions where "can the
    * commander pay" is the wrong one — a threat ring does not stop existing because the enemy is
    * broke.
@@ -341,7 +341,7 @@ export class CombatSession implements RulesQuery {
       displacements: [],
       detonations: [],
       predictedDeaths: [],
-      cost: { pips: 0, marrow: 0 },
+      cost: { bones: 0, marrow: 0 },
     };
 
     let events: GameEvent[];
@@ -359,7 +359,7 @@ export class CombatSession implements RulesQuery {
       displacements: [],
       detonations: [],
       predictedDeaths: [],
-      cost: { pips: 0, marrow: 0 },
+      cost: { bones: 0, marrow: 0 },
     };
 
     const paths = new Map<UnitId, Coord[]>();

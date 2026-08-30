@@ -329,7 +329,7 @@ export function remainingCopies(
   return Math.max(0, Math.min(byTier, byOwnership, byBehemoth, bySize));
 }
 
-/** Pip-cost histogram, for the builder's curve display. */
+/** Bone-cost histogram, for the builder's curve display. */
 export function costCurve(deck: string[]): number[] {
   const curve = new Array(7).fill(0) as number[];
   for (const id of deck) {

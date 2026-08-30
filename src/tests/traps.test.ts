@@ -97,7 +97,7 @@ describe('the three Marks the set was missing', () => {
   /** Sets a mark off with a real card of the right damage type, from the player's hand. */
   const cast = (mark: string, spell: string) => {
     const { state, host, beside } = wired(mark);
-    state.players.player.pips = 8;
+    state.players.player.bones = 8;
     const card = giveCard(state, 'player', spell);
     const res = run(state, play(card, { kind: 'entity', ref: { kind: 'unit', id: host.id } }));
     return { res, host, beside };
@@ -266,7 +266,7 @@ describe('Rot-Root Snare', () => {
 
 describe('Volatile Munitions Cask', () => {
   const withCask = () => {
-    const state = scenario({ width: 6, height: 8, hand: ['volatile_cask'], pips: 6 });
+    const state = scenario({ width: 6, height: 8, hand: ['volatile_cask'], bones: 6 });
     const card = handCard(state, 'player', 'volatile_cask');
     const res = run(state, play(card, atTile(2, 4)));
     const raised = eventsOf(res.events, 'obstacleSpawned')[0]!;
@@ -379,7 +379,7 @@ describe('Volatile Munitions Cask', () => {
 
 describe('Soul Splinter Mark', () => {
   it('was already in the game, and matches the brief but for its damage type', () => {
-    // Shipped since the founding starter deck: 1 Pip, death trigger, lowest-HP-enemy blast,
+    // Shipped since the founding starter deck: 1 Bone, death trigger, lowest-HP-enemy blast,
     // 5 damage. The one difference from the brief is `spell` rather than `true` — see the
     // report. Left as shipped because `spell` is an aligned type for Cinder Mark, so
     // changing it would quietly remove a cascade interaction as well as re-balancing a card
@@ -392,7 +392,7 @@ describe('Soul Splinter Mark', () => {
     const card = CARDS.soul_splinter_mark!;
     expect(card.kind, 'a Mark, not a Spell').toBe('mark');
     expect(card.school, "the Hero's colour, because the Hero lays it").toBe('arcane');
-    expect(card.cost).toEqual({ pips: 1, marrow: 0 });
+    expect(card.cost).toEqual({ bones: 1, marrow: 0 });
 
     const mark = MARKS.soul_splinter_mark!;
     expect(mark.school, 'the payload keeps the colour it detonates in').toBe('dusk');

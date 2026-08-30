@@ -287,7 +287,7 @@ describe('the wired knacks', () => {
 
     // Shield Bash shoves one tile. Under the knack it shoves two, out of the same card.
     const bashed = (bonus: number) => {
-      const state = scenario({ width: 6, height: 9, hand: ['shield_bash'], pips: 8 });
+      const state = scenario({ width: 6, height: 9, hand: ['shield_bash'], bones: 8 });
       const foe = addUnit(state, { def: 'grave_sentinel', side: 'enemy', at: { x: 2, y: 3 } });
       state.players.player.bonusShoveDistance = bonus;
       const card = handCard(state, 'player', 'shield_bash');

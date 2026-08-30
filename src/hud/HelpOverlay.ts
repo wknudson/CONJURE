@@ -23,7 +23,7 @@ const SECTIONS: { heading: string; rows: [string, string][] }[] = [
   {
     heading: 'A turn, in order',
     rows: [
-      ['1 · Upkeep', 'You gain a Pip, draw to four cards, and Burn and Toxin tick.'],
+      ['1 · Upkeep', 'You gain a Bone, draw to four cards, and Burn and Toxin tick.'],
       ['2 · Escalation', 'Units that survived a full round grow stronger.'],
       ['3 · Your actions', 'Play cards, move units, attack — in any order you like.'],
       ['4 · End turn', 'Unspent Marrow is lost. Unplayed cards are discarded unless they Retain.'],
@@ -129,7 +129,7 @@ export class HelpOverlay {
         })
         .join('');
 
-    const resourceRows = termRows(['pips', 'marrow', 'armor']);
+    const resourceRows = termRows(['bones', 'marrow', 'armor']);
     // Terrain reads from the glossary rather than a second hand-written copy: the board
     // is canvas, so these tiles have nothing to hover, and this panel is where a player
     // looks when a unit's reach is shorter than they expected.

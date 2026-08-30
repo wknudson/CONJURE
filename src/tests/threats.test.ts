@@ -119,7 +119,7 @@ describe('Scrap-Titan', () => {
       at: { x: 3, y: 6 },
       fresh: false,
     });
-    state.players.player.pips = 8;
+    state.players.player.bones = 8;
     state.players.player.cards.bash = { instanceId: 'bash', defId: 'shield_bash' };
     state.players.player.hand.push('bash');
     void shover;

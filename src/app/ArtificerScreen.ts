@@ -45,7 +45,7 @@ import { tierOf } from '../core/data/deckRules.js';
 import { schoolOf } from '../render/palette.js';
 import type { School } from '../contract/ids.js';
 import { cardFaceHtml, faceOfDef } from '../hud/cardFace.js';
-import { filterBarHtml, matchesPips, pipPills, wireFilterBar } from '../hud/filterBar.js';
+import { filterBarHtml, matchesBones, bonePills, wireFilterBar } from '../hud/filterBar.js';
 import { Tooltip } from '../hud/Tooltip.js';
 import { ASCENSION_PERCENT } from '../core/data/ascension.js';
 import { reagentById } from '../core/data/splicing.js';
@@ -162,7 +162,7 @@ const REFUSAL_COPY: Record<string, string> = {
  */
 interface SchematicFilters {
   school: School | 'all';
-  /** The chosen Pip pill, as its key. Compared through `matchesPips`. */
+  /** The chosen Bone pill, as its key. Compared through `matchesBones`. */
   cost: string;
   source: 'all' | 'hero' | 'companion';
   kind: 'all' | CardDef['kind'];
@@ -192,7 +192,7 @@ const KIND_PILLS: { key: 'all' | CardDef['kind']; label: string }[] = [
 
 const SORT_PILLS: { key: SchematicFilters['sort']; label: string }[] = [
   { key: 'unlock', label: 'Unforged first' },
-  { key: 'cost', label: 'Pip cost' },
+  { key: 'cost', label: 'Bone cost' },
   { key: 'name', label: 'Name' },
   { key: 'school', label: 'School' },
 ];
@@ -360,7 +360,7 @@ export class ArtificerScreen implements Screen {
           })),
         ],
       },
-      { name: 'cost', label: 'Pips', active: String(f.cost), pills: pipPills() },
+      { name: 'cost', label: 'Bones', active: String(f.cost), pills: bonePills() },
       {
         name: 'source',
         label: 'Cast by',
@@ -408,11 +408,11 @@ export class ArtificerScreen implements Screen {
       .filter((d) => f.school === 'all' || d.school === f.school)
       .filter((d) => f.source === 'all' || d.source === f.source)
       .filter((d) => f.kind === 'all' || d.kind === f.kind)
-      .filter((d) => matchesPips(d.cost.pips, f.cost))
+      .filter((d) => matchesBones(d.cost.bones, f.cost))
       .sort((a, b) => {
         switch (f.sort) {
           case 'cost':
-            return a.cost.pips - b.cost.pips || a.name.localeCompare(b.name);
+            return a.cost.bones - b.cost.bones || a.name.localeCompare(b.name);
           case 'school':
             return a.school.localeCompare(b.school) || a.name.localeCompare(b.name);
           case 'unlock':
