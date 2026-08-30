@@ -22,12 +22,14 @@ import { defineArea, type AreaDef, type TileDef } from '../map.js';
  *   ,  chalk track   — the way west, off the shelf
  *   P  pylon footing — impassable, tall and very thin
  *   R  rock          — impassable, the boundary
+ *   h  burnt heath — scrub far enough from a footing to have grown back
  *
  * `P` has the largest inset of any solid in the game on both axes. A pylon leg is a mast, not a
  * building, and the footings have to read as something you can see *past* — the pattern only
  * works if you can see four ranks of them at once.
  */
 const SHELF_LEGEND: Record<string, TileDef> = {
+  h: { tex: 'heath', safe: false, walk: true },
   b: { tex: 'blasted', safe: false, walk: true },
   '#': { tex: 'grass', safe: false, walk: true },
   ',': { tex: 'chalk', safe: false, walk: true },
@@ -54,28 +56,28 @@ const SHELF_LEGEND: Record<string, TileDef> = {
  */
 const GRID: readonly string[] = [
   'RRRRRRRRRRRRRRRRRRRRRRRRRR', //  0
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', //  1
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', //  2
-  'RbbPbbbbbbPbbbbbbPbbbbbPbR', //  3  a rank of footings
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', //  4
-  'Rbbbb##bbbbbbbbbb##bbbbbbR', //  5
+  'RhhhhhhhhhhbbbbhhhhhhhhhhR', //  1
+  'RhbbbhhhhbbbbbbbbbbhhhbbbR', //  2
+  'RhbPbhhhhbPbbbbbbPbhhhbPbR', //  3  a rank of footings
+  'RhbbbhhhbbbbbbbbbbbhhhbbbR', //  4
+  'Rbbhh##bbbbbbbbbb##hhhhbbR', //  5
   'RbbbbbbbbbbbbbbbbbbbbbbbbR', //  6
   'RbbPbbbbbbPbbbbbbPbbbbbPbR', //  7
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', //  8
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', //  9
+  'RbbbbbbbbbbbbbbbbbbbhhbbbR', //  8
+  'RbhhhhhbbbbbbbbbbbbhhhhbbR', //  9
   ',,,,,,,,,,,,,,,,,,,,,,,,,R', // 10  the track west, to the Crossing
   ',,,,,,,,,,,,,,,,,,,,,,,,,R', // 11
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', // 12
-  'RbbPbbbbbbPbbbbbbPbbbbbPbR', // 13
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', // 14
-  'Rbbbb##bbbbbbbbbb##bbbbbbR', // 15
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', // 16
-  'RbbPbbbbbbPbbbbbbPbbbbbPbR', // 17
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', // 18
-  'Rbbbb##bbbbbbbbbb##bbbbbbR', // 19
+  'RhbbbhhhhbbbbbbhbbbhhhbbbR', // 12
+  'RhbPbhhhhbPbbbhhbPbhhhbPbR', // 13
+  'RhbbbhhhhbbbbbhhbbbhhhbbbR', // 14
+  'Rhhhh##hhhhbbbbhh##hhhhhhR', // 15
+  'RhbbbhhhhbbbbbbbbbbhhhbbbR', // 16
+  'RhbPbhhhhbPbbbbbbPbhhhbPbR', // 17
+  'RbbbbhhbbbbbbbbbbbbhhhbbbR', // 18
+  'Rbbhh##bbbbbbbbbb##bhhhbbR', // 19
   'RbbbbbbbbbbbbbbbbbbbbbbbbR', // 20
   'RbbPbbbbbbPbbbbbbPbbbbbPbR', // 21
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', // 22
+  'RbbbbhbbbbbbbbbbbbbbhhbbbR', // 22
   'RRRRRRRRRRRRRRRRRRRRRRRRRR', // 23
 ];
 
@@ -99,6 +101,50 @@ export const STORM_SHELF: AreaDef = defineArea({
     },
   ],
   props: {
+    /** On the footings themselves. Whoever wrote this had been under one. */
+    graffiti: [
+      { text: 'DO NOT SHELTER UNDER IRON', wallX: 18, wallZ: 7.95, dx: -3.0, facesSouth: true, tint: '#b7ae9d' },
+      { text: 'NINE WAS NOT AN ACCIDENT', wallX: -38, wallZ: -32.05, dx: 3.2, facesSouth: true, tint: '#a4543a' },
+    ],
+    /** Pylon country. Scorch where the sky has been down, and cairns where shepherds have been. */
+    dressing: [
+      { kind: 'scorch', x: -46, z: -42 },
+      { kind: 'scorch', x: -14, z: -38 },
+      { kind: 'scorch', x: 34, z: -34 },
+      { kind: 'scorch', x: -18, z: -26 },
+      { kind: 'scorch', x: 22, z: -22 },
+      { kind: 'scorch', x: -22, z: -14 },
+      { kind: 'scorch', x: 26, z: -10 },
+      { kind: 'scorch', x: -10, z: -2 },
+      { kind: 'scorch', x: 30, z: 2 },
+      { kind: 'scorch', x: -14, z: 10 },
+      { kind: 'scorch', x: 26, z: 14 },
+      { kind: 'scorch', x: -30, z: 22 },
+      { kind: 'scorch', x: 18, z: 26 },
+      { kind: 'scorch', x: -38, z: 34 },
+      { kind: 'scorch', x: 6, z: 38 },
+      { kind: 'cairn', x: -38, z: -42 },
+      { kind: 'cairn', x: -34, z: -34 },
+      { kind: 'cairn', x: -6, z: -26 },
+      { kind: 'cairn', x: 6, z: -18 },
+      { kind: 'cairn', x: 38, z: -10 },
+      { kind: 'cairn', x: -22, z: 2 },
+      { kind: 'cairn', x: 6, z: 10 },
+      { kind: 'cairn', x: 10, z: 18 },
+      { kind: 'cairn', x: 34, z: 26 },
+      { kind: 'cairn', x: 38, z: 34 },
+      { kind: 'spoilheap', x: -34, z: -42 },
+      { kind: 'spoilheap', x: 22, z: -34 },
+      { kind: 'spoilheap', x: -2, z: -22 },
+      { kind: 'spoilheap', x: -26, z: -10 },
+      { kind: 'spoilheap', x: -18, z: 2 },
+      { kind: 'spoilheap', x: -42, z: 14 },
+      { kind: 'spoilheap', x: 30, z: 22 },
+      { kind: 'spoilheap', x: -6, z: 34 },
+      { kind: 'waystone', x: -30, z: -42, text: 'PYLON IX — DO NOT SHELTER' },
+      { kind: 'waystone', x: -6, z: -14, text: 'PYLON IX — DO NOT SHELTER' },
+      { kind: 'waystone', x: -46, z: 18, text: 'PYLON IX — DO NOT SHELTER' },
+    ],
     crates: [
       { x: 38, z: -6 },
       { x: -34, z: -6 },

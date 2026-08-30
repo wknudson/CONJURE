@@ -100,6 +100,35 @@ export const WARD_SEVEN: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Built over a cistern that stopped draining. Everything here is about water nobody wants. */
+    dressing: [
+      { kind: 'well', x: -38, z: -30 },
+      { kind: 'well', x: 26, z: -22 },
+      { kind: 'well', x: 22, z: -6 },
+      { kind: 'well', x: -6, z: 10 },
+      { kind: 'well', x: -10, z: 26 },
+      { kind: 'trough', x: -34, z: -30 },
+      { kind: 'trough', x: 30, z: -22 },
+      { kind: 'trough', x: 26, z: -6 },
+      { kind: 'trough', x: 6, z: 10 },
+      { kind: 'trough', x: -6, z: 26 },
+      { kind: 'washing', x: -42, z: -42, yaw: 0 },
+      { kind: 'washing', x: 6, z: -34, yaw: 0 },
+      { kind: 'washing', x: -26, z: -22, yaw: 0 },
+      { kind: 'washing', x: -42, z: -10, yaw: 0 },
+      { kind: 'washing', x: 22, z: -2, yaw: 0 },
+      { kind: 'washing', x: -38, z: 14, yaw: 0 },
+      { kind: 'washing', x: 14, z: 22, yaw: 0 },
+      { kind: 'washing', x: -6, z: 34, yaw: 0 },
+      { kind: 'barrel', x: -30, z: -30 },
+      { kind: 'barrel', x: 22, z: -26 },
+      { kind: 'barrel', x: -26, z: -14 },
+      { kind: 'barrel', x: -10, z: -6 },
+      { kind: 'barrel', x: 6, z: 2 },
+      { kind: 'barrel', x: -34, z: 14 },
+      { kind: 'barrel', x: 10, z: 22 },
+      { kind: 'barrel', x: 2, z: 30 },
+    ],
     /**
      * The two people treating a ward built over its own water.
      *

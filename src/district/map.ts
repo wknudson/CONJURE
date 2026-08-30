@@ -19,6 +19,7 @@
  */
 
 import type { FolkId } from '../render/folk.js';
+import type { DressingId } from './dressing.js';
 
 /**
  * World units per tile, global to every area.
@@ -177,6 +178,30 @@ export interface GraffitiSpec {
   readonly tint: string;
 }
 
+/**
+ * One piece of furniture standing in a ward.
+ *
+ * The kind says what it is and how it is built (`district/dressing.ts`); this says where, and
+ * which way round. Everything past the position is optional because most props do not care.
+ */
+export interface DressingSpec {
+  readonly kind: DressingId;
+  readonly x: number;
+  readonly z: number;
+  /**
+   * Which way it faces, in radians, for the forms that have a front.
+   *
+   * Meaningful for `panel` and ignored by everything else: a billboard turns to the camera by
+   * definition, a box this size reads the same from every side, and a ground decal is round.
+   * Absent means zero, which faces south — the direction most of these maps are read from.
+   */
+  readonly yaw?: number;
+  /** Overrides the kind's own size, for the one crate that should be bigger than the others. */
+  readonly size?: number;
+  /** What is carved on it. `waystone` only; ignored elsewhere. */
+  readonly text?: string;
+}
+
 /** Everything an area may put on top of its ground. All optional; the wilds uses few. */
 export interface AreaProps {
   readonly doors?: readonly DoorSpec[];
@@ -194,6 +219,16 @@ export interface AreaProps {
    */
   readonly huntSignpost?: Vec2;
   readonly crates?: readonly { x: number; z: number; size?: number }[];
+  /**
+   * Everything else standing about, by kind.
+   *
+   * One list rather than a field per prop type. `crates`, `lamps` and `trees` above predate
+   * this and are left alone — they are load-bearing in `world.ts`, in the collider set and in
+   * four tests — but nothing new should join them at this level. A barrel is not a different
+   * *kind of thing* from a hay bale in the way a lamp is; it is a different noun, and nouns
+   * belong in a registry.
+   */
+  readonly dressing?: readonly DressingSpec[];
   readonly lamps?: readonly Vec2[];
   readonly trees?: readonly Vec2[];
   readonly graffiti?: readonly GraffitiSpec[];

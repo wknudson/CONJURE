@@ -89,6 +89,32 @@ export const WEEPING_STILE: AreaDef = defineArea({
     },
   ],
   props: {
+    /** A village that stopped answering. Everything here is something somebody left. */
+    dressing: [
+      { kind: 'pens', x: -30, z: -38, yaw: 0 },
+      { kind: 'pens', x: 18, z: -30, yaw: 0 },
+      { kind: 'pens', x: 6, z: -18, yaw: 0 },
+      { kind: 'pens', x: 6, z: -6, yaw: 0 },
+      { kind: 'pens', x: 22, z: 6, yaw: 0 },
+      { kind: 'pens', x: 2, z: 18, yaw: 0 },
+      { kind: 'pens', x: -18, z: 30, yaw: 0 },
+      { kind: 'fence', x: -22, z: -38, yaw: 0 },
+      { kind: 'fence', x: -10, z: -26, yaw: 0 },
+      { kind: 'fence', x: 10, z: -14, yaw: 0 },
+      { kind: 'fence', x: -14, z: 2, yaw: 0 },
+      { kind: 'fence', x: 10, z: 14, yaw: 0 },
+      { kind: 'fence', x: 18, z: 26, yaw: 0 },
+      { kind: 'logpile', x: -18, z: -38 },
+      { kind: 'logpile', x: 22, z: -22 },
+      { kind: 'logpile', x: -10, z: 2 },
+      { kind: 'logpile', x: -14, z: 22 },
+      { kind: 'cairn', x: -14, z: -38 },
+      { kind: 'cairn', x: 26, z: -22 },
+      { kind: 'cairn', x: -6, z: 2 },
+      { kind: 'cairn', x: -10, z: 22 },
+      { kind: 'waystone', x: -10, z: -38, text: 'RELOCATED — LABOUR — 61' },
+      { kind: 'waystone', x: 6, z: 2, text: 'RELOCATED — LABOUR — 61' },
+    ],
     /**
      * The only two people in a village of sixty-one.
      *

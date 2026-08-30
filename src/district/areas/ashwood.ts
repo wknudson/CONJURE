@@ -21,12 +21,14 @@ import { defineArea, type AreaDef, type TileDef } from '../map.js';
  *   .  weeds        — the edges of a clearing going over
  *   ,  chalk track  — the ride south, out to the Levels
  *   T  timber       — impassable
+ *   l  leaf litter — the floor under the canopy; bare ground is the clearings
  *
  * `T` is tall and split. Split matters here more than anywhere: a run of unsplit timber would be
  * a fence, and the whole point of a wood is that the trunks are at different heights and do not
  * line up.
  */
 const WOOD_LEGEND: Record<string, TileDef> = {
+  l: { tex: 'litter', safe: false, walk: true },
   w: { tex: 'forest', safe: false, walk: true },
   '#': { tex: 'grass', safe: false, walk: true },
   '.': { tex: 'weeds', safe: false, walk: true },
@@ -47,30 +49,30 @@ const WOOD_LEGEND: Record<string, TileDef> = {
  */
 const GRID: readonly string[] = [
   'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', //  0
-  'TwwwwwwwwwwwwwwwwwwwwwwwwwwwwT', //  1
-  'TwwTTwwwwwwwwTTwwwwwwwwTTwwwwT', //  2
-  'Twwwwwwww####wwwwwwww####wwwwT', //  3  clearings
-  'Twwwwwwww####wwwwwwww####wwwwT', //  4
-  'TwwwwwwwwwwwwwwwwwwwwwwwwwwwwT', //  5
-  'TTTwwwwTTwwwwwwTTwwwwTTwwwwTTT', //  6
-  'TwwwwwwwwwwwwwwwwwwwwwwwwwwwwT', //  7
-  'Tww####wwwwwwwwww####wwwwwwwwT', //  8
-  'Tww####wwwwwwwwww####wwwwwwwwT', //  9
-  'TwwwwwwwwwwwwwwwwwwwwwwwwwwwwT', // 10
-  'TwwTTwwwwTTwwwwwwwwTTwwwwTTwwT', // 11
-  'TwwwwwwwwwwwwwwwwwwwwwwwwwwwwT', // 12
-  'Tww..wwwwwwww..wwwwwwww..wwwwT', // 13
-  'TwwwwwwwwwwwwwwwwwwwwwwwwwwwwT', // 14
-  'TTTwwwwTTwwwwwwTTwwwwTTwwwwTTT', // 15
-  'TwwwwwwwwwwwwwwwwwwwwwwwwwwwwT', // 16
-  'Tww####wwwwwwwwww####wwwwwwwwT', // 17
-  'Tww####wwwwwwwwww####wwwwwwwwT', // 18
-  'TwwwwwwwwwwwwwwwwwwwwwwwwwwwwT', // 19
-  'TwwTTwwwwwwwwTTwwwwwwwwTTwwwwT', // 20
-  'TwwwwwwwwwwwwwwwwwwwwwwwwwwwwT', // 21
-  'Twwwwwwwwwwww,,wwwwwwwwwwwwwwT', // 22  the ride
-  'Twwwwwwwwwwww,,wwwwwwwwwwwwwwT', // 23
-  'Twwwwwwwwwwww,,wwwwwwwwwwwwwwT', // 24
+  'TllllllllllllllllllllllllllllT', //  1
+  'TlwTTwwwwwwwlTTwwwwwwwlTTwwwlT', //  2
+  'Tllwwwwww####wllwwwww####wwwlT', //  3  clearings
+  'Tlwwwwwww####wwwwwwww####wwwlT', //  4
+  'TlwlwwlwlwwwwwlllwwwllwlwwlllT', //  5
+  'TTTlwwlTTwwwwwwTTwwwlTTlwwlTTT', //  6
+  'TlwwwwwllwwwwwwlwlwwwwllwwwllT', //  7
+  'Tlw####wwwwwwwwww####wwwwwwwlT', //  8
+  'Tlw####wwwwwwwwww####wwwwwwwlT', //  9
+  'TllwllwwwlwwwwwwwwllwwwwllwllT', // 10
+  'TlwTTlwwwTTlwwwwwwwTTlwwlTTwlT', // 11
+  'TlllllwwwllwwwwwwwllwlwwlllllT', // 12
+  'Tlw..wwwwwwww..wwwwwwww..wwwlT', // 13
+  'TllwwwllwlwwwwlllwwwwwlwwwlwlT', // 14
+  'TTTlwwlTTlwwwwlTTlwwwTTwwwlTTT', // 15
+  'TlwwwwllwwwwwwllwwwwwlllwwlllT', // 16
+  'Tlw####wwwwwwwwww####wwwwwwwlT', // 17
+  'Tlw####wwwwwwwwww####wwwwwwwlT', // 18
+  'TlwwwlwwwwwwlwllwwwwwwllwwwwlT', // 19
+  'TllTTwwwwwwwlTTlwwwwwwlTTwwwlT', // 20
+  'TlwlwlwwwwwwwlwwwwwwwwwwllwwlT', // 21
+  'Tlwwwwwwwwwww,,wwwwwwwwwwwwwlT', // 22  the ride
+  'Tlwwwwwwwwwww,,wwwwwwwwwwwwwlT', // 23
+  'Tllllllllllll,,llllllllllllllT', // 24
   'TTTTTTTTTTTTT,,TTTTTTTTTTTTTTT', // 25  south, down to the Tallow Levels
 ];
 
@@ -94,6 +96,54 @@ export const ASHWOOD: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Deep timber. Cut wood, and the marks left by whoever cut it. */
+    dressing: [
+      { kind: 'waystone', x: -18, z: 18, text: 'THE RIDE — KEEP TO IT' },
+      { kind: 'logpile', x: -54, z: -46 },
+      { kind: 'logpile', x: -10, z: -42 },
+      { kind: 'logpile', x: 42, z: -38 },
+      { kind: 'logpile', x: -38, z: -30 },
+      { kind: 'logpile', x: 18, z: -26 },
+      { kind: 'logpile', x: -46, z: -18 },
+      { kind: 'logpile', x: -2, z: -14 },
+      { kind: 'logpile', x: 34, z: -10 },
+      { kind: 'logpile', x: -14, z: -2 },
+      { kind: 'logpile', x: 34, z: 2 },
+      { kind: 'logpile', x: -34, z: 10 },
+      { kind: 'logpile', x: 30, z: 14 },
+      { kind: 'logpile', x: -42, z: 22 },
+      { kind: 'logpile', x: -6, z: 26 },
+      { kind: 'logpile', x: 50, z: 30 },
+      { kind: 'logpile', x: -26, z: 38 },
+      { kind: 'logpile', x: 10, z: 42 },
+      { kind: 'cairn', x: -50, z: -46 },
+      { kind: 'cairn', x: -2, z: -38 },
+      { kind: 'cairn', x: 22, z: -30 },
+      { kind: 'cairn', x: -22, z: -18 },
+      { kind: 'cairn', x: 6, z: -10 },
+      { kind: 'cairn', x: -42, z: 2 },
+      { kind: 'cairn', x: 14, z: 10 },
+      { kind: 'cairn', x: 50, z: 18 },
+      { kind: 'cairn', x: -22, z: 30 },
+      { kind: 'cairn', x: 22, z: 38 },
+      { kind: 'scorch', x: -46, z: -46 },
+      { kind: 'scorch', x: 2, z: -38 },
+      { kind: 'scorch', x: 26, z: -30 },
+      { kind: 'scorch', x: -18, z: -18 },
+      { kind: 'scorch', x: 10, z: -10 },
+      { kind: 'scorch', x: -38, z: 2 },
+      { kind: 'scorch', x: 18, z: 10 },
+      { kind: 'scorch', x: 54, z: 18 },
+      { kind: 'scorch', x: -18, z: 30 },
+      { kind: 'scorch', x: 26, z: 38 },
+      { kind: 'fence', x: -38, z: -46, yaw: 0 },
+      { kind: 'fence', x: -6, z: -34, yaw: 0 },
+      { kind: 'fence', x: 46, z: -22, yaw: 0 },
+      { kind: 'fence', x: -14, z: -6, yaw: 0 },
+      { kind: 'fence', x: 38, z: 6, yaw: 0 },
+      { kind: 'fence', x: -10, z: 22, yaw: 0 },
+      { kind: 'fence', x: 38, z: 34, yaw: 0 },
+    ],
     // No lamps. Nothing has ever lit a wood.
     crates: [
       { x: -6, z: 42 },

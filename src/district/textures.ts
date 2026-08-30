@@ -18,6 +18,7 @@
 
 import * as THREE from 'three';
 import { groundRowsOf, waterRowsOf, type AreaDef } from './map.js';
+import type { DressingId } from './dressing.js';
 
 /** A deterministic RNG, so the ward is painted the same way every reload. */
 export function mulberry32(seed: number): () => number {
@@ -147,29 +148,203 @@ const PX = 16; // canvas pixels per tile
  * it is a road that looks like a street. A test walks every area's legend against this list
  * so the failure happens where the mistake is.
  */
-export const GROUND_TEXES = [
-  'sidewalk',
-  'grass',
-  'chalk',
-  'field',
-  'weeds',
-  'cobble',
-  'water',
-  // Jolrek's remaining wards.
-  'market',
-  'slag',
-  'ash',
-  'marsh',
-  'flagstone',
-  // The Middle Ring.
-  'salt',
-  'forest',
-  // The Wildlands.
-  'snow',
-  'ice',
-  'blasted',
-  'bone',
-] as const;
+type PaintFn = (
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  rng: () => number,
+) => void;
+
+/**
+ * Every ground paint, and the function that lays it down.
+ *
+ * A record rather than a list beside an if/else chain, because the two of them drifted. The
+ * list has carried `water` since the canal wards were built and the chain never had a branch
+ * for it, so `tex: 'water'` fell through the bare `else` and painted **cobbles**. Invisible in
+ * the five areas that declare `waterRows` — the bake starts below the canal — and very visible
+ * in the Tallow Levels, which declare `W: { tex: 'water' }` with no `waterRows` at all: every
+ * drainage cut in "drained country losing the argument" was dry paving.
+ *
+ * The test walks each area's legend against `GROUND_TEXES`, which catches a *typo* in a legend.
+ * It could never catch this, because the drift was in the other direction — a name on the list
+ * with nothing drawing it. Deriving the list from the record is what makes that direction
+ * impossible rather than merely tested.
+ */
+const PAINTS = {
+  sidewalk: paintSidewalk,
+  grass: paintGrass,
+  chalk: paintChalk,
+  field: paintField,
+  weeds: (ctx, px, py, rng) => paintCobble(ctx, px, py, rng, true),
+  cobble: (ctx, px, py, rng) => paintCobble(ctx, px, py, rng, false),
+  water: paintCut,
+  market: paintMarket,
+  slag: paintSlag,
+  ash: paintAsh,
+  marsh: paintMarsh,
+  flagstone: paintFlagstone,
+  salt: paintSalt,
+  forest: paintForest,
+  snow: paintSnow,
+  ice: paintIce,
+  blasted: paintBlasted,
+  bone: paintBone,
+  // Wave 7: the surfaces the thin areas were missing. Each one exists to break up an area
+  // where a single character covered most of the grid.
+  crust: paintCrust,
+  sulphur: paintSulphur,
+  drift: paintDrift,
+  litter: paintLitter,
+  barrow: paintBarrow,
+  heath: paintHeath,
+} as const satisfies Record<string, PaintFn>;
+
+export type GroundTex = keyof typeof PAINTS;
+
+/**
+ * Every paint an area's legend may ask for.
+ *
+ * `TileDef.tex` stays a plain string — "open-ended: the wilds grows its own" — and the dispatch
+ * below still ends in a fallback rather than a throw, because a typo should paint something
+ * wrong rather than take the ward down. The test is what turns that into a failure at the site
+ * of the mistake.
+ */
+export const GROUND_TEXES = Object.keys(PAINTS) as readonly GroundTex[];
+
+/**
+ * Standing water in a cut, seen from above.
+ *
+ * `GROUND_TEXES` has listed `water` since the canal wards were built, and `bakeGround` never
+ * had a branch for it — so it fell through the bare `else` and painted **cobbles**. Invisible
+ * in Ashfall, Lamprow, Saltglass, Ward Seven and Fenwick's, because those five declare
+ * `waterRows` and `bakeGround` starts below it. Not invisible in the Tallow Levels, which
+ * declares `W: { tex: 'water' }` with no `waterRows` at all: every drainage cut in the area
+ * the atlas calls "drained country losing the argument" has been baking as dry paving, while
+ * the file's own comment says the cuts "are below you, not in front of you".
+ *
+ * The legend test only walks legend -> `GROUND_TEXES`, never `GROUND_TEXES` -> the dispatch,
+ * which is how a green build hid it.
+ */
+/**
+ * Cooled lava crust — the Caldera's floor where it has set hard rather than shattered.
+ *
+ * The crater was two textures over 672 cells, `slag` and `ash` at 43/35, which is why it read
+ * as one surface with a slight tint change. This is the third: plated, near-black, with the
+ * fissures still holding heat. The only warm ground in the game, and it should be — nothing
+ * else in Azo is standing on something that is still cooling.
+ */
+function paintCrust(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  const plate = ['#2b2422', '#332b28', '#251f1e', '#3a312d'];
+  ctx.fillStyle = plate[(rng() * plate.length) | 0]!;
+  ctx.fillRect(px, py, PX, PX);
+
+  // Plates, as several small blocks rather than two large ones. The first cut used blocks half
+  // the tile wide, and since every tile is painted from the same 16px stamp the plates lined up
+  // across tile boundaries and the crater read as a checkerboard — the 4-unit grid became
+  // visible, which is the one thing ground paint must never do.
+  for (let i = 0; i < 5; i++) {
+    const w = 2 + ((rng() * 4) | 0);
+    const h = 2 + ((rng() * 3) | 0);
+    ctx.fillStyle = plate[(rng() * plate.length) | 0]!;
+    ctx.fillRect(px + ((rng() * (PX - w)) | 0), py + ((rng() * (PX - h)) | 0), w, h);
+  }
+
+  // The fissures. Sparse and short: a floor that is more crack than plate is lava, not crust.
+  if (rng() < 0.3) {
+    const x = px + ((rng() * (PX - 4)) | 0);
+    const y = py + ((rng() * PX) | 0);
+    ctx.fillStyle = '#5e2413';
+    ctx.fillRect(x, y, 2 + ((rng() * 3) | 0), 1);
+    ctx.fillStyle = '#93381a';
+    ctx.fillRect(x + 1, y, 2, 1);
+  }
+}
+
+/** Sulphur bloom, where a vent has been breathing on the same patch for years. */
+function paintSulphur(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  const crust = ['#7e6b32', '#8d793a', '#6f5d2b', '#95813f'];
+  ctx.fillStyle = crust[(rng() * crust.length) | 0]!;
+  ctx.fillRect(px, py, PX, PX);
+  ctx.fillStyle = '#a8934a';
+  for (let i = 0; i < 5; i++) {
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 2, 2);
+  }
+  // The rock showing through where the bloom is thin.
+  ctx.fillStyle = '#4a4038';
+  for (let i = 0; i < 3; i++) ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 1, 1);
+}
+
+/**
+ * Wind-piled drift, against the Rimefields' packed snow.
+ *
+ * Paler and smoother than `snow` and deliberately almost featureless: a drift is where the
+ * wind put the snow down rather than scoured it, so it has none of `paintSnow`'s hollows. The
+ * two side by side are what turns 63% of one character into weather.
+ */
+function paintDrift(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  const pale = ['#b6bcc8', '#c0c6d2', '#adb3c0'];
+  ctx.fillStyle = pale[(rng() * pale.length) | 0]!;
+  ctx.fillRect(px, py, PX, PX);
+  // One long shallow ridge, aligned across the tile, which is how drift lies.
+  ctx.fillStyle = '#c9cfda';
+  ctx.fillRect(px, py + ((rng() * PX) | 0), PX, 2);
+  ctx.fillStyle = '#a4aab7';
+  ctx.fillRect(px, py + ((rng() * PX) | 0), PX, 1);
+}
+
+/** Leaf litter under the Ashwood's canopy, where the forest floor is not bare. */
+function paintLitter(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  ctx.fillStyle = '#26301f';
+  ctx.fillRect(px, py, PX, PX);
+  const leaf = ['#4a3f22', '#5c4b28', '#3d3a1e', '#6b5530'];
+  for (let i = 0; i < 14; i++) {
+    ctx.fillStyle = leaf[(rng() * leaf.length) | 0]!;
+    ctx.fillRect(px + ((rng() * (PX - 2)) | 0), py + ((rng() * (PX - 1)) | 0), 2, 1);
+  }
+}
+
+/** Turf over bone — the Bone Bastion's mounds, going grey where the barrow surfaces. */
+function paintBarrow(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  const turf = ['#3e4634', '#47503b', '#39412f'];
+  ctx.fillStyle = turf[(rng() * turf.length) | 0]!;
+  ctx.fillRect(px, py, PX, PX);
+  // What is coming up through it, which is the whole subject of the area.
+  ctx.fillStyle = '#9a927f';
+  for (let i = 0; i < 3; i++) {
+    ctx.fillRect(px + ((rng() * (PX - 3)) | 0), py + ((rng() * PX) | 0), 2 + ((rng() * 2) | 0), 1);
+  }
+  ctx.fillStyle = '#2e3527';
+  for (let i = 0; i < 4; i++) ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 1, 1);
+}
+
+/** Burnt heath on the Storm Shelf, where the sky has been down more than once. */
+function paintHeath(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  const scrub = ['#3a3328', '#443c2f', '#322c23'];
+  ctx.fillStyle = scrub[(rng() * scrub.length) | 0]!;
+  ctx.fillRect(px, py, PX, PX);
+  // Low woody stuff that survived, and the char that did not.
+  ctx.fillStyle = '#55603c';
+  for (let i = 0; i < 6; i++) {
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * (PX - 2)) | 0), 1, 2);
+  }
+  ctx.fillStyle = '#1b1815';
+  for (let i = 0; i < 4; i++) ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 1, 1);
+}
+
+function paintCut(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  ctx.fillStyle = '#232d31';
+  ctx.fillRect(px, py, PX, PX);
+  // A little depth, so a cut reads as holding water rather than as a dark tile.
+  ctx.fillStyle = '#1a2225';
+  for (let i = 0; i < 5; i++) {
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 3, 1);
+  }
+  // The odd glint off the surface. Sparse — a cut is not a canal.
+  if (rng() < 0.35) {
+    ctx.fillStyle = '#3c4c50';
+    ctx.fillRect(px + ((rng() * (PX - 3)) | 0), py + ((rng() * PX) | 0), 3, 1);
+  }
+}
 
 function paintSidewalk(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
   // Warm flagstones. The grout is only a shade darker than the slab — a hard black line at
@@ -682,23 +857,9 @@ export function bakeGround(area: AreaDef, maxAnisotropy: number): THREE.Texture 
       const px = col * PX;
       const py = (row - row0) * PX;
       const tex = area.legend[area.grid[row]![col]!]?.tex ?? 'water';
-      if (tex === 'sidewalk') paintSidewalk(ctx, px, py, rng);
-      else if (tex === 'grass') paintGrass(ctx, px, py, rng);
-      else if (tex === 'chalk') paintChalk(ctx, px, py, rng);
-      else if (tex === 'field') paintField(ctx, px, py, rng);
-      else if (tex === 'weeds') paintCobble(ctx, px, py, rng, true);
-      else if (tex === 'market') paintMarket(ctx, px, py, rng);
-      else if (tex === 'slag') paintSlag(ctx, px, py, rng);
-      else if (tex === 'ash') paintAsh(ctx, px, py, rng);
-      else if (tex === 'marsh') paintMarsh(ctx, px, py, rng);
-      else if (tex === 'flagstone') paintFlagstone(ctx, px, py, rng);
-      else if (tex === 'salt') paintSalt(ctx, px, py, rng);
-      else if (tex === 'forest') paintForest(ctx, px, py, rng);
-      else if (tex === 'snow') paintSnow(ctx, px, py, rng);
-      else if (tex === 'ice') paintIce(ctx, px, py, rng);
-      else if (tex === 'blasted') paintBlasted(ctx, px, py, rng);
-      else if (tex === 'bone') paintBone(ctx, px, py, rng);
-      else paintCobble(ctx, px, py, rng, false);
+      // Unknown paint falls back to cobbles rather than throwing, which is the stance the
+      // header takes: a legend typo should look wrong, not end the ward.
+      (PAINTS[tex as GroundTex] ?? PAINTS.cobble)(ctx, px, py, rng);
     }
   }
 
@@ -821,6 +982,329 @@ export function makeCrateTexture(): THREE.Texture {
   ctx.fillRect(7, 0, 2, 16);
   return canvasTexture(c);
 }
+
+/* ============================================================
+   Dressing — the furniture of a ward
+
+   One factory per kind in `district/dressing.ts`, on the same terms as `makeCrateTexture`
+   above: a small canvas, nearest-filtered, no smoothing. They are deliberately blocky. The
+   environment in this game is pixel art and the actors are painted, and a prop drawn to split
+   the difference ends up belonging to neither.
+
+   Everything here is drawn facing south, because that is what `DressingSpec.yaw` measures from.
+   ============================================================ */
+
+/** Staves and two hoops. Oil in Lamprow, beer at Fenwick's, brine at Saltglass. */
+export function makeBarrelTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 18);
+  // Edge to edge: this is a `box` form, so any transparent pixel is a hole cut through the
+  // barrel by `alphaTest` rather than a rounded side.
+  ctx.fillStyle = '#4a3524';
+  ctx.fillRect(0, 0, 16, 18);
+  ctx.fillStyle = '#5b4229';
+  for (let x = 2; x < 15; x += 3) ctx.fillRect(x, 1, 2, 16);
+  ctx.fillStyle = '#2e2a25';
+  ctx.fillRect(0, 3, 16, 2);
+  ctx.fillRect(0, 13, 16, 2);
+  return canvasTexture(c);
+}
+
+/** Slumped grain sacks. The mill's output, and the toll's subject. */
+export function makeSacksTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(18, 16);
+  // Filled, for the same reason as the barrel above.
+  ctx.fillStyle = '#7a6c4f';
+  ctx.fillRect(0, 0, 18, 16);
+  ctx.fillStyle = '#8d7f5f';
+  ctx.fillRect(1, 5, 8, 11);
+  ctx.fillRect(9, 7, 8, 9);
+  ctx.fillStyle = '#6d6046';
+  ctx.fillRect(2, 1, 6, 4);
+  ctx.fillRect(10, 2, 6, 4);
+  ctx.fillStyle = '#5d5238';
+  ctx.fillRect(1, 15, 16, 1);
+  return canvasTexture(c);
+}
+
+/** A bale, banded twice. Fodder country. */
+export function makeHaybaleTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(18, 14);
+  ctx.fillStyle = '#a08a4e';
+  ctx.fillRect(0, 0, 18, 14);
+  ctx.fillStyle = '#8d7940';
+  for (let y = 2; y < 14; y += 3) ctx.fillRect(0, y, 18, 1);
+  ctx.fillStyle = '#4a3d22';
+  ctx.fillRect(4, 1, 1, 13);
+  ctx.fillRect(13, 1, 1, 13);
+  return canvasTexture(c);
+}
+
+/** Striped cloth stretched over a stall row. Hangs above head height. */
+export function makeAwningTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(24, 12);
+  const stripe = ['#7d3f34', '#b8a68a'];
+  for (let x = 0; x < 24; x += 4) {
+    ctx.fillStyle = stripe[(x / 4) % 2]!;
+    ctx.fillRect(x, 0, 4, 10);
+  }
+  // A sagging hem, so it reads as cloth rather than as a painted board.
+  ctx.fillStyle = '#3a3029';
+  for (let x = 0; x < 24; x += 4) ctx.fillRect(x, 9 + ((x / 4) % 2), 4, 2);
+  return canvasTexture(c);
+}
+
+/** Post and rail. What makes a field a field. */
+export function makeFenceTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 14);
+  ctx.fillStyle = '#4b3d2c';
+  ctx.fillRect(1, 0, 3, 14);
+  ctx.fillRect(16, 0, 3, 14);
+  ctx.fillStyle = '#5d4c36';
+  ctx.fillRect(0, 3, 20, 2);
+  ctx.fillRect(0, 8, 20, 2);
+  return canvasTexture(c);
+}
+
+/** Livestock hurdles — lower than a fence and closer barred. */
+export function makePensTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 11);
+  ctx.fillStyle = '#4b3d2c';
+  for (let x = 0; x < 20; x += 4) ctx.fillRect(x, 0, 2, 11);
+  ctx.fillStyle = '#5d4c36';
+  ctx.fillRect(0, 2, 20, 2);
+  ctx.fillRect(0, 7, 20, 2);
+  return canvasTexture(c);
+}
+
+/** A parked cart, wheel on. Hand cart, coal cart, freight — never moving. */
+export function makeCartTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(22, 18);
+  ctx.fillStyle = '#4f3f2b';
+  ctx.fillRect(2, 4, 18, 7);
+  ctx.fillStyle = '#614d34';
+  ctx.fillRect(3, 5, 16, 2);
+  ctx.fillStyle = '#3a3029';
+  ctx.fillRect(1, 11, 20, 1);
+  // Shafts, so it is a cart and not a box on wheels.
+  ctx.fillRect(19, 6, 3, 1);
+  ctx.fillStyle = '#2b2521';
+  ctx.beginPath();
+  ctx.arc(7, 14, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#4a3f33';
+  ctx.beginPath();
+  ctx.arc(7, 14, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+  return canvasTexture(c);
+}
+
+/** An open fire in an iron basket. Its light is not gaslight, which is the point. */
+export function makeBrazierTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 20);
+  ctx.fillStyle = '#2b2521';
+  ctx.fillRect(4, 12, 2, 8);
+  ctx.fillRect(10, 12, 2, 8);
+  ctx.fillRect(3, 8, 10, 5);
+  ctx.fillStyle = '#d9643a';
+  ctx.fillRect(5, 4, 6, 5);
+  ctx.fillStyle = '#f0a85c';
+  ctx.fillRect(6, 2, 4, 4);
+  ctx.fillStyle = '#ffe0a0';
+  ctx.fillRect(7, 1, 2, 2);
+  return canvasTexture(c);
+}
+
+/** A stone rim and a crossbeam. The reason a hamlet is where it is. */
+export function makeWellTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(18, 20);
+  ctx.fillStyle = '#6b6459';
+  ctx.fillRect(1, 10, 16, 10);
+  ctx.fillStyle = '#7a7367';
+  for (let y = 11; y < 20; y += 3) for (let x = 2; x < 17; x += 4) ctx.fillRect(x, y, 3, 2);
+  ctx.fillStyle = '#100e0c';
+  ctx.fillRect(4, 9, 10, 3);
+  ctx.fillStyle = '#4b3d2c';
+  ctx.fillRect(2, 0, 2, 11);
+  ctx.fillRect(14, 0, 2, 11);
+  ctx.fillRect(1, 0, 16, 2);
+  return canvasTexture(c);
+}
+
+/** Low, long, and full of water. */
+export function makeTroughTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 10);
+  ctx.fillStyle = '#4b3d2c';
+  ctx.fillRect(0, 2, 20, 8);
+  ctx.fillStyle = '#2f4148';
+  ctx.fillRect(2, 3, 16, 3);
+  ctx.fillStyle = '#3d525a';
+  ctx.fillRect(3, 3, 6, 1);
+  return canvasTexture(c);
+}
+
+/** A drying frame — nets, hides, herbs. Open enough to see through. */
+export function makeRackTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 22);
+  ctx.fillStyle = '#4b3d2c';
+  ctx.fillRect(1, 0, 2, 22);
+  ctx.fillRect(17, 0, 2, 22);
+  ctx.fillRect(0, 1, 20, 2);
+  ctx.fillStyle = '#6d6450';
+  for (let x = 4; x < 17; x += 4) ctx.fillRect(x, 3, 1, 12 + ((x * 5) % 5));
+  ctx.fillStyle = '#8a7f66';
+  for (let x = 4; x < 17; x += 4) ctx.fillRect(x - 1, 6 + ((x * 3) % 4), 3, 2);
+  return canvasTexture(c);
+}
+
+/** A line strung between windows. Strung high; you walk under it. */
+export function makeWashingTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(26, 12);
+  ctx.fillStyle = '#3a352c';
+  ctx.fillRect(0, 1, 26, 1);
+  const cloth = ['#8f8574', '#6e7a72', '#94836a', '#5f6570'];
+  for (let i = 0; i < 4; i++) {
+    ctx.fillStyle = cloth[i]!;
+    ctx.fillRect(2 + i * 6, 2, 5, 6 + ((i * 3) % 4));
+  }
+  return canvasTexture(c);
+}
+
+/** Stacked stones. The only mark people leave on the wilds. */
+export function makeCairnTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 16);
+  const grey = ['#6f6a61', '#5d5951', '#7b756a'];
+  const rows: [number, number, number][] = [
+    [2, 12, 4],
+    [3, 10, 4],
+    [4, 8, 3],
+    [5, 5, 3],
+  ];
+  rows.forEach((r, i) => {
+    ctx.fillStyle = grey[i % 3]!;
+    ctx.fillRect(r[0], r[1], r[2] + 2, 4);
+  });
+  return canvasTexture(c);
+}
+
+/** Spoil, slag, salt — a heap of what came out and was not wanted. */
+export function makeSpoilheapTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(24, 12);
+  ctx.fillStyle = '#4c4239';
+  ctx.beginPath();
+  ctx.moveTo(0, 12);
+  ctx.lineTo(8, 2);
+  ctx.lineTo(16, 5);
+  ctx.lineTo(24, 12);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#5d5148';
+  ctx.fillRect(7, 4, 3, 2);
+  ctx.fillRect(14, 7, 3, 2);
+  return canvasTexture(c);
+}
+
+/** Cut timber, stacked to season. End-on, so the rounds show. */
+export function makeLogpileTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 14);
+  ctx.fillStyle = '#3f3225';
+  ctx.fillRect(0, 2, 20, 12);
+  ctx.fillStyle = '#7d6a4e';
+  for (let y = 3; y < 14; y += 4) {
+    for (let x = 1; x < 19; x += 4) {
+      ctx.beginPath();
+      ctx.arc(x + 1.5, y + 1.5, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  return canvasTexture(c);
+}
+
+/** A burn mark on the ground. A thing happened here and is over. */
+export function makeScorchTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(24, 24);
+  const rng = mulberry32(9137);
+  ctx.clearRect(0, 0, 24, 24);
+  ctx.fillStyle = 'rgba(20,16,14,0.85)';
+  ctx.beginPath();
+  ctx.arc(12, 12, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(46,36,28,0.6)';
+  for (let i = 0; i < 40; i++) {
+    const a = rng() * Math.PI * 2;
+    const r = 8 + rng() * 4;
+    ctx.fillRect(12 + Math.cos(a) * r, 12 + Math.sin(a) * r, 2, 2);
+  }
+  return canvasTexture(c);
+}
+
+/** Quay and processional. Stops a cart, not a person walking round it. */
+export function makeBollardTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(8, 12);
+  ctx.fillStyle = '#3a3a40';
+  ctx.fillRect(2, 2, 4, 10);
+  ctx.fillStyle = '#4b4b53';
+  ctx.fillRect(2, 3, 2, 8);
+  ctx.fillStyle = '#2b2b30';
+  ctx.fillRect(1, 0, 6, 3);
+  return canvasTexture(c);
+}
+
+/**
+ * A carved marker, with a line on it.
+ *
+ * The wilds have no walls, so they have no graffiti, so they have had nothing to say. This is
+ * how the Chalk Road and the barrows get a voice — and the atlas already asked for it, placing
+ * waystone pairs at rows 5 and 7 of the road.
+ */
+export function makeWaystoneTexture(text: string): THREE.Texture {
+  const w = Math.max(20, 10 + text.length * 6);
+  const { c, ctx } = makeCanvas(w, 26);
+  ctx.fillStyle = '#6a6459';
+  ctx.fillRect(2, 2, w - 4, 24);
+  ctx.fillStyle = '#787166';
+  ctx.fillRect(3, 3, w - 6, 4);
+  ctx.font = 'bold 8px monospace';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#3b352d';
+  // Same deterministic jitter as the graffiti, so a carved line reads as cut by hand.
+  let h = 7;
+  for (let i = 0; i < text.length; i++) {
+    h = (Math.imul(h, 31) + text.charCodeAt(i)) >>> 0;
+    ctx.fillText(text[i]!, 5 + i * 6, 15 + (((h >>> 3) % 3) - 1));
+  }
+  return canvasTexture(c);
+}
+
+/**
+ * Which factory draws which kind.
+ *
+ * Here rather than in `dressing.ts` because that module is deliberately free of the DOM —
+ * `map.ts` and the tests import it under node, where `document.createElement` does not exist.
+ * The registry holds the facts about a prop; this holds its picture, and a test walks the two
+ * against each other so a kind can never be declared without being drawable.
+ *
+ * `waystone` is absent on purpose: its picture depends on the line carved into it, so it is
+ * built per instance by `makeWaystoneTexture` rather than shared from here.
+ */
+export const DRESSING_ART: Record<Exclude<DressingId, 'waystone'>, () => THREE.Texture> = {
+  barrel: makeBarrelTexture,
+  sacks: makeSacksTexture,
+  haybale: makeHaybaleTexture,
+  awning: makeAwningTexture,
+  fence: makeFenceTexture,
+  cart: makeCartTexture,
+  brazier: makeBrazierTexture,
+  well: makeWellTexture,
+  trough: makeTroughTexture,
+  rack: makeRackTexture,
+  washing: makeWashingTexture,
+  cairn: makeCairnTexture,
+  spoilheap: makeSpoilheapTexture,
+  logpile: makeLogpileTexture,
+  scorch: makeScorchTexture,
+  bollard: makeBollardTexture,
+  pens: makePensTexture,
+};
 
 export function makeGateTexture(): THREE.Texture {
   const { c, ctx } = makeCanvas(16, 24);

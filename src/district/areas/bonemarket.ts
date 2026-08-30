@@ -107,6 +107,37 @@ export const BONEMARKET: AreaDef = defineArea({
     },
   ],
   props: {
+    /** The stall rows are the legend (`T`), so this is what hangs off them, not the stalls themselves. */
+    dressing: [
+      { kind: 'awning', x: -46, z: -38, yaw: 0 },
+      { kind: 'awning', x: 46, z: -34, yaw: 0 },
+      { kind: 'awning', x: 34, z: -26, yaw: 0 },
+      { kind: 'awning', x: 30, z: -18, yaw: 0 },
+      { kind: 'awning', x: 30, z: -10, yaw: 0 },
+      { kind: 'awning', x: 42, z: -2, yaw: 0 },
+      { kind: 'awning', x: -34, z: 10, yaw: 0 },
+      { kind: 'awning', x: -30, z: 18, yaw: 0 },
+      { kind: 'awning', x: -30, z: 26, yaw: 0 },
+      { kind: 'awning', x: -42, z: 34, yaw: 0 },
+      { kind: 'rack', x: -42, z: -34 },
+      { kind: 'rack', x: -14, z: -26 },
+      { kind: 'rack', x: 6, z: -18 },
+      { kind: 'rack', x: 42, z: -10 },
+      { kind: 'rack', x: -38, z: 2 },
+      { kind: 'rack', x: -42, z: 10 },
+      { kind: 'rack', x: -10, z: 18 },
+      { kind: 'rack', x: 30, z: 26 },
+      { kind: 'sacks', x: -38, z: -34 },
+      { kind: 'sacks', x: -26, z: -22 },
+      { kind: 'sacks', x: -10, z: -10 },
+      { kind: 'sacks', x: -22, z: 2 },
+      { kind: 'sacks', x: 10, z: 10 },
+      { kind: 'sacks', x: 34, z: 22 },
+      { kind: 'barrel', x: -34, z: -34 },
+      { kind: 'barrel', x: 34, z: -18 },
+      { kind: 'barrel', x: -18, z: 2 },
+      { kind: 'barrel', x: -2, z: 18 },
+    ],
     /**
      * The traders the market was missing.
      *

@@ -107,6 +107,38 @@ export const HIGHCOURT: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Dressed stone and rank. Bollards and braziers on the processional; nothing on the service end. */
+    dressing: [
+      { kind: 'bollard', x: -34, z: -46 },
+      { kind: 'bollard', x: -6, z: -46 },
+      { kind: 'bollard', x: 26, z: -46 },
+      { kind: 'bollard', x: 22, z: -42 },
+      { kind: 'bollard', x: 22, z: -38 },
+      { kind: 'bollard', x: 30, z: -34 },
+      { kind: 'bollard', x: -14, z: -30 },
+      { kind: 'bollard', x: 18, z: -30 },
+      { kind: 'bollard', x: -14, z: -26 },
+      { kind: 'bollard', x: 22, z: -26 },
+      { kind: 'bollard', x: -10, z: -22 },
+      { kind: 'bollard', x: 22, z: -22 },
+      { kind: 'bollard', x: -18, z: -18 },
+      { kind: 'bollard', x: 14, z: -18 },
+      { kind: 'bollard', x: -30, z: -14 },
+      { kind: 'bollard', x: 6, z: -14 },
+      { kind: 'brazier', x: -30, z: -46 },
+      { kind: 'brazier', x: 30, z: -46 },
+      { kind: 'brazier', x: 26, z: -38 },
+      { kind: 'brazier', x: -10, z: -30 },
+      { kind: 'brazier', x: -10, z: -26 },
+      { kind: 'brazier', x: -6, z: -22 },
+      { kind: 'brazier', x: -14, z: -18 },
+      { kind: 'brazier', x: -26, z: -14 },
+      { kind: 'awning', x: -38, z: -50, yaw: 0 },
+      { kind: 'awning', x: 38, z: -46, yaw: 0 },
+      { kind: 'awning', x: 18, z: -38, yaw: 0 },
+      { kind: 'awning', x: 26, z: -30, yaw: 0 },
+      { kind: 'awning', x: 38, z: -22, yaw: 0 },
+    ],
     /**
      * The court, on the processional.
      *

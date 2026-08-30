@@ -109,6 +109,31 @@ export const CHALK_VERGE: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Spoil and abandoned kit, and the first waystones the road puts up. */
+    dressing: [
+      { kind: 'spoilheap', x: -38, z: -26 },
+      { kind: 'spoilheap', x: -10, z: -22 },
+      { kind: 'spoilheap', x: 30, z: -18 },
+      { kind: 'spoilheap', x: -22, z: -10 },
+      { kind: 'spoilheap', x: 42, z: -6 },
+      { kind: 'spoilheap', x: 38, z: 2 },
+      { kind: 'spoilheap', x: 42, z: 10 },
+      { kind: 'spoilheap', x: -2, z: 18 },
+      { kind: 'cairn', x: -34, z: -26 },
+      { kind: 'cairn', x: 26, z: -22 },
+      { kind: 'cairn', x: 30, z: -14 },
+      { kind: 'cairn', x: -42, z: -2 },
+      { kind: 'cairn', x: 30, z: 6 },
+      { kind: 'cairn', x: -34, z: 18 },
+      { kind: 'waystone', x: -30, z: -26, text: 'THE WARD ENDS HERE' },
+      { kind: 'waystone', x: 34, z: -18, text: 'NO WRIT PAST THIS STONE' },
+      { kind: 'waystone', x: -38, z: -2, text: 'THE WARD ENDS HERE' },
+      { kind: 'waystone', x: -38, z: 14, text: 'NO WRIT PAST THIS STONE' },
+      { kind: 'fence', x: -26, z: -26, yaw: 0 },
+      { kind: 'fence', x: 38, z: -18, yaw: 0 },
+      { kind: 'fence', x: -34, z: -2, yaw: 0 },
+      { kind: 'fence', x: -34, z: 14, yaw: 0 },
+    ],
     /**
      * Three packs, working one shared stretch of road.
      *

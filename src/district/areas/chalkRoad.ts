@@ -124,6 +124,29 @@ export const CHALK_ROAD: AreaDef = defineArea({
     },
   ],
   props: {
+    /** The artery. The atlas puts waystone pairs on it, so here they are, plus what falls off a cart. */
+    dressing: [
+      { kind: 'waystone', x: -58, z: -18, text: 'JOLREK — VIII' },
+      { kind: 'waystone', x: 10, z: -14, text: 'MILLHARROW — III' },
+      { kind: 'waystone', x: -54, z: -6, text: 'THE RIME — XI' },
+      { kind: 'waystone', x: 34, z: -2, text: 'FENWICK — V' },
+      { kind: 'waystone', x: -58, z: 10, text: 'JOLREK — VIII' },
+      { kind: 'waystone', x: 10, z: 14, text: 'MILLHARROW — III' },
+      { kind: 'fence', x: -54, z: -18, yaw: 0 },
+      { kind: 'fence', x: -46, z: -14, yaw: 0 },
+      { kind: 'fence', x: -6, z: -10, yaw: 0 },
+      { kind: 'fence', x: 10, z: -6, yaw: 0 },
+      { kind: 'fence', x: 38, z: -2, yaw: 0 },
+      { kind: 'fence', x: 10, z: 6, yaw: 0 },
+      { kind: 'fence', x: 42, z: 10, yaw: 0 },
+      { kind: 'fence', x: -58, z: 18, yaw: 0 },
+      { kind: 'cart', x: -50, z: -18 },
+      { kind: 'cart', x: -46, z: -6 },
+      { kind: 'cart', x: -50, z: 10 },
+      { kind: 'cairn', x: -46, z: -18 },
+      { kind: 'cairn', x: -42, z: -6 },
+      { kind: 'cairn', x: -46, z: 10 },
+    ],
     /**
      * Three crews working one stretch.
      *

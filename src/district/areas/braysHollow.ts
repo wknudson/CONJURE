@@ -90,6 +90,34 @@ export const BRAYS_HOLLOW: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Livestock, and the licences that cost more than the herd. Fences, a well, and fodder. */
+    dressing: [
+      { kind: 'waystone', x: 10, z: -18, text: 'BRAY — NO MARKET, NO INN' },
+      { kind: 'pens', x: -34, z: -38, yaw: 0 },
+      { kind: 'pens', x: -10, z: -30, yaw: 0 },
+      { kind: 'pens', x: 14, z: -22, yaw: 0 },
+      { kind: 'pens', x: -6, z: -10, yaw: 0 },
+      { kind: 'pens', x: -18, z: 2, yaw: 0 },
+      { kind: 'pens', x: 14, z: 10, yaw: 0 },
+      { kind: 'pens', x: -14, z: 22, yaw: 0 },
+      { kind: 'pens', x: 14, z: 30, yaw: 0 },
+      { kind: 'fence', x: -30, z: -38, yaw: 0 },
+      { kind: 'fence', x: -22, z: -26, yaw: 0 },
+      { kind: 'fence', x: -2, z: -14, yaw: 0 },
+      { kind: 'fence', x: -14, z: 2, yaw: 0 },
+      { kind: 'fence', x: 10, z: 14, yaw: 0 },
+      { kind: 'fence', x: 34, z: 26, yaw: 0 },
+      { kind: 'haybale', x: -26, z: -38 },
+      { kind: 'haybale', x: 26, z: -26 },
+      { kind: 'haybale', x: 30, z: -10 },
+      { kind: 'haybale', x: -14, z: 10 },
+      { kind: 'haybale', x: -14, z: 26 },
+      { kind: 'well', x: -22, z: -38 },
+      { kind: 'well', x: -6, z: 2 },
+      { kind: 'trough', x: -18, z: -38 },
+      { kind: 'trough', x: 6, z: -14 },
+      { kind: 'trough', x: 26, z: 14 },
+    ],
     /**
      * Two people, which is the right number for a place that is not a town.
      *

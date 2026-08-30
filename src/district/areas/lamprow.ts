@@ -125,6 +125,33 @@ export const LAMPROW: AreaDef = defineArea({
     },
   ],
   props: {
+    /** The lighting ward. Oil on the quay, a fire below the kerb, washing over the Sink. */
+    dressing: [
+      { kind: 'barrel', x: -42, z: -30 },
+      { kind: 'barrel', x: 14, z: -30 },
+      { kind: 'barrel', x: -22, z: -26 },
+      { kind: 'barrel', x: 22, z: -26 },
+      { kind: 'barrel', x: 14, z: -22 },
+      { kind: 'barrel', x: 2, z: -18 },
+      { kind: 'barrel', x: -38, z: -14 },
+      { kind: 'washing', x: -42, z: -38, yaw: 0 },
+      { kind: 'washing', x: -34, z: -26, yaw: 0 },
+      { kind: 'washing', x: -22, z: -14, yaw: 0 },
+      { kind: 'washing', x: -22, z: -2, yaw: 0 },
+      { kind: 'washing', x: 30, z: 14, yaw: 0 },
+      { kind: 'washing', x: -30, z: 30, yaw: 0 },
+      { kind: 'brazier', x: -42, z: 14 },
+      { kind: 'brazier', x: -38, z: 26 },
+      { kind: 'brazier', x: -6, z: 30 },
+      { kind: 'brazier', x: 18, z: 34 },
+      { kind: 'bollard', x: -38, z: -30 },
+      { kind: 'bollard', x: 18, z: -30 },
+      { kind: 'bollard', x: -18, z: -26 },
+      { kind: 'bollard', x: 30, z: -26 },
+      { kind: 'bollard', x: 18, z: -22 },
+      { kind: 'bollard', x: 10, z: -18 },
+      { kind: 'bollard', x: -34, z: -14 },
+    ],
     /**
      * The ward, on its own flags.
      *

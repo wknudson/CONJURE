@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { LOOK, ambientFor, type AmbientDef } from './look.js';
 import type { ColliderSet } from './collision.js';
+import { DRESSING } from './dressing.js';
 import {
   TILE,
   extractRects,
@@ -20,12 +21,15 @@ import {
   xOfCol,
   zOfRow,
   type AreaDef,
+  type DressingSpec,
 } from './map.js';
 import {
   bakeGround,
   makeBoardTexture,
   makeCrateTexture,
+  DRESSING_ART,
   makeGateTexture,
+  makeWaystoneTexture,
   makeOutskirtsTexture,
   makeGraffitiTexture,
   makeSignTexture,
@@ -86,6 +90,8 @@ export class DistrictWorld {
   private readonly structures: Structure[] = [];
   private readonly hitboxes: THREE.Mesh[] = [];
   private readonly lamps: Lamp[] = [];
+  /** One picture per kind of furniture, for the life of this world. See the build loop. */
+  private readonly dressTex = new Map<string, THREE.Texture>();
   private readonly signs: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = [];
   private readonly impacts: ImpactLight[] = [];
   /** Absent in an area with no canal. `dispose` and `scrollWater` both allow for it. */
@@ -230,6 +236,26 @@ export class DistrictWorld {
       for (const c of crates) this.addCrate(crateTexture, c.x, c.z, c.size ?? 1.1);
     }
 
+    /* --- the furniture ---
+       One texture per *kind* standing in this area, not per instance — the rule the trees and
+       crates above already follow, and the reason a ward with twelve barrels uploads one
+       barrel. Cached on the build rather than at module scope: `dispose()` traverses the scene
+       disposing every map it finds and the screen is torn down on every shop door, so a
+       module-level texture would be dead on the second visit.
+
+       Waystones are the exception and cannot share, because the picture is the line carved
+       into it. */
+    for (const spec of area.props.dressing ?? []) {
+      let texture = this.dressTex.get(spec.kind);
+      if (spec.kind === 'waystone') {
+        texture = makeWaystoneTexture(spec.text ?? '');
+      } else if (!texture) {
+        texture = DRESSING_ART[spec.kind]();
+        this.dressTex.set(spec.kind, texture);
+      }
+      this.addDressing(spec, texture);
+    }
+
     /* --- door plaques --- */
     for (const door of area.props.doors ?? []) {
       const sign = new THREE.Mesh(
@@ -364,6 +390,105 @@ export class DistrictWorld {
     this.scene.add(b);
     this.billboards.push(b);
     return b;
+  }
+
+  /**
+   * One piece of furniture, built the way its kind says to build it.
+   *
+   * Four forms, because the two that existed do not cover the world. A fence is not a
+   * billboard — it would swing to face the camera and stop enclosing anything the moment the
+   * player orbits with Q/E — and a scorch mark is not a box.
+   */
+  private addDressing(spec: DressingSpec, texture: THREE.Texture): void {
+    const kind = DRESSING[spec.kind];
+    const size = spec.size ?? kind.size;
+    const img = texture.image as { width?: number; height?: number } | null | undefined;
+    const aspect = img?.width && img.height ? img.width / img.height : 1;
+    const yaw = spec.yaw ?? 0;
+
+    if (kind.form === 'billboard') {
+      // Through the same helper the trees use, so it lands in `world.billboards` and is turned
+      // to camera each frame with everything else. `yaw` is meaningless here and a test says so
+      // rather than letting it be silently discarded.
+      this.addBillboard(texture, size * aspect, size, spec.x, spec.z);
+    } else if (kind.form === 'panel') {
+      // Deliberately not a `BillboardSprite`, and deliberately not pushed into `billboards`:
+      // holding the yaw it was given is the entire reason this form exists.
+      const geo = new THREE.PlaneGeometry(size * aspect, size);
+      // Lifted so `position.y = 0` means standing on the floor, the same trick the gate uses.
+      geo.translate(0, size / 2, 0);
+      const panel = new THREE.Mesh(
+        geo,
+        new THREE.MeshLambertMaterial({
+          map: texture,
+          transparent: false,
+          alphaTest: 0.35,
+          side: THREE.DoubleSide,
+        }),
+      );
+      panel.position.set(spec.x, 0, spec.z);
+      panel.rotation.y = yaw;
+      panel.castShadow = true;
+      this.scene.add(panel);
+    } else if (kind.form === 'ground') {
+      // Lambert, not Basic: the ground plane it lies on is Lambert, and an unlit decal would
+      // glow on a dark street instead of taking the ward's light with everything else.
+      const decal = new THREE.Mesh(
+        new THREE.PlaneGeometry(size, size),
+        new THREE.MeshLambertMaterial({
+          map: texture,
+          transparent: true,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+        }),
+      );
+      decal.rotation.x = -Math.PI / 2;
+      decal.rotation.z = yaw;
+      // A hair off the floor, so it does not fight the baked ground for depth.
+      decal.position.set(spec.x, 0.03, spec.z);
+      decal.renderOrder = 1;
+      this.scene.add(decal);
+    } else {
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(size * aspect, size, size),
+        // `alphaTest` rather than a bare map: these textures do not fill their canvas — a
+        // barrel is round and a trough is low — and an untested alpha renders those pixels as
+        // solid black faces rather than as nothing. The crate got away without it only because
+        // its art is a filled square.
+        new THREE.MeshLambertMaterial({ map: texture, transparent: false, alphaTest: 0.5 }),
+      );
+      box.position.set(spec.x, size / 2, spec.z);
+      box.rotation.y = yaw;
+      box.castShadow = true;
+      box.receiveShadow = true;
+      this.scene.add(box);
+      // Into `structures` so a fight fades it, exactly as a building is faded — a barrel left
+      // standing opaque in the middle of an arena is the same complaint as a wall would be.
+      // Only this form: `inArena` reads `BoxGeometry.parameters`, so handing it a plane would
+      // give it `depth: undefined` and a NaN comparison that silently answers false.
+      //
+      // Not into `hitboxes`, though. That list is raycast every frame for occlusion, and
+      // waist-high furniture never stands between a camera 22 units out and the player.
+      this.structures.push({ hit: box, mats: [box.material] });
+    }
+
+    // A brazier is a fire, so it lights what is around it. Same warm point light the gas lamps
+    // carry, at a shorter reach and with no pole: a fire in a basket is not a street lamp.
+    if (spec.kind === 'brazier') {
+      const light = new THREE.PointLight(new THREE.Color('#e08040'), LOOK.lampIntensity * 0.8, LOOK.lampDistance * 0.6, 2);
+      light.position.set(spec.x, size * 0.9, spec.z);
+      this.scene.add(light);
+    }
+
+    if (kind.collides) {
+      // The footprint of the *rotated* box, because `ColliderSet` is axis-aligned only. Without
+      // this a fence turned forty-five degrees would collide as though it still ran east-west,
+      // and the art would be lying about where the wall is.
+      const w = size * aspect;
+      const cos = Math.abs(Math.cos(yaw));
+      const sin = Math.abs(Math.sin(yaw));
+      this.colliders.add(spec.x, spec.z, w * cos + size * sin, w * sin + size * cos, spec.kind);
+    }
   }
 
   private addCrate(texture: THREE.Texture, x: number, z: number, s: number): void {

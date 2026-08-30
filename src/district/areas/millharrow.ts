@@ -123,6 +123,53 @@ export const MILLHARROW: AreaDef = defineArea({
   ],
   props: {
     /**
+     * The crossroads has opinions about the toll.
+     *
+     * On the west range, where the road into town runs past it — the graffiti in this game is
+     * always on the wall of whatever the line is complaining about.
+     */
+    graffiti: [
+      { text: 'THE TOLL IS NOT THE KINGS', wallX: -42, wallZ: -16.05, dx: 3.0, facesSouth: true, tint: '#a46a4a' },
+      { text: 'WEIGH IT AT THE MILL', wallX: -42, wallZ: 11.95, dx: -3.2, facesSouth: true, tint: '#b7ae9d' },
+    ],
+    /** Mill town at the crossroads: grain in, beer out, and a toll on the best road. */
+    dressing: [
+      { kind: 'sacks', x: -46, z: -42 },
+      { kind: 'sacks', x: -38, z: -34 },
+      { kind: 'sacks', x: -46, z: -26 },
+      { kind: 'sacks', x: 18, z: -18 },
+      { kind: 'sacks', x: 14, z: -6 },
+      { kind: 'sacks', x: -2, z: 6 },
+      { kind: 'sacks', x: -18, z: 18 },
+      { kind: 'sacks', x: 46, z: 26 },
+      { kind: 'sacks', x: 38, z: 34 },
+      { kind: 'haybale', x: -38, z: -42 },
+      { kind: 'haybale', x: 18, z: -34 },
+      { kind: 'haybale', x: -10, z: -22 },
+      { kind: 'haybale', x: -10, z: -6 },
+      { kind: 'haybale', x: 46, z: 6 },
+      { kind: 'haybale', x: 14, z: 22 },
+      { kind: 'haybale', x: -18, z: 34 },
+      { kind: 'cart', x: -34, z: -42 },
+      { kind: 'cart', x: 18, z: -30 },
+      { kind: 'cart', x: -10, z: -10 },
+      { kind: 'cart', x: 18, z: 10 },
+      { kind: 'cart', x: -10, z: 30 },
+      { kind: 'fence', x: -30, z: -42, yaw: 0 },
+      { kind: 'fence', x: -30, z: -34, yaw: 0 },
+      { kind: 'fence', x: -34, z: -26, yaw: 0 },
+      { kind: 'fence', x: -46, z: -14, yaw: 0 },
+      { kind: 'fence', x: -42, z: -2, yaw: 0 },
+      { kind: 'fence', x: 2, z: 6, yaw: 0 },
+      { kind: 'fence', x: -10, z: 18, yaw: 0 },
+      { kind: 'fence', x: -46, z: 30, yaw: 0 },
+      { kind: 'fence', x: 46, z: 34, yaw: 0 },
+      { kind: 'waystone', x: -26, z: -42, text: 'BY ORDER — TOLL PAYABLE' },
+      { kind: 'waystone', x: -26, z: 2, text: 'BY ORDER — TOLL PAYABLE' },
+      { kind: 'well', x: -22, z: -42 },
+      { kind: 'well', x: -22, z: 2 },
+    ],
+    /**
      * The hub, populated as a hub.
      *
      * One on each of three of the four arms of the crossroads, so that whichever road the

@@ -22,11 +22,13 @@ import { defineArea, type AreaDef, type TileDef } from '../map.js';
  *   ,  causeway     — chalk, and the only cut ground here
  *   M  barrow mound — impassable, low and wide
  *   X  bastion wall — impassable, and enormous
+ *   t  turf        — grass over a mound, going grey where the barrow surfaces
  *
  * `M` is unsplit and barely inset: a mound is one heaped mass, and chunking it would turn a
  * barrow into a terrace of huts.
  */
 const BASTION_LEGEND: Record<string, TileDef> = {
+  t: { tex: 'barrow', safe: false, walk: true },
   o: { tex: 'bone', safe: false, walk: true },
   '#': { tex: 'grass', safe: false, walk: true },
   ',': { tex: 'chalk', safe: false, walk: true },
@@ -53,30 +55,30 @@ const BASTION_LEGEND: Record<string, TileDef> = {
  */
 const GRID: readonly string[] = [
   'XXXXXXXXXXXXXXXXXXXXXXXX', //  0
-  'XooooooooooooooooooooooX', //  1
-  'XooooooooooooooooooooooX', //  2
-  'XooMMMMoooooooMMMMoooooX', //  3  a rank of barrows
-  'XooMMMMoooooooMMMMoooooX', //  4
-  'XooooooooooooooooooooooX', //  5
-  'XooooooMMMMMMooooooooooX', //  6
-  'XooooooMMMMMMooooooooooX', //  7
-  'XooooooooooooooooooooooX', //  8
-  'XooMMMMoooooMMMMoooooo#X', //  9
-  'XooMMMMoooooMMMMoooooo#X', // 10
-  'XooooooooooooooooooooooX', // 11
+  'XttttttttooottttttttoooX', //  1
+  'XttttttttooottttttttoooX', //  2
+  'XttMMMMttooottMMMMttoooX', //  3  a rank of barrows
+  'XttMMMMtttttttMMMMttoooX', //  4
+  'XtttttttttttttttttttoooX', //  5
+  'XttttttMMMMMMtttttttoooX', //  6
+  'XttttttMMMMMMtttttoooooX', //  7
+  'XtttttttttttttttttoooooX', //  8
+  'XttMMMMtttttMMMMttoooo#X', //  9
+  'XttMMMMttottMMMMttoooo#X', // 10
+  'XttttttttottttttttoooooX', // 11
   'X,,,,,,,,,,,,,,,,,,,,,,,', // 12  the causeway east, to the Tallow Levels
   'X,,,,,,,,,,,,,,,,,,,,,,,', // 13
-  'XooooooooooooooooooooooX', // 14
-  'XooMMMMoooooMMMMoooooo#X', // 15
-  'XooMMMMoooooMMMMoooooo#X', // 16
-  'XooooooooooooooooooooooX', // 17
-  'XooooooMMMMMMooooooooooX', // 18
-  'XooooooMMMMMMooooooooooX', // 19
-  'XooooooooooooooooooooooX', // 20
-  'XooMMMMoooooooMMMMoooooX', // 21
-  'XooMMMMoooooooMMMMoooooX', // 22
-  'XooooooooooooooooooooooX', // 23
-  'XooooooooooooooooooooooX', // 24
+  'XttttttttottttttttoooooX', // 14
+  'XttMMMMttottMMMMttoooo#X', // 15
+  'XttMMMMtttttMMMMttoooo#X', // 16
+  'XtttttttttttttttttoooooX', // 17
+  'XttttttMMMMMMtttttoooooX', // 18
+  'XttttttMMMMMMtttttttoooX', // 19
+  'XtttttttttttttttttttoooX', // 20
+  'XttMMMMtttttttMMMMttoooX', // 21
+  'XttMMMMttooottMMMMttoooX', // 22
+  'XttttttttooottttttttoooX', // 23
+  'XttttttttooottttttttoooX', // 24
   'XXXXXXXXXXXXXXXXXXXXXXXX', // 25
 ];
 
@@ -100,6 +102,56 @@ export const BONE_BASTION: AreaDef = defineArea({
     },
   ],
   props: {
+    /**
+     * On the bastion wall, which is the one thing here anybody built.
+     *
+     * The atlas calls it "an enormous fortification around ground whose only occupants have
+     * been dead a very long time". These two lines are somebody having noticed which way it
+     * faces.
+     */
+    graffiti: [
+      { text: 'THE WALL FACES IN', wallX: -34, wallZ: 15.95, dx: 3.0, facesSouth: true, tint: '#a46a4a' },
+      { text: 'COUNT THEM AGAIN', wallX: 22, wallZ: 39.95, dx: -3.2, facesSouth: true, tint: '#b7ae9d' },
+    ],
+    /** Barrow country behind an enormous wall. Standing stones, and cairns on the mounds. */
+    dressing: [
+      { kind: 'cairn', x: -42, z: -46 },
+      { kind: 'cairn', x: -18, z: -42 },
+      { kind: 'cairn', x: 38, z: -38 },
+      { kind: 'cairn', x: 10, z: -30 },
+      { kind: 'cairn', x: -30, z: -22 },
+      { kind: 'cairn', x: 22, z: -18 },
+      { kind: 'cairn', x: 26, z: -10 },
+      { kind: 'cairn', x: -22, z: -2 },
+      { kind: 'cairn', x: 30, z: 2 },
+      { kind: 'cairn', x: -14, z: 10 },
+      { kind: 'cairn', x: -18, z: 18 },
+      { kind: 'cairn', x: 30, z: 22 },
+      { kind: 'cairn', x: -10, z: 30 },
+      { kind: 'cairn', x: -38, z: 38 },
+      { kind: 'cairn', x: 18, z: 42 },
+      { kind: 'waystone', x: -38, z: -46, text: 'THE BASTION HOLDS' },
+      { kind: 'waystone', x: 26, z: -38, text: 'COUNT THE MOUNDS' },
+      { kind: 'waystone', x: 30, z: -26, text: 'NOTHING IS BURIED SHALLOW' },
+      { kind: 'waystone', x: 38, z: -14, text: 'THE BASTION HOLDS' },
+      { kind: 'waystone', x: -34, z: 2, text: 'COUNT THE MOUNDS' },
+      { kind: 'waystone', x: -38, z: 14, text: 'NOTHING IS BURIED SHALLOW' },
+      { kind: 'waystone', x: -26, z: 26, text: 'THE BASTION HOLDS' },
+      { kind: 'waystone', x: -6, z: 38, text: 'COUNT THE MOUNDS' },
+      { kind: 'spoilheap', x: -34, z: -46 },
+      { kind: 'spoilheap', x: 30, z: -38 },
+      { kind: 'spoilheap', x: 34, z: -26 },
+      { kind: 'spoilheap', x: -42, z: -10 },
+      { kind: 'spoilheap', x: -30, z: 2 },
+      { kind: 'spoilheap', x: -18, z: 14 },
+      { kind: 'spoilheap', x: -22, z: 26 },
+      { kind: 'spoilheap', x: -2, z: 38 },
+      { kind: 'logpile', x: -30, z: -46 },
+      { kind: 'logpile', x: 18, z: -30 },
+      { kind: 'logpile', x: 38, z: -10 },
+      { kind: 'logpile', x: -6, z: 10 },
+      { kind: 'logpile', x: 2, z: 30 },
+    ],
     crates: [{ x: 38, z: -2 }],
     /** In the scrub along the east wall, which is the only ground here anything grows on. */
     trees: [

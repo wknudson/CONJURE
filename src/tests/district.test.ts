@@ -25,6 +25,7 @@ import { AREAS, ASHFALL, CHALK_ROAD, LAMPROW, areaById } from '../district/areas
 import { GROUND_TEXES } from '../district/textures.js';
 import { ColliderSet } from '../district/collision.js';
 import { FOLK_LINES } from '../district/dialogue.js';
+import { DRESSING, DRESSING_IDS, isDressingId } from '../district/dressing.js';
 import { FOLK_IDS, isFolkId } from '../render/folk.js';
 
 const SPAWN = ASHFALL.spawn;
@@ -51,6 +52,25 @@ describe('the world is populated', () => {
     // -- but nobody may share an `id`, which is what the screen keys them by.
     const ids = cast.map((n) => n.id);
     expect(ids).toHaveLength(new Set(ids).size);
+  });
+
+  it('uses every kind of thing it knows how to build', () => {
+    // The same both-ways rule the sprite sheets get. Dropping a prop kind should be a decision
+    // somebody takes, not a thing that quietly happens while an area is edited.
+    const placed = new Set(AREAS.flatMap((a) => (a.props.dressing ?? []).map((d) => d.kind)));
+    expect([...DRESSING_IDS].filter((id) => !placed.has(id))).toEqual([]);
+  });
+
+  it('gives every area something written in it', () => {
+    // Graffiti needs a wall and eleven areas had none, so the wilds get carved markers instead
+    // — which is why `waystone` carries text. The rule is that every place says *something*:
+    // an area with no line anywhere in it is a place the world has no opinion about.
+    const mute = AREAS.filter(
+      (a) =>
+        (a.props.graffiti ?? []).length === 0 &&
+        !(a.props.dressing ?? []).some((d) => d.kind === 'waystone' && d.text),
+    );
+    expect(mute.map((a) => a.id)).toEqual([]);
   });
 
   it('leaves the Wildlands and the Chalk Road empty', () => {
@@ -224,7 +244,23 @@ describe('every area', () => {
         // Walked rather than reasoned about: a straight line from the spawn to each exit,
         // sampled against the same collision the player is subject to.
         const set = new ColliderSet(area);
-        for (const c of area.props.crates ?? []) set.add(c.x, c.z, 1.1, 1.1, 'crate');
+        // Every collider the world actually puts down, which this walk has never quite been.
+        // Three gaps, all of them pre-existing and all of them making the test weaker than it
+        // reads: the crate size was hardcoded at 1.1 while `world.ts` uses `c.size ?? 1.1`, so
+        // a crate authored bigger was wider in play than in the walk; and lamps and the board
+        // were simply absent, though both collide.
+        for (const c of area.props.crates ?? []) {
+          const w = c.size ?? 1.1;
+          set.add(c.x, c.z, w, w, 'crate');
+        }
+        for (const l of area.props.lamps ?? []) set.add(l.x, l.z, 0.5, 0.5, 'lamp');
+        if (area.props.board) set.add(area.props.board.x, area.props.board.z, 0.9, 0.5, 'board');
+        for (const d of area.props.dressing ?? []) {
+          const kind = DRESSING[d.kind];
+          if (!kind.collides) continue;
+          const size = d.size ?? kind.size;
+          set.add(d.x, d.z, size, size, d.kind);
+        }
         for (const exit of area.exits) {
           if (exit.gate) set.add(exit.gate.x, exit.gate.z, 8, 1.2, 'gate');
         }
@@ -279,6 +315,49 @@ describe('every area', () => {
         // close enough to raise.
         for (const n of area.props.npcs ?? []) {
           expect(isWalkable(area, n.x, n.z), `${area.id}: npc ${n.id}`).toBe(true);
+        }
+      });
+
+      it('stands its furniture where furniture can stand', () => {
+        for (const d of area.props.dressing ?? []) {
+          expect(isDressingId(d.kind), `${area.id}: unknown kind '${d.kind}'`).toBe(true);
+          const kind = DRESSING[d.kind];
+          // Only the things that stop a body have to be on walkable ground. A hoarding is
+          // *supposed* to stand against a wall and an awning hangs over a stall row, so a flat
+          // `isWalkable` rule here would ban exactly the placements those forms exist for.
+          if (kind.collides) {
+            expect(isWalkable(area, d.x, d.z), `${area.id}: ${d.kind} collides inside a wall`).toBe(
+              true,
+            );
+          }
+          // A yaw on a billboard is silently thrown away -- `faceCamera` overwrites
+          // `rotation.y` every frame -- so declaring one is a mistake worth failing on rather
+          // than a preference that quietly does nothing.
+          if (kind.form === 'billboard') {
+            expect(d.yaw, `${area.id}: ${d.kind} faces the camera; its yaw is discarded`).toBeUndefined();
+          }
+          if (d.kind === 'waystone') {
+            expect(d.text, `${area.id}: a waystone with nothing carved on it`).toBeTruthy();
+          }
+        }
+      });
+
+      it('keeps its furniture out of the doorways', () => {
+        // A colliding prop on a hotspot is the `ExitSpec.gate` failure again: every individual
+        // coordinate is legal, and the door simply cannot be reached.
+        const hotspots = [
+          ...area.exits.map((e) => ({ what: `the ${e.to} exit`, x: e.x, z: e.z })),
+          ...(area.props.doors ?? []).map((d) => ({ what: `the ${d.key} door`, x: d.x, z: d.z })),
+        ];
+        for (const d of area.props.dressing ?? []) {
+          if (!DRESSING[d.kind].collides) continue;
+          const size = d.size ?? DRESSING[d.kind].size;
+          for (const h of hotspots) {
+            expect(
+              Math.hypot(d.x - h.x, d.z - h.z),
+              `${area.id}: a ${d.kind} stands on ${h.what}`,
+            ).toBeGreaterThan(size / 2 + 1.4);
+          }
         }
       });
 

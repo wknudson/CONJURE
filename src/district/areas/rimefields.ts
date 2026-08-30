@@ -22,11 +22,13 @@ import { defineArea, type AreaDef, type TileDef } from '../map.js';
  *   ,  chalk road   — the road east, running out into the snow
  *   I  pressure ridge — impassable, low and broad
  *   R  rock         — impassable, the boundary
+ *   d  drift       — where the wind put the snow down rather than scouring it
  *
  * `I` is the widest low solid in the game: almost no inset, so a ridge is a continuous barrier
  * you walk the end of rather than a row of blocks you walk between.
  */
 const RIME_LEGEND: Record<string, TileDef> = {
+  d: { tex: 'drift', safe: false, walk: true },
   n: { tex: 'snow', safe: false, walk: true },
   i: { tex: 'ice', safe: false, walk: true },
   '#': { tex: 'grass', safe: false, walk: true },
@@ -54,26 +56,26 @@ const RIME_LEGEND: Record<string, TileDef> = {
  */
 const GRID: readonly string[] = [
   'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  0
-  'RnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnR', //  1
-  'RnnnnIIIInnnnnnnnnnIIIInnnnnnnnR', //  2  pressure ridges
-  'RnnnnIIIInnnnnnnnnnIIIInnnnnnnnR', //  3
-  'RnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnR', //  4
-  'RnniiiiiinnnnnnnnnnnniiiiiinnnnR', //  5  swept to the ice
-  'RnniiiiiinnnnnnnnnnnniiiiiinnnnR', //  6
-  'RnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnR', //  7
-  'RnnnnnnnnIIIIIInnnnnnIIIIIInnnnR', //  8
-  'RnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnR', //  9
+  'RddddddddddddddddddddddddddddddR', //  1
+  'RddddIIIIddddddddddIIIIddddddddR', //  2  pressure ridges
+  'RddddIIIIddnndddnddIIIIdddnnnddR', //  3
+  'RddddddddddnnnnnnddddddddnnnnddR', //  4
+  'RddiiiiiiddnnnnnnddddiiiiiinnddR', //  5  swept to the ice
+  'RddiiiiiiddddddddnnddiiiiiiddddR', //  6
+  'RddnnnnddddddddddnnddddddddddddR', //  7
+  'RddnnnnddIIIIIIddnnddIIIIIIddddR', //  8
+  'RddnnnnddddddddddnnddddddddddddR', //  9
   'R,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,', // 10  the road, east to the Chalk Road
   'R,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,', // 11
-  'RnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnR', // 12
-  'RnnnnnnnnIIIIIInnnnnnIIIIIInnnnR', // 13
-  'RnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnR', // 14
-  'RnniiiiiinnnnnnnnnnnniiiiiinnnnR', // 15
-  'RnniiiiiinnnnnnnnnnnniiiiiinnnnR', // 16
-  'RnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnR', // 17
-  'Rnnnn##nnnnnnnnnnnnnn##nnnnnnnnR', // 18
-  'RnnnnIIIInnnnnnnnnnIIIInnnnnnnnR', // 19
-  'RnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnR', // 20
+  'RddnnnnddddddddddnnddddddddddddR', // 12
+  'RddnnnnddIIIIIIddnnddIIIIIIddddR', // 13
+  'RddnnnnddddddddddnnddddddddddddR', // 14
+  'RddiiiiiiddddddddnnddiiiiiiddddR', // 15
+  'RddiiiiiinnnnnnnnnnnniiiiiinnddR', // 16
+  'RddddddddddnnnnnnddddddddnnnnddR', // 17
+  'Rdddd##ddddnnndnndddd##ddnnddddR', // 18
+  'RddddIIIIddddddddddIIIIddddddddR', // 19
+  'RddddddddddddddddddddddddddddddR', // 20
   'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', // 21
 ];
 
@@ -97,6 +99,49 @@ export const RIMEFIELDS: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Two crates on a snowfield was the whole area. Cairns are what people leave on ice. */
+    dressing: [
+      { kind: 'cairn', x: -58, z: -38 },
+      { kind: 'cairn', x: 50, z: -38 },
+      { kind: 'cairn', x: -50, z: -30 },
+      { kind: 'cairn', x: -30, z: -26 },
+      { kind: 'cairn', x: -42, z: -22 },
+      { kind: 'cairn', x: -54, z: -18 },
+      { kind: 'cairn', x: 54, z: -18 },
+      { kind: 'cairn', x: 42, z: -14 },
+      { kind: 'cairn', x: -42, z: -6 },
+      { kind: 'cairn', x: -38, z: -2 },
+      { kind: 'cairn', x: -34, z: 2 },
+      { kind: 'cairn', x: -34, z: 6 },
+      { kind: 'cairn', x: -46, z: 10 },
+      { kind: 'cairn', x: -10, z: 14 },
+      { kind: 'cairn', x: -22, z: 18 },
+      { kind: 'cairn', x: -34, z: 22 },
+      { kind: 'cairn', x: -46, z: 26 },
+      { kind: 'cairn', x: -58, z: 30 },
+      { kind: 'cairn', x: 50, z: 30 },
+      { kind: 'cairn', x: -50, z: 38 },
+      { kind: 'waystone', x: -54, z: -38, text: 'THE ROAD — EAST' },
+      { kind: 'waystone', x: -46, z: -30, text: 'NO SHELTER PAST HERE' },
+      { kind: 'waystone', x: -38, z: -22, text: 'COUNT YOUR PARTY' },
+      { kind: 'waystone', x: 58, z: -18, text: 'THE ROAD — EAST' },
+      { kind: 'waystone', x: -38, z: -6, text: 'NO SHELTER PAST HERE' },
+      { kind: 'waystone', x: -30, z: 2, text: 'COUNT YOUR PARTY' },
+      { kind: 'waystone', x: -42, z: 10, text: 'THE ROAD — EAST' },
+      { kind: 'waystone', x: -18, z: 18, text: 'NO SHELTER PAST HERE' },
+      { kind: 'waystone', x: -42, z: 26, text: 'COUNT YOUR PARTY' },
+      { kind: 'waystone', x: 54, z: 30, text: 'THE ROAD — EAST' },
+      { kind: 'spoilheap', x: -50, z: -38 },
+      { kind: 'spoilheap', x: -26, z: -30 },
+      { kind: 'spoilheap', x: -34, z: -22 },
+      { kind: 'spoilheap', x: -58, z: -14 },
+      { kind: 'spoilheap', x: -34, z: -6 },
+      { kind: 'spoilheap', x: -26, z: 2 },
+      { kind: 'spoilheap', x: -38, z: 10 },
+      { kind: 'spoilheap', x: -14, z: 18 },
+      { kind: 'spoilheap', x: -38, z: 26 },
+      { kind: 'spoilheap', x: 58, z: 30 },
+    ],
     // No lamps and no trees. There is nothing out here to hang one on or for one to be.
     crates: [
       { x: 46, z: -2 },

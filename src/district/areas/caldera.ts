@@ -21,12 +21,16 @@ import { defineArea, type AreaDef, type TileDef } from '../map.js';
  *   a  fallen ash  — the skirt, where the walls shed
  *   R  rock face   — impassable, and the whole boundary
  *   V  vent        — impassable, low and taken whole
+ *   c  cooled crust — the floor where it set in sheets rather than shattering
+ *   f  sulphur     — the bloom a vent leaves on the ash it breathes on
  *
  * Four characters, two of them solid. `R` is the tallest unsplit solid outside the Spire: a
  * crater wall chunked into two- and three-tile pieces would read as a row of buildings, and the
  * one thing this place must not look like is a street.
  */
 const CALDERA_LEGEND: Record<string, TileDef> = {
+  c: { tex: 'crust', safe: false, walk: true },
+  f: { tex: 'sulphur', safe: false, walk: true },
   s: { tex: 'slag', safe: false, walk: true },
   a: { tex: 'ash', safe: false, walk: true },
   R: {
@@ -55,21 +59,21 @@ const GRID: readonly string[] = [
   'RaaaaaaaaaaaaaaaaaaaaaaaaaaR', //  1  the ash skirt
   'RaaaaRRRRaaaaaaaaRRRRaaaaaaR', //  2  buttresses
   'RaaaaRRRRaaaaaaaaRRRRaaaaaaR', //  3
-  'RaaaaaaaaaaaaaaaaaaaaaaaaaaR', //  4
-  'RaassssssssssssssssssssssaaR', //  5  the floor
-  'RasssssVVsssssssVVssssssssaR', //  6  vents
+  'RaaaaffffffaaaffffffaaaaaaaR', //  4
+  'RaassssssssssscssssssssssaaR', //  5  the floor
+  'RascsssVVsssssssVVssssssssaR', //  6  vents
   'RassssssssssssssssssssssssaR', //  7
   'RassssssssssssssssssssssssaR', //  8
-  'RasssVVVVssssssssVVVVsssssaR', //  9
-  'RassssssssssssssssssssssssaR', // 10
-  'Rassssssssssssssssssssssssas', // 11  the cut east, to the Cinderworks
-  'Rassssssssssssssssssssssssas', // 12
-  'RasssVVVVssssssssVVVVsssssaR', // 13
-  'RassssssssssssssssssssssssaR', // 14
-  'RassssssssssssssssssssssssaR', // 15
-  'RasssssVVsssssssVVssssssssaR', // 16
-  'RaassssssssssssssssssssssaaR', // 17
-  'RaaaaaaaaaaaaaaaaaaaaaaaaaaR', // 18
+  'RascsVVVVssssssscVVVVsssssaR', //  9
+  'RasccsssssssssccccssssssssaR', // 10
+  'Rascccsssssssscccccsssssssas', // 11  the sut east, to the Cinderworks
+  'Rasccccsssssscccccccssssssas', // 12
+  'RasccVVVVssscccccVVVVsssssaR', // 13
+  'RasccccccssccccccccccssscsaR', // 14
+  'RasccccccssccccccccccssscsaR', // 15
+  'RasccccVVsscccccVVcccssscsaR', // 16
+  'RaassssssssscccssssssssssaaR', // 17
+  'RaaaaffffffaaaffffffaaaaaaaR', // 18
   'RaaaaRRRRaaaaaaaaRRRRaaaaaaR', // 19
   'RaaaaRRRRaaaaaaaaRRRRaaaaaaR', // 20
   'RaaaaaaaaaaaaaaaaaaaaaaaaaaR', // 21
@@ -97,6 +101,50 @@ export const CALDERA: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Daubed on the crater wall by whoever last worked the tap field, and left. */
+    graffiti: [
+      { text: 'THE TAP FIELD TOOK NINE', wallX: -34, wallZ: -32.05, dx: 3.4, facesSouth: true, tint: '#a4543a' },
+    ],
+    /** The thinnest area in the game had one crate on it. Nothing lives here, so nothing here is built — only left. */
+    dressing: [
+      { kind: 'scorch', x: -50, z: -42 },
+      { kind: 'scorch', x: 6, z: -38 },
+      { kind: 'scorch', x: -10, z: -30 },
+      { kind: 'scorch', x: 30, z: -26 },
+      { kind: 'scorch', x: -18, z: -18 },
+      { kind: 'scorch', x: 22, z: -14 },
+      { kind: 'scorch', x: -10, z: -6 },
+      { kind: 'scorch', x: -42, z: 2 },
+      { kind: 'scorch', x: 42, z: 6 },
+      { kind: 'scorch', x: -22, z: 14 },
+      { kind: 'scorch', x: 34, z: 18 },
+      { kind: 'scorch', x: -30, z: 26 },
+      { kind: 'scorch', x: 42, z: 30 },
+      { kind: 'scorch', x: 10, z: 38 },
+      { kind: 'cairn', x: -42, z: -42 },
+      { kind: 'cairn', x: 50, z: -38 },
+      { kind: 'cairn', x: 46, z: -30 },
+      { kind: 'cairn', x: 22, z: -22 },
+      { kind: 'cairn', x: -14, z: -14 },
+      { kind: 'cairn', x: -30, z: -6 },
+      { kind: 'cairn', x: -30, z: 2 },
+      { kind: 'cairn', x: -26, z: 10 },
+      { kind: 'cairn', x: 42, z: 14 },
+      { kind: 'cairn', x: 10, z: 22 },
+      { kind: 'cairn', x: -14, z: 30 },
+      { kind: 'cairn', x: -6, z: 38 },
+      { kind: 'spoilheap', x: -38, z: -42 },
+      { kind: 'spoilheap', x: 38, z: -34 },
+      { kind: 'spoilheap', x: -46, z: -22 },
+      { kind: 'spoilheap', x: -10, z: -14 },
+      { kind: 'spoilheap', x: 42, z: -6 },
+      { kind: 'spoilheap', x: 2, z: 6 },
+      { kind: 'spoilheap', x: 46, z: 14 },
+      { kind: 'spoilheap', x: -38, z: 26 },
+      { kind: 'spoilheap', x: 50, z: 34 },
+      { kind: 'waystone', x: -34, z: -42, text: 'THE TAP FIELD — KEEP OUT' },
+      { kind: 'waystone', x: -22, z: 2, text: 'THE TAP FIELD — KEEP OUT' },
+    ],
     // No lamps. Nothing here has ever been lit by anybody.
     crates: [{ x: 42, z: -2 }],
     /**

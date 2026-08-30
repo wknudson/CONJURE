@@ -110,6 +110,37 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Coach inn and bridge. Beer, horses, and somewhere to tie them. */
+    dressing: [
+      { kind: 'barrel', x: -50, z: -26 },
+      { kind: 'barrel', x: 14, z: -22 },
+      { kind: 'barrel', x: -2, z: -14 },
+      { kind: 'barrel', x: 46, z: -10 },
+      { kind: 'barrel', x: -10, z: -2 },
+      { kind: 'barrel', x: 38, z: 2 },
+      { kind: 'barrel', x: -14, z: 10 },
+      { kind: 'barrel', x: -26, z: 18 },
+      { kind: 'barrel', x: -2, z: 22 },
+      { kind: 'barrel', x: 26, z: 26 },
+      { kind: 'trough', x: -46, z: -26 },
+      { kind: 'trough', x: -14, z: -10 },
+      { kind: 'trough', x: 42, z: 2 },
+      { kind: 'trough', x: 38, z: 18 },
+      { kind: 'cart', x: -38, z: -26 },
+      { kind: 'cart', x: -10, z: -10 },
+      { kind: 'cart', x: 46, z: 2 },
+      { kind: 'cart', x: 42, z: 18 },
+      { kind: 'fence', x: -34, z: -26, yaw: 0 },
+      { kind: 'fence', x: 18, z: -18, yaw: 0 },
+      { kind: 'fence', x: 6, z: -6, yaw: 0 },
+      { kind: 'fence', x: -50, z: 6, yaw: 0 },
+      { kind: 'fence', x: 18, z: 14, yaw: 0 },
+      { kind: 'fence', x: 50, z: 22, yaw: 0 },
+      { kind: 'haybale', x: -30, z: -26 },
+      { kind: 'haybale', x: -6, z: -10 },
+      { kind: 'haybale', x: -46, z: 6 },
+      { kind: 'haybale', x: 50, z: 18 },
+    ],
     /**
      * The busiest street in the Ring, and the only place four people is not too many.
      *
