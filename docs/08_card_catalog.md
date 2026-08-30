@@ -8,28 +8,28 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**214 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**216 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
 | minion | 82 | Hero | Vanguard Roster, never a deck |
-| spell | 96 | Companion | drafted into a Grimoire |
+| spell | 98 | Companion | drafted into a Grimoire |
 | ability | 10 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
 | obstacle | 20 | Hero | Hero Deck, shown as a Construct |
-| **total** | **214** | | |
+| **total** | **216** | | |
 
 ### By school
 
 | School | Cards |
 |---|---:|
 | dusk | 35 |
+| frost | 32 |
 | bulwark | 31 |
-| frost | 31 |
 | bloom | 29 |
 | surge | 29 |
 | pyre | 28 |
-| arcane | 21 |
+| arcane | 22 |
 | neutral | 10 |
 
 ### By file
@@ -51,8 +51,8 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`wildlife.ts`](#wildlifets) | 2 | 2 minion |
 | [`threats.ts`](#threatsts) | 3 | 3 minion |
 | [`hybrid.ts`](#hybridts) | 24 | 23 spell, 1 obstacle |
-| [`auras.ts`](#aurasts) | 11 | 9 spell, 2 ability |
-| **total** | **214** | |
+| [`auras.ts`](#aurasts) | 13 | 11 spell, 2 ability |
+| **total** | **216** | |
 
 ---
 
@@ -370,7 +370,7 @@ Splice products. Obtainable only at the bench. — **24 cards** (23 spell, 1 obs
 
 ### `auras.ts`
 
-The Aura attach cards, their Detonations and Revival. — **11 cards** (9 spell, 2 ability).
+The Aura attach cards, their Detonations and Revival. — **13 cards** (11 spell, 2 ability).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -380,8 +380,10 @@ The Aura attach cards, their Detonations and Revival. — **11 cards** (9 spell,
 | **Verdant Collapse** | `verdant_collapse` | spell | 1P | 1 | hero | — | — | entity (ally, aura climax) | — | R2 | Spends a Climaxed Aura. The growth goes back into the Pact — heal 80. |
 | **Ember Coat** | `ember_coat` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Wraps an ally in fire. +10 ATK per stack, to two. At Climax it burns what it strikes. |
 | **Petrifying Mantle** | `petrifying_mantle` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Sets an ally in stone. +10 Persistent Armor per stack, to two. At Climax nothing shoves it. |
+| **Rime Shell** | `rime_shell` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Plates an ally in ice. +20 Max HP and +10 Armor per stack, to two. At Climax it re-forms. |
 | **Static Charge** | `static_charge` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Charges an ally. +1 MOV per stack, to two. At Climax it stops going around things. |
 | **Verdant Swell** | `verdant_swell` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Roots an ally deeper. +20 Max HP per stack, to two. At Climax it drinks what it wounds. |
+| **Written Path** | `written_path` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Writes an ally a road. +1 MOV per stack, to two. At Climax it steps to anywhere it sees. |
 | **The Blood & Bone Rally** | `blood_and_bone_rally` | spell | 3M | 2 | hero | — | — | fallen (startingZone) | — | R2 | Costs 3 Marrow, which no bank of Bones will cover. Raises a fallen Vanguard in your starting zone at 10 health, wearing Persistent Armor equal to everything it lost. |
 | **Aetheric Resurgence** | `aetheric_resurgence` | ability | X (max 5) | 1 | hero | — | — | fallen (pyre) | — | — | X Bones, up to 5. Raises a fallen Vanguard on the exact tile it fell, at 20% of its health per Bone spent. Nothing may be standing there. |
 | **The Anchor Rally** | `anchor_rally` | ability | 3P | 2 | hero | — | — | fallen (anchor) | — | — | Raises a fallen Vanguard on an Anchor Tile at half health, quickened: +1 MOV this turn. |
@@ -392,7 +394,7 @@ The Aura attach cards, their Detonations and Revival. — **11 cards** (9 spell,
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 74 of the 214 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 74 of the 216 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 
