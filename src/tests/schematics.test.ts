@@ -246,6 +246,13 @@ describe('what the loop can actually reach', () => {
     'siege_break',
     'iron_gate',
     'battlement',
+    // The two Auras that arrived after the ledger was last read. Hero kit, so no enemy deck
+    // was ever going to carry their plan -- an Aura is cast on your own body, and a fight
+    // teaches what it is fought *against*. They reach a player through their school's
+    // `spellPool` on the taming roll like the rest of this list; what they cannot yet be is
+    // forged.
+    'rime_shell',
+    'written_path',
   ]);
 
   const reachable = (): Set<string> => {
