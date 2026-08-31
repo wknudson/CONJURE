@@ -20,6 +20,10 @@
 
 import type { FolkId } from '../render/folk.js';
 import type { DressingId } from './dressing.js';
+import type { CritterId } from './wildlife.js';
+import type { Gate } from './chronicle.js';
+import type { PackHours } from './daylight.js';
+import type { SkyId } from './skies.js';
 
 /**
  * World units per tile, global to every area.
@@ -147,10 +151,40 @@ export interface NpcSpec {
   readonly says?: string;
 }
 
+/**
+ * Animals on a patch. See `wildlife.ts` for what each kind is and how it behaves.
+ *
+ * Shaped like `PackSpec` on purpose — a home, a radius, and a wander — because the motion is
+ * the same motion and reading the two side by side in an area file should make that obvious.
+ * What it does not have is an encounter, and it never will: nothing here can be fought.
+ */
+export interface WildlifeSpec {
+  readonly kind: CritterId;
+  readonly x: number;
+  readonly z: number;
+  /** How far from home it will wander. */
+  readonly roam: number;
+  /**
+   * How many, from one line.
+   *
+   * Their homes are jittered around this one, so a flight of six rooks or a pair of deer is a
+   * single authored entry rather than six. Absent means one.
+   */
+  readonly count?: number;
+}
+
 /** A wandering minion pack. See `data/packs.ts` for what it fights as. */
 export interface PackSpec {
   /** The encounter walking into it starts. */
   readonly encounterId: string;
+  /**
+   * When this crew is out. Absent means always.
+   *
+   * A reading of what they are doing rather than a difficulty setting — see `PackHours`. A pack
+   * that is not out is not spawned at all, so the road is genuinely empty rather than holding
+   * something asleep.
+   */
+  readonly hours?: PackHours;
   /** The middle of its beat. */
   readonly x: number;
   readonly z: number;
@@ -168,6 +202,15 @@ export interface PackSpec {
  */
 export interface GraffitiSpec {
   readonly text: string;
+  /**
+   * When this line is on the wall, if it is not always.
+   *
+   * The reason `docs/worldbuild-todo.md` carried a row about `DON'T CARRY IT IN` through four
+   * waves: the most pointed sentence in the world was painted on Ashfall's wall from turn one,
+   * where it is a warning about something the player has not been offered yet. Absent means
+   * always, which is what every other line here wants.
+   */
+  readonly gate?: Gate;
   /** The wall face it is painted on — the same point a door plaque is hung at. */
   readonly wallX: number;
   readonly wallZ: number;
@@ -211,6 +254,25 @@ export interface AreaProps {
   readonly patrols?: readonly (readonly Vec2[])[];
   readonly packs?: readonly PackSpec[];
   /**
+   * What lives here.
+   *
+   * Empty is a legal and meaningful answer — the Caldera floor is not somewhere anything walks —
+   * but it is worth being deliberate about, because "no animals" and "nobody got round to it"
+   * look identical in an area file and only one of them is a decision.
+   */
+  readonly wildlife?: readonly WildlifeSpec[];
+  /**
+   * What is falling out of the sky here.
+   *
+   * Named `sky` rather than `weather` because the engine already has a `Weather` and it is
+   * a combat rule -- fog shortens a sightline, a gale carries a shot. See `skies.ts`.
+   *
+   * Required in practice rather than by the type: a test asks every area to declare one, so an
+   * area with still air says `'none'` out loud instead of arriving at it by omission. The
+   * difference matters exactly once — the first time somebody adds an area and forgets.
+   */
+  readonly sky?: SkyId;
+  /**
    * Where the hunting notices are posted.
    *
    * The gate used to *be* this panel. Travel took the gate over, and the cooldown
@@ -230,6 +292,15 @@ export interface AreaProps {
    */
   readonly dressing?: readonly DressingSpec[];
   readonly lamps?: readonly Vec2[];
+  /**
+   * Who lights them, by `NpcSpec.id`. Absent means nobody does.
+   *
+   * Absent in eighteen of the nineteen, and that is the honest state rather than a gap: nowhere
+   * else in the world claims a person whose job this is. Where it is absent the lamps fade
+   * together on the hour's curve, which is the right picture drawn by the wrong cause — and where
+   * it is present, they come on one at a time behind somebody walking the row.
+   */
+  readonly lamplighter?: string;
   readonly trees?: readonly Vec2[];
   readonly graffiti?: readonly GraffitiSpec[];
   /** Rows 0..n-1 are open water along the north edge. Absent means no canal and no quay. */

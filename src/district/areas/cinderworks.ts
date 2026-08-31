@@ -114,6 +114,17 @@ export const CINDERWORKS: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Moths at the furnace mouths, which is the one thing that comes *to* a foundry. */
+    sky: 'ash',
+    wildlife: [
+      { kind: 'moth', x: -50, z: -42, roam: 7, count: 3 },
+      { kind: 'moth', x: -18, z: -22, roam: 7, count: 3 },
+      { kind: 'moth', x: 22, z: -2, roam: 7, count: 3 },
+      { kind: 'moth', x: 42, z: 22, roam: 7, count: 3 },
+      { kind: 'rat', x: -26, z: -38, roam: 5, count: 2 },
+      { kind: 'rat', x: -26, z: 2, roam: 5, count: 2 },
+      { kind: 'rook', x: -42, z: -42, roam: 24, count: 3 },
+    ],
     /** Foundry belt: what comes out of the furnace, what carries it, and what it leaves on the floor. */
     dressing: [
       { kind: 'spoilheap', x: -46, z: -38 },
@@ -156,12 +167,20 @@ export const CINDERWORKS: AreaDef = defineArea({
      * hand is down among the slag heaps, which is where the work he describes happens.
      */
     npcs: [
+      { id: 'cinderworks_lamplighter', x: -38, z: -38, art: 'night_watchman', label: 'Talk to the lamplighter' },
       { id: 'cinderworks_smith', x: -18, z: -14, art: 'blacksmith_px', label: 'Talk to the foundry smith' },
       { id: 'cinderworks_glassblower', x: 18, z: -18, art: 'glassblower', label: 'Talk to the glassblower' },
       { id: 'cinderworks_miner', x: -2, z: 22, art: 'miner_a', label: 'Talk to the ash-yard hand' },
       { id: 'cinderworks_potter', x: 14, z: -22, art: 'potter', label: 'Talk to the potter' },
     ],
     /** In the lanes only. Nobody hangs a lamp over a floor that glows on its own. */
+    /**
+     * Who walks the row.
+     *
+     * The one ward that could light itself and does not: furnace glow is not a
+     * street lamp, and the cart lanes are the only ground here anybody walks.
+     */
+    lamplighter: 'cinderworks_lamplighter',
     lamps: [
       { x: -34, z: -38 },
       { x: 6, z: -38 },

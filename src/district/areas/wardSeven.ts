@@ -100,6 +100,16 @@ export const WARD_SEVEN: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Built over a cistern that stopped draining, so: reeds, a heron, and rats. */
+    sky: 'drizzle',
+    wildlife: [
+      { kind: 'heron', x: -26, z: -30, roam: 6 },
+      { kind: 'rat', x: -18, z: -30, roam: 5, count: 2 },
+      { kind: 'rat', x: 18, z: -14, roam: 5, count: 2 },
+      { kind: 'rat', x: -38, z: 6, roam: 5, count: 2 },
+      { kind: 'rat', x: 22, z: 22, roam: 5, count: 2 },
+      { kind: 'gull', x: -38, z: -42, roam: 20, count: 2 },
+    ],
     /** Built over a cistern that stopped draining. Everything here is about water nobody wants. */
     dressing: [
       { kind: 'well', x: -38, z: -30 },
@@ -128,6 +138,12 @@ export const WARD_SEVEN: AreaDef = defineArea({
       { kind: 'barrel', x: -34, z: 14 },
       { kind: 'barrel', x: 10, z: 22 },
       { kind: 'barrel', x: 2, z: 30 },
+      { kind: 'reeds', x: -26, z: -30 },
+      { kind: 'reeds', x: 22, z: -30 },
+      { kind: 'reeds', x: -10, z: -26 },
+      { kind: 'reeds', x: -38, z: -22 },
+      { kind: 'reeds', x: 14, z: -22 },
+      { kind: 'reeds', x: 26, z: -18 },
     ],
     /**
      * The two people treating a ward built over its own water.
@@ -136,11 +152,18 @@ export const WARD_SEVEN: AreaDef = defineArea({
      * standing in the thing that is making people ill would be the map arguing with itself.
      */
     npcs: [
+      { id: 'ward_seven_lamplighter', x: 10, z: -2, art: 'night_watchman', label: 'Talk to the lamplighter' },
       { id: 'ward_seven_healer', x: -18, z: -6, art: 'healer', label: 'Talk to the ward healer' },
       { id: 'ward_seven_apothecary', x: 18, z: 10, art: 'apothecary', label: 'Talk to the apothecary' },
       { id: 'ward_seven_herbalist', x: -22, z: -10, art: 'herbalist', label: 'Talk to the herbalist' },
     ],
     /** On the ring lane and the terrace row. None over the basin: nothing is lit out there. */
+    /**
+     * Who walks the row.
+     *
+     * Four lamps over a flooded ward. He lights them and goes.
+     */
+    lamplighter: 'ward_seven_lamplighter',
     lamps: [
       { x: -18, z: 2 },
       { x: 10, z: 2 },

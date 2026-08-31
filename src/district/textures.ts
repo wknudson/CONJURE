@@ -19,6 +19,7 @@
 import * as THREE from 'three';
 import { groundRowsOf, waterRowsOf, type AreaDef } from './map.js';
 import type { DressingId } from './dressing.js';
+import type { CritterId } from './wildlife.js';
 
 /** A deterministic RNG, so the ward is painted the same way every reload. */
 export function mulberry32(seed: number): () => number {
@@ -1614,17 +1615,575 @@ export const DRESSING_ART: Record<Exclude<DressingId, 'waystone'>, () => THREE.T
   scorch: makeScorchTexture,
   bollard: makeBollardTexture,
   pens: makePensTexture,
+  reeds: makeReedsTexture,
+  bracken: makeBrackenTexture,
+  wildflowers: makeWildflowersTexture,
+  bramble: makeBrambleTexture,
+  deadfall: makeDeadfallTexture,
+  mushrooms: makeMushroomsTexture,
 };
 
+
+/* ============================================================
+   Things that grow
+
+   Six plants, drawn to the same three rules as the furniture above, plus one of their own:
+   **the silhouette is the whole prop.** A barrel can afford a flat side because its shape
+   already says barrel; a plant has no shape until you draw one, so these are mostly negative
+   space and the outline is doing more work than the fill.
+
+   All six sway. `BillboardSprite.setSway` weights the bend by the square of the vertex height,
+   so what matters here is that the *base is narrow and the top is loose* — a plant drawn as a
+   solid block bends like a bending block.
+   ============================================================ */
+
+/** Standing water and drainage cuts. The loosest thing in the world; it bends furthest. */
+export function makeReedsTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(18, 26);
+  const green = ramp('#5f6b3a');
+  const rng = mulberry32(4401);
+  // Fanned from a common root rather than parallel: reeds come out of one crown, and a set of
+  // vertical lines at even spacing reads as a fence.
+  for (let i = 0; i < 11; i++) {
+    const lean = (i - 5) * 0.9;
+    const h = 14 + ((rng() * 11) | 0);
+    const tone = green[i % 2 === 0 ? 1 : 2]!;
+    ctx.fillStyle = tone;
+    for (let y = 0; y < h; y++) {
+      const k = y / h;
+      ctx.fillRect(9 + Math.round(lean * k * k) - 0, 25 - y, 1, 1);
+    }
+    // The seed head, on the taller half only.
+    if (h > 20) {
+      ctx.fillStyle = green[3]!;
+      ctx.fillRect(9 + Math.round(lean), 25 - h, 1, 3);
+    }
+  }
+  contact(ctx, 9, 25, 9);
+  return canvasTexture(c);
+}
+
+/** Woodland floor and rough hillside. What grows where nothing is farmed. */
+export function makeBrackenTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 16);
+  const frond = ramp('#4c5c33');
+  // Three fronds arching out of one root, each a stem with pinnae stepping off it. The arch is
+  // what separates bracken from a bush: it goes up and then over.
+  const arcs: [number, number, number][] = [
+    [-1, 9, -1],
+    [0, 12, 0],
+    [1, 8, 1],
+  ];
+  for (const [dir, len, i] of arcs) {
+    ctx.fillStyle = frond[i === 0 ? 1 : 2]!;
+    for (let k = 0; k < len; k++) {
+      const t = k / len;
+      const x = 10 + Math.round(dir * k * 0.9);
+      const y = 15 - Math.round(len * (t - t * t * 0.55) * 1.15);
+      ctx.fillRect(x, y, 1, 1);
+      if (k > 2 && k % 2 === 0) {
+        ctx.fillRect(x - 1, y - 1, 1, 1);
+        ctx.fillRect(x + 1, y - 1, 1, 1);
+      }
+    }
+  }
+  contact(ctx, 10, 15, 10);
+  outline(ctx, 20, 16, frond[4]!);
+  return canvasTexture(c);
+}
+
+/** Field margins and verges. The only colour in the Middle Ring. */
+export function makeWildflowersTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 12);
+  const stem = ramp('#5a6b3c');
+  const rng = mulberry32(2266);
+  // Four petal colours, because one would make this a patch of the same flower and a verge is
+  // never that. Warm against the Ring's cool grass on purpose.
+  const petals = ['#d8c85a', '#c96f8c', '#e2e0d2', '#9a86c4'];
+  for (let i = 0; i < 7; i++) {
+    const x = 1 + ((rng() * 12) | 0);
+    const h = 4 + ((rng() * 5) | 0);
+    ctx.fillStyle = stem[2]!;
+    ctx.fillRect(x, 11 - h, 1, h);
+    ctx.fillStyle = petals[(rng() * petals.length) | 0]!;
+    ctx.fillRect(x, 11 - h - 1, 1, 1);
+    if (h > 6) ctx.fillRect(x - 1, 11 - h, 1, 1);
+  }
+  contact(ctx, 7, 11, 9);
+  return canvasTexture(c);
+}
+
+/** A thicket. The one plant with enough of itself to go round rather than through. */
+export function makeBrambleTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(22, 18);
+  const cane = ramp('#3c3324');
+  const rng = mulberry32(7719);
+  // A tangle, drawn as random arcs rather than as a shape: the point of a bramble is that it
+  // has no outline you could describe, which is also why it is the one plant that collides.
+  for (let i = 0; i < 26; i++) {
+    const x = 2 + ((rng() * 18) | 0);
+    const y = 4 + ((rng() * 13) | 0);
+    const len = 3 + ((rng() * 5) | 0);
+    const dir = rng() > 0.5 ? 1 : -1;
+    ctx.fillStyle = cane[y < 9 ? 1 : 2]!;
+    for (let k = 0; k < len; k++) {
+      ctx.fillRect(x + dir * k, y - ((k * k) >> 2), 1, 1);
+    }
+  }
+  // Fruit. Three of them, so it reads as a bramble rather than as barbed wire.
+  ctx.fillStyle = '#2b1b2e';
+  ctx.fillRect(6, 8, 2, 2);
+  ctx.fillRect(15, 11, 2, 2);
+  ctx.fillRect(11, 6, 2, 2);
+  contact(ctx, 11, 17, 16);
+  return canvasTexture(c);
+}
+
+/** A fallen limb, gone soft. Lies where it came down. */
+export function makeDeadfallTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(26, 12);
+  const bark = ramp('#4a3d2c');
+  // Horizontal, unlike everything else here. A fallen tree is the one piece of vegetation whose
+  // long axis is on the ground, and drawing it upright would make it a stump.
+  ctx.fillStyle = bark[2]!;
+  ctx.fillRect(1, 6, 24, 4);
+  ctx.fillStyle = bark[1]!;
+  ctx.fillRect(1, 6, 24, 2);
+  ctx.fillStyle = bark[0]!;
+  ctx.fillRect(3, 6, 12, 1);
+  ctx.fillStyle = bark[3]!;
+  ctx.fillRect(1, 9, 24, 1);
+  // The broken end, torn rather than sawn, and a stub of branch off the top.
+  ctx.fillStyle = bark[3]!;
+  ctx.fillRect(24, 5, 2, 5);
+  ctx.fillStyle = bark[2]!;
+  ctx.fillRect(8, 3, 2, 3);
+  ctx.fillRect(9, 2, 3, 1);
+  // Moss, on the up-side only, which is what says it has been there a while.
+  ctx.fillStyle = '#4c6038';
+  ctx.fillRect(5, 5, 4, 1);
+  ctx.fillRect(14, 5, 5, 1);
+  contact(ctx, 13, 11, 22);
+  outline(ctx, 26, 12, bark[4]!);
+  return canvasTexture(c);
+}
+
+/** Rot and shade. Grows on the deadfall it came out of. */
+export function makeMushroomsTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 10);
+  const cap = ramp('#8a6a4a');
+  const stalk = ramp('#c8bda6');
+  // Three, at three sizes, because a cluster of identical caps reads as a pattern.
+  const caps: [number, number, number][] = [
+    [3, 4, 5],
+    [8, 2, 6],
+    [11, 6, 3],
+  ];
+  for (const [x, y, w] of caps) {
+    ctx.fillStyle = stalk[2]!;
+    ctx.fillRect(x + ((w / 2) | 0), y + 2, 1, 9 - y - 2);
+    ctx.fillStyle = cap[2]!;
+    ctx.fillRect(x, y + 1, w, 2);
+    ctx.fillStyle = cap[1]!;
+    ctx.fillRect(x + 1, y, w - 2, 1);
+    ctx.fillStyle = cap[0]!;
+    ctx.fillRect(x + 1, y, 2, 1);
+  }
+  contact(ctx, 7, 9, 11);
+  outline(ctx, 14, 10, cap[4]!);
+  return canvasTexture(c);
+}
+
+/* ============================================================
+   Wildlife
+
+   Twelve animals, and one rule that is not the furniture's: **every one is drawn in profile,
+   facing left**, because `SIDE_ART_FACES` says left and `Walker` mirrors against that. One
+   picture then serves all four bearings — a fox seen from the front is a fox seen from the
+   side, at this size and this distance, and nobody has ever noticed. That is the same trade the
+   townsfolk sheets make in the opposite direction, and the reason `actorArtFromProfile` exists
+   next to `actorArtFromOne`: a person flipped swaps the tools in their hands, and an animal
+   flipped simply turns round.
+
+   Small canvases even by this file's standards. A rat is 0.3 world units tall; anything more
+   than a dozen pixels of it is detail nobody will ever be close enough to resolve.
+   ============================================================ */
+
+/** Gutters, spoil heaps, the Sink. */
+export function makeRatTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 8);
+  const fur = ramp('#584f47');
+  ctx.fillStyle = fur[2]!;
+  ctx.fillRect(3, 3, 7, 3);
+  ctx.fillStyle = fur[1]!;
+  ctx.fillRect(3, 3, 7, 1);
+  // Snout forward-left, ear behind it, tail trailing right. The tail is most of the read.
+  ctx.fillStyle = fur[2]!;
+  ctx.fillRect(1, 4, 2, 2);
+  ctx.fillStyle = fur[3]!;
+  ctx.fillRect(4, 2, 2, 1);
+  ctx.fillRect(10, 4, 3, 1);
+  ctx.fillRect(12, 3, 1, 1);
+  ctx.fillRect(4, 6, 1, 1);
+  ctx.fillRect(8, 6, 1, 1);
+  outline(ctx, 14, 8, fur[4]!);
+  return canvasTexture(c);
+}
+
+/** Field margins and snow. The most nervous thing in Azo. */
+export function makeHareTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 14);
+  const fur = ramp('#8a7355');
+  ctx.fillStyle = fur[2]!;
+  ctx.fillRect(3, 7, 8, 4);
+  ctx.fillStyle = fur[1]!;
+  ctx.fillRect(3, 7, 8, 2);
+  // Haunch high at the back, head low at the front, ears up. Crouched, because a hare at rest
+  // is already halfway to gone.
+  ctx.fillStyle = fur[1]!;
+  ctx.fillRect(8, 6, 4, 4);
+  ctx.fillStyle = fur[2]!;
+  ctx.fillRect(1, 6, 3, 3);
+  ctx.fillStyle = fur[3]!;
+  ctx.fillRect(2, 2, 1, 4);
+  ctx.fillRect(4, 1, 1, 5);
+  ctx.fillRect(3, 11, 1, 2);
+  ctx.fillRect(9, 11, 1, 2);
+  ctx.fillStyle = '#e6ded0';
+  ctx.fillRect(11, 8, 2, 2);
+  outline(ctx, 14, 14, fur[4]!);
+  return canvasTexture(c);
+}
+
+/** Woodland edges and the backs of towns. */
+export function makeFoxTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(18, 12);
+  const fur = ramp('#a05a2c');
+  ctx.fillStyle = fur[2]!;
+  ctx.fillRect(4, 4, 8, 4);
+  ctx.fillStyle = fur[1]!;
+  ctx.fillRect(4, 4, 8, 2);
+  // Long low body, sharp muzzle, and the brush — which is half the animal and the only part
+  // anybody could identify at twelve pixels.
+  ctx.fillStyle = fur[2]!;
+  ctx.fillRect(1, 4, 3, 3);
+  ctx.fillStyle = fur[3]!;
+  ctx.fillRect(2, 2, 1, 2);
+  ctx.fillRect(4, 2, 1, 2);
+  ctx.fillStyle = fur[1]!;
+  ctx.fillRect(12, 3, 5, 3);
+  ctx.fillStyle = '#e6ded0';
+  ctx.fillRect(16, 3, 2, 2);
+  ctx.fillStyle = fur[3]!;
+  for (const x of [4, 6, 9, 11]) ctx.fillRect(x, 8, 1, 3);
+  outline(ctx, 18, 12, fur[4]!);
+  return canvasTexture(c);
+}
+
+/** Ashwood clearings. Big enough to see a long way off, which is the point of it. */
+export function makeDeerTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 22);
+  const hide = ramp('#7a5c3e');
+  ctx.fillStyle = hide[2]!;
+  ctx.fillRect(4, 8, 11, 5);
+  ctx.fillStyle = hide[1]!;
+  ctx.fillRect(4, 8, 11, 2);
+  // Neck up and forward, head small, antlers above it. Legs long and thin: the height is what
+  // reads at distance, not the body.
+  ctx.fillStyle = hide[2]!;
+  ctx.fillRect(3, 4, 3, 5);
+  ctx.fillRect(1, 3, 4, 2);
+  ctx.fillStyle = hide[3]!;
+  ctx.fillRect(4, 0, 1, 3);
+  ctx.fillRect(2, 1, 1, 2);
+  ctx.fillRect(6, 1, 1, 2);
+  for (const x of [5, 7, 12, 14]) ctx.fillRect(x, 13, 1, 8);
+  ctx.fillStyle = '#e6ded0';
+  ctx.fillRect(15, 8, 1, 3);
+  outline(ctx, 20, 22, hide[4]!);
+  return canvasTexture(c);
+}
+
+/** Hillside and rough ground. Barely concerned by anybody. */
+export function makeGoatTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 14);
+  const hide = ramp('#8f8574');
+  ctx.fillStyle = hide[2]!;
+  ctx.fillRect(3, 5, 9, 4);
+  ctx.fillStyle = hide[1]!;
+  ctx.fillRect(3, 5, 9, 2);
+  ctx.fillStyle = hide[2]!;
+  ctx.fillRect(1, 4, 3, 3);
+  // Horns sweeping back, and a beard. Both are the whole difference from a sheep at this size.
+  ctx.fillStyle = hide[3]!;
+  ctx.fillRect(2, 2, 1, 2);
+  ctx.fillRect(3, 1, 2, 1);
+  ctx.fillRect(1, 7, 1, 2);
+  for (const x of [4, 6, 9, 11]) ctx.fillRect(x, 9, 1, 4);
+  outline(ctx, 16, 14, hide[4]!);
+  return canvasTexture(c);
+}
+
+/** Farmland. Moves the least of anything with legs. */
+export function makeSheepTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 13);
+  const wool = ramp('#c9c2b2');
+  const face = ramp('#3a3229');
+  // Lumpy on top rather than a rectangle: fleece is the only thing being drawn here, and a
+  // straight edge along the back turns it back into a box.
+  ctx.fillStyle = wool[2]!;
+  ctx.fillRect(3, 4, 10, 5);
+  ctx.fillStyle = wool[1]!;
+  ctx.fillRect(3, 4, 10, 2);
+  ctx.fillStyle = wool[0]!;
+  for (const x of [4, 7, 10]) ctx.fillRect(x, 3, 2, 1);
+  ctx.fillStyle = face[2]!;
+  ctx.fillRect(1, 5, 3, 3);
+  ctx.fillStyle = face[3]!;
+  for (const x of [4, 6, 10, 12]) ctx.fillRect(x, 9, 1, 3);
+  outline(ctx, 16, 13, wool[4]!);
+  return canvasTexture(c);
+}
+
+/** Salt pans and river mud. Sidles rather than runs. */
+export function makeCrabTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 8);
+  const shell = ramp('#8a4a3a');
+  ctx.fillStyle = shell[2]!;
+  ctx.fillRect(3, 3, 8, 3);
+  ctx.fillStyle = shell[1]!;
+  ctx.fillRect(3, 3, 8, 1);
+  // Wide and low, one claw raised. Drawn in profile like everything else, which for a crab is
+  // nearly a front view anyway — it is the one animal here whose two views agree.
+  ctx.fillStyle = shell[1]!;
+  ctx.fillRect(1, 1, 2, 2);
+  ctx.fillRect(2, 3, 1, 1);
+  ctx.fillStyle = shell[3]!;
+  for (const x of [4, 6, 8, 10]) ctx.fillRect(x, 6, 1, 2);
+  ctx.fillStyle = '#f0e4d2';
+  ctx.fillRect(5, 4, 1, 1);
+  ctx.fillRect(8, 4, 1, 1);
+  outline(ctx, 14, 8, shell[4]!);
+  return canvasTexture(c);
+}
+
+/** Standing in the drainage cuts. */
+export function makeHeronTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 22);
+  const plume = ramp('#96a2ac');
+  ctx.fillStyle = plume[2]!;
+  ctx.fillRect(4, 9, 7, 4);
+  ctx.fillStyle = plume[1]!;
+  ctx.fillRect(4, 9, 7, 2);
+  // The S of the neck, folded rather than straight — a heron standing has its head over its
+  // chest, and drawn straight up it becomes a stork.
+  ctx.fillStyle = plume[1]!;
+  ctx.fillRect(5, 5, 2, 4);
+  ctx.fillRect(4, 3, 2, 2);
+  ctx.fillRect(2, 3, 2, 1);
+  ctx.fillStyle = '#d8b13a';
+  ctx.fillRect(0, 3, 2, 1);
+  ctx.fillStyle = plume[3]!;
+  ctx.fillRect(6, 13, 1, 8);
+  ctx.fillRect(9, 13, 1, 8);
+  ctx.fillRect(5, 20, 3, 1);
+  ctx.fillRect(8, 20, 3, 1);
+  outline(ctx, 14, 22, plume[4]!);
+  return canvasTexture(c);
+}
+
+/** The Rimefields and the deep Ashwood. Does not run from you. */
+export function makeWolfTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 14);
+  const fur = ramp('#6b6a66');
+  ctx.fillStyle = fur[2]!;
+  ctx.fillRect(4, 4, 10, 5);
+  ctx.fillStyle = fur[1]!;
+  ctx.fillRect(4, 4, 10, 2);
+  // Head carried low and level with the shoulder — the one posture that separates a wolf from
+  // a large dog, and the reason it reads as watching you rather than as trotting past.
+  ctx.fillStyle = fur[2]!;
+  ctx.fillRect(1, 5, 4, 3);
+  ctx.fillStyle = fur[3]!;
+  ctx.fillRect(3, 3, 1, 2);
+  ctx.fillRect(5, 3, 1, 2);
+  ctx.fillStyle = fur[1]!;
+  ctx.fillRect(14, 4, 4, 3);
+  ctx.fillStyle = fur[3]!;
+  for (const x of [5, 7, 11, 13]) ctx.fillRect(x, 9, 1, 4);
+  ctx.fillStyle = '#e2c25a';
+  ctx.fillRect(2, 6, 1, 1);
+  outline(ctx, 20, 14, fur[4]!);
+  return canvasTexture(c);
+}
+
+/** Over every roof and every barrow in the world. */
+export function makeRookTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 10);
+  const feather = ramp('#26262c');
+  // Wings out, seen from below and slightly side-on: this only ever appears against the sky at
+  // eleven units, so the whole picture is a silhouette with one highlight to keep it from
+  // reading as a hole in the fog.
+  ctx.fillStyle = feather[2]!;
+  ctx.fillRect(8, 4, 5, 3);
+  ctx.fillRect(2, 3, 7, 2);
+  ctx.fillRect(12, 3, 6, 2);
+  ctx.fillStyle = feather[1]!;
+  ctx.fillRect(3, 3, 5, 1);
+  ctx.fillRect(13, 3, 5, 1);
+  ctx.fillStyle = feather[3]!;
+  ctx.fillRect(6, 5, 2, 1);
+  ctx.fillRect(13, 5, 2, 1);
+  ctx.fillRect(13, 6, 4, 1);
+  ctx.fillStyle = feather[2]!;
+  ctx.fillRect(6, 4, 3, 2);
+  return canvasTexture(c);
+}
+
+/** Water and the smell of a market. Wheels wider than a rook does. */
+export function makeGullTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(22, 10);
+  const body = ramp('#d8dde2');
+  const tip = ramp('#3a4048');
+  ctx.fillStyle = body[1]!;
+  ctx.fillRect(9, 4, 5, 3);
+  // Longer wings than the rook and a kink in each — a gull holds them bent, which at this size
+  // is the only thing separating the two birds.
+  ctx.fillStyle = body[2]!;
+  ctx.fillRect(3, 3, 6, 2);
+  ctx.fillRect(14, 3, 6, 2);
+  ctx.fillStyle = body[1]!;
+  ctx.fillRect(5, 2, 4, 1);
+  ctx.fillRect(14, 2, 4, 1);
+  ctx.fillStyle = tip[2]!;
+  ctx.fillRect(1, 3, 2, 1);
+  ctx.fillRect(20, 3, 2, 1);
+  ctx.fillStyle = '#d8b13a';
+  ctx.fillRect(8, 5, 1, 1);
+  return canvasTexture(c);
+}
+
+/** Drawn to anything burning. The only wildlife on the Caldera floor. */
+export function makeMothTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(12, 8);
+  const wing = ramp('#c8bda0');
+  // Deliberately pale and soft-edged rather than outlined. A moth against a dark crater is a
+  // smudge of light, and a hard black keyline would turn it into a butterfly sticker.
+  ctx.fillStyle = wing[2]!;
+  ctx.fillRect(1, 2, 4, 4);
+  ctx.fillRect(7, 2, 4, 4);
+  ctx.fillStyle = wing[0]!;
+  ctx.fillRect(2, 2, 3, 2);
+  ctx.fillRect(7, 2, 3, 2);
+  ctx.fillStyle = wing[3]!;
+  ctx.fillRect(5, 3, 2, 3);
+  ctx.fillRect(4, 1, 1, 1);
+  ctx.fillRect(7, 1, 1, 1);
+  return canvasTexture(c);
+}
+
+/**
+ * One factory per animal, the way `DRESSING_ART` indexes the furniture.
+ *
+ * Which means adding a thirteenth is one registry entry in `wildlife.ts`, one factory above,
+ * and one line here — and nothing in `world.ts`, `DistrictScreen` or any test learns a name.
+ */
+export const CRITTER_ART: Record<CritterId, () => THREE.Texture> = {
+  rat: makeRatTexture,
+  hare: makeHareTexture,
+  fox: makeFoxTexture,
+  deer: makeDeerTexture,
+  goat: makeGoatTexture,
+  sheep: makeSheepTexture,
+  crab: makeCrabTexture,
+  heron: makeHeronTexture,
+  wolf: makeWolfTexture,
+  rook: makeRookTexture,
+  gull: makeGullTexture,
+  moth: makeMothTexture,
+};
+
+/**
+ * The gate: shut, and yours to open.
+ *
+ * `docs/worldbuild-todo.md` has carried this since Wave 5 — *"the mesh is still a sealed warded
+ * gate, though you walk straight through it"* — and getting it right meant first being honest
+ * about what the gate actually **is**. Its collider spans the whole eight-unit opening, so you do
+ * not walk through it; you walk up to it and the exit hotspot takes you. That is a gate somebody
+ * opens.
+ *
+ * Which rules out both of the obvious answers. **Sealed** was the old lie: a glowing cyan ward
+ * pinned at the centre, which says Magistracy business and not yours. **Ajar** would be a new
+ * one, and a worse one — a visible gap you cannot walk through is the picture contradicting the
+ * collider, and the player would try it.
+ *
+ * So: closed, latched, unwarded, and readably a *gate* rather than a wall with bars in it. The
+ * three things that carry it are all things the old drawing had no room for at sixteen pixels —
+ *
+ *  - **two leaves**, with a meeting stile down the middle. A single field of evenly spaced bars
+ *    is a railing; what makes something read as a gate is that it is in halves;
+ *  - **hinges** on the outer edges, which say which way it swings;
+ *  - **a latch** across the seam in plain iron and brass, where the ward used to be. A latch is a
+ *    thing a person operates. That swap is the whole content of this change.
+ *
+ * Drawn at 32×24 for an 8×4.6 plane — four pixels to the world unit across, where the old one had
+ * two. The gaps between the bars are transparent and cut by `alphaTest`, so you can see the road
+ * on the other side, which was already true and is most of why a gate is not a door.
+ */
 export function makeGateTexture(): THREE.Texture {
-  const { c, ctx } = makeCanvas(16, 24);
-  ctx.fillStyle = '#14151a';
-  for (let x = 1; x < 16; x += 4) ctx.fillRect(x, 0, 2, 24);
-  ctx.fillStyle = '#7a5c2a';
-  ctx.fillRect(0, 4, 16, 2);
-  ctx.fillRect(0, 17, 16, 2);
-  ctx.fillStyle = '#5ef2d6';
-  ctx.fillRect(7, 10, 2, 2);
+  const { c, ctx } = makeCanvas(32, 24);
+  const iron = ramp('#2a2c33');
+  const timber = ramp('#7a5c2a');
+
+  // One leaf, drawn twice. The seam at x=15..16 stays transparent, so the two halves read as
+  // two objects that meet rather than as one panel with a line on it.
+  const leaf = (x0: number, w: number, hingeAtLeft: boolean): void => {
+    // Uprights. Four to a leaf, and the outermost is the hanging stile -- thicker, because it
+    // carries the weight and because it is what the hinges are bolted through.
+    ctx.fillStyle = iron[2]!;
+    for (let x = x0 + 1; x < x0 + w - 1; x += 4) ctx.fillRect(x, 2, 2, 20);
+    const stile = hingeAtLeft ? x0 : x0 + w - 3;
+    ctx.fillStyle = iron[1]!;
+    ctx.fillRect(stile, 1, 3, 22);
+    ctx.fillStyle = iron[0]!;
+    ctx.fillRect(stile, 1, 1, 22);
+
+    // Rails, top and bottom. Timber rather than iron: the bars are set into a frame, which is
+    // what stops a row of vertical lines reading as a fence.
+    ctx.fillStyle = timber[2]!;
+    ctx.fillRect(x0, 3, w, 3);
+    ctx.fillRect(x0, 18, w, 3);
+    ctx.fillStyle = timber[1]!;
+    ctx.fillRect(x0, 3, w, 1);
+    ctx.fillRect(x0, 18, w, 1);
+    ctx.fillStyle = timber[3]!;
+    ctx.fillRect(x0, 5, w, 1);
+    ctx.fillRect(x0, 20, w, 1);
+
+    // Hinge straps, on the hanging side. Two of them, and they run *into* the leaf, which is the
+    // detail that says the thing swings rather than slides.
+    ctx.fillStyle = iron[1]!;
+    const hx = hingeAtLeft ? x0 : x0 + w - 6;
+    ctx.fillRect(hx, 6, 6, 2);
+    ctx.fillRect(hx, 16, 6, 2);
+    ctx.fillStyle = iron[0]!;
+    ctx.fillRect(hingeAtLeft ? x0 : x0 + w - 2, 6, 2, 2);
+    ctx.fillRect(hingeAtLeft ? x0 : x0 + w - 2, 16, 2, 2);
+  };
+
+  leaf(0, 15, true);
+  leaf(17, 15, false);
+
+  // The latch, across the seam, at the height a hand is. Where the ward used to be, and the whole
+  // point of the drawing: a bar and a keeper are a thing a person lifts.
+  ctx.fillStyle = iron[1]!;
+  ctx.fillRect(11, 11, 10, 2);
+  ctx.fillStyle = '#b0946a';
+  ctx.fillRect(10, 10, 3, 4); // the keeper, on the left leaf
+  ctx.fillRect(19, 11, 3, 2); // the bar's tail, on the right
+  ctx.fillStyle = '#d8bb8a';
+  ctx.fillRect(10, 10, 3, 1);
+
   return canvasTexture(c);
 }
 

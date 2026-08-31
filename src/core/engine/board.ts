@@ -1,12 +1,26 @@
 /**
- * Board queries. Occupancy is DERIVED, never stored: every lookup scans entities via
- * cellsOf(). On a 5x5 board with <30 entities this is trivially cheap, and it removes an
+ * Board queries. Occupancy is DERIVED, never stored: every lookup scans entities. On a
+ * board this size with under thirty entities this is trivially cheap, and it removes an
  * entire class of "grid array out of sync with entity list" bugs.
+ *
+ * That design has been kept. What changed is that the scans stopped **allocating**.
+ *
+ * A CPU profile of one Open Glacial Field playout — 15 seconds, the heaviest arena in the
+ * game — put `entityAt` at 14.4% of all runtime, with `allUnits` at 6.9% and
+ * `allObstacles` at 3.2% behind it, which is close to a quarter of the engine spent in one
+ * point lookup. None of it was the scan. `entityAt` called `allEntities`, which builds two
+ * `Object.values` arrays and spreads them into a third, and then called `cellsOf` per
+ * entity, which allocates a fresh `Coord` array to compare against one cell. Every lookup
+ * threw away five or more objects to answer a question about four integers.
+ *
+ * So the hot lookups below iterate the records directly and ask `occupies`, which compares
+ * without building anything. Identical results, identical iteration order — units before
+ * obstacles, registry order within each — and no garbage. `allUnits` and friends stay for
+ * the many callers that genuinely want a list.
  */
 
 import type { Coord, Side, TargetRef, UnitId } from '../../contract/ids.js';
-import { coordEq } from '../../contract/ids.js';
-import { cellsAt, cellsOf } from '../util/grid.js';
+import { cellsAt, occupies } from '../util/grid.js';
 import type { Entity, Obstacle, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import type { GameState } from '../types/state.js';
@@ -34,29 +48,38 @@ export function unitsOf(state: GameState, side: Side): Unit[] {
  * always wins the lookup — attacks and displacement should find the body, not the bush.
  */
 export function entityAt(state: GameState, c: Coord): Entity | undefined {
+  // Units first, then obstacles: the same order `allEntities` produced, which matters
+  // because the first non-cover match wins and a unit may share a tile with cover.
+  for (const id in state.units) {
+    const u = state.units[id]!;
+    if (occupies(u, c)) return u;
+  }
   let cover: Entity | undefined;
-  for (const e of allEntities(state)) {
-    if (!cellsOf(e).some((cell) => coordEq(cell, c))) continue;
-    if (isCover(e)) {
-      cover ??= e;
+  for (const id in state.obstacles) {
+    const o = state.obstacles[id]!;
+    if (!occupies(o, c)) continue;
+    if (isCover(o)) {
+      cover ??= o;
       continue;
     }
-    return e;
+    return o;
   }
   return cover;
 }
 
 export function unitAt(state: GameState, c: Coord): Unit | undefined {
-  for (const u of allUnits(state)) {
-    if (cellsOf(u).some((cell) => coordEq(cell, c))) return u;
+  for (const id in state.units) {
+    const u = state.units[id]!;
+    if (occupies(u, c)) return u;
   }
   return undefined;
 }
 
 /** The cover terrain on a tile, if any, regardless of who is standing on it. */
 export function coverAt(state: GameState, c: Coord): Entity | undefined {
-  for (const o of allObstacles(state)) {
-    if (isCover(o) && cellsOf(o).some((cell) => coordEq(cell, c))) return o;
+  for (const id in state.obstacles) {
+    const o = state.obstacles[id]!;
+    if (isCover(o) && occupies(o, c)) return o;
   }
   return undefined;
 }

@@ -110,6 +110,18 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
     },
   ],
   props: {
+    /** A bridge town on a river. Everything here belongs to the water. */
+    sky: 'drizzle',
+    wildlife: [
+      { kind: 'gull', x: -54, z: -34, roam: 22, count: 4 },
+      { kind: 'gull', x: -6, z: 2, roam: 22, count: 4 },
+      { kind: 'heron', x: -26, z: -26, roam: 6 },
+      { kind: 'crab', x: -18, z: -26, roam: 4, count: 2 },
+      { kind: 'crab', x: -22, z: -6, roam: 4, count: 2 },
+      { kind: 'crab', x: 18, z: 18, roam: 4, count: 2 },
+      { kind: 'rat', x: -14, z: -26, roam: 5, count: 2 },
+      { kind: 'rat', x: -30, z: 6, roam: 5, count: 2 },
+    ],
     /** Coach inn and bridge. Beer, horses, and somewhere to tie them. */
     dressing: [
       { kind: 'barrel', x: -50, z: -26 },
@@ -140,6 +152,12 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
       { kind: 'haybale', x: -6, z: -10 },
       { kind: 'haybale', x: -46, z: 6 },
       { kind: 'haybale', x: 50, z: 18 },
+      { kind: 'reeds', x: -26, z: -26 },
+      { kind: 'reeds', x: -50, z: -22 },
+      { kind: 'reeds', x: 22, z: -22 },
+      { kind: 'reeds', x: -2, z: -18 },
+      { kind: 'reeds', x: 2, z: -14 },
+      { kind: 'reeds', x: -18, z: -10 },
     ],
     /**
      * The busiest street in the Ring, and the only place four people is not too many.
@@ -156,6 +174,13 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
       { id: 'fenwick_carpenter', x: 22, z: -26, art: 'carpenter', label: 'Talk to the carpenter' },
     ],
     /** The bridgehead and the street. A crossing that is not lit is a crossing nobody uses. */
+    /**
+     * Who walks the row.
+     *
+     * A bridge town lit by its inn. Nobody is paid to do it -- an unlit crossing
+     * is simply bad for trade, which is a better reason than a wage.
+     */
+    lamplighter: 'fenwick_innkeeper',
     lamps: [
       { x: -22, z: -26 },
       { x: 18, z: -26 },

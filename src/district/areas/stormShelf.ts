@@ -101,6 +101,16 @@ export const STORM_SHELF: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Goats on the footings — the one animal that will stand where the sky comes down. */
+    sky: 'drizzle',
+    wildlife: [
+      { kind: 'goat', x: -42, z: -42, roam: 9, count: 2 },
+      { kind: 'goat', x: -14, z: -14, roam: 9, count: 2 },
+      { kind: 'goat', x: 34, z: 14, roam: 9, count: 2 },
+      { kind: 'hare', x: -26, z: -42, roam: 9 },
+      { kind: 'hare', x: -14, z: 2, roam: 9 },
+      { kind: 'rook', x: -50, z: -46, roam: 26, count: 3 },
+    ],
     /** On the footings themselves. Whoever wrote this had been under one. */
     graffiti: [
       { text: 'DO NOT SHELTER UNDER IRON', wallX: 18, wallZ: 7.95, dx: -3.0, facesSouth: true, tint: '#b7ae9d' },
@@ -144,6 +154,15 @@ export const STORM_SHELF: AreaDef = defineArea({
       { kind: 'waystone', x: -30, z: -42, text: 'PYLON IX — DO NOT SHELTER' },
       { kind: 'waystone', x: -6, z: -14, text: 'PYLON IX — DO NOT SHELTER' },
       { kind: 'waystone', x: -46, z: 18, text: 'PYLON IX — DO NOT SHELTER' },
+      { kind: 'bracken', x: -42, z: -42 },
+      { kind: 'bracken', x: 18, z: -30 },
+      { kind: 'bracken', x: -14, z: -14 },
+      { kind: 'bracken', x: -30, z: 2 },
+      { kind: 'bracken', x: 34, z: 14 },
+      { kind: 'bracken', x: -6, z: 30 },
+      { kind: 'bramble', x: -26, z: -42 },
+      { kind: 'bramble', x: -10, z: -14 },
+      { kind: 'bramble', x: 38, z: 14 },
     ],
     crates: [
       { x: 38, z: -6 },

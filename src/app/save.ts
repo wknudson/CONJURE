@@ -76,10 +76,26 @@ import { traitsFor } from '../core/data/companionTraits.js';
 import { makeRng } from '../core/util/rng.js';
 import { draftGrimoire, isDraftable, socketRefusal } from '../core/data/grimoire.js';
 import { isHunt } from '../core/data/hunts.js';
+import { isLair } from '../core/data/lairs.js';
+import { isPack } from '../core/data/packs.js';
+import { errandById } from '../district/errands.js';
+import { NIGHT_ANCHOR } from '../district/daylight.js';
+
+/**
+ * Errands run, and the one currently open.
+ *
+ * Declared here rather than in `district/errands.ts` because it is a *save* shape: the registry
+ * owns what an errand is, and this owns what the file remembers about them. The same split
+ * `TutorialFlag` and `quest.ts` already draw.
+ */
+export interface ErrandLedger {
+  done: string[];
+  active: { id: string; ready: boolean } | null;
+}
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 22;
+export const SAVE_VERSION = 24;
 
 /**
  * The first version whose health numbers are written at the stretched scale.
@@ -147,6 +163,24 @@ const FIRST_CAMPAIGN = 21;
  * an empty map, which is also what a new character gets.
  */
 const FIRST_HUNTS = 22;
+
+/**
+ * The first version that remembers errands.
+ *
+ * A pre-v23 save arrives with an empty ledger and nothing open, like `campaign` and for the same
+ * reason: no townsperson could ask for anything before v23, so an old character genuinely has not
+ * run any. Backfilling would mark work done that was never offered.
+ */
+const FIRST_ERRANDS = 23;
+
+/**
+ * The first version with a clock on it.
+ *
+ * A pre-v24 save arrives at `NIGHT_ANCHOR`, which is the hour the whole `AMBIENT` table was
+ * authored and measured at — so an existing character walks back into exactly the ward they
+ * left, and the upgrade is invisible until they next cross a road.
+ */
+const FIRST_CLOCK = 24;
 
 /**
  * The steps of the first lap, in the order a new Commander meets them.
@@ -330,6 +364,35 @@ export interface Profile {
    * long wait, so a clock rolled back cannot lock the gate. See `core/data/hunts.ts`.
    */
   hunts: Record<string, number>;
+  /**
+   * Errands run, and the one currently open (v23).
+   *
+   * Two halves with two different characters, which is why they are one field rather than two.
+   * `done` is a **ledger** in the idiom of `campaign` and `rosterUnlocks` — things that happened,
+   * nothing removes from it, presence is the only question asked. `active` is a *slot*, in the
+   * idiom of `overworld.activeEncounter`: at most one, overwritten, and cleared on turn-in.
+   *
+   * One at a time is the design and not a limitation. See `district/errands.ts`.
+   *
+   * `ready` is whether the step has been satisfied and it is time to report back — a pack
+   * killed, a place reached, a thing picked up. It lives here rather than being recomputed
+   * because there is nothing to recompute it from: the world does not remember that you once
+   * stood on the Storm Shelf.
+   */
+  errands: ErrandLedger;
+  /**
+   * What time it is for this character, in hours past midnight (v24).
+   *
+   * **Not a wall clock**, unlike `hunts` — and the difference is the whole design. A hunt
+   * cooldown is about the player's real day, so it reads a real timestamp; this is about the
+   * character's, so it moves when *they* do. A crossing costs about twenty minutes and a fight
+   * about ninety, so a session reads as a day passing and a player who wants dawn can walk to it.
+   *
+   * Stored rather than derived because there is nothing to derive it from: no other field in the
+   * profile counts anything monotonic, and `campaign.length` would make the hour a function of
+   * how much story is done, which is a different statement entirely.
+   */
+  clock: number;
   /**
    * Who the player said they were, at the desk (v18).
    *
@@ -561,6 +624,8 @@ export function initializeNewProfile(profileId: string, rawLook: CharacterLook):
     campaign: [],
     // Every hunt open. A new Whisperer has not been past the gate.
     hunts: {},
+    errands: { done: [], active: null },
+    clock: NIGHT_ANCHOR,
     decks,
     // A warband of their own colour, spending as much of the ten as their school's shelf
     // allows -- so a new player meets the deployment phase with a real line to place, and
@@ -1012,6 +1077,8 @@ function migrateProfile(
     tutorial: readTutorialFlags(data.tutorial, version),
     campaign: readCampaign(data.campaign, version),
     hunts: readHunts(data.hunts, version),
+    errands: readErrands(data.errands, version),
+    clock: readClock(data.clock, version),
     decks,
     roster,
     rosterUnlocks: unlocks,
@@ -1349,11 +1416,63 @@ function readHunts(raw: unknown, version: number): Record<string, number> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
   const out: Record<string, number> = {};
   for (const [id, at] of Object.entries(raw as Record<string, unknown>)) {
-    if (!isHunt(id)) continue;
+    // Hunts, packs and lairs all stamp this map (`main.ts` writes all three on a win).
+    // The predicate used to admit hunts alone, which silently reset every pack's
+    // cooldown on reload — the road repopulated the moment the game was reopened.
+    if (!isHunt(id) && !isPack(id) && !isLair(id)) continue;
     if (typeof at !== 'number' || !Number.isFinite(at)) continue;
     out[id] = Math.max(0, Math.round(at));
   }
   return out;
+}
+
+/**
+ * The errand ledger, rebuilt rather than trusted.
+ *
+ * An id that no longer names an errand is dropped from `done` — unlike `campaign`, which keeps
+ * unknown entries so a renamed contract does not quietly un-complete itself. The two are
+ * different on purpose: a campaign ledger is a record of a story that was played, and an errand
+ * ledger is only ever asked "may this be offered again". A stale id there means a job the player
+ * can never take because a townsperson is waiting on something that does not exist.
+ *
+ * An `active` naming an errand that has gone is cleared outright, which is the important half:
+ * left in place it would be an objective panel pointing at nothing, with no way to close it.
+ */
+function readErrands(raw: unknown, version: number): ErrandLedger {
+  const empty: ErrandLedger = { done: [], active: null };
+  if (version < FIRST_ERRANDS) return empty;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return empty;
+
+  const data = raw as { done?: unknown; active?: unknown };
+  const done = Array.isArray(data.done)
+    ? [...new Set(data.done.filter((x): x is string => typeof x === 'string' && !!errandById(x)))]
+    : [];
+
+  let active: ErrandLedger['active'] = null;
+  const open = data.active as { id?: unknown; ready?: unknown } | null | undefined;
+  if (open && typeof open === 'object' && typeof open.id === 'string' && errandById(open.id)) {
+    // An errand both open and already done is a save that was interrupted between the payout and
+    // the write. The ledger is the authority -- it has been paid for -- so the slot is dropped.
+    if (!done.includes(open.id)) active = { id: open.id, ready: open.ready === true };
+  }
+
+  return { done, active };
+}
+
+/**
+ * The hour, wrapped into a day and refused if it is not a number.
+ *
+ * `NaN` is the case worth guarding: every comparison in `daylightAt` would be false, so it would
+ * fall through to "no daylight" and the world would be permanently, inexplicably at night — the
+ * exact class of failure `readHunts` refuses a `NaN` stamp for, one field over.
+ */
+function readClock(raw: unknown, version: number): number {
+  if (version < FIRST_CLOCK) return NIGHT_ANCHOR;
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return NIGHT_ANCHOR;
+  // Not wrapped into a day any more: the clock counts hours since the character started and the
+  // sky reads the day off it. A v24 save holds a number between 0 and 24, which is day zero and
+  // needs nothing done to it -- which is why the sky changing did not cost a version.
+  return Math.max(0, raw);
 }
 
 function readTutorialFlags(raw: unknown, version: number): TutorialFlag[] {

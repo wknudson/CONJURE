@@ -99,6 +99,18 @@ export const RIMEFIELDS: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Hares that break at fifty yards, and wolves that do not break at all. */
+    sky: 'snow',
+    wildlife: [
+      { kind: 'hare', x: -46, z: -38, roam: 10 },
+      { kind: 'hare', x: -46, z: -18, roam: 10 },
+      { kind: 'hare', x: -22, z: 2, roam: 10 },
+      { kind: 'hare', x: -26, z: 22, roam: 10 },
+      { kind: 'wolf', x: -38, z: -38, roam: 14, count: 2 },
+      { kind: 'wolf', x: 22, z: -14, roam: 14, count: 2 },
+      { kind: 'wolf', x: 38, z: 14, roam: 14, count: 2 },
+      { kind: 'rook', x: -62, z: -42, roam: 26, count: 3 },
+    ],
     /** Two crates on a snowfield was the whole area. Cairns are what people leave on ice. */
     dressing: [
       { kind: 'cairn', x: -58, z: -38 },
@@ -141,6 +153,12 @@ export const RIMEFIELDS: AreaDef = defineArea({
       { kind: 'spoilheap', x: -14, z: 18 },
       { kind: 'spoilheap', x: -38, z: 26 },
       { kind: 'spoilheap', x: 58, z: 30 },
+      { kind: 'bracken', x: -46, z: -38 },
+      { kind: 'bracken', x: -46, z: -18 },
+      { kind: 'bracken', x: -22, z: 2 },
+      { kind: 'bracken', x: -26, z: 22 },
+      { kind: 'bramble', x: -42, z: -38 },
+      { kind: 'bramble', x: 54, z: 2 },
     ],
     // No lamps and no trees. There is nothing out here to hang one on or for one to be.
     crates: [

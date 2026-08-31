@@ -53,19 +53,23 @@ import {
   composeBoard,
   encounterForBounty,
   huntBoard,
+  lairBoard,
   packBounty,
   type Bounty,
 } from './core/data/bounties.js';
 import { isPack, packByEncounter, reinforceSquad, type PackDef } from './core/data/packs.js';
 import { isHunt } from './core/data/hunts.js';
+import { isLair } from './core/data/lairs.js';
 import { storyContractByEncounter } from './core/data/campaign.js';
 import {
   carryFor,
   contractRefusal,
   openContract,
+  payErrand,
   resolveCombat,
   type CombatOutcome,
 } from './core/overworld/run.js';
+import { errandById } from './district/errands.js';
 import { companionById, DEFAULT_COMPANION } from './core/data/companions.js';
 import { printedDeck } from './core/data/collection.js';
 import { grantSchematic, rollSchematicOffer } from './core/data/schematics.js';
@@ -325,6 +329,31 @@ function showDistrict(companionId: string): void {
   showArea(currentAreaId(), companionId);
 }
 
+/**
+ * What a fight costs the clock.
+ *
+ * Walking is charged by `DistrictScreen`'s own street clock, which runs at two game-hours a real
+ * minute — so a crossing pays for itself in the walking and is not billed again here. This is the
+ * one jump: an hour and a half whether you won or lost, which is the only place the clock gets to
+ * say something rather than merely tick.
+ */
+const HOURS_PER_FIGHT = 1.5;
+
+/**
+ * Moves the character's clock forward. Counts hours, and never resets.
+ *
+ * It used to wrap at twenty-four, which threw away the day — and the sky wants to know how many
+ * have passed, because whether it is snowing today should not be the same question it was
+ * yesterday. Everything that reads the *hour* takes it modulo a day already, so nothing else
+ * changed and no save had to be migrated: a v24 file's 0-to-24 reading is day zero.
+ */
+function advanceClock(hours: number): void {
+  const p = active ? profile() : null;
+  if (!p) return;
+  p.clock = Math.max(0, p.clock + hours);
+  persist();
+}
+
 function showArea(areaId: string, companionId: string): void {
   rescueIfDown();
   const area = areaById(areaId) ?? DEFAULT_AREA;
@@ -352,6 +381,7 @@ function showArea(areaId: string, companionId: string): void {
       // fee is stable while the player is looking at it, and re-rolled when a fight moves
       // the seed on — the same rule the posters follow.
       huntBoard: huntBoard(global.overworld.bountySeed),
+      lairBoard: lairBoard(global.overworld.bountySeed),
       hunts: profile().hunts,
       collection: profile().collection,
       deck: deckFor(companionId),
@@ -360,6 +390,59 @@ function showArea(areaId: string, companionId: string): void {
       notice: notice ?? undefined,
       tutorial: profile().tutorial,
       onTutorialFlag: recordTutorial,
+      // The ledger the board already reads to pick each tier's next poster. The street reads the
+      // same one, so what a wall says and what the board offers can never disagree about how far
+      // through the campaign this character is.
+      campaign: profile().campaign,
+      hour: profile().clock,
+      // The street clock runs while the player stands in it, so the hour they leave with is not
+      // the one they arrived with. Written on the way out rather than per frame -- `persist` is a
+      // `localStorage` write and the clock moves sixty times a second.
+      onHour: (hour) => {
+        profile().clock = hour;
+        persist();
+      },
+      // Read fresh on every entry, which is every crossing and every shop door, so the street
+      // is always built against what the file actually says rather than against a snapshot
+      // taken when the character was opened.
+      errands: profile().errands,
+      onErrandAccept: (id) => {
+        profile().errands.active = { id, ready: false };
+        persist();
+      },
+      onErrandReady: (id) => {
+        // Written even though the district also holds it: this is the half that has to survive
+        // closing the tab. Killing the waywatch and then quitting must not un-kill it.
+        const led = profile().errands;
+        if (led.active?.id === id) led.active.ready = true;
+        persist();
+      },
+      onErrandAbandon: () => {
+        // Cleared without touching `done`, so the job goes straight back on offer.
+        profile().errands.active = null;
+        persist();
+      },
+      onErrandComplete: (id) => {
+        const led = profile().errands;
+        // Guarded rather than trusted. A turn-in conversation is driven by a dialogue callback
+        // and dialogue callbacks are the kind of thing that fire twice; paying an errand twice
+        // is the one bug in this system that is worth actual money.
+        if (led.done.includes(id)) return null;
+        const def = errandById(id);
+        led.active = null;
+        led.done.push(id);
+        persist();
+        if (!def) return null;
+
+        const { brewTaken } = payErrand(global, def.reward);
+        persist();
+        // A full satchel is an ordinary thing that happens rather than an error -- the same
+        // call `addConsumable` already makes -- so it is said out loud instead of the brew
+        // quietly evaporating between the thanks and the purse.
+        if (def.reward.brew && !brewTaken) return 'Satchel full. The brew was left behind.';
+        const paid = def.reward.ducats ?? 0;
+        return paid > 0 ? `Paid: ${paid} Ducats.` : 'Paid.';
+      },
       onChange: persist,
       onApothecary: () =>
         screens.go(
@@ -450,6 +533,9 @@ function showArea(areaId: string, companionId: string): void {
           }),
         ),
       onJournal: () => showBuilder(companionId, () => showDistrict(companionId)),
+      // The crossing itself is free: `DistrictScreen.unmount` has already handed back an hour
+      // that moved while the player walked to the edge of the map, so charging again here would
+      // be billing the same walk twice.
       onTravel: (exit) => showArea(exit.to, companionId),
       // A pack is a fight that happened to you, so it is deliberately *not* routed through
       // `onBounty`: that path records `bounty_taken` and would tick a step of the guided lap
@@ -796,6 +882,11 @@ function finishCombat(
   else if (result === 'bound') p.record.bound += 1;
   else p.record.losses += 1;
 
+  // The clock, and it moves whether you won or not. An hour and a half is what the fight took;
+  // losing it does not give the time back, which is the one place this system gets to say
+  // something rather than merely tick.
+  advanceClock(HOURS_PER_FIGHT);
+
   // Survival XP. Written here rather than inside `resolveCombat` because progression
   // belongs to the *character* and the run does not own one -- the same reason the
   // bestiary and the Companion roster are handed in rather than reached for.
@@ -845,7 +936,10 @@ function finishCombat(
   // Hunts and packs share the clock, because they are the same promise: the thing you
   // cleared is gone for a while and then it is back. A pack is stamped on a win only, so
   // being driven off leaves it standing on the road where you left it.
-  if (won && (isHunt(played.id) || isPack(played.id))) p.hunts[played.id] = Date.now();
+  // Lairs stamp the same clock: a bound-or-beaten apex leaves its ground quiet for a
+  // while, and a repeat visit rolls a different animal for free.
+  if (won && (isHunt(played.id) || isPack(played.id) || isLair(played.id)))
+    p.hunts[played.id] = Date.now();
   // A pack the ring dragged in was in the fight and went down in it, so it goes off the
   // road on the same clock. Only on a win, exactly like the host: driving them off leaves
   // every one of them standing where you left it.

@@ -18,8 +18,9 @@ import type { EncounterDef, EncounterScript } from './registry.js';
 import { registerEncounter, registerEncounterScript } from './registry.js';
 import type { Ctx } from '../../engine/context.js';
 import { emit, newCause } from '../../engine/context.js';
-import { dealDamage } from '../../engine/damage.js';
-import { SEAL_ONLY_SCRIPT, sealAt25 } from './seal.js';
+import { dealDamage, healCommander } from '../../engine/damage.js';
+import { sealAt25 } from './seal.js';
+import { growAtHalfScript } from './bossPhases.js';
 import { summonUnit } from '../../engine/spawn.js';
 import { canPlace, unitsOf } from '../../engine/board.js';
 
@@ -263,19 +264,43 @@ export const STORM_SHELF_BINDING: EncounterDef = registerEncounter({
  * Master #4 — The Geist of Pylon Nine
  * ================================================================================== */
 
-// TODO(worldbuild): the doc gives the geist "heals from shock damage — starve it, not
-// blast it". EncounterScript has no unit-damage hook, so that rule needs either a unit
-// keyword or a new hook; the rough pass ships the fight without it.
-// The haunting had no script: it was a straight fight with a themed deck. It has a prize
-// now, and a prize is only offered by something that calls `beginSubjugation`.
-registerEncounterScript('pylon_nine', SEAL_ONLY_SCRIPT);
+/**
+ * "Heals from shock damage — starve it, not blast it."
+ *
+ * The doc's rule, finally buildable once `onDamageToCommander` learned what type of
+ * damage is arriving — the geist's body is a Bound Form, so its wounds route to the
+ * portrait and this is the one hook that sees them. Shock lands as nothing and feeds
+ * it half the blow; the announce is lazy, firing at the moment of the player's first
+ * mistake, because a rule taught before it matters is a rule skimmed past.
+ */
+const GEIST_DRINKS_GATE = 'geist_drinks';
+
+const geistScript: EncounterScript = {
+  onDamageToCommander(ctx, side, amount, dtype) {
+    if (side !== 'enemy' || dtype !== 'shock') return amount;
+    if (!ctx.state.encounter.firedGates.includes(GEIST_DRINKS_GATE)) {
+      ctx.state.encounter.firedGates.push(GEIST_DRINKS_GATE);
+      newCause(ctx);
+      emit(ctx, { t: 'bossPhaseShift', side: 'enemy', phase: 1, name: 'It Drinks the Charge' });
+    }
+    healCommander(ctx, 'enemy', Math.floor(amount / 2));
+    return 0;
+  },
+  onCommanderHpChanged(ctx, side) {
+    if (side === 'enemy') sealAt25(ctx);
+  },
+  onTurnStart(ctx, side) {
+    if (side === 'enemy') sealAt25(ctx);
+  },
+};
+registerEncounterScript('pylon_nine', geistScript);
 
 export const PYLON_NINE: EncounterDef = registerEncounter({
   id: 'pylon_nine',
   name: 'The Geist of Pylon Nine',
   blurb:
     'Something haunts the newest pylon and drinks its charge. The Conduit Works ledger ' +
-    'carries it as product loss. Make the ledger balance.',
+    'carries it as product loss. Starve it, not blast it — the charge is what it eats.',
   width: 7,
   height: 8,
   playerHp: 400,
@@ -517,29 +542,22 @@ export const RELOCATION_TRAIN: EncounterDef = registerEncounter({
  * Master #9 — Apex Subjugation: The Bone Bastion Sovereign
  * ================================================================================== */
 
-const sovereignScript: EncounterScript = {
-  onTurnStart(ctx, side) {
-    if (side !== 'enemy') return;
-    // At half strength the graves answer. Sentinels: the Bastion has always had wardens.
-    phaseAtHalf(ctx, 'bastion_wakes', 'The Bastion Wakes', {
-      defId: 'grave_sentinel',
-      at: [
-        [1, 1],
-        [6, 1],
-        [3, 0],
-      ],
-    });
-    sealAt25(ctx);
-  },
-  onCommanderHpChanged(ctx, side) {
-    if (side === 'enemy') sealAt25(ctx);
-  },
-};
+// At half strength the Bastion wakes: the Sovereign rises into its 2x2 form — the shape
+// the doc always billed it as — with sentinels answering from the graves if the ground
+// leaves it no room. The full machinery (clamp, purge, dock, retry, 25% seal) is
+// `bossPhases.ts`; no Forced Eviction, because the dead are patient.
+const sovereignScript = growAtHalfScript({
+  phaseName: 'The Bastion Wakes',
+  grownDefId: 'sovereign_behemoth_bound',
+  addDefId: 'grave_sentinel',
+  addSpawns: [
+    [1, 1],
+    [6, 1],
+    [3, 0],
+  ],
+  forcedEviction: false,
+});
 registerEncounterScript('bone_bastion', sovereignScript);
-
-// TODO(worldbuild): the doc bills the Sovereign as 2x2 behemoth-class. Only Ignis has a
-// grown form today (`ignis_behemoth_bound`); the Sovereign fights at footprint 1 until a
-// second 2x2 body is authored.
 export const BONE_BASTION: EncounterDef = registerEncounter({
   id: 'bone_bastion',
   name: 'Apex Subjugation: The Bone Bastion Sovereign',

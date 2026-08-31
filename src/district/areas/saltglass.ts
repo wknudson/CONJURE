@@ -97,6 +97,18 @@ export const SALTGLASS: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Flats and fused panes. Gulls and crabs, and nothing that needs cover. */
+    sky: 'drizzle',
+    wildlife: [
+      { kind: 'gull', x: -46, z: -38, roam: 24, count: 4 },
+      { kind: 'gull', x: -18, z: -10, roam: 24, count: 4 },
+      { kind: 'gull', x: 34, z: 14, roam: 24, count: 4 },
+      { kind: 'crab', x: -14, z: -30, roam: 4, count: 2 },
+      { kind: 'crab', x: 10, z: -14, roam: 4, count: 2 },
+      { kind: 'crab', x: 6, z: -2, roam: 4, count: 2 },
+      { kind: 'crab', x: 10, z: 14, roam: 4, count: 2 },
+      { kind: 'crab', x: -10, z: 26, roam: 4, count: 2 },
+    ],
     /** Fishing town with a shut harbour: nets that are not being used, salt that is not being sold. */
     dressing: [
       { kind: 'waystone', x: -18, z: -22, text: 'HARBOUR CLOSED BY WRIT' },
@@ -126,6 +138,10 @@ export const SALTGLASS: AreaDef = defineArea({
       { kind: 'barrel', x: -38, z: -2 },
       { kind: 'barrel', x: -34, z: 14 },
       { kind: 'barrel', x: 10, z: 22 },
+      { kind: 'reeds', x: -14, z: -30 },
+      { kind: 'reeds', x: -10, z: -26 },
+      { kind: 'reeds', x: 6, z: -22 },
+      { kind: 'reeds', x: -42, z: -14 },
     ],
     /** Both up on the brine pans at the north end, where the work is and the writ bites. */
     npcs: [
@@ -135,6 +151,13 @@ export const SALTGLASS: AreaDef = defineArea({
       { id: 'saltglass_bard', x: -10, z: -30, art: 'bard_b', label: 'Listen to the singer' },
     ],
     /** On the quay, where the pans are worked before dawn. */
+    /**
+     * Who walks the row.
+     *
+     * She is already up: the pans are worked before dawn, which makes her the only
+     * person on the flats awake when the lamps matter.
+     */
+    lamplighter: 'saltglass_panwife',
     lamps: [
       { x: -30, z: -30 },
       { x: 2, z: -30 },

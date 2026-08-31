@@ -45,12 +45,21 @@ import {
   actorArtFromTextures,
   buildActorArt,
   buildSheetActorArt,
+  actorArtFromProfile,
+  BillboardSprite,
   disposeActorArt,
   pickFacing,
+  setWindTime,
   Walker,
   type ActorArt,
 } from './sprites3d.js';
-import { makeMinionTexture, makeWardenTexture, sheetFrameTexture } from './textures.js';
+import {
+  CRITTER_ART,
+  makeMinionTexture,
+  makeWardenTexture,
+  sheetFrameTexture,
+} from './textures.js';
+import { CRITTERS, type CritterId } from './wildlife.js';
 import {
   FOLK_SHEETS,
   folkBox,
@@ -62,6 +71,7 @@ import {
 import {
   CombatRing,
   CompanionFollower,
+  Critter,
   DoorHotspot,
   Hotspot,
   NPC,
@@ -71,6 +81,29 @@ import {
   type Updatable,
 } from './entities.js';
 import { isSafeAt, type AreaDef, type DoorKey, type ExitSpec } from './map.js';
+import {
+  cullSatisfiedBy,
+  errandFor,
+  errandMarker,
+  NO_ERRANDS,
+  type ErrandState,
+} from './errands.js';
+import { DRESSING_ART, makeCairnTexture } from './textures.js';
+import { asideFor, gateOpen, type Chronicle } from './chronicle.js';
+import { sitesInArea } from './sites.js';
+import { isLair } from '../core/data/lairs.js';
+import { groundedEncounter, skyStrengthAt } from './skies.js';
+import {
+  lamplighterPost,
+  lampsLitAt,
+  packOutAt,
+  packSightAt,
+  packVigourAt,
+  wardenGraceAt,
+  wardenSightAt,
+} from './daylight.js';
+import { stallFor } from '../core/data/stalls.js';
+import type { DialogueLine } from './dialogue.js';
 import { WorldCombat } from './combat/WorldCombat.js';
 import { Descent, frameBoard } from './combat/Descent.js';
 import type { CombatResult } from '../contract/events.js';
@@ -81,6 +114,15 @@ import type { AiProfile } from '../core/ai/controller.js';
 import { huntAvailable } from '../core/data/hunts.js';
 import { hashText, makeRng, nextInt } from '../core/util/rng.js';
 import { flagForDoor, tutorialActive } from './quest.js';
+
+/**
+ * How fast the street clock runs: two game-hours a real minute.
+ *
+ * A whole day in about twelve minutes of walking. Fast enough that a player who wants the light
+ * can wait for it, slow enough that an hour of the world is not gone before they have crossed
+ * the ward.
+ */
+const HOURS_PER_SECOND = 2 / 60;
 
 const MOVE_SPEED = 6;
 const ORBIT_SPEED = 1.6;
@@ -158,12 +200,71 @@ export interface DistrictOpts {
    * open and a value captured at mount would be stale by the time anybody read it.
    */
   huntBoard: Bounty[];
+  /**
+   * Every regional apex lair as a Bounty, composed the same way `huntBoard` is. The
+   * site hotspots are the only consumer: a lair has no poster and no signpost — the
+   * ground itself is the surfacing.
+   */
+  lairBoard: Bounty[];
   hunts: Readonly<Record<string, number>>;
   collection: Collection;
   deck: string[];
   notice?: { title: string; body: string };
   tutorial: readonly TutorialFlag[];
   onTutorialFlag: (flag: TutorialFlag) => void;
+  /**
+   * Story contracts walked, so the street can react to them.
+   *
+   * Handed in the same way `tutorial`, `hunts` and `errands` are: a snapshot per entry, which is
+   * every crossing and every shop door. That granularity is exactly right here -- a contract
+   * resolves on a screen change, so the ward you walk back into is always the one that knows.
+   */
+  campaign: readonly string[];
+  /** What time it is, in hours. See `daylight.ts`. */
+  hour: number;
+  /**
+   * The hour, handed back on the way out.
+   *
+   * The street clock runs while the player is standing in it, so the hour they leave with is not
+   * the one they arrived with and the profile has to be told. Optional so a test can mount a
+   * screen without a save behind it.
+   */
+  onHour?: (hour: number) => void;
+  /**
+   * What has been run and what is open, handed in exactly as `hunts` and `tutorial` are.
+   *
+   * A snapshot rather than a live object: the district reads it to decide what a townsperson has
+   * to say and where to stand a marker, and writes through the three callbacks below. It is
+   * re-read on every screen entry, which is every crossing and every shop door -- so a change
+   * made here is in front of the player by the time they have walked out of the conversation.
+   */
+  errands: ErrandState;
+  /** Taken. The ledger opens the slot and the screen puts the marker down. */
+  onErrandAccept: (id: string) => void;
+  /**
+   * The step is satisfied and it is time to report back.
+   *
+   * Separate from `onErrandComplete` because they happen in different places and often minutes
+   * apart: you kill the pack out on the Verge and you are paid in Ashfall.
+   */
+  onErrandReady: (id: string) => void;
+  /**
+   * Handed back, unpaid and unrecorded.
+   *
+   * Free on purpose. This is the release valve on the one-errand-at-a-time rule rather than a
+   * penalty for changing your mind, and charging for it would turn that rule into a trap with a
+   * fee attached.
+   */
+  onErrandAbandon: () => void;
+  /**
+   * Reported, and paid for. Returns a line to show the player, or null.
+   *
+   * A return value rather than `void` for one case that is small and real: an errand can pay a
+   * brew and the satchel holds three. Paid into a full satchel the brew would simply evaporate
+   * between the thanks and the purse, and the only place that knows it happened is the payout —
+   * which is in `core` and has no HUD. So it says so, and the street shows it.
+   */
+  onErrandComplete: (id: string) => string | null;
   onApothecary: () => void;
   onArtificer: () => void;
   onVivarium: () => void;
@@ -233,6 +334,56 @@ export class DistrictScreen implements Screen {
   private seizedTimer = 0;
   private readonly packs: Pack[] = [];
   /**
+   * The animals.
+   *
+   * Held apart from `updatables` for the same two reasons the packs are: they need the player's
+   * position pushed at them each frame, and they have to go off the street while a board is
+   * standing on it. Everything else about them runs through `Updatable` like the rest.
+   */
+  private readonly critters: Critter[] = [];
+
+  /**
+   * What the player has been asked to do, as this screen believes it.
+   *
+   * Held rather than read from `opts` on every question, because the screen mutates it the
+   * instant a conversation ends and the save write goes out through a callback -- so a read
+   * straight from `opts` would answer with what was true when the street was built and the
+   * townsperson you just spoke to would offer you the same job again.
+   */
+  private errands: ErrandState = NO_ERRANDS;
+
+  /**
+   * The hour, ticking.
+   *
+   * Held here rather than read from `opts` because it **moves while you stand in the street** —
+   * and it has to. `daylight.ts` argues that the whole value of a cycle is being *in* the change,
+   * and a first cut of this advanced the clock only on a crossing or a fight, which meant the
+   * only way to see dawn was to miss it by walking through a door. Now the light comes up while
+   * you are looking at it, the lamps go out while you are standing under them, and the Warden's
+   * cone shortens in front of you at dusk.
+   *
+   * Written back to the profile on the way out rather than every frame: `persist` is a
+   * `localStorage` write and this changes sixty times a second.
+   */
+  private hour = 0;
+  /**
+   * The hour the world is currently dressed for. See the gate in `tickClock`: the clock moves
+   * every frame and the scene is re-lit about twice a second, so the two are deliberately
+   * different numbers and the threshold is measured between them.
+   */
+  private litAtHour = 0;
+
+  /** What the street knows, for the graffiti and for what people say. */
+  private get chronicle(): Chronicle {
+    return { campaign: this.opts.campaign };
+  }
+
+  /** Whoever walks this ward's lamps, if anybody does. See `walkTheRow`. */
+  private lamplighter: NPC | null = null;
+
+  /** The open errand's mark on this street, if it points here. See `placeErrandMarker`. */
+  private marker: { hotspot: Hotspot; sprite: BillboardSprite | null } | null = null;
+  /**
    * The last place worth being put back to.
    *
    * In the ward that is the last pavement tile, and the Warden's catch uses it. Out on the
@@ -286,6 +437,12 @@ export class DistrictScreen implements Screen {
     this.opts = opts;
     this.area = opts.area;
     this.flags = [...opts.tutorial];
+    // Here rather than in `mount`, because `unmount` hands the hour back and a screen that was
+    // torn down before it finished building would otherwise report midnight -- setting every
+    // such character's clock to zero on the way past.
+    this.hour = opts.hour;
+    // The constructor lights the world at this hour, so this is what it is dressed for.
+    this.litAtHour = opts.hour;
   }
 
   /* ============================================================
@@ -313,7 +470,7 @@ export class DistrictScreen implements Screen {
     const colliders = new ColliderSet(this.area);
     this.colliderSet = colliders;
     const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
-    const world = new DistrictWorld(this.area, colliders, maxAnisotropy);
+    const world = new DistrictWorld(this.area, colliders, maxAnisotropy, this.chronicle, this.opts.hour);
     this.world = world;
 
     const camera = new THREE.PerspectiveCamera(
@@ -331,6 +488,13 @@ export class DistrictScreen implements Screen {
       global: this.opts.global,
       onChange: this.opts.onChange,
       onBounty: (bounty) => this.opts.onBounty(bounty),
+      onErrandAbandon: () => this.abandonErrand(),
+      // `this.hour`, not `this.opts.hour`. The latter is the hour the screen was *mounted* at,
+      // and handing the HUD that froze the one readout the player can actually see: the world
+      // moved -- lamps, sight, the Warden's beat, the sky -- while the ledger insisted it was
+      // still whatever o'clock they walked in on. Every test passed, because `clockLabel` and
+      // `phaseAt` are pure and were being asked the wrong question. Found by looking at it.
+      hour: () => this.hour,
     });
     this.dialogue = new DialogueBox(root);
 
@@ -377,7 +541,12 @@ export class DistrictScreen implements Screen {
 
     this.gui = buildLookGui(this.lookHandles(), this.area.id, this.area.name);
 
-    this.hud.renderTutorial(this.flags);
+    this.errands = this.opts.errands;
+    this.hud.renderObjective(this.flags, this.errands);
+    // Here rather than at the end of `loadActors`, which is where it started: that method awaits
+    // every sprite in the ward, and the marker needs none of them -- it is a cairn cut in code
+    // and a hotspot. Down there, a slow or failed fetch takes the errand's mark with it.
+    this.placeErrandMarker();
 
     if (this.opts.notice) {
       this.hud.showNotice(this.opts.notice, () => {
@@ -411,6 +580,10 @@ export class DistrictScreen implements Screen {
   }
 
   unmount(): void {
+    // The hour goes home. Written here rather than in `tickClock` because `persist` is a
+    // `localStorage` write and that runs sixty times a second; every path out of a district --
+    // a crossing, a door, a fight, closing the tab on a screen change -- comes through here.
+    this.opts.onHour?.(this.hour);
     if (this.disposed) return;
     this.disposed = true;
 
@@ -495,6 +668,29 @@ export class DistrictScreen implements Screen {
         this.hud!.openHunts(this.opts.huntBoard, this.opts.hunts),
       );
       this.interactables.push(signpost);
+    }
+
+    // Contract sites: the board briefs, the ground launches. A story site is live iff
+    // its contract's bounty is on the composed board this screen already holds — which
+    // is `nextStoryContract` read back, so liveness needs no state of its own. A lair
+    // is live when its gate opens and its cooldown has lapsed, and launches through
+    // the same `onBounty` road so spoils, wagers, the tutorial ledger and the
+    // open-contract failsafe all come along unchanged.
+    for (const site of sitesInArea(this.area.id)) {
+      const bounty =
+        this.opts.bounties.find((b) => b.id === `story_${site.encounterId}`) ??
+        this.opts.lairBoard.find((b) => b.enemySeed === site.encounterId);
+      if (!bounty) continue;
+      if (!gateOpen(site.gate, this.chronicle)) continue;
+      // The guided lap steers to Novice work, the same policy the board itself keeps.
+      if (tutorialActive(this.flags) && bounty.difficulty !== 'novice') continue;
+      if (isLair(site.encounterId) && !huntAvailable(this.opts.hunts[site.encounterId], Date.now()))
+        continue;
+      const spot = new Hotspot(site.at.x, site.at.z, site.label, () =>
+        this.opts.onBounty(bounty),
+      );
+      if (site.interactDetail) spot.interactDetail = site.interactDetail;
+      this.interactables.push(spot);
     }
   }
 
@@ -673,7 +869,12 @@ export class DistrictScreen implements Screen {
         spec.x,
         spec.z,
         spec.label ?? 'Talk to Dispatcher Vex',
-        spec.art ? () => this.dialogue?.start(script ?? []) : () => this.talkToVex(),
+        // An errand takes precedence over the person's own script, and falls back to it when
+        // there is nothing to say -- so a townsperson with no errand today is exactly the
+        // townsperson they were before this existed. Vex keeps the tutorial, which is hers.
+        spec.art
+          ? () => this.talkTo(spec.id, spec.says ?? spec.id, script ?? [])
+          : () => this.talkToVex(),
         // Offset per body, so four people on one street do not breathe in lockstep — which
         // reads as a row of copies rather than as a crowd.
         1.3 + i * 0.7,
@@ -686,7 +887,13 @@ export class DistrictScreen implements Screen {
       this.updatables.push(npc);
       this.interactables.push(npc);
       this.npcs.push(npc);
+      if (spec.id === this.area.props.lamplighter) this.lamplighter = npc;
     });
+
+    // Once, now that he exists. `tickClock` only calls this when the hour has moved a
+    // game-minute, so without this the row would open on the uniform curve and stay there for the
+    // first half-second -- and he would have nowhere to be.
+    this.walkTheRow();
 
     const beat = this.area.props.patrols?.[0];
     if (beat && wardenArt) {
@@ -696,6 +903,8 @@ export class DistrictScreen implements Screen {
       this.world.billboards.push(this.warden.walker.sprite);
       this.updatables.push(this.warden);
       this.warden.onCatch = () => this.arrest();
+      this.warden.setSight(wardenSightAt(this.hour));
+      this.warden.grace = wardenGraceAt(this.hour);
       this.warden.onAlertChange = (on) => this.hud?.setAlert(on);
     }
 
@@ -732,6 +941,14 @@ export class DistrictScreen implements Screen {
           () => nextInt(rng, 10_000) / 10_000,
         );
         pack.onContact = () => this.ambush(spec.encounterId);
+        pack.setSight(packSightAt(this.hour));
+        // Spawned whatever the hour, and put on or off shift by the clock -- see
+        // `Pack.setOnShift`. Skipping the build for an off-hours crew was the first version and
+        // the live street clock broke it: an hour that opens while the player is standing there
+        // would have arrived with nothing on the road to arrive.
+        pack.hours = spec.hours;
+        pack.setOnShift(packOutAt(spec.hours, this.hour));
+        pack.vigour = packVigourAt(spec.hours, this.hour);
         for (const w of pack.walkers) {
           this.world.scene.add(w.sprite);
           this.world.billboards.push(w.sprite);
@@ -742,6 +959,59 @@ export class DistrictScreen implements Screen {
         this.world.scene.add(pack.aggroRing);
         this.packs.push(pack);
         this.updatables.push(pack);
+      }
+    }
+
+    /* --- the wildlife ---
+       After the packs and on purpose: the collider set is complete by here, so a hare's wander
+       is rejected against the same walls the player is stopped by rather than against a partial
+       world. One texture and one `ActorArt` per *kind* standing in this area, not per animal —
+       the rule the furniture and the townsfolk both follow, and the reason a flight of six
+       rooks uploads one rook. */
+    const fauna = this.area.props.wildlife ?? [];
+    if (fauna.length > 0) {
+      const critterArt = new Map<CritterId, ActorArt>();
+      const faunaRng = makeRng(hashText(`${this.area.id}:wildlife`) >>> 0);
+      const roll = (): number => nextInt(faunaRng, 10_000) / 10_000;
+
+      for (const spec of fauna) {
+        let art = critterArt.get(spec.kind);
+        if (!art) {
+          // `actorArtFromProfile` rather than `actorArtFromOne`: an animal is drawn side-on and
+          // a mirrored fox is the same fox facing the other way, where a mirrored townsperson
+          // has swapped the tools in their hands. See that function for the whole of it.
+          art = actorArtFromProfile(CRITTER_ART[spec.kind]());
+          critterArt.set(spec.kind, art);
+          this.heroArt.push(art);
+        }
+        // `count` spawns a group from one authored line, jittered around the given home so
+        // they are a flock rather than a stack. Each keeps its own home, so they drift apart
+        // over a minute the way a real group does instead of moving as one body.
+        const n = Math.max(1, spec.count ?? 1);
+        const flies = CRITTERS[spec.kind].flies;
+        for (let i = 0; i < n; i++) {
+          const spread = n === 1 ? 0 : Math.min(spec.roam * 0.6, 4);
+          // The authored spot is checked by the per-area test; the *jittered* ones are not, and
+          // a body born inside a wall cannot get out of it -- `colliders.move` tests the
+          // destination, so something already inside one is stuck there in full view. Tried a
+          // few times and then given the authored home, which is known good.
+          let hx = spec.x;
+          let hz = spec.z;
+          for (let t = 0; t < 6 && spread > 0; t++) {
+            const cx = spec.x + (roll() - 0.5) * 2 * spread;
+            const cz = spec.z + (roll() - 0.5) * 2 * spread;
+            if (flies || !colliders.blocked(cx, cz, 0.3)) {
+              hx = cx;
+              hz = cz;
+              break;
+            }
+          }
+          const critter = new Critter(spec.kind, art, hx, hz, spec.roam, colliders, roll);
+          this.world.scene.add(critter.walker.sprite);
+          this.world.billboards.push(critter.walker.sprite);
+          this.critters.push(critter);
+          this.updatables.push(critter);
+        }
       }
     }
 
@@ -806,7 +1076,7 @@ export class DistrictScreen implements Screen {
   private raiseFlag(flag: TutorialFlag): void {
     if (!this.flags.includes(flag)) this.flags.push(flag);
     this.opts.onTutorialFlag(flag);
-    this.hud?.renderTutorial(this.flags);
+    this.refreshObjective();
   }
 
   /**
@@ -957,8 +1227,16 @@ export class DistrictScreen implements Screen {
     if (this.warden) {
       this.warden.playerAt.copy(anchor);
       this.warden.playerSafe = this.playerSafe;
+      // Per frame rather than on the clock tick: the post is a function of the hour, and the
+      // hour moves continuously. Assigning a number is cheaper than deciding whether to.
+      this.warden.hour = this.hour;
     }
     for (const npc of this.npcs) npc.playerAt = anchor;
+    // Copied rather than aliased, unlike the NPCs above: a critter reads this every frame to
+    // decide whether to bolt, and `anchor` is the player's live position vector -- handing it
+    // over by reference would be fine today and a very confusing bug the day somebody moves
+    // the player inside the same frame.
+    for (const critter of this.critters) critter.playerAt.copy(anchor);
     if (this.packArming > 0) this.packArming -= dt;
     // Pack aggro answers to the pavement, not to `this.playerSafe`. That flag is pinned
     // true in an area with no walkways, because what it means is "no Warden may see you
@@ -985,9 +1263,19 @@ export class DistrictScreen implements Screen {
       this.ring?.update(dt);
     }
 
+    // The clock, and everything that reads it. See `hour` above for why this ticks on the
+    // street rather than only on a crossing.
+    this.tickClock(dt);
     world.updateLamps(this.elapsed);
     world.updateImpactLights(dt);
     world.scrollWater(dt);
+    world.updateRises(dt, Math.random);
+    // The air follows whoever the camera is watching -- which during a fight is the board and
+    // not the player, so it is `anchor` and not `player.position`. See `weather.ts`.
+    world.updateSky(dt, anchor);
+    // One clock for every swaying thing in the world. Written here rather than inside the
+    // sprites so a field of reeds is provably in the same wind as the tree beside it.
+    setWindTime(this.elapsed);
     world.trackSun(anchor.x, anchor.y, anchor.z);
     world.updateOccluders(dt, camera, anchor);
     for (const b of world.billboards) b.faceCamera(camera);
@@ -1008,12 +1296,18 @@ export class DistrictScreen implements Screen {
       this.hud.drawMap(this.area, {
         player: { x: anchor.x, z: anchor.z },
         yaw: this.cameraYaw,
-        packs: this.packs.map((p) => ({
-          encounterId: p.encounterId,
-          x: p.position.x,
-          z: p.position.z,
-          hunting: p.state !== 'ROAM',
-        })),
+        // Only the crews actually on the road. A map that showed an off-shift pack would be
+        // telling the player about a threat that is not there, which is worse than telling them
+        // nothing -- the map is the one place in this game that is meant to be reliable.
+        packs: this.packs
+          .filter((p) => p.onShift)
+          .map((p) => ({
+            encounterId: p.encounterId,
+            x: p.position.x,
+            z: p.position.z,
+            hunting: p.state !== 'ROAM',
+          })),
+        ...(this.marker ? { errand: { x: this.marker.hotspot.position.x, z: this.marker.hotspot.position.z } } : {}),
         ...(this.warden
           ? {
               warden: {
@@ -1085,6 +1379,90 @@ export class DistrictScreen implements Screen {
     this.post!.composer.render();
     this.raf = requestAnimationFrame(this.loop);
   };
+
+  /**
+   * Moves the hour, and the world with it.
+   *
+   * Two game-hours a real minute, so a whole day is about twelve minutes of walking and the
+   * three-hour dawn ramp takes ninety seconds — long enough to be a change you are *inside*
+   * rather than a transition you watch, short enough that standing still to see it is a
+   * reasonable thing to do.
+   *
+   * The scene is only re-lit when the hour has moved by a game-minute, which is roughly twice a
+   * second: `setHour` re-derives seven values and parses four hex colours, and doing that per
+   * frame to move the light by a hundredth of nothing is work for its own sake.
+   *
+   * Frozen during a fight. A board standing on the street is a scene with its own framing and its
+   * own fog scale, and having the sun come up through it would be the world carrying on around
+   * something that has everybody's attention.
+   */
+  private tickClock(dt: number): void {
+    if (this.combat) return;
+    // Not wrapped. The field is really the clock -- hours since this character started -- and
+    // the day is read off it by the sky. Everything that wants the *hour* takes it modulo a day
+    // itself, which is why nothing else here had to change.
+    this.hour += dt * HOURS_PER_SECOND;
+
+    // Against the hour the world was last *lit* at, not against the hour one frame ago.
+    //
+    // This was `const before = this.hour` captured at the top of the call, which made the
+    // comparison `this.hour - before` -- exactly one frame's worth of clock, every time. One
+    // frame at the clamped maximum `dt` of 0.05s moves the clock 0.00167 hours and the gate
+    // wants 0.0167, so **it could never pass at any framerate**, and everything below it never
+    // ran while the player stood in a ward: no re-light, no lamplighter, no pack coming on
+    // shift, no sky re-rolled, and no ledger. The clock advanced and nothing read it. Re-entering
+    // the district was the only thing that ever applied an hour, because the constructor does it.
+    //
+    // A threshold has to be measured against the last time the work was *done*. That is the whole
+    // bug, and it is invisible to a unit test: every function below here is pure, tested, and was
+    // simply never called. It took watching a lamp fail to come on.
+    if (Math.abs(this.hour - this.litAtHour) < 1 / 60) return;
+    this.litAtHour = this.hour;
+
+    this.world?.setHour(this.hour);
+    // The ledger, on the same gate. `renderLedger` was only called at mount and on a purse
+    // change, so even once it was reading the live hour the readout sat at whatever it said
+    // when the screen came up -- the second half of the same bug, and the reason the clock was
+    // invisible twice over. This gate already fires about twice a second and is what re-lights
+    // the world, so the text and the light now move together, which is the point.
+    this.hud?.renderLedger();
+    this.walkTheRow();
+    this.warden?.setSight(wardenSightAt(this.hour));
+    if (this.warden) this.warden.grace = wardenGraceAt(this.hour);
+    for (const pack of this.packs) {
+      pack.setSight(packSightAt(this.hour));
+      // Coming on and going off while the player watches, which is the whole of what a shift is.
+      // The windows overlap at dawn and dusk, so a crew arrives as the light goes.
+      pack.setOnShift(packOutAt(pack.hours, this.hour));
+      pack.vigour = packVigourAt(pack.hours, this.hour);
+    }
+  }
+
+  /**
+   * The lamplighter, on his rounds.
+   *
+   * How many lamps are lit is a function of the hour, and he stands at the boundary — the next
+   * one he has to deal with. So the row lights from one end behind him through dusk and goes out
+   * ahead of him through dawn, and he walks up the street and back down it over a day without
+   * either direction being written anywhere.
+   *
+   * Called on the clock tick rather than per frame: the count changes about once a game-minute,
+   * and the walking between posts is `NPC.goTo`'s business.
+   */
+  private walkTheRow(): void {
+    const world = this.world;
+    const man = this.lamplighter;
+    if (!world || !man || world.lampCount === 0) return;
+
+    const lit = lampsLitAt(this.hour, world.lampCount);
+    for (let i = 0; i < world.lampCount; i++) world.setLampLit(i, i < lit ? 1 : 0);
+
+    // Sent to the lamp rather than teleported to it: he arrives when he arrives, and the lamp is
+    // already lit by the time he gets there because the clock said so. That is the one honest
+    // compromise here -- the alternative is the light waiting on a walk, and a man who fell
+    // behind his own schedule would leave a ward dark at midnight.
+    man.goTo = world.lampPosition(lamplighterPost(lit, world.lampCount));
+  }
 
   private updatePlayer(dt: number): void {
     // Orbit stays live even mid-conversation: it cannot change any state, and locking it
@@ -1244,6 +1622,138 @@ export class DistrictScreen implements Screen {
     this.hud?.setPrompt(best?.interactLabel ?? null, best?.interactDetail ?? null);
   }
 
+  /* ============================================================
+     Errands
+     ============================================================ */
+
+  /**
+   * A townsperson, who may or may not want something today.
+   *
+   * The whole of the routing is one call to `errandFor`, which is deliberate: which of four
+   * things this person is doing -- offering, nudging, taking a delivery, taking a report -- is a
+   * question about global state, and answering it in four places here is how two of them end up
+   * disagreeing about whether an errand is finished.
+   */
+  private talkTo(npcId: string, says: string, own: readonly DialogueLine[]): void {
+    // A stall opens *after* whatever was said, not instead of it -- so a trader who is also
+    // owed a delivery, or who has an opinion about the Census, gets to say so and then serve
+    // you. Talking and trading are the same interaction with a shopkeeper; splitting them
+    // across two prompts would be an interface deciding which half of a person you meant.
+    const stall = stallFor(this.area.id, npcId);
+    const thenTrade = stall ? () => this.hud?.openStall(stall) : undefined;
+
+    // The errand comes first. Somebody who is owed a delivery says so before they remark on the
+    // Census -- what they want from you now outranks what they think about last month.
+    const found = errandFor(this.area.id, npcId, this.errands);
+    if (!found) {
+      // Then whatever the ledger has made true, and only then their fixed script.
+      const lines = asideFor(says, this.chronicle) ?? own;
+      // `DialogueBox.start` returns without firing `onEnd` on an empty script, so a keeper with
+      // nothing to say would have a stall that never opened.
+      if (lines.length === 0) thenTrade?.();
+      else this.dialogue?.start([...lines], thenTrade);
+      return;
+    }
+    const { def, phase } = found;
+    if (phase === 'nudge') {
+      this.dialogue?.start([...def.nudge], thenTrade);
+      return;
+    }
+    if (phase === 'offer') {
+      // Not while the guided lap is running. The panel has one slot and the lap wins it, so an
+      // errand taken now would be a job with *no* UI at all -- no task line, and no way to hand
+      // it back, which with one errand slot is a corner the player cannot get out of. It is also
+      // simply wrong to send a Commander who has not met the Artificer to Highcourt. The lap is
+      // four steps; the townsperson keeps their own line until it is walked.
+      if (tutorialActive(this.flags)) {
+        const lines = asideFor(says, this.chronicle) ?? own;
+        if (lines.length === 0) thenTrade?.();
+        else this.dialogue?.start([...lines], thenTrade);
+        return;
+      }
+      // Recorded when the conversation *ends* rather than when it starts, so backing out of a
+      // dialogue is backing out of the job. `DialogueBox` already takes the callback.
+      this.dialogue?.start([...def.offer], () => {
+        this.errands = { ...this.errands, active: { id: def.id, ready: false } };
+        this.opts.onErrandAccept(def.id);
+        this.refreshObjective();
+        this.placeErrandMarker();
+        thenTrade?.();
+      });
+      return;
+    }
+    this.dialogue?.start([...def.thanks], () => {
+      this.errands = { done: [...this.errands.done, def.id], active: null };
+      const said = this.opts.onErrandComplete(def.id);
+      if (said) this.hud?.flashNotice(said);
+      this.refreshObjective();
+      this.placeErrandMarker();
+      thenTrade?.();
+    });
+  }
+
+  /**
+   * Stands the open errand's marker on this street, or takes it away again.
+   *
+   * Called on entry and whenever the errand's state moves. Idempotent: it clears whatever it put
+   * down last time first, so accepting and finishing in one visit cannot leave a cairn standing
+   * in a ward nobody was ever sent to.
+   */
+  private placeErrandMarker(): void {
+    if (this.marker) {
+      const i = this.interactables.indexOf(this.marker.hotspot);
+      if (i >= 0) this.interactables.splice(i, 1);
+      if (this.marker.sprite) {
+        this.world?.scene.remove(this.marker.sprite);
+        const b = this.world?.billboards.indexOf(this.marker.sprite) ?? -1;
+        if (b >= 0) this.world?.billboards.splice(b, 1);
+        this.marker.sprite.material.map?.dispose();
+        this.marker.sprite.material.dispose();
+        this.marker.sprite.geometry.dispose();
+      }
+      this.marker = null;
+    }
+
+    const want = errandMarker(this.errands);
+    if (!want || want.area !== this.area.id || !this.world) return;
+
+    const texture = want.art ? DRESSING_ART[want.art]() : makeCairnTexture();
+    const sprite = this.world.addBillboard(texture, 1.6, 1.6, want.x, want.z);
+    const hotspot = new Hotspot(want.x, want.z, want.label, () => {
+      this.errands = {
+        ...this.errands,
+        ...(this.errands.active ? { active: { ...this.errands.active, ready: true } } : {}),
+      };
+      if (this.errands.active) this.opts.onErrandReady(this.errands.active.id);
+      this.refreshObjective();
+      this.placeErrandMarker();
+      this.hud?.flashNotice('Taken. Go and report it.');
+    });
+    this.interactables.push(hotspot);
+    this.marker = { hotspot, sprite };
+  }
+
+  /**
+   * Hands the open errand back.
+   *
+   * Free, and it does not go into the `done` ledger -- so the giver offers it again next time
+   * you speak to them, which is the whole point. A job you gave back is a job you did not do,
+   * not a job you failed.
+   */
+  private abandonErrand(): void {
+    if (!this.errands.active) return;
+    this.errands = { ...this.errands, active: null };
+    this.opts.onErrandAbandon();
+    this.refreshObjective();
+    this.placeErrandMarker();
+    this.hud?.flashNotice('Given back.');
+  }
+
+  /** The objective panel, which the tutorial and the errands share. See `quest.ts`. */
+  private refreshObjective(): void {
+    this.hud?.renderObjective(this.flags, this.errands);
+  }
+
   /**
    * Caught off the pavement.
    *
@@ -1310,6 +1820,18 @@ export class DistrictScreen implements Screen {
     // big this fight was going to be, and the board belongs inside it.
     const at = { x: this.ring?.originX ?? player.position.x, z: this.ring?.originZ ?? player.position.z };
 
+    // The weather is the weather here -- and only out here. A contract played on the 2D board is
+    // not standing on any particular ground; this is for the fights that happen on the road you
+    // are already looking at. The rule about what the ground may and may not fill in lives in
+    // `groundedEncounter`.
+    // ...and only on a day it is actually falling. A clear night in the Rimefields is a fight
+    // with clear air in it, which is the entire reason the sky learned to stop.
+    const encounter = groundedEncounter(
+      fight.encounter,
+      this.area.props.sky,
+      skyStrengthAt(this.area.id, this.area.props.sky, this.hour),
+    );
+
     const combat = new WorldCombat({
       root: this.root!,
       scene: world.scene,
@@ -1317,7 +1839,7 @@ export class DistrictScreen implements Screen {
       area: this.area,
       at,
       maxAnisotropy: this.renderer!.capabilities.getMaxAnisotropy(),
-      encounter: fight.encounter,
+      encounter,
       seed: fight.seed,
       companionId: this.opts.companionId,
       ...(this.opts.companionShiny !== undefined
@@ -1331,6 +1853,18 @@ export class DistrictScreen implements Screen {
       onRotate: (steps) => this.nudgeOrbit(steps),
       onFinish: (result, encounter, outcome) => {
         this.endFight();
+        // A cull is satisfied by the *pack dying*, not by the errand having arranged it -- so a
+        // player who was already going to clear that road gets the credit. Asked here rather
+        // than pushed from the errand, which is why the two never have to agree about whose
+        // fight this was.
+        // `pulled` as well as the host: the ring drags in whatever was roaming nearby and they
+        // all go off the road on the same clock, so they are all things that died here.
+        if (result !== 'defeat' && cullSatisfiedBy(this.errands, encounterId, ...pulled)) {
+          const id = this.errands.active!.id;
+          this.errands = { ...this.errands, active: { id, ready: true } };
+          this.opts.onErrandReady(id);
+          this.refreshObjective();
+        }
         fight.onFinish(result, encounter, outcome);
       },
     });
@@ -1361,7 +1895,11 @@ export class DistrictScreen implements Screen {
     // `endFight` puts them back, which matters for the one path that returns to this same
     // screen instance: a Warden who cannot serve a second contract falls through to `seize`.
     for (const pack of this.packs) pack.setVisible(false);
+    for (const critter of this.critters) critter.setVisible(false);
     this.warden?.setVisible(false);
+    // The errand's cairn too. `setArena` fades *structures*, so a marker seated inside the
+    // footprint would otherwise stand in the middle of the grid with a prompt over it.
+    if (this.marker?.sprite) this.marker.sprite.visible = false;
 
     // The Commander and their beast take their places at the near edge — off the grid but on
     // the field, which is the same geometry the 2D board draws its portraits in. They are the
@@ -1406,7 +1944,9 @@ export class DistrictScreen implements Screen {
     // Whatever the fight did to the follower, it walks the road again after it.
     if (this.follower) this.follower.walker.sprite.visible = true;
     for (const pack of this.packs) pack.setVisible(true);
+    for (const critter of this.critters) critter.setVisible(true);
     this.warden?.setVisible(true);
+    if (this.marker?.sprite) this.marker.sprite.visible = true;
     this.descent = null;
     this.combatCam = null;
     this.world?.setArena(null);

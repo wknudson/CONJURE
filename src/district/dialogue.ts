@@ -67,6 +67,16 @@ export const VEX_REPEAT: DialogueLine[] = [
  */
 export const FOLK_LINES: Record<string, DialogueLine[]> = {
   /* --- Ashfall Ward ------------------------------------------------------------------ */
+  ashfall_lamplighter: [
+    {
+      who: 'LAMPLIGHTER',
+      text: 'Ten on this ward. I start at the gate and I finish at the canal, and if you are still off the flags when I pass you a second time that is your own business.',
+    },
+    {
+      who: 'LAMPLIGHTER',
+      text: 'Every lamp in Jolrek is Magistracy property. So is the light. Bear that in mind about where you choose to stand.',
+    },
+  ],
   ashfall_gate_guard: [
     { who: 'GATE SENTRY', text: 'South gate. Stay on the flags and you and I have no argument.' },
     {
@@ -105,6 +115,12 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
   ],
 
   /* --- The Bonemarket ---------------------------------------------------------------- */
+  bonemarket_lamplighter: [
+    {
+      who: 'LAMPLIGHTER',
+      text: 'Five, and I light them while the stalls are still coming down. They want seeing to pack up and I want seeing to work.',
+    },
+  ],
   bonemarket_grocer: [
     {
       who: 'GROCER',
@@ -132,6 +148,12 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
   ],
 
   /* --- The Cinderworks --------------------------------------------------------------- */
+  cinderworks_lamplighter: [
+    {
+      who: 'LAMPLIGHTER',
+      text: 'You would think a ward full of furnaces would light its own lanes. Furnace glow is not light. It is something happening to you.',
+    },
+  ],
   cinderworks_smith: [
     {
       who: 'FOUNDRY SMITH',
@@ -160,6 +182,12 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
   ],
 
   /* --- Ward Seven -------------------------------------------------------------------- */
+  ward_seven_lamplighter: [
+    {
+      who: 'LAMPLIGHTER',
+      text: 'Four lamps and I do not linger over any of them. Whatever is wrong with the water down here is wrong with the air by now.',
+    },
+  ],
   ward_seven_healer: [
     {
       who: 'WARD HEALER',
@@ -178,6 +206,16 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
   ],
 
   /* --- Highcourt and the Spire ------------------------------------------------------- */
+  highcourt_lamplighter: [
+    {
+      who: 'LAMPLIGHTER',
+      text: 'Seven, on the processional. Best-lit street in Azo and there is never anybody on it to see.',
+    },
+    {
+      who: 'LAMPLIGHTER',
+      text: 'They keep the service end dark on purpose. I asked once. I was told the round is seven lamps.',
+    },
+  ],
   highcourt_scribe: [
     {
       who: 'COURT SCRIBE',

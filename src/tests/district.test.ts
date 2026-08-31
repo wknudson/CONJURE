@@ -26,6 +26,8 @@ import { GROUND_TEXES } from '../district/textures.js';
 import { ColliderSet } from '../district/collision.js';
 import { FOLK_LINES } from '../district/dialogue.js';
 import { DRESSING, DRESSING_IDS, isDressingId } from '../district/dressing.js';
+import { CRITTERS, CRITTER_IDS, isCritterId } from '../district/wildlife.js';
+import { isSkyId, SKIES } from '../district/skies.js';
 import { FOLK_IDS, isFolkId } from '../render/folk.js';
 
 const SPAWN = ASHFALL.spawn;
@@ -73,6 +75,50 @@ describe('the world is populated', () => {
     expect(mute.map((a) => a.id)).toEqual([]);
   });
 
+  it('uses every animal it knows how to draw', () => {
+    // The same both-ways rule the sprite sheets and the furniture get. An unused animal is not
+    // a bug, but it is a decision, and this is the line that makes dropping one a decision
+    // somebody takes rather than a thing that quietly happens while an area is edited.
+    const placed = new Set(AREAS.flatMap((a) => (a.props.wildlife ?? []).map((w) => w.kind)));
+    expect([...CRITTER_IDS].filter((id) => !placed.has(id))).toEqual([]);
+  });
+
+  it('says what the air is doing in every one of them', () => {
+    // Declared rather than defaulted, and that is the whole content of this test. `'none'` and
+    // "nobody got round to it" look identical in an area file and only one of them is a
+    // decision -- the Bone Bastion's still air is authored, and this is what makes it possible
+    // to tell that from the outside.
+    for (const area of AREAS) {
+      expect(area.props.sky, `${area.id} does not say what its air is doing`).toBeDefined();
+      expect(isSkyId(area.props.sky!), `${area.id}: unknown weather`).toBe(true);
+    }
+  });
+
+  it('uses every kind of weather it can draw', () => {
+    const declared = new Set(AREAS.map((a) => a.props.sky));
+    expect(Object.keys(SKIES).filter((id) => !declared.has(id as never))).toEqual([]);
+  });
+
+  it('has somebody to light every lamp in the world but two', () => {
+    // The lamps used to fade together on one curve everywhere, which is the right picture drawn
+    // by the wrong cause: nothing dims a gas lamp. Somewhere with lamps and nobody to light them
+    // is that cause again, so this asks that every lit street have a person on it.
+    const unlit = AREAS.filter((a) => (a.props.lamps ?? []).length > 0 && !a.props.lamplighter);
+    expect(unlit.map((a) => a.id)).toEqual(['brays_hollow']);
+  });
+
+  it("lets Bray's Hollow off, because Old Bray already told us why", () => {
+    // The one exception, and it is not an omission -- it is canon that predates the mechanic.
+    // Old Bray's fixed script has always said: "Somebody puts those two lamps out every night.
+    // It is not the Magistracy, and they know it." Giving the Hollow a lamplighter would be the
+    // system contradicting a line the world has been saying since the townsfolk landed.
+    const hollow = areaById('brays_hollow')!;
+    expect(hollow.props.lamps ?? [], 'it does have lamps').toHaveLength(2);
+    expect(hollow.props.lamplighter, 'and nobody who lights them').toBeUndefined();
+    const bray = FOLK_LINES.brays_elder!.map((l) => l.text).join(' ');
+    expect(bray, 'and says so out loud').toMatch(/lamps out every night/i);
+  });
+
   it('leaves the Wildlands and the Chalk Road empty', () => {
     // Not an oversight, and this is where that is written down. The atlas says nothing lives
     // out here, and that the Road carries no notices because "the notices are posted where
@@ -89,6 +135,16 @@ describe('the world is populated', () => {
     ];
     for (const id of uninhabited) {
       expect(areaById(id)?.props.npcs ?? [], id).toEqual([]);
+    }
+  });
+
+  it('does not read that emptiness as a claim about animals', () => {
+    // The line above is about *people*, and it is worth pinning that the two are different
+    // claims -- because the obvious misreading of it is "these areas are empty", which is not
+    // what the atlas says and would leave the seven largest maps in the game with nothing
+    // moving on them. Nobody lives in the Ashwood. Things live in the Ashwood.
+    for (const id of ['chalk_road', 'ashwood', 'rimefields', 'caldera', 'storm_shelf']) {
+      expect((areaById(id)?.props.wildlife ?? []).length, id).toBeGreaterThan(0);
     }
   });
 });
@@ -318,6 +374,47 @@ describe('every area', () => {
         }
       });
 
+      it('puts its animals somewhere they can live', () => {
+        for (const w of area.props.wildlife ?? []) {
+          expect(isCritterId(w.kind), `${area.id}: unknown animal '${w.kind}'`).toBe(true);
+          const kind = CRITTERS[w.kind];
+          // A flying kind is homed anywhere in the map on purpose: it never touches the
+          // collider set, so a rook over a chimney is a rook over a chimney. Everything with
+          // legs has to start on ground a body could stand on, or it spends the whole area
+          // shoved against the inside of a wall by the collider it was born in.
+          if (!kind.flies) {
+            expect(isWalkable(area, w.x, w.z), `${area.id}: ${w.kind} homed inside a wall`).toBe(
+              true,
+            );
+          }
+          expect(w.roam, `${area.id}: ${w.kind} with no room to wander`).toBeGreaterThan(0);
+          // The bound `collision.ts` states its anti-tunnelling proof against, and it applies
+          // to legs only -- which the first draft of this got wrong, and the gull failed it at
+          // 3.6. Nothing that flies ever asks the collider set a question, so its speed is a
+          // look decision rather than a safety one; a hare at four would be through the hedge.
+          // `Critter` runs at double this when it bolts, against a `dt` clamped to 0.05, and
+          // the step has to stay inside the smallest collider radius.
+          if (!kind.flies) {
+            expect(kind.speed, `${w.kind} is fast enough to tunnel`).toBeLessThanOrEqual(3.5);
+          }
+        }
+      });
+
+      it('does not put an animal inside a roaming pack', () => {
+        // A hare living inside a pack's patch is a hare that spends the area being walked
+        // through by three things trying to kill you. Compared patch to patch rather than
+        // point to point, because neither of them stays where it was put.
+        for (const w of area.props.wildlife ?? []) {
+          for (const pk of area.props.packs ?? []) {
+            const gap = Math.hypot(w.x - pk.x, w.z - pk.z);
+            expect(
+              gap,
+              `${area.id}: ${w.kind} lives inside ${pk.encounterId}'s patch`,
+            ).toBeGreaterThan(pk.roam);
+          }
+        }
+      });
+
       it('stands its furniture where furniture can stand', () => {
         for (const d of area.props.dressing ?? []) {
           expect(isDressingId(d.kind), `${area.id}: unknown kind '${d.kind}'`).toBe(true);
@@ -359,6 +456,18 @@ describe('every area', () => {
             ).toBeGreaterThan(size / 2 + 1.4);
           }
         }
+      });
+
+      it('names a lamplighter who is actually standing there, if it names one', () => {
+        // A string pointing at another string, with no compiler between them -- the same silent
+        // failure an errand's giver has. A misspelled id is a ward whose lamps quietly fall back
+        // to fading together, which is exactly what it looked like before anybody walked the row.
+        const who = area.props.lamplighter;
+        if (!who) return;
+        const cast = (area.props.npcs ?? []).map((n) => n.id);
+        expect(cast, `${area.id}: no npc called '${who}'`).toContain(who);
+        expect((area.props.lamps ?? []).length, `${area.id} has a lamplighter and no lamps`)
+          .toBeGreaterThan(0);
       });
 
       it('gives every one of its people art, a prompt and something to say', () => {

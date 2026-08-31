@@ -13,9 +13,25 @@ import type { GlobalGameState } from '../core/overworld/state.js';
 import { useConsumable } from '../core/overworld/run.js';
 import type { Bounty } from '../core/data/bounties.js';
 import { encounterById } from '../core/data/encounters/index.js';
+import { siteByEncounter } from './sites.js';
+import { areaById } from './areas/index.js';
 import type { TutorialFlag } from '../app/save.js';
 import type { AreaDef } from './map.js';
 import { LOCKED_REASON, bountyAvailable, currentObjective, pipStates, tutorialActive } from './quest.js';
+import { errandObjective, type ErrandState } from './errands.js';
+import { clockLabel, phaseAt } from './daylight.js';
+import {
+  brewPrice,
+  buyAt,
+  buyRefusal,
+  corePrice,
+  sellAt,
+  sellRefusal,
+  stallStock,
+  type StallDef,
+} from '../core/data/stalls.js';
+import { APOTHECARY_STOCK } from '../core/data/apothecary.js';
+import { reagentById } from '../core/data/splicing.js';
 import { companionById } from '../core/data/companions.js';
 import { huntByEncounter, huntCooldownLabel, huntCooldownRemaining } from '../core/data/hunts.js';
 
@@ -37,12 +53,26 @@ export interface HudOpts {
   global: GlobalGameState;
   onChange?: () => void;
   onBounty: (bounty: Bounty) => void;
+  /** Hands an open errand back. See `renderObjective`. */
+  onErrandAbandon?: () => void;
+  /**
+   * What time it is, asked rather than handed over.
+   *
+   * A function because the ledger is re-rendered on every purse change and the hour moves
+   * underneath it -- a value captured when the HUD was built would be the time the ward was
+   * entered, frozen, for as long as the player stayed in it.
+   */
+  hour: () => number;
 }
 
 export class DistrictHud {
   private readonly objective: HTMLDivElement;
   private readonly objectiveTask: HTMLDivElement;
   private readonly objectivePips: HTMLDivElement;
+  private readonly objectiveCap: HTMLDivElement;
+  private readonly objectiveFlash: HTMLDivElement;
+  private readonly objectiveDrop: HTMLButtonElement;
+  private flashTimer = 0;
   private readonly zoneChip: HTMLDivElement;
   private readonly alert: HTMLDivElement;
   private readonly prompt: HTMLDivElement;
@@ -79,10 +109,16 @@ export class DistrictHud {
     this.objective.innerHTML =
       '<div class="district-objective__cap">OBJECTIVE</div>' +
       '<div class="district-objective__task"></div>' +
-      '<div class="district-objective__pips"></div>';
+      '<div class="district-objective__pips"></div>' +
+      '<button class="district-objective__drop" type="button">Give it back</button>' +
+      '<div class="district-objective__flash"></div>';
     root.appendChild(this.objective);
     this.objectiveTask = this.objective.querySelector('.district-objective__task')!;
     this.objectivePips = this.objective.querySelector('.district-objective__pips')!;
+    this.objectiveCap = this.objective.querySelector('.district-objective__cap')!;
+    this.objectiveFlash = this.objective.querySelector('.district-objective__flash')!;
+    this.objectiveDrop = this.objective.querySelector('.district-objective__drop')!;
+    this.objectiveDrop.addEventListener('click', () => this.opts.onErrandAbandon?.());
 
     this.zoneChip = el('div', 'district-panel district-zone');
     root.appendChild(this.zoneChip);
@@ -140,19 +176,64 @@ export class DistrictHud {
 
   /* ------------------------------------------------------------ objective */
 
-  renderTutorial(flags: readonly TutorialFlag[]): void {
-    if (!tutorialActive(flags)) {
+/**
+   * The objective panel, which now has two tenants.
+   *
+   * It used to belong to the guided lap alone and to go away for good once that was walked --
+   * which left a panel, a caption and a slot of screen furniture doing nothing for the rest of
+   * the game. An errand is exactly the same kind of statement ("here is the one thing you are
+   * being asked to do"), so it moves in rather than a second panel being built beside it.
+   *
+   * The lap wins where both are live. It is the shorter of the two and it is teaching, and a
+   * new Commander who takes a job off a townsperson should not have the instructions replaced
+   * by it. The pips belong to the lap and are dropped when the errand has the panel, because
+   * three marks that never light would read as an errand with steps.
+   */
+  renderObjective(flags: readonly TutorialFlag[], errands: ErrandState): void {
+    const lap = tutorialActive(flags) ? currentObjective(flags) : null;
+    const errand = lap ? null : errandObjective(errands);
+    const task = lap ?? errand;
+    if (!task) {
       this.objective.classList.add('is-hidden');
       return;
     }
     this.objective.classList.remove('is-hidden');
-    this.objectiveTask.textContent = currentObjective(flags) ?? '';
-    this.objectivePips.innerHTML = pipStates(flags)
-      .map(
-        (p) =>
-          `<span class="district-pip${p.lit ? ' is-lit' : ''}">&#9672; ${p.label}</span>`,
-      )
-      .join(' ');
+    this.objective.classList.toggle('is-errand', !lap);
+    this.objectiveCap.textContent = lap ? 'OBJECTIVE' : 'ERRAND';
+    this.objectiveTask.textContent = task;
+    this.objectivePips.innerHTML = lap
+      ? pipStates(flags)
+          .map((p) => `<span class="district-pip${p.lit ? ' is-lit' : ''}">&#9672; ${p.label}</span>`)
+          .join(' ')
+      : '';
+    // The release valve, and it is not a nicety.
+    //
+    // One errand open at a time is a good rule and it has a sharp edge: an errand that becomes
+    // uncompletable locks the player out of the *entire* system, permanently, with no way to
+    // say so. The cull is the case that made this real — the Combat Ring can drag the errand's
+    // pack into somebody else's ambush, and a pack that has died is off the road for its whole
+    // cooldown whether or not anybody got the credit.
+    //
+    // That particular hole is fixed. This is here because it was not the only one available:
+    // any single-slot commitment needs a way out, and the honest one is free. Giving a job back
+    // is not a failure state and does not cost anything -- the errand simply goes back on offer.
+    this.objectiveDrop.classList.toggle('is-shown', !lap && !!task);
+  }
+
+  /**
+   * A line that says something just happened, over the interact prompt.
+   *
+   * The district had nowhere to say "taken" -- `showNotice` is a modal that wants acknowledging
+   * and this is a receipt. Clears itself, and is deliberately not queued: two of these in the
+   * same second means the second one is what matters.
+   */
+  flashNotice(text: string): void {
+    this.objectiveFlash.textContent = text;
+    this.objectiveFlash.classList.add('is-shown');
+    window.clearTimeout(this.flashTimer);
+    this.flashTimer = window.setTimeout(() => {
+      this.objectiveFlash.classList.remove('is-shown');
+    }, 2600);
   }
 
   /* ------------------------------------------------------------ zone + alert */
@@ -238,6 +319,10 @@ export class DistrictHud {
           <span class="ledger__label">Brew held</span>
           <span class="ledger__held">${activeBuff ?? 'none'}</span>
         </div>
+        <div class="ledger__stat">
+          <span class="ledger__label">The hour</span>
+          <span class="ledger__value ledger__value--hour">${clockLabel(this.opts.hour())} · ${phaseAt(this.opts.hour())}</span>
+        </div>
       </div>
       <button class="district-satchel__toggle">Satchel ${inventory.length}/${INVENTORY_LIMIT}</button>
       <div class="district-satchel ledger__satchel"></div>
@@ -318,6 +403,37 @@ export class DistrictHud {
         const reagents = bounty.spoils.reagents
           ? Object.values(bounty.spoils.reagents).reduce((a, b) => a + b, 0)
           : 0;
+        // A story poster is a briefing, not a button: the board says what the job is
+        // and where, and the fight is launched by walking up to the ground the writ
+        // names. Rolled work and the audit keep click-to-launch — placeless arena
+        // work with no geography to walk to.
+        const site = bounty.id.startsWith('story_') ? siteByEncounter(bounty.enemySeed) : undefined;
+        const whereLine = site
+          ? `The writ names ${areaById(site.areaId)?.name ?? site.areaId} — ${site.label}`
+          : encounter
+            ? `${encounter.name} · ${encounter.width}×${encounter.height}`
+            : 'Location unknown';
+        if (site) {
+          return `
+        <div class="bounty-card brass-panel bounty-card--${bounty.difficulty} bounty-card--writ">
+          <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
+          <span class="bounty-seal">Writ</span>
+          <div class="bounty-card__tier">${bounty.difficulty}</div>
+          <div class="bounty-card__title">${bounty.title}</div>
+          <div class="bounty-card__where">${whereLine}</div>
+          <div class="bounty-card__flavour">${bounty.flavour}</div>
+          <div class="bounty-card__pay">
+            <span class="bounty-card__coin bounty-card__coin--gold">${bounty.spoils.ducats ?? 0} d</span>
+            ${
+              bounty.spoils.marrowShards
+                ? `<span class="bounty-card__coin bounty-card__coin--marrow">${bounty.spoils.marrowShards} shards</span>`
+                : ''
+            }
+            ${reagents ? `<span class="bounty-card__coin bounty-card__coin--reagent">${reagents} cores</span>` : ''}
+            ${bounty.wager ? `<span class="bounty-card__coin bounty-card__coin--marrow">stake ${bounty.wager} d</span>` : ''}
+          </div>
+        </div>`;
+        }
         return `
         <button class="bounty-card brass-panel bounty-card--${bounty.difficulty}${
           bounty.audit ? ' bounty-card--audit' : ''
@@ -326,11 +442,7 @@ export class DistrictHud {
           ${bounty.audit ? '<span class="bounty-seal">Audit</span>' : ''}
           <div class="bounty-card__tier">${bounty.audit ? 'audit' : bounty.difficulty}</div>
           <div class="bounty-card__title">${bounty.title}</div>
-          <div class="bounty-card__where">${
-            encounter
-              ? `${encounter.name} · ${encounter.width}×${encounter.height}`
-              : 'Location unknown'
-          }</div>
+          <div class="bounty-card__where">${whereLine}</div>
           <div class="bounty-card__flavour">${bounty.flavour}</div>
           <div class="bounty-card__pay">
             <span class="bounty-card__coin bounty-card__coin--gold">${bounty.spoils.ducats ?? 0} d</span>
@@ -488,6 +600,110 @@ export class DistrictHud {
     }
   }
 
+
+  /**
+   * A stall on the street.
+   *
+   * The **third** renderer into the one overlay the Bounty Board and the Wildlands Gate already
+   * share, for the reason `openHunts` states above and which applies again here: Escape closes
+   * it, movement stays blocked while it is up, and the interact prompt behaves, all without a
+   * third copy of that logic in `DistrictScreen`. Overlays that must never be open at once are
+   * more honestly one overlay with several renderers.
+   *
+   * Deliberately not a `Screen`. Every trade in this game has been a door in Ashfall and a full
+   * screen change, which is right for a shop you walk *into* — the Apothecary has a counter and
+   * a fitting room. A stall is a person standing in a street, and stepping out of the world to
+   * buy one Core off them would be the interface disagreeing with the fiction. You stay on the
+   * street; the street goes quiet for a moment.
+   *
+   * Repainted rather than patched after every trade, on the same reasoning: the panel is a
+   * dozen rows, it is rebuilt from scratch on open anyway, and a targeted update would have to
+   * know which rows a purse of 90 Ducats had just made unaffordable.
+   */
+  openStall(stall: StallDef): void {
+    this.boardOpen = true;
+    this.boardPanel.classList.add('is-open');
+    this.renderStall(stall);
+  }
+
+  private renderStall(stall: StallDef): void {
+    const { overworld } = this.opts.global;
+    const cores = stall.goods === 'cores';
+
+    const rows = stallStock(stall)
+      .map((id) => {
+        const held = cores ? (overworld.economy.reagents[id] ?? 0) : 0;
+        const price = cores ? corePrice(stall, id)!.buy : brewPrice(stall, id)!;
+        const paid = cores ? corePrice(stall, id)!.sell : 0;
+        const name = cores
+          ? (reagentById(id)?.name ?? id)
+          : (APOTHECARY_STOCK.find((s) => s.item.id === id)?.item.name ?? id);
+        const blurb = cores
+          ? (reagentById(id)?.blurb ?? '')
+          : (APOTHECARY_STOCK.find((s) => s.item.id === id)?.blurb ?? '');
+        const cannotBuy = buyRefusal(overworld, stall, id);
+        const cannotSell = cores ? sellRefusal(overworld, stall, id) : 'not-stocked';
+
+        return `
+          <div class="stall-row brass-panel">
+            <div class="stall-row__what">
+              <div class="stall-row__name">${esc(name)}${
+                held > 0 ? `<span class="stall-row__held">you hold ${held}</span>` : ''
+              }</div>
+              <div class="stall-row__blurb">${esc(blurb)}</div>
+            </div>
+            <div class="stall-row__deal">
+              <button class="brass-btn stall-row__buy" data-buy="${esc(id)}"${
+                cannotBuy ? ' disabled' : ''
+              }>${cannotBuy === 'satchel-full' ? 'Satchel full' : `Buy · ${price} d`}</button>
+              ${
+                cores && paid > 0
+                  ? `<button class="brass-btn stall-row__sell" data-sell="${esc(id)}"${
+                      cannotSell ? ' disabled' : ''
+                    }>Sell · ${paid} d</button>`
+                  : ''
+              }
+            </div>
+          </div>`;
+      })
+      .join('');
+
+    this.boardPanel.innerHTML = `
+      <div class="district-board__card brass-panel">
+        <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
+        <div class="district-board__head">
+          <div class="district-board__title">${esc(stall.name)}</div>
+          <div class="district-stall__purse">${overworld.economy.ducats} d</div>
+          <button class="brass-btn district-board__close">Step away</button>
+        </div>
+        <div class="district-stall__line">${esc(stall.line)}</div>
+        <div class="district-stall__rows">${rows}</div>
+      </div>`;
+
+    this.boardPanel
+      .querySelector('.district-board__close')!
+      .addEventListener('click', () => this.closeBoard());
+
+    for (const node of this.boardPanel.querySelectorAll<HTMLButtonElement>('[data-buy]')) {
+      node.addEventListener('click', () => {
+        if (buyAt(overworld, stall, node.dataset.buy!)) {
+          // Written before the shelf is redrawn, so a closed tab cannot lose a purchase the
+          // player has already watched happen. The Apothecary's counter saves on the same beat.
+          this.opts.onChange?.();
+          this.renderStall(stall);
+        }
+      });
+    }
+    for (const node of this.boardPanel.querySelectorAll<HTMLButtonElement>('[data-sell]')) {
+      node.addEventListener('click', () => {
+        if (sellAt(overworld, stall, node.dataset.sell!)) {
+          this.opts.onChange?.();
+          this.renderStall(stall);
+        }
+      });
+    }
+  }
+
   closeBoard(): void {
     this.boardOpen = false;
     this.boardPanel.classList.remove('is-open');
@@ -584,6 +800,22 @@ export class DistrictHud {
 
     if (view.warden) {
       dot(view.warden.x, view.warden.z, 3.2, view.warden.alerted ? '#ff6a45' : '#d8b13a', '#1b1720');
+    }
+
+    // The errand, drawn as a ring rather than a dot: everything else on this map is a body
+    // that moves, and a mark that means "a place" should not look like one of them.
+    if (view.errand) {
+      const ex = px(view.errand.x);
+      const ez = pz(view.errand.z);
+      ctx.beginPath();
+      ctx.arc(ex, ez, 6, 0, Math.PI * 2);
+      ctx.strokeStyle = '#e8c86a';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(ex, ez, 1.6, 0, Math.PI * 2);
+      ctx.fillStyle = '#e8c86a';
+      ctx.fill();
     }
 
     // You, and which way you are looking — the camera's yaw rather than the body's, because
@@ -704,6 +936,7 @@ export class DistrictHud {
   }
 
   destroy(): void {
+    window.clearTimeout(this.flashTimer);
     for (const node of [
       this.objective,
       this.zoneChip,
@@ -727,6 +960,14 @@ export interface MapView {
   yaw: number;
   packs: readonly { encounterId: string; x: number; z: number; hunting: boolean }[];
   warden?: { x: number; z: number; alerted: boolean };
+  /**
+   * Where the open errand wants you, when it wants you in *this* area.
+   *
+   * The one thing the map does that could not be got at any other way. Being told to fetch
+   * something from the Ashwood and then hunting a thirty-by-twenty-six wood tile by tile is
+   * not an errand, it is a search; the marker is what turns the first into a walk.
+   */
+  errand?: { x: number; z: number };
 }
 
 /**

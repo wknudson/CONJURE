@@ -269,7 +269,7 @@ export interface CombatBoons {
   /**
    * A unit of this side standing in steam is not a legal target for a ranged attack.
    *
-   * The exact inverse of the rule `occluderCells` documents — fog blocks shooting
+   * The exact inverse of the rule `cellOccludes` documents — fog blocks shooting
    * *through* the cloud while leaving whoever is inside it shootable. Goggles still win:
    * a viewer with `ignoresFog` reads the tile as empty air and picks the body out of it,
    * which keeps the two rules an answer to each other rather than a stack.

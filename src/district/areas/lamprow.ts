@@ -125,6 +125,16 @@ export const LAMPROW: AreaDef = defineArea({
     },
   ],
   props: {
+    /** A canal ward. Gulls off the water, rats in the Sink, rooks over both. */
+    sky: 'ash',
+    wildlife: [
+      { kind: 'gull', x: -38, z: -38, roam: 22, count: 3 },
+      { kind: 'gull', x: -38, z: -2, roam: 22, count: 3 },
+      { kind: 'rat', x: -22, z: -30, roam: 5, count: 2 },
+      { kind: 'rat', x: 30, z: -10, roam: 5, count: 2 },
+      { kind: 'rat', x: 30, z: 26, roam: 5, count: 2 },
+      { kind: 'rook', x: -18, z: -38, roam: 24, count: 3 },
+    ],
     /** The lighting ward. Oil on the quay, a fire below the kerb, washing over the Sink. */
     dressing: [
       { kind: 'barrel', x: -42, z: -30 },
@@ -190,10 +200,21 @@ export const LAMPROW: AreaDef = defineArea({
      * can pull one into the other's fight.
      */
     packs: [
-      { encounterId: 'pack_lamprow_gutter_crew', x: 0, z: 12, roam: 7 },
-      { encounterId: 'pack_lamprow_tithe_takers', x: 10, z: 14, roam: 7 },
+      // Both nocturnal, and for the same reason the ward has forty-one lamps: what happens
+      // below the kerb happens when the light stops. A crew that worked the Sink at noon would
+      // be a crew doing it in front of everybody.
+      { encounterId: 'pack_lamprow_gutter_crew', x: 0, z: 12, roam: 7, hours: 'night' },
+      { encounterId: 'pack_lamprow_tithe_takers', x: 10, z: 14, roam: 7, hours: 'night' },
     ],
-    /** The lamps the ward is named for — every one of them on the flags. */
+    /**
+     * Who walks the row.
+     *
+     * The only one in the world, and the ward is named for the job. His fixed line has always
+     * been "Forty-one lamps on the High Street. I light them. I do not own them." — said standing
+     * still while they came on by themselves. Now they come on behind him.
+     */
+    lamplighter: 'lamprow_lamplighter',
+    /** The lamps the ward is named for — every one of them on the flags, in one straight row. */
     lamps: [
       { x: -34, z: 6 },
       { x: -22, z: 6 },

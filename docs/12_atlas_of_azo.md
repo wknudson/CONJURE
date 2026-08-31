@@ -576,11 +576,12 @@ Not a wishlist. Just the honest read of the table above.
    walk, and that is all they are: no packs outside the Chalk Road, the Verge and Lamprow, no
    Wardens outside Ashfall and Lamprow, no doors outside the ward, no boards, no signposts. The
    world is a body with most of its contents still to come.
-3. **The contracts still do not know the ground exists.** `the_summons` fights at the throne and
-   there is a Highcourt to walk through now; `fouled_cistern` fights in Ward Seven and there is a
-   Ward Seven; `caldera_chimera` fights in a crater you can stand in. Every one of them is still
-   reached by accepting a posting and being put on a board. Wiring a contract to start where its
-   fiction says it happens is the obvious next move and nothing does it yet.
+3. ~~**The contracts still do not know the ground exists.**~~ **Resolved.** The board is a
+   briefing surface now: a poster names the job, the pay and the ground, and every story
+   contract launches from a walk-to site in the ward its fiction names (`district/sites.ts`
+   — one site per contract, plus the three regional apex lairs and the epilogue's four).
+   Rolled fallback work and the audit keep click-to-launch, deliberately: they are placeless
+   arena dice with no geography to walk to.
 4. **`DON'T CARRY IT IN` is on the wrong wall.** It belongs on Highcourt's last safe wall,
    late-campaign; it is on Ashfall's Vivarium wall from turn one because the world does not read
    campaign state. Highcourt now exists to put it on.

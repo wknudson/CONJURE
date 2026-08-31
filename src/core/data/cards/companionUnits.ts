@@ -422,6 +422,47 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
       footprint: 2,
       archetype: 'behemoth',
       escalationBonus: { atk: 0, hp: 0 },
+      // The kit, not just the size — it shipped as a stat clone of the enraged drake and
+      // read as a bigger number rather than a different machine. It strikes with the grid
+      // it eats, and what survives a blow is left Charged: the engine primes the board
+      // for Vane's own cascade deck, so ignoring the body makes his hand worse for you.
+      attackDtype: 'shock',
+      onHit: { status: 'charged', stacks: 1 },
+      // Self-welding plate. Left alone it hardens; PLATE_CAP bounds how far.
+      platesEachTurn: 10,
+      // And the stated weakness the player can be told: it comes apart to impact —
+      // Bulwark's whole vocabulary is the answer to the machine.
+      elementalMod: { impact: 10 },
+    },
+  },
+
+  /**
+   * The Bone Bastion Sovereign at half strength: the necropolis apex grown into the
+   * shape the doc always billed it as. The third 2x2 Bound Form, and like the other two
+   * it is the fight's second half — slower, harder-hitting, and rewriting the arena's
+   * sightlines by standing in them. Dusk's own body: what the graves keep, at full size.
+   */
+  sovereign_behemoth_bound: {
+    id: 'sovereign_behemoth_bound',
+    name: 'The Sovereign, Risen',
+    cost: { bones: 0, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'minion',
+    text: 'Bound Form. The Bastion, awake. Blocks sight through itself.',
+    target: { kind: 'none' },
+    effect: { op: 'seq', effects: [] },
+    keywords: ['BoundForm'],
+    setupOnly: true,
+    unit: {
+      atk: 50,
+      hp: BOSS_HP,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 2,
+      archetype: 'behemoth',
+      escalationBonus: { atk: 0, hp: 0 },
     },
   },
 

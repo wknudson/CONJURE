@@ -80,7 +80,13 @@ export type DressingId =
   | 'logpile'
   | 'scorch'
   | 'bollard'
-  | 'pens';
+  | 'pens'
+  | 'reeds'
+  | 'bracken'
+  | 'wildflowers'
+  | 'bramble'
+  | 'deadfall'
+  | 'mushrooms';
 
 /**
  * The vocabulary.
@@ -109,7 +115,40 @@ export const DRESSING: Record<DressingId, DressingKind> = {
   scorch: { form: 'ground', size: 3.6, collides: false, note: 'Burn mark. A thing happened here and is over.' },
   bollard: { form: 'billboard', size: 1.1, collides: true, note: 'Quay and processional. Stops a cart, not a person going round it.' },
   pens: { form: 'panel', size: 1.7, collides: true, note: 'Livestock hurdles, penned. Lower and tighter than a fence.' },
+
+  /* --- things that grow ---
+     Six, and every one of them `collides: false` except the bramble. The rule is the one
+     stated above — mass — and a plant you would push through is not a plant that stops you.
+     The bramble is the exception because a thicket is exactly the thing you go round, and
+     because the wilds needed one soft obstacle that is not a rock face.
+
+     All `billboard`: a plant's whole character is its silhouette, and a `box` would wear the
+     same picture on six faces. They are also the first things in this registry that move —
+     see `sways` and `BillboardSprite.setSway`. */
+  reeds: { form: 'billboard', size: 1.8, collides: false, note: 'Standing water and drainage cuts. Bends further than anything else here.' },
+  bracken: { form: 'billboard', size: 1.1, collides: false, note: 'Woodland floor and rough hillside. What grows where nothing is farmed.' },
+  wildflowers: { form: 'billboard', size: 0.6, collides: false, note: 'Field margins and verges. The only colour in the Middle Ring.' },
+  bramble: { form: 'billboard', size: 1.5, collides: true, note: 'A thicket. The one plant with enough of itself to go round rather than through.' },
+  deadfall: { form: 'billboard', size: 1.2, collides: false, note: 'A fallen limb, gone soft. Lies where it came down.' },
+  mushrooms: { form: 'billboard', size: 0.45, collides: false, note: 'Rot and shade. Grows on the deadfall it came out of.' },
 };
+
+/**
+ * Which kinds move in the wind.
+ *
+ * A barrel does not sway and a stack of sacks does not sway, so this is per kind rather than
+ * across the form — the same call `collides` makes, for the same reason. Trees are not here
+ * because they are not `dressing`: `props.trees` predates the registry and `world.ts` sways
+ * them directly.
+ */
+export const SWAYS: ReadonlySet<DressingId> = new Set<DressingId>([
+  'reeds',
+  'bracken',
+  'wildflowers',
+  'bramble',
+  'washing',
+  'awning',
+]);
 
 export const DRESSING_IDS = Object.keys(DRESSING) as DressingId[];
 

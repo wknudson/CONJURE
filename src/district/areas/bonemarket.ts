@@ -107,6 +107,17 @@ export const BONEMARKET: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Everything here is about food that is out in the open. Gulls follow a market inland. */
+    sky: 'ash',
+    wildlife: [
+      { kind: 'gull', x: -42, z: -38, roam: 20, count: 3 },
+      { kind: 'gull', x: 46, z: -2, roam: 20, count: 3 },
+      { kind: 'rat', x: -26, z: -34, roam: 5, count: 2 },
+      { kind: 'rat', x: 2, z: -18, roam: 5, count: 2 },
+      { kind: 'rat', x: -2, z: 2, roam: 5, count: 2 },
+      { kind: 'rat', x: -38, z: 22, roam: 5, count: 2 },
+      { kind: 'rook', x: -26, z: -38, roam: 22, count: 4 },
+    ],
     /** The stall rows are the legend (`T`), so this is what hangs off them, not the stalls themselves. */
     dressing: [
       { kind: 'awning', x: -46, z: -38, yaw: 0 },
@@ -145,6 +156,7 @@ export const BONEMARKET: AreaDef = defineArea({
      * you walk down and not as a queue. None of them stands in a lane a dead end opens off.
      */
     npcs: [
+      { id: 'bonemarket_lamplighter', x: -26, z: -34, art: 'night_watchman', label: 'Talk to the lamplighter' },
       { id: 'bonemarket_grocer', x: -14, z: -10, art: 'grocer', label: 'Talk to the grocer' },
       { id: 'bonemarket_fishmonger', x: 18, z: -10, art: 'fishmonger', label: 'Talk to the fishmonger' },
       { id: 'bonemarket_jeweler', x: -14, z: 22, art: 'jeweler', label: 'Talk to the jeweller' },
@@ -153,6 +165,12 @@ export const BONEMARKET: AreaDef = defineArea({
       { id: 'bonemarket_alchemist', x: -10, z: -6, art: 'alchemist', label: 'Talk to the alchemist' },
     ],
     /** Strung down the two lanes, not over the floor — the trade brings its own light. */
+    /**
+     * Who walks the row.
+     *
+     * A market packs up after dark, so somebody has to light it while it does.
+     */
+    lamplighter: 'bonemarket_lamplighter',
     lamps: [
       { x: -22, z: -34 },
       { x: 10, z: -34 },

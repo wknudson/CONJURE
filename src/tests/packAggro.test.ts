@@ -17,7 +17,8 @@
 
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { CombatRing, Pack } from '../district/entities.js';
+import { CombatRing, Pack, Warden } from '../district/entities.js';
+import { BEAT_HOURS, beatPostAt } from '../district/daylight.js';
 import { ColliderSet } from '../district/collision.js';
 import { AREAS, CHALK_VERGE, LAMPROW } from '../district/areas/index.js';
 import { isSafeAt } from '../district/map.js';
@@ -301,5 +302,135 @@ describe('every stretch of road packs share', () => {
         false,
       );
     }
+  });
+});
+
+describe('a crew that has clocked off', () => {
+  function offShift(): Pack {
+    const p = pack();
+    p.setOnShift(false);
+    return p;
+  }
+
+  it('cannot see you at all, standing on top of it', () => {
+    const p = offShift();
+    p.playerAt.set(0, 0, 2);
+    p.playerSafe = false;
+    expect(p.sees()).toBe(false);
+  });
+
+  it('cannot ambush you, which is the one that would have been ugly', () => {
+    // Without the guard a crew that has gone home is still standing where it was, invisible, and
+    // walking through it starts a fight with something the player never saw. The worst possible
+    // version of a schedule.
+    const p = offShift();
+    let jumped = false;
+    p.onContact = () => void (jumped = true);
+    p.playerAt.set(0, 0, 0);
+    p.playerSafe = false;
+    run(p, 2);
+    expect(jumped, 'it jumped you anyway').toBe(false);
+  });
+
+  it('is not drawn, cone and ring included', () => {
+    const p = offShift();
+    expect(p.walkers.some((w) => w.sprite.visible)).toBe(false);
+    expect(p.cone.visible).toBe(false);
+    expect(p.aggroRing.visible).toBe(false);
+  });
+
+  it('drops whatever it was doing about you on the way out', () => {
+    // Clocking back on mid-sprint would be a crew resuming a chase it left an hour ago.
+    const p = pack();
+    p.playerAt.set(0, 0, 1);
+    p.playerSafe = false;
+    run(p, 2);
+    p.setOnShift(false);
+    expect(p.state).toBe('ROAM');
+  });
+
+  it('keeps the fight and the clock as two separate switches', () => {
+    // A fight taking the street away and the hour taking the crew away are different owners
+    // asking at different moments. Folded into one flag, a fight that ended at dawn would put a
+    // night crew back on the road.
+    const p = pack();
+    p.setVisible(false); // a board is standing on the street
+    p.setOnShift(true); // and it is their hour
+    expect(p.walkers.some((w) => w.sprite.visible), 'the fight still wins').toBe(false);
+    p.setVisible(true);
+    expect(p.walkers.every((w) => w.sprite.visible), 'and gives it back').toBe(true);
+  });
+});
+
+describe('the Warden walks a timetable', () => {
+  const beat: { x: number; z: number }[] = [
+    { x: -24, z: -6 },
+    { x: -8, z: -6 },
+    { x: -8, z: 2 },
+    { x: -24, z: 2 },
+  ];
+
+  function warden(hour: number): Warden {
+    const w = new Warden(art(), 2.5, beat, new ColliderSet(CHALK_VERGE));
+    w.hour = hour;
+    w.playerAt.set(200, 0, 200);
+    w.playerSafe = true;
+    return w;
+  }
+
+  /** Where it ends up after long enough to have walked anywhere on the beat. */
+  function settle(hour: number): { x: number; z: number } {
+    const w = warden(hour);
+    for (let t = 0; t < 40; t += 0.05) w.update(0.05, t, 0);
+    return { x: w.position.x, z: w.position.z };
+  }
+
+  it('is in the same place at the same hour, every time', () => {
+    // The whole point, and what a blind `(target + 1) % n` loop can never be. Where the Warden
+    // will be in thirty seconds used to depend on where it happened to be now, which depended on
+    // everything that had happened since the screen was built. A timetable is knowledge.
+    const a = settle(2.1);
+    const b = settle(2.1);
+    expect(a.x).toBeCloseTo(b.x, 5);
+    expect(a.z).toBeCloseTo(b.z, 5);
+  });
+
+  it('is in a different place at a different hour', () => {
+    const early = settle(2.05);
+    const later = settle(2.05 + BEAT_HOURS / 2);
+    expect(Math.hypot(early.x - later.x, early.z - later.z), 'it moved on').toBeGreaterThan(4);
+  });
+
+  it('walks the whole beat over one circuit, and no more than once', () => {
+    const posts = new Set<number>();
+    for (let h = 0; h < BEAT_HOURS; h += BEAT_HOURS / 64) posts.add(beatPostAt(h, beat.length));
+    expect([...posts].sort(), 'every post, once round').toEqual([0, 1, 2, 3]);
+  });
+
+  it('repeats on the hour, so a player who watched one circuit knows the next', () => {
+    for (let h = 0; h < 24; h += 0.37) {
+      expect(beatPostAt(h, beat.length), `at ${h}`).toBe(beatPostAt(h + BEAT_HOURS, beat.length));
+    }
+  });
+
+  it('never asks for a post that is not on the beat', () => {
+    for (let h = 0; h < 24; h += 0.1) {
+      const i = beatPostAt(h, beat.length);
+      expect(i, `at ${h}`).toBeGreaterThanOrEqual(0);
+      expect(i, `at ${h}`).toBeLessThan(beat.length);
+    }
+    expect(beatPostAt(3, 0), 'and survives a beat with no posts').toBe(0);
+  });
+
+  it('catches up to where it should be rather than resuming where it broke off', () => {
+    // What a person on a beat does after a chase. The old loop went back to the next post in the
+    // ring, which after a long pursuit put the Warden hours behind its own schedule.
+    const w = warden(2.05);
+    for (let t = 0; t < 6; t += 0.05) w.update(0.05, t, 0);
+    // Time passes while it is away -- half a circuit's worth.
+    w.hour = 2.05 + BEAT_HOURS / 2;
+    for (let t = 0; t < 40; t += 0.05) w.update(0.05, t, 0);
+    const expected = beat[beatPostAt(w.hour, beat.length)]!;
+    expect(Math.hypot(w.position.x - expected.x, w.position.z - expected.z)).toBeLessThan(1.5);
   });
 });

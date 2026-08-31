@@ -149,7 +149,24 @@ export interface AmbientDef {
   groundBounce: string;
   fogColor: string;
   fogDensity: number;
+  /**
+   * What noon does to this place, where the general answer is wrong.
+   *
+   * **Every value above describes this place at one in the morning** — that is the hour the whole
+   * table was authored and measured at, and `daylight.ts` derives the rest of the day from it by
+   * one transform. Absent means the transform is right here, which it is for thirteen of the
+   * nineteen.
+   *
+   * It is present where the reasoning in this file already says the place is unusual: somewhere
+   * lit by its own floor rather than by the sky does not become a meadow at noon, somewhere under
+   * a closed canopy barely notices, and the two brightest grounds in the game do not want
+   * doubling. Only the fields that differ; the rest still come from the transform.
+   */
+  day?: DayOverride;
 }
+
+/** The half of an `AmbientDef` a place may say for itself about daylight. */
+export type DayOverride = Partial<Omit<AmbientDef, 'day'>>;
 
 export const AMBIENT: Record<string, AmbientDef> = {
   /**
@@ -327,6 +344,11 @@ export const AMBIENT: Record<string, AmbientDef> = {
    * the game and it is meant to be uncomfortable after the Levels.
    */
   saltglass: {
+    // Already the brightest place in the game at night, at a measured mean of 105 -- the salt
+    // itself averages 184 of 255 and does most of the work. Doubled by the general transform it
+    // would clip; a salt flat at noon is a thing you squint at, and a thing you squint at on a
+    // screen is a white rectangle.
+    day: { sunIntensity: 2.1, ambientIntensity: 1.7 },
     sunIntensity: 1.25,
     sunColor: '#dcd6c0',
     ambientIntensity: 0.95,
@@ -377,6 +399,9 @@ export const AMBIENT: Record<string, AmbientDef> = {
    * its edges are. Green key, heavy fog, and a floor that gives almost nothing back.
    */
   weeping_stile: {
+    // Small, close and overgrown -- the tightest map in the game. Daylight here is only what
+    // gets through the canopy and over the walls, so the sun is held below the common one.
+    day: { sunIntensity: 4.4 },
     sunIntensity: 3.0,
     sunColor: '#8f9c7e',
     ambientIntensity: 3.8,
@@ -394,6 +419,10 @@ export const AMBIENT: Record<string, AmbientDef> = {
    * walls bounce what little there is back down.
    */
   caldera: {
+    // The one place where the ground *is* the light source, so noon changes the sky over the
+    // crater and leaves the floor doing what it does. Only the fog: blending toward one daylight
+    // already holds the sun where it should be, and the crater keeps its own dark air.
+    day: { fogColor: '#6e5a4a' },
     sunIntensity: 4.2,
     sunColor: '#c98f5e',
     ambientIntensity: 5.8,
@@ -413,6 +442,10 @@ export const AMBIENT: Record<string, AmbientDef> = {
    * can get, and no amount of sun climbs past it.
    */
   ashwood: {
+    // Under a closed canopy. Only the fog is overridden: what makes a wood dark at noon is the
+    // green half-light under the timber, not a weaker sun, and that is a colour rather than an
+    // intensity.
+    day: { fogColor: '#5e6a4c' },
     sunIntensity: 3.8,
     sunColor: '#9aa878',
     ambientIntensity: 4.8,
@@ -431,6 +464,11 @@ export const AMBIENT: Record<string, AmbientDef> = {
    * different climate from the road it continues.
    */
   rimefields: {
+    // Snow at 140 of 255 already doing most of the work, which is why this is the one area whose
+    // night was tuned *downward*. Noon on a snowfield is genuinely blinding, and a thing you
+    // squint at on a screen is a white rectangle -- so what it gets is a cold, flat, very bright
+    // overcast rather than a sun.
+    day: { sunIntensity: 2.0, ambientIntensity: 1.9, sunColor: '#e8eef4', fogColor: '#9aa8b4' },
     sunIntensity: 1.2,
     sunColor: '#b8c6d8',
     ambientIntensity: 0.95,

@@ -22,6 +22,26 @@ export function cellsOf(e: Footprinted): Coord[] {
   ];
 }
 
+/**
+ * Whether a footprint covers a cell, without building the footprint to find out.
+ *
+ * Exactly `cellsOf(e).some((c) => coordEq(c, at))`, and the reason it exists separately is
+ * that the `some` version was the single most expensive expression in the engine. A CPU
+ * profile of one Glacial Field game put `entityAt` at 14.4% of all runtime with `allUnits`
+ * and `allObstacles` behind it — not because scanning entities is slow, but because every
+ * scan allocated: one array from `cellsOf` per entity per cell tested, plus a closure call
+ * and a `coordEq` per element. On an 8x8 board with fog, where line of sight is asked
+ * hundreds of times a turn, that is millions of one-element arrays for a comparison that
+ * is four integer reads.
+ *
+ * Same answer, same order, no allocation.
+ */
+export function occupies(e: Footprinted, at: Coord): boolean {
+  const { x, y } = e.anchor;
+  if (e.footprint === 1) return x === at.x && y === at.y;
+  return (at.x === x || at.x === x + 1) && (at.y === y || at.y === y + 1);
+}
+
 /** Cells a footprint would occupy at a hypothetical anchor. */
 export function cellsAt(anchor: Coord, footprint: 1 | 2): Coord[] {
   return cellsOf({ anchor, footprint });

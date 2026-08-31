@@ -9,6 +9,8 @@ import * as THREE from 'three';
 import { LOOK } from './look.js';
 import type { ColliderSet } from './collision.js';
 import type { DoorKey } from './map.js';
+import { CRITTERS, type CritterId, type CritterKind } from './wildlife.js';
+import { beatPostAt, type PackHours } from './daylight.js';
 import { Walker, pickFacing, type ActorArt } from './sprites3d.js';
 
 /** Anything the player can stand near and press a key at. */
@@ -102,14 +104,50 @@ export class NPC implements Interactable, Updatable {
   /** Set by the screen each frame so the NPC knows where to look. */
   playerAt: THREE.Vector3 | null = null;
 
-  update(_dt: number, t: number, cameraYaw: number): void {
-    this.position.y = Math.abs(Math.sin(t * 1.4 + this.bobPhase)) * 0.035;
-    if (!this.playerAt) return;
-    const dx = this.playerAt.x - this.position.x;
-    const dz = this.playerAt.z - this.position.z;
-    if (Math.hypot(dx, dz) < this.interactRadius * 1.6) {
-      this.walker.face(pickFacing(dx, dz, cameraYaw));
+  /**
+   * Somewhere to be, or null to stand where they were put.
+   *
+   * Null for forty-seven of the forty-eight. The lamplighter is the exception and the reason this
+   * exists: his whole line is that he lights the High Street, and until now he said so standing
+   * still while the lamps came on by themselves. Walking is the only thing that makes the claim
+   * true.
+   *
+   * The interact prompt follows him for free -- `updateInteraction` measures against the live
+   * `position`, so a moving person is a person you catch up with.
+   */
+  goTo: { x: number; z: number } | null = null;
+  /** Unhurried. A man on his rounds is not late for anything. */
+  private static readonly WALK = 1.7;
+
+  update(dt: number, t: number, cameraYaw: number): void {
+    if (this.goTo) {
+      const dx = this.goTo.x - this.position.x;
+      const dz = this.goTo.z - this.position.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist > 0.35) {
+        const step = Math.min(dist, NPC.WALK * dt);
+        this.position.x += (dx / dist) * step;
+        this.position.z += (dz / dist) * step;
+        // The gait, and the facing that comes with it. Walking wins over looking at you: a man
+        // on his rounds glances and keeps going.
+        this.walker.step((dx / dist) * step, (dz / dist) * step, cameraYaw);
+        return;
+      }
     }
+
+    if (this.playerAt) {
+      const dx = this.playerAt.x - this.position.x;
+      const dz = this.playerAt.z - this.position.z;
+      if (Math.hypot(dx, dz) < this.interactRadius * 1.6) {
+        this.walker.face(pickFacing(dx, dz, cameraYaw));
+      }
+    }
+    // After the turn, not before it. `walker.position` is the sprite's own vector and
+    // `Walker.face` ends by writing the standing bob -- zero -- into its `y`, so the order this
+    // was in meant a townsperson stopped breathing the moment you walked up to them and started
+    // again the moment you left. Caught by the wildlife tests, which asked the same question of
+    // a rook and got it back on the ground.
+    this.position.y = Math.abs(Math.sin(t * 1.4 + this.bobPhase)) * 0.035;
   }
 
   onInteract(): void {
@@ -228,6 +266,15 @@ export type WardenState = 'PATROL' | 'ALERT' | 'CHASE' | 'RETURN';
  */
 export class Warden implements Updatable {
   readonly walker: Walker;
+  /**
+   * How much of its authored sight it has right now, 0 to 1. See `daylight.ts`.
+   *
+   * A multiplier held here rather than a changed `LOOK.visionRange`, for the reason `world.ts`
+   * keeps `amb` and `lit` apart: `LOOK` is bound live by the tuning panel, and an hour that wrote
+   * through it would mean nudging the vision slider at dusk permanently rewrote the authored
+   * number for every area and every hour.
+   */
+  sight = 1;
   readonly position: THREE.Vector3;
   readonly cone: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
 
@@ -242,6 +289,14 @@ export class Warden implements Updatable {
   private static readonly CHASE_SPEED = 4.6;
   /** A beat of grace before the chase — long enough to step back onto stone. */
   private static readonly GRACE = 0.4;
+
+  /**
+   * What the hour does to that beat, 0 to 1. Set by the screen; see `wardenGraceAt`.
+   *
+   * The curfew. Lower is worse for the player, and it is lower at night — which is the one number
+   * in this file that makes darkness a *harder* problem rather than an easier one.
+   */
+  grace = 1;
 
   constructor(
     art: ActorArt,
@@ -272,7 +327,24 @@ export class Warden implements Updatable {
   rebuildCone(): void {
     const half = THREE.MathUtils.degToRad(LOOK.visionAngle) / 2;
     this.cone.geometry.dispose();
-    this.cone.geometry = new THREE.CircleGeometry(LOOK.visionRange, 28, -half, half * 2);
+    this.cone.geometry = new THREE.CircleGeometry(this.range, 28, -half, half * 2);
+  }
+
+  /** How far it can actually see, this hour. The cone drawn on the road is this long. */
+  get range(): number {
+    return LOOK.visionRange * this.sight;
+  }
+
+  /**
+   * Re-cuts the cone for a new hour, and only when the hour has actually moved it.
+   *
+   * `rebuildCone` disposes and re-allocates geometry, and the street clock ticks every frame --
+   * so this is the guard that keeps a slow dusk from being a geometry churn sixty times a second.
+   */
+  setSight(k: number): void {
+    if (Math.abs(k - this.sight) < 0.01) return;
+    this.sight = k;
+    this.rebuildCone();
   }
 
   /**
@@ -292,6 +364,13 @@ export class Warden implements Updatable {
   /* Set by the screen each frame — the Warden does not reach for global state. */
   playerAt = new THREE.Vector3();
   playerSafe = true;
+  /**
+   * What time it is. Drives which post it is due at; see `beatPostAt`.
+   *
+   * Pushed in rather than read, like `playerAt` and `playerSafe` above and for the same reason:
+   * an entity in this file reaches for nothing.
+   */
+  hour = 0;
   onCatch: (() => void) | null = null;
   onAlertChange: ((alerted: boolean) => void) | null = null;
 
@@ -300,7 +379,7 @@ export class Warden implements Updatable {
     const dx = this.playerAt.x - this.position.x;
     const dz = this.playerAt.z - this.position.z;
     const dist = Math.hypot(dx, dz);
-    if (dist > LOOK.visionRange || dist < 0.001) return false;
+    if (dist > this.range || dist < 0.001) return false;
     const dot = (dx * this.heading.x + dz * this.heading.y) / dist;
     return dot > Math.cos(THREE.MathUtils.degToRad(LOOK.visionAngle) / 2);
   }
@@ -333,13 +412,19 @@ export class Warden implements Updatable {
       if (this.pause > 0) {
         this.pause -= dt;
       } else {
+        // Where the clock says it is due, not the next post round the ring. See `beatPostAt`:
+        // the whole value of this is that a player can learn it, and a loop that depends on
+        // where the Warden happens to have got to is not learnable by anybody.
+        const due = beatPostAt(this.hour, this.waypoints.length);
+        if (due !== this.target) {
+          this.target = due;
+          this.pause = 0;
+        }
         const wp = this.waypoints[this.target]!;
         const dist = this.steer(wp.x, wp.z, Warden.SPEED, dt, cameraYaw);
-        if (dist < 0.6) {
-          this.target = (this.target + 1) % this.waypoints.length;
-          this.pause = 0.9;
-          this.state = 'PATROL';
-        }
+        // Arrived early, which is the ordinary case: the beat is two game-hours and the walk is
+        // twenty real seconds. It stands at the post until the timetable moves on.
+        if (dist < 0.6) this.state = 'PATROL';
       }
       if (this.sees()) {
         this.state = 'ALERT';
@@ -352,7 +437,7 @@ export class Warden implements Updatable {
         this.state = 'RETURN';
         this.detect = 0;
         this.onAlertChange?.(false);
-      } else if (this.detect >= Warden.GRACE) {
+      } else if (this.detect >= Warden.GRACE * this.grace) {
         this.state = 'CHASE';
         this.onAlertChange?.(true);
       }
@@ -425,6 +510,21 @@ export class Pack implements Updatable {
 
   /** What it is doing about you, on the Warden's three-state pattern. */
   state: 'ROAM' | 'ALERT' | 'CHASE' = 'ROAM';
+  /**
+   * When this crew works, carried so the screen can ask the clock about it each tick.
+   *
+   * Held on the pack rather than looked up from the area each frame: the spec that built it is
+   * the authority, and re-finding it by encounter id every tick would be a search per pack per
+   * frame to answer a question that never changes.
+   */
+  hours: PackHours | undefined;
+  /**
+   * How much of its authored sight it has right now, 0 to 1.
+   *
+   * Steeper than the Warden's, because a pack has nothing to see by and the Magistracy has
+   * gaslight. See `packSightAt`.
+   */
+  sight = 1;
   readonly cone: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   readonly aggroRing: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
 
@@ -504,22 +604,31 @@ export class Pack implements Updatable {
   rebuildCone(): void {
     const half = THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2;
     this.cone.geometry.dispose();
-    this.cone.geometry = new THREE.CircleGeometry(LOOK.packVisionRange, 28, -half, half * 2);
+    this.cone.geometry = new THREE.CircleGeometry(this.range, 28, -half, half * 2);
     this.aggroRing.geometry.dispose();
-    this.aggroRing.geometry = new THREE.RingGeometry(
-      LOOK.packVisionRange * 0.96,
-      LOOK.packVisionRange,
-      40,
-    );
+    this.aggroRing.geometry = new THREE.RingGeometry(this.range * 0.96, this.range, 40);
+  }
+
+  /** How far it can actually see, this hour. The cone and the ring are both this long. */
+  get range(): number {
+    return LOOK.packVisionRange * this.sight;
+  }
+
+  /** Re-cuts the cone and the ring, and only when the hour has moved them. See `Warden.setSight`. */
+  setSight(k: number): void {
+    if (Math.abs(k - this.sight) < 0.01) return;
+    this.sight = k;
+    this.rebuildCone();
   }
 
   /** Can it see you from where it is standing, facing the way it is facing? */
   sees(): boolean {
+    if (!this.onShift) return false; // Off shift, and not on the road at all.
     if (this.playerSafe) return false; // Sanctioned pavement, same rule as the Warden's.
     const dx = this.playerAt.x - this.position.x;
     const dz = this.playerAt.z - this.position.z;
     const dist = Math.hypot(dx, dz);
-    if (dist > LOOK.packVisionRange || dist < 0.001) return false;
+    if (dist > this.range || dist < 0.001) return false;
     const dot = (dx * this.heading.x + dz * this.heading.y) / dist;
     return dot > Math.cos(THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2);
   }
@@ -556,10 +665,55 @@ export class Pack implements Updatable {
    * starts", which is a thing that has already happened.
    */
   setVisible(v: boolean): void {
+    this.drawn = v;
+    this.applyVisible();
+  }
+
+  /**
+   * Whether this crew is working right now.
+   *
+   * Separate from `setVisible`, and it has to be: that one is a fight taking the street away,
+   * this one is the clock, and the two are asked at different moments by different owners. Folded
+   * into a single flag, a fight that ended at dawn would put a night crew back on the road.
+   *
+   * Off shift a crew is invisible, blind and untouchable, and stands where it is. **Not
+   * despawned**, which is the change the live street clock forced: the hour moves while the
+   * player is standing in it, so a window can open under their feet — and a pack that existed
+   * only if it happened to be its hour when the screen was built would mean waiting on the Chalk
+   * Road at four in the morning and watching the waywatch's hour arrive with an empty road.
+   */
+  setOnShift(on: boolean): void {
+    if (this.onShift === on) return;
+    this.onShift = on;
+    if (!on) {
+      // Whatever it was doing about you, it has gone home. Clocking back on mid-sprint would be
+      // a crew resuming a chase it left an hour ago.
+      this.state = 'ROAM';
+      this.detect = 0;
+      this.pickTarget();
+    }
+    this.applyVisible();
+  }
+
+  /** Drawn only when the clock and the street both allow it. */
+  private applyVisible(): void {
+    const v = this.drawn && this.onShift;
     for (const w of this.walkers) w.sprite.visible = v;
     this.cone.visible = v;
     this.aggroRing.visible = v;
   }
+
+  private drawn = true;
+  /** False while its hours are closed. See `setOnShift`. */
+  onShift = true;
+  /**
+   * How far it ranges right now, against its authored radius. See `packVigourAt`.
+   *
+   * A crew coming on shift is near where it started and one about to go off is drifting back, so
+   * the patch is at its widest in the middle of the window. It is the difference between a shift
+   * and a switch.
+   */
+  vigour = 1;
 
   /** Frees the cone and ring geometry. The walkers' art is owned by the screen. */
   dispose(): void {
@@ -573,7 +727,9 @@ export class Pack implements Updatable {
   private pickTarget(): void {
     for (let tries = 0; tries < 12; tries++) {
       const a = this.rng() * Math.PI * 2;
-      const r = this.roam * (0.35 + this.rng() * 0.65);
+      // Scaled by how deep into its shift the crew is, so a patch opens out over the first of
+      // the window and closes again at the end of it. See `packVigourAt`.
+      const r = this.roam * this.vigour * (0.35 + this.rng() * 0.65);
       const x = this.home.x + Math.cos(a) * r;
       const z = this.home.y + Math.sin(a) * r;
       if (!this.colliders.blocked(x, z, 0.4)) {
@@ -629,7 +785,7 @@ export class Pack implements Updatable {
     if (this.state === 'CHASE') {
       // Straight at you, through the collider layer so it slides along walls instead of
       // grinding into them — the Warden's chase does the same, for the same reason.
-      const lost = !this.sees() && this.rangeToPlayer() > LOOK.packVisionRange * Pack.GIVE_UP;
+      const lost = !this.sees() && this.rangeToPlayer() > this.range * Pack.GIVE_UP;
       if (this.playerSafe || lost) {
         this.state = 'ROAM';
         this.detect = 0;
@@ -702,7 +858,10 @@ export class Pack implements Updatable {
     this.aggroRing.material.color.copy(this.cone.material.color);
     this.aggroRing.position.set(this.position.x, 0.05, this.position.z);
 
-    if (this.spent || !this.onContact) return;
+    // Off shift is off the road. Without this a crew that has clocked off is still standing
+    // where it was, invisible, and walking through it starts a fight with something the player
+    // cannot see -- the worst possible version of this feature.
+    if (!this.onShift || this.spent || !this.onContact) return;
     const d = Math.hypot(this.playerAt.x - this.position.x, this.playerAt.z - this.position.z);
     if (d < Pack.CONTACT) {
       // Latched, because `update` runs every frame and the player is still standing there
@@ -711,6 +870,183 @@ export class Pack implements Updatable {
       this.spent = true;
       this.onContact();
     }
+  }
+}
+
+
+/**
+ * One animal, wandering its patch and breaking away from you.
+ *
+ * Most of this is `Pack` with the hunting taken out — a home, a radius, somewhere on it to walk
+ * to, a beat of standing about, and a `Walker` so the body turns as it goes. That similarity is
+ * deliberate rather than lazy: a pack roaming a road and a fox roaming a clearing are the same
+ * motion, and the version of this that invented its own wander read as a different world from
+ * the one the packs live in.
+ *
+ * What it adds is the whole reason it exists. **Flush**: come inside its tolerance and it runs
+ * directly away from you for a beat, then goes back to what it was doing. That is the only thing
+ * in this file the player can cause without a consequence attached, and it is what separates a
+ * place with animals in it from a place with animated scenery in it.
+ *
+ * It is not an `Interactable` and it has no `onContact`. Nothing here can start a fight, be
+ * targeted, be killed, or be walked into — a rabbit that blocked a doorway would be a soft-lock
+ * with fur on. Ground kinds move *through* the collider layer so they go round walls; flying
+ * kinds ignore it completely, because there is nothing at eleven units to go round.
+ */
+export class Critter implements Updatable {
+  readonly walker: Walker;
+  readonly position: THREE.Vector3;
+  readonly kind: CritterKind;
+
+  /** Set by the screen each frame, exactly as the Warden's and the pack's are. */
+  playerAt = new THREE.Vector3();
+
+  private readonly home: THREE.Vector2;
+  private readonly target = new THREE.Vector2();
+  private pause = 0;
+  /** Seconds of bolting left. Above zero it is running from you and not steering anywhere. */
+  private fleeing = 0;
+  private readonly bobPhase: number;
+
+  /**
+   * How much faster it goes when it breaks.
+   *
+   * The number the anti-tunnelling bound has to be checked against, not `kind.speed`: the
+   * fastest ground animal is the hare at 3.0, so this is 6.0, and `collision.ts` states its
+   * proof against a `dt` clamped to 0.05 — a step of 0.3, inside the smallest collider radius.
+   * The Warden's chase is quicker still, so nothing here moves the ceiling.
+   */
+  private static readonly FLUSH_SPEED = 2.0;
+  /** How long a bolt lasts before it settles. Short: this is a startle, not a chase. */
+  private static readonly FLUSH_TIME = 1.4;
+
+  constructor(
+    id: CritterId,
+    art: ActorArt,
+    homeX: number,
+    homeZ: number,
+    private readonly roam: number,
+    private readonly colliders: ColliderSet,
+    private readonly rng: () => number,
+  ) {
+    this.kind = CRITTERS[id];
+    this.walker = new Walker(art, this.kind.height);
+    this.walker.position.set(homeX, this.kind.flies ? (this.kind.altitude ?? 8) : 0, homeZ);
+    this.position = this.walker.position;
+    this.home = new THREE.Vector2(homeX, homeZ);
+    this.target.set(homeX, homeZ);
+    this.bobPhase = this.rng() * Math.PI * 2;
+    this.pickTarget();
+  }
+
+  /**
+   * Somewhere else on its patch that it can actually stand.
+   *
+   * The pack's routine, with one difference: a flying kind skips the collider check outright.
+   * A rook whose wander was rejected because there is a chimney under it would spend the fight
+   * circling the one clear corner of the ward.
+   */
+  private pickTarget(): void {
+    for (let tries = 0; tries < 12; tries++) {
+      const a = this.rng() * Math.PI * 2;
+      const r = this.roam * (0.35 + this.rng() * 0.65);
+      const x = this.home.x + Math.cos(a) * r;
+      const z = this.home.y + Math.sin(a) * r;
+      if (this.kind.flies || !this.colliders.blocked(x, z, 0.3)) {
+        this.target.set(x, z);
+        return;
+      }
+    }
+    this.target.copy(this.home);
+  }
+
+  /** One step toward a spot. Through the collider layer on the ground, straight through it above. */
+  private driveToward(tx: number, tz: number, speed: number, dt: number): void {
+    const dx = tx - this.position.x;
+    const dz = tz - this.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 0.001) return;
+    const mx = (dx / dist) * speed * dt;
+    const mz = (dz / dist) * speed * dt;
+    if (this.kind.flies) {
+      this.position.x += mx;
+      this.position.z += mz;
+    } else {
+      this.colliders.move(this.position as unknown as { x: number; z: number }, mx, mz, 0.3);
+    }
+  }
+
+  update(dt: number, t: number, cameraYaw: number): void {
+    const before = { x: this.position.x, z: this.position.z };
+
+    if (this.fleeing > 0) {
+      this.fleeing -= dt;
+      // Directly away from where you are *now*, recomputed each frame, so walking after one
+      // keeps it going rather than letting it run past you on the line it picked at the start.
+      const dx = this.position.x - this.playerAt.x;
+      const dz = this.position.z - this.playerAt.z;
+      const dist = Math.hypot(dx, dz) || 1;
+      this.driveToward(
+        this.position.x + (dx / dist) * 6,
+        this.position.z + (dz / dist) * 6,
+        this.kind.speed * Critter.FLUSH_SPEED,
+        dt,
+      );
+      if (this.fleeing <= 0) {
+        // Wherever it has ended up is where it lives now. Snapping the home back would drag it
+        // straight past the player it just ran from, which is the one thing it must not do.
+        this.home.set(this.position.x, this.position.z);
+        this.pause = 0.4 + this.rng() * 0.8;
+        this.pickTarget();
+      }
+    } else if (this.startled()) {
+      this.fleeing = Critter.FLUSH_TIME;
+      this.pause = 0;
+    } else if (this.pause > 0) {
+      this.pause -= dt;
+      if (this.pause <= 0) this.pickTarget();
+    } else {
+      const dx = this.target.x - this.position.x;
+      const dz = this.target.y - this.position.z;
+      if (Math.hypot(dx, dz) < 0.4) {
+        // Longer than a pack's beat, and more variable. A pack loiters; an animal grazes,
+        // and a field of sheep that all set off at once reads as a formation.
+        this.pause = 1.5 + this.rng() * 5;
+      } else {
+        this.driveToward(this.target.x, this.target.y, this.kind.speed, dt);
+      }
+    }
+
+    this.walker.step(this.position.x - before.x, this.position.z - before.z, cameraYaw);
+
+    // Height, and it has to be written *after* `step` rather than before it.
+    //
+    // `walker.position` is the sprite's own position vector, and `Walker.step` ends by writing
+    // the walking bob into its `y`. Set beforehand, every rook in the world was quietly put back
+    // on the ground on the same frame it was lifted off it — which looked exactly like the
+    // altitude never having been applied. `NPC` had the same bug for the same reason and it is
+    // fixed above.
+    //
+    // A ground animal keeps whatever `step` gave it, which is the gait: that bob is wanted, and
+    // overwriting it with zero would make everything with legs glide.
+    if (this.kind.flies) {
+      // A long slow rise and fall about the altitude it was given, which is what stops a flight
+      // of rooks reading as a decal slid across the sky.
+      this.position.y = (this.kind.altitude ?? 8) + Math.sin(t * 0.6 + this.bobPhase) * 0.8;
+    }
+  }
+
+  /** Whether the player has just come inside its tolerance. Zero tolerance is never startled. */
+  private startled(): boolean {
+    if (this.kind.flush <= 0) return false;
+    const dx = this.playerAt.x - this.position.x;
+    const dz = this.playerAt.z - this.position.z;
+    return Math.hypot(dx, dz) < this.kind.flush;
+  }
+
+  /** Off the street while a board stands on it. The same rule the packs follow. */
+  setVisible(v: boolean): void {
+    this.walker.sprite.visible = v;
   }
 }
 
@@ -801,6 +1137,10 @@ export class CombatRing implements Updatable {
 
     for (const pack of this.candidates) {
       if (this.pulled.length >= CombatRing.MAX_PULLS) break;
+      // A crew that is not working does not answer a circle drawn on the road. The ring is a
+      // thing that *catches what is nearby*, and something off shift is not nearby -- it is not
+      // there at all, and dragging it in would put a body on the grid that nobody had seen.
+      if (!pack.onShift) continue;
       if (this.pulled.includes(pack.encounterId)) continue;
       const d = Math.hypot(pack.position.x - this.originX, pack.position.z - this.originZ);
       if (d > radius) continue;
