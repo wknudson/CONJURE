@@ -16,6 +16,7 @@ import type { IsoCamera } from './IsoCamera.js';
 import {
   COMMANDER_HEIGHT_TILES,
   drawCommander as drawHeroBitmap,
+  drawCommanderSheetFrame,
   drawCompanionBitmap,
 } from './sprites.js';
 
@@ -368,6 +369,15 @@ export function drawCommander(
      * still the honest thing to draw when nobody knows what the body looks like.
      */
     art?: HTMLImageElement | null;
+    /**
+     * Mid-stride, from the real walk sheet — the entrance march at the top of a fight.
+     *
+     * Only the Hero has walk art (the sheet is side-profile only), so this replaces the
+     * standing still just for the frames the figure is actually travelling; a beast
+     * slides to its dais instead, which suits a body that was never drawn with legs in
+     * mind. `mirror` flips the profile to face the direction of travel.
+     */
+    walk?: { sheet: HTMLImageElement; frame: number; mirror: boolean } | null;
   },
 ): void {
   const colors = schoolOf(o.school as never);
@@ -396,7 +406,14 @@ export function drawCommander(
   // `unit` is pixels per tile, derived from the height the prism already occupied rather than
   // picked -- so turning the art on does not resize anybody. `blit` inside these takes its
   // origin at the feet, which is exactly where the dais is drawn.
-  if (o.art) {
+  if (o.walk && o.kind === 'hero') {
+    const unit = height / COMMANDER_HEIGHT_TILES;
+    ctx.save();
+    ctx.translate(centre.x, centre.y);
+    if (o.walk.mirror) ctx.scale(-1, 1);
+    drawCommanderSheetFrame(ctx, unit, o.walk.sheet, o.walk.frame);
+    ctx.restore();
+  } else if (o.art) {
     const unit = height / COMMANDER_HEIGHT_TILES;
     ctx.save();
     ctx.translate(centre.x, centre.y);
@@ -655,6 +672,8 @@ export function drawBodyFurniture(
     statuses: readonly { kind: string; stacks: number }[];
     /** Gave up its swing this turn. Optional so older structural callers stay valid. */
     channelled?: boolean;
+    /** Already acted this turn. Optional for the same reason. */
+    spent?: boolean;
   },
   pulse: number,
   /**
@@ -699,6 +718,40 @@ export function drawBodyFurniture(
   drawStatusChips(ctx, centre, z, view.statuses);
 
   if (view.channelled) drawChannelGlyph(ctx, centre, z, pulse);
+  if (view.spent) drawSpentTick(ctx, centre, z);
+}
+
+/**
+ * The mark of a body that has acted: a small slate tick beside its feet.
+ *
+ * COMBAT_FEEL.md's own backlog, verbatim: "dimming reads as 'disabled'; a tick reads as
+ * 'done'." The dim is kept but softened — it still separates the two sides of the board
+ * at a glance — and the tick is what actually answers "did this one go yet". Offset left
+ * so a body that both channelled and then moved wears the glyph and the tick side by side.
+ */
+function drawSpentTick(ctx: Ctx2D, centre: { x: number; y: number }, z: number): void {
+  const cx = centre.x - 24 * z;
+  const cy = centre.y + 54 * z;
+  const u = 4.5 * z;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, u * 1.35, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(20, 24, 33, 0.85)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+  ctx.lineWidth = Math.max(1, z);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = Math.max(1.2, 1.6 * z);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - u * 0.6, cy + u * 0.05);
+  ctx.lineTo(cx - u * 0.15, cy + u * 0.55);
+  ctx.lineTo(cx + u * 0.7, cy - u * 0.5);
+  ctx.stroke();
+  ctx.restore();
 }
 
 /**

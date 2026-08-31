@@ -476,7 +476,8 @@ export class WorldCombat {
       ctx.save();
       // Spent bodies fade back, exactly as their sprites do, so the eye lands on the ones
       // that can still act.
-      ctx.globalAlpha = view.alpha * (view.spent ? 0.5 : 1);
+      // Softened from 0.5 now the tick carries "done": the dim only has to whisper.
+      ctx.globalAlpha = view.alpha * (view.spent ? 0.75 : 1);
       drawBodyFurniture(ctx, centre, scale, view, pulse, Math.max(12, centre.y - head.y));
       ctx.restore();
     }

@@ -162,6 +162,12 @@ export interface CommanderModel {
    * without anything having to wait for it.
    */
   art?: HTMLImageElement | null;
+  /**
+   * The walk sheet, for the entrance march. Hero only — the sheet is side-profile art of
+   * the Commander, and a beast slides to its dais instead. Resolved by the screen for the
+   * same reason `art` is: the renderer is handed a fight, not a character.
+   */
+  walkSheet?: HTMLImageElement | null;
 }
 
 /** How much bigger a unit looks per Escalation stack. */
@@ -206,6 +212,15 @@ export class BoardRenderer {
   private clock = 0;
   overlays: Overlays = emptyOverlays();
   commanders: CommanderModel[] = [];
+  /**
+   * The entrance march, or null once everyone has reached their dais.
+   *
+   * Set by the screen at the top of a fight; the figures walk in along their rows from
+   * offstage while it runs. Held here rather than on the models because `syncCommanders`
+   * rebuilds those on every input unlock, and an entrance that reset with them would
+   * stutter every time the opening batch touched the board.
+   */
+  commanderEntrance: { startedAt: number; durationMs: number } | null = null;
   /**
    * The live tether, or null.
    *
@@ -769,7 +784,39 @@ export class BoardRenderer {
 
   private drawCommanderModel(c: CommanderModel, pulse: number): void {
     const { ctx, cam } = this;
-    const centre = cam.worldToScreen(c.at.x + 0.5, c.at.y + 0.5, 0);
+
+    // The entrance march: everyone walks in along their row from offstage. The player's
+    // figures come in from the left and the enemy's from the right, so the two sides
+    // visibly arrive from their own wings. The Hero walks it on real frames; a beast
+    // slides, which suits a body that was never drawn with legs in mind.
+    let at = c.at;
+    let walk: { sheet: HTMLImageElement; frame: number; mirror: boolean } | null = null;
+    const ent = this.commanderEntrance;
+    if (ent) {
+      const elapsed = performance.now() - ent.startedAt;
+      if (elapsed >= ent.durationMs) {
+        this.commanderEntrance = null;
+      } else {
+        const k = Math.min(1, Math.max(0, elapsed / ent.durationMs));
+        const eased = 1 - (1 - k) * (1 - k);
+        const fromLeft = c.side === 'player';
+        const span = 3.2 * (1 - eased);
+        at = { x: c.at.x + (fromLeft ? -span : span), y: c.at.y };
+        if (c.kind === 'hero' && c.walkSheet) {
+          // Frame from ground covered rather than a timer, in miniature: the eased span
+          // is the distance walked, and five sheet frames make one step.
+          const covered = 3.2 * eased;
+          walk = {
+            sheet: c.walkSheet,
+            frame: Math.floor(covered * 5),
+            // The sheet's profile walks leftward; a figure travelling +x mirrors it.
+            mirror: fromLeft,
+          };
+        }
+      }
+    }
+
+    const centre = cam.worldToScreen(at.x + 0.5, at.y + 0.5, 0);
     drawCommander(ctx, cam, centre, {
       school: c.school,
       ally: c.side === 'player',
@@ -780,6 +827,7 @@ export class BoardRenderer {
       name: c.name,
       pulse,
       art: c.art ?? null,
+      walk,
     });
   }
 
@@ -962,7 +1010,8 @@ export class BoardRenderer {
 
     ctx.save();
     // Spent units fade back so the eye lands on the ones that can still act.
-    ctx.globalAlpha = view.alpha * (view.spent ? 0.5 : 1);
+    // Softened from 0.5 now the tick carries "done": the dim only has to whisper.
+    ctx.globalAlpha = view.alpha * (view.spent ? 0.75 : 1);
 
     if (view.snapshot) {
       // Under the plate: the stain is ground the body is standing in, not paint on it.

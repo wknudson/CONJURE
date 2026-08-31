@@ -39,8 +39,10 @@ import type { Gender } from '../core/data/characterLook.js';
 import { companionByUnitCard } from '../core/data/companions.js';
 import {
   commanderSpriteIfLoaded,
+  commanderWalkSheetIfLoaded,
   companionSpriteIfLoaded,
   loadCommanderSprite,
+  loadCommanderWalkSheet,
   loadCompanionSprite,
 } from '../render/sprites.js';
 
@@ -238,6 +240,8 @@ export class CombatScreen implements Screen {
     // `syncCommanders` re-reads the cache on every unlock, so a decode that lands two seconds
     // later simply appears. A species nobody has painted 404s and costs exactly one silhouette.
     if (this.look.gender) void loadCommanderSprite(this.look.gender, 'front').catch(() => null);
+    // The walk sheet too, for the entrance march. Same contract: lands when it lands.
+    if (this.look.gender) void loadCommanderWalkSheet(this.look.gender).catch(() => null);
     if (companionId) void loadCompanionSprite(companionId, 'front').catch(() => null);
     const enemyBeast = encounter.enemyCompanion?.unitCardId;
     const enemySpecies = enemyBeast ? companionByUnitCard(enemyBeast) : undefined;
@@ -385,6 +389,12 @@ export class CombatScreen implements Screen {
 
     this.renderer.resize();
     this.renderer.start();
+    // The entrance march: the figures walk in from the wings as the curtain-up banner
+    // lands. Skipped under a reduced-motion preference -- they simply stand where they
+    // belong, which is what the board drew before this existed.
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.renderer.commanderEntrance = { startedAt: performance.now(), durationMs: 1500 };
+    }
     this.reportViewportSize();
 
     if (import.meta.env.DEV) {
@@ -1167,6 +1177,7 @@ export class CombatScreen implements Screen {
         maxHp: board.player.maxHp,
         armor: board.player.armor,
         art: heroArt,
+        walkSheet: this.look.gender ? commanderWalkSheetIfLoaded(this.look.gender) : null,
       },
       ...(embodied
         ? []
