@@ -70,6 +70,15 @@ export interface CombatView {
 const MINION_HITSTOP_MS = 150;
 const BEHEMOTH_HITSTOP_MS = 400;
 
+/**
+ * The colour a status tick's name-tag wears — the same element its damage number below
+ * arrives in, so the two read as one beat. Anything unlisted names itself in plain text.
+ */
+const TICK_FLOATER: Record<string, string> = {
+  burn: 'fire',
+  toxin: 'toxic',
+};
+
 /** A pause that respects the sequencer's speed scaling, so skip still skips. */
 function hold(ms: number): Promise<void> {
   if (ms <= 0) return Promise.resolve();
@@ -87,6 +96,53 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
   let sealedBossId: string | undefined;
 
   // ---------------------------------------------------------------- board setup
+
+  seq.on('combatStarted', async (e, { view, t }) => {
+    // Curtain-up. The first event of every fight was entirely unobserved — the name of
+    // the thing you walked into deserves a beat before the first body drops in. The
+    // turn banner that follows the setup replaces it naturally.
+    view.hud.banner(e.encounterName.toUpperCase(), 'foe');
+    view.sfx.play('chime', { pitch: 0.8 });
+    await hold(t(900));
+  });
+
+  seq.on('unitDeployed', async (e, { view, t }) => {
+    // Deployment used to be silent: a body appeared on the next view sync as if it had
+    // always been there. It lands now — the same drop the summon has, a size smaller,
+    // because placing a piece is a decision and not yet an act of magic.
+    view.sfx.play('card');
+    const snap = view.snapshotOf?.(e.unitId);
+    if (!snap) return;
+    if (!view.views.get(e.unitId)) {
+      const v = view.views.addUnit(snap);
+      v.elev = 30;
+      await tween(t(200), easeOutBack, (k) => {
+        v.elev = 30 * (1 - k);
+      });
+      v.elev = 0;
+    }
+  });
+
+  seq.on('unitRecalled', async (e, { view, t }) => {
+    // The event carries no unit id — the body is already gone from the board — so the
+    // view to lift off is found by where it was standing. The idle re-sync would drop
+    // it anyway; this just makes being picked back up look like being picked up.
+    const v = view.views
+      .all()
+      .find((x) => x.snapshot?.side === 'player' && roundOf(x.pos).x === e.at.x && roundOf(x.pos).y === e.at.y);
+    view.sfx.play('rasp');
+    if (!v) return;
+    await tween(t(160), easeOutQuad, (k) => {
+      v.alpha = 1 - k;
+      v.elev = k * 18;
+    });
+    view.views.remove(v.id);
+  });
+
+  seq.on('deploymentEnded', (e, { view }) => {
+    view.hud.flashNotice(`The line is set — ${e.fielded} fielded`);
+    view.sfx.play('gear_lock');
+  });
 
   seq.on('unitSummoned', async (e, { view, t }) => {
     const v = view.views.addUnit(e.unit);
@@ -335,6 +391,13 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     v.statuses = v.statuses
       .map((s) => (s.kind === e.status ? { ...s, stacks: e.remaining } : s))
       .filter((s) => s.stacks > 0);
+
+    // Name the tick. The damage itself arrives through `dealDamage` a beat later, as an
+    // ordinary damage floater in the element's colour — what was missing was whose fault
+    // the number is. A `-6` that appears on nobody's turn now says BURN above itself.
+    if (e.damage > 0) {
+      view.fx.label(roundOf(v.pos), e.status.toUpperCase(), TICK_FLOATER[e.status] ?? 'note', -58);
+    }
   });
 
   seq.on('escalated', async (e, { view, t }) => {
@@ -722,6 +785,11 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     view.hud.setSubjugation(0);
     view.fx.label(e.at, 'ANCHORED', 'tether');
     view.fx.screenShake(8, t(300));
+    // The cable under load, for as long as it holds. Synthesised for this and never
+    // started; it runs under the fight until the snap or the vault lock ends it, and it
+    // deliberately coexists with the Last Stand heartbeat — dying while holding the
+    // tether should sound like both.
+    view.sfx.startLoop('tether_strain', 'winch_grind');
     await tween(t(420), easeOutQuad, () => {});
   });
 
@@ -735,6 +803,8 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
   seq.on('tetherSnapped', async (e, { view, t }) => {
     view.renderer.tether = null;
     view.hud.setSubjugation(null);
+    // The strain ends the instant the cable does, so the snap lands on silence.
+    view.sfx.stopLoop('tether_strain');
     // Steel letting go. The cue was synthesised for exactly this beat and then never
     // wired; the loudest failure in the game was the one that made no sound.
     view.sfx.play('cable_snap');

@@ -479,7 +479,8 @@ export class BodyLayer {
 
       // Spent bodies dim, which is the one piece of board state that is about availability
       // rather than about the body. Only your own: reading the enemy's is not yours to do.
-      if (view.spent) mat.opacity = Math.min(mat.opacity, 0.55);
+      // Softened from 0.55 now the shared tick badge carries "done".
+      if (view.spent) mat.opacity = Math.min(mat.opacity, 0.75);
 
       // The footing stays flat on the road while the body above it hops, lunges and drops in:
       // it is where the piece *is*, and a ring that rose with a jump would stop meaning that.
