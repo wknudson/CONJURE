@@ -78,12 +78,12 @@ types that may animate simultaneously when they share one:
 
 ## 2. Resources
 
-### Pips — banked magic
+### Bones — banked magic
 
-+1 at the start of every turn, and unspent Pips carry over.
++1 at the start of every turn, and unspent Bones carry over.
 
-The ceiling is **8** (`PIP_CAP`), enforced **only during end-of-turn cleanup** — so
-in-turn totals may freely exceed it. It is stored per-commander as `pipCap` rather than
+The ceiling is **8** (`BONE_CAP`), enforced **only during end-of-turn cleanup** — so
+in-turn totals may freely exceed it. It is stored per-commander as `boneCap` rather than
 read from the constant, because gear can move it and a rule that gear bends has to be a
 value somebody can hold.
 
@@ -107,15 +107,15 @@ The verb is **extract**: op `extractMarrow`, event `marrowExtracted`.
 ### The two halves of a cost
 
 ```ts
-interface CardCost { pips: number; marrow: number; }
+interface CardCost { bones: number; marrow: number; }
 ```
 
 Two genuinely different demands:
 
-- **`pips` is generic energy.** Marrow substitutes for it freely, and does so **first**,
-  because Marrow evaporates while Pips bank. A card priced purely in Pips is still fully
+- **`bones` is generic energy.** Marrow substitutes for it freely, and does so **first**,
+  because Marrow evaporates while Bones bank. A card priced purely in Bones is still fully
   payable out of a tithe, which is what keeps the ramp economy intact.
-- **`marrow` is a strict requirement.** Pips cannot cover it at any price. A card asking
+- **`marrow` is a strict requirement.** Bones cannot cover it at any price. A card asking
   for Marrow is asking you to have opened something up *this turn*, and no amount of
   patient banking substitutes for that.
 
@@ -126,8 +126,8 @@ The badge reads `3`, or `1+2✦` when both are demanded, or `1✦` when only Mar
 
 ### Reaction refunds
 
-Landing an elemental reaction pays **1 Pip** back (`REACTION_PIP_REFUND`), capped at **2
-per turn** (`REACTION_PIP_CAP`, tracked as `reactionPipsThisTurn`) — beyond that a cascade
+Landing an elemental reaction pays **1 Bone** back (`REACTION_BONE_REFUND`), capped at **2
+per turn** (`REACTION_BONE_CAP`, tracked as `reactionPipsThisTurn`) — beyond that a cascade
 would fund itself, which is a loop rather than a reward.
 
 Emitted as `pipRefunded`, deliberately distinct from the generic `pipGained`: turn income
@@ -146,19 +146,19 @@ out loud, at the tile where it happened.
 Every body gets **one move and one attack per turn, in either order**. Striking and then
 withdrawing is legal; movement cannot be split around a swing.
 
-**A swing costs 1 Pip. A body that gives up its swing makes one.**
+**A swing costs 1 Bone. A body that gives up its swing makes one.**
 
 | Class | Points | Channel yields | Verb |
 |---|---|---|---|
-| melee | 2 | 1 Pip, 1 Marrow | Brace |
+| melee | 2 | 1 Bone, 1 Marrow | Brace |
 | ranged | 3 | 1 card, 1 Marrow | Sight |
-| elite | 4 | 2 Pips, 1 Marrow | Focus |
+| elite | 4 | 2 Bones, 1 Marrow | Focus |
 | Behemoth | 6 | — cannot channel | — |
 
 Income is **`1 + bodies/3`** per turn, counting the bodies that could spend it. Ferals are
 outside the economy entirely: nothing commands them, so they neither pay to strike nor earn.
 
-Net Pips for a side attacking with a fraction `f` of `N` bodies is `income + N(1 - 2f)`. On a
+Net Bones for a side attacking with a fraction `f` of `N` bodies is `income + N(1 - 2f)`. On a
 six-body warband: attack with half and you bank +3 a turn, which funds a card and a half;
 attack with three quarters and you break even and cast nothing; attack with everything and you
 run -3, which is a burst paid for out of the bank. Army size cancels at the halfway point, so
@@ -172,10 +172,10 @@ the shape holds from a 4x6 ambush to a 12x12 field.
   would punish one mistake twice, and this command exists precisely so the whiff is *visible*.
 - **A Feral's bite.** See above.
 
-### Why this reverses "Pips buy magic, and only magic"
+### Why this reverses "Bones buy magic, and only magic"
 
 `docs/07_deck_building.md` and the combat overhaul both state that pillar, and it was written
-about *bodies costing Pips to summon* — a one-off purchase against a trickle, where "a 3-Pip
+about *bodies costing Bones to summon* — a one-off purchase against a trickle, where "a 3-Bone
 ranged body is three turns of the entire economy." Buying a board meant casting nothing.
 
 This is the opposite shape: a **cycle**, where the warband funds itself. A board is now what
@@ -185,7 +185,7 @@ written does contradict it, and the contradiction is deliberate rather than drif
 The problem it solves: attacking was free and unbounded, so a turn was ten or more free unit
 actions against one or two card plays, and the deck was a garnish on a turn that was already
 full. Measured over the shipped encounters, attacks ran 0.63 a turn against 1.16 cards, with
-Pips left unspent every turn and nothing to spend a body's idleness on.
+Bones left unspent every turn and nothing to spend a body's idleness on.
 
 ## 3. The Pact
 
@@ -227,7 +227,7 @@ turn dumps several cards.
 |---|---|---|
 | pyre | **Ember Watch** | Ignites (1 Burn) every enemy in the Companion's column |
 | frost | **Rime Guard** | +20 Persistent Armor to your Hero |
-| surge | **Storm Tithe** | Pays 1 Pip back |
+| surge | **Storm Tithe** | Pays 1 Bone back |
 | dusk | **Grave Tithe** | Drains 20 HP from the lowest-HP enemy |
 | bloom | **Verdant Growth** | Returns 20 HP to the Pact (`VERDANT_GROWTH_HEAL`) |
 | bulwark | **Shield Oath** | +10 Persistent Armor to your units in the Companion's column |
@@ -441,7 +441,7 @@ cone with no facing is a circle.
 `seq` · `damage` · `summon` · `spawnObstacle` · `spawnConstruct` · `attachMark` · `push` ·
 `grantArmor` · `applyStatus` · `consumeTarget` · `tithe` · `attachAura` · `detonateAura` ·
 `heal` · `revive` · `extractMarrow` · `drawCards` · `shoveArea` · `pullArea` ·
-`detonateAllMarks` · `cleaveFront` · `anchorTether` · `ifMet` · `gainPips` ·
+`detonateAllMarks` · `cleaveFront` · `anchorTether` · `ifMet` · `gainBones` ·
 `spawnHazard` · `clearStatus`
 
 `tithe` and the `bloodTithe` command both resolve through the single `applyTithe`, so a
@@ -705,7 +705,7 @@ gap cannot be forgotten and closing it cannot go unrecorded.
 > said Arc was deliberately absent and could not be expressed — on two premises that had
 > quietly stopped being true, since `shock` is a `DamageType` and the Surge set ships four
 > cards. Formalising it changed two things: it now **announces itself** (`reactionTriggered`)
-> and **pays the Pip refund** under the standard 2/turn cap, and it now **requires the hit
+> and **pays the Bone refund** under the standard 2/turn cap, and it now **requires the hit
 > to land**, which the special case never did.
 >
 > **No shipped encounter is fought in rain**, so Arc is reachable in principle and not yet

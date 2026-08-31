@@ -10,12 +10,12 @@ intent and `docs/02_combat_lexicon.md` was the record of shipped behaviour; now
 it. Where the two disagree, the Lexicon wins — and so does the code.
 
 Everything once marked `[proposal]` has now shipped. The **Frost** and **Arcane** Auras
-(§7) were the last two open items and were built with the Pip economy — Rime Shell and
+(§7) were the last two open items and were built with the Bone economy — Rime Shell and
 Written Path are in `data/auras.ts` with cards in `cards/auras.ts`, so every school has an
 Aura and the Hero's own colour is one they can deck rather than draft.
 
 The Aura magnitudes in §7 are the *original* ones and are now low: they were doubled when
-attacking started costing a Pip, because an Aura has to be the difference between a swing
+attacking started costing a Bone, because an Aura has to be the difference between a swing
 worth its cost and one that is not. `data/auras.ts` is authoritative.
 
 Every claim about pre-overhaul behaviour carries a `file:line` as it stood at the time.
@@ -37,11 +37,11 @@ raise a player feels over a campaign rather than over a contract. Small integers
 express a small improvement, so the integers stopped being small. `src/core/scale.ts`
 carries the factor and the rule.
 
-**What did not stretch is everything that is counted rather than measured.** Pips, Marrow,
+**What did not stretch is everything that is counted rather than measured.** Bones, Marrow,
 cards in hand, card costs, movement, range, footprint, Anchor Tiles, status stacks and Aura
 stacks are all quantities of *things*, and every number this document fixes for them —
-the 10-point roster budget, the 2/3/6 ladder, Aetheric Resurgence's X≤5 at 20% a pip,
-Anchor Rally's 3 pips, Blood & Bone's 3 Marrow, the Rule of 3 itself — stands exactly as
+the 10-point roster budget, the 2/3/6 ladder, Aetheric Resurgence's X≤5 at 20% a bone,
+Anchor Rally's 3 bones, Blood & Bone's 3 Marrow, the Rule of 3 itself — stands exactly as
 written.
 
 Two seams cross the boundary and undo the factor deliberately: the Clinic prices health in
@@ -52,14 +52,14 @@ Ducats, which did not stretch, and Harvest the Weak caps a *Marrow* payout again
 
 ## 0. Why
 
-### The Pip Tax
+### The Bone Tax
 
-A minion costs Pips out of the same pool as the spell it exists to enable.
+A minion costs Bones out of the same pool as the spell it exists to enable.
 
-All 33 `kind: 'minion'` definitions cost between 1 and 4 Pips, and **not one of them costs
+All 33 `kind: 'minion'` definitions cost between 1 and 4 Bones, and **not one of them costs
 Marrow** — every body competes directly with every spell. Turn income is exactly `+1`
-(`turn.ts:44`, whose own comment calls it "the game's only source of Pip income"), so a
-3-Pip ranged body is three turns of the entire economy. The player who wants a board pays
+(`turn.ts:44`, whose own comment calls it "the game's only source of Bone income"), so a
+3-Bone ranged body is three turns of the entire economy. The player who wants a board pays
 for it with the turns they wanted the board *for*.
 
 Two consequences fall out of that, and both are visible in the shipped content:
@@ -69,14 +69,14 @@ Two consequences fall out of that, and both are visible in the shipped content:
    turn one is a real tactical turn instead of a setup turn." A free body is a patch over
    an economy that cannot afford one.
 2. **Bodies are priced as spells and then die like bodies.** `killEntity` deletes the unit
-   outright (`death.ts:42`). Three Pips buy a thing an enemy removes for free, and nothing
+   outright (`death.ts:42`). Three Bones buy a thing an enemy removes for free, and nothing
    in the game brings it back.
 
 ### The shape of the fix
 
 Minions stop being cards. They become a **Vanguard Roster**: a persistent, point-bought
 warband the player commits to before a dungeon and deploys onto the board before turn 1.
-The deck keeps the spells. Pips buy magic, and only magic.
+The deck keeps the spells. Bones buy magic, and only magic.
 
 That single move breaks three other systems by implication, which is why this document has
 five pillars rather than one:
@@ -131,7 +131,7 @@ ROSTER_BUDGET = 10
 > unchanged apart from the elite tier this document proposed. See `docs/07_deck_building.md`.
 
 **A fourth class at 4 points — "elite"** *(shipped; the ladder is in `src/core/data/roster.ts`)*. Two shipped units (`slag_iron_golem`,
-4 Pips, Guardian + Counter, 8 HP; `arc_turret`, 4 Pips, 5 ATK) are plainly not 3-point
+4 Bones, Guardian + Counter, 8 HP; `arc_turret`, 4 Bones, 5 ATK) are plainly not 3-point
 ranged bodies and are equally plainly not Behemoths. Pricing them at 3 makes the ranged
 class the only class worth buying; pricing them at 6 makes them Behemoths that cannot
 block a 2×2 corridor. The four-class ladder keeps every existing unit expressible.
@@ -519,7 +519,7 @@ Marrow out of a body that then stands there, wounded and useless, for the rest o
 ### 3.1 Why sacrifice cannot survive the roster
 
 `sacrifice` (`engine.ts:406-434`) trades a whole unit for `sacrificeValue` Marrow — 1 or 2,
-occasionally 3. That is a reasonable trade when the unit came from a 1-Pip card you have
+occasionally 3. That is a reasonable trade when the unit came from a 1-Bone card you have
 two more copies of. It is an absurd one when the unit came from a roster slot you committed
 to before the dungeon and cannot replace until you leave it.
 
@@ -584,7 +584,7 @@ New event `unitTithed { unitId, side, marrow, damage }`.
 | `Sacrifice` keyword | Deleted from the union. It was glossary text that gated nothing (`02_combat_lexicon.md` §5). |
 | `UnitStatBlock.sacrificeValue` | Becomes optional `titheBonus?: number` — extra Marrow this body yields when tithed. |
 | `marrow_wisp`, `ash_ghoul` | Keep their bred-to-bleed identity as 2-point roster units with `titheBonus: 1`. |
-| `dark_tithe`, `harvest_the_weak`, `cull_the_weak` | Re-templated onto `op: 'tithe'` at **above-command rates** — they cost a card *and* Pips, so the free command is the floor they beat. `cull_the_weak` becomes the big drain: 4 damage, 4 Marrow. |
+| `dark_tithe`, `harvest_the_weak`, `cull_the_weak` | Re-templated onto `op: 'tithe'` at **above-command rates** — they cost a card *and* Bones, so the free command is the floor they beat. `cull_the_weak` becomes the big drain: 4 damage, 4 Marrow. |
 | `grantArmor {from:'sacrificedHp'}`, `extractMarrow {from:'sacrificedHp'}` | Become `{from:'titheDamage'}` — damage actually dealt. |
 | `bonusSacrificeMarrow` (relic boon, `CombatBoons`, `CommanderState`) | Renamed `bonusTitheMarrow`; semantics transfer intact. |
 | `healOnSacrifice` | Renamed `healOnTithe`. Mortis's identity survives unchanged. |
@@ -604,7 +604,7 @@ re-rank sharply, and that is the intended tension:
 | Channel | Kept. The patient option. |
 
 A player who wants a Marrow-costed spell now asks: do I bleed the Vanguard, or do I spend
-two turns walking to a geode? That question did not exist when a 1-Pip body could be fed
+two turns walking to a geode? That question did not exist when a 1-Bone body could be fed
 into the grinder on arrival.
 
 ---
@@ -653,7 +653,7 @@ interface CardDef {
 | { type: 'playCard'; …; x?: number }   // [new] optional
 ```
 
-`spendResources` charges `cost.pips + x`. **X must be at least 1** — a 0-Pip revive would
+`spendResources` charges `cost.bones + x`. **X must be at least 1** — a 0-Bone revive would
 make every death a 20%-HP inconvenience and hollow out the Graveyard entirely. `x > max` is
 refused.
 
@@ -683,16 +683,16 @@ and one new op:
 
 | Card | Cost | Where it lands | Comes back with |
 |---|---|---|---|
-| **Aetheric Resurgence** | X Pips, up to 5 | its **exact Soul Pyre** — refused if occupied by an enemy | **20% of Max HP per Pip spent**; stripped of all marks and buffs |
-| **The "Anchor" Rally** | 3 Pips (flat) | any starting **Anchor Tile** | **50% HP** and **+1 MOV** for the turn |
-| **The "Blood & Bone" Rally** | **0 Pips + 3 Marrow** | anywhere in the **starting zone** | **1 HP**, and **Persistent Armor equal to its missing Health** |
+| **Aetheric Resurgence** | X Bones, up to 5 | its **exact Soul Pyre** — refused if occupied by an enemy | **20% of Max HP per Bone spent**; stripped of all marks and buffs |
+| **The "Anchor" Rally** | 3 Bones (flat) | any starting **Anchor Tile** | **50% HP** and **+1 MOV** for the turn |
+| **The "Blood & Bone" Rally** | **0 Bones + 3 Marrow** | anywhere in the **starting zone** | **1 HP**, and **Persistent Armor equal to its missing Health** |
 
 Each has a distinct job. Resurgence is the *expensive, correct* answer — full price at X=5
 returns a whole body exactly where it fell, which is often the tile you needed held.
 The Anchor Rally is the **safe defensive retreat**: cheap, flat, predictable, and it pulls
 the unit all the way home with the movement to start walking back. Blood & Bone is the
 **pillar-three payoff loop**: tithe a healthy Vanguard for the Marrow, spend it raising a
-dead one as a near-unkillable armour wall. Zero Pips, and the whole cost paid in blood.
+dead one as a near-unkillable armour wall. Zero Bones, and the whole cost paid in blood.
 
 > **Blood & Bone's armour is enormous on purpose.** A 12-HP Behemoth returns at 1 HP with
 > **11 Persistent Armor** — it will not die to chip damage, and it will die instantly to
@@ -753,7 +753,7 @@ escalationCap: stats.footprint === 2 ? Infinity : 3,
 ```
 
 A Behemoth's growth is **literally uncapped**. Today that is survivable because a Behemoth
-costs 4 Pips, dies, and cannot be re-summoned cheaply. Under a roster that deploys the same
+costs 4 Bones, dies, and cannot be re-summoned cheaply. Under a roster that deploys the same
 Behemoth every fight and revives it when it falls, `Infinity` is the whole game by turn
 twelve.
 
@@ -903,13 +903,13 @@ blast machinery: the burst is authored as normal `damage`, `heal`, or `extractMa
 centred on the host, which means a Detonation is balanced with the same vocabulary as every
 other spell in the game.
 
-Three cards at launch, 0–1 Pips, one per starting school:
+Three cards at launch, 0–1 Bones, one per starting school:
 
 | Card | Cost | Effect |
 |---|---|---|
-| **Pyre Detonation** — *Cataclysm* | 1 Pip | Heavy fire damage in `adjacent8` around the host. The host survives at 1 HP. |
-| **Bloom Detonation** — *Verdant Collapse* | 1 Pip | Massive heal to the Pact, scaled off the host's Max HP. |
-| **Dusk Detonation** — *Marrow Burst* | **0 Pips** | Large Marrow generation. Free to cast, and the aura took three turns to grow. |
+| **Pyre Detonation** — *Cataclysm* | 1 Bone | Heavy fire damage in `adjacent8` around the host. The host survives at 1 HP. |
+| **Bloom Detonation** — *Verdant Collapse* | 1 Bone | Massive heal to the Pact, scaled off the host's Max HP. |
+| **Dusk Detonation** — *Marrow Burst* | **0 Bones** | Large Marrow generation. Free to cast, and the aura took three turns to grow. |
 
 Event `auraDetonated`. The loop the pillar creates: cast an aura, grow it two turns, hold a
 climaxed unit that is now a liability, and choose the turn you spend it.
@@ -940,7 +940,7 @@ Everything the five pillars break or orphan, with one ruling each.
 | 6.16 | **Pacifist lockout** (`turn.ts:149`) | Unchanged — a player whose roster is entirely fallen still casts spells, and if they truly cannot engage, the lockout is doing its job. One addition: the deployment phase must not count as a stalled round. |
 | 6.17 | **`escalationBonus` fields** | Stripped from the 16 converted minions; retained on `Growth` defs. `Unit.escalation` / `escalationCap` stay (the enemy uses them); cap `Infinity` → 99. |
 | 6.18 | **Session, undo, replay** | Unmodified. `deployUnit`, `finishDeployment` and `bloodTithe` are ordinary commands through the one reducer, so replay-from-seed works by construction, and the roster living in `GameState` means undo un-kills a pyre for free. |
-| 6.19 | **`03_rpg_sandbox.md` dead fields** | `CompanionProgress.startingArmor` and `.bonusPips` are still granted by nothing. Unrelated to this overhaul, but the roster work touches the same profile shape — worth clearing in the same pass. |
+| 6.19 | **`03_rpg_sandbox.md` dead fields** | `CompanionProgress.startingArmor` and `.bonusBones` are still granted by nothing. Unrelated to this overhaul, but the roster work touches the same profile shape — worth clearing in the same pass. |
 | 6.20 | **The dev tame buttons** (`VivariumScreen.ts:106-119`) | **Deleted**, and replaced by the localhost **Dev Commission** in slot #3 of the contract board (§1.4.1). |
 | 6.21 | **The Magistrate's Audit** (`AUDIT_BOUNTY_ID`, poster #3) | **Absorbed into the Dev Commission** (§1.4.1). Its spoils become the commission's "max resources" step, and it stops being reachable in a shipped build — which closes the gap `04_sandbox_audit_and_ideation.md` flagged. |
 | 6.22 | **The movement layer** | Newly load-bearing. `overload` needs pathing through occupied cells and a list of who was crossed; `heavyFootprint` needs displacement immunity and obstacle-shattering on a deliberate move (§5.5). Both are Climax-only, so the ordinary move path is untouched — but this is the first time a unit's *trait* changes how movement resolves. |

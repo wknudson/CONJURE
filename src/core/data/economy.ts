@@ -11,11 +11,10 @@
  *
  * ### This reverses a shipped pillar, on purpose
  *
- * `docs/07_deck_building.md` states *"Pips buy magic, and only magic,"* and §0 of the combat
- * overhaul is titled **The Pip Tax**. Those docs predate this rename and still say "Pip"; the
- * quotes are left verbatim so the citation resolves. That was written about *bodies costing
- * Pips to summon* — a one-off purchase against a trickle, where "a 3-Pip ranged body is three
- * turns of the entire economy." This is a different shape: a **cycle**, where the warband
+ * The combat overhaul doc states *"Bones buy magic, and only magic"* and titles its §0
+ * **The Bone Tax**. That was written about *bodies costing Bones to summon* — a one-off
+ * purchase against a trickle, where "a 3-Bone ranged body is three turns of the entire
+ * economy." This is a different shape: a **cycle**, where the warband
  * funds itself and the player allocates. The old complaint was that buying a board meant
  * casting nothing; here a board is what lets you cast at all.
  *

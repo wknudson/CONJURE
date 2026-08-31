@@ -15,7 +15,7 @@ then used).
 | Section | What landed |
 | :-- | :-- |
 | **Symmetric battlefield** | Duelists field their own Companion; both routes to the Pact stay open. Ignis is the on-grid unit and docks into a 2×2 enraged form at half health |
-| **Economy** | Channel (`C`), reaction Pip refunds capped at 2/turn, Marrow Geodes on neutral ground |
+| **Economy** | Channel (`C`), reaction Bone refunds capped at 2/turn, Marrow Geodes on neutral ground |
 | **Ranged archetypes** | Sniper (lines only), Lobber (ignores sight, blind up close), Turret (immobile) |
 | **Terrain** | Rubble costing double, volatile crystals hitting friend and foe, conveyor currents at the round boundary |
 | **Wildlife** | `Feral` units nobody commands; a scavenger that flees and escapes, wolves that maul both sides |
@@ -30,8 +30,8 @@ boxed in (growth is now tracked apart from the phase).
 - **Arc, the rain reaction.** No Surge damage type and no Surge card exist, so the branch
   could not be reached or tested. The reaction table records the shape it takes when
   Surge lands — a `requiresWeather` field beside `requires`.
-- **§2.4 pip income fail-safe.** Held as the doc asks. It is one token: `turn.ts`'s
-  `gainPips(ctx, side, 1)` is the only income in the game, and the line says so.
+- **§2.4 bone income fail-safe.** Held as the doc asks. It is one token: `turn.ts`'s
+  `gainBones(ctx, side, 1)` is the only income in the game, and the line says so.
 - **AI kiting.** Retreats stay pruned from enumeration for everything except a Bound Form,
   so the new archetypes are used as static shooters rather than kited. Acceptable; noted
   beside the pruning.
@@ -88,7 +88,7 @@ the offering was worth any Marrow.
 
 | System | State | Reference |
 | :-- | :-- | :-- |
-| Rules engine | Pips and Marrow, overdraw burn, free reshuffle, Retain, movement (BFS, 2×2 footprints), **independent move + attack per turn**, collisions 30/20 with Mass Invariance, supercover LoS, Guardian occlusion, Marks with cascades and armor gating and fizzle, Growth caps, the status tick order, sudden-death double-KO | `docs/02_combat_lexicon.md` |
+| Rules engine | Bones and Marrow, overdraw burn, free reshuffle, Retain, movement (BFS, 2×2 footprints), **independent move + attack per turn**, collisions 30/20 with Mass Invariance, supercover LoS, Guardian occlusion, Marks with cascades and armor gating and fizzle, Growth caps, the status tick order, sudden-death double-KO | `docs/02_combat_lexicon.md` |
 | Cards | 214 base cards — **at least twenty per elemental school**, and every school's draftable shelf full — all data-driven through shared effect primitives. Rank 2 printings are derived, not authored | `docs/08_card_catalog.md` |
 | Splicing | 19 pressings covering **all fifteen** dual-school pairings, from six Cores (one per school) | `docs/08_card_catalog.md` |
 | Deck building | Hero Deck of 4–12, tier-derived copy limits, Behemoth cap, the Grimoire draft, one swap after seeing the arena | `docs/07_deck_building.md` |
@@ -234,12 +234,12 @@ is worth wrapping.
    sidewalk tiles (safe) vs. street tiles (danger) — the Sidewalk Immunity rule.
 2. ✅ Roaming packs with vision cones and a chase; aggro off the pavement, never from it.
 3. ✅ **Combat Circle**: on contact, expanding ring for 2.5s; any second mob touched joins
-   as Wave 2 on round 2, player compensated +1 Pip and +1 draw. Two deviations from the
+   as Wave 2 on round 2, player compensated +1 Bone and +1 draw. Two deviations from the
    edge cases below, both deliberate: a **third** mob is ignored rather than queued as its
    own encounter, and contact locks input immediately, so there is no fleeing a ring
    half-drawn — the circle is not a window to escape through, it is the road deciding how
    big the fight is.
-4. Contact advantage: frontal = neutral; player rear-ambush = +1 pip, draw 6.
+4. Contact advantage: frontal = neutral; player rear-ambush = +1 bone, draw 6.
 5. Transition: snapshot the overworld position, run the encounter, return with results
    (defeated duelists stay down for the session).
 

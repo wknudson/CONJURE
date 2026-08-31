@@ -343,13 +343,13 @@ it is not a special case in the planner, it is the ordinary consequence of cards
 
 ---
 
-## 3. Pips, Marrow, and the mechanic that never shipped
+## 3. Bones, Marrow, and the mechanic that never shipped
 
-The AI spends out of the same two-resource engine the player does: **Pips** bank at +1 a
-turn to a ceiling of 8 (`PIP_CAP`), **Marrow** is extracted during a turn and every
+The AI spends out of the same two-resource engine the player does: **Bones** bank at +1 a
+turn to a ceiling of 8 (`BONE_CAP`), **Marrow** is extracted during a turn and every
 unspent point evaporates at cleanup. See `docs/02_combat_lexicon.md` §2.
 
-There is **no Pip-banking heuristic**. No ramp phase, no capacity-management rule, no burst
+There is **no Bone-banking heuristic**. No ramp phase, no capacity-management rule, no burst
 trigger. `marrowEfficiency` pays **10 per point of Marrow actually spent** and that is the
 whole of the resource term — and it is enough, because Marrow expires. A plan that opens a
 body and then leaves the Marrow on the table scores strictly worse than one that spends it,
@@ -549,7 +549,7 @@ AIs, can otherwise trade board presence indefinitely and nothing resolves.
 
 Three details:
 
-- It counts **rounds without commander damage**, not Pip totals or hand sizes. A full hand
+- It counts **rounds without commander damage**, not Bone totals or hand sizes. A full hand
   and a banked 8 are not stalling; not hurting anybody is.
 - **It is suspended while a tether is live.** The lockout breaks a stalemate between two
   sides who will not commit; a subjugation is the opposite — a timed siege in which the
@@ -666,7 +666,7 @@ and the fight stops being a damage race. `src/core/engine/subjugation.ts`:
 
 | | |
 |---|---|
-| The card | `rite_of_subjugation`, **0 Pips, 0 Marrow**, carries **Retain** |
+| The card | `rite_of_subjugation`, **0 Bones, 0 Marrow**, carries **Retain** |
 | Where it is dealt | **onto the top of the draw pile**, `cmd.deck.unshift` |
 | Rounds to hold | **3** (`SUBJUGATION_ROUNDS`) |
 | Result | `bound` |
@@ -719,11 +719,11 @@ board, so the global-cast fallback stays exercised in something a player actuall
 
 | | |
 |---|---|
-| Banked Pips | **3** — `encounter.startingPips ?? 3` in `setup.ts` |
+| Banked Bones | **3** — `encounter.startingPips ?? 3` in `setup.ts` |
 | Opening hand | **5** (`OPENING_HAND`) |
 
 This is the contact table: **frontal contact is the neutral state, and the neutral state is
-3 Pips and 5 cards.** Without the opening Pips, turn one is a dead turn — the
+3 Bones and 5 cards.** Without the opening Bones, turn one is a dead turn — the
 first turn's income is +1 on top of the 3, and a 4-cost card would be unreachable until
 turn five.
 
@@ -816,19 +816,19 @@ answer**.
 |---|---|---|
 | Minion kill worth **+50 per Card Tier** | flat **50** (`kill`), plus 10 per Growth stack | Tier is derived from cost, and pricing a kill by cost double-counts what the board already shows |
 | **+35** for positioning a Guardian ally into the boss's line of sight | no such term | Never implemented. Guardian *removal* is priced (60); Guardian *placement* is not |
-| **+5** per Pip preserved under the 8 cap | no such term | Replaced by pricing Marrow spent. See §3 |
+| **+5** per Bone preserved under the 8 cap | no such term | Replaced by pricing Marrow spent. See §3 |
 | Collision **+45** for everyone | **0** Novice, **45** Adept | Collision awareness is what separates the tiers |
 | Three difficulty tiers: Novice, Adept, **Master** | **two**. `AI_PROFILES` is Novice and Adept | Master (2-turn lookahead, 0% suboptimal, chain collisions, interlocking walls) was never built. `adept.test.ts` pins the absence |
 | Adept has **1-turn lookahead** | one-***action*** lookahead, beam 4, rollout depth 3, discount 0.9 | The unit of planning is an action, not a turn — which is what makes it fix the move-before-swing ordering bug |
 | **150 iterations / 1.2 s** compute cap | **400** sims Novice, **1600** Adept; **8000 ms** hang guard | The clock cannot be the binding limit without breaking determinism. It survives only as an anti-hang backstop |
 | Ties break toward the unit **closest to the boss's own back row** | **highest `y`** — deepest into the *player's* half; a face hit (`y = 99`) wins every tie | Opposite orientation. Leftmost-`x` as the second key does match |
 | A full **Devour / sacrifice-Spark** heuristic engine | **Devour does not exist.** `bloodTithe` (30 damage, 2 Marrow, body survives) and `channel` (1 Marrow) are the resource verbs | The mechanic was designed and never built. `companionTraits.ts` records it as having no trigger |
-| Pacifist Lockout: **3 rounds** at 8 Pips with a full hand, **10 true to the Hero** | **6 rounds** without commander damage, **10 true to both**, +5 per further round, suspended during a subjugation | Stalling is measured as nobody getting hurt, not as resources held. Symmetric because either side can be the one refusing to commit |
+| Pacifist Lockout: **3 rounds** at 8 Bones with a full hand, **10 true to the Hero** | **6 rounds** without commander damage, **10 true to both**, +5 per further round, suspended during a subjugation | Stalling is measured as nobody getting hurt, not as resources held. Symmetric because either side can be the one refusing to commit |
 | **Crush Summoning** onto occupied tiles | does not exist; `canPlace` refuses | The answer to a walled summon zone is to break the wall, which the matrix already rewards |
 | **Fatigue Spark Burn**: empty deck deals 1 true damage per draw and grants the opponent a Spark | empty deck **reshuffles free**; overdrawing burns the card and grants **1 Marrow to the drawer** | Cycling a 20-card deck is expected play, not a punishable mistake |
 | A Boss below 25% generates the Rite as an **Ephemeral Overlay** pushing the hand limit to 9 | dealt **onto the top of the draw pile**; the hand limit is never bent. `Retain` stops it being discarded | An overlay hands the player the card without the turn it costs to draw it. The `ephemeral` field exists and is honoured elsewhere — the Rite simply does not use it |
 | Phase transition **interrupts the player's turn** and passes priority back | resolves **inline**, synchronously, inside the action that triggered it | There is no mid-turn interrupt in the reducer, and adding one for a boss would be a scheduler |
-| Forced Eviction refunds the evicted unit's **Pip cost as temporary Sparks** | returns it to hand with a flat **1 Marrow** | Bodies are no longer bought with Pips — they come off the Vanguard Roster — so there is no cost to refund |
+| Forced Eviction refunds the evicted unit's **Bone cost as temporary Sparks** | returns it to hand with a flat **1 Marrow** | Bodies are no longer bought with Bones — they come off the Vanguard Roster — so there is no cost to refund |
 | Simultaneous status death resolves by **turn priority** | cannot arise: **portraits carry no statuses** | Mutual lethal is handled by sudden death instead |
 | Four **Continental Apex Bosses** on four continents | one boss (`ignis_trial`) and an `EncounterScript` seam | That world does not exist in the code |
 

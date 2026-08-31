@@ -251,12 +251,12 @@ mirrors it in the bottom-right ([`src/hud/Hud.ts`](../src/hud/Hud.ts),
 ### The resource dial — SHIPPED
 
 The old brief's "Dual-Ring Resource Dial", rebuilt in the shipped vocabulary. It shows
-**banked Pips** and **volatile Marrow**, and the two are drawn to be tellable apart at a
+**banked Bones** and **volatile Marrow**, and the two are drawn to be tellable apart at a
 glance mid-fight:
 
 | Ring | Drawn as | Why |
 |---|---|---|
-| **Pips** — banked | Heavy metallic sockets, up to `PIP_CAP` = 8, filled ones warm gold with a glow | A socket is a thing that *holds*. Pips carry over between turns |
+| **Bones** — banked | Heavy metallic sockets, up to `BONE_CAP` = 8, filled ones warm gold with a glow | A socket is a thing that *holds*. Bones carry over between turns |
 | **Marrow** — volatile | Flickering crimson beads on a 1.4s animation, hidden entirely at zero | Crimson rather than ember, deliberately: Marrow is the visceral one, and all of it is lost at end of turn |
 
 At narrow widths a row of eight sockets would reach the hand, so under 1000px the dial
@@ -469,8 +469,8 @@ The table below is the brief's intent as it actually shipped.
 
 | Cue | What it is |
 |---|---|
-| `pip` | one rising sine. Turn income: expected, and quiet |
-| `chime` | **two** rising notes where `pip` has one, so a reaction refund is audibly better news than the Pip that arrives anyway |
+| `bone` | one rising sine. Turn income: expected, and quiet |
+| `chime` | **two** rising notes where `bone` has one, so a reaction refund is audibly better news than the Bone that arrives anyway |
 | `rasp` | a falling sawtooth under harsh noise. **Named for the sound, not the event** — it serves Marrow, hazards and Resonance alike, and a cue named after one of them would misdescribe the other two. Deliberately unpleasant: spending life should sound like it costs something |
 | `hit` | short filtered noise plus a low triangle |
 | `shock` | a *crack*, not a boom: a very short high square burst over bright noise, with a second snap a hair later so it reads as a discharge rather than a hit |

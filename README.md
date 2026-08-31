@@ -199,8 +199,8 @@ follows, and each is asserted by a test:
 | Collision damage | 30 to the displaced unit, 20 to the blocker, 30/30 vs. obstacles; Mass Invariance | `docs/02_combat_lexicon.md` §7 + `core/engine/displacement.ts` |
 | Hand size | 7; overdraw burns the card for +1 Marrow | `docs/02_combat_lexicon.md` §6 + `core/engine/deck.ts` |
 | Double KO | Both revive at 10 HP, board wiped, armor purged, sudden death | `docs/02_combat_lexicon.md` §11 + `core/engine/death.ts` |
-| Pip cap | 8, enforced only during end-of-turn cleanup | `docs/02_combat_lexicon.md` §2 + `core/engine/deck.ts` |
-| Opening hand | 5 cards and 3 banked Pips (frontal contact), then draw 4/turn | `core/engine/setup.ts` + `core/engine/deck.ts` |
+| Bone cap | 8, enforced only during end-of-turn cleanup | `docs/02_combat_lexicon.md` §2 + `core/engine/deck.ts` |
+| Opening hand | 5 cards and 3 banked Bones (frontal contact), then draw 4/turn | `core/engine/setup.ts` + `core/engine/deck.ts` |
 | Status tick order | Toxin → Burn → Freeze/Entangle → hazards → Growth | `docs/02_combat_lexicon.md` §8 |
 | Reaching a Commander | Only through their Companion's Bound Form; no attack may name a portrait | `docs/02_combat_lexicon.md` §3 |
 | Obstacles | Terrain, not allies — either side may break a pillar to open a lane | Adapted |
@@ -211,7 +211,7 @@ follows, and each is asserted by a test:
 Three rules were implemented because their absence caused real problems. All three are
 documented in the design record, and all three are verified by tests:
 
-- **Starting Pips (`core/engine/setup.ts`).** Without the specified 3 banked Pips, turn
+- **Starting Bones (`core/engine/setup.ts`).** Without the specified 3 banked Bones, turn
   one was a dead turn with nothing affordable.
 - **Opening Vanguard.** Both sides begin with a free Vanguard Footman on their front
   line, so the first turn is a tactical decision rather than a setup step and the board
@@ -264,12 +264,12 @@ Three ways to find resources when the hand is bad, because a turn spent passing 
 turn the game did not ask you anything.
 
 **Channel** (`C`) spends a unit's attack to extract Marrow. It keeps its move, so this is a
-use for the swing rather than exhaustion. **Reactions pay a Pip back** — capped at two a
+use for the swing rather than exhaustion. **Reactions pay a Bone back** — capped at two a
 turn, which is the whole design: without the cap a three-reaction cascade funds the card
 that caused it. **Marrow Geodes** are 10 HP and worth two Marrow, scattered only on neutral
 ground, so taking one means walking somewhere you would rather not stand yet.
 
-If play still feels starved, the fail-safe is one token: `gainPips(ctx, side, 1)` in
+If play still feels starved, the fail-safe is one token: `gainBones(ctx, side, 1)` in
 `turn.ts` is the game's only income, and the line says so.
 
 ### Fighting at a distance
@@ -464,7 +464,7 @@ and the body that stands on the board.
 | :-- | :-- | :-- | :-- |
 | **Ignis**, Ember Drake | Pyre | 30 ATK, melee, MOV 2 | *Ember Watch* — ignites its lane |
 | **Boreas**, Frost Bear | Frost | 20 ATK, reach 3, MOV 2 | *Rime Guard* — armours your Hero |
-| **Voltara**, Storm Lynx | Surge | 20 ATK, reach 2, MOV 3 | *Storm Tithe* — refunds a Pip |
+| **Voltara**, Storm Lynx | Surge | 20 ATK, reach 2, MOV 3 | *Storm Tithe* — refunds a Bone |
 | **Mortis**, Carrion Stag | Dusk | 20 ATK, melee, MOV 2 | *Grave Tithe* — drains the weakest enemy |
 | **Sylva**, Thorn Warden | Bloom | 10 ATK, reach 3, MOV 2 | *Verdant Growth* — returns health to the Pact |
 | **Ferrum**, Vault Boar | Bulwark | 20 ATK, melee, MOV 1 | *Shield Oath* — plates your units |
@@ -560,7 +560,7 @@ walls stop ranged projection. A **determinism harness** replays recorded games f
 their seed and asserts an identical event stream and state hash — including through boss
 phase transitions — and a **fuzz soak** drives random legal commands across two dozen
 games, checking engine invariants after every single one (no negative HP, no shared
-tiles, no orphaned cards, no pip overflow after cleanup, at most one Bound Form per side
+tiles, no orphaned cards, no bone overflow after cleanup, at most one Bound Form per side
 and never one that lost health of its own).
 
 Three suites guard the pivot specifically. **Bound Form** proves every route to the Pact —
