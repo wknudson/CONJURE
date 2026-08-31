@@ -17,6 +17,15 @@
  * Coordinates are world units (TILE = 4), picked against each area's authored grid and
  * kept clear of props; `sites.test.ts` holds every entry to a real area and a real
  * encounter.
+ *
+ * **Liveness is evaluated at area mount**, because `buildInteractables` runs once. A
+ * gate that opens or a lair cooldown that lapses while the player is standing in the
+ * ward will not surface its hotspot until they leave and return. Deliberate for now:
+ * gates only change when the campaign ledger does, which happens through a fight the
+ * player returns from, and a lair's ten-minute clock against a multi-ward walk makes
+ * the stale window a curiosity rather than a wall. Flagged by the concurrent session
+ * after its frozen-clock fix (`tickClock`, 60a336e) made in-ward time real — if wards
+ * ever gain live re-evaluation of interactables, sites should join it.
  */
 
 import type { Gate } from './chronicle.js';
