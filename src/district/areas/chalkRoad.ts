@@ -124,6 +124,16 @@ export const CHALK_ROAD: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Farmland either side of a corridor. The longest sightline in the game, so: birds. */
+    sky: 'pollen',
+    wildlife: [
+      { kind: 'hare', x: -42, z: -18, roam: 9 },
+      { kind: 'hare', x: 58, z: -10, roam: 9 },
+      { kind: 'hare', x: 46, z: 6, roam: 9 },
+      { kind: 'rook', x: -62, z: -22, roam: 26, count: 4 },
+      { kind: 'rook', x: 46, z: -2, roam: 26, count: 4 },
+      { kind: 'fox', x: -22, z: -18, roam: 10 },
+    ],
     /** The artery. The atlas puts waystone pairs on it, so here they are, plus what falls off a cart. */
     dressing: [
       { kind: 'waystone', x: -58, z: -18, text: 'JOLREK — VIII' },
@@ -146,6 +156,17 @@ export const CHALK_ROAD: AreaDef = defineArea({
       { kind: 'cairn', x: -46, z: -18 },
       { kind: 'cairn', x: -42, z: -6 },
       { kind: 'cairn', x: -46, z: 10 },
+      { kind: 'wildflowers', x: -42, z: -18 },
+      { kind: 'wildflowers', x: -2, z: -14 },
+      { kind: 'wildflowers', x: 26, z: -10 },
+      { kind: 'wildflowers', x: 50, z: -6 },
+      { kind: 'wildflowers', x: 22, z: 2 },
+      { kind: 'wildflowers', x: 18, z: 10 },
+      { kind: 'wildflowers', x: 62, z: 14 },
+      { kind: 'bramble', x: -22, z: -18 },
+      { kind: 'bramble', x: 34, z: -14 },
+      { kind: 'bramble', x: 42, z: -2 },
+      { kind: 'bramble', x: 34, z: 14 },
     ],
     /**
      * Three crews working one stretch.
@@ -156,9 +177,15 @@ export const CHALK_ROAD: AreaDef = defineArea({
      * refused by one that does not, which is the cap doing its job where it can be seen.
      */
     packs: [
-      { encounterId: 'pack_road_waywatch', x: -30, z: 2, roam: 10 },
+      // The one daylight crew in the world, and it is daylight for a reason a player can work
+      // out: a waywatch robs carts, carts travel by day, and an empty road pays nothing. Standing
+      // on the Chalk Road at noon is the only place in Azo where the sun is the dangerous time.
+      { encounterId: 'pack_road_waywatch', x: -30, z: 2, roam: 10, hours: 'day' },
+      // Vermin do not keep a schedule.
       { encounterId: 'pack_hedgerow_vermin', x: -16, z: 4, roam: 10 },
-      { encounterId: 'pack_freight_pickers', x: -26, z: -4, roam: 10 },
+      // Freight moves after dark -- there is a whole contract about it (`night_freight`) -- so
+      // the people picking it over move after dark too.
+      { encounterId: 'pack_freight_pickers', x: -26, z: -4, roam: 10, hours: 'night' },
     ],
     /** Freight off the back of something, and nobody left to claim it. */
     crates: [

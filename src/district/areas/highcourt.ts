@@ -107,6 +107,12 @@ export const HIGHCOURT: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Rooks over the Spire and nothing at ground level. Nothing lives on dressed stone. */
+    sky: 'drizzle',
+    wildlife: [
+      { kind: 'rook', x: -34, z: -50, roam: 26, count: 5 },
+      { kind: 'rook', x: 34, z: 2, roam: 26, count: 5 },
+    ],
     /** Dressed stone and rank. Bollards and braziers on the processional; nothing on the service end. */
     dressing: [
       { kind: 'bollard', x: -34, z: -46 },
@@ -147,6 +153,7 @@ export const HIGHCOURT: AreaDef = defineArea({
      * exists to be the place the court does not look, and populating it would spend it.
      */
     npcs: [
+      { id: 'highcourt_lamplighter', x: -26, z: -38, art: 'night_watchman', label: 'Talk to the lamplighter' },
       { id: 'highcourt_scribe', x: -14, z: -14, art: 'scribe_scholar', label: 'Talk to the court scribe' },
       { id: 'highcourt_noblewoman', x: 14, z: -22, art: 'noblewoman', label: 'Talk to the lady of the court' },
       { id: 'highcourt_crier', x: -14, z: -2, art: 'town_crier', label: 'Talk to the crier' },
@@ -154,6 +161,13 @@ export const HIGHCOURT: AreaDef = defineArea({
       { id: 'highcourt_tailor', x: 18, z: -26, art: 'taylor', label: 'Talk to the court tailor' },
     ],
     /** Paired, because everything here is paired. */
+    /**
+     * Who walks the row.
+     *
+     * Seven, on the processional. The best-lit street in Azo and the one with the
+     * fewest people out on it.
+     */
+    lamplighter: 'highcourt_lamplighter',
     lamps: [
       { x: -26, z: -34 },
       { x: 22, z: -34 },
@@ -176,6 +190,22 @@ export const HIGHCOURT: AreaDef = defineArea({
         dx: 3,
         facesSouth: true,
         tint: '#9e8f5e',
+      },
+      {
+        // The last line before the Spire, and the only conditional one in the world.
+        //
+        // It spent four waves painted on Ashfall's Vivarium wall from turn one, which is where
+        // the doc kept objecting to it: a warning about carrying something into the Spire,
+        // shown to a player who has not been told the Spire wants them. Here it is on the last
+        // wall on the approach, in fresh paint, and it appears only once the Bone Bastion is
+        // walked -- which is to say, the week the Summons goes up.
+        text: "DON'T CARRY IT IN",
+        wallX: -22,
+        wallZ: 22,
+        dx: 3,
+        facesSouth: true,
+        tint: '#a4543a',
+        gate: { after: ['bone_bastion'] },
       },
     ],
     horizon: 'city',

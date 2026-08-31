@@ -34,6 +34,79 @@ export type Facing = 'down' | 'up' | 'left' | 'right';
  */
 export const SIDE_ART_FACES: Facing = 'left';
 
+/**
+ * The one clock every swaying thing in the world reads.
+ *
+ * A single shared uniform object, handed to every patched material rather than one per sprite.
+ * That is not only cheaper — it is what keeps them all in the *same wind*. A field of reeds each
+ * running its own clock is a field of reeds each in its own weather, and the eye reads that as
+ * malfunction rather than as breeze.
+ *
+ * Written once a frame by `DistrictScreen`. Nothing else may touch it.
+ */
+const WIND = { value: 0 };
+
+export function setWindTime(t: number): void {
+  WIND.value = t;
+}
+
+/**
+ * Makes a Lambert material bend in the wind.
+ *
+ * A vertex offset patched into the stock shader rather than a material of our own, which keeps
+ * the lighting, the fog, the alpha cutout and the shadow exactly as they were — everything this
+ * file's opening paragraph says the trick depends on. `onBeforeCompile` is the supported seam
+ * for precisely this.
+ *
+ * Three details, each of which was wrong in a draft:
+ *
+ *  - **The weight is `position.y` squared.** Every plane this is applied to spans y 0..1 with
+ *    the base at zero, so `position.y` is already "how far up this vertex is" with no extra
+ *    attribute. Squaring it pins the base hard and puts nearly all the movement in the top
+ *    third, which is how a stem actually bends; the linear version slides the whole plant
+ *    sideways and its foot leaves the ground.
+ *  - **The phase comes from the object's own world position**, read out of `modelMatrix`, so no
+ *    two plants standing in one clearing move together and none of them needs a uniform of its
+ *    own. Identical shader source for every instance, so three.js compiles one program.
+ *  - **The offset is in local x**, which the billboard rotation then carries — so a plant sways
+ *    across the screen whichever way the camera is orbited, rather than disappearing into the
+ *    depth axis at ninety degrees. On a fixed `panel` it is the hanging direction, which is the
+ *    right axis for a washing line too.
+ */
+export function applySway(material: THREE.Material, amount: number, height = 1): void {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uWind = WIND;
+    shader.uniforms.uSway = { value: amount };
+    shader.uniforms.uTall = { value: Math.max(1e-4, height) };
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        '#include <common>\nuniform float uWind;\nuniform float uSway;\nuniform float uTall;',
+      )
+      .replace(
+        '#include <begin_vertex>',
+        [
+          '#include <begin_vertex>',
+          'float swayPhase = modelMatrix[3].x * 0.7 + modelMatrix[3].z * 0.53;',
+          // Normalised, and that `uTall` is the whole of this fix. A `BillboardSprite` is a unit
+          // plane sized by `scale`, so its `position.y` runs 0..1 and squaring it is a weight.
+          // A `panel` is not: `addDressing` builds its geometry at full size, so an awning's
+          // `position.y` runs 0..3 and the square of that is *nine* -- which put a 0.8-unit
+          // swing on a stall awning and made the washing lines whip. Both forms now agree that
+          // the top of the plane is 1.0.
+          'float swayLean = (position.y / uTall) * (position.y / uTall);',
+          // Two frequencies summed: a slow body to the gust and a quicker flutter over it. A
+          // single sine is a metronome, and a plant on a metronome reads as a toy.
+          'float swayAmt = sin(uWind * 1.1 + swayPhase) * 0.7 + sin(uWind * 2.7 + swayPhase * 1.7) * 0.3;',
+          'transformed.x += swayAmt * uSway * swayLean;',
+        ].join('\n'),
+      );
+  };
+  // Forces the program to be rebuilt with the patch. Without it the mesh keeps whatever shader
+  // it compiled on its first frame and nothing moves -- silently.
+  material.needsUpdate = true;
+}
+
 export class BillboardSprite extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshLambertMaterial> {
   /** Mirrored horizontally — the opposite bearing is the drawn one, flipped. */
   private mirrored = false;
@@ -73,6 +146,16 @@ export class BillboardSprite extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshL
 
   private applyScale(): void {
     this.scale.set(this.mirrored ? -this.worldWidth : this.worldWidth, this.worldHeight, 1);
+  }
+
+  /**
+   * Makes this billboard bend in the wind. See `applySway`.
+   *
+   * No height is passed because there is nothing to normalise: the geometry here is a unit
+   * plane and the size lives in `scale`, which is exactly the case `applySway` defaults to.
+   */
+  setSway(amount: number): void {
+    applySway(this.material, amount);
   }
 
   /** Cylindrical billboarding: Y only. */
@@ -403,6 +486,19 @@ export function actorArtFromTextures(
  */
 export function actorArtFromOne(tex: THREE.Texture): ActorArt {
   return { front: tex, back: tex, side: tex, sideWalk: [], walkGaitCycles: 1, mirrorSide: false };
+}
+
+/**
+ * The same one-picture trick, but for something that *should* flip.
+ *
+ * The only difference from `actorArtFromOne` is `mirrorSide`, and the reason is the difference
+ * between a person and an animal. A townsperson is drawn front-on holding something, so flipping
+ * them swaps the bard's lute into his other hand — hence `false` up there. An animal is drawn in
+ * profile, and a fox walking the other way *is* the same fox mirrored. Turning the flip off for
+ * one would mean every fox in the world faces left forever, including the ones running east.
+ */
+export function actorArtFromProfile(tex: THREE.Texture): ActorArt {
+  return { front: tex, back: tex, side: tex, sideWalk: [], walkGaitCycles: 1, mirrorSide: true };
 }
 
 export function disposeActorArt(art: ActorArt): void {

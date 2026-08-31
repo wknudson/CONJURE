@@ -90,6 +90,18 @@ export const BRAYS_HOLLOW: AreaDef = defineArea({
     },
   ],
   props: {
+    /** A bowl with hedges on the rim. The most alive place in the Ring, and the least worked. */
+    sky: 'pollen',
+    wildlife: [
+      { kind: 'sheep', x: -14, z: -38, roam: 7, count: 4 },
+      { kind: 'sheep', x: 10, z: 2, roam: 7, count: 4 },
+      { kind: 'goat', x: -6, z: -38, roam: 8, count: 2 },
+      { kind: 'goat', x: 22, z: -14, roam: 8, count: 2 },
+      { kind: 'goat', x: -26, z: 18, roam: 8, count: 2 },
+      { kind: 'hare', x: 2, z: -38, roam: 8 },
+      { kind: 'hare', x: 30, z: 2, roam: 8 },
+      { kind: 'fox', x: 10, z: -38, roam: 10 },
+    ],
     /** Livestock, and the licences that cost more than the herd. Fences, a well, and fodder. */
     dressing: [
       { kind: 'waystone', x: 10, z: -18, text: 'BRAY — NO MARKET, NO INN' },
@@ -117,6 +129,22 @@ export const BRAYS_HOLLOW: AreaDef = defineArea({
       { kind: 'trough', x: -18, z: -38 },
       { kind: 'trough', x: 6, z: -14 },
       { kind: 'trough', x: 26, z: 14 },
+      { kind: 'wildflowers', x: -14, z: -38 },
+      { kind: 'wildflowers', x: 26, z: -30 },
+      { kind: 'wildflowers', x: -2, z: -18 },
+      { kind: 'wildflowers', x: 18, z: -6 },
+      { kind: 'wildflowers', x: 26, z: 6 },
+      { kind: 'wildflowers', x: 22, z: 18 },
+      { kind: 'wildflowers', x: 2, z: 30 },
+      { kind: 'bramble', x: -10, z: -38 },
+      { kind: 'bramble', x: 2, z: -30 },
+      { kind: 'bramble', x: 30, z: -14 },
+      { kind: 'bramble', x: -26, z: 18 },
+      { kind: 'bramble', x: 30, z: 30 },
+      { kind: 'bracken', x: -6, z: -38 },
+      { kind: 'bracken', x: 30, z: -22 },
+      { kind: 'bracken', x: 14, z: 2 },
+      { kind: 'bracken', x: 2, z: 22 },
     ],
     /**
      * Two people, which is the right number for a place that is not a town.

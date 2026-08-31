@@ -64,6 +64,69 @@
   letter-spacing: 0.08em;
   color: #4e5666;
 }
+
+/*
+ * The panel's second tenant.
+ *
+ * Same box, same position, warmer caption. It reads as the same kind of statement -- here is
+ * the one thing you are being asked to do -- and a second panel beside it would have been two
+ * places to look for one answer.
+ */
+.district-objective.is-errand .district-objective__cap {
+  color: #e8c86a;
+}
+
+/*
+ * A receipt, not a notice.
+ *
+ * `showNotice` is a modal that wants acknowledging and stops the world; this says "taken" and
+ * gets out of the way. Zero height when empty, so the panel does not carry a blank line around
+ * for the rest of the game.
+ */
+/*
+ * The one thing in this panel you can click, so the panel stops ignoring the mouse for it.
+ *
+ * `.district-objective` is `pointer-events: none` -- it is a readout and should never eat a
+ * click meant for the street behind it -- so the button turns them back on for itself alone,
+ * which is the same trick `.hand > *` uses in the combat HUD.
+ */
+.district-objective__drop {
+  display: none;
+  margin-top: 8px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #8a93a6;
+  background: transparent;
+  border: 1px solid #3a4150;
+  border-radius: 3px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 0.2s, border-color 0.2s;
+}
+.district-objective__drop.is-shown {
+  display: inline-block;
+}
+.district-objective__drop:hover {
+  color: #f0e6d2;
+  border-color: #8a93a6;
+}
+
+.district-objective__flash {
+  margin-top: 0;
+  max-height: 0;
+  overflow: hidden;
+  font-size: 11px;
+  color: #9fe0c4;
+  opacity: 0;
+  transition: opacity 0.25s, max-height 0.25s, margin-top 0.25s;
+}
+.district-objective__flash.is-shown {
+  margin-top: 6px;
+  max-height: 2.4em;
+  opacity: 1;
+}
 .district-pip.is-lit {
   color: #5ef2d6;
   text-shadow: 0 0 8px rgba(94, 242, 214, 0.7);
@@ -319,6 +382,85 @@ body.is-talking .district-help {
   gap: 12px;
 }
 /* --- the Wildlands Gate: same panel, grouped by region ---------------------- */
+
+/* --- a stall, in the same overlay the board and the gate use ------------- */
+
+.ledger__value--hour {
+  color: #9fb2d6;
+  text-transform: capitalize;
+}
+
+.district-stall__purse {
+  margin-left: auto;
+  margin-right: 12px;
+  font-size: 13px;
+  color: #e8c86a;
+  letter-spacing: 0.04em;
+}
+
+/* The keeper's own line, above the shelf. Their voice, not the counter's. */
+.district-stall__line {
+  padding: 0 4px 12px;
+  font-size: 12px;
+  font-style: italic;
+  color: #9aa2b2;
+  line-height: 1.5;
+}
+
+.district-stall__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+/*
+ * One thing on the shelf: what it is on the left, what it costs on the right.
+ *
+ * A row rather than a card, unlike the bounty board next door, and the difference is the
+ * point: a contract is a decision you read, and a Core is a line item you either can or
+ * cannot afford. Cards would make six of them look like six contracts.
+ */
+.stall-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+}
+.stall-row__what {
+  flex: 1;
+  min-width: 0;
+}
+.stall-row__name {
+  font-size: 13px;
+  color: #f0e6d2;
+}
+.stall-row__held {
+  margin-left: 8px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #6f9a86;
+}
+.stall-row__blurb {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #8a93a6;
+  line-height: 1.45;
+}
+.stall-row__deal {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.stall-row__deal .brass-btn {
+  font-size: 11px;
+  padding: 5px 10px;
+}
+.stall-row__deal .brass-btn:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
 
 .district-board__note {
   margin: -4px 0 16px;

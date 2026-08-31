@@ -104,6 +104,15 @@ export const TALLOW_LEVELS: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Drained country losing the argument. Reeds in the cuts and a heron standing in them. */
+    sky: 'drizzle',
+    wildlife: [
+      { kind: 'heron', x: -38, z: -34, roam: 6 },
+      { kind: 'heron', x: -50, z: 2, roam: 6 },
+      { kind: 'hare', x: -18, z: -34, roam: 8 },
+      { kind: 'hare', x: -42, z: 2, roam: 8 },
+      { kind: 'gull', x: -58, z: -38, roam: 22, count: 3 },
+    ],
     /** Rendering country. Vats, drying frames, and hurdles keeping stock off the cuts. */
     dressing: [
       { kind: 'waystone', x: -30, z: -22, text: 'NORTH FIELD — CONDEMNED' },
@@ -140,6 +149,17 @@ export const TALLOW_LEVELS: AreaDef = defineArea({
       { kind: 'haybale', x: 2, z: -6 },
       { kind: 'haybale', x: 22, z: 6 },
       { kind: 'haybale', x: -14, z: 22 },
+      { kind: 'reeds', x: -38, z: -34 },
+      { kind: 'reeds', x: -18, z: -26 },
+      { kind: 'reeds', x: -30, z: -18 },
+      { kind: 'reeds', x: 54, z: -14 },
+      { kind: 'reeds', x: -34, z: -2 },
+      { kind: 'reeds', x: 50, z: 2 },
+      { kind: 'reeds', x: -30, z: 14 },
+      { kind: 'reeds', x: 54, z: 18 },
+      { kind: 'reeds', x: 50, z: 26 },
+      { kind: 'bramble', x: -18, z: -34 },
+      { kind: 'bramble', x: -34, z: 2 },
     ],
     /**
      * Both on the worked strips, which on these Levels is the whole of the siting decision.
@@ -153,6 +173,13 @@ export const TALLOW_LEVELS: AreaDef = defineArea({
       { id: 'tallow_cobbler', x: -22, z: -18, art: 'cobbler_b', label: 'Talk to the cobbler' },
     ],
     /** Nothing lights the Levels. These four are on the worked strips, and stop there. */
+    /**
+     * Who walks the row.
+     *
+     * Rendering runs late and the yard is the only lit ground on the Levels, so
+     * the man who works latest lights it.
+     */
+    lamplighter: 'tallow_tanner',
     lamps: [
       { x: -34, z: -34 },
       { x: 26, z: -34 },

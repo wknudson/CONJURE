@@ -16,6 +16,8 @@ import {
 import { COMPANIONS } from '../core/data/companions.js';
 import { TIER_WAGER } from '../core/data/bounties.js';
 import { HUNTS } from '../core/data/hunts.js';
+import { ERRANDS } from '../district/errands.js';
+import { dayNumber, NIGHT_ANCHOR } from '../district/daylight.js';
 import { traitsFor } from '../core/data/companionTraits.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import { CARDS } from '../core/data/cards/index.js';
@@ -809,5 +811,180 @@ describe('the hunt clock', () => {
     file.profiles['slot-1']!.hunts = { [A_HUNT]: 1_700_000_000_000 };
     writeSave(file);
     expect(loadSave().save.profiles['slot-1']!.hunts).toEqual({ [A_HUNT]: 1_700_000_000_000 });
+  });
+});
+
+describe('the errand ledger', () => {
+  let store: Map<string, string>;
+  beforeEach(() => {
+    store = installStorage();
+  });
+
+  /** Writes a raw save at a chosen version, bypassing `writeSave`'s version stamp. */
+  function writeRawErrands(version: number, errands?: unknown): void {
+    const file = fileWith('slot-1');
+    const raw = JSON.parse(JSON.stringify(file)) as Record<string, unknown>;
+    raw.version = version;
+    const profiles = raw.profiles as Record<string, Record<string, unknown>>;
+    if (errands === undefined) delete profiles['slot-1']!.errands;
+    else profiles['slot-1']!.errands = errands;
+    store.set('conjure.save', JSON.stringify(raw));
+  }
+
+  const AN_ERRAND = ERRANDS[0]!.id;
+  const ANOTHER = ERRANDS[1]!.id;
+
+  it('starts a new character owing nobody anything', () => {
+    expect(newProfile('slot-1').errands).toEqual({ done: [], active: null });
+  });
+
+  it('gives a character from before errands existed an empty ledger', () => {
+    // Nothing to migrate, and the opposite call to the guided lap's: no townsperson could ask
+    // for anything before v23, so an old character genuinely has not run any. Backfilling would
+    // mark work done that was never offered.
+    //
+    // Pinned to the literal version before errands shipped rather than to `SAVE_VERSION - 1`,
+    // which is the trap the two ledgers above both record falling into.
+    writeRawErrands(22, { done: [AN_ERRAND], active: null });
+    expect(loadSave().save.profiles['slot-1']!.errands).toEqual({ done: [], active: null });
+  });
+
+  it('carries what a character actually ran', () => {
+    writeRawErrands(SAVE_VERSION, { done: [AN_ERRAND], active: { id: ANOTHER, ready: true } });
+    expect(loadSave().save.profiles['slot-1']!.errands).toEqual({
+      done: [AN_ERRAND],
+      active: { id: ANOTHER, ready: true },
+    });
+  });
+
+  it('drops an id that no longer names an errand', () => {
+    // Unlike `campaign`, which keeps unknown entries so a renamed contract does not quietly
+    // un-complete itself. The two ledgers are asked different questions: a campaign ledger
+    // records a story that was played, and this one is only ever asked "may this be offered
+    // again" -- where a stale id is a job the player can never take.
+    writeRawErrands(SAVE_VERSION, { done: [AN_ERRAND, 'errand_deleted_long_ago'], active: null });
+    expect(loadSave().save.profiles['slot-1']!.errands.done).toEqual([AN_ERRAND]);
+  });
+
+  it('clears an open errand that has stopped existing', () => {
+    // The important half. Left in place it is an objective panel pointing at nothing, with no
+    // townsperson anywhere who can close it.
+    writeRawErrands(SAVE_VERSION, { done: [], active: { id: 'errand_deleted_long_ago', ready: true } });
+    expect(loadSave().save.profiles['slot-1']!.errands.active).toBeNull();
+  });
+
+  it('refuses to hold one errand both open and already done', () => {
+    // A save interrupted between the payout and the write. The ledger is the authority -- it
+    // has been paid for -- so the slot is dropped rather than the job being run twice.
+    writeRawErrands(SAVE_VERSION, { done: [AN_ERRAND], active: { id: AN_ERRAND, ready: true } });
+    const led = loadSave().save.profiles['slot-1']!.errands;
+    expect(led.done).toEqual([AN_ERRAND]);
+    expect(led.active).toBeNull();
+  });
+
+  it('reads a missing or malformed ledger as nothing run', () => {
+    writeRawErrands(SAVE_VERSION, 'not an object');
+    expect(loadSave().save.profiles['slot-1']!.errands).toEqual({ done: [], active: null });
+    writeRawErrands(SAVE_VERSION);
+    expect(loadSave().save.profiles['slot-1']!.errands).toEqual({ done: [], active: null });
+  });
+
+  it('treats a `ready` that is not true as not ready', () => {
+    writeRawErrands(SAVE_VERSION, { done: [], active: { id: AN_ERRAND, ready: 'yes' } });
+    expect(loadSave().save.profiles['slot-1']!.errands.active).toEqual({ id: AN_ERRAND, ready: false });
+  });
+
+  it('survives a round trip through disk', () => {
+    const file = fileWith('slot-1');
+    file.profiles['slot-1']!.errands = { done: [AN_ERRAND], active: { id: ANOTHER, ready: false } };
+    writeSave(file);
+    expect(loadSave().save.profiles['slot-1']!.errands).toEqual({
+      done: [AN_ERRAND],
+      active: { id: ANOTHER, ready: false },
+    });
+  });
+});
+
+describe('the clock', () => {
+  let store: Map<string, string>;
+  beforeEach(() => {
+    store = installStorage();
+  });
+
+  function writeRawClock(version: number, clock?: unknown): void {
+    const file = fileWith('slot-1');
+    const raw = JSON.parse(JSON.stringify(file)) as Record<string, unknown>;
+    raw.version = version;
+    const profiles = raw.profiles as Record<string, Record<string, unknown>>;
+    if (clock === undefined) delete profiles['slot-1']!.clock;
+    else profiles['slot-1']!.clock = clock;
+    store.set('conjure.save', JSON.stringify(raw));
+  }
+
+  it('starts a new character at the hour the world was measured at', () => {
+    // `NIGHT_ANCHOR` is not an arbitrary default. Every value in `AMBIENT` describes the world at
+    // exactly this hour, so a character who has done nothing sees the lighting three separate
+    // measured passes agreed on.
+    expect(newProfile('slot-1').clock).toBe(NIGHT_ANCHOR);
+  });
+
+  it('puts a character from before the clock at the same hour', () => {
+    // The upgrade is invisible: they walk back into the ward they left. Pinned to the literal
+    // version before the clock shipped rather than to `SAVE_VERSION - 1`, which is the trap the
+    // three ledgers above all record falling into.
+    writeRawClock(23, 14);
+    expect(loadSave().save.profiles['slot-1']!.clock).toBe(NIGHT_ANCHOR);
+  });
+
+  it('carries an hour a character actually reached', () => {
+    writeRawClock(SAVE_VERSION, 13.75);
+    expect(loadSave().save.profiles['slot-1']!.clock).toBe(13.75);
+  });
+
+  it('keeps the day, because the sky is reading it', () => {
+    // This used to wrap into a day, and the sky changing is what stopped it. The clock counts
+    // hours since the character started; `dayNumber` divides it and `skyStrengthAt` rolls the
+    // weather off the result. Wrapping threw the day away every midnight, which made every day
+    // the same day.
+    writeRawClock(SAVE_VERSION, 26.5);
+    expect(loadSave().save.profiles['slot-1']!.clock).toBe(26.5);
+    writeRawClock(SAVE_VERSION, 24 * 40 + 6);
+    expect(loadSave().save.profiles['slot-1']!.clock).toBe(966);
+  });
+
+  it('still refuses a clock from before the character existed', () => {
+    // The one direction that is not a reading. A negative clock is a corrupt file, not day minus
+    // one, and `dayNumber` would floor it to something no roll should ever be asked for.
+    writeRawClock(SAVE_VERSION, -2);
+    expect(loadSave().save.profiles['slot-1']!.clock).toBe(0);
+  });
+
+  it('reads a v24 file as day zero, which is what it is', () => {
+    // Why the sky changing cost no save version. Every clock written by v24 is a number between
+    // 0 and 24, and that is already a valid monotonic reading -- it means the first day. There
+    // was nothing to migrate.
+    writeRawClock(24, 21.5);
+    const clock = loadSave().save.profiles['slot-1']!.clock;
+    expect(clock).toBe(21.5);
+    expect(dayNumber(clock)).toBe(0);
+  });
+
+  it('refuses an hour that is not a finite number', () => {
+    // `NaN` is the one worth guarding. Every comparison in `daylightAt` would be false, so it
+    // falls through to "no daylight" -- and the world would be permanently, inexplicably at
+    // night with nothing to point at. The same failure `readHunts` refuses a NaN stamp for.
+    writeRawClock(SAVE_VERSION, Number.NaN);
+    expect(loadSave().save.profiles['slot-1']!.clock).toBe(NIGHT_ANCHOR);
+    writeRawClock(SAVE_VERSION, 'dawn');
+    expect(loadSave().save.profiles['slot-1']!.clock).toBe(NIGHT_ANCHOR);
+    writeRawClock(SAVE_VERSION);
+    expect(loadSave().save.profiles['slot-1']!.clock).toBe(NIGHT_ANCHOR);
+  });
+
+  it('survives a round trip through disk', () => {
+    const file = fileWith('slot-1');
+    file.profiles['slot-1']!.clock = 9.25;
+    writeSave(file);
+    expect(loadSave().save.profiles['slot-1']!.clock).toBe(9.25);
   });
 });

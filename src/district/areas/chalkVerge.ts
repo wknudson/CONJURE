@@ -109,6 +109,13 @@ export const CHALK_VERGE: AreaDef = defineArea({
     },
   ],
   props: {
+    /** The first ground outside the ward, and it shows: hares, and a verge that flowers. */
+    sky: 'pollen',
+    wildlife: [
+      { kind: 'hare', x: -22, z: -26, roam: 8 },
+      { kind: 'hare', x: 38, z: -6, roam: 8 },
+      { kind: 'rook', x: -46, z: -30, roam: 24, count: 3 },
+    ],
     /** Spoil and abandoned kit, and the first waystones the road puts up. */
     dressing: [
       { kind: 'spoilheap', x: -38, z: -26 },
@@ -133,6 +140,15 @@ export const CHALK_VERGE: AreaDef = defineArea({
       { kind: 'fence', x: 38, z: -18, yaw: 0 },
       { kind: 'fence', x: -34, z: -2, yaw: 0 },
       { kind: 'fence', x: -34, z: 14, yaw: 0 },
+      { kind: 'wildflowers', x: -22, z: -26 },
+      { kind: 'wildflowers', x: 14, z: -22 },
+      { kind: 'wildflowers', x: -2, z: -14 },
+      { kind: 'wildflowers', x: 38, z: -6 },
+      { kind: 'wildflowers', x: -26, z: 6 },
+      { kind: 'wildflowers', x: -30, z: 18 },
+      { kind: 'bramble', x: -18, z: -26 },
+      { kind: 'bramble', x: 10, z: -18 },
+      { kind: 'bramble', x: 42, z: 6 },
     ],
     /**
      * Three packs, working one shared stretch of road.
@@ -149,9 +165,13 @@ export const CHALK_VERGE: AreaDef = defineArea({
      * something that actually happens rather than something that theoretically could.
      */
     packs: [
+      // The scavengers live here and are out whenever you are -- the verge is the first ground
+      // outside the ward and it is never entirely safe, which is the lesson it exists to teach.
       { encounterId: 'pack_chalk_scavengers', x: -10, z: 0, roam: 9 },
-      { encounterId: 'pack_verge_stray_dogs', x: 0, z: 8, roam: 9 },
-      { encounterId: 'pack_spoil_heap_hollows', x: 6, z: -4, roam: 9 },
+      // The other two keep hours. Dogs range at night; whatever is in the spoil heaps does not
+      // come out into the light at all.
+      { encounterId: 'pack_verge_stray_dogs', x: 0, z: 8, roam: 9, hours: 'night' },
+      { encounterId: 'pack_spoil_heap_hollows', x: 6, z: -4, roam: 9, hours: 'night' },
     ],
     /** The notices, nailed to a post where the road forks. */
     huntSignpost: { x: 26, z: 14 },

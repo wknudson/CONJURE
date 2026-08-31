@@ -102,6 +102,13 @@ export const BONE_BASTION: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Still air, deliberately. Rooks over the mounds and nothing on the ground under them. */
+    sky: 'none',
+    wildlife: [
+      { kind: 'rook', x: -46, z: -50, roam: 26, count: 4 },
+      { kind: 'rook', x: -2, z: -18, roam: 26, count: 4 },
+      { kind: 'rook', x: 18, z: 18, roam: 26, count: 4 },
+    ],
     /**
      * On the bastion wall, which is the one thing here anybody built.
      *
@@ -151,6 +158,10 @@ export const BONE_BASTION: AreaDef = defineArea({
       { kind: 'logpile', x: 38, z: -10 },
       { kind: 'logpile', x: -6, z: 10 },
       { kind: 'logpile', x: 2, z: 30 },
+      { kind: 'bracken', x: -26, z: -46 },
+      { kind: 'bracken', x: 42, z: -26 },
+      { kind: 'bracken', x: -22, z: 2 },
+      { kind: 'bracken', x: 6, z: 26 },
     ],
     crates: [{ x: 38, z: -2 }],
     /** In the scrub along the east wall, which is the only ground here anything grows on. */

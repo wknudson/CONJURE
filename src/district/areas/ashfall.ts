@@ -161,6 +161,15 @@ export const ASHFALL: AreaDef = defineArea({
     },
   ],
   props: {
+    /** The ward is named for what falls on it. Rats in the yards, rooks over the terraces. */
+    sky: 'ash',
+    wildlife: [
+      { kind: 'rat', x: -30, z: -30, roam: 5, count: 2 },
+      { kind: 'rat', x: -6, z: -14, roam: 5, count: 2 },
+      { kind: 'rat', x: -34, z: 6, roam: 5, count: 2 },
+      { kind: 'rook', x: -34, z: -38, roam: 24, count: 4 },
+      { kind: 'rook', x: -18, z: -2, roam: 24, count: 4 },
+    ],
     /** The hub, kept working: stores in the yard, washing over the terraces, a fire on the cross-street. */
     dressing: [
       { kind: 'barrel', x: -38, z: -30 },
@@ -208,6 +217,7 @@ export const ASHFALL: AreaDef = defineArea({
         label: 'Talk to the gate sentry',
       },
       { id: 'ashfall_smith', x: 2, z: 22, art: 'blacksmith', label: 'Talk to the smith' },
+      { id: 'ashfall_lamplighter', x: 2, z: 2, art: 'night_watchman', label: 'Talk to the lamplighter' },
       { id: 'ashfall_cobbler', x: -2, z: 34, art: 'cobbler', label: 'Talk to the cobbler' },
     ],
     /** The Warden's beat, clockwise around the open warehouse yard. */
@@ -227,6 +237,13 @@ export const ASHFALL: AreaDef = defineArea({
       { x: -26, z: -2 },
     ],
     /** Gas lamps, all on walkway tiles — the light *is* the safe zone, so it has to line up. */
+    /**
+     * Who walks the row.
+     *
+     * The hub, and ten lamps: the longest round in the city. Magistracy property,
+     * lit by a Magistracy man, on the ward that wrote the rule about them.
+     */
+    lamplighter: 'ashfall_lamplighter',
     lamps: [
       { x: 0.7, z: -13 },
       { x: 7.3, z: -13 },
@@ -259,12 +276,12 @@ export const ASHFALL: AreaDef = defineArea({
       { text: 'THE ENGINES EAT OUR MARROW', wallX: WEST_X, wallZ: 8.05, dx: 3.2, facesSouth: true, tint: '#b7ae9d' },
       { text: 'THE CENSUS COUNTS DOWN', wallX: EAST_X, wallZ: 8.05, dx: -3.4, facesSouth: true, tint: '#a46a4a' },
       { text: "VANE'S LIGHT IS OUR DARK", wallX: WEST_X, wallZ: 15.95, dx: 3.0, facesSouth: false, tint: '#b7ae9d' },
-      // The last line before the Spire, per the doc: fresh paint on the wall nearest the
-      // board that posts The Summons. TODO(worldbuild): should live on the Highcourt
-      // approach — which exists now, `areas/highcourt.ts`, so that half of the wait is over
-      // — and ideally only appear late-campaign, which is still blocked: the world does not
-      // read campaign state.
-      { text: "DON'T CARRY IT IN", wallX: EAST_X, wallZ: 15.95, dx: -3.2, facesSouth: false, tint: '#a4543a' },
+      // `DON'T CARRY IT IN` used to be here, unconditionally, from the first minute of the
+      // game -- a warning about the Spire painted on a wall four crossings from it, aimed at a
+      // player who has not been offered the Summons and has no idea what "it" is. It has gone
+      // where the doc always said it belonged: Highcourt's service wall, late-campaign. See
+      // `areas/highcourt.ts`.
+      { text: 'THE QUOTA IS A NUMBER SOMEBODY CHOSE', wallX: EAST_X, wallZ: 15.95, dx: -3.2, facesSouth: false, tint: '#a4543a' },
     ],
     waterRows: WATER_ROWS,
     horizon: 'city',

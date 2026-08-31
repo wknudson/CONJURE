@@ -122,6 +122,18 @@ export const MILLHARROW: AreaDef = defineArea({
     },
   ],
   props: {
+    /** A crossroads town in worked country. Stock in the fields, rats at the mill. */
+    sky: 'pollen',
+    wildlife: [
+      { kind: 'sheep', x: -18, z: -42, roam: 7, count: 4 },
+      { kind: 'sheep', x: -38, z: -14, roam: 7, count: 4 },
+      { kind: 'sheep', x: 2, z: 18, roam: 7, count: 4 },
+      { kind: 'goat', x: -10, z: -42, roam: 7, count: 2 },
+      { kind: 'goat', x: -14, z: 2, roam: 7, count: 2 },
+      { kind: 'rat', x: 6, z: -42, roam: 5, count: 2 },
+      { kind: 'rat', x: -6, z: 2, roam: 5, count: 2 },
+      { kind: 'rook', x: -50, z: -46, roam: 22, count: 4 },
+    ],
     /**
      * The crossroads has opinions about the toll.
      *
@@ -168,6 +180,14 @@ export const MILLHARROW: AreaDef = defineArea({
       { kind: 'waystone', x: -26, z: 2, text: 'BY ORDER — TOLL PAYABLE' },
       { kind: 'well', x: -22, z: -42 },
       { kind: 'well', x: -22, z: 2 },
+      { kind: 'wildflowers', x: -18, z: -42 },
+      { kind: 'wildflowers', x: 30, z: -30 },
+      { kind: 'wildflowers', x: 2, z: -10 },
+      { kind: 'wildflowers', x: -42, z: 14 },
+      { kind: 'wildflowers', x: 2, z: 30 },
+      { kind: 'bramble', x: -14, z: -42 },
+      { kind: 'bramble', x: 38, z: -30 },
+      { kind: 'bramble', x: -2, z: 30 },
     ],
     /**
      * The hub, populated as a hub.
@@ -183,6 +203,13 @@ export const MILLHARROW: AreaDef = defineArea({
       { id: 'millharrow_tollman', x: 10, z: -14, art: 'town_guard_b', label: 'Talk to the tollman' },
     ],
     /** Down the cross, and nowhere else — the strips are not the town's to light. */
+    /**
+     * Who walks the row.
+     *
+     * No Magistracy man comes this far out. The tollman keeps the gate on the
+     * crossroads and the lamps *are* the crossroads, so he does it himself.
+     */
+    lamplighter: 'millharrow_tollman',
     lamps: [
       { x: -2, z: -30 },
       { x: -2, z: -10 },

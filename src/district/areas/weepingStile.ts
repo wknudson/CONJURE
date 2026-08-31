@@ -89,6 +89,16 @@ export const WEEPING_STILE: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Small, close and overgrown — the tightest map in the game, and the wettest. */
+    sky: 'drizzle',
+    wildlife: [
+      { kind: 'heron', x: -6, z: -38, roam: 5 },
+      { kind: 'fox', x: -2, z: -38, roam: 8 },
+      { kind: 'hare', x: 10, z: -38, roam: 6 },
+      { kind: 'hare', x: 26, z: 2, roam: 6 },
+      { kind: 'moth', x: -34, z: -42, roam: 6, count: 3 },
+      { kind: 'moth', x: -30, z: 6, roam: 6, count: 3 },
+    ],
     /** A village that stopped answering. Everything here is something somebody left. */
     dressing: [
       { kind: 'pens', x: -30, z: -38, yaw: 0 },
@@ -114,6 +124,27 @@ export const WEEPING_STILE: AreaDef = defineArea({
       { kind: 'cairn', x: -10, z: 22 },
       { kind: 'waystone', x: -10, z: -38, text: 'RELOCATED — LABOUR — 61' },
       { kind: 'waystone', x: 6, z: 2, text: 'RELOCATED — LABOUR — 61' },
+      { kind: 'reeds', x: -6, z: -38 },
+      { kind: 'reeds', x: -30, z: -22 },
+      { kind: 'reeds', x: -30, z: -6 },
+      { kind: 'reeds', x: 6, z: 10 },
+      { kind: 'reeds', x: -10, z: 26 },
+      { kind: 'bracken', x: -2, z: -38 },
+      { kind: 'bracken', x: -26, z: -22 },
+      { kind: 'bracken', x: -26, z: -6 },
+      { kind: 'bracken', x: 10, z: 10 },
+      { kind: 'bracken', x: -6, z: 26 },
+      { kind: 'bramble', x: 2, z: -38 },
+      { kind: 'bramble', x: -26, z: -18 },
+      { kind: 'bramble', x: 18, z: 2 },
+      { kind: 'bramble', x: -2, z: 22 },
+      { kind: 'mushrooms', x: 10, z: -38 },
+      { kind: 'mushrooms', x: -22, z: -18 },
+      { kind: 'mushrooms', x: 22, z: 2 },
+      { kind: 'mushrooms', x: 6, z: 22 },
+      { kind: 'deadfall', x: 14, z: -38 },
+      { kind: 'deadfall', x: 30, z: -14 },
+      { kind: 'deadfall', x: 30, z: 14 },
     ],
     /**
      * The only two people in a village of sixty-one.

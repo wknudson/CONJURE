@@ -10,6 +10,11 @@
 
 import * as THREE from 'three';
 import { LOOK, ambientFor, type AmbientDef } from './look.js';
+import { SWAYS } from './dressing.js';
+import { SKIES, SkyField, skyStrengthAt, type SkyId } from './skies.js';
+import { hashText } from '../core/util/rng.js';
+import { gateOpen, NOTHING_HAPPENED, type Chronicle } from './chronicle.js';
+import { ambientAt, lampsAt, NIGHT_ANCHOR, type Lit } from './daylight.js';
 import type { ColliderSet } from './collision.js';
 import { DRESSING } from './dressing.js';
 import {
@@ -39,7 +44,7 @@ import {
   mulberry32,
   configurePixelTexture,
 } from './textures.js';
-import { BillboardSprite } from './sprites3d.js';
+import { BillboardSprite, applySway } from './sprites3d.js';
 
 /**
  * A building, plus everything that has to disappear along with it.
@@ -54,9 +59,26 @@ interface Structure {
 }
 
 interface Lamp {
+  /**
+   * How hard this one is burning, 0 to 1.
+   *
+   * Per lamp rather than per ward, which is the change that lets somebody walk the row. It was a
+   * single multiplier applied to all of them, and a whole street dimming together is the right
+   * picture drawn by the wrong cause -- nothing dims a gas lamp.
+   */
+  lit: number;
   light: THREE.PointLight;
   head: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   phase: number;
+}
+
+/** One expanding ring on the canal. See `updateRises`. */
+interface Rise {
+  mesh: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
+  life: number;
+  max: number;
+  /** How wide this one gets. Varied per rise, so they are not one animation played repeatedly. */
+  reach: number;
 }
 
 interface ImpactLight {
@@ -96,6 +118,22 @@ export class DistrictWorld {
   private readonly impacts: ImpactLight[] = [];
   /** Absent in an area with no canal. `dispose` and `scrollWater` both allow for it. */
   private readonly waterTexture: THREE.Texture | null = null;
+  /**
+   * Where the canal is, for putting a rise on it. Null wherever there is no canal.
+   *
+   * Kept rather than recomputed because the arithmetic that placed the water plane is a dozen
+   * lines up and involves `waterRowsOf`, `zOfRow` and a half-tile — a second copy of it here
+   * would be a second chance to put the fish in the road.
+   */
+  private readonly waterRect: { w: number; z0: number; z1: number } | null = null;
+  /** Expanding rings on that water. See `updateRises`. */
+  private readonly rises: Rise[] = [];
+  private riseTimer = 1.5;
+  /** This area's falling air, or null where it declares none. */
+  private readonly sky: SkyField | null = null;
+  /** Kept for the daily roll, which is per place as well as per day. */
+  private readonly areaId: string;
+  private readonly skyId: SkyId;
   private readonly colliderHelpers = new THREE.Group();
   /**
    * This area's ambience.
@@ -106,6 +144,21 @@ export class DistrictWorld {
    * sharing one set of numbers the way they would if this still read `LOOK`.
    */
   private readonly amb: AmbientDef;
+  /**
+   * The same place, at the hour it currently is.
+   *
+   * Held apart from `amb` and not derived on the fly, because the two have different owners:
+   * `amb` is `AMBIENT[id]`, which the tuning panel binds to and mutates live, and this is what
+   * the scene is actually wearing. Pushing the panel's edits straight at the lights would mean
+   * a nudged fog value snapped the world to midnight, and deriving `amb` from the hour would
+   * mean the panel edited a value that was overwritten on the next frame.
+   *
+   * `applyFog`, `applySun` and `applyAmbient` all read this; `setHour` recomputes it from `amb`,
+   * so a panel edit still reaches the screen through the same three calls it always did.
+   */
+  private lit: Lit;
+  /** What the clock says. See `daylight.ts`; the authored values are one in the morning. */
+  private hour = NIGHT_ANCHOR;
 
   private readonly occRay = new THREE.Raycaster();
   private readonly occDir = new THREE.Vector3();
@@ -116,12 +169,35 @@ export class DistrictWorld {
     area: AreaDef,
     private readonly colliders: ColliderSet,
     maxAnisotropy: number,
+    /**
+     * What the street knows. Only the graffiti reads it, and only to decide what is painted.
+     *
+     * Defaulted so every existing caller and every test that builds a world for its geometry
+     * keeps working unchanged -- and so the answer to "what does a ward look like to somebody
+     * who has done nothing" is the one you get by not asking.
+     */
+    chron: Chronicle = NOTHING_HAPPENED,
+    /**
+     * What time it is, in hours.
+     *
+     * Defaulted to the hour the whole `AMBIENT` table was authored and measured at, so every
+     * existing caller — and every test that builds a world for its geometry — gets exactly the
+     * lighting those measurements describe, and "what does this ward look like" has the same
+     * answer it had before there was a clock.
+     */
+    hour: number = NIGHT_ANCHOR,
   ) {
     // The ambience is the area's; the camera and the film are the game's. See `AMBIENT`.
     const amb = ambientFor(area.id);
     this.amb = amb;
-    this.scene.fog = new THREE.FogExp2(amb.fogColor, amb.fogDensity);
-    this.scene.background = new THREE.Color(amb.fogColor);
+    this.hour = hour;
+    // Everything below builds from the *lit* values, so a ward entered at noon is built at noon
+    // rather than built at night and corrected on the first frame -- which would have been one
+    // visible flash of midnight on every crossing.
+    const lit = ambientAt(amb, hour);
+    this.lit = lit;
+    this.scene.fog = new THREE.FogExp2(lit.fogColor, lit.fogDensity);
+    this.scene.background = new THREE.Color(lit.fogColor);
 
     /* --- ground, outskirts, canal --- */
     const span = groundSpan(area);
@@ -158,8 +234,11 @@ export class DistrictWorld {
         new THREE.MeshBasicMaterial({ map: this.waterTexture }),
       );
       water.rotation.x = -Math.PI / 2;
-      water.position.set(0, -0.5, zOfRow(area, 0) - TILE / 2 + depth / 2 - 1);
+      const waterZ = zOfRow(area, 0) - TILE / 2 + depth / 2 - 1;
+      water.position.set(0, -0.5, waterZ);
       this.scene.add(water);
+      // Inset from the plane's own edges, so nothing ever rises half-under the quay.
+      this.waterRect = { w: span.w - 6, z0: waterZ - depth / 2 + 2, z1: waterZ + depth / 2 - 2 };
 
       const quay = new THREE.Mesh(
         new THREE.BoxGeometry(span.w, 0.7, 0.7),
@@ -223,11 +302,32 @@ export class DistrictWorld {
       }
     }
 
+    /* --- the air ---
+       Built before the furniture so it is early in the scene graph and therefore early in the
+       traversal `dispose` does; it is added to the scene like everything else, so it is cleaned
+       up by that traversal and needs no line of its own down there. */
+    const skyId = area.props.sky ?? 'none';
+    this.areaId = area.id;
+    this.skyId = skyId;
+    if (skyId !== 'none') {
+      // Seeded off the area id, so a place's weather is the same weather every time you walk
+      // into it rather than a fresh scatter on every shop door.
+      this.sky = new SkyField(SKIES[skyId], mulberry32(hashText(area.id) >>> 0));
+      // Lit before it is added, so a ward entered at noon has daylight ash from its first frame
+      // rather than a frame of midnight ash corrected afterwards.
+      this.sky.relight(lit, hour);
+      this.sky.setStrength(skyStrengthAt(area.id, skyId, hour));
+      this.scene.add(this.sky.points);
+    }
+
     /* --- dressing --- */
     const trees = area.props.trees ?? [];
     if (trees.length > 0) {
       const treeTexture = makeTreeTexture();
-      for (const t of trees) this.addBillboard(treeTexture, 3, 4, t.x, t.z);
+      // Trees are not `dressing` -- `props.trees` predates the registry -- so the sway that the
+      // plants get from `SWAYS` is applied here directly. A quarter of a plant's amplitude:
+      // a tree is a trunk with a canopy on it, and bracken-sized movement makes it rubber.
+      for (const t of trees) this.addBillboard(treeTexture, 3, 4, t.x, t.z).setSway(0.05);
     }
 
     const crates = area.props.crates ?? [];
@@ -286,6 +386,9 @@ export class DistrictWorld {
        own list, which is what it was: a `door: number` reaching into `DOORS`, silently
        skipped when the index missed. Reordering the doors would have erased the words. */
     for (const g of area.props.graffiti ?? []) {
+      // A line that has not been earned yet, or has been overtaken, is simply not painted.
+      // Cheaper than fading it and more honest: a wall either says this or it does not.
+      if (!gateOpen(g.gate, chron)) continue;
       const tex = makeGraffitiTexture(g.text);
       const img = tex.image as HTMLCanvasElement;
       const scrawl = new THREE.Mesh(
@@ -323,9 +426,10 @@ export class DistrictWorld {
     }
 
     /* --- the gates ---
-       One per exit. It is scenery and a wall with a hole in it: the collider spans the
-       opening so you cannot walk round the frame, and the hotspot in front of it is what
-       actually takes you through. */
+       One per exit that asks for one. The collider spans the whole opening, so this is not
+       scenery: you do not walk through a gate, you walk up to it and the hotspot in front of it
+       opens it. Which is why the drawing is a *closed, latched* gate rather than a sealed one or
+       an open one -- see `makeGateTexture`, where the reasoning lives. */
     for (const exit of area.exits) {
       const at = exit.gate;
       if (!at) continue;
@@ -346,10 +450,10 @@ export class DistrictWorld {
     }
 
     /* --- lighting rig --- */
-    this.hemi = new THREE.HemisphereLight(amb.skyColor, amb.groundBounce, amb.ambientIntensity);
+    this.hemi = new THREE.HemisphereLight(lit.skyColor, lit.groundBounce, lit.ambientIntensity);
     this.scene.add(this.hemi);
 
-    this.sun = new THREE.DirectionalLight(amb.sunColor, amb.sunIntensity);
+    this.sun = new THREE.DirectionalLight(lit.sunColor, lit.sunIntensity);
     this.sun.position.set(-12, 18, 10);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
@@ -410,7 +514,10 @@ export class DistrictWorld {
       // Through the same helper the trees use, so it lands in `world.billboards` and is turned
       // to camera each frame with everything else. `yaw` is meaningless here and a test says so
       // rather than letting it be silently discarded.
-      this.addBillboard(texture, size * aspect, size, spec.x, spec.z);
+      const b = this.addBillboard(texture, size * aspect, size, spec.x, spec.z);
+      // Scaled by the prop's own height, so a tall reed leans further than a mushroom does
+      // while both bend by the same angle. A flat amplitude makes the small things wobble.
+      if (SWAYS.has(spec.kind)) b.setSway(0.035 * size);
     } else if (kind.form === 'panel') {
       // Deliberately not a `BillboardSprite`, and deliberately not pushed into `billboards`:
       // holding the yaw it was given is the entire reason this form exists.
@@ -429,6 +536,13 @@ export class DistrictWorld {
       panel.position.set(spec.x, 0, spec.z);
       panel.rotation.y = yaw;
       panel.castShadow = true;
+      // Washing on a line and an awning over a stall are the two pieces of furniture that are
+      // cloth, and cloth moves. The sway axis is local x, which for a fixed panel is the way it
+      // hangs -- so a line billows along its own length instead of flapping edge-on.
+      // The height is handed over because a panel's geometry is built at full size rather
+      // than scaled from a unit plane -- see `applySway`, where getting this wrong made an
+      // awning swing through most of a metre.
+      if (SWAYS.has(spec.kind)) applySway(panel.material, 0.03 * size, size);
       this.scene.add(panel);
     } else if (kind.form === 'ground') {
       // Lambert, not Basic: the ground plane it lies on is Lambert, and an unlit decal would
@@ -609,12 +723,48 @@ export class DistrictWorld {
     this.scene.add(light);
 
     this.colliders.add(x, z, 0.5, 0.5, 'lamp');
-    this.lamps.push({ light, head, phase: this.lamps.length * 1.7 });
+    this.lamps.push({ light, head, phase: this.lamps.length * 1.7, lit: lampsAt(this.hour) });
   }
 
   /* ============================================================
      Per-frame
      ============================================================ */
+
+  /**
+   * The gas lamps, flickering — and going out.
+   *
+   * The lamps are the payoff of having a clock at all. Azo has forty-one of them on the Lamprow
+   * High Street alone and a lamplighter whose whole job is walking that row; until now they
+   * burned at the same intensity at every hour of a day that did not exist. `lampsAt` lags the
+   * sun by an hour at each end, so they are lit before the light has entirely gone and are still
+   * up for the first of the morning — which is the only thing in the world that shows somebody
+   * is doing a job on a schedule.
+   *
+   * The flicker is unchanged and still runs at noon. A dead lamp does not flicker, but it also
+   * does not cost anything to compute, and gating the maths would put a branch in the one loop
+   * here that runs per lamp per frame.
+   */
+  /** Where a lamp stands, for whoever is walking the row. */
+  lampPosition(i: number): { x: number; z: number } | null {
+    const l = this.lamps[i];
+    return l ? { x: l.light.position.x, z: l.light.position.z } : null;
+  }
+
+  get lampCount(): number {
+    return this.lamps.length;
+  }
+
+  /**
+   * How brightly one lamp burns, 0 to 1.
+   *
+   * Set per lamp so a row can be lit one at a time by somebody walking it. Every lamp is reset to
+   * the hour's own curve by `setHour`, so a ward with nobody to light it behaves exactly as it
+   * did — which is eighteen of the nineteen.
+   */
+  setLampLit(i: number, k: number): void {
+    const l = this.lamps[i];
+    if (l) l.lit = k;
+  }
 
   updateLamps(t: number): void {
     for (const l of this.lamps) {
@@ -622,7 +772,8 @@ export class DistrictWorld {
       const n =
         0.5 +
         0.5 * (Math.sin(t * 6.3 + l.phase) * 0.6 + Math.sin(t * 11.7 + l.phase * 2.1) * 0.4);
-      l.light.intensity = LOOK.lampIntensity * (1 - LOOK.lampFlicker + LOOK.lampFlicker * n * 2);
+      l.light.intensity =
+        LOOK.lampIntensity * (1 - LOOK.lampFlicker + LOOK.lampFlicker * n * 2) * l.lit;
     }
   }
 
@@ -637,6 +788,80 @@ export class DistrictWorld {
     // or care which area it is drawing.
     if (!this.waterTexture) return;
     this.waterTexture.offset.x += 0.03 * dt;
+  }
+
+  /**
+   * Something rising in the canal.
+   *
+   * A ring that expands and fades, on a timer, somewhere in the water. There is no fish: the
+   * ring *is* the fish, the same way a footprint is a person, and at the range the camera keeps
+   * from the quay a drawn body would be four pixels of guesswork. What the player reads is that
+   * the water is not a scrolling texture — which, until this, is exactly what it was.
+   *
+   * Pooled and reused rather than allocated, on the `ImpactLight` pattern. Absent wherever
+   * `waterRows` is, like the water itself.
+   */
+  updateRises(dt: number, rng: () => number): void {
+    if (!this.waterRect) return;
+
+    this.riseTimer -= dt;
+    if (this.riseTimer <= 0) {
+      // Irregular on purpose. A rise every three seconds exactly is a machine.
+      this.riseTimer = 1.8 + rng() * 5.5;
+      this.spawnRise(
+        (rng() - 0.5) * this.waterRect.w,
+        this.waterRect.z0 + rng() * (this.waterRect.z1 - this.waterRect.z0),
+      );
+    }
+
+    for (let i = this.rises.length - 1; i >= 0; i--) {
+      const r = this.rises[i]!;
+      r.life -= dt;
+      if (r.life <= 0) {
+        this.scene.remove(r.mesh);
+        r.mesh.geometry.dispose();
+        r.mesh.material.dispose();
+        this.rises.splice(i, 1);
+        continue;
+      }
+      const k = 1 - r.life / r.max;
+      // Expands fast and then slows, which is what a ring on water does; a linear expansion
+      // reads as a circle being scaled, because that is all it is.
+      const spread = Math.sqrt(k);
+      r.mesh.scale.setScalar(0.4 + spread * r.reach);
+      r.mesh.material.opacity = (1 - k) * 0.5;
+    }
+  }
+
+  private spawnRise(x: number, z: number): void {
+    const mesh = new THREE.Mesh(
+      new THREE.RingGeometry(0.72, 1, 20),
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color('#cfe3ea'),
+        transparent: true,
+        opacity: 0.5,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    mesh.rotation.x = -Math.PI / 2;
+    // Just proud of the water plane at -0.5. Any lower and it z-fights the surface it is on.
+    mesh.position.set(x, -0.46, z);
+    mesh.renderOrder = 2;
+    this.scene.add(mesh);
+    this.rises.push({ mesh, life: 2.6, max: 2.6, reach: 1.6 + Math.random() * 1.4 });
+  }
+
+  /**
+   * One frame of falling air, centred on whoever the camera is watching.
+   *
+   * The anchor is the whole design: see `weather.ts`. A field big enough to cover the Ashwood
+   * would be tens of thousands of points, all but a few dozen of them behind the player or
+   * beyond the fog.
+   */
+  updateSky(dt: number, anchor: THREE.Vector3): void {
+    this.sky?.update(dt, anchor);
   }
 
   /**
@@ -734,7 +959,7 @@ export class DistrictWorld {
    * Road stays the clearest place in the game and Lamprow stays the thickest.
    */
   setFogScale(scale: number): void {
-    (this.scene.fog as THREE.FogExp2).density = this.amb.fogDensity * scale;
+    (this.scene.fog as THREE.FogExp2).density = this.lit.fogDensity * scale;
   }
 
   /* ============================================================
@@ -825,21 +1050,49 @@ export class DistrictWorld {
      Look changes from the panel
      ============================================================ */
 
+  /**
+   * Moves the clock, and the light with it.
+   *
+   * Recomputes from `amb` every time rather than stepping the current value, so the hour is the
+   * single input and nothing drifts: setting it back to `NIGHT_ANCHOR` returns the exact street
+   * the lighting passes measured, whatever it has been through since.
+   */
+  setHour(hour: number): void {
+    this.hour = hour;
+    this.lit = ambientAt(this.amb, hour);
+    this.applyFog();
+    this.applySun();
+    this.applyAmbient();
+    // The air too. A mote is lit by the same light as the street it is falling on, so this
+    // reads the ambience that was just computed rather than the hour a second time.
+    this.sky?.relight(this.lit, hour);
+    this.sky?.setStrength(skyStrengthAt(this.areaId, this.skyId, hour));
+    // The default, which is the whole ward fading together on one curve. A lamplighter overrides
+    // it lamp by lamp immediately afterwards; everywhere else this is the behaviour, unchanged.
+    const burning = lampsAt(hour);
+    for (const l of this.lamps) l.lit = burning;
+  }
+
   applyFog(): void {
-    (this.scene.fog as THREE.FogExp2).color.set(this.amb.fogColor);
-    (this.scene.fog as THREE.FogExp2).density = this.amb.fogDensity;
-    (this.scene.background as THREE.Color).set(this.amb.fogColor);
+    // Re-derived here as well as in `setHour`, because the tuning panel calls this directly
+    // after editing `amb` and would otherwise be writing last hour's values.
+    this.lit = ambientAt(this.amb, this.hour);
+    (this.scene.fog as THREE.FogExp2).color.set(this.lit.fogColor);
+    (this.scene.fog as THREE.FogExp2).density = this.lit.fogDensity;
+    (this.scene.background as THREE.Color).set(this.lit.fogColor);
   }
 
   applySun(): void {
-    this.sun.intensity = this.amb.sunIntensity;
-    this.sun.color.set(this.amb.sunColor);
+    this.lit = ambientAt(this.amb, this.hour);
+    this.sun.intensity = this.lit.sunIntensity;
+    this.sun.color.set(this.lit.sunColor);
   }
 
   applyAmbient(): void {
-    this.hemi.intensity = this.amb.ambientIntensity;
-    this.hemi.color.set(this.amb.skyColor);
-    this.hemi.groundColor.set(this.amb.groundBounce);
+    this.lit = ambientAt(this.amb, this.hour);
+    this.hemi.intensity = this.lit.ambientIntensity;
+    this.hemi.color.set(this.lit.skyColor);
+    this.hemi.groundColor.set(this.lit.groundBounce);
   }
 
   applyLamps(): void {
@@ -884,6 +1137,13 @@ export class DistrictWorld {
       }
       if ((obj as THREE.Light).isLight) (obj as THREE.PointLight).dispose?.();
     });
+
+    for (const r of this.rises) {
+      this.scene.remove(r.mesh);
+      r.mesh.geometry.dispose();
+      r.mesh.material.dispose();
+    }
+    this.rises.length = 0;
 
     this.sun.shadow.dispose();
     // Optional-chained because an area without a canal never made one. Unguarded this is a

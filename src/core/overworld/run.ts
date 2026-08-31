@@ -10,7 +10,7 @@
 import type { CombatResult } from '../../contract/events.js';
 import type { CombatBoons, CombatCarry } from '../engine/setup.js';
 import type { Bestiary, BuffId, GlobalGameState, OverworldState } from './state.js';
-import { INVENTORY_LIMIT } from './state.js';
+import { INVENTORY_LIMIT, addConsumable } from './state.js';
 import { nextBountySeed } from '../data/bounties.js';
 import type { CompanionInstance, CompanionProgress } from './vivarium.js';
 import type { Bounty } from '../data/bounties.js';
@@ -29,6 +29,60 @@ import type { MasteryReport } from '../data/mastery.js';
  * a run may carry; saying what one *does* needs the engine's vocabulary, so it is said
  * here — the one file allowed to hold both. Adding a fourth brew is adding a row.
  */
+/**
+ * What an errand pays, into the same purse a contract pays into.
+ *
+ * Beside `settleCombat` rather than in the district, and through the same three lines that
+ * settle a win, because the purse is the overworld's and there should be exactly one place that
+ * knows how to add to it. An errand that credited Ducats by hand would be a second answer to
+ * "what does a payout do", and the first time the two disagreed it would be about something
+ * subtle like whether a zero-count reagent creates a key.
+ *
+ * Returns whether the brew was taken. A full satchel is an ordinary thing that happens rather
+ * than an error — the same call `addConsumable` already makes — and the caller says so rather
+ * than the money silently vanishing.
+ */
+export function payErrand(
+  state: GlobalGameState,
+  reward: {
+    ducats?: number;
+    marrowShards?: number;
+    reagents?: Readonly<Record<string, number>>;
+    brew?: BuffId;
+  },
+): { brewTaken: boolean } {
+  const { overworld } = state;
+  overworld.economy.ducats += reward.ducats ?? 0;
+  overworld.economy.marrowShards += reward.marrowShards ?? 0;
+  for (const [id, count] of Object.entries(reward.reagents ?? {})) {
+    if (count > 0) overworld.economy.reagents[id] = (overworld.economy.reagents[id] ?? 0) + count;
+  }
+
+  if (!reward.brew) return { brewTaken: false };
+  return {
+    brewTaken: addConsumable(overworld, {
+      id: reward.brew,
+      name: BREW_NAMES[reward.brew],
+      type: 'buff',
+      value: 0,
+    }),
+  };
+}
+
+/**
+ * What each brew is called on the satchel.
+ *
+ * Duplicated from `APOTHECARY_STOCK` rather than read out of it, and that is a real trade worth
+ * naming: the shop's list is a *shelf* -- three things, priced, with sales copy -- and it does
+ * not stock the Quicksilver at all. Reading a name out of a shop that may not sell the item
+ * would give a brew no name at the one moment it is being handed over.
+ */
+const BREW_NAMES: Record<BuffId, string> = {
+  ironbrew: 'Ironbrew',
+  kinetic_capacitor: 'Kinetic Capacitor',
+  quicksilver: 'Quicksilver',
+};
+
 export const BUFF_EFFECTS: Record<BuffId, CombatBoons> = {
   /** Armour to soak the first exchange. */
   ironbrew: { armor: 50 },

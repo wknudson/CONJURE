@@ -101,6 +101,16 @@ export const CALDERA: AreaDef = defineArea({
     },
   ],
   props: {
+    /** Moths and nothing else, which is the whole statement. Nothing else could live on it. */
+    sky: 'embers',
+    wildlife: [
+      { kind: 'moth', x: -54, z: -46, roam: 9, count: 3 },
+      { kind: 'moth', x: 50, z: -34, roam: 9, count: 3 },
+      { kind: 'moth', x: 42, z: -18, roam: 9, count: 3 },
+      { kind: 'moth', x: -38, z: 2, roam: 9, count: 3 },
+      { kind: 'moth', x: -26, z: 18, roam: 9, count: 3 },
+      { kind: 'moth', x: -34, z: 34, roam: 9, count: 3 },
+    ],
     /** Daubed on the crater wall by whoever last worked the tap field, and left. */
     graffiti: [
       { text: 'THE TAP FIELD TOOK NINE', wallX: -34, wallZ: -32.05, dx: 3.4, facesSouth: true, tint: '#a4543a' },
