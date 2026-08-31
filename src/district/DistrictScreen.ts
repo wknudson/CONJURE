@@ -473,7 +473,12 @@ export class DistrictScreen implements Screen {
       onChange: this.opts.onChange,
       onBounty: (bounty) => this.opts.onBounty(bounty),
       onErrandAbandon: () => this.abandonErrand(),
-      hour: () => this.opts.hour,
+      // `this.hour`, not `this.opts.hour`. The latter is the hour the screen was *mounted* at,
+      // and handing the HUD that froze the one readout the player can actually see: the world
+      // moved -- lamps, sight, the Warden's beat, the sky -- while the ledger insisted it was
+      // still whatever o'clock they walked in on. Every test passed, because `clockLabel` and
+      // `phaseAt` are pure and were being asked the wrong question. Found by looking at it.
+      hour: () => this.hour,
     });
     this.dialogue = new DialogueBox(root);
 
@@ -1362,6 +1367,12 @@ export class DistrictScreen implements Screen {
     if (Math.abs(this.hour - before) < 1 / 60) return;
 
     this.world?.setHour(this.hour);
+    // The ledger, on the same gate. `renderLedger` was only called at mount and on a purse
+    // change, so even once it was reading the live hour the readout sat at whatever it said
+    // when the screen came up -- the second half of the same bug, and the reason the clock was
+    // invisible twice over. This gate already fires about twice a second and is what re-lights
+    // the world, so the text and the light now move together, which is the point.
+    this.hud?.renderLedger();
     this.walkTheRow();
     this.warden?.setSight(wardenSightAt(this.hour));
     if (this.warden) this.warden.grace = wardenGraceAt(this.hour);
