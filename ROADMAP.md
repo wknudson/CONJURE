@@ -26,21 +26,25 @@ the Marrow to *complete a purchase*); `canMove` ignored MOV so an immobile unit 
 as spent; and the first draft of the boss phase re-announced itself when the drake was
 boxed in (growth is now tracked apart from the phase).
 
-**Deliberately not done, and why:**
-- **Arc, the rain reaction.** No Surge damage type and no Surge card exist, so the branch
-  could not be reached or tested. The reaction table records the shape it takes when
-  Surge lands — a `requiresWeather` field beside `requires`.
-- **§2.4 bone income fail-safe.** Held as the doc asks. It is one token: `turn.ts`'s
+**Deliberately not done, and why** *(ledger updated 2026-08-31 — three of the five have
+since landed)*:
+- ~~**Arc, the rain reaction.**~~ **Landed** once Surge shipped the damage type and cards
+  the note was waiting on — a full `ReactionDef` with the `requiresWeather` field this
+  bullet sketched, paying the standard refund under the standard cap.
+- **§2.4 bone income fail-safe.** Still held, as the doc asks. It is one token: `turn.ts`'s
   `gainBones(ctx, side, 1)` is the only income in the game, and the line says so.
-- **AI kiting.** Retreats stay pruned from enumeration for everything except a Bound Form,
-  so the new archetypes are used as static shooters rather than kited. Acceptable; noted
-  beside the pruning.
-- **The AI is blind to Geodes.** There is no obstacle-kill scoring, so the enemy never
-  walks over to break one and only clips them incidentally. Deliberate — it keeps
-  enumeration flat and leaves the 2 Marrow as a prize for the attentive player — but it
-  is free value the AI declines, and worth revisiting if the middle ever feels uncontested.
+- ~~**AI kiting.**~~ **Landed in two halves.** Strike-and-withdraw came with the retreat
+  term; the enumeration prune then still confined backward moves to the Bound Form, so
+  ranged bodies could only sidestep. The prune now exempts every ranged body — backing a
+  shooter up is kiting, not retreating — and melee stays pruned as before.
+- ~~**The AI is blind to Geodes.**~~ **Landed.** Cracks score through a dedicated
+  `extraction` weight read off the simulated `marrowExtracted` event, and the pursue term
+  counts a Geode as quarry and gates off for a unit already in reach of one — so the
+  middle is contested without any new enumeration. `docs/09_ai_and_encounters.md` has the
+  pricing.
 - **`magma_brute` Resonance.** Still a Pyre summon marked `source: 'hero'`, so it never
-  triggers Resonance. Moving it is a buff, not a fix — a balance decision.
+  triggers Resonance. Moving it is a buff, not a fix — a balance decision, and it stays
+  one.
 
 **Worth measuring before tuning:** with the same brain on both sides the player takes 9 of
 10 on the mirror duelist (first move, stronger Companion), while a scripted player that

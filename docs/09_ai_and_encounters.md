@@ -58,6 +58,7 @@ fields, and they are named in the Adept row.
 | `pursue` | **6** | — | tile closed on the nearest hostile body, when nothing is in reach |
 | `armorChip` | **0.5** | — | fraction of a point credited for stripping armor rather than health |
 | `retreat` | **2.5** | **3.5** | old point of incoming damage stepped out of |
+| `extraction` | **3.5** | — | Marrow pried out of a Geode — priced above a plain advance, below a real swing |
 | `retreatSurvival` | **0.5** | — | fraction of `kill` for leaving lethal range |
 | `developAtk` | **4** | — | old point of Attack summoned |
 | `developHp` | **1.5** | — | old point of Health summoned |
@@ -198,10 +199,13 @@ AI can never consider an action the player could not also take**. On top of that
 | Blood Tithes with nothing to buy | See §3 |
 | Channels that complete no purchase | See §3 |
 
-**The Bound Form is exempt from the retreat prune, and the exemption matters.** It is the
-one body whose loss is the game, so withdrawing it is frequently the entire turn. Pruned
-with everything else, the AI could walk its Companion forward into range and then have no
-way at all of walking it back.
+**The Bound Form and every ranged body are exempt from the retreat prune.** The Bound Form
+because it is the one body whose loss is the game, so withdrawing it is frequently the
+entire turn. A ranged body because backing up is not retreating, it is **kiting**: with
+move and attack independent, the step out of a blade's reach costs a shooter nothing it
+cannot still do from the new tile. Melee stays pruned — the same backward step costs a
+bruiser its whole turn. Whether a legal retreat is taken is the retreat term's business;
+the prune only decides what is considered at all.
 
 Attacks are enumerated **before** moves, so an equal-utility tie favours acting over
 repositioning.
@@ -260,6 +264,15 @@ correctness of it: the question is whether the tile threatens anything *at all*,
 this unit has a swing left. A body that has already attacked still threatens from where it
 stands, so strike-and-withdraw stays the retreat term's business rather than becoming
 strike-and-chase.
+
+A **Marrow Geode counts on both sides of this term**. It is quarry — the nearer of the
+nearest foe and the nearest unbroken Geode is what `pursue` closes on — and it gates the
+term off for a unit already standing in reach of one, for the same reason `threatensFrom`
+does: the greedy planner plays the highest-scoring command first, and a pursue bonus that
+outbid the crack would walk the unit away from two Marrow every time. The crack itself
+scores through `extraction`, read off the simulated `marrowExtracted` event. A Novice takes
+the prize when the plain auction says to; an Adept's lookahead also cracks before a long
+advance, because the crack leaves the move and the move leaves nothing.
 
 Hostility is read the same way `legalAttacks` reads it — a Feral beast is an enemy of
 everything that is not also Feral, including the side whose record it sits in — and distance

@@ -13,15 +13,15 @@
 import type { Side } from '../../contract/ids.js';
 import type { GameEvent } from '../../contract/events.js';
 import type { GameState } from '../types/state.js';
-import type { Unit } from '../types/units.js';
+import type { Obstacle, Unit } from '../types/units.js';
 import type { Command } from '../types/commands.js';
 import { applyCommand } from '../engine/engine.js';
 import { unitsOf } from '../engine/board.js';
 import { opposite } from '../engine/board.js';
 import { threatMap } from '../engine/threat.js';
-import { threatensFrom } from '../engine/targeting.js';
+import { canStrike, threatensFrom } from '../engine/targeting.js';
 import { coordKey } from '../../contract/ids.js';
-import { footprintDistance } from '../util/grid.js';
+import { cellsAt, cellsOf, footprintDistance } from '../util/grid.js';
 import { STAT_SCALE } from '../scale.js';
 
 export interface UtilityWeights {
@@ -35,6 +35,19 @@ export interface UtilityWeights {
   marrowEfficiency: number;
   /** Extracting Marrow by channelling. Deferred value, so priced under spending it. */
   channelValue: number;
+  /**
+   * Marrow pried out of a Geode, per point.
+   *
+   * Its own weight rather than `channelValue`, because the two sit in different auctions.
+   * A channel competes with the swing it gives up, so it is priced just under one; a crack
+   * IS the swing, and what it competes with is the *move* the greedy planner would take
+   * first — pursue and advance both outbid a cheap attack, and a command that scores lower
+   * than the unit's best move is a command that plays second, from a tile that may no
+   * longer reach. Priced so two Marrow beats a plain two-row advance (6) and an ordinary
+   * 20-damage swing (4) — the game's own card says the prize is "most of a card", and a
+   * chip hit is not — while any kill still dwarfs it.
+   */
+  extraction: number;
   /** What one banked Bone is worth. See the default for how it is priced. */
   boneValue: number;
   /** What one card drawn is worth. */
@@ -140,6 +153,7 @@ export const NOVICE_WEIGHTS: UtilityWeights = {
    * could have hit, and measured attacks fell from 0.63 a turn to 0.27.
    */
   channelValue: 1,
+  extraction: 3.5,
   /**
    * What one banked Bone is worth.
    *
@@ -323,6 +337,40 @@ function nearestFoe(state: GameState, unit: Unit): Unit | undefined {
 }
 
 /**
+ * The nearest unbroken Marrow Geode, for the pursue term.
+ *
+ * Geodes only — not obstacles generally. A pillar is worth breaking when it is in the
+ * way, which the lane and reach terms already understand; a Geode is worth *walking to*,
+ * because it pays the walker. Widening this to every destructible would send bodies
+ * chasing scenery.
+ */
+function nearestGeode(state: GameState, unit: Unit): Obstacle | undefined {
+  let best: Obstacle | undefined;
+  let bestDist = Infinity;
+
+  for (const o of Object.values(state.obstacles)) {
+    if (o.defId !== 'marrow_geode' || o.hp <= 0) continue;
+    const d = footprintDistance(unit, o);
+    if (d < bestDist) {
+      bestDist = d;
+      best = o;
+    }
+  }
+
+  return best;
+}
+
+/** Whether a crackable Geode is in this unit's attack reach from where it stands. */
+function geodeInReach(state: GameState, unit: Unit): boolean {
+  const from = cellsAt(unit.anchor, unit.footprint);
+  for (const o of Object.values(state.obstacles)) {
+    if (o.defId !== 'marrow_geode' || o.hp <= 0) continue;
+    if (canStrike(state, unit, from, cellsOf(o), [unit.id, o.id])) return true;
+  }
+  return false;
+}
+
+/**
  * Damage the opposing side could land on each tile next turn, for retreat scoring.
  *
  * Reuses the same projection that draws the player's danger zone, so the AI is reading
@@ -487,9 +535,27 @@ export function scoreAction(
       // a swing left. A body that has already attacked still threatens from where it
       // stands, so strike-and-withdraw is left to the retreat term below rather than
       // being turned into strike-and-chase.
-      if (weights.pursue > 0 && !threatensFrom(state, unit, unit.anchor)) {
+      //
+      // "Something worth breaking" now means it: a Marrow Geode counts as quarry alongside
+      // the nearest foe, and the nearer of the two wins. This is the walking half of the
+      // Geode fix — the extraction term below pays for the swing, but a prize nobody moves
+      // toward is still only clipped incidentally. Same term, same weight, no new
+      // enumeration: the candidate moves were always there, they just never scored.
+      // "Nothing in reach" includes a crackable Geode: a unit standing beside one has
+      // something worth its swing exactly where it is, and a pursue bonus that outbids
+      // the crack would walk it away from two Marrow every time — the greedy planner
+      // plays the highest-scoring command first, and a forfeited position does not
+      // replay. The same shape as the `threatensFrom` gate, for the same reason.
+      if (weights.pursue > 0 && !threatensFrom(state, unit, unit.anchor) && !geodeInReach(state, unit)) {
         const moved = next.units[unit.id];
-        const quarry = nearestFoe(state, unit);
+        const foe = nearestFoe(state, unit);
+        const geode = nearestGeode(state, unit);
+        const quarry =
+          foe && geode
+            ? footprintDistance(unit, geode) < footprintDistance(unit, foe)
+              ? geode
+              : foe
+            : (foe ?? geode);
         if (moved && quarry) {
           const gained = footprintDistance(unit, quarry) - footprintDistance(moved, quarry);
           if (gained > 0) utility += weights.pursue * gained;
@@ -577,6 +643,15 @@ export function scoreAction(
     utility += weights.channelValue * e.marrow;
     utility += weights.boneValue * e.bones;
     utility += weights.drawValue * e.draw;
+  }
+
+  // Cracking a Geode. This term is what ends the AI's Geode blindness — the swing was
+  // always enumerated (obstacles are legal targets), but a broken Geode scored zero, so
+  // the prize sat on neutral ground for whoever the scoring let notice it, which was only
+  // ever the player. See `extraction` in the weights for how the price was set.
+  for (const e of events) {
+    if (e.t !== 'marrowExtracted' || e.side !== side || e.source !== 'obstacle') continue;
+    utility += weights.extraction * e.amount;
   }
 
   // No Bone penalty on attacking, deliberately.
