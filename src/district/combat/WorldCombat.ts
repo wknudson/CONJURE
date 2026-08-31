@@ -245,6 +245,26 @@ export class WorldCombat {
     };
     this.sequencer = new Sequencer(view);
     registerHandlers(this.sequencer);
+    if (import.meta.env.DEV) {
+      // The same event timeline the 2D board hangs on the sequencer's tap, so a fight out
+      // in the world is as inspectable as one reached from the Bounty Board. The trace
+      // flag is shared: `__conjureTrace = true` narrates either shell.
+      const events: { t: string; at: number }[] = [];
+      this.sequencer.onEvent = (e) => {
+        events.push({ t: e.t, at: Math.round(performance.now()) });
+        if (events.length > 500) events.shift();
+        if ((window as unknown as Record<string, unknown>).__conjureTrace) {
+          console.debug('[conjure]', e.t, e);
+        }
+      };
+      (window as unknown as Record<string, unknown>).__conjureWorld = {
+        session: this.session,
+        views: this.views,
+        sequencer: this.sequencer,
+        fx: this.fx,
+        events,
+      };
+    }
     this.hud.setSpeedLabel(this.speed);
     this.applyBeat();
     this.sequencer.onIdle = () => this.onSequencerIdle();

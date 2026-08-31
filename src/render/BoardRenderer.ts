@@ -206,6 +206,18 @@ export function emptyOverlays(): Overlays {
  */
 export const FLASH_MS = 340;
 
+/**
+ * A stable per-unit offset for idle motion, from the id's characters.
+ *
+ * Not a hash anyone relies on — it only has to spread a squad across the breath cycle,
+ * and being deterministic per id keeps the motion continuous across frames and syncs.
+ */
+function idleSeed(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 100000;
+  return h;
+}
+
 export class BoardRenderer {
   private raf: number | null = null;
   private lastTime = 0;
@@ -1035,6 +1047,9 @@ export class BoardRenderer {
         footprint,
         ally,
         bob: (this.clock / 1400) % 1,
+        // The board's clock, offset per unit so a line of the same archetype breathes
+        // out of step. The seed is stable across frames because the id is.
+        idleMs: this.clock + idleSeed(view.id),
       });
 
       if (scaled) ctx.restore();

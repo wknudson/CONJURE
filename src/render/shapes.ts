@@ -234,6 +234,18 @@ export interface UnitDrawOptions {
   /** 0..1 bob phase for floating casters. */
   bob: number;
   dim?: boolean;
+  /**
+   * A per-unit clock for idle micro-motion, in milliseconds — the board's clock plus a
+   * seed from the unit's id, so a row of bruisers breathes out of step instead of like a
+   * chorus line. Absent means still: the movement ghost and the obstacles pass nothing,
+   * and are the reason this is optional rather than zero.
+   */
+  idleMs?: number;
+}
+
+/** One slow breath: a gentle ±1 multiplier at the given period, from the idle clock. */
+function breath(idleMs: number | undefined, periodMs: number): number {
+  return idleMs === undefined ? 0 : Math.sin((idleMs / periodMs) * Math.PI * 2);
 }
 
 export function drawUnitBody(
@@ -246,15 +258,25 @@ export function drawUnitBody(
   ctx.save();
   if (o.dim) ctx.globalAlpha = 0.45;
 
+  // Idle micro-motion, per archetype, so the board breathes at rest. Only the caster's
+  // orb moved before this, and a field of perfectly still prisms read as a diagram. The
+  // amplitudes are deliberately a pixel or two: this is meant to be *felt* on a full
+  // board and invisible in a screenshot.
   switch (o.archetype) {
-    case 'bruiser':
-      drawPrism(ctx, cam, centre, HEX, 0.62, 30 * cam.zoom, colors);
-      drawShieldGlyph(ctx, centre, 30 * cam.zoom, cam.zoom);
+    case 'bruiser': {
+      // A slow, heavy breath — the wall settling its weight.
+      const h = (30 + breath(o.idleMs, 2600) * 1.3) * cam.zoom;
+      drawPrism(ctx, cam, centre, HEX, 0.62, h, colors);
+      drawShieldGlyph(ctx, centre, h, cam.zoom);
       break;
+    }
 
-    case 'skirmisher':
-      drawPrism(ctx, cam, centre, KITE, 0.58, 40 * cam.zoom, colors);
+    case 'skirmisher': {
+      // Quicker and lighter: a body on the balls of its feet.
+      const h = (40 + breath(o.idleMs, 1700) * 1.0) * cam.zoom;
+      drawPrism(ctx, cam, centre, KITE, 0.58, h, colors);
       break;
+    }
 
     case 'caster': {
       // A floating orb rather than a prism, bobbing gently.
@@ -282,14 +304,39 @@ export function drawUnitBody(
       break;
     }
 
-    case 'sniper':
+    case 'sniper': {
+      // Dead still — a sniper does not breathe where you can see it — but every few
+      // seconds a glint sweeps the top face: a lens catching the light as it scans.
       drawPrism(ctx, cam, centre, SQUARE, 0.4, 52 * cam.zoom, colors);
+      if (o.idleMs !== undefined) {
+        const cycle = (o.idleMs % 4200) / 4200;
+        if (cycle < 0.14) {
+          const k = cycle / 0.14;
+          const z = cam.zoom;
+          const top = centre.y - 52 * z;
+          ctx.save();
+          ctx.globalAlpha = Math.sin(k * Math.PI) * 0.55;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5 * z;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          const gx = centre.x + (k * 2 - 1) * 10 * z;
+          ctx.moveTo(gx - 4 * z, top + 2 * z);
+          ctx.lineTo(gx + 4 * z, top - 2 * z);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
       break;
+    }
 
-    case 'behemoth':
-      drawPrism(ctx, cam, centre, HEX, 1.35, 70 * cam.zoom, colors);
-      drawCracks(ctx, centre, 70 * cam.zoom, cam.zoom, colors);
+    case 'behemoth': {
+      // The deepest breath in the set, slow enough to read as bulk rather than motion.
+      const h = (70 + breath(o.idleMs, 3800) * 2) * cam.zoom;
+      drawPrism(ctx, cam, centre, HEX, 1.35, h, colors);
+      drawCracks(ctx, centre, h, cam.zoom, colors);
       break;
+    }
 
     case 'obstacle':
       drawPrism(ctx, cam, centre, SQUARE, 0.55, 46 * cam.zoom, {
