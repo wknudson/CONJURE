@@ -398,6 +398,19 @@ export class CombatScreen implements Screen {
     this.reportViewportSize();
 
     if (import.meta.env.DEV) {
+      // The event timeline, hung on the tap the sequencer has carried unassigned since it
+      // was written. A ring buffer of what played and when, plus live tracing behind a
+      // flag that survives remounts: `__conjureTrace = true` in the console narrates every
+      // event as it animates. Dev builds only — production never assigns the tap.
+      const events: { t: string; at: number }[] = [];
+      this.sequencer.onEvent = (e) => {
+        events.push({ t: e.t, at: Math.round(performance.now()) });
+        if (events.length > 500) events.shift();
+        if ((window as unknown as Record<string, unknown>).__conjureTrace) {
+          console.debug('[conjure]', e.t, e);
+        }
+      };
+
       // Dev handle: lets a headless session force a frame and inspect state.
       (window as unknown as Record<string, unknown>).__conjure = {
         renderer: this.renderer,
@@ -407,6 +420,7 @@ export class CombatScreen implements Screen {
         hud: this.hud,
         sequencer: this.sequencer,
         fx: this.fx,
+        events,
       };
     }
 
