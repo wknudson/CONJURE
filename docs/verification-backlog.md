@@ -137,6 +137,45 @@ To reach dawn without waiting: back up `conjure.save`'s active-profile `clock`, 
 04:00–07:00 ramp, reload, tick once, then restore. Sampling three seeded hours is far quicker than
 running the clock for five real minutes, and it makes the progression reproducible.
 
+**In-world combat does all three things it was asked to.** This was the request the whole line of
+work started from, and it had never been seen.
+
+| asked for | result |
+|---|---|
+| world sprites disappear when the board comes up | **yes** — the Warden's sprite goes `visible: false` and is gone from the street. This was the reported bug: roaming minions still rendered after starting a fight with them. |
+| rotate around the grid | **yes** — yaw 0 → 1.15 rad rotates the view, board and all |
+| grid friendlier to interpret | **yes** — home bands colour-coded red/teal, ringed unit footings, HP labelled per body, world dimmed around the board |
+
+The follower goes hidden too, correctly, because the Companion is embodied on the board. **The
+player's own sprite stays visible on purpose** — they are the commander standing at the board, not
+a piece on it, so do not "fix" that.
+
+Not confirmed: the **`Q`/`E` key path** specifically. The camera orbits when driven through
+`setCameraYaw`, but discrete synthetic keypresses never moved the yaw, which is expected against a
+held-key model in a frame-starved tab — the input is read per frame and almost no frames run
+between a synthetic keydown and keyup. Needs a human holding the key.
+
+### Starting a fight from a script — two traps
+
+Both cost real time.
+
+**`ambush()` only accepts a *pack* encounter id.** It routes to `opts.onPack`, whose very first
+line is `packByEncounter(encounterId)` and which returns `null` for anything else. Campaign
+contract ids look valid, are valid encounters, and are silently declined — `ambush('curfew_breakers')`
+returns `undefined` and does nothing. Get the real ids from `/src/core/data/packs.ts`: there are
+nine, including **`warden_writ`**, which is the one to use in Ashfall since that ward has a Warden
+and no packs.
+
+**`ambush()` returns immediately unless the world is ready.** Its guard is
+`if (this.inputLocked || !this.player || this.ring) return`. Called before `loadActors` finishes it
+is a no-op, and — the nastier half — once a ring exists **every later call is a no-op too**, so
+retrying after a failed attempt does nothing until the page is reloaded.
+
+Then it needs frames: `ambush` spawns a `CombatRing` that closes over `CombatRing.DURATION` (2.5s)
+of accumulated, clamped `dt` — about 50 frames — and only *then* calls `beginFight`. In a throttled
+tab that is far longer than it sounds. Driving `d.frame()` from a script with ~25ms awaits is much
+faster than waiting on the tab's own rAF; combat started at frame 38 that way.
+
 **Sidewalk Immunity reads correctly.** Moving the player off sanctioned paving flips the banner
 from `SANCTIONED WALKWAY — SAFE` to `UNPAVED GROUND — EXPOSED`, the scene darkens away from the lit
 walkway, and an `ambush()` on sanctioned ground is *correctly refused*.
@@ -211,7 +250,7 @@ Roughly in order of value.
 |---|---|---|
 | 1 | ~~The hour readout advancing~~ | **Done.** See above. |
 | 2 | ~~The lamplighter walking the row~~ | **Done.** See below. |
-| 3 | **In-world combat** | The original request that started this work, and completely unseen. Three parts: on-world sprites must **disappear** when the board comes up (the reported bug was roaming minions still rendered after starting a fight with them); the camera must **orbit** (`setCameraYaw` is exposed on the dev handle); and the grid must be **legible**. `ambush('curfew_breakers')` returns `undefined` and declines silently *even on exposed ground*, so there is a further guard — cooldown, or the Warden's grace — that needs live frames to find. Ashfall has no packs; Lamprow, the Chalk Verge and the Chalk Road do. |
+| 3 | ~~In-world combat~~ | **Done**, all three parts. See below. |
 | 4 | **The gate art in situ** | Redrawn as closed, latched and unwarded in two leaves. `gateArt.test.ts` asserts the composition by rendering the texture to a text grid under node, but nobody has seen it on the mesh at 8×4.6 world units. |
 | 5 | **A night/noon pass across all nineteen wards** | Only two wards have been measured. |
 | 6 | **The Warden's beat and the pack shifts** | Pure functions of the clock and unit-tested as such; never watched. |
