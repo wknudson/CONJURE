@@ -21,7 +21,7 @@
 
 import * as THREE from 'three';
 import type { Action, BoardView } from '../../contract/query.js';
-import type { Coord, UnitId } from '../../contract/ids.js';
+import type { Coord, Side, UnitId } from '../../contract/ids.js';
 import type { CombatResult } from '../../contract/events.js';
 import type { CombatOutcome } from '../../core/overworld/run.js';
 import type { EncounterDef } from '../../core/data/encounters/registry.js';
@@ -237,6 +237,11 @@ export class WorldCombat {
       sfx: this.sfx,
       hud: this.hud,
       renderer: this.tetherSink,
+      // Answered in tile space — the same coords `heroStand`/`enemyStand` are built from —
+      // because `Fx` projects through the overlay camera, not through the world mesh.
+      casterAnchor: (side, owner) => this.commanderAnchor(side, owner),
+      snapshotOf: (unitId) =>
+        this.session.getBoard().units.find((u) => u.id === unitId) ?? null,
     };
     this.sequencer = new Sequencer(view);
     registerHandlers(this.sequencer);
@@ -329,6 +334,32 @@ export class WorldCombat {
   /** Where the Hero stands: one row beyond the near edge, off the grid but on the field. */
   heroStand(): { x: number; z: number } {
     return this.board.centreOf({ x: (this.board.w - 1) / 2, y: this.board.h + 0.35 });
+  }
+
+  /**
+   * The stands again, in *tile* coordinates, for the handlers' cast flourish.
+   *
+   * The district draws no free-standing Companion — the player's own body is the Hero and
+   * the Companion appears only as its Bound Form — so an unembodied companion answers
+   * null and the flourish is simply skipped, rather than lighting up the wrong figure.
+   */
+  private commanderAnchor(side: Side, owner: 'hero' | 'companion'): Coord | null {
+    const board = this.session.getBoard();
+    if (side === 'enemy') {
+      const bound = board.units.find(
+        (u) => u.side === 'enemy' && u.keywords.includes('BoundForm'),
+      );
+      if (bound) return this.views.get(bound.id)?.pos ?? { ...bound.anchor };
+      if (board.rout) return null;
+      return { x: (board.width - 1) / 2, y: -1.35 };
+    }
+    if (owner === 'companion') {
+      const bound = board.units.find(
+        (u) => u.side === 'player' && u.keywords.includes('BoundForm'),
+      );
+      return bound ? (this.views.get(bound.id)?.pos ?? { ...bound.anchor }) : null;
+    }
+    return { x: (board.width - 1) / 2, y: board.height + 0.35 };
   }
 
   /** And where the enemy Commander stands, beyond the far edge. */
@@ -852,6 +883,9 @@ export class WorldCombat {
     if (this.disposed) return;
     this.disposed = true;
 
+    // The heartbeat and any other loop end with the fight, however it ended — the same
+    // belt CombatScreen.unmount wears over combatEnded's suspenders.
+    this.sfx.stopAllLoops();
     this.sequencer.onIdle = undefined;
     this.deploy?.destroy();
     this.grave.destroy();

@@ -6,9 +6,10 @@
  * raced ahead to the future.
  */
 
-import type { Coord } from '../contract/ids.js';
+import type { Coord, Side, UnitId } from '../contract/ids.js';
+import type { UnitSnapshot } from '../contract/snapshots.js';
 import type { Sequencer } from './Sequencer.js';
-import { easeInQuad, easeOutBack, easeOutQuad, tween } from './tween.js';
+import { easeInOutQuad, easeInQuad, easeOutBack, easeOutQuad, tween } from './tween.js';
 import type { EntityViewMap } from '../render/EntityViews.js';
 import { lerpCoord } from '../render/EntityViews.js';
 import type { Fx } from '../render/Fx.js';
@@ -17,6 +18,10 @@ import type { Sfx } from '../sound/Sfx.js';
 import type { Hud } from '../hud/Hud.js';
 import type { TetherModel } from '../render/BoardRenderer.js';
 import { schoolOf, statusColor } from '../render/palette.js';
+import { ownerOfKind } from '../hud/cardFace.js';
+// Read-only data, the same way `cardFace.ts` reads it: the house rule forbids *editing*
+// the core from the presentation layer, not knowing what an Aura's school is.
+import { AURAS } from '../core/data/auras.js';
 
 /**
  * Somewhere to hang the tether.
@@ -41,6 +46,24 @@ export interface CombatView {
    * added to it without editing the core.
    */
   renderer: TetherSink;
+  /**
+   * Where a side's Hero or Companion figure stands, in tile coordinates — fractional and
+   * off-grid included, which both cameras project happily.
+   *
+   * The commander figures are the one piece of the scene the two shells draw with nothing
+   * in common (`BoardRenderer.commanders` on one, `BodyLayer.setStands` on the other), so
+   * the handlers ask rather than reach. Optional, like `snapshotOf` below: a shell that
+   * cannot answer simply loses the flourish, not the fight.
+   */
+  casterAnchor?: (side: Side, owner: 'hero' | 'companion') => Coord | null;
+  /**
+   * The current snapshot of a unit the views have never met.
+   *
+   * Exists for `unitRevived`, which deliberately carries no snapshot of its own. Logic
+   * state has already raced ahead of the animation, so the shell can answer from the board
+   * it is holding.
+   */
+  snapshotOf?: (unitId: UnitId) => UnitSnapshot | null;
 }
 
 /** Held beat before a death resolves, so removing a piece has weight. */
@@ -133,31 +156,55 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     const v = view.views.get(e.attackerId);
     if (!v) return;
 
+    // Where the blow is going. A body or obstacle answers from its view; a portrait
+    // answers from wherever that side's Commander is standing, so a swing at the throne
+    // leans the same way every other swing does.
+    const at: Coord | null =
+      e.target.kind !== 'portrait'
+        ? (view.views.get(e.target.id)?.pos ?? null)
+        : (view.casterAnchor?.(e.target.side, 'hero') ?? null);
+
     // A shot that crosses ground gets a tracer; a melee swing does not. A blade that
     // already reached is not a projectile, and a line drawn between two adjacent tiles is
     // a smear rather than a shot — the lunge below is what sells those.
     const snap = v.snapshot;
-    const target = e.target.kind !== 'portrait' ? view.views.get(e.target.id) : undefined;
-    if (snap && target) {
-      const reach = Math.max(
-        Math.abs(target.pos.x - v.pos.x),
-        Math.abs(target.pos.y - v.pos.y),
-      );
-      if (reach > 1) {
-        view.fx.tracer(
-          v.pos,
-          target.pos,
-          schoolOf(snap.school).main,
-          snap.attackProfile === 'arcing',
-          t(220),
-        );
-      }
+    const reach = at
+      ? Math.max(Math.abs(at.x - v.pos.x), Math.abs(at.y - v.pos.y))
+      : 1;
+    if (snap && at && reach > 1 && e.target.kind !== 'portrait') {
+      view.fx.tracer(v.pos, at, schoolOf(snap.school).main, snap.attackProfile === 'arcing', t(220));
     }
 
-    // A short lunge toward the target sells the swing.
-    await tween(t(110), easeOutQuad, (k) => {
-      v.elev = Math.sin(k * Math.PI) * 10;
-    });
+    // The swing itself: motion with a direction, not just a hop in place. Both are
+    // round trips on `sin(kπ)`, so a skip's `finishAll()` lands at k=1 — the origin —
+    // and nothing is left to clean up.
+    const base = { ...v.pos };
+    const span = at ? Math.hypot(at.x - base.x, at.y - base.y) : 0;
+    const dir = span > 0 ? { x: (at!.x - base.x) / span, y: (at!.y - base.y) / span } : null;
+
+    if (dir && reach <= 1) {
+      // Melee: the body throws itself at the target and recovers. 0.35 tiles keeps the
+      // depth sort honest — the attacker never rounds into its victim's cell.
+      await tween(t(240), easeInOutQuad, (k) => {
+        const s = Math.sin(k * Math.PI);
+        v.pos = { x: base.x + dir.x * 0.35 * s, y: base.y + dir.y * 0.35 * s };
+        v.elev = 6 * s;
+      });
+    } else if (dir) {
+      // Ranged: the tracer carries the shot; the body just absorbs the loosing of it,
+      // a short kick away from the target.
+      await tween(t(150), easeOutQuad, (k) => {
+        const s = Math.sin(k * Math.PI);
+        v.pos = { x: base.x - dir.x * 0.12 * s, y: base.y - dir.y * 0.12 * s };
+        v.elev = 10 * s;
+      });
+    } else {
+      // No target to lean toward — the old vertical hop still says "I acted".
+      await tween(t(110), easeOutQuad, (k) => {
+        v.elev = Math.sin(k * Math.PI) * 10;
+      });
+    }
+    v.pos = base;
     v.elev = 0;
   });
 
@@ -179,6 +226,9 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     if (v) {
       v.hp = e.remainingHp;
       v.armor = Math.max(0, v.armor - e.absorbedByArmor);
+      // The blanch: a body that actually bled goes white for a beat. The wash the status
+      // system already decays, borrowed at full brightness — one line, both boards.
+      if (e.hpLoss > 0) v.flash = { color: '#FFFFFF', life: 1 };
     }
 
     if (e.at) {
@@ -189,8 +239,20 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     // A discharge sounds nothing like a blade. The arcs it throws off are `physical` and
     // deliberately keep the ordinary hit, so one cast reads as a crack and then thumps.
     if (e.hpLoss > 0) view.sfx.play(e.dtype === 'shock' ? 'shock' : 'hit');
+
+    // A heavy blow — forty or more, or half a body in one swing — earns a beat of held
+    // silence and a kick of the frame. Gated on the target surviving: a killing blow
+    // keeps only the death's own hit-stop, or the two stack into a stutter. Parallel-safe
+    // AoE groups run these holds concurrently, so a blast costs one stop, not one per body.
+    const heavy = e.hpLoss >= 40 || (v && v.maxHp > 0 && e.hpLoss >= v.maxHp * 0.5);
+    if (heavy && e.remainingHp > 0) {
+      await hold(t(90));
+      view.fx.screenShake(4, t(120));
+    }
+
+    const amp = heavy ? 0.75 : 0.6;
     await tween(t(110), easeOutQuad, (k) => {
-      if (v) v.squash = Math.sin(k * Math.PI) * 0.6;
+      if (v) v.squash = Math.sin(k * Math.PI) * amp;
     });
     if (v) v.squash = 0;
   });
@@ -288,6 +350,62 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     v.elev = 0;
   });
 
+  // ---------------------------------------------------------------- auras
+
+  // The growth system shipped without a single frame of presentation: a body took an
+  // Aura, grew for three turns and hit its Climax entirely in the stat bar. These four
+  // are its moments. The school comes off the Aura's own definition — read-only, the
+  // way `cardFace` reads card data — with neutral as the fallthrough so an Aura added
+  // later is unstyled rather than invisible.
+  const auraSchool = (id: string): string => AURAS[id]?.school ?? 'neutral';
+
+  seq.on('auraAttached', async (e, { view, t }) => {
+    const v = view.views.get(e.unitId);
+    if (v) {
+      v.atk = e.atk;
+      v.hp = e.hp;
+      v.flash = { color: schoolOf(auraSchool(e.aura) as never).main, life: 1 };
+      view.fx.label(roundOf(v.pos), e.name.toUpperCase(), 'aura');
+      void view.fx.castBurst(roundOf(v.pos), auraSchool(e.aura), t(260));
+    }
+    await hold(t(200));
+  });
+
+  seq.on('auraStacked', async (e, { view, t }) => {
+    const v = view.views.get(e.unitId);
+    if (!v) return;
+    v.atk = e.atk;
+    v.hp = e.hp;
+    view.fx.label(roundOf(v.pos), `▲ ${e.stacks}`, 'aura');
+    await tween(t(160), easeOutQuad, (k) => {
+      v.elev = Math.sin(k * Math.PI) * 6;
+    });
+    v.elev = 0;
+  });
+
+  seq.on('auraClimaxed', async (e, { view, t }) => {
+    const v = view.views.get(e.unitId);
+    if (v) {
+      v.atk = e.atk;
+      v.hp = e.hp;
+      view.fx.label(roundOf(v.pos), 'CLIMAX', 'aura');
+      void view.fx.sigilBurst(roundOf(v.pos), auraSchool(e.aura), t(420));
+    }
+    // The cap is the payoff the player grew three turns toward; it gets the chime and
+    // the kick that an ordinary stack does not.
+    view.sfx.play('chime', { pitch: 1.2 });
+    view.fx.screenShake(5, t(240));
+    await hold(t(280));
+  });
+
+  seq.on('auraDetonated', async (e, { view, t }) => {
+    const v = view.views.get(e.unitId);
+    view.sfx.play('detonate', { pitch: 1.1 });
+    if (!v) return;
+    // The card's own ops carry the consequences; this is just the Aura itself going up.
+    await view.fx.detonation(roundOf(v.pos), auraSchool(e.aura), t(380));
+  });
+
   // ---------------------------------------------------------------- removal
 
   seq.on('unitTithed', (e, { view }) => {
@@ -311,11 +429,18 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
 
   seq.on('unitChannelled', async (e, { view, t }) => {
     // A quieter beat than a sacrifice: nothing is lost, the unit simply gives up its
-    // swing. A brief lift and a marrow chime, then it settles back as spent.
+    // swing. A brief lift and a marrow chime, then it settles back as spent — wearing
+    // the channel glyph until its owner's next refresh, so "gave up its swing" stays
+    // distinguishable from "already swung" for the rest of the round.
     const v = view.views.get(e.unitId);
     if (v) {
+      v.channelled = true;
       view.fx.label(roundOf(v.pos), 'CHANNEL', 'marrow');
-      view.fx.label(roundOf(v.pos), `+${e.marrow} MARROW`, 'marrow', -20);
+      if (e.marrow > 0) view.fx.label(roundOf(v.pos), `+${e.marrow} MARROW`, 'marrow', -20);
+      // The class ladder pays in more than Marrow now; report the whole yield, stacked
+      // above the pair the tile has always shown.
+      if (e.bones > 0) view.fx.label(roundOf(v.pos), `+${e.bones} BONE`, 'refund', -60);
+      if (e.draw > 0) view.fx.label(roundOf(v.pos), `+${e.draw} DRAW`, 'note', -80);
     }
     view.sfx.play('rasp');
     await tween(t(180), easeOutQuad, (k) => {
@@ -356,6 +481,33 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
       });
     }
     view.views.remove(e.unitId);
+  });
+
+  seq.on('unitRevived', async (e, { view, t }) => {
+    // The most dramatic beat the game had, and until now the body simply popped into
+    // existence on the next view sync. The pyre flares in its own pact blue, and the
+    // body rises out of it — the death sink, run backwards.
+    view.sfx.play('chime');
+    view.fx.label(e.at, 'REVIVED', 'refund');
+    void view.fx.pyreFlare(e.at, t(360));
+
+    // The event deliberately carries no snapshot; the shell answers from the board that
+    // logic state has already raced ahead to. A shell that cannot answer keeps the flare
+    // and the label, and the idle re-sync stands the body up plainly.
+    const snap = view.snapshotOf?.(e.unitId);
+    if (!snap) {
+      await hold(t(300));
+      return;
+    }
+    const v = view.views.addUnit(snap);
+    v.hp = e.hp;
+    v.alpha = 0;
+    await tween(t(300), easeOutBack, (k) => {
+      v.elev = 30 * (1 - k);
+      v.alpha = Math.min(1, k * 1.6);
+    });
+    v.elev = 0;
+    v.alpha = 1;
   });
 
   seq.on('obstacleDestroyed', async (e, { view, t }) => {
@@ -424,10 +576,23 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     view.hud.onCardRemoved(e.side, e.cardId);
   });
 
-  seq.on('cardPlayed', (e, { view }) => {
+  seq.on('cardPlayed', async (e, { view, t }) => {
+    // The card's on-screen rect has to be read before the removal detaches it.
+    const rect = view.hud.cardRect(e.card.instanceId);
     view.hud.onCardRemoved(e.side, e.card.instanceId);
     view.sfx.play('card');
     if (e.side === 'enemy') view.hud.flashNotice(`Enemy plays ${e.card.name}`);
+
+    // The figure that cast it answers with a sigil. Owner comes off what the card *is* —
+    // `ownerOfKind`, not `card.source`, which is 'companion' on Hero-owned Marks — and the
+    // burst is fire-and-forget: decoration must not lengthen the turn.
+    const anchor = view.casterAnchor?.(e.side, ownerOfKind(e.card.kind));
+    if (anchor) void view.fx.sigilBurst(anchor, e.card.school, t(420));
+
+    // `at` exists only for tile-targeted casts; a unit-targeted or global card keeps just
+    // the flourish, and its own ops carry the rest of the presentation.
+    if (rect && e.at) await view.fx.cardFlight(rect, e.at, e.card.school, t(280));
+    if (e.at) await view.fx.castBurst(e.at, e.card.school, t(320));
   });
 
   seq.on('cardInjected', (e, { view }) => {
@@ -445,6 +610,13 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
 
   seq.on('turnStarted', (e, { view }) => {
     view.hud.setTurn(e.turn, e.side);
+    // A channel lasts until the swing it gave up comes back, which is this moment for
+    // the side that just refreshed. Cleared here rather than in `syncFrom`, because a
+    // channelled body is not exhausted — it keeps its move — so no snapshot field
+    // mirrors the glyph and the view layer has to keep its own time.
+    for (const v of view.views.all()) {
+      if (v.snapshot?.side === e.side) v.channelled = false;
+    }
   });
 
   seq.on('phaseChanged', (e, { view }) => {
@@ -563,6 +735,9 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
   seq.on('tetherSnapped', async (e, { view, t }) => {
     view.renderer.tether = null;
     view.hud.setSubjugation(null);
+    // Steel letting go. The cue was synthesised for exactly this beat and then never
+    // wired; the loudest failure in the game was the one that made no sound.
+    view.sfx.play('cable_snap');
     view.fx.label(e.at, 'TETHER SNAPPED', 'tether');
     view.fx.screenShake(18, t(620));
     await tween(t(520), easeOutQuad, () => {});
@@ -584,6 +759,11 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
 
   seq.on('combatEnded', (e, { view }) => {
     view.sfx.play(e.result === 'defeat' ? 'lose' : 'win');
+    // A subjugation that held to the end is a vault closing on something enormous.
+    if (e.result === 'bound') view.sfx.play('vault_lock');
+    // Whatever was still looping — the Last Stand heartbeat, above all — ends with the
+    // fight. Without this the pulse followed the player back into the overworld.
+    view.sfx.stopAllLoops();
     // However the fight ended, the cable is no longer holding anything. `bound` is the
     // subjugation succeeding; the others are the trial ending around it.
     view.renderer.tether = null;

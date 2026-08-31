@@ -508,6 +508,15 @@ export class Hud {
     view.playDrawAnimation();
   }
 
+  /**
+   * Where a hand card currently sits on screen, for the flight a played card takes to its
+   * target tile. Null for the enemy's hand — it has no visible cards to leave from — and
+   * null once the card is removed, which is why the caller reads it *before* the removal.
+   */
+  cardRect(id: CardInstanceId): DOMRect | null {
+    return this.cards.get(id)?.el.getBoundingClientRect() ?? null;
+  }
+
   onCardRemoved(side: Side, id: CardInstanceId): void {
     if (side !== 'player') return;
     const card = this.cards.get(id);

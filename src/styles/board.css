@@ -178,6 +178,57 @@
   font-size: 14px;
 }
 
+/* The CASCADE xN callout: the single loudest thing the game can do, dressed for it.
+   Sacrifice-violet at crash size, with the crash's own pop rather than the ordinary
+   rise, because a chain going off is an impact and not a drift. */
+.floater--cascade {
+  color: #b49cf0;
+  font-size: 20px;
+  letter-spacing: 2px;
+  text-shadow:
+    0 0 2px #fff,
+    0 0 12px rgba(168, 85, 247, 0.8),
+    0 0 24px rgba(168, 85, 247, 0.5);
+  animation: crash-pop 800ms ease-out forwards;
+}
+
+/* A reaction announcing its own name: SHATTER, VAPORIZE, WILDFIRE. The burst below it
+   carries the element's colour; the name stays legible white with an ember glow. */
+.floater--reaction {
+  color: var(--text);
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-shadow:
+    0 0 10px rgba(251, 191, 36, 0.7),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* Aura callouts: the attach name, the stack count, CLIMAX. White on purpose — Auras span
+   every school, and the flash and burst beside the label carry the colour. */
+.floater--aura {
+  color: var(--text);
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, 0.45),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* The ghost a played card leaves behind: a glowing school-coloured slab that flies from
+   the hand to the tile it targets. Colour arrives inline from the school palette;
+   transform and opacity are driven per-frame by the shared tween. */
+.card-ghost {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  background: rgba(20, 22, 29, 0.55);
+  box-shadow:
+    0 0 14px currentColor,
+    inset 0 0 22px rgba(255, 255, 255, 0.08);
+  will-change: transform, opacity;
+}
+
 @keyframes floater-rise {
   0% {
     opacity: 0;
@@ -301,5 +352,14 @@
   .screen--combat[data-sky='rain']::before,
   .screen--combat[data-sky='gale']::before {
     animation: none;
+  }
+
+  /* The flight is pure decoration and its code path already resolves instantly. */
+  .card-ghost {
+    display: none;
+  }
+
+  .floater--cascade {
+    animation: floater-rise 1100ms ease-out forwards;
   }
 }

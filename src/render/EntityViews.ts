@@ -39,6 +39,16 @@ export interface EntityView {
   escalation: number;
   /** Already acted this turn — drawn dimmed so it reads as unavailable. */
   spent: boolean;
+  /**
+   * Gave up its swing to make resources this turn.
+   *
+   * `spent` alone cannot say this: a body that attacked and a body that channelled read
+   * the same on the board, and "why can't that one swing" had two answers with one
+   * appearance. Set by the `unitChannelled` handler and cleared by `turnStarted` for the
+   * side that refreshed — not by `syncFrom`, because a channelled body is not exhausted
+   * (it keeps its move) and no snapshot field mirrors this.
+   */
+  channelled: boolean;
   dead: boolean;
 }
 
@@ -87,6 +97,7 @@ export class EntityViewMap {
       statuses: [],
       escalation: 0,
       spent: false,
+      channelled: false,
       dead: false,
     };
     this.views.set(s.id, view);
@@ -111,6 +122,7 @@ export class EntityViewMap {
       statuses: [],
       escalation: 0,
       spent: false,
+      channelled: false,
       dead: false,
     };
     this.views.set(o.id, view);
@@ -142,6 +154,9 @@ export class EntityViewMap {
         existing.escalation = u.escalation;
         // Only your own spent units dim: enemy availability is not yours to read.
         existing.spent = u.side === 'player' && u.exhausted;
+        // `channelled` is deliberately not synced: a channel spends the swing without
+        // exhausting the body (it keeps its move), so the snapshot has no field that
+        // mirrors it. The `turnStarted` handler clears it when the owner's swing refreshes.
       } else {
         const added = this.addUnit(u);
         added.escalation = u.escalation;
