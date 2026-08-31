@@ -73,6 +73,25 @@ gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
 - Keep evaluated scripts **short**. The CDP `Runtime.evaluate` bridge times out at 45s and long
   loops with awaits get killed mid-run.
 
+### Combat animations cannot be driven at all in a hidden pane
+
+Found by the session that built the contract sites, and worth its own heading because it defeats
+everything above it.
+
+The sequencer's tween pump runs on **rAF**, and `tween.ts`'s `schedule()` only falls back to
+`setTimeout` when `document.hidden` is true — which, per the very first section here, is exactly the
+thing a hidden Browser pane lies about. So the pump never runs, the first animated command wedges
+the queue permanently, and driving `d.frame()` does not help because **`frame()` is not the tween
+pump**.
+
+The recovery is to skip rather than to pump: call `combat['sequencer'].skip()` in a loop for as long
+as it reports busy. That finishes every outstanding tween synchronously and zeroes the remaining
+durations.
+
+Related, from the same session: the enemy AI's `planTurn` is synchronous and long enough to starve
+the CDP eval bridge into its 45s timeout *mid-fight*. Probe with tiny expressions between turns
+rather than large ones during them.
+
 ### Two measurement traps
 
 Both of these produced findings that looked like bugs and were not:
