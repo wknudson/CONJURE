@@ -10,9 +10,8 @@
 import type { Coord, Side, UnitId } from '../../contract/ids.js';
 import { coordKey } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
-import { allEntities } from './board.js';
-import { cellsOf } from '../util/grid.js';
-import { isUnit } from '../types/units.js';
+import { occupies } from '../util/grid.js';
+import type { Unit } from '../types/units.js';
 
 /**
  * All cells strictly between a and b that the segment passes through.
@@ -65,43 +64,75 @@ function pushIfBetween(out: Coord[], c: Coord, a: Coord, b: Coord): void {
 }
 
 /**
- * Cells that block sight. Excludes the shooter and the intended target.
+ * Whether a body stops sight. The rule, written once.
  *
- * `viewer` is who is doing the looking, when anyone is. It matters only for smoke: a side
- * that ignores fog reads the cloud as empty air, and everything solid still stops them.
- * Omitting it means "nobody in particular", which is the strictest reading and therefore
- * the safe default for a caller that has not thought about it.
+ * `viewer` is who is doing the looking, when anyone is. Omitting it means "nobody in
+ * particular", which is the strictest reading and therefore the safe default for a caller
+ * that has not thought about it.
+ *
+ * A Behemoth's bulk is geometry and blocks for everyone. A Guardian is a *posture* — a body
+ * deliberately interposing — and that is the half a piercing eye can read around. Trench
+ * plate does not make a 2x2 transparent.
+ *
+ * Obstacles are not asked: every obstacle blocks sight, cover included, which is what makes
+ * cover cover. Only units have a say.
  */
-export function occluderCells(
+function unitBlocks(state: GameState, u: Unit, viewer?: Side): boolean {
+  if (u.footprint === 2) return true;
+  if (!u.keywords.includes('Guardian')) return false;
+  return viewer === undefined || !state.players[viewer].ignoresGuardians;
+}
+
+/** Whether this side reads a steam cloud as empty air. */
+function seesThroughSmoke(state: GameState, viewer?: Side): boolean {
+  return viewer !== undefined && state.players[viewer].ignoresFog;
+}
+
+/**
+ * Whether one cell stops sight. Excludes the shooter and the intended target, via
+ * `ignoreIds`.
+ *
+ * This replaced `occluderCells`, which answered the same question for the *whole board* and
+ * was what `hasLoS` used to call — once per call. It built every entity's `cellsOf` array, a
+ * `coordKey` string per occupied cell, a `Set` insertion each, and an `Object.entries` over
+ * the hazards, and then asked about the two or three cells actually on the line. On a board
+ * where `hasLoS` runs hundreds of times a turn that is an enormous amount of string and Set
+ * churn to answer a question about a handful of tiles, and a CPU profile put it at 6.7% of
+ * all engine time.
+ *
+ * Steam fog occludes exactly like a cover screen: you cannot shoot through the cloud, but a
+ * unit standing inside it is still a legal target. Smoked glass and a tight seal are what get
+ * you out of that — and only out of *that*: a Guardian is still a Guardian to somebody
+ * wearing goggles.
+ *
+ * Same rule, same answers, in integer comparisons.
+ */
+function cellOccludes(
   state: GameState,
-  ignoreIds: UnitId[] = [],
-  viewer?: Side,
-): Set<string> {
-  const set = new Set<string>();
-  for (const e of allEntities(state)) {
-    if (ignoreIds.includes(e.id)) continue;
-    // A Behemoth's bulk is geometry and blocks for everyone. A Guardian is a *posture* —
-    // a body deliberately interposing — and that is the half a piercing eye can read
-    // around. Trench plate does not make a 2x2 transparent.
-    const screens = isUnit(e) && e.keywords.includes('Guardian') && e.footprint !== 2;
-    const pierced = screens && viewer !== undefined && state.players[viewer].ignoresGuardians;
-    const blocks = !isUnit(e) || e.footprint === 2 || (screens && !pierced);
-    if (!blocks) continue;
-    for (const c of cellsOf(e)) set.add(coordKey(c));
+  c: Coord,
+  ignoreIds: UnitId[],
+  viewer: Side | undefined,
+  smokeBlocks: boolean,
+): boolean {
+  // Cheapest first: one string only where somebody has actually laid a cloud.
+  if (smokeBlocks && state.hazards[coordKey(c)]?.kind === 'steam_fog') return true;
+
+  // Every obstacle blocks, cover included. Membership, not a rule.
+  for (const id in state.obstacles) {
+    const o = state.obstacles[id]!;
+    if (!occupies(o, c)) continue;
+    if (ignoreIds.includes(o.id)) continue;
+    return true;
   }
 
-  // Steam fog occludes exactly like a cover screen: you cannot shoot through the cloud,
-  // but a unit standing inside it is still a legal target. Smoked glass and a tight seal
-  // are what get you out of that — and only out of *that*: a Guardian is still a Guardian
-  // to somebody wearing goggles.
-  const seesThroughSmoke = viewer !== undefined && state.players[viewer].ignoresFog;
-  if (!seesThroughSmoke) {
-    for (const [key, hazard] of Object.entries(state.hazards)) {
-      if (hazard.kind === 'steam_fog') set.add(key);
-    }
+  for (const id in state.units) {
+    const u = state.units[id]!;
+    if (!occupies(u, c)) continue;
+    if (ignoreIds.includes(u.id)) continue;
+    if (unitBlocks(state, u, viewer)) return true;
   }
 
-  return set;
+  return false;
 }
 
 export function hasLoS(
@@ -113,7 +144,7 @@ export function hasLoS(
 ): boolean {
   // Fog-Stalker, and the one rule that looks at the *destination* rather than the path.
   //
-  // `occluderCells` documents the default explicitly: a body standing in steam is still a
+  // `cellOccludes` documents the default explicitly: a body standing in steam is still a
   // legal target. This side is the exception — it melts into the cloud instead of merely
   // hiding behind it. Goggles beat it, so `ignoresFog` and this remain an answer to each
   // other rather than stacking into "nobody can shoot anybody".
@@ -126,16 +157,30 @@ export function hasLoS(
   if (state.players.player.fogConceals || state.players.enemy.fogConceals) {
     if (viewer === undefined || !state.players[viewer].ignoresFog) {
       if (state.hazards[coordKey(to)]?.kind === 'steam_fog') {
-        const hidden = allEntities(state).find(
-          (e) => isUnit(e) && cellsOf(e).some((c) => c.x === to.x && c.y === to.y),
-        );
-        if (hidden && state.players[(hidden as { side: Side }).side].fogConceals) return false;
+        // Units only, and without building a thing: same reason as `cellOccludes`. This was
+        // the last `allEntities` sweep in the file.
+        for (const id in state.units) {
+          const u = state.units[id]!;
+          if (!occupies(u, to)) continue;
+          if (state.players[u.side].fogConceals) return false;
+          break;
+        }
       }
     }
   }
 
-  const blockers = occluderCells(state, ignoreIds, viewer);
-  return supercoverLine(from, to).every((c) => !blockers.has(coordKey(c)));
+  const between = supercoverLine(from, to);
+  // Adjacent, or the same tile. There is nothing in between, so nothing can be in the way —
+  // and this is the common case: melee reach, adjacency checks, and every step of a threat
+  // map's inner loop. The old shape built the board's whole occluder set before discovering
+  // it had no cells to test it against, which was the single most wasteful thing here.
+  if (between.length === 0) return true;
+
+  const smokeBlocks = !seesThroughSmoke(state, viewer);
+  for (const c of between) {
+    if (cellOccludes(state, c, ignoreIds, viewer, smokeBlocks)) return false;
+  }
+  return true;
 }
 
 /** Tiles the given origin cannot see — the renderer's shadow-cone fog. */
