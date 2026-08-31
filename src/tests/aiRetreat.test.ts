@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { findUnit, scenario } from './scenario.js';
 import { planTurn, NOVICE_AI } from '../core/ai/controller.js';
+import { enumerateActions } from '../core/ai/enumerate.js';
 import { applyCommand } from '../core/engine/engine.js';
 import { NOVICE_WEIGHTS } from '../core/ai/score.js';
 import { threatMap } from '../core/engine/threat.js';
@@ -142,5 +143,76 @@ describe('AI retreat', () => {
     // worth more than one point of dodged damage.
     expect(NOVICE_WEIGHTS.retreat).toBeLessThan(NOVICE_WEIGHTS.face);
     expect(NOVICE_WEIGHTS.retreat).toBeLessThan(NOVICE_WEIGHTS.kill);
+  });
+});
+
+describe('ranged kiting', () => {
+  /**
+   * A ranged body with a blade at its throat. Backward moves used to be pruned from
+   * enumeration for everything but a Bound Form, so ranged bodies stood in melee and
+   * traded — the roadmap carried the note for a week. A ranged body backing up is not
+   * retreating, it is kiting: with move and attack independent, the step out of reach
+   * costs it nothing it cannot still do from the new tile.
+   *
+   * A free-aim shooter rather than a §3 archetype, deliberately: a constrained shooter
+   * standing off its line takes the `firingPosition` bonus for re-lining first, which is
+   * correct behaviour and a different test. The keywords are stripped so the bound body
+   * reads as a plain ranged minion. A narrow board and a slow blade, so there is no
+   * lateral escape to muddy the reading and a MOV-1 attacker leaves genuinely safe
+   * ground two steps back.
+   */
+  it("steps backward out of a blade's reach after shooting", () => {
+    const state = scenario({
+      width: 3,
+      height: 5,
+      units: [
+        { def: 'gargoyle_bound', side: 'enemy', at: { x: 1, y: 3 }, keywords: [] },
+        { def: 'rimeguard', side: 'player', at: { x: 1, y: 4 }, atk: 60, keywords: [] },
+      ],
+    });
+    state.activeSide = 'enemy';
+    const stalker = findUnit(state, 'gargoyle_bound', 'enemy');
+
+    // The gate itself: backward moves for a ranged unit are candidates at all now.
+    const backward = enumerateActions(state, 'enemy').filter(
+      (c) => c.type === 'moveUnit' && c.unit === stalker.id && c.to.y < stalker.anchor.y,
+    );
+    expect(backward.length, 'backward moves should be enumerated for ranged').toBeGreaterThan(0);
+
+    const danger = threatMap(state, 'enemy').damageByTile;
+    expect(danger.get(coordKey(stalker.anchor)) ?? 0, 'the stalker starts in lethal danger')
+      .toBeGreaterThanOrEqual(stalker.hp);
+
+    const commands = planTurn(state, 'enemy', NOVICE_AI);
+    const attacked = commands.some((c) => c.type === 'attack' && c.attacker === stalker.id);
+    const moved = commands.find((c) => c.type === 'moveUnit' && c.unit === stalker.id);
+
+    expect(attacked, 'the stalker should still take its shot').toBe(true);
+    expect(moved, 'the stalker should not stand at the blade').toBeDefined();
+    if (moved?.type === 'moveUnit') {
+      expect(moved.to.y, 'the withdrawal should be backward — the move that used to be illegal to consider')
+        .toBeLessThan(stalker.anchor.y);
+      expect(danger.get(coordKey(moved.to)) ?? 0, 'and it should reach safe ground').toBe(0);
+    }
+  });
+
+  it('still prunes backward moves for melee bodies', () => {
+    // The pruning exists to keep the candidate list focused, and a bruiser walking
+    // backwards is still almost never the best thing to do. Only reach buys the exception.
+    const state = scenario({
+      width: 3,
+      height: 5,
+      units: [
+        { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 3 } },
+        { def: 'rimeguard', side: 'player', at: { x: 1, y: 4 }, atk: 60, keywords: [] },
+      ],
+    });
+    state.activeSide = 'enemy';
+    const imp = findUnit(state, 'scout_imp', 'enemy');
+
+    const backward = enumerateActions(state, 'enemy').filter(
+      (c) => c.type === 'moveUnit' && c.unit === imp.id && c.to.y < imp.anchor.y,
+    );
+    expect(backward.length, 'melee backward moves stay pruned').toBe(0);
   });
 });

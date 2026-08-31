@@ -67,14 +67,20 @@ export function enumerateActions(state: GameState, side: Side): Command[] {
   // backwards is almost never the best thing to do, and enumerating every such move
   // triples the search for nothing.
   //
-  // The Bound Form is the exception, and the exception matters: it is the one unit whose
-  // loss is the game, so withdrawing it is frequently the whole turn. Pruned along with
-  // everything else, the AI could not defend its own Companion at all — it would walk it
-  // forward into range and have no way of walking it back.
+  // Two exceptions, for two reasons. The Bound Form is the unit whose loss is the game,
+  // so withdrawing it is frequently the whole turn — pruned along with everything else,
+  // the AI could not defend its own Companion at all. And a **ranged body backing up is
+  // not retreating, it is kiting**: with move and attack independent, a step out of a
+  // blade's reach costs a marksman nothing it cannot still do from the new tile. Pruning
+  // those turned the §3 archetypes into static shooters that stood in melee and traded —
+  // the exact note the roadmap carried since they shipped. Melee stays pruned: the same
+  // backward step costs a bruiser its whole turn, which is why it was pruned to begin
+  // with. Whether a legal retreat is *taken* is the retreat term in `score.ts`; this only
+  // lets the candidate exist.
   const forward = side === 'player' ? -1 : 1;
   for (const unit of mine) {
     if (!canMove(unit)) continue;
-    const mayRetreat = unit.keywords.includes('BoundForm');
+    const mayRetreat = unit.keywords.includes('BoundForm') || unit.rangeMax > 1;
     for (const move of legalMoves(state, unit)) {
       if (!mayRetreat) {
         const advances = (move.to.y - unit.anchor.y) * forward > 0;

@@ -8,6 +8,8 @@ import { startingZone } from '../core/types/state.js';
 import { spawnObstacle } from '../core/engine/spawn.js';
 import { makeCtx } from '../core/engine/context.js';
 import { CARDS } from '../core/data/cards/index.js';
+import { planTurn, NOVICE_AI, ADEPT_AI } from '../core/ai/controller.js';
+import { footprintDistance } from '../core/util/grid.js';
 
 /**
  * Marrow Geodes: a prize on neutral ground.
@@ -194,5 +196,73 @@ describe('in play', () => {
     const session = new CombatSession(NOVICE_DUELIST, 9);
     expect(session.getPlayableCards().length).toBeGreaterThan(0);
     expect(session.getBoard().obstacles.length).toBeGreaterThan(0);
+  });
+});
+
+describe('the AI and the geode', () => {
+  /**
+   * The prize used to be the player's alone. Attacks on obstacles were always enumerated,
+   * but a broken Geode scored zero — so the enemy only ever clipped one incidentally, and
+   * the roadmap carried the note: "free value the AI declines." The extraction now scores
+   * through the same weight channelling uses, and the pursue term counts a Geode as
+   * quarry, so the middle of the board is contested instead of gifted.
+   */
+  it('cracks a geode standing next to it', () => {
+    const state = scenario({ width: 6, height: 8, marrow: 0 });
+    // A footman, not an imp: at MOV 2 the crack (7) wins the plain auction against the
+    // best advance (6), so even the greedy Novice takes it. A faster body walking past
+    // the prize is the lookahead case below.
+    const footman = addUnit(state, { def: 'vanguard_footman', side: 'enemy', at: { x: 2, y: 3 } });
+    addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 5, y: 7 } });
+    const ctx = makeCtx(state);
+    const geodeId = spawnObstacle(ctx, 'marrow_geode', 'player', { x: 2, y: 4 })!;
+    state.activeSide = 'enemy';
+
+    const commands = planTurn(state, 'enemy', NOVICE_AI);
+    const cracked = commands.some(
+      (c) => c.type === 'attack' && c.attacker === footman.id
+        && c.target.kind === 'obstacle' && c.target.id === geodeId,
+    );
+    expect(cracked, 'the enemy should take the two marrow sitting next to it').toBe(true);
+  });
+
+  it('cracks before advancing, given one action of lookahead', () => {
+    // A Hasted imp covers three rows a turn, and a plain advance (9) outbids the crack
+    // (7) — so the greedy Novice walks past the prize, exactly as the controller's own
+    // comment predicts: "moving first scores well on its own but leaves nothing." The
+    // Adept re-values a candidate by what it leaves available, and the crack leaves the
+    // move.
+    const state = scenario({ width: 6, height: 8, marrow: 0 });
+    const imp = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 3 } });
+    addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 5, y: 7 } });
+    const ctx = makeCtx(state);
+    const geodeId = spawnObstacle(ctx, 'marrow_geode', 'player', { x: 2, y: 4 })!;
+    state.activeSide = 'enemy';
+
+    const commands = planTurn(state, 'enemy', ADEPT_AI);
+    const cracked = commands.some(
+      (c) => c.type === 'attack' && c.attacker === imp.id
+        && c.target.kind === 'obstacle' && c.target.id === geodeId,
+    );
+    expect(cracked, 'the Adept should crack first and still make its move').toBe(true);
+  });
+
+  it('walks toward a geode when it is the nearest thing worth breaking', () => {
+    const state = scenario({ width: 6, height: 8, marrow: 0 });
+    const imp = addUnit(state, { def: 'scout_imp', side: 'enemy', at: { x: 2, y: 0 } });
+    addUnit(state, { def: 'grave_sentinel', side: 'player', at: { x: 5, y: 7 } });
+    const ctx = makeCtx(state);
+    const geodeObstacleId = spawnObstacle(ctx, 'marrow_geode', 'player', { x: 2, y: 3 })!;
+    const geode = state.obstacles[geodeObstacleId]!;
+    state.activeSide = 'enemy';
+
+    const before = footprintDistance(imp, geode);
+    const commands = planTurn(state, 'enemy', NOVICE_AI);
+    const moved = commands.find((c) => c.type === 'moveUnit' && c.unit === imp.id);
+    expect(moved, 'the imp should move at all').toBeDefined();
+    if (moved?.type === 'moveUnit') {
+      const after = footprintDistance({ ...imp, anchor: moved.to }, geode);
+      expect(after, 'and the move should close on the geode').toBeLessThan(before);
+    }
   });
 });
