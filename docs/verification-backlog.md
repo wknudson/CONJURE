@@ -94,7 +94,8 @@ rather than large ones during them.
 
 ### Two measurement traps
 
-Both of these produced findings that looked like bugs and were not:
+Both of these produced findings that looked like bugs and were not (two more, learned on the
+nineteen-ward pass, follow the original pair):
 
 - `world.setHour(h)` sets the **world's** hour only. The screen's own `this.hour` is untouched, so
   the HUD and anything driven from `tickClock` — notably the lamplighter — do not follow. Lamps
@@ -102,6 +103,18 @@ Both of these produced findings that looked like bugs and were not:
   simply never ran.
 - The clock only advances through `tickClock`, which needs real elapsed time. See the `frame()`
   note above.
+- **In a live tab, `world.setHour` is undone within a frame.** With rAF running, `tickClock`
+  re-lights the world to the screen's own hour on the next tick — so `setHour(12)` followed by an
+  `await` measures whatever hour the ledger says, not noon. Either sample synchronously in the
+  same evaluation (`setHour`, `frame`, `readPixels`, no awaits between), or pin the screen too:
+  set `screen.hour` and `screen.litAtHour` alongside. The hidden-pane sessions never hit this
+  because nothing ticked between their calls.
+- **A lamplighter walks off their own prompt.** An NPC's interact hotspot follows their live
+  position, so a position read even a second ago can be stale — the Saltglass pan-wife took her
+  errand turn-in three attempts because she was out lighting the pans. Read the hotspot's
+  position and teleport to it in the same evaluation, then interact immediately. (Synthetic
+  `keydown` events on `window` drive talk/advance faithfully — the listener is global and
+  `Space` routes to dialogue-advance or nearest-interact exactly as the real key does.)
 
 ---
 
@@ -268,6 +281,45 @@ That single observation also confirms the gate fix reaches everything, not just 
 `world.setHour`, `walkTheRow`, the Warden's sight and grace, and the pack shifts are all on that
 same code path.
 
+### Every crossing put the clock back
+
+Found by walking backlog item 5. Leave Lamprow past ten at night, take the road, and it is three
+in the morning in Ashfall — the previous evening, not the next one.
+
+`showArea` builds the next district's options with `hour: profile().clock`, and that expression is
+evaluated **before** `screens.go()` runs — and `go()` is what unmounts the outgoing screen, whose
+`unmount` was the only place the walked hours were written back. So every district-to-district
+crossing mounted the new ward at the clock as of the *previous* mount. Doors were immune, which
+hid it: a shop visit unmounts the district first and `showDistrict` re-reads the clock afterwards,
+so the one path anybody had watched worked. The comment at the crossing's payment site even says
+"`DistrictScreen.unmount` has already handed back an hour" — the code believed an ordering that
+was never true.
+
+The fix is one line in `travel()`: the hour goes home alongside the position, *before* `onTravel`,
+for exactly the reason `writePosition` already lives there. Verified in the browser: 24.78 out of
+Saltglass, 24.78 into Millharrow, and continuous across three more crossings.
+
+Same class as the frozen readout above: every function involved is pure, tested and correct, and
+the wrong value is handed between them. A unit test cannot see it. Walking a dusk across a road
+can.
+
+### The gate was entombed
+
+Backlog item 4 asked whether the redrawn gate reads correctly on the mesh. It could not be seen at
+all: the solid-run builder merges wall cells into full-length boxes and never cut an opening, so
+Ashfall's yard wall ran unbroken across the gate span with the 8×4.6 plane standing *inside* the
+2.4-deep box — only the top metre cleared the coping. `gateArt.test.ts` held the texture's
+composition to the letter while no player could ever have laid eyes on the thing it tested.
+
+The fix cuts each gate's span (`gate.x ± 4`) out of any solid run whose z-band contains it, one
+height per run so the flanking pieces match, and the chimney kept to the widest surviving piece so
+cutting a wall does not mint a second one. Colliders are untouched — they come from the grid, and
+you still do not walk through a gate.
+
+With the wall open, the art verifies: seam, bars with daylight through them, rails, hinges, latch,
+no glow. And the plane's `alphaTest: 0.5` was already right — the see-through gaps worked the
+moment there was anything to see them against.
+
 ---
 
 ## Not verified — the actual backlog
@@ -279,17 +331,19 @@ Roughly in order of value.
 | 1 | ~~The hour readout advancing~~ | **Done.** See above. |
 | 2 | ~~The lamplighter walking the row~~ | **Done.** See below. |
 | 3 | ~~In-world combat~~ | **Done**, all three parts. See below. |
-| 4 | **The gate art in situ** | Redrawn as closed, latched and unwarded in two leaves. `gateArt.test.ts` asserts the composition by rendering the texture to a text grid under node, but nobody has seen it on the mesh at 8×4.6 world units. |
-| 5 | **A night/noon pass across all nineteen wards** | Only two wards have been measured. |
-| 6 | **The Warden's beat and the pack shifts** | Pure functions of the clock and unit-tested as such; never watched. |
-| 7 | **Errands, stalls and asides end to end** | Registry-tested only. No errand has been walked from offer to reward in a browser. |
+| 4 | ~~The gate art in situ~~ | **Done** — after finding and fixing the reason nobody could ever have seen it. See "The gate was entombed" below. Seen at noon from the street: two leaves, a visible seam, daylight through the bars, rails, hinge hardware on the posts, the latch in brass at hand height, and nothing glowing. It reads as a gate, not a railing. |
+| 5 | ~~A night/noon pass across all nineteen wards~~ | **Done.** All nineteen measured by `readPixels` on a central crop at hours 0 and 12. Every area's noon is brighter than its night; no ward is near-black at either hour; no framebuffer errors anywhere. Saltglass has the brightest night floor (95 luma — the salt doing the work, as authored) and the Caldera the flattest day (56 → 108, the floored-intensity rule holding). The crop follows the player, so the numbers are entry-point-dependent — treat them as a smoke pass, not a calibration. |
+| 6 | ~~The Warden's beat and the pack shifts~~ | **Done**, watched live in Lamprow. The Warden's `target` equals `beatPostAt(hour, 4)` at every sampled hour including the wrap, and it transits between posts in real time. Both night crews: off at noon, on at 23:00, driven through the real `tickClock` path — and the dusk handover was watched happen: at 17:56 (lit 0.767) both off, the street clock ran across the `lit < 0.75` boundary, and at 18:03 (lit 0.715) both were on shift. |
+| 7 | ~~Errands, stalls and asides end to end~~ | **Done**, two full errands walked in the browser through the real input path (window-level `keydown`, `Space` to talk and advance). **Deliver** (`salt_for_the_butcher`): offer accepted on dialogue end, nudge phase gives the directional line not the offer again, objective panel fills, state persists at every step, turn-in at the pan-wife pays ("Paid: 120 Ducats.", 75 → 195) and her stall opens *after* the thanks, as `talkTo` promises. **Survey** (`chart_the_shelf`): the cairn stands at exactly the authored spot, interacting flips `ready` (persisted immediately), removes the marker and flashes the notice; the report-back pays 175. **Stalls**: sell at the Lamprow kerb (+27 ducats, −1 Surge Core) and buy at the Saltglass pans (−90, +1 Frost Core), both persisted, margins visibly one-directional. **Asides**: the Census clerk speaks her `before: hollow_census` lines — not her fixed script's reveal — on an unresolved campaign. |
 
 ### One open question for the art side, not a bug
 
 Noon is very desaturated: **0.099 against 0.497 at night**, and the noon fog `#8e8c83` is near
 neutral grey. `DAY_FOG` is a single constant blended at 0.72 for every area and fog is the hard
-ceiling on brightness, so **all nineteen wards probably converge on a similar grey midday**. Only
-one ward was measured; the rest is inference from the constant.
+ceiling on brightness, so **all nineteen wards converge on a similar grey midday** — no longer an
+inference: the nineteen-ward pass above measured noon means clustered at 108–183 luma with
+near-neutral colour everywhere (Lamprow's noon crop averages rgb(180,176,166), Ward Seven's
+rgb(133,138,139)).
 
 This is the side effect of a deliberate earlier fix. Blending toward one common daylight solved a
 real problem — multiplying amplified the spread until the Tallow Levels were four times Saltglass
