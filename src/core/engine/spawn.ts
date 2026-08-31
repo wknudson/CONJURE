@@ -103,7 +103,14 @@ export function placeOpeningUnit(
   /** The Vanguard level, for a deployed roster body. Absent everywhere else. */
   level?: number,
 ): UnitId | undefined {
-  const spot = firstFreeNear(ctx.state, at, side);
+  // The body's real footprint, so the fallback search validates the ground the unit
+  // will actually stand on. This search was footprint-blind for as long as every
+  // opening body was 1x1: it would approve a single free cell for a Behemoth whose
+  // 2x2 then failed to place, and the fight quietly started a unit short. The same
+  // blindness sat under sudden death's Bound Form restore, where the body being
+  // restored is exactly the grown 2x2 case.
+  const footprint = CARDS[defId]?.unit?.footprint ?? 1;
+  const spot = firstFreeNear(ctx.state, at, side, footprint);
   if (!spot) return undefined;
   const id = summonUnit(ctx, defId, side, spot, level);
   if (!id) return undefined;
@@ -115,13 +122,18 @@ export function placeOpeningUnit(
 }
 
 /** Falls back to a nearby tile in the same territory if the preferred one is taken. */
-export function firstFreeNear(state: GameState, at: Coord, side: Side): Coord | undefined {
-  if (canPlace(state, at, 1)) return at;
+export function firstFreeNear(
+  state: GameState,
+  at: Coord,
+  side: Side,
+  footprint: 1 | 2 = 1,
+): Coord | undefined {
+  if (canPlace(state, at, footprint)) return at;
   const rows = startingZone(state, side);
   for (const y of rows) {
     for (let x = 0; x < state.width; x++) {
       const c = { x, y };
-      if (canPlace(state, c, 1)) return c;
+      if (canPlace(state, c, footprint)) return c;
     }
   }
   return undefined;

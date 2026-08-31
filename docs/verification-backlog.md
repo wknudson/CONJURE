@@ -150,10 +150,19 @@ The follower goes hidden too, correctly, because the Companion is embodied on th
 player's own sprite stays visible on purpose** — they are the commander standing at the board, not
 a piece on it, so do not "fix" that.
 
-Not confirmed: the **`Q`/`E` key path** specifically. The camera orbits when driven through
-`setCameraYaw`, but discrete synthetic keypresses never moved the yaw, which is expected against a
-held-key model in a frame-starved tab — the input is read per frame and almost no frames run
-between a synthetic keydown and keyup. Needs a human holding the key.
+**The `Q`/`E` orbit keys work**, confirmed through the real input path rather than the camera API.
+Yaw moved +2.0 rad while `E` was held over 25 frames and −2.4 rad while `Q` was held over 30, in
+perfectly linear steps of 0.08 per frame — which is `ORBIT_SPEED` 1.6 rad/s against the 0.05 clamped
+`dt`, exactly as written. It passes freely through zero into negative, so the orbit is unbounded, and
+it stops dead on release with zero drift.
+
+Getting there needed the right shape of test, and this is the reusable part: the handlers live on
+`window`, key state is a `Set` of `e.code`, and orbit is applied **per frame** from that set. A
+`computer` keypress — or any synthetic keydown immediately followed by keyup — therefore does
+nothing, because no frame runs while the key is down. **Dispatch `keydown`, drive `d.frame()` in a
+loop, then dispatch `keyup`.** That is a faithful exercise of the app's own listener and its
+per-frame read; only the browser's physical key delivery is left out, and that is not this
+project's code.
 
 ### Starting a fight from a script — two traps
 
