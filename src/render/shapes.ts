@@ -653,6 +653,8 @@ export function drawBodyFurniture(
     atk: number;
     escalation: number;
     statuses: readonly { kind: string; stacks: number }[];
+    /** Gave up its swing this turn. Optional so older structural callers stay valid. */
+    channelled?: boolean;
   },
   pulse: number,
   /**
@@ -695,6 +697,46 @@ export function drawBodyFurniture(
   }
 
   drawStatusChips(ctx, centre, z, view.statuses);
+
+  if (view.channelled) drawChannelGlyph(ctx, centre, z, pulse);
+}
+
+/**
+ * The mark of a body that channelled: an orb with a spark through it.
+ *
+ * The same glyph the enemy-intent badge uses for "about to channel", deliberately — one
+ * symbol for the act, whether it is forecast or remembered. Worn in Marrow's crimson with
+ * the aether-violet glow, because Marrow is what channelling makes, and drawn below the
+ * status row so neither crowds the other. It answers the question the plain dim cannot:
+ * this body is not merely spent, it spent its swing on purpose.
+ */
+function drawChannelGlyph(
+  ctx: Ctx2D,
+  centre: { x: number; y: number },
+  z: number,
+  pulse: number,
+): void {
+  const cy = centre.y + 54 * z;
+  const u = 5 * z;
+
+  ctx.save();
+  ctx.globalAlpha = 0.7 + 0.3 * pulse;
+  ctx.strokeStyle = '#f0567a';
+  ctx.shadowColor = 'rgba(168, 85, 247, 0.5)';
+  ctx.shadowBlur = 8 * z;
+  ctx.lineWidth = Math.max(1, 1.4 * z);
+  ctx.lineCap = 'round';
+
+  ctx.beginPath();
+  ctx.arc(centre.x, cy, u * 0.75, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(centre.x, cy - u * 1.25);
+  ctx.lineTo(centre.x, cy - u * 0.75);
+  ctx.moveTo(centre.x, cy + u * 0.75);
+  ctx.lineTo(centre.x, cy + u * 1.25);
+  ctx.stroke();
+  ctx.restore();
 }
 
 /**

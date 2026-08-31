@@ -32,7 +32,7 @@ import { readWeather } from '../hud/weather.js';
 import { cellsAt } from '../core/util/grid.js';
 import { coordEq } from '../contract/ids.js';
 import type { CommanderModel } from '../render/BoardRenderer.js';
-import type { Coord } from '../contract/ids.js';
+import type { Coord, Side } from '../contract/ids.js';
 import type { GameState } from '../core/types/state.js';
 import { calculateProjectedDamage } from '../hud/projection.js';
 import type { Gender } from '../core/data/characterLook.js';
@@ -311,6 +311,11 @@ export class CombatScreen implements Screen {
       sfx: this.sfx,
       hud: this.hud,
       renderer: this.renderer,
+      // The same rows `syncCommanders` stands the figures on, answered in tile space so
+      // the handlers can aim a sigil or a lunge without knowing either renderer.
+      casterAnchor: (side, owner) => this.commanderAnchor(side, owner),
+      snapshotOf: (unitId) =>
+        this.session.getBoard().units.find((u) => u.id === unitId) ?? null,
     };
     this.grave = new Graveyard(el, {
       onPick: (rosterIndex) => this.targeting?.onFallenPick(rosterIndex),
@@ -421,6 +426,9 @@ export class CombatScreen implements Screen {
   }
 
   unmount(): void {
+    // A fight abandoned mid-Last-Stand would otherwise carry its heartbeat into the
+    // overworld; `combatEnded` stops the loops, but not every unmount saw that event.
+    this.sfx.stopAllLoops();
     this.grave?.destroy();
     this.grave = null;
     this.channel?.close();
@@ -1095,6 +1103,35 @@ export class CombatScreen implements Screen {
    * Places the Hero, Companion and enemy Commander one row beyond each end of the grid.
    * They are on the field but never on it, which is what makes melee reach legible.
    */
+  /**
+   * Where a side's commanding figure stands, for the handlers' cast flourish and
+   * portrait-directed lunges.
+   *
+   * The same arithmetic `syncCommanders` uses, asked on demand instead of read from the
+   * models it builds — the models are rebuilt only on input unlock, and a mid-sequence
+   * handler must not depend on that timing. A Companion whose Bound Form walks the grid
+   * answers from the body's own view, exactly as the off-grid model yields to it.
+   */
+  private commanderAnchor(side: Side, owner: 'hero' | 'companion'): Coord | null {
+    const board = this.session.getBoard();
+    if (side === 'enemy') {
+      const bound = board.units.find(
+        (u) => u.side === 'enemy' && u.keywords.includes('BoundForm'),
+      );
+      if (bound) return this.views.get(bound.id)?.pos ?? { ...bound.anchor };
+      if (board.rout) return null;
+      return { x: Math.floor((board.width - 1) / 2), y: -1.35 };
+    }
+    if (owner === 'companion') {
+      const bound = board.units.find(
+        (u) => u.side === 'player' && u.keywords.includes('BoundForm'),
+      );
+      if (bound) return this.views.get(bound.id)?.pos ?? { ...bound.anchor };
+      return { x: board.player.companionColumn, y: board.height + 0.35 };
+    }
+    return { x: board.player.heroColumn, y: board.height + 0.35 };
+  }
+
   private syncCommanders(board: ReturnType<CombatSession['getBoard']>): void {
     if (!this.renderer) return;
 

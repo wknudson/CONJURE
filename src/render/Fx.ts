@@ -6,7 +6,7 @@
 import type { Coord, DamageType } from '../contract/ids.js';
 import type { FxCamera } from './IsoCamera.js';
 import { schoolOf } from './palette.js';
-import { tween, easeOutQuad, linear } from '../anim/tween.js';
+import { tween, easeInQuad, easeOutQuad, linear } from '../anim/tween.js';
 
 /** The CSS treatments a floating number can take. One class per value, in `board.css`. */
 export type FloaterKind =
@@ -286,6 +286,163 @@ export class Fx {
       outer.radius = k * this.cam.tileW * 1.7;
       outer.alpha = 1 - k;
       if (k >= 1) this.rings = this.rings.filter((r) => r !== inner && r !== outer);
+    });
+  }
+
+  /**
+   * The moment a card's magic arrives on a tile.
+   *
+   * Deliberately quieter than a detonation: no white flash and no shake, because a cast is
+   * the player's own act landing where they pointed, not something happening *to* them. A
+   * soft ring and a handful of risers in the school's colour say "here" and get out of the
+   * way of whatever the card actually does — the summon, the damage, the mark — which
+   * follows with its own presentation.
+   */
+  castBurst(at: Coord, school: string, duration: number): Promise<void> {
+    const colors = schoolOf(school as never);
+    const centre = this.cam.tileCenter(at);
+
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2 + Math.random() * 0.5;
+      this.particles.push({
+        x: centre.x + Math.cos(angle) * this.cam.tileW * 0.2,
+        y: centre.y + Math.sin(angle) * this.cam.tileH * 0.15,
+        vx: Math.cos(angle) * 0.4,
+        vy: -0.8 - Math.random() * 0.6,
+        life: 1,
+        color: i % 2 === 0 ? colors.main : colors.light,
+        size: 1.8 + Math.random() * 1.4,
+        gravity: -0.2,
+        decay: 0.0024,
+      });
+    }
+
+    const ring: Ring = { at, radius: 0, alpha: 1, color: colors.main };
+    this.rings.push(ring);
+    return tween(Math.max(1, duration), easeOutQuad, (k) => {
+      ring.radius = k * this.cam.tileW * 0.9;
+      ring.alpha = 1 - k;
+      if (k >= 1) this.rings = this.rings.filter((r) => r !== ring);
+    });
+  }
+
+  /**
+   * The caster's flourish: magic leaving a body rather than arriving on a tile.
+   *
+   * Flattened hard onto the ground plane so it reads as a sigil under the figure instead of
+   * a blast on it, and the risers drift up slowly — power drawn out of someone, not thrown
+   * at them. Used over the Hero or Companion when their card is cast, and over a unit whose
+   * Aura reaches its Climax, which are the same shape of moment.
+   */
+  sigilBurst(at: Coord, school: string, duration: number): Promise<void> {
+    const colors = schoolOf(school as never);
+    const centre = this.cam.tileCenter(at);
+
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2 + Math.random() * 0.4;
+      this.particles.push({
+        x: centre.x + Math.cos(angle) * this.cam.tileW * 0.28,
+        y: centre.y + Math.sin(angle) * this.cam.tileH * 0.16,
+        vx: Math.cos(angle) * 0.25,
+        vy: -0.5 - Math.random() * 0.5,
+        life: 1,
+        color: i % 2 === 0 ? colors.main : colors.light,
+        size: 1.6 + Math.random() * 1.2,
+        gravity: -0.3,
+        decay: 0.0016,
+      });
+    }
+
+    const inner: Ring = { at, radius: 0, alpha: 1, color: colors.light, flatten: 0.55 };
+    const outer: Ring = { at, radius: 0, alpha: 0.8, color: colors.main, flatten: 0.55 };
+    this.rings.push(inner, outer);
+    return tween(Math.max(1, duration), easeOutQuad, (k) => {
+      inner.radius = k * this.cam.tileW * 0.5;
+      inner.alpha = 1 - k;
+      outer.radius = k * this.cam.tileW * 0.8;
+      outer.alpha = 0.8 * (1 - k);
+      if (k >= 1) this.rings = this.rings.filter((r) => r !== inner && r !== outer);
+    });
+  }
+
+  /**
+   * A Soul Pyre giving its body back.
+   *
+   * The pact blue of the pyre tiles themselves, so the flare and the ground it rises from
+   * read as one thing. Soft-filled rather than stroked — a welling-up, not an explosion —
+   * with embers that drift the way the revived unit is about to.
+   */
+  pyreFlare(at: Coord, duration: number): Promise<void> {
+    const centre = this.cam.tileCenter(at);
+
+    for (let i = 0; i < 9; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      this.particles.push({
+        x: centre.x + Math.cos(angle) * this.cam.tileW * 0.22,
+        y: centre.y + Math.sin(angle) * this.cam.tileH * 0.14,
+        vx: Math.cos(angle) * 0.3,
+        vy: -0.9 - Math.random() * 0.8,
+        life: 1,
+        color: i % 3 === 0 ? '#e0f2fe' : '#7dd3fc',
+        size: 1.8 + Math.random() * 1.6,
+        gravity: -0.35,
+        decay: 0.0018,
+      });
+    }
+
+    const well: Ring = {
+      at,
+      radius: this.cam.tileW * 0.15,
+      alpha: 0.9,
+      color: 'rgba(125, 211, 252, 0.9)',
+      fill: true,
+      flatten: 0.55,
+    };
+    this.rings.push(well);
+    return tween(Math.max(1, duration), easeOutQuad, (k) => {
+      well.radius = this.cam.tileW * (0.15 + k * 0.5);
+      well.alpha = 0.9 * (1 - k);
+      if (k >= 1) this.rings = this.rings.filter((r) => r !== well);
+    });
+  }
+
+  /**
+   * A played card travelling from the hand to the tile it targets.
+   *
+   * A DOM ghost rather than a canvas sprite, because the journey starts in the HUD — DOM
+   * territory — and the floater layer is the one element that spans both worlds. Driven by
+   * the shared tween so a skip's `finishAll()` lands it instantly, the same contract every
+   * other animation keeps.
+   */
+  cardFlight(fromRect: DOMRect, at: Coord, school: string, duration: number): Promise<void> {
+    if (duration <= 0) return Promise.resolve();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return Promise.resolve();
+    }
+
+    const layerRect = this.floaterLayer.getBoundingClientRect();
+    const to = this.cam.tileCenter(at);
+    const colors = schoolOf(school as never);
+
+    const el = document.createElement('div');
+    el.className = 'card-ghost';
+    el.style.color = colors.main;
+    const w = fromRect.width * 0.7;
+    const h = fromRect.height * 0.7;
+    el.style.width = `${w}px`;
+    el.style.height = `${h}px`;
+    const x0 = fromRect.left - layerRect.left + (fromRect.width - w) / 2;
+    const y0 = fromRect.top - layerRect.top + (fromRect.height - h) / 2;
+    el.style.left = `${x0}px`;
+    el.style.top = `${y0}px`;
+    this.floaterLayer.appendChild(el);
+
+    const dx = to.x - (x0 + w / 2);
+    const dy = to.y - (y0 + h / 2);
+    return tween(duration, easeInQuad, (k) => {
+      el.style.transform = `translate(${dx * k}px, ${dy * k}px) scale(${1 - 0.7 * k})`;
+      el.style.opacity = String(1 - k * 0.85);
+      if (k >= 1) el.remove();
     });
   }
 
