@@ -279,3 +279,31 @@ them alive, and all four wager duels — where the beast, not only the purse, is
 The arithmetic the player is never told: a killed apex pays its contract, and a bound one
 pays the same contract *and* joins the roster. The generous reading is also the profitable
 one, and the game leaves them to notice.
+
+## 8. The walk-to world, and the epilogue (2026-08-31)
+
+Two changes shipped after the campaign's thirty contracts.
+
+**The board briefs; the ground launches.** A poster now says what the next job is, what it
+pays, and where — and the fight starts by walking up to the site the writ names
+(`district/sites.ts`, one site per contract). The travel is the soft gate the tiers never
+had: nothing stops a four-minute-old Commander taking the Master poster, but the Caldera
+is still two crossings away and the Bone Bastion five. Hunts keep their signpost; packs
+are still walked into; the audit and the rolled fallbacks keep click-to-launch.
+
+**The epilogue: "The Quiet Below."** Four master-pay contracts after `the_summons`,
+gated purely by coming after it: `dead_letters` (the posters come up a pneumatic from
+below, on a clock), `undercroft_census` (four hundred and eleven names, in a dozen hands,
+older than Vane), `underhill_duel` (the last King's Duelist, and the answer he duelled
+for: the King never once came down), and `the_quiet_below` — the working engine the
+Colossus was only ever the mouth of, bound prizeless one floor beneath the throne. E1's
+poster keeps the regime's voice because that voice turns out to be a machine no one alive
+is speaking through; from E2 the posters are Vex's plain hand. The King stays unseen,
+which is the arc's whole finding: he never signed, never came down, never countermanded.
+
+Alongside these, the wilds gained their promised depth: the Sovereign rises into a 2×2
+at half strength (`sovereign_behemoth_bound`, the grow-at-half machinery shared in
+`bossPhases.ts`), Pylon Nine's geist finally *drinks the charge* (shock heals it — starve
+it, not blast it), the Colossus fights with a kit instead of borrowed statistics, and the
+Obsidian Tortoise, the Cinder-Wasp mother-comb and Black Ice keep regional lairs as
+second routes for players who killed the story beast.

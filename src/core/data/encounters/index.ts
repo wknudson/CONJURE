@@ -61,6 +61,13 @@ import {
   HUNT_TALLOW_AUROCHS,
 } from './hunts.js';
 import { PACK_ENCOUNTERS } from './packs.js';
+import { CALDERA_TORTOISE, CALDERA_WASPS, RIMEFIELD_GARGOYLE } from './apex.lairs.js';
+import {
+  DEAD_LETTERS,
+  THE_QUIET_BELOW,
+  UNDERCROFT_CENSUS,
+  UNDERHILL_DUEL,
+} from './campaign.epilogue.js';
 
 // Roughly in order of what they ask of a player: an honest duel, then a corridor that
 // punishes standing still, then an open field where nothing can see, then the boss.
@@ -100,6 +107,17 @@ export const ENCOUNTERS: EncounterDef[] = [
   RELOCATION_TRAIN,
   BONE_BASTION,
   THE_SUMMONS,
+  // The epilogue, in walking order — gated on the finale purely by coming after it in
+  // `STORY_CONTRACTS`.
+  DEAD_LETTERS,
+  UNDERCROFT_CENSUS,
+  UNDERHILL_DUEL,
+  THE_QUIET_BELOW,
+  // The regional apex lairs: walk-to fights with no poster, second routes for species
+  // whose story fights happened in the city. See `district/sites.ts` for the ground.
+  CALDERA_TORTOISE,
+  CALDERA_WASPS,
+  RIMEFIELD_GARGOYLE,
   // The Wild Hunts, last: they are not campaign order because they are not campaign. Every
   // one is standing work behind the ward gate, repeatable on its own clock.
   HUNT_CALDERA_DRAKE,

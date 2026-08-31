@@ -76,6 +76,8 @@ import { traitsFor } from '../core/data/companionTraits.js';
 import { makeRng } from '../core/util/rng.js';
 import { draftGrimoire, isDraftable, socketRefusal } from '../core/data/grimoire.js';
 import { isHunt } from '../core/data/hunts.js';
+import { isLair } from '../core/data/lairs.js';
+import { isPack } from '../core/data/packs.js';
 import { errandById } from '../district/errands.js';
 import { NIGHT_ANCHOR } from '../district/daylight.js';
 
@@ -1414,7 +1416,10 @@ function readHunts(raw: unknown, version: number): Record<string, number> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
   const out: Record<string, number> = {};
   for (const [id, at] of Object.entries(raw as Record<string, unknown>)) {
-    if (!isHunt(id)) continue;
+    // Hunts, packs and lairs all stamp this map (`main.ts` writes all three on a win).
+    // The predicate used to admit hunts alone, which silently reset every pack's
+    // cooldown on reload — the road repopulated the moment the game was reopened.
+    if (!isHunt(id) && !isPack(id) && !isLair(id)) continue;
     if (typeof at !== 'number' || !Number.isFinite(at)) continue;
     out[id] = Math.max(0, Math.round(at));
   }

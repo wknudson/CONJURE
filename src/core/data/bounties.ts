@@ -18,6 +18,7 @@ import { hashText, makeRng, nextInt } from '../util/rng.js';
 import { REAGENTS } from './splicing.js';
 import { nextStoryContract, storyContractByEncounter, type StoryContract } from './campaign.js';
 import { HUNTS, huntByEncounter, type Hunt } from './hunts.js';
+import { LAIRS, lairByEncounter, type Lair } from './lairs.js';
 import { packByEncounter, type PackDef } from './packs.js';
 
 export type BountyDifficulty = 'novice' | 'adept' | 'master';
@@ -104,6 +105,10 @@ export function tierOfEncounter(encounterId: string): BountyDifficulty {
   // Schematics a win offers, so getting it wrong is quietly wrong twice.
   const pack = packByEncounter(encounterId);
   if (pack) return pack.tier;
+  // And the regional apex lairs — walk-to fights with no poster, filed like hunts so a
+  // Master lair never pays Novice for want of a table row.
+  const lair = lairByEncounter(encounterId);
+  if (lair) return lair.tier;
   for (const tier of DIFFICULTIES) {
     if (TIER_ENCOUNTERS[tier].includes(encounterId)) return tier;
   }
@@ -385,6 +390,40 @@ export function packBounty(pack: PackDef, seed: number): Bounty {
 /** Every hunt as a Bounty, in registry order. The gate panel's whole data source. */
 export function huntBoard(seed: number): Bounty[] {
   return HUNTS.map((h) => huntBounty(h, seed));
+}
+
+/**
+ * One regional apex lair, dressed as a Bounty.
+ *
+ * Same argument as `huntBounty` and `packBounty` before it: the lair is not posted
+ * anywhere — the ground itself is the surfacing — and it still rides the ordinary
+ * contract road, because that road pays the spoils, offers the Schematics, records the
+ * Ledger, and closes the open-contract failsafe. Tier pay with the hunt's seeded
+ * spread, and never a wager — an animal has not agreed to anything.
+ */
+export function lairBounty(lair: Lair, seed: number): Bounty {
+  const rng = makeRng((seed ^ hashText(lair.encounterId)) >>> 0);
+  const pay = TIER_PAY[lair.tier];
+  const encounter = encounterById(lair.encounterId);
+  return {
+    id: `lair_${lair.encounterId}`,
+    title: encounter?.name ?? lair.encounterId,
+    difficulty: lair.tier,
+    enemySeed: lair.encounterId,
+    spoils: {
+      ducats: pay.ducats + nextInt(rng, TIER_SPREAD[lair.tier] + 1),
+      marrowShards: pay.marrowShards,
+      ...(TIER_CORES[lair.tier] > 0
+        ? { reagents: { [REAGENTS[nextInt(rng, REAGENTS.length)]!.id]: TIER_CORES[lair.tier] } }
+        : {}),
+    },
+    flavour: encounter?.blurb ?? 'Something keeps this ground.',
+  };
+}
+
+/** Every lair as a Bounty. The site hotspots' data source. */
+export function lairBoard(seed: number): Bounty[] {
+  return LAIRS.map((l) => lairBounty(l, seed));
 }
 
 /**

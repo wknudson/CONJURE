@@ -29,6 +29,12 @@ export interface StoryContract {
   crack: { title: string; body: string };
   /** Duels stake a wager instead of only paying a fee. */
   wager?: true;
+  /**
+   * Post-finale work. Board dressing only — a different seal on the poster — and never
+   * read by any pay table: the epilogue is master-tier work because the story changes
+   * what the work *is*, not what work is worth.
+   */
+  epilogue?: true;
 }
 
 /**
@@ -548,6 +554,100 @@ export const STORY_CONTRACTS: readonly StoryContract[] = [
         'first time anyone on the street can remember, Jolrek can see the sky. The ' +
         'walls will need new paint. Somebody has already started: WE FEED OURSELVES ' +
         'NOW.',
+    },
+  },
+
+  // ---- The epilogue: "The Quiet Below" ---------------------------------------------
+  //
+  // Gated on the finale purely by position: these are master-tier contracts that come
+  // after `the_summons`, so `nextStoryContract('master')` cannot serve them until the
+  // throne room is in the ledger. E1's poster still speaks in the regime's voice —
+  // the last lie, because that voice turns out to be a machine no one alive is
+  // speaking through. From E2 the posters are Vex's plain hand.
+  {
+    id: 'dead_letters',
+    tier: 'master',
+    epilogue: true,
+    title: 'Dead Letters',
+    flavour:
+      'Interference on the Dispatch line, Highcourt service quarter. Clear it; normal ' +
+      'service will resume. Sealed in the standard wax, posted in the standard hand, ' +
+      'countersigned THE CROWN — in print, the way it always has been, if anyone had ' +
+      'ever looked.',
+    crack: {
+      title: 'Normal Service',
+      body:
+        'The detail you clear carries wage sheets, current ones — pay drawn on the ' +
+        'Magistracy’s account for the week after the Magistracy’s master knelt. Their ' +
+        'standing order was cut the year the Spire was raised and countermanded never. ' +
+        'You trace the dispatch line to cut it and learn the truth of the board you ' +
+        'have worked your whole life: the posters do not come from an office. They come ' +
+        'up the pneumatic from below, on a clock, from a floor that is still warm.',
+    },
+  },
+  {
+    id: 'undercroft_census',
+    tier: 'master',
+    epilogue: true,
+    title: 'The Undercroft Census',
+    flavour:
+      'Not the Crown’s paper. Vex’s own hand, name signed in full: the undercroft is ' +
+      'still warm, and the Census owes Weeping Stile a count. Take the clerk down the ' +
+      'stair and let her write what is true, for once, room by room.',
+    crack: {
+      title: 'The Count',
+      body:
+        'Sixty-one you were braced for. The clerk stops crossing names at four hundred ' +
+        'and eleven and starts simply counting marks. RELOCATED, in a dozen hands, ' +
+        'going back decades — the earliest pages older than Vane’s appointment, older ' +
+        'than the tax on light. He did not build the floor. He was the seventeenth man ' +
+        'to feed it, and the first to be caught doing it.',
+    },
+  },
+  {
+    id: 'underhill_duel',
+    tier: 'master',
+    epilogue: true,
+    wager: true,
+    title: 'The King’s Duelist: Underhill',
+    flavour:
+      'The last of the King’s Duelists holds the Spire doors, because his standing ' +
+      'orders say the doors are held and nobody who could countermand them is left ' +
+      'above ground. He has asked for you by name. It is not an honor this time. It is ' +
+      'a question.',
+    crack: {
+      title: 'The Crest, Kept',
+      body:
+        'Beaten, he keeps his crest, and that is the answer he duelled you for. ' +
+        '“Twenty years on this post and the King never once came down to it. No order. ' +
+        'No writ. No face. The crest is the King the way a poster is a job.” Then he ' +
+        'steps aside from the doors and gives you the last thing any of the King’s ' +
+        'people will ever tell you for free: the floor was eating before there was a ' +
+        'Spire to stand on it. Vane built it a better mouth. That is all he ever built.',
+    },
+  },
+  {
+    id: 'the_quiet_below',
+    tier: 'master',
+    epilogue: true,
+    title: 'The Quiet Below',
+    flavour:
+      'The last job on the board, and nobody posted it, because everybody did. Below ' +
+      'the throne room is the working engine — the one the Colossus was only ever the ' +
+      'mouth of — still drawing on every pact in Azo, yours included, one quiet degree ' +
+      'at a time. Go down and put it out. There is no fee. Vex asked what should be ' +
+      'written under the fee line, and has left it blank.',
+    crack: {
+      title: 'The Floor Is Just a Floor',
+      body:
+        'The Rite holds, and for the second time you bind an engine to a tether it ' +
+        'built. The geode-light dies down the length of the galleries, and floors above ' +
+        'you the throne room’s tether goes slack — the Colossus was never the engine, ' +
+        'only its mouth, and a mouth with nothing behind it is only brass. The stair up ' +
+        'is dark the whole way. In the morning a royal writ of thanks is on the board, ' +
+        'unsigned, in print, in the standard wax. You leave it pinned where it is. On ' +
+        'the service wall, under the older line, somebody has painted: THE FLOOR IS ' +
+        'JUST A FLOOR.',
     },
   },
 ];

@@ -7,109 +7,36 @@
  * `docs/11_world_of_azo_and_the_kings_contracts.md` §6.
  *
  * The fight runs the `ignis_trial` machinery whole, because the doc specifies exactly
- * that: the 50% damage gate clamps and cancels the chain, the purge shrugs off whatever
- * was saved for the moment, and Vane docks from his phase-1 form into the 2x2 Clockwork
- * Colossus. At 25% the Harpoon Protocol fires — `beginSubjugation` seals the engine,
- * injects the Rite, and the three-round siege ends it. There is **no subjugationPrize**,
- * and that is the point of the ending: a seal without a prize is a `bound` result that
- * pays like a victory and adds nothing to the roster. Vane is subjugated by the exact
- * instrument he built to license the wild, and what the player keeps is Azo.
+ * that — and since both fights want it, the machinery now lives in `bossPhases.ts` and
+ * this file names the knobs: the 50% damage gate clamps and cancels the chain, the purge
+ * shrugs off whatever was saved for the moment, and Vane docks from his phase-1 form
+ * into the 2x2 Clockwork Colossus. No Forced Eviction — the Colossus rises where the
+ * floor opens, or waits while the throne guard clears it. At 25% the Harpoon Protocol
+ * fires — `beginSubjugation` seals the engine, injects the Rite, and the three-round
+ * siege ends it. There is **no subjugationPrize**, and that is the point of the ending:
+ * a seal without a prize is a `bound` result that pays like a victory and adds nothing
+ * to the roster. Vane is subjugated by the exact instrument he built to license the
+ * wild, and what the player keeps is Azo.
  */
 
-import type { EncounterDef, EncounterScript } from './registry.js';
+import type { EncounterDef } from './registry.js';
 import { registerEncounter, registerEncounterScript } from './registry.js';
-import type { Ctx } from '../../engine/context.js';
-import { emit, newCause } from '../../engine/context.js';
-import { dockIntoForm, summonUnit } from '../../engine/spawn.js';
-import { sealAt25 } from './seal.js';
-import { clearIntents } from '../../engine/intents.js';
-import { canPlace, unitsOf } from '../../engine/board.js';
+import { growAtHalfScript } from './bossPhases.js';
 
 const ENCOUNTER_ID = 'the_summons';
-const PHASE_TWO_GATE = 'phase2';
-const GROWN_GATE = 'grown';
 
-/** Where the throne guard answers if the Colossus is boxed in. */
-const SENTINEL_SPAWNS: [number, number][] = [
-  [2, 1],
-  [5, 1],
-  [3, 0],
-];
-
-const script: EncounterScript = {
-  onDamageToCommander(ctx, side, amount) {
-    if (side !== 'enemy') return amount;
-    if (ctx.state.encounter.firedGates.includes(PHASE_TWO_GATE)) return amount;
-
-    const cmd = ctx.state.players.enemy;
-    const halfway = Math.floor(cmd.maxHp / 2);
-    if (cmd.hp - amount > halfway) return amount;
-
-    const clamped = Math.max(0, cmd.hp - halfway);
-    ctx.state.encounter.firedGates.push(PHASE_TWO_GATE);
-    ctx.state.encounter.chainCancelled = true;
-    enterPhaseTwo(ctx);
-    return clamped;
-  },
-
-  onCommanderHpChanged(ctx, side) {
-    if (side !== 'enemy') return;
-    sealAt25(ctx);
-  },
-
-  onTurnStart(ctx, side) {
-    if (side !== 'enemy') return;
-    const cmd = ctx.state.players.enemy;
-    const halfway = Math.floor(cmd.maxHp / 2);
-    if (cmd.hp <= halfway && !ctx.state.encounter.firedGates.includes(PHASE_TWO_GATE)) {
-      ctx.state.encounter.firedGates.push(PHASE_TWO_GATE);
-      enterPhaseTwo(ctx);
-    } else if (ctx.state.encounter.bossPhase === 2) {
-      boardTheColossus(ctx);
-    }
-    sealAt25(ctx);
-  },
-};
-
-/** The throne floor opens. */
-function enterPhaseTwo(ctx: Ctx): void {
-  const state = ctx.state;
-  state.encounter.bossPhase = 2;
-
-  newCause(ctx);
-  emit(ctx, {
-    t: 'bossPhaseShift',
-    side: 'enemy',
-    phase: 2,
-    name: 'The Great Quieting',
-  });
-
-  // The purge: whatever was banked against this moment, he shrugs off boarding.
-  for (const unit of unitsOf(state, 'enemy')) unit.statuses = {};
-
-  if (boardTheColossus(ctx)) return;
-
-  // Boxed in: the throne guard makes room the hard way, and boarding retries each turn.
-  for (const [x, y] of SENTINEL_SPAWNS) {
-    if (canPlace(state, { x, y }, 1)) {
-      summonUnit(ctx, 'grave_sentinel', 'enemy', { x, y });
-      return;
-    }
-  }
-}
-
-/** Vane docks from the owl into the engine, if there is floor enough. */
-function boardTheColossus(ctx: Ctx): boolean {
-  const state = ctx.state;
-  if (state.encounter.firedGates.includes(GROWN_GATE)) return false;
-
-  const grew = dockIntoForm(ctx, 'enemy', 'colossus_bound');
-  if (!grew) return false;
-
-  state.encounter.firedGates.push(GROWN_GATE);
-  clearIntents(ctx);
-  return true;
-}
+const script = growAtHalfScript({
+  phaseName: 'The Great Quieting',
+  grownDefId: 'colossus_bound',
+  addDefId: 'grave_sentinel',
+  // Where the throne guard answers if the Colossus is boxed in.
+  addSpawns: [
+    [2, 1],
+    [5, 1],
+    [3, 0],
+  ],
+  forcedEviction: false,
+});
 
 registerEncounterScript(ENCOUNTER_ID, script);
 

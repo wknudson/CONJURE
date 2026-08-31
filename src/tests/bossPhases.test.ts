@@ -538,3 +538,145 @@ describe('the beast hunting its anchor', () => {
     });
   });
 });
+
+describe('the Sovereign, risen (grow-at-half via the shared builder)', () => {
+  function sovereignScenario(opts: Parameters<typeof scenario>[0] = {}): GameState {
+    const state = scenario(opts);
+    state.encounter.id = 'bone_bastion';
+    state.encounter.name = 'Apex Subjugation: The Bone Bastion Sovereign';
+    state.players.enemy.maxHp = 460;
+    return state;
+  }
+
+  function sovereignBody(state: GameState, at = { x: 2, y: 1 }) {
+    const ctx = makeCtx(state);
+    const id = summonUnit(ctx, 'sovereign_bound', 'enemy', at)!;
+    state.players.enemy.companionUnitId = id;
+    state.players.enemy.companionUnitDefId = 'sovereign_bound';
+    return state.units[id]!;
+  }
+
+  it('rises into its 2x2 form at the halfway mark', () => {
+    const state = sovereignScenario({
+      enemyHp: 250,
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 0 }, atk: 120 }],
+    });
+    const imp = findUnit(state, 'scout_imp', 'player');
+    const boss = sovereignBody(state);
+
+    const res = run(state, {
+      type: 'attack',
+      attacker: imp.id,
+      target: { kind: 'unit', id: boss.id },
+    });
+
+    const shifts = eventsOf(res.state === res.state ? res.events : [], 'bossPhaseShift');
+    expect(shifts.some((e) => e.name === 'The Bastion Wakes')).toBe(true);
+    const grown = res.state.units[res.state.players.enemy.companionUnitId!];
+    expect(grown?.defId).toBe('sovereign_behemoth_bound');
+    expect(grown?.footprint).toBe(2);
+    expect(res.state.players.enemy.hp, 'clamped to exactly half').toBe(230);
+  });
+
+  it('summons a sentinel instead when the ground refuses the risen form, without evicting', () => {
+    // Player bodies wall the Sovereign in. The dead are patient — no Forced Eviction —
+    // so the growth waits and the graves answer with a sentinel at the first free anchor.
+    const state = sovereignScenario({
+      width: 8,
+      height: 8,
+      enemyHp: 250,
+      // The striker is part of the wall: adjacent enough to swing, player-owned enough
+      // that the patient dead refuse to move it.
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 3, y: 1 }, atk: 120 }],
+    });
+    const boss = sovereignBody(state, { x: 2, y: 1 });
+    // Wall every anchor a 2x2 could take around the boss with PLAYER bodies.
+    for (const at of [
+      { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 },
+      { x: 1, y: 1 }, { x: 4, y: 1 },
+      { x: 1, y: 2 }, { x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 },
+      { x: 4, y: 0 },
+    ]) {
+      addUnit(state, { def: 'ember_moth', side: 'player', at });
+    }
+    const imp = findUnit(state, 'scout_imp', 'player');
+    const handBefore = state.players.player.hand.length;
+
+    const res = run(state, {
+      type: 'attack',
+      attacker: imp.id,
+      target: { kind: 'unit', id: boss.id },
+    });
+
+    const still = res.state.units[res.state.players.enemy.companionUnitId!];
+    expect(still?.defId, 'the growth waits for room').toBe('sovereign_bound');
+    expect(res.state.players.player.hand.length, 'nobody was evicted').toBe(handBefore);
+    const sentinels = Object.values(res.state.units).filter(
+      (u) => u.defId === 'grave_sentinel' && u.side === 'enemy',
+    );
+    expect(sentinels.length, 'the graves answered instead').toBeGreaterThan(0);
+  });
+});
+
+describe('the Geist of Pylon Nine (starve it, not blast it)', () => {
+  function geistScenario(): GameState {
+    const state = scenario({ enemyHp: 400 });
+    state.encounter.id = 'pylon_nine';
+    state.encounter.name = 'The Geist of Pylon Nine';
+    state.players.enemy.maxHp = 400;
+    const ctx = makeCtx(state);
+    const id = summonUnit(ctx, 'geist_bound', 'enemy', { x: 2, y: 1 })!;
+    state.players.enemy.companionUnitId = id;
+    state.players.enemy.companionUnitDefId = 'geist_bound';
+    return state;
+  }
+
+  it('drinks shock: the blow lands as nothing and feeds it half', () => {
+    const state = geistScenario();
+    state.players.enemy.hp = 300;
+    const ctx = makeCtx(state);
+    dealDamage(ctx, {
+      target: { kind: 'portrait', side: 'enemy' },
+      amount: 40,
+      dtype: 'shock',
+      cause: 'spell',
+    });
+    expect(state.players.enemy.hp, '300 - 0 + heal 20').toBe(320);
+  });
+
+  it('announces the rule once, at the moment of the first mistake', () => {
+    const state = geistScenario();
+    state.players.enemy.hp = 300;
+    const ctx = makeCtx(state);
+    dealDamage(ctx, {
+      target: { kind: 'portrait', side: 'enemy' },
+      amount: 40,
+      dtype: 'shock',
+      cause: 'spell',
+    });
+    dealDamage(ctx, {
+      target: { kind: 'portrait', side: 'enemy' },
+      amount: 40,
+      dtype: 'shock',
+      cause: 'spell',
+    });
+    const shifts = ctx.events.filter(
+      (e) => e.t === 'bossPhaseShift' && e.name === 'It Drinks the Charge',
+    );
+    expect(shifts).toHaveLength(1);
+  });
+
+  it('still bleeds to everything else, and seals at a quarter', () => {
+    const state = geistScenario();
+    state.players.enemy.hp = 120;
+    const ctx = makeCtx(state);
+    dealDamage(ctx, {
+      target: { kind: 'portrait', side: 'enemy' },
+      amount: 40,
+      dtype: 'physical',
+      cause: 'attack',
+    });
+    expect(state.players.enemy.hp).toBe(80);
+    expect(state.encounter.subjugation.sealed, 'sealed below a quarter of 400').toBe(true);
+  });
+});

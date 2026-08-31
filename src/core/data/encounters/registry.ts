@@ -5,7 +5,7 @@
  * phase gates and the Harpoon Protocol add no branches to the combat rules.
  */
 
-import type { School, Side } from '../../../contract/ids.js';
+import type { DamageType, School, Side } from '../../../contract/ids.js';
 import type { Ctx } from '../../engine/context.js';
 import type { GameState, Weather } from '../../types/state.js';
 
@@ -112,8 +112,19 @@ export interface EncounterDef {
 export interface EncounterScript {
   /** Runs once after both sides are set up. */
   setup?(ctx: Ctx): void;
-  /** Clamps or modifies damage before it lands on a commander. Return the new amount. */
-  onDamageToCommander?(ctx: Ctx, side: Side, amount: number): number;
+  /**
+   * Clamps or modifies damage before it lands on a commander. Return the new amount.
+   *
+   * Carries the damage type so a boss can care what is hitting it — Pylon Nine's geist
+   * drinks shock rather than suffering it. Note this is the hook a *boss's own* damage
+   * rule wants even though the boss stands on the board as a body: a Bound Form's wounds
+   * are redirected to the portrait in `damage.ts` before they ever reach unit damage, so
+   * a per-unit hook here would never see them. If a rule for ordinary minions is ever
+   * wanted, the seam is `damageEntity` after the HP write — an
+   * `onUnitDamaged(ctx, unitId, dtype, hpLoss)` — designed here so nobody rediscovers
+   * the redirect the hard way, and deliberately not built until something needs it.
+   */
+  onDamageToCommander?(ctx: Ctx, side: Side, amount: number, dtype: DamageType): number;
   /** Fires after a commander actually loses HP. */
   onCommanderHpChanged?(ctx: Ctx, side: Side): void;
   /** Fires at the start of each side's turn, before that side acts. */

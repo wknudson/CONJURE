@@ -13,6 +13,8 @@ import type { GlobalGameState } from '../core/overworld/state.js';
 import { useConsumable } from '../core/overworld/run.js';
 import type { Bounty } from '../core/data/bounties.js';
 import { encounterById } from '../core/data/encounters/index.js';
+import { siteByEncounter } from './sites.js';
+import { areaById } from './areas/index.js';
 import type { TutorialFlag } from '../app/save.js';
 import type { AreaDef } from './map.js';
 import { LOCKED_REASON, bountyAvailable, currentObjective, pipStates, tutorialActive } from './quest.js';
@@ -401,6 +403,37 @@ export class DistrictHud {
         const reagents = bounty.spoils.reagents
           ? Object.values(bounty.spoils.reagents).reduce((a, b) => a + b, 0)
           : 0;
+        // A story poster is a briefing, not a button: the board says what the job is
+        // and where, and the fight is launched by walking up to the ground the writ
+        // names. Rolled work and the audit keep click-to-launch — placeless arena
+        // work with no geography to walk to.
+        const site = bounty.id.startsWith('story_') ? siteByEncounter(bounty.enemySeed) : undefined;
+        const whereLine = site
+          ? `The writ names ${areaById(site.areaId)?.name ?? site.areaId} — ${site.label}`
+          : encounter
+            ? `${encounter.name} · ${encounter.width}×${encounter.height}`
+            : 'Location unknown';
+        if (site) {
+          return `
+        <div class="bounty-card brass-panel bounty-card--${bounty.difficulty} bounty-card--writ">
+          <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
+          <span class="bounty-seal">Writ</span>
+          <div class="bounty-card__tier">${bounty.difficulty}</div>
+          <div class="bounty-card__title">${bounty.title}</div>
+          <div class="bounty-card__where">${whereLine}</div>
+          <div class="bounty-card__flavour">${bounty.flavour}</div>
+          <div class="bounty-card__pay">
+            <span class="bounty-card__coin bounty-card__coin--gold">${bounty.spoils.ducats ?? 0} d</span>
+            ${
+              bounty.spoils.marrowShards
+                ? `<span class="bounty-card__coin bounty-card__coin--marrow">${bounty.spoils.marrowShards} shards</span>`
+                : ''
+            }
+            ${reagents ? `<span class="bounty-card__coin bounty-card__coin--reagent">${reagents} cores</span>` : ''}
+            ${bounty.wager ? `<span class="bounty-card__coin bounty-card__coin--marrow">stake ${bounty.wager} d</span>` : ''}
+          </div>
+        </div>`;
+        }
         return `
         <button class="bounty-card brass-panel bounty-card--${bounty.difficulty}${
           bounty.audit ? ' bounty-card--audit' : ''
@@ -409,11 +442,7 @@ export class DistrictHud {
           ${bounty.audit ? '<span class="bounty-seal">Audit</span>' : ''}
           <div class="bounty-card__tier">${bounty.audit ? 'audit' : bounty.difficulty}</div>
           <div class="bounty-card__title">${bounty.title}</div>
-          <div class="bounty-card__where">${
-            encounter
-              ? `${encounter.name} · ${encounter.width}×${encounter.height}`
-              : 'Location unknown'
-          }</div>
+          <div class="bounty-card__where">${whereLine}</div>
           <div class="bounty-card__flavour">${bounty.flavour}</div>
           <div class="bounty-card__pay">
             <span class="bounty-card__coin bounty-card__coin--gold">${bounty.spoils.ducats ?? 0} d</span>

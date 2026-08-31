@@ -89,7 +89,9 @@ import {
   type ErrandState,
 } from './errands.js';
 import { DRESSING_ART, makeCairnTexture } from './textures.js';
-import { asideFor, type Chronicle } from './chronicle.js';
+import { asideFor, gateOpen, type Chronicle } from './chronicle.js';
+import { sitesInArea } from './sites.js';
+import { isLair } from '../core/data/lairs.js';
 import { groundedEncounter, skyStrengthAt } from './skies.js';
 import {
   lamplighterPost,
@@ -198,6 +200,12 @@ export interface DistrictOpts {
    * open and a value captured at mount would be stale by the time anybody read it.
    */
   huntBoard: Bounty[];
+  /**
+   * Every regional apex lair as a Bounty, composed the same way `huntBoard` is. The
+   * site hotspots are the only consumer: a lair has no poster and no signpost — the
+   * ground itself is the surfacing.
+   */
+  lairBoard: Bounty[];
   hunts: Readonly<Record<string, number>>;
   collection: Collection;
   deck: string[];
@@ -660,6 +668,29 @@ export class DistrictScreen implements Screen {
         this.hud!.openHunts(this.opts.huntBoard, this.opts.hunts),
       );
       this.interactables.push(signpost);
+    }
+
+    // Contract sites: the board briefs, the ground launches. A story site is live iff
+    // its contract's bounty is on the composed board this screen already holds — which
+    // is `nextStoryContract` read back, so liveness needs no state of its own. A lair
+    // is live when its gate opens and its cooldown has lapsed, and launches through
+    // the same `onBounty` road so spoils, wagers, the tutorial ledger and the
+    // open-contract failsafe all come along unchanged.
+    for (const site of sitesInArea(this.area.id)) {
+      const bounty =
+        this.opts.bounties.find((b) => b.id === `story_${site.encounterId}`) ??
+        this.opts.lairBoard.find((b) => b.enemySeed === site.encounterId);
+      if (!bounty) continue;
+      if (!gateOpen(site.gate, this.chronicle)) continue;
+      // The guided lap steers to Novice work, the same policy the board itself keeps.
+      if (tutorialActive(this.flags) && bounty.difficulty !== 'novice') continue;
+      if (isLair(site.encounterId) && !huntAvailable(this.opts.hunts[site.encounterId], Date.now()))
+        continue;
+      const spot = new Hotspot(site.at.x, site.at.z, site.label, () =>
+        this.opts.onBounty(bounty),
+      );
+      if (site.interactDetail) spot.interactDetail = site.interactDetail;
+      this.interactables.push(spot);
     }
   }
 

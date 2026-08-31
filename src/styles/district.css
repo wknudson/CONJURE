@@ -692,3 +692,15 @@ body.is-talking .district-help {
  * the district has always had on Q and E. So they stay, wired to the orbit, and the tooltip
  * says "the view" rather than "the board" because that is what it moves in both renderers.
  */
+
+/* A story poster is a briefing, not a button: the writ names the ground and the ground
+   launches the fight. Dressed apart from `.is-locked` — a writ is not refused work, it
+   is work that has to be walked to. */
+.bounty-card--writ {
+  cursor: default;
+  border-style: dashed;
+}
+.bounty-card--writ .bounty-card__where {
+  color: var(--gold, #fde047);
+  font-weight: 700;
+}

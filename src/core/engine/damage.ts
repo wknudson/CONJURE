@@ -176,7 +176,7 @@ function damagePortrait(ctx: Ctx, req: DamageRequest, side: Side, at?: Coord): D
   // of the current resolution chain.
   const script = getEncounterScript(ctx.state.encounter.id);
   if (script?.onDamageToCommander) {
-    amount = script.onDamageToCommander(ctx, side, amount);
+    amount = script.onDamageToCommander(ctx, side, amount, req.dtype);
   }
 
   let absorbed = 0;
