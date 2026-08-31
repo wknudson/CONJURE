@@ -42,6 +42,7 @@ export const DEAD_LETTERS: EncounterDef = registerEncounter({
     'service will resume. Sealed in the standard wax, posted in the standard hand.',
   width: 7,
   height: 8,
+  rosterBudget: 12,
   playerHp: 400,
   enemyHp: 440,
   playerName: 'Hero',
@@ -124,6 +125,7 @@ export const UNDERCROFT_CENSUS: EncounterDef = registerEncounter({
   // A descent: long and narrow.
   width: 7,
   height: 9,
+  rosterBudget: 10,
   playerHp: 400,
   enemyHp: 460,
   playerName: 'Hero',
@@ -209,6 +211,12 @@ export const UNDERHILL_DUEL: EncounterDef = registerEncounter({
     ['grave_sentinel', 2, 1],
     ['grave_sentinel', 4, 1],
     ['storm_rod', 3, 0],
+    // The arena pass: an 8x8 seats sixteen points, and the last post is manned like a
+    // post -- a guard line, and the emplacements a King's coat still rates.
+    ['shieldbearer', 0, 1],
+    ['shieldbearer', 6, 1],
+    ['voltaic_coil', 1, 0],
+    ['storm_rod', 7, 0],
   ],
   // The stock duelist shadow, deliberately: the undercroft took his beast years ago,
   // and what casts beside him now is what it gave back.
@@ -276,6 +284,7 @@ export const THE_QUIET_BELOW: EncounterDef = registerEncounter({
     'degree at a time. Go down and put it out. There is no fee.',
   width: 8,
   height: 8,
+  rosterBudget: 10,
   playerHp: 400,
   // The finale's cap. The epilogue meets it, never exceeds it.
   enemyHp: 500,

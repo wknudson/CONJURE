@@ -21,6 +21,7 @@ export const CURFEW_BREAKERS: EncounterDef = registerEncounter({
   // 6x8, the novice duelist's lane shape: a street, fought down its length.
   width: 6,
   height: 8,
+  rosterBudget: 8,
   playerHp: 400,
   enemyHp: 340,
   playerName: 'Hero',

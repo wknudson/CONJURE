@@ -85,6 +85,10 @@ export const NOVICE_DUELIST: EncounterDef = registerEncounter({
     ['ash_ghoul', 1, 1],
     ['scout_imp', 4, 1],
     ['hollowed_husk', 2, 0],
+    // The arena pass: a 6x8 seats fourteen points and a duelist concedes nothing at the
+    // coin. Two more dusk bodies bring the warband to the ground's own number.
+    ['hollow_wraith', 5, 0],
+    ['carrion_crow', 0, 0],
   ],
   // A duelist, so they fight as you do: their Companion stands on the board, their spells
   // are cast from it, and shoving it into a wall costs them exactly what it would cost you.

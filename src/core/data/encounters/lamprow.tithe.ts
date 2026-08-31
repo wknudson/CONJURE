@@ -23,6 +23,7 @@ export const LAMPROW_TITHE: EncounterDef = registerEncounter({
   // fight happens across a kitchen table's worth of ground, which is the point.
   width: 6,
   height: 6,
+  rosterBudget: 8,
   playerHp: 400,
   enemyHp: 300,
   playerName: 'Hero',
