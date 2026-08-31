@@ -286,14 +286,15 @@ and walk back — twice in a row without a reload.
 
 ## 4. Known issues (small, tracked, not blocking)
 
-- **The shipped fights got easier, and the enemy boards have not caught up.** Vanguard budgets
-  are now `width + height`, so the Novice Duelist (6×8) seats 14 player points and both 8×8s
-  seat 16, against enemy warbands still authored at roughly ten. Narrow Ruin (4×6) lands on 10
-  and is unchanged. The follow-up is a balance pass topping up
-  `encounter.enemyOpeningBoard` per arena — `duelist.test.ts` already asserts the Duelist's
-  enemy board matches the *starting* warband's points, and that is the template for asserting
-  it against the arena's budget instead. An optional `rosterBudget` override on `EncounterDef`
-  is the escape hatch if a specific fight wants its own number; deliberately not built yet.
+- ~~**The shipped fights got easier, and the enemy boards have not caught up.**~~ **Landed**
+  (2026-08-31), in exactly the shape this bullet sketched and wider. The four proving-ground
+  fights and all five wager duels now field their arena's full `width + height`, in
+  each fight's own school; the `rosterBudget` override exists and every deliberately-light
+  fight — hunts, packs, bosses with waves, the Summons — declares its number through it; and
+  `rosterLedger.test.ts` holds all 63 encounters to *fields exactly what it declares*, both
+  directions, so an undeclared shortfall can never sit unnoticed again. The duels also got
+  faces: eleven duelist figures landed on a fifth folk sheet, and the five wager duels stand
+  their duelist at the site while the contract is live — the person is the interactable.
 - **`magma_brute` is the only fieldable 2×2 in the game**, so the two-Behemoth kit cap is
   reachable only by holding two copies of it. Legal — the roster has always been a multiset —
   but a second Behemoth body would make the cap mean something. `deployment.test.ts` asserts
