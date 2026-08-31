@@ -263,20 +263,42 @@ export class DistrictWorld {
       for (const rect of extractRects(area, char)) {
         const runs = solid.split ? splitRun(rect.w) : ([[0, rect.w]] as [number, number][]);
         for (const [off, w] of runs) {
-          const cx = xOfCol(area, rect.col + off) - TILE / 2 + (w * TILE) / 2;
           const cz = zOfRow(area, rect.row) - TILE / 2 + (rect.d * TILE) / 2;
           // Capped well under the camera's sight line to the player, so the occlusion fade
           // is a safety net for the awkward angles rather than a thing that runs constantly.
           const h = solid.minHeight + buildRng() * (solid.maxHeight - solid.minHeight);
-          this.addStructure(
-            wallTexture,
-            cx,
-            cz,
-            w * TILE - solid.inset,
-            h,
-            rect.d * TILE - solid.depthInset,
-            { chimney: buildRng() < solid.chimneyChance ? 1.6 + buildRng() * 1.8 : 0 },
-          );
+          const chimney = buildRng() < solid.chimneyChance ? 1.6 + buildRng() * 1.8 : 0;
+          // A gate is an opening before it is a picture: cut its span out of any run that
+          // crosses it, or the drawing below hangs inside the masonry. That was the shipped
+          // state -- the plane stood at the wall's own z, entombed, and only the top metre
+          // cleared the coping. Verifiable from the street, and from nowhere else: every
+          // texture test passed while no player could ever have seen the thing tested.
+          const x0 = xOfCol(area, rect.col + off) - TILE / 2;
+          let spans: [number, number][] = [[x0, x0 + w * TILE]];
+          for (const exit of area.exits) {
+            const g = exit.gate;
+            if (!g || Math.abs(g.z - cz) > (rect.d * TILE) / 2) continue;
+            spans = spans.flatMap(([a, b]) => {
+              const cut: [number, number][] = [];
+              if (g.x - 4 > a) cut.push([a, Math.min(b, g.x - 4)]);
+              if (g.x + 4 < b) cut.push([Math.max(a, g.x + 4), b]);
+              return cut;
+            });
+          }
+          const widest = spans.reduce((m, s) => (s[1] - s[0] > m ? s[1] - s[0] : m), 0);
+          for (const [a, b] of spans) {
+            this.addStructure(
+              wallTexture,
+              (a + b) / 2,
+              cz,
+              b - a - solid.inset,
+              h,
+              rect.d * TILE - solid.depthInset,
+              // One chimney per run, kept to the widest piece, so cutting a gate out of a
+              // wall does not mint a second chimney out of thin air.
+              { chimney: b - a === widest ? chimney : 0 },
+            );
+          }
         }
       }
     }

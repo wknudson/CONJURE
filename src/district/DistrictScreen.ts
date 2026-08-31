@@ -1115,6 +1115,15 @@ export class DistrictScreen implements Screen {
    */
   private travel(exit: ExitSpec): void {
     this.writePosition({ x: exit.arrive.x, z: exit.arrive.z, mapId: exit.to });
+    // The hour goes home *before* the crossing, not only in `unmount`. The next district's
+    // options are built while this screen is still standing, so an hour handed back only on
+    // the way out arrives after the new ward has already read the save -- and the save still
+    // held the hour this screen was *mounted* at. Every crossing put the clock back to
+    // whenever you last arrived somewhere: walk a ward to dusk, take a road, and it was
+    // morning again. Found by leaving Lamprow after ten at night and reaching Ashfall at
+    // three -- the class of bug no unit test sees, because every function involved is pure
+    // and correct and the wrong value is handed between them.
+    this.opts.onHour?.(this.hour);
     this.opts.onTravel(exit);
   }
 
