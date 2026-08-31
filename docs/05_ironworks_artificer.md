@@ -193,7 +193,7 @@ so a new op cannot join the game and silently inherit an answer nobody chose.
 
 The exclusions are the more interesting half:
 
-- **Economy.** Pips, Marrow, cards drawn, Marrow extracted. A Rank 2 that cost one Pip less
+- **Economy.** Bones, Marrow, cards drawn, Marrow extracted. A Rank 2 that cost one Bone less
   is a *different tempo*, and leaving tempo alone is the whole reason progression was made
   vertical.
 - **Space.** Movement, range, shove and pull distance, area shape, cone depth, line length.

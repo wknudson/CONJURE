@@ -92,8 +92,8 @@ on the board; and there is no single place that answers "what should I be worrie
 1. **Threat panel.** A compact list of declared intents: which unit, how much, where. This
    is the HUD's new centre of gravity, and it is what E1 makes possible.
 2. **Proper Dual-Ring dial** (see `docs/10_presentation.md`) — metallic sockets for banked
-   Pips, ephemeral beads for Marrow that visibly burn away at end of turn.
-3. **Enemy read.** Hand count and banked Pips, so a Cataclysmic Core turn is foreseeable
+   Bones, ephemeral beads for Marrow that visibly burn away at end of turn.
+3. **Enemy read.** Hand count and banked Bones, so a Cataclysmic Core turn is foreseeable
    rather than a surprise.
 4. **Selected-unit panel.** Stats, keywords, statuses and remaining actions in one place,
    rather than only in a hover tooltip.
@@ -160,7 +160,7 @@ gravity and decay, and a colour ramp; rings gained a filled soft-edged mode.
 **This pass: E4 (rotation) and E3 (HUD).** ✅ Done 2026-08-17.
 
 Shipped: 90° board rotation on Q/E and buttons, with an animated spin and an extent-based
-camera fit; an enemy read (hand count and banked Pips, flagged when a Power Tier turn
+camera fit; an enemy read (hand count and banked Bones, flagged when a Power Tier turn
 becomes affordable); a selected-unit inspection panel; and a segmented Pact gauge.
 
 **Two bugs surfaced, both by tests rather than by looking at it:**

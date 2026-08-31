@@ -430,7 +430,7 @@ slot — several become Part 2 material.
 | `Obstacle.cover` | encounter-only, **no card spawns it** | `setup.ts:363` |
 | `trail: 'steam_fog'` | legal, **only `rubble` shipped** | `threats.ts:55` |
 | `obstacleDeath.damage` | typed, **both users apply statuses only** | `terrain.ts:85,97` |
-| `CombatBoons.pips` / `.extraOpeningCards` | **no relic, no trait** — brews only | `run.ts:26-33` |
+| `CombatBoons.bones` / `.extraOpeningCards` | **no relic, no trait** — brews only | `run.ts:26-33` |
 | Keywords `Dormant`, `Impact`, `Sacrifice` | **no engine code reads them** — card text | `glossary.ts:23,27,72` |
 | `isAnchor()` | exported, **never called** | `subjugation.ts:42` |
 | `ignoreIceSlip` | reaches `CommanderState`, **movement never reads it** | — |
@@ -498,7 +498,7 @@ Bulwark decks already want to do — stand in a line and not move.
 
 | Trait | Boons | Note |
 |---|---|---|
-| **Ironbound Gut** | `{ pips: 1 }` | First trait in the game on the `pips` axis — currently brews-only |
+| **Ironbound Gut** | `{ bones: 1 }` | First trait in the game on the `bones` axis — currently brews-only |
 | **Bulwark Stance** | `{ boundFormGrounded: true }` | Shares the flag with Ironclad Boots; a flag is a flag, so wearing both is not twice as rooted |
 | **Quarry-Sense** | `{ bonusObstacleHp: 2 }` | Pairs with the Alchemist's Mortar for genuinely siege-grade walls |
 
@@ -532,8 +532,8 @@ the width. All five bend a rule; none of them is a number.
 *Ground from a single reaction that never stopped.*
 
 **Raises the reaction-refund cap from 2 to 3 per turn.** New boon `bonusReactionCap: number`,
-read at exactly one chokepoint: `REACTION_PIP_CAP` in `engine/reactions.ts:198`, which
-becomes a per-commander value the way `pipCap` already is. The 2/turn cap exists so a cascade
+read at exactly one chokepoint: `REACTION_BONE_CAP` in `engine/reactions.ts:198`, which
+becomes a per-commander value the way `boneCap` already is. The 2/turn cap exists so a cascade
 cannot fund itself (`02:126-128`); 3 keeps that true while making a genuinely elaborate
 Vaporize→Wildfire turn pay for one more card.
 

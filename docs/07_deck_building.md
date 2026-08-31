@@ -231,7 +231,7 @@ returning `Infinity` rather than a number is the copy model deliberately not sur
 inside a boolean question.
 
 `costCurve` ([deckRules.ts:274](src/core/data/deckRules.ts:274)) buckets the deck by total
-pip cost into seven bins for the curve display.
+bone cost into seven bins for the curve display.
 
 The screen is `src/app/DeckBuilderScreen.ts` — the Field Journal. Four tabs
 ([DeckBuilderScreen.ts:144](src/app/DeckBuilderScreen.ts:144)): **The Deck**, **The Threat
@@ -369,13 +369,13 @@ that is a content bug and the suite says so rather than relaxing to "some may be
 
 | Weight | Roll |
 |---|---|
-| 2 | −1 Pip cost |
+| 2 | −1 Bone cost |
 | 4 | +10 damage |
 | 3 | gains Retain |
 
 — [vivarium.ts:203](src/core/overworld/vivarium.ts:203)
 
-Weighted by worth rather than uniformly: a Pip off is the roll players will chase, so it is
+Weighted by worth rather than uniformly: a Bone off is the roll players will chase, so it is
 the rarest, and Retain is the quiet one that makes a situational card worth drafting. A
 spell that appears twice is rolled once and shares the result, because the key is the
 spell.
@@ -436,9 +436,9 @@ that competes with nothing.
 
 ### Why
 
-A minion used to cost Pips out of the same pool as the spell it existed to enable, so
-buying a board meant not casting anything — the "Pip Tax". The deck keeps the spells now,
-and Pips bought magic and only magic — **until the Pip economy**, which made a swing cost one and a body that sits out make one. See `02_combat_lexicon.md` §2.5: the pillar was about bodies being *bought* out of the spell pool, and a cycle the warband funds itself is a different shape from a toll on summoning
+A minion used to cost Bones out of the same pool as the spell it existed to enable, so
+buying a board meant not casting anything — the "Bone Tax". The deck keeps the spells now,
+and Bones bought magic and only magic — **until the Bone economy**, which made a swing cost one and a body that sits out make one. See `02_combat_lexicon.md` §2.5: the pillar was about bodies being *bought* out of the spell pool, and a cycle the warband funds itself is a different shape from a toll on summoning
 ([roster.ts:1](src/core/data/roster.ts:1)).
 
 ### The budget: you own a kit, you field an arena's worth of it
@@ -506,7 +506,7 @@ export function rosterPointsOf(def: CardDef): number
 | Test | Points |
 |---|---|
 | `footprint === 2` | **6** — a Behemoth is most of a warband |
-| total cost ≥ 4 | **4** — elite (asked before reach, so a 4-Pip ranged body is elite rather than merely ranged) |
+| total cost ≥ 4 | **4** — elite (asked before reach, so a 4-Bone ranged body is elite rather than merely ranged) |
 | `rangeMax > 1` | **3** — ranged |
 | otherwise | **2** — basic melee |
 
@@ -629,7 +629,7 @@ illegal deck into a fight.
 | `OPENING_HAND` | 5 | dealt at setup |
 | `DRAW_PER_TURN` | 4 | at the start of your turn |
 | `HAND_LIMIT` | 7 | |
-| `PIP_CAP` | 8 | enforced only at end-of-turn cleanup |
+| `BONE_CAP` | 8 | enforced only at end-of-turn cleanup |
 
 — [deck.ts:21](src/core/engine/deck.ts:21)
 
@@ -643,11 +643,11 @@ is a real decision: a smaller deck cycles faster and burns more, and burning is 
 resource gain rather than a pure loss. Ephemeral overlay cards do not count against the
 limit.
 
-**Marrow evaporates; Pips bank.** `endOfTurnCleanup`
-([deck.ts:201](src/core/engine/deck.ts:201)) zeroes Marrow and caps Pips, and
-`costBreakdown` ([deck.ts:95](src/core/engine/deck.ts:95)) spends Marrow before Pips for
-exactly that reason. A card priced `{ pips: 3, marrow: 0 }` is payable entirely out of a
-tithe; a card priced `{ pips: 1, marrow: 2 }` cannot be bought with patience at any Pip
+**Marrow evaporates; Bones bank.** `endOfTurnCleanup`
+([deck.ts:201](src/core/engine/deck.ts:201)) zeroes Marrow and caps Bones, and
+`costBreakdown` ([deck.ts:95](src/core/engine/deck.ts:95)) spends Marrow before Bones for
+exactly that reason. A card priced `{ bones: 3, marrow: 0 }` is payable entirely out of a
+tithe; a card priced `{ bones: 1, marrow: 2 }` cannot be bought with patience at any Bone
 total.
 
 **Retain** keeps a card through cleanup, and printed Retain and *rolled* Retain count the

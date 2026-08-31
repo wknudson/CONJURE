@@ -197,7 +197,7 @@ growth, `beginSubjugation`):
 2. **The Clockwork Colossus.** At the 50% damage gate the throne floor opens and Vane
    boards a 2×2 smog-spewing engine.
 3. **The Rite.** At 25% the Colossus purges its statuses and gains aether plating — raw
-   damage immunity. The engine injects the 0-pip **Rite of Subjugation**; the player
+   damage immunity. The engine injects the 0-bone **Rite of Subjugation**; the player
    anchors a unit and holds the three-round siege while Vane's AI throws every action at
    the tether. Victory strips the engine, not the man: **Vane is subjugated by the exact
    instrument he built to license the wild.**

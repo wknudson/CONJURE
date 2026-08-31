@@ -213,9 +213,9 @@ trait id ────────┘
 | Field | Effect |
 |---|---|
 | `armor` | Persistent Armor on the Commander at the opening bell |
-| `pips` | added to the starting Pip bank |
+| `bones` | added to the starting Bone bank |
 | `extraOpeningCards` | drawn on top of the ordinary opening hand |
-| `maxPips` | raises the Pip **ceiling** for the whole fight |
+| `maxBones` | raises the Bone **ceiling** for the whole fight |
 | `ignoreFog` | fog and steam no longer break this side's line of sight |
 | `immuneToBurn` | Burn stops ticking on this side |
 | `ignoreIceSlip` | ice underfoot costs this side nothing |
@@ -248,11 +248,11 @@ const gear  = boonsOfRelics(overworld.equippedRelics);
 const knack = traitById(companion.traitId)?.boons ?? {};
 
 const armor   = brew.armor + companion.startingArmor + gear.armor + knack.armor;  // additive
-const maxPips = Math.max(gear.maxPips ?? 0, knack.maxPips ?? 0);                   // maximal
+const maxBones = Math.max(gear.maxBones ?? 0, knack.maxBones ?? 0);                   // maximal
 ```
 
 **Additive where adding makes sense, maximal where it does not.** A second coat is more
-armour; a second battery is not a higher ceiling. `maxPips` is stated as *the ceiling it
+armour; a second battery is not a higher ceiling. `maxBones` is stated as *the ceiling it
 produces* (9) rather than as `+1`, so the number in the data is the number the engine uses
 and two batteries are one battery. It is ignored when lower than the default: gear bends a
 rule in the player's favour or not at all.
