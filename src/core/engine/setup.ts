@@ -688,9 +688,18 @@ export function createCombat(
     };
   }
 
-  // Enemy opening board.
+  // Enemy opening board. A declared body that cannot field is a loud error, not a
+  // quietly smaller fight: the relocation fallback already absorbs ordinary collisions
+  // (footprint-aware, since the Behemoth case), so reaching this throw means the arena
+  // genuinely has no ground for something its author wrote down — the same class of
+  // authoring mistake the terrain and bounds validations above refuse at the door.
   for (const [defId, x, y] of encounter.enemyOpeningBoard) {
-    placeOpeningUnit(ctx, defId, 'enemy', { x, y });
+    const placed = placeOpeningUnit(ctx, defId, 'enemy', { x, y });
+    if (!placed) {
+      throw new Error(
+        `${encounter.id}: opening unit ${defId} at ${x},${y} could not be fielded`,
+      );
+    }
   }
 
   // A free body for the **enemy** only, centred on its front line, so an authored board

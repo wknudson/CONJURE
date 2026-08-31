@@ -56,9 +56,11 @@ export const CALDERA_TORTOISE: EncounterDef = registerEncounter({
     'stone_barricade',
     'aegis_ward',
   ],
-  // Vent-things, all enemy-owned: no all-Feral stall.
+  // Vent-things, all enemy-owned: no all-Feral stall. The brute anchors the corner
+  // because it is 2x2 and the wall at (2,2) sits inside any footprint anchored at (1,1)
+  // -- a 1x1 that collides gets relocated by placement, a Behemoth just fails to field.
   enemyOpeningBoard: [
-    ['magma_brute', 1, 1],
+    ['magma_brute', 0, 0],
     ['ember_hound', 6, 1],
     ['ember_moth', 3, 0],
   ],

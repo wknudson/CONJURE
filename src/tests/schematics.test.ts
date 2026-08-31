@@ -244,15 +244,16 @@ describe('what the loop can actually reach', () => {
     'hail_spire',
     'hammer_fall',
     'siege_break',
-    'iron_gate',
+    // `iron_gate` came off this list when the epilogue's Standing Orders started
+    // fielding it -- Dead Letters is a fight against Bulwark paperwork, and its deck
+    // is where the plan finally drops.
     'battlement',
-    // The two Auras that arrived after the ledger was last read. Hero kit, so no enemy deck
-    // was ever going to carry their plan -- an Aura is cast on your own body, and a fight
-    // teaches what it is fought *against*. They reach a player through their school's
-    // `spellPool` on the taming roll like the rest of this list; what they cannot yet be is
-    // forged.
+    // The Aura that arrived after the ledger was last read. Hero kit, so no enemy deck
+    // was ever going to teach it -- until one did: `written_path` came off this list when
+    // Dead Letters started casting it, an aura literally about paper in a fight against
+    // the Standing Orders. `rime_shell` still reaches a player only through its school's
+    // `spellPool` on the taming roll; what it cannot yet be is forged.
     'rime_shell',
-    'written_path',
   ]);
 
   const reachable = (): Set<string> => {
