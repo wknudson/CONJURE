@@ -207,6 +207,27 @@ export const HIGHCOURT: AreaDef = defineArea({
         tint: '#a4543a',
         gate: { after: ['bone_bastion'] },
       },
+      {
+        // The answer, and the last line the world gets.
+        //
+        // It belongs on *this* wall and no other, because this wall already says HE COUNTS THE
+        // FLOORS -- painted by somebody who believed the counting meant something. The epilogue
+        // is what happens after you have been down there and found out, so the reply is written
+        // under the original in different paint: not a rebuttal of the Magistracy but of the
+        // dread, which is a quieter and worse thing to have been wrong about.
+        //
+        // Gated on `the_quiet_below`, the last of the four epilogue contracts, so it cannot be
+        // read before it means anything. Third of three on the service end, on the same eight-unit
+        // spacing as the two above it -- the wall the court does not look at is where every line
+        // in this ward has ended up, which is the joke the ward is making about itself.
+        text: 'THE FLOOR IS JUST A FLOOR',
+        wallX: -22,
+        wallZ: 14,
+        dx: 3,
+        facesSouth: true,
+        tint: '#8c93a6',
+        gate: { after: ['the_quiet_below'] },
+      },
     ],
     horizon: 'city',
   },
