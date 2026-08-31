@@ -1,7 +1,8 @@
 /**
  * The people of Azo, and where each of them is on a sheet.
  *
- * Forty-eight townsfolk arrived as four PNGs, each a rough 3x4 grid named by its contents.
+ * Forty-eight townsfolk arrived as four PNGs, each a rough 3x4 grid named by its contents,
+ * and the eleven wager duelists followed on a fifth cut the same way.
  * This is the one place that knows their names, which sheet each is on, how it must be
  * filtered, and how tall to stand it. The boxes themselves come from
  * `folkContent.generated.ts` — measured off the alpha channel rather than divided out of a
@@ -16,8 +17,8 @@
 
 import { FOLK_BOXES } from './folkContent.generated.js';
 
-/** Which of the four sheets. */
-export type FolkSheetId = 'painted' | 'trades' | 'crafts' | 'alts';
+/** Which of the five sheets. */
+export type FolkSheetId = 'painted' | 'trades' | 'crafts' | 'alts' | 'duelists';
 
 /** Everyone drawn, by id. The keys of the generated table, so the two cannot drift. */
 export type FolkId = keyof typeof FOLK_BOXES;
@@ -37,7 +38,7 @@ export interface FolkSheet {
 }
 
 /**
- * The four sheets, under the names the artist filed them as.
+ * The five sheets, under the names the artist filed them as.
  *
  * The filenames are the manifest — each one lists its own twelve in order — so they are kept
  * verbatim rather than tidied into `townsfolk-2.png`. Two of them contain spaces, which is
@@ -60,6 +61,14 @@ export const FOLK_SHEETS: Record<FolkSheetId, FolkSheet> = {
   },
   alts: {
     file: 'ButcherB_BrewerB_Fishmonger_Taylor_CobblerB_Town GuardB_Miller_Harold_CartographerB_Tax Collector_Tanner_Street Urchin.png',
+    pixelArt: true,
+  },
+  // The wager duels' opponents, on the campaign's own ladder: four Novice wanderers, four
+  // Adept journeymen, three Master duelists. Five of the eleven stand at the duel sites
+  // (`district/sites.ts` names which); the other six are the bench the next duel is cast
+  // from. Same pixel style as the trades sheets, so the same filtering rule.
+  duelists: {
+    file: 'NoviceWandererA_NoviceWandererB_NoviceWandererC_NoviceWanderD_AdeptJourneymanA_AdeptJourneymanB_AdeptJourneymanC_AdeptJourneymanD_MasterDuelistA_MasterDuelistB_MasterDuelistC.png',
     pixelArt: true,
   },
 };
