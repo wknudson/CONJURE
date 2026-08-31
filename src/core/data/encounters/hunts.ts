@@ -33,6 +33,8 @@ import { registerEncounter, registerEncounterScript } from './registry.js';
 import { SEAL_ONLY_SCRIPT } from './seal.js';
 import { HUNTS } from '../hunts.js';
 import { companionById } from '../companions.js';
+import { rosterPointsOf } from '../roster.js';
+import { CARDS } from '../cards/index.js';
 import type { Weather } from '../../types/state.js';
 
 /** What one hunt has to say for itself. Everything else the builder decides. */
@@ -84,6 +86,12 @@ function hunt(spec: HuntSpec): EncounterDef {
     blurb: spec.blurb,
     width: 8,
     height: 8,
+    // A hunt is one apex beast and whatever runs with it -- the shape is the point, not a
+    // shortfall against the arena. The number is the adds plus the free vanguard, computed
+    // off the spec so the ledger test and the den can never disagree about what fields.
+    rosterBudget:
+      spec.opening.reduce((n, [defId]) => n + rosterPointsOf(CARDS[defId]!), 0) +
+      rosterPointsOf(CARDS.vanguard_footman!),
     playerHp: 400,
     enemyHp: TIER_HP[entry.tier] ?? 400,
     playerName: 'Hero',

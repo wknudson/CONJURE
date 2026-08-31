@@ -30,6 +30,7 @@ export const BONEMARKET_VERMIN: EncounterDef = registerEncounter({
   // 7x7: territory rows 0-1 and 5-6; three market rows between, cluttered with stalls.
   width: 7,
   height: 7,
+  rosterBudget: 8,
   playerHp: 400,
   enemyHp: 320,
   playerName: 'Hero',

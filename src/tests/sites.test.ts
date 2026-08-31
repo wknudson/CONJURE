@@ -4,6 +4,7 @@ import { STORY_CONTRACTS } from '../core/data/campaign.js';
 import { LAIRS } from '../core/data/lairs.js';
 import { areaById } from '../district/areas/index.js';
 import { encounterById } from '../core/data/encounters/index.js';
+import { folkSheetOf, isFolkId } from '../render/folk.js';
 
 /**
  * The board is a briefing surface and the world is the launcher, so the world has to
@@ -81,5 +82,35 @@ describe('contract sites', () => {
   it('answers area lookups', () => {
     expect(sitesInArea('highcourt').length).toBeGreaterThanOrEqual(7);
     expect(sitesInArea('nowhere')).toHaveLength(0);
+  });
+
+  it('stands a duelist at every wager duel, drawn from the duelists sheet', () => {
+    // The five duels are the sites that are a person rather than a place, and the figure is
+    // the interactable while the contract is live. Listed by hand so removing one -- or
+    // pointing it at a townsperson from another sheet -- fails here rather than rendering a
+    // grocer holding the King's ground.
+    const duels = [
+      'smoke_eaters_rest',
+      'ashwood_poacher',
+      'waystone_duel',
+      'coldwater_duel',
+      'underhill_duel',
+    ];
+    for (const id of duels) {
+      const site = siteByEncounter(id);
+      expect(site?.duelist, `${id} has nobody standing at it`).toBeTruthy();
+      expect(isFolkId(site!.duelist!), `${id}: '${site!.duelist}' is not drawn`).toBe(true);
+      expect(folkSheetOf(site!.duelist!), id).toBe('duelists');
+    }
+    // And nobody else is: a granary door with a duelist standing in it is a data slip.
+    for (const site of CONTRACT_SITES) {
+      if (!duels.includes(site.encounterId)) {
+        expect(site.duelist, `${site.id} is not a duel and has a duelist`).toBeUndefined();
+      }
+    }
+    // Every duelist is a different person. Two sites wearing one face is the cobbler
+    // problem all over again, and there are eleven figures to choose from.
+    const worn = duels.map((id) => siteByEncounter(id)!.duelist!);
+    expect(new Set(worn).size).toBe(worn.length);
   });
 });

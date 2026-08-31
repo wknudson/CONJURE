@@ -70,6 +70,17 @@ export const IGNIS_TRIAL: EncounterDef = registerEncounter({
   enemyOpeningBoard: [
     ['scout_imp', 1, 1],
     ['marrow_wisp', 5, 1],
+    // The arena pass: an 8x8 seats sixteen points. A trial should cost what the ground
+    // says it costs, and the drake was carrying the fight alone. Placed on the west half
+    // on purpose: the drake grows into a 2x2 at the halfway mark and `findDockSite` looks
+    // no further than one tile from its anchor, so the quad east of it -- the only one the
+    // wisp leaves open -- has to stay clear, and so do the Ember Guard's authored spawn
+    // tiles. The first draft stood a lobber in the dock and the drake could not enrage,
+    // which `bossPhases.test.ts` caught before anything shipped.
+    ['cinder_lobber', 0, 1],
+    ['cinder_adder', 2, 1],
+    ['ember_hound', 0, 0],
+    ['soot_sprite', 1, 0],
   ],
   // The drake fights on the board. Its 44 HP is the pool its body draws on.
   enemyCompanion: { unitCardId: 'ignis_drake_bound' },

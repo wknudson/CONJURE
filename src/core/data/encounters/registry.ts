@@ -84,6 +84,22 @@ export interface EncounterDef {
   /** Free opening unit placed for both sides. Set to null to skip. */
   vanguard?: string | null;
   /**
+   * What the enemy's opening warband is worth, in roster points, free vanguard included.
+   *
+   * Absent, it means the arena's own number — `rosterBudgetFor(width, height)` — which is
+   * what the player can seat, and `rosterLedger.test.ts` holds the board to it exactly. The
+   * duels and the proving-ground fights field full arenas on that default, because a duelist
+   * who seats less than the ground allows is conceding before the coin is down.
+   *
+   * Present, it is a fight saying out loud that it fields fewer points than the arena seats,
+   * and the test holds it to *that* instead. A hunt is one apex beast and its adds; a pack is
+   * one warband priced on the reinforcement ladder; a boss carries waves and a script. Those
+   * are shapes, not shortfalls — but the number has to be written down, because "the enemy
+   * boards have not caught up" sat in the roadmap for a fortnight precisely because nothing
+   * made the gap visible.
+   */
+  rosterBudget?: number;
+  /**
    * The species a successful subjugation adds to the roster, by Companion id.
    *
    * Here rather than in the engine for the same reason `beginSubjugation` is called from

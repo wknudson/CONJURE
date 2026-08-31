@@ -146,6 +146,9 @@ function packEncounter(pack: PackDef): EncounterDef {
     // No free footman: the pack is costed at exactly ten points and a gift body would make
     // every one of them twelve.
     vanguard: null,
+    // The same ten, said where the ledger looks. A pack is one warband priced on the
+    // reinforcement ladder, not a garrison scaled to its ground.
+    rosterBudget: 10,
     victory: 'rout',
   });
 }

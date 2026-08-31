@@ -28,6 +28,7 @@ export const LAMPLIGHTER_ESCORT: EncounterDef = registerEncounter({
     'through to the last post.',
   width: 6,
   height: 8,
+  rosterBudget: 8,
   playerHp: 400,
   enemyHp: 320,
   playerName: 'Hero',
@@ -74,6 +75,7 @@ export const DEBT_COLLECTED_MINOR: EncounterDef = registerEncounter({
   // The smallest legal room but one: everything happens at arm's length.
   width: 6,
   height: 6,
+  rosterBudget: 8,
   playerHp: 400,
   enemyHp: 300,
   playerName: 'Hero',
@@ -115,6 +117,7 @@ export const FOULED_CISTERN: EncounterDef = registerEncounter({
     'down before the pumps foul.',
   width: 6,
   height: 7,
+  rosterBudget: 6,
   playerHp: 400,
   // A starved juvenile: the lowest Pact in the campaign, and that is the tell.
   enemyHp: 260,
@@ -159,6 +162,7 @@ export const POSTER_WORK: EncounterDef = registerEncounter({
     'and detain whoever holds the brush.',
   width: 6,
   height: 6,
+  rosterBudget: 6,
   playerHp: 400,
   // The lightest opposition in the campaign. They are bill-stickers.
   enemyHp: 260,
@@ -196,6 +200,7 @@ export const GUTTER_DISPUTE: EncounterDef = registerEncounter({
     'Magistracy does not care who wins, only that it stops.',
   width: 7,
   height: 7,
+  rosterBudget: 8,
   playerHp: 400,
   enemyHp: 330,
   playerName: 'Hero',
@@ -241,6 +246,7 @@ export const CLINIC_QUOTA: EncounterDef = registerEncounter({
     'never going to be allowed to avoid. Collect.',
   width: 6,
   height: 7,
+  rosterBudget: 8,
   playerHp: 400,
   enemyHp: 310,
   playerName: 'Hero',

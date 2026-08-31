@@ -29,6 +29,7 @@
  */
 
 import type { Gate } from './chronicle.js';
+import type { FolkId } from '../render/folk.js';
 
 export interface ContractSite {
   /** `${areaId}:${slug}` — the errand and stall naming idiom. */
@@ -45,6 +46,17 @@ export interface ContractSite {
   readonly interactDetail?: string;
   /** Extra availability on top of board/cooldown liveness, e.g. the epilogue's finale gate. */
   readonly gate?: Gate;
+  /**
+   * Who is standing here, for the sites that are a person rather than a place.
+   *
+   * The wager duels only. A duel site's whole fiction is somebody waiting on the ground of
+   * the fight, so while the contract is live the figure stands at `at` and *is* the
+   * interactable -- walking up to the Smoke-Eater and talking to him is how the wager is
+   * offered. Every other site stays a bare hotspot, because a granary door is not a person.
+   * Drawn from the duelists sheet (`render/folk.ts`); hand-matched to each duelist's own
+   * description rather than rolled, for the same reason the towns' cast lists are authored.
+   */
+  readonly duelist?: FolkId;
 }
 
 export const CONTRACT_SITES: readonly ContractSite[] = [
@@ -100,6 +112,8 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     at: { x: 6, z: -6 },
     encounterId: 'smoke_eaters_rest',
     label: 'The Smoke-Eater’s Bench',
+    // The barefoot veteran: the man the blurb says has nothing left to put up but the beast.
+    duelist: 'novice_wanderer_c',
     interactDetail:
       'He has claimed the bench, and the clean-air trade walks the long way round him. He duels anyone the Wardens send — and duels are wagered.',
   },
@@ -199,6 +213,8 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     at: { x: 14, z: 38 },
     encounterId: 'ashwood_poacher',
     label: 'The Poacher’s Fire',
+    // Sword and bedroll, dressed for the fringe he is bleeding.
+    duelist: 'adept_journeyman_c',
     interactDetail:
       'A banked fire just off the ride, laid by somebody who wants to be found by the right person. Duels are wagered.',
   },
@@ -238,6 +254,8 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     at: { x: 26, z: 2 },
     encounterId: 'waystone_duel',
     label: 'The Waystone',
+    // The long coat of a man who keeps a post, which is the whole of what he does.
+    duelist: 'adept_journeyman_a',
     interactDetail:
       'He stands the lane between the stones and the toll-men no longer bother walking up. Millharrow’s children come this way with bread. Duels are wagered.',
   },
@@ -298,6 +316,9 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     at: { x: 10, z: 6 },
     encounterId: 'coldwater_duel',
     label: 'Ground of Her Choosing',
+    // Mask and rapier: the first of the King's Duelists, dressed for the ceremony she insists
+    // this still is.
+    duelist: 'master_duelist_a',
     interactDetail:
       'A duelist’s square has been swept in the middle of the village, and sixty-one hearths stand cold around it. She is waiting where the ledger says nobody lives. Duels are wagered.',
   },
@@ -371,6 +392,8 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     at: { x: -2, z: -22 },
     encounterId: 'underhill_duel',
     label: 'The Last Post',
+    // The King's coat and the heavy sword, at attention for the order that is never coming.
+    duelist: 'master_duelist_c',
     interactDetail:
       'One man in a King’s coat, square in front of the doors, at attention for an order that is never coming. Duels are wagered.',
     gate: { after: ['undercroft_census'] },

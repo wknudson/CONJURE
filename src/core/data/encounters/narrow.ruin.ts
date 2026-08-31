@@ -46,7 +46,13 @@ export const NARROW_RUIN: EncounterDef = registerEncounter({
     'scout_imp',
     'dark_tithe',
   ],
-  enemyOpeningBoard: [['arc_turret', 1, 1]],
+  // The turret and the wall of shoulders in front of it -- a 4x6 seats ten points, and an
+  // emplaced Warden garrisons what the hall allows.
+  enemyOpeningBoard: [
+    ['arc_turret', 1, 1],
+    ['shieldbearer', 0, 1],
+    ['quarry_hand', 3, 1],
+  ],
   // The Warden is emplaced and so is what they are bound to. In a four-wide hall a
   // tortoise is a second wall, and the only door to the Pact behind it.
   enemyCompanion: { unitCardId: 'tortoise_bound' },

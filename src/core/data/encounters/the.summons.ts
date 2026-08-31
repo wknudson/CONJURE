@@ -49,6 +49,7 @@ export const THE_SUMMONS: EncounterDef = registerEncounter({
     'You were never hunting threats. You were collecting his collateral.',
   width: 8,
   height: 8,
+  rosterBudget: 10,
   playerHp: 400,
   // The largest Pact in the game. He has been collecting it all campaign.
   enemyHp: 500,

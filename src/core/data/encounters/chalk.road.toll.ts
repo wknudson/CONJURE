@@ -23,6 +23,7 @@ export const CHALK_ROAD_TOLL: EncounterDef = registerEncounter({
   // so closing the distance in the rain is most of the fight.
   width: 6,
   height: 9,
+  rosterBudget: 10,
   playerHp: 400,
   enemyHp: 380,
   playerName: 'Hero',

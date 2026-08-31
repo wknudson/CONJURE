@@ -29,6 +29,7 @@ import { DRESSING, DRESSING_IDS, isDressingId } from '../district/dressing.js';
 import { CRITTERS, CRITTER_IDS, isCritterId } from '../district/wildlife.js';
 import { isSkyId, SKIES } from '../district/skies.js';
 import { FOLK_IDS, isFolkId } from '../render/folk.js';
+import { CONTRACT_SITES } from '../district/sites.js';
 
 const SPAWN = ASHFALL.spawn;
 const DOORS = ASHFALL.props.doors ?? [];
@@ -42,10 +43,27 @@ describe('the world is populated', () => {
   const cast = AREAS.flatMap((a) => (a.props.npcs ?? []).map((n) => ({ area: a.id, ...n })));
 
   it('uses every drawing on every sheet', () => {
-    // All forty-eight, deliberately. An unused sprite is not a bug, but it is a decision, and
-    // this is the line that makes dropping one a decision somebody has to take on purpose
-    // rather than a thing that quietly happens while an area is edited.
-    const placed = new Set(cast.map((n) => n.art).filter(Boolean));
+    // All forty-eight townsfolk, deliberately. An unused sprite is not a bug, but it is a
+    // decision, and this is the line that makes dropping one a decision somebody has to take
+    // on purpose rather than a thing that quietly happens while an area is edited.
+    //
+    // The duelists sheet plays by a different rule: its figures stand at contract sites, not
+    // in cast lists, and only five of eleven are cast today. The other six are the bench the
+    // next wager duel draws from -- named here one by one, so spending a benched figure means
+    // striking it from this list on purpose, the same discipline the townsfolk get.
+    const BENCH = [
+      'novice_wanderer_a',
+      'novice_wanderer_b',
+      'novice_wanderer_d',
+      'adept_journeyman_b',
+      'adept_journeyman_d',
+      'master_duelist_b',
+    ];
+    const placed = new Set<string>([
+      ...cast.map((n) => n.art).filter((a): a is NonNullable<typeof a> => !!a),
+      ...CONTRACT_SITES.map((s) => s.duelist).filter((d): d is NonNullable<typeof d> => !!d),
+      ...BENCH,
+    ]);
     expect([...FOLK_IDS].filter((id) => !placed.has(id))).toEqual([]);
   });
 

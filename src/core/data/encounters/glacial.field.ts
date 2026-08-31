@@ -61,6 +61,12 @@ export const GLACIAL_FIELD: EncounterDef = registerEncounter({
   enemyOpeningBoard: [
     ['scout_imp', 2, 1],
     ['rimeguard', 5, 1],
+    // The arena pass: an 8x8 seats sixteen points, and the mirror stops being a mirror if
+    // only one side fields what the field allows.
+    ['glacier_warden', 6, 1],
+    ['rimeguard', 1, 1],
+    ['glacial_stalker', 0, 0],
+    ['hoarhound', 7, 0],
   ],
   // A mirror, and a frost one: their spells are thrown from a body that has to walk into
   // the fog to reach anything, exactly as yours does.

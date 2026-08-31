@@ -257,27 +257,47 @@ export interface Measured {
  * figures meet varies from row to row — on the `trades` sheet the best cut sits at x=403 in
  * one band and x=458 in another, forty pixels either side of the same nominal line.
  */
-export function measureSheet(bm: Bitmap, cols: number, rows: number): Measured {
+export function measureSheet(
+  bm: Bitmap,
+  cols: number,
+  rows: number,
+  gaps: readonly number[] = [],
+): Measured {
   const colWidth = bm.width / cols;
+  const gapSet = new Set(gaps);
 
   // Pass 1 — the row bands, unioned across the columns.
-  const perColumn: { top: number; bottom: number }[][] = [];
+  //
+  // A column with a declared gap legitimately holds fewer figures than the sheet has rows,
+  // so its blocks are assigned to the rows it *does* hold, in order, and the band union
+  // simply has one fewer voice for the missing row. The count is still checked exactly —
+  // a gap is a statement about the art, and a column that disagrees with it is the same
+  // error a miscounted full column always was.
+  const perColumn: ({ top: number; bottom: number } | null)[][] = [];
   for (let c = 0; c < cols; c++) {
+    const present = Array.from({ length: rows }, (_unused, r) => !gapSet.has(r * cols + c));
+    const expected = present.filter(Boolean).length;
     const blocks = figureBlocks(bm, Math.round(c * colWidth), Math.round((c + 1) * colWidth));
-    if (blocks.length !== rows) {
-      throw new Error(`column ${c}: found ${blocks.length} figures, expected ${rows}`);
+    if (blocks.length !== expected) {
+      throw new Error(`column ${c}: found ${blocks.length} figures, expected ${expected}`);
     }
-    perColumn.push(blocks);
+    let at = 0;
+    perColumn.push(present.map((has) => (has ? blocks[at++]! : null)));
   }
-  const bands = Array.from({ length: rows }, (_unused, r) => ({
-    top: Math.min(...perColumn.map((b) => b[r]!.top)),
-    bottom: Math.max(...perColumn.map((b) => b[r]!.bottom)),
-  }));
+  const bands = Array.from({ length: rows }, (_unused, r) => {
+    const here = perColumn.map((b) => b[r]).filter((b): b is { top: number; bottom: number } => !!b);
+    if (here.length === 0) throw new Error(`row ${r}: every cell is a declared gap`);
+    return {
+      top: Math.min(...here.map((b) => b.top)),
+      bottom: Math.max(...here.map((b) => b.bottom)),
+    };
+  });
 
-  // Pass 2 — the seams, per band, and the boxes between them.
+  // Pass 2 — the seams, per band, and the boxes between them. A gap cell emits nothing, so
+  // the boxes line up with the sheet's folk list rather than carrying a 1x1 where nobody is.
   const out: Box[] = [];
   let worstSeam = 0;
-  for (const band of bands) {
+  bands.forEach((band, r) => {
     const edges = [0];
     for (let c = 1; c < cols; c++) {
       const seam = seamAt(bm, Math.round(c * colWidth), band.top, band.bottom);
@@ -285,8 +305,11 @@ export function measureSheet(bm: Bitmap, cols: number, rows: number): Measured {
       edges.push(seam.x);
     }
     edges.push(bm.width);
-    for (let c = 0; c < cols; c++) out.push(trim(bm, edges[c]!, edges[c + 1]!, band.top, band.bottom));
-  }
+    for (let c = 0; c < cols; c++) {
+      if (gapSet.has(r * cols + c)) continue;
+      out.push(trim(bm, edges[c]!, edges[c + 1]!, band.top, band.bottom));
+    }
+  });
   return { boxes: out, worstSeam };
 }
 
@@ -302,6 +325,15 @@ interface SheetSource {
   rows: number;
   /** The ids on it, in reading order — the same order the filename lists them. */
   folk: string[];
+  /**
+   * Cells with nobody drawn in them, as reading-order indices (`row * cols + col`).
+   *
+   * The duelists sheet ships eleven figures on a 3x4 grid, and the artist left the ninth
+   * cell empty rather than padding it. Declared here so the measurer expects the shortfall
+   * in exactly that column instead of refusing the sheet — and *only* here: an undeclared
+   * missing figure is still the miscount error it always was.
+   */
+  gaps?: number[];
 }
 
 export const SHEETS: SheetSource[] = [
@@ -385,6 +417,28 @@ export const SHEETS: SheetSource[] = [
       'street_urchin',
     ],
   },
+  {
+    id: 'duelists',
+    file: 'NoviceWandererA_NoviceWandererB_NoviceWandererC_NoviceWanderD_AdeptJourneymanA_AdeptJourneymanB_AdeptJourneymanC_AdeptJourneymanD_MasterDuelistA_MasterDuelistB_MasterDuelistC.png',
+    cols: 3,
+    rows: 4,
+    // Eleven duelists on the campaign's own ladder — the wager fights' opponents, drawn at
+    // last. The ninth cell (row 3, column 3) is empty on the sheet itself.
+    gaps: [8],
+    folk: [
+      'novice_wanderer_a',
+      'novice_wanderer_b',
+      'novice_wanderer_c',
+      'novice_wanderer_d',
+      'adept_journeyman_a',
+      'adept_journeyman_b',
+      'adept_journeyman_c',
+      'adept_journeyman_d',
+      'master_duelist_a',
+      'master_duelist_b',
+      'master_duelist_c',
+    ],
+  },
 ];
 
 /** Everything the generator knows, as the generated module will state it. */
@@ -397,7 +451,7 @@ export function measureAll(
     const bm = decodePngAlpha(resolve(spritesDir, sheet.file));
     let measured: Measured;
     try {
-      measured = measureSheet(bm, sheet.cols, sheet.rows);
+      measured = measureSheet(bm, sheet.cols, sheet.rows, sheet.gaps ?? []);
     } catch (err) {
       throw new Error(`${sheet.file}: ${(err as Error).message}`);
     }

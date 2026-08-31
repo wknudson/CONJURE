@@ -68,4 +68,16 @@ export const FOLK_BOXES = {
   tax_collector: { sheet: 'alts', x: 30, y: 2434, w: 405, h: 580 },
   tanner: { sheet: 'alts', x: 464, y: 2411, w: 439, h: 599 },
   street_urchin: { sheet: 'alts', x: 973, y: 2477, w: 329, h: 532 },
+  // NoviceWandererA_NoviceWandererB_NoviceWandererC_NoviceWanderD_AdeptJourneymanA_AdeptJourneymanB_AdeptJourneymanC_AdeptJourneymanD_MasterDuelistA_MasterDuelistB_MasterDuelistC.png
+  novice_wanderer_a: { sheet: 'duelists', x: 43, y: 93, w: 445, h: 686 },
+  novice_wanderer_b: { sheet: 'duelists', x: 549, y: 174, w: 329, h: 607 },
+  novice_wanderer_c: { sheet: 'duelists', x: 976, y: 157, w: 344, h: 617 },
+  novice_wanderer_d: { sheet: 'duelists', x: 105, y: 955, w: 319, h: 600 },
+  adept_journeyman_a: { sheet: 'duelists', x: 560, y: 946, w: 323, h: 609 },
+  adept_journeyman_b: { sheet: 'duelists', x: 1009, y: 956, w: 272, h: 598 },
+  adept_journeyman_c: { sheet: 'duelists', x: 56, y: 1711, w: 384, h: 622 },
+  adept_journeyman_d: { sheet: 'duelists', x: 560, y: 1712, w: 297, h: 621 },
+  master_duelist_a: { sheet: 'duelists', x: 16, y: 2443, w: 418, h: 577 },
+  master_duelist_b: { sheet: 'duelists', x: 506, y: 2467, w: 368, h: 550 },
+  master_duelist_c: { sheet: 'duelists', x: 891, y: 2438, w: 416, h: 584 },
 } as const satisfies Record<string, FolkBox>;

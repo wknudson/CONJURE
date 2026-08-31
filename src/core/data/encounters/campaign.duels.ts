@@ -63,6 +63,11 @@ export const SMOKE_EATERS_REST: EncounterDef = registerEncounter({
     ['shieldbearer', 2, 1],
     ['shieldbearer', 4, 1],
     ['grave_sentinel', 2, 0],
+    // The arena pass: a 7x7 seats fourteen points, and what is left of a squad is still
+    // a squad. Stone and shoulders, like the man.
+    ['quarry_hand', 1, 1],
+    ['shieldbearer', 5, 1],
+    ['stone_heart_golem', 6, 0],
   ],
   // A Hedgefort: a standing stone the hedge grew through, and about as willing to move as
   // the old soldier casting from behind it.
@@ -109,6 +114,11 @@ export const ASHWOOD_POACHER: EncounterDef = registerEncounter({
     ['longshot_stalker', 1, 1],
     ['briar_wolf', 5, 1],
     ['briar_wolf', 2, 0],
+    // The arena pass: a 7x8 seats fifteen points. More of the wood, which is what a
+    // poacher has instead of a squad.
+    ['bramble_sentinel', 0, 1],
+    ['sporeback_boar', 2, 1],
+    ['briar_wolf', 6, 0],
   ],
   // Something taken from the wood, as a discharged man's beast should be: antlers with
   // last winter's thorns still frozen into them.
@@ -161,6 +171,12 @@ export const COLDWATER_DUEL: EncounterDef = registerEncounter({
     ['galvanic_revenant', 2, 1],
     ['grave_sentinel', 5, 1],
     ['hollow_wraith', 3, 0],
+    // The arena pass: an 8x8 seats sixteen points -- and hers are deliberately cheap and
+    // many, because her whole kit spends what falls. Bodies are her ammunition.
+    ['carrion_crow', 0, 1],
+    ['ash_ghoul', 6, 1],
+    ['hollow_wraith', 1, 0],
+    ['marrow_hound', 7, 0],
   ],
   // A King's Duelist warrants her own beast, and Coldwater's is what is left of a
   // lamplighter who kept going back for the wick. She does not say where she got it.
@@ -203,6 +219,11 @@ export const WAYSTONE_DUEL: EncounterDef = registerEncounter({
   enemyOpeningBoard: [
     ['shieldbearer', 2, 1],
     ['anvil_lord', 4, 1],
+    // The arena pass: a 6x9 seats fifteen points. A bridge is held by weight of iron,
+    // and the mortar reaches over the parapets his line stands behind.
+    ['shieldbearer', 0, 1],
+    ['quarry_hand', 5, 1],
+    ['scrap_metal_mortar', 1, 0],
   ],
   // Hedge lightning, coiled in the bridge's own briar. The children who bring him bread
   // walk past it twice a day and it has never once moved.

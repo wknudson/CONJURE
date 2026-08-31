@@ -5,7 +5,7 @@ import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
 import { HERO_KINDS, deckRoleRefusal } from '../core/data/deckRules.js';
 import { schematicPool } from '../core/data/schematics.js';
 import { SCHOOLS } from '../core/data/pools.js';
-import { rosterPointsOf } from '../core/data/roster.js';
+import { rosterBudgetFor, rosterPointsOf } from '../core/data/roster.js';
 import { startingRosterFor } from '../core/data/pools.js';
 import { hybridSchools } from '../core/data/splicing.js';
 import { VARIANT_PILLS, belongsInCase } from '../app/DeckBuilderScreen.js';
@@ -47,16 +47,21 @@ describe('the Wandering Duelist holds a Hero Deck', () => {
     }
   });
 
-  it('fields a warband worth the same ten points a character gets', () => {
-    // `setup.ts` hands the enemy a free `vanguard_footman`, so the authored list is the
-    // other eight points. Counting it here is what caught the first draft listing a Footman
-    // as well: six bodies against a ten-point roster, one of them on an occupied tile.
+  it('fields a warband worth the arena, not the old ten', () => {
+    // The rule this asserted for a fortnight -- "a duelist fields what a starting character
+    // gets" -- became a handicap the day Vanguard budgets moved to `width + height`: the
+    // player seats fourteen points on this 6x8 and the ten-point warband never caught up
+    // (ROADMAP §4). A duelist concedes nothing at the coin, so the warband now fills the
+    // ground's own number. `rosterLedger.test.ts` holds every fight to the same rule; this
+    // stays because the *change of fiction* belongs to the duel that set the old one.
     const authored = NOVICE_DUELIST.enemyOpeningBoard.reduce(
       (n, [defId]) => n + rosterPointsOf(CARDS[defId]!),
       0,
     );
     const free = rosterPointsOf(CARDS.vanguard_footman!);
-    expect(authored + free).toBe(
+    expect(authored + free).toBe(rosterBudgetFor(NOVICE_DUELIST.width, NOVICE_DUELIST.height));
+    // And the ground pays better than the character's kit: what changed is the floor.
+    expect(authored + free).toBeGreaterThan(
       startingRosterFor('dusk').reduce((n, id) => n + rosterPointsOf(CARDS[id]!), 0),
     );
   });

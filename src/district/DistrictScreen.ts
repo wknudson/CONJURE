@@ -90,7 +90,7 @@ import {
 } from './errands.js';
 import { DRESSING_ART, makeCairnTexture } from './textures.js';
 import { asideFor, gateOpen, type Chronicle } from './chronicle.js';
-import { sitesInArea } from './sites.js';
+import { sitesInArea, type ContractSite } from './sites.js';
 import { isLair } from '../core/data/lairs.js';
 import { groundedEncounter, skyStrengthAt } from './skies.js';
 import {
@@ -315,6 +315,16 @@ export class DistrictScreen implements Screen {
    * teardown — is done for the list.
    */
   private readonly npcs: NPC[] = [];
+
+  /**
+   * The wager duelists whose ground is live on this street.
+   *
+   * Recorded by `buildInteractables` and stood up by `loadActors`, because the split is
+   * real: liveness is known at build time, but a body needs its sheet decoded. While a
+   * duel's contract is on the board, its duelist is the interactable -- the person, not a
+   * bare patch of ground, is what offers the wager.
+   */
+  private readonly liveDuelists: { site: ContractSite; offer: () => void }[] = [];
 
   private readonly interactables: Interactable[] = [];
   private readonly updatables: Updatable[] = [];
@@ -686,6 +696,13 @@ export class DistrictScreen implements Screen {
       if (tutorialActive(this.flags) && bounty.difficulty !== 'novice') continue;
       if (isLair(site.encounterId) && !huntAvailable(this.opts.hunts[site.encounterId], Date.now()))
         continue;
+      // A duel is a person, and the person is the prompt. The body needs its sheet, so
+      // the hotspot's work is deferred to `loadActors` -- which also falls back to bare
+      // ground if the sheet does not, so a failed decode costs the figure and not the fight.
+      if (site.duelist) {
+        this.liveDuelists.push({ site, offer: () => this.opts.onBounty(bounty) });
+        continue;
+      }
       const spot = new Hotspot(site.at.x, site.at.z, site.label, () =>
         this.opts.onBounty(bounty),
       );
@@ -889,6 +906,48 @@ export class DistrictScreen implements Screen {
       this.npcs.push(npc);
       if (spec.id === this.area.props.lamplighter) this.lamplighter = npc;
     });
+
+    // The wager duelists whose contracts are live, standing on their own ground. Their sheet
+    // is fetched apart from the townsfolk's and only on a street where a duel is actually up,
+    // under the same rule the cast sheets follow: art costs exactly the people drawn from it.
+    if (this.liveDuelists.length > 0) {
+      const duelSheet = await loadFolkSheet('duelists').catch(() => null);
+      if (this.disposed || !this.world) return;
+      for (const { site, offer } of this.liveDuelists) {
+        if (!duelSheet) {
+          // The ground still offers the wager; a failed decode costs the figure, not the fight.
+          const spot = new Hotspot(site.at.x, site.at.z, site.label, offer);
+          if (site.interactDetail) spot.interactDetail = site.interactDetail;
+          this.interactables.push(spot);
+          continue;
+        }
+        const id = site.duelist!;
+        const box = folkBox(id);
+        const art = actorArtFromOne(
+          sheetFrameTexture(duelSheet, box.x, box.y, box.w, box.h, anis, true),
+        );
+        this.heroArt.push(art);
+        const duelist = new NPC(
+          art,
+          folkHeight(id),
+          site.at.x,
+          site.at.z,
+          site.label,
+          offer,
+          // Off the townsfolk's breathing cadence, the way each of them is off each other's.
+          1.1,
+          // The duelists sheet is pixel art with its own painted ground shadow, like the
+          // trades sheets -- a billboard shadow under it would be the second of two.
+          false,
+        );
+        if (site.interactDetail) duelist.interactDetail = site.interactDetail;
+        this.world.scene.add(duelist.walker.sprite);
+        this.world.billboards.push(duelist.walker.sprite);
+        this.updatables.push(duelist);
+        this.interactables.push(duelist);
+        this.npcs.push(duelist);
+      }
+    }
 
     // Once, now that he exists. `tickClock` only calls this when the hour has moved a
     // game-minute, so without this the row would open on the uniform curve and stay there for the

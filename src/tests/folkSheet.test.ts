@@ -51,8 +51,8 @@ describe('the townsfolk sheets', () => {
   });
 
   it('holds forty-eight people, each on exactly one sheet', () => {
-    expect(FOLK_IDS).toHaveLength(48);
-    expect(new Set(FOLK_IDS).size).toBe(48);
+    expect(FOLK_IDS).toHaveLength(59);
+    expect(new Set(FOLK_IDS).size).toBe(59);
     for (const id of FOLK_IDS) expect(SHEET_IDS).toContain(folkSheetOf(id));
   });
 
@@ -75,7 +75,7 @@ describe('the townsfolk sheets', () => {
 
 describe('the measured boxes', () => {
   it('match the art as it is on disk today', () => {
-    // The whole point. Re-measures the four PNGs and renders the same file the generator
+    // The whole point. Re-measures the five PNGs and renders the same file the generator
     // would, so redrawing a sheet without re-running `npm run folk:measure` fails here
     // instead of shipping.
     expect(render(measureAll(SPRITES_DIR))).toBe(
@@ -170,7 +170,7 @@ function renderCommitted(): string {
   for (const id of FOLK_IDS) measured[id] = { sheet: folkSheetOf(id), box: folkBox(id) };
   // Referenced so a reader can see the generated module is what is under test here, and so
   // an empty table cannot pass by rendering two identical nothings.
-  expect(Object.keys(FOLK_BOXES)).toHaveLength(48);
+  expect(Object.keys(FOLK_BOXES)).toHaveLength(59);
   expect(GENERATED).toContain('folkContent.generated.ts');
   return render(measured);
 }
