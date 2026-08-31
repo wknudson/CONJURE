@@ -115,6 +115,28 @@ early, which is what a lamplighter's round looks like from outside.
 340** motes; the Cinderworks' drew **174 of 340**. Different wards, same day, neither at zero and
 neither at full.
 
+**The lamplighter walks his round.** Ashfall's ten lamps, sampled across the dawn ramp:
+
+| hour | lamps | out |
+|---|---|---|
+| 05:30 | `[1,1,1,1,1,1,1,1,1,0]` | 1 |
+| 06:18 | `[1,1,1,1,1,1,0,0,0,0]` | 4 |
+| 06:51 | `[1,1,1,0,0,0,0,0,0,0]` | 7 |
+
+The boundary sweeps monotonically along the row and stays **contiguous** — which is the part worth
+asserting, because a contiguous run is a man walking in order and a scattered one would be noise.
+
+Two things learned doing it. He was **unreachable** before the `tickClock` gate was fixed —
+`walkTheRow` sits below that gate, so he had never taken a step. And the divergence comes from
+`walkTheRow`, not from `setHour`: read immediately after a fresh mount, all ten lamps sit at a
+uniform `lampsAt(hour)` (0.6 at 06:18) because that is what the constructor dressed them to, and
+they only split once a tick has run. **Sample after at least one tick, or you will conclude he is
+broken when he has merely not started.**
+
+To reach dawn without waiting: back up `conjure.save`'s active-profile `clock`, set it into the
+04:00–07:00 ramp, reload, tick once, then restore. Sampling three seeded hours is far quicker than
+running the clock for five real minutes, and it makes the progression reproducible.
+
 **Sidewalk Immunity reads correctly.** Moving the player off sanctioned paving flips the banner
 from `SANCTIONED WALKWAY — SAFE` to `UNPAVED GROUND — EXPOSED`, the scene darkens away from the lit
 walkway, and an `ambush()` on sanctioned ground is *correctly refused*.
@@ -188,7 +210,7 @@ Roughly in order of value.
 | # | What | Why it is still open |
 |---|---|---|
 | 1 | ~~The hour readout advancing~~ | **Done.** See above. |
-| 2 | **The lamplighter walking the row** | Was unreachable until the gate above was fixed — `walkTheRow` is called from `tickClock`, below the gate, so he had literally never taken a step. Now reachable but still unwatched. The tell: the ten `world.lamps` values **diverging from each other**, lighting one at a time behind him. All ten sharing a value at *night* is correct and proves nothing — `lampsAt` is ~1 for every lamp then. **Watch at dawn (04:00–07:00) or dusk (17:00–20:00)**, which is the only window where the round is visible. Ashfall is the longest at 10 lamps; Lamprow's seven on the High Street are the authored showcase. |
+| 2 | ~~The lamplighter walking the row~~ | **Done.** See below. |
 | 3 | **In-world combat** | The original request that started this work, and completely unseen. Three parts: on-world sprites must **disappear** when the board comes up (the reported bug was roaming minions still rendered after starting a fight with them); the camera must **orbit** (`setCameraYaw` is exposed on the dev handle); and the grid must be **legible**. `ambush('curfew_breakers')` returns `undefined` and declines silently *even on exposed ground*, so there is a further guard — cooldown, or the Warden's grace — that needs live frames to find. Ashfall has no packs; Lamprow, the Chalk Verge and the Chalk Road do. |
 | 4 | **The gate art in situ** | Redrawn as closed, latched and unwarded in two leaves. `gateArt.test.ts` asserts the composition by rendering the texture to a text grid under node, but nobody has seen it on the mesh at 8×4.6 world units. |
 | 5 | **A night/noon pass across all nineteen wards** | Only two wards have been measured. |
