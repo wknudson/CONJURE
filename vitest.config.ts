@@ -11,8 +11,16 @@ import { defineConfig } from 'vitest/config';
  * competed for the same cores and blew per-test deadlines that were fine in isolation,
  * which meant chasing timing failures that said nothing about the code. Rather than keep
  * raising individual budgets, the deadline is generous and global — these tests exist to
- * catch a hang or a divergence, never to measure a machine — and the worker count is
- * capped so the heavy files are not all racing each other at once.
+ * catch a hang or a divergence, never to measure a machine.
+ *
+ * **The worker cap was two, and it is six now.** That cap was doing nothing. Measured with
+ * `--reporter=json`, the balance playouts were 1738s of a 1753-second run — 83% in one
+ * file, against fifty-odd seconds for the other 114 — and a file cannot be split across
+ * workers, so the wall clock was one file on one core and every spare core idle. Capping
+ * workers could not help and raising them could not either. The fix was the one the note
+ * below prescribes: `balance.test.ts` became six shard files (see `balanceSuite.ts`), and
+ * only *then* was there anything for more workers to do. Six, on eight cores, leaves two
+ * for the OS.
  *
  * Raised to 240s for the Fused Grimoire. Every deck is permanently larger now — a Hero
  * half plus eight innate spells — and the AI's cost scales with the options it has to
@@ -34,6 +42,6 @@ export default defineConfig({
     testTimeout: 240_000,
     hookTimeout: 60_000,
     minWorkers: 1,
-    maxWorkers: 2,
+    maxWorkers: 6,
   },
 });
