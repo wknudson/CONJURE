@@ -126,7 +126,39 @@ the ward signage, the Warden's detection ring, and the interaction prompts.
 
 ## Found by looking, and fixed
 
-**The hour readout was frozen, in two independent ways.** Committed as part of this work.
+### The whole time-of-day layer was inert while you stood in a ward
+
+The big one, and the cause of nearly everything else on this page. `tickClock` gated its work like
+this:
+
+```ts
+const before = this.hour;
+this.hour += dt * HOURS_PER_SECOND;
+if (Math.abs(this.hour - before) < 1 / 60) return;   // never passes
+```
+
+`before` is captured at the top of the *same call*, so the comparison is always exactly one
+frame's worth of clock. One frame at the clamped maximum `dt` of 0.05s moves the clock 0.00167
+hours; the gate wants 0.0167. **It could not pass at any framerate** — 60 fps, 30, or 6, the
+arithmetic is a factor of ten short either way.
+
+So everything below the gate never ran while the player was in a ward: no re-light, so fog, sun and
+ambient stayed at the mount hour; no `walkTheRow`, so no lamplighter ever moved; no pack coming on
+or off shift; no sky strength re-read; and no ledger. The clock advanced and *nothing read it*.
+Re-entering a district was the only thing that ever applied an hour, because the constructor does
+it directly — which is exactly why this looked like it worked.
+
+The fix is to measure the threshold against the hour the world was last **lit** at, not the hour one
+frame ago: a new `litAtHour` field, seeded from `opts.hour` in the constructor because that is what
+the constructor dressed the scene for.
+
+Every function below that gate is pure and unit-tested and was simply never called. No amount of
+coverage finds that. It took watching a lamp fail to come on.
+
+### The hour readout was frozen, in two independent ways
+
+Downstream symptoms of the above, and real bugs in their own right — with the gate fixed, these
+would still have kept the readout wrong.
 
 1. `DistrictScreen` handed the HUD `hour: () => this.opts.hour` — the hour the screen was
    *mounted* at. `tickClock` advances `this.hour`, and that is what the world, the Warden, the
@@ -138,9 +170,14 @@ Every test passed before the fix and after, because `clockLabel` and `phaseAt` a
 correct — they were being asked the wrong question. **This is the class of bug the whole file
 exists to warn about: a unit test cannot see a value that is never handed to it.**
 
-⚠️ **Both fixes are themselves unverified in a browser.** They were derived from the symptom and
-the source, they typecheck, and 560 tests pass — but nobody has watched the readout move. This is
-the first thing to confirm.
+✅ **Verified in a browser.** With all three fixes in, the ledger ticks: `warden.hour` read 1.3972
+and the readout read `01:23 · night` — 1h 23.8m, which agree exactly. Confirmed independently by
+the user watching a focused tab.
+
+That single observation also confirms the gate fix reaches everything, not just the text:
+`renderLedger()` is called *after* the gate, so the HUD moving proves the gate now passes — and
+`world.setHour`, `walkTheRow`, the Warden's sight and grace, and the pack shifts are all on that
+same code path.
 
 ---
 
@@ -150,8 +187,8 @@ Roughly in order of value.
 
 | # | What | Why it is still open |
 |---|---|---|
-| 1 | **The hour readout advancing** | The two fixes above. Needs ~30s of sustained real frames, i.e. a focused tab. If the ledger ticks off `01:00 · night`, both are confirmed. |
-| 2 | **The lamplighter walking the row** | Driven from `tickClock`, so it needs the clock genuinely running. The tell: the ten `world.lamps` values **diverging from each other**, lighting one at a time behind him. All ten sharing a value means he never ran — see the measurement trap above. Ashfall is the longest round at 10 lamps; Lamprow's seven on the High Street are the authored showcase. |
+| 1 | ~~The hour readout advancing~~ | **Done.** See above. |
+| 2 | **The lamplighter walking the row** | Was unreachable until the gate above was fixed — `walkTheRow` is called from `tickClock`, below the gate, so he had literally never taken a step. Now reachable but still unwatched. The tell: the ten `world.lamps` values **diverging from each other**, lighting one at a time behind him. All ten sharing a value at *night* is correct and proves nothing — `lampsAt` is ~1 for every lamp then. **Watch at dawn (04:00–07:00) or dusk (17:00–20:00)**, which is the only window where the round is visible. Ashfall is the longest at 10 lamps; Lamprow's seven on the High Street are the authored showcase. |
 | 3 | **In-world combat** | The original request that started this work, and completely unseen. Three parts: on-world sprites must **disappear** when the board comes up (the reported bug was roaming minions still rendered after starting a fight with them); the camera must **orbit** (`setCameraYaw` is exposed on the dev handle); and the grid must be **legible**. `ambush('curfew_breakers')` returns `undefined` and declines silently *even on exposed ground*, so there is a further guard — cooldown, or the Warden's grace — that needs live frames to find. Ashfall has no packs; Lamprow, the Chalk Verge and the Chalk Road do. |
 | 4 | **The gate art in situ** | Redrawn as closed, latched and unwarded in two leaves. `gateArt.test.ts` asserts the composition by rendering the texture to a text grid under node, but nobody has seen it on the mesh at 8×4.6 world units. |
 | 5 | **A night/noon pass across all nineteen wards** | Only two wards have been measured. |

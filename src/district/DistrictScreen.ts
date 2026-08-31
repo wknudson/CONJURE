@@ -358,6 +358,12 @@ export class DistrictScreen implements Screen {
    * `localStorage` write and this changes sixty times a second.
    */
   private hour = 0;
+  /**
+   * The hour the world is currently dressed for. See the gate in `tickClock`: the clock moves
+   * every frame and the scene is re-lit about twice a second, so the two are deliberately
+   * different numbers and the threshold is measured between them.
+   */
+  private litAtHour = 0;
 
   /** What the street knows, for the graffiti and for what people say. */
   private get chronicle(): Chronicle {
@@ -427,6 +433,8 @@ export class DistrictScreen implements Screen {
     // torn down before it finished building would otherwise report midnight -- setting every
     // such character's clock to zero on the way past.
     this.hour = opts.hour;
+    // The constructor lights the world at this hour, so this is what it is dressed for.
+    this.litAtHour = opts.hour;
   }
 
   /* ============================================================
@@ -1359,12 +1367,26 @@ export class DistrictScreen implements Screen {
    */
   private tickClock(dt: number): void {
     if (this.combat) return;
-    const before = this.hour;
     // Not wrapped. The field is really the clock -- hours since this character started -- and
     // the day is read off it by the sky. Everything that wants the *hour* takes it modulo a day
     // itself, which is why nothing else here had to change.
     this.hour += dt * HOURS_PER_SECOND;
-    if (Math.abs(this.hour - before) < 1 / 60) return;
+
+    // Against the hour the world was last *lit* at, not against the hour one frame ago.
+    //
+    // This was `const before = this.hour` captured at the top of the call, which made the
+    // comparison `this.hour - before` -- exactly one frame's worth of clock, every time. One
+    // frame at the clamped maximum `dt` of 0.05s moves the clock 0.00167 hours and the gate
+    // wants 0.0167, so **it could never pass at any framerate**, and everything below it never
+    // ran while the player stood in a ward: no re-light, no lamplighter, no pack coming on
+    // shift, no sky re-rolled, and no ledger. The clock advanced and nothing read it. Re-entering
+    // the district was the only thing that ever applied an hour, because the constructor does it.
+    //
+    // A threshold has to be measured against the last time the work was *done*. That is the whole
+    // bug, and it is invisible to a unit test: every function below here is pure, tested, and was
+    // simply never called. It took watching a lamp fail to come on.
+    if (Math.abs(this.hour - this.litAtHour) < 1 / 60) return;
+    this.litAtHour = this.hour;
 
     this.world?.setHour(this.hour);
     // The ledger, on the same gate. `renderLedger` was only called at mount and on a purse
