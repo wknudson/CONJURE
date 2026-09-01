@@ -22,7 +22,9 @@ import { dockIntoForm, summonUnit } from '../../engine/spawn.js';
 import { sealAt25 } from './seal.js';
 import { clearIntents } from '../../engine/intents.js';
 import { canPlace, entityAt, unitsOf } from '../../engine/board.js';
+import { onAnchorDied } from '../../engine/subjugation.js';
 import { toCardSnapshot } from '../../engine/views.js';
+import { isUnit } from '../../types/units.js';
 import { cellsAt } from '../../util/grid.js';
 
 export interface GrowAtHalfConfig {
@@ -166,7 +168,12 @@ export function evictAndSpawn(
     if (!occupant) continue;
     if (occupant.side !== 'player') return false; // enemy unit already there; try next site
 
-    // Return the player's unit to hand with a marrow refund.
+    // Return the player's unit to hand with a marrow refund. If the body being thrown
+    // is the tether's anchor, the tether snaps first — the same rule `killEntity`
+    // applies, and for the same reason: leaving `subjugation.active` pointing at a unit
+    // that is no longer on the board hangs the phase open with the beast still sealed,
+    // a fight that can neither be won nor lost.
+    if (isUnit(occupant)) onAnchorDied(ctx, occupant);
     const cmd = state.players.player;
     delete state.units[occupant.id];
     emit(ctx, {
