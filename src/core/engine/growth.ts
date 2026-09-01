@@ -17,7 +17,7 @@ import type { Ctx } from './context.js';
 import { emit } from './context.js';
 import type { Unit } from '../types/units.js';
 import { CARDS } from '../data/cards/index.js';
-import { auraDef, AURA_LAST_PAYING_STACK } from '../data/auras.js';
+import { auraDef, AURA_LAST_PAYING_STACK, type AuraDef } from '../data/auras.js';
 import { dealDamage } from './damage.js';
 import { STAT_SCALE } from '../scale.js';
 
@@ -141,8 +141,10 @@ export function isClimaxed(unit: Unit): boolean {
 /**
  * The Climax trait this unit actively possesses, or undefined.
  *
- * The single query every future Climax behaviour hangs off — none of the five are
- * implemented yet, by design: this phase builds the system and marks the trait.
+ * The single query every Climax behaviour hangs off, each at its own named seam:
+ * `overload` and `heavyFootprint` in movement and displacement, `conflagration` and
+ * `hollow` on the attack rider, `overgrowth` on the swing and the corpse, `rimeShell` in
+ * the tick below, `blink` in `legalMoves`.
  */
 export function climaxTraitOf(unit: Unit): string | undefined {
   if (!isClimaxed(unit)) return undefined;
@@ -267,7 +269,10 @@ export function tickAura(ctx: Ctx, unit: Unit): void {
   //    than adding a per-Aura one: a body that has not yet stood a round is not growing on
   //    any clock, and `growUnit` clears the flag for the enemy's.
   if (unit.freshlySummoned) return;
-  if (held.stacks >= def.maxStacks) return;
+  if (held.stacks >= def.maxStacks) {
+    reformShell(ctx, unit, def);
+    return;
+  }
 
   held.stacks += 1;
 
@@ -296,4 +301,31 @@ export function tickAura(ctx: Ctx, unit: Unit): void {
       hp: unit.hp,
     });
   }
+}
+
+/**
+ * Rime Shell's Climax: the plate re-forms.
+ *
+ * One step of the Aura's own armour comes back at the start of each of the host's turns,
+ * for as long as it holds — frost's whole argument is that it does not die, and the
+ * Climax is that argument made permanent. Bounded the way `plateUnit` bounds a Guardian:
+ * the ceiling is a full three stacks' worth, so a shell left alone becomes hard rather
+ * than unkillable, and a wall of ice standing in a corner does not grow plate forever.
+ */
+function reformShell(ctx: Ctx, unit: Unit, def: AuraDef): void {
+  if (def.climaxTrait !== 'rimeShell') return;
+  const step = def.passiveStat.armor ?? 0;
+  if (step <= 0) return;
+
+  const ceiling = step * def.maxStacks;
+  if (unit.armor >= ceiling) return;
+
+  const amount = Math.min(step, ceiling - unit.armor);
+  unit.armor += amount;
+  emit(ctx, {
+    t: 'armorGained',
+    target: { kind: 'unit', id: unit.id },
+    amount,
+    total: unit.armor,
+  });
 }

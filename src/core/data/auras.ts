@@ -35,8 +35,10 @@ export const AURA_LAST_PAYING_STACK = 2;
  * Ids rather than functions, so the AI can read that a unit has climaxed and what that
  * implies without executing anything.
  *
- * **None of the five behaviours are implemented yet** — this phase builds the Aura system
- * and marks the trait. `climaxTraitOf` is the one query everything else will hang off.
+ * All seven are built, each interpreted at a named engine seam — `climaxTraitOf` is the
+ * one query they hang off. For a long while only the two movement traits were, while the
+ * card text sold every one of the others; a trait named here and read nowhere is a
+ * promise the board does not keep.
  */
 export type ClimaxTraitId =
   /** Pyre. Ignite (2) on attack, and a fire hazard left on every tile it walks off. */

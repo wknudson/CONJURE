@@ -390,6 +390,28 @@ export function healCommander(ctx: Ctx, side: Side, amount: number): number {
   return healed;
 }
 
+/**
+ * Puts health back on a body, up to its ceiling.
+ *
+ * The unit-side twin of `healCommander`, and until Overgrowth's Leech nothing needed one:
+ * every heal in the game went to a Pact. Same shape and the same event, so the renderer
+ * draws a green number over the body without learning anything new.
+ */
+export function healUnit(ctx: Ctx, unit: Unit, amount: number): number {
+  if (amount <= 0 || ctx.state.result) return 0;
+  const healed = Math.min(amount, unit.maxHp - unit.hp);
+  if (healed <= 0) return 0;
+
+  unit.hp += healed;
+  emit(ctx, {
+    t: 'healed',
+    target: { kind: 'unit', id: unit.id },
+    amount: healed,
+    remainingHp: unit.hp,
+  });
+  return healed;
+}
+
 export function drainCommander(ctx: Ctx, side: Side, amount: number, cause: DamageCause): void {
   dealDamage(ctx, {
     target: { kind: 'portrait', side },

@@ -18,8 +18,9 @@ import type { GameState } from '../types/state.js';
 import type { Unit } from '../types/units.js';
 import { entityAt, isCover } from './board.js';
 import { isUnit } from '../types/units.js';
-import { inBounds } from '../types/state.js';
+import { inBounds, visionClamp } from '../types/state.js';
 import { climaxTraitOf } from './growth.js';
+import { hasLoS } from './los.js';
 import { DIRS_8, add, cellsAt } from '../util/grid.js';
 
 /**
@@ -150,7 +151,46 @@ export function legalMoves(state: GameState, unit: Unit): MoveOption[] {
   // Reachable is not the same as standable. Overload paths straight through bodies but may
   // not stop inside one, so the destinations are filtered here rather than during the
   // search — a tile it must cross to get anywhere is still a tile it may not end on.
-  return [...best.values()].filter((m) => canFinish(state, m.to, unit, license));
+  const walked = [...best.values()].filter((m) => canFinish(state, m.to, unit, license));
+
+  if (climaxTraitOf(unit) !== 'blink') return walked;
+  return [...walked, ...blinkMoves(state, unit, license, best)];
+}
+
+/**
+ * Blink: once a turn the Written Path's host may step to any empty tile it can see.
+ *
+ * "Once a turn" is the move action itself — `canMove` already refuses a body that has
+ * moved — so the Climax widens *where* a move may end rather than granting a second one.
+ * "Can see" is the same sight the rest of the game uses: a clear line from where it
+ * stands, and no further than the weather lets anything see. Tiles it could have walked
+ * to keep their walked route, so the path the animation follows is the one the body would
+ * actually take; only the ground beyond its stride is a step through nothing.
+ */
+function blinkMoves(
+  state: GameState,
+  unit: Unit,
+  license: MoveLicense,
+  walked: Map<string, MoveOption>,
+): MoveOption[] {
+  const out: MoveOption[] = [];
+  const clamp = visionClamp(state);
+  const start = unit.anchor;
+
+  for (let y = 0; y < state.height; y++) {
+    for (let x = 0; x < state.width; x++) {
+      const to = { x, y };
+      const key = coordKey(to);
+      if (key === coordKey(start) || walked.has(key)) continue;
+      if (clamp !== undefined && Math.max(Math.abs(x - start.x), Math.abs(y - start.y)) > clamp) {
+        continue;
+      }
+      if (!canFinish(state, to, unit, license)) continue;
+      if (!hasLoS(state, start, to, [unit.id], unit.side)) continue;
+      out.push({ to, path: [start, to], cost: 0 });
+    }
+  }
+  return out;
 }
 
 /**

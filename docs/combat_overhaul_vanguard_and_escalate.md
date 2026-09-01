@@ -858,6 +858,21 @@ implies without executing anything:
 | `conflagration` — shipped | pyre | Host's attacks apply `burn 1`, and it takes 1 fire damage each turn | It is burning too. |
 | `rimeShell` **[proposal]** | frost | Host gains armour each turn, but its MOV drops to 0 | A wall that cannot be repositioned. |
 
+> **As built (2026-09-01).** The table above is the design record and stays as written; the
+> code is the ruling. All seven traits now execute, at these seams: **`overload`** and
+> **`heavyFootprint`** in movement and displacement, as described. **`conflagration`** is a
+> rider — Ignite (2) on any wounding swing — plus a burning trail on every tile the host walks
+> off; the self-burn was not adopted, since the Aura already stops paying at three.
+> **`overgrowth`** is Leech (the host heals what its blow actually took) plus a Toxin (2)
+> deathburst on the enemies beside its corpse. **`hollow`**'s Frail-Strike leaves the victim
+> **Brittle**, the existing status that already means "takes more from every later blow", so
+> no `hollow` status was invented. **`rimeShell`** refunds one step of the Aura's own armour at
+> the start of each of the host's turns, bounded at three stacks' worth like a Guardian's
+> plate; the MOV-to-zero half of the proposal was not adopted. **`blink`** widens the host's
+> one move to any empty tile it can see — ordinary sight, fog-clamped like everything else.
+> Each is read off `climaxTraitOf`, none is a closure, and `src/tests/climaxTraits.test.ts`
+> holds every promise the card text makes.
+
 The Rule of 3 is therefore not merely a ceiling — it is a **timer**. The aura stops paying
 and starts costing, and the answer to that is to cash it in.
 

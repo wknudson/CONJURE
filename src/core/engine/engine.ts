@@ -8,10 +8,11 @@
  * the ordered event batch the sequencer will animate.
  */
 
-import type { Coord, TargetRef } from '../../contract/ids.js';
+import type { Coord, StatusKind, TargetRef } from '../../contract/ids.js';
 import type { Command } from '../types/commands.js';
 import { IllegalCommandError } from '../types/commands.js';
-import type { GameState, StepResult } from '../types/state.js';
+import type { GameState, HazardKind, StepResult } from '../types/state.js';
+import { climaxTraitOf } from './growth.js';
 import type { Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import type { CardDef, CardPlayContext, ChosenTarget } from '../types/cards.js';
@@ -25,7 +26,7 @@ import { canAfford, drawCards, effectiveCost, resolvePlayedCard, spendResources 
 import { applyTithe, executeEffect, TITHE_DAMAGE, TITHE_MARROW } from './effects.js';
 import { canAct, canAttack, canMove, findMove, licenseFor, setAnchor } from './movement.js';
 import { legalAttacks, legalCardTargets } from './targeting.js';
-import { dealDamage } from './damage.js';
+import { dealDamage, healUnit } from './damage.js';
 import { applyStatusTo } from './status.js';
 import { checkLethal, killEntity } from './death.js';
 import { entityAt, getEntity, refOf } from './board.js';
@@ -417,7 +418,8 @@ function moveUnit(ctx: Ctx, unitId: string, to: { x: number; y: number }): void 
 
   // Read before the move: for a 2x2 body these are two tiles, and after `setAnchor` there
   // is no way to know which ones they were.
-  const leaving = unit.trail ? cellsOf(unit) : [];
+  const trail = trailOf(unit);
+  const leaving = trail ? cellsOf(unit) : [];
 
   // What the route ran into, gathered while everything is still standing where it was.
   const crossed = crossedEntities(ctx.state, unit, option.path);
@@ -453,8 +455,24 @@ function moveUnit(ctx: Ctx, unitId: string, to: { x: number; y: number }): void 
     });
   }
 
-  if (ctx.state.units[unitId] && unit.trail) layTrail(ctx, unit, leaving);
+  if (ctx.state.units[unitId] && trail) layTrail(ctx, unit, trail, leaving);
 }
+
+/**
+ * What this body leaves on the ground it walks off, if anything.
+ *
+ * A stat-block `trail` is the creature's own — a Titan's rubble. Conflagration lends one
+ * to whatever wears it: a Climaxed Ember Coat host leaves fire in its wake, the second
+ * half of what the card promises. Read once at the top of a move so the tiles are
+ * gathered under the same rule that decides whether to lay anything on them.
+ */
+function trailOf(unit: Unit): HazardKind | undefined {
+  if (unit.trail) return unit.trail;
+  return climaxTraitOf(unit) === 'conflagration' ? 'burning' : undefined;
+}
+
+/** How long a Conflagration host's wake keeps burning. Matches the Pyre cards that lay fire. */
+const CONFLAGRATION_TRAIL_TURNS = 2;
 
 /** What an Overload charge deals to each body it passes straight through. */
 export const OVERLOAD_PHASE_DAMAGE = 10;
@@ -508,13 +526,17 @@ function crossedEntities(
  * over its own trail. That is the creature, not an oversight — it commits to a direction
  * and the arena is different afterwards.
  */
-function layTrail(ctx: Ctx, unit: Unit, leaving: Coord[]): void {
-  if (!unit.trail) return;
+function layTrail(ctx: Ctx, unit: Unit, kind: HazardKind, leaving: Coord[]): void {
   const now = cellsOf(unit);
+
+  // Rubble is permanent and a creature's own; fire is borrowed from a Climax and burns
+  // out, so it takes the same clock the Pyre cards give the ground they light.
+  const permanent = kind === 'rubble';
+  const turns = permanent ? 1 : CONFLAGRATION_TRAIL_TURNS;
 
   for (const cell of leaving) {
     if (now.some((c) => coordEq(c, cell))) continue;
-    spawnHazard(ctx, cell, unit.trail, 1, unit.trail === 'rubble');
+    spawnHazard(ctx, cell, kind, turns, permanent);
   }
 }
 
@@ -624,6 +646,7 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
   });
 
   applyOnHit(ctx, attackerId, target, landed.hpLoss);
+  leech(ctx, attackerId, target, landed.hpLoss);
 
   // What the body earns its owner for swinging. Paid whether or not the blow drew blood:
   // this is a generator striking, not a reaction landing, and a Storm Wisp held off by
@@ -680,14 +703,54 @@ function applyOnHit(ctx: Ctx, attackerId: string, target: TargetRef, hpLoss: num
   if (hpLoss <= 0) return;
 
   const attacker = ctx.state.units[attackerId];
-  if (!attacker?.onHit) return;
+  if (!attacker) return;
+  const rider = attacker.onHit ?? climaxRiderOf(attacker);
+  if (!rider) return;
 
   const victim = ctx.state.units[target.id];
   if (!victim || victim.hp <= 0) return;
   if (victim.keywords.includes('BoundForm')) return;
   if (isSealed(ctx.state, target)) return;
 
-  applyStatusTo(ctx, victim, attacker.onHit.status, attacker.onHit.stacks, attacker.side);
+  applyStatusTo(ctx, victim, rider.status, rider.stacks, attacker.side);
+}
+
+/**
+ * The rider a Climax lends a body that has none of its own.
+ *
+ * Two traits are riders in all but name, so they take the rider's seam and every one of
+ * its rules — a wound, a living host, no Bound Form, no sealed Alpha — rather than a
+ * second copy of that list. Conflagration ignites what it strikes; Hollow's Frail-Strike
+ * leaves its victim Brittle, which is already the status that means "takes more from
+ * every later blow", so the trait needs no status of its own.
+ *
+ * A body's printed rider wins where it has one. Stacking the two would make an Ember Coat
+ * on a Cinder Adder worth two statuses a swing, which no card text promises.
+ */
+function climaxRiderOf(unit: Unit): { status: StatusKind; stacks: number } | undefined {
+  switch (climaxTraitOf(unit)) {
+    case 'conflagration':
+      return { status: 'burn', stacks: 2 };
+    case 'hollow':
+      return { status: 'brittle', stacks: 1 };
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Overgrowth's Leech: the host drinks what it wounds.
+ *
+ * Health actually taken, not damage swung — armour it failed to get through feeds nothing,
+ * the same wound rule the rider above lives by. Re-read after the blow for the reason
+ * `applyOnHit` documents: a Counter can have killed the attacker by now, and a corpse
+ * does not drink.
+ */
+function leech(ctx: Ctx, attackerId: string, target: TargetRef, hpLoss: number): void {
+  if (target.kind !== 'unit' || hpLoss <= 0 || ctx.state.result) return;
+  const attacker = ctx.state.units[attackerId];
+  if (!attacker || climaxTraitOf(attacker) !== 'overgrowth') return;
+  healUnit(ctx, attacker, hpLoss);
 }
 
 /**

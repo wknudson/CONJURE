@@ -165,6 +165,8 @@ export const TERMS: Record<string, GlossaryEntry> = {
   climax: {
     title: 'Climax',
     body: 'An Aura at three stacks. It grows no further, and its Climax trait is now active.',
+    detail:
+      'Conflagration burns what it strikes and the ground it leaves. Overgrowth heals what it deals and bursts with Toxin on death. Overload walks through bodies. Heavy Footprint cannot be shoved and breaks walls. Hollow leaves its victims Brittle. Rime Shell re-forms a step of armour each turn. Blink steps to any tile it can see.',
   },
   escalation: {
     title: 'Escalation stacks',
