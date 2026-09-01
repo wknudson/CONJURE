@@ -64,6 +64,8 @@ fields, and they are named in the Adept row.
 | `developHp` | **1.5** | — | old point of Health summoned |
 | `armorValue` | **1.5** | — | old point of Armor gained |
 | `markSetup` | **12** | — | Mark attached (halved on one of its own units) |
+| `statusValue` | **2** | — | stack of a debuff landed on a foe; the same, negated, for one landed on its own |
+| `auraValue` | **8** | — | Elemental Aura attached to one of its own bodies |
 | `marrowEfficiency` | **10** | — | Marrow actually spent |
 | `channelValue` | **6** | — | Marrow extracted by channelling |
 | `counterRisk` | **12** | — | old point taken from a **Counter** |
@@ -121,6 +123,16 @@ declines free swings — softening a unit only by accident, on the way to someth
 
 **`developAtk` / `developHp`.** Without them summoning scores exactly zero and the enemy
 never builds a board at all.
+
+**`statusValue` / `auraValue`.** Without them a card whose whole effect is a status or an
+Aura scored exactly zero, and zero sits at the pass threshold — so all six Auras and four
+control spells (Spore Cloud, Noxious Cloud, Rime Touch, Creeping Rime) were shipped in
+enemy decks and unplayable by the side they were written for. They cost Bones and no
+Marrow, so not even `marrowEfficiency` rescued them; the AI re-enumerated and re-declined
+the same cards every turn of every game that dealt them, and the whole Aura system was
+player-only in practice. Both are read off the simulated events like everything else, so
+an attack whose rider applies Burn earns the same small credit a spell does, and gassing
+its own bodies costs exactly what gassing the enemy pays.
 
 Both are the same lesson: a term missing from the matrix is not a neutral omission, it is
 a strong claim that the thing is worthless.
@@ -184,7 +196,7 @@ out of the matrix, and at the shipped weights it falls out in roughly this order
 5. **Collisions**, for an Adept only — 45 a shove, which on a walled arena is a whole
    extra damage source and, since the elemental matrix, the way to Shatter a frozen body.
 6. **Chip and development** — `unitDamage`, `developAtk`/`developHp`, `armorValue`,
-   `markSetup`.
+   `markSetup`, `statusValue`, `auraValue`.
 7. **Face** — 15 an old point, cut to a fifth of that while the player has anything growing.
 
 ### The candidate list is pruned, and one exception is the whole point
