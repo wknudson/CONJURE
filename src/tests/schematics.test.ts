@@ -236,7 +236,7 @@ describe('what the loop can actually reach', () => {
     // was fought **against** Bloom, Bulwark or Surge, so their plans had nowhere to drop
     // from. A hunt is a fight against a beast of a school, which is exactly the missing
     // shape — the Thorn Warden's grove teaches the Bloom half, the Vault Boar's road the
-    // Bulwark half, and the Conduit Kite's pylon the Surge half. What remains below is what
+    // Bulwark half, and the Conduit Kudu's pylon the Surge half. What remains below is what
     // no authored fight yet casts.)
     'slag_cairn',
     'rime_lance',

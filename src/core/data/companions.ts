@@ -147,7 +147,7 @@ export const COMPANIONS: CompanionDef[] = [
     // plan a coincidence. Arc Lash and the Hound are Hero cards and would be legal in any
     // deck; they are here because this is the deck that wants them.
     deck: [...STARTER_DECK],
-    // Charge, step, cash in. The Lynx is the mobile half of Surge and gives the Kite the
+    // Charge, step, cash in. The Lynx is the mobile half of Surge and gives the Kudu the
     // things that stand still: the pylon, the storm overhead, and the two big discharges.
     grimoire: {
       schools: ['surge'],
@@ -568,11 +568,11 @@ export const COMPANIONS: CompanionDef[] = [
   {
     id: 'kite',
     artId: 'conduit_kite',
-    name: 'Conduit Kite',
-    title: 'Pylon Nester',
+    name: 'Conduit Kudu',
+    title: 'Pylon Grazer',
     school: 'surge',
     blurb:
-      'Nests where the grid hums loudest. Charges everything within reach and empties it into one body.',
+      'Grazes the pylon fields where the grid hums loudest. Draws every charge within reach down through its horns and into one body.',
     deck: [...STARTER_DECK],
     // The standing half of Surge -- pylons, the storm overhead, the big discharge. The
     // Lynx keeps the footwork.

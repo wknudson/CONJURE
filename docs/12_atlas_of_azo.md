@@ -481,7 +481,7 @@ at all, and the Ashwood is the only one with no visible boundary.
 | **The Caldera** | 🟢 walkable | `caldera_chimera` (M1) → **Chimera of the Caldera** | `hunt_caldera_drake` → **Ignis** | — |
 | **The Ashwood** | 🟢 walkable | `ashwood_poacher` (A6, wager) → **Winterthorn Elk**; `wildfire_writ` (M5) | `hunt_ashwood_warden` → **Sylva**; `hunt_ashwood_stag` → **Mortis** | — |
 | **The Rimefields** | 🟢 walkable | `rimefield_break` (M2) → **Glacial Juggernaut** | `hunt_rimefield_bear` → **Boreas** | — |
-| **The Storm Shelf** | 🟢 walkable | `storm_shelf_binding` (M3) → **Storm-Mantis**; `pylon_nine` (M4) → **Volatile Geist** | `hunt_shelf_lynx` → **Voltara**; `hunt_pylon_kite` → **Conduit Kite** | — |
+| **The Storm Shelf** | 🟢 walkable | `storm_shelf_binding` (M3) → **Storm-Mantis**; `pylon_nine` (M4) → **Volatile Geist** | `hunt_shelf_lynx` → **Voltara**; `hunt_pylon_kite` → **Conduit Kudu** | — |
 | **The Bone Bastion** | 🟢 walkable | `bone_bastion` (M9) → **Bone Bastion Sovereign** | `hunt_barrow_jackal` → **Barrow Jackal** | — |
 
 `coldwater_duel` (M6) is fought "on ground of her choosing" — the only contract in the game
@@ -503,7 +503,7 @@ about the design: **the wild repeats, the story does not.**
 | Boreas | Frost Bear | frost | The Rimefields | `hunt_rimefield_bear` |
 | Saltglass Seal | Harbor Ghost | frost | Saltglass | `hunt_saltglass_seal` |
 | Voltara | Storm Lynx | surge | The Storm Shelf | `hunt_shelf_lynx` |
-| Conduit Kite | Pylon Nester | surge | The Storm Shelf | `hunt_pylon_kite` |
+| Conduit Kudu | Pylon Grazer | surge | The Storm Shelf | `hunt_pylon_kite` |
 | Mortis | Carrion Stag | dusk | The Ashwood | `hunt_ashwood_stag` |
 | Barrow Jackal | Grave-Digger | dusk | The Bone Bastion | `hunt_barrow_jackal` |
 | Sylva | Thorn Warden | bloom | The Ashwood | `hunt_ashwood_warden` |

@@ -705,10 +705,10 @@ export const COMPANION_UNIT_CARDS: Record<string, CardDef> = {
     },
   },
 
-  /** Nests on the Magistracy's own pylons and has never once been asked to leave. */
+  /** Grazes the Magistracy's own pylon fields and has never once been asked to leave. */
   kite_bound: {
     id: 'kite_bound',
-    name: 'Conduit Kite',
+    name: 'Conduit Kudu',
     cost: { bones: 0, marrow: 0 },
     school: 'surge',
     source: 'companion',
