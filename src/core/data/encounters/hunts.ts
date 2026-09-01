@@ -364,6 +364,12 @@ export const HUNT_CHALK_CUT_RAM = hunt({
     'crag_slam',
     'deadweight',
     'seismic_slam',
+    // The Ram's own signature shove, out of its legacy Grimoire. It was the one splice base
+    // no fight taught: Kinetic Arc is pressed from it, the bench gates on the *collection*,
+    // and nothing put it there — so the pressing could be tested and never reached. A ram
+    // that takes the shoring with it is exactly the thing that should be slamming bodies
+    // into these walls.
+    'avalanche_slam',
     'quarry_hand',
     'quarry_hand',
     'shieldbearer',
