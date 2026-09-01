@@ -457,13 +457,13 @@ export const HUNT_TALLOW_AUROCHS = hunt({
   ],
 });
 
-export const HUNT_PYLON_KITE = hunt({
-  encounterId: 'hunt_pylon_kite',
+export const HUNT_PYLON_KUDU = hunt({
+  encounterId: 'hunt_pylon_kudu',
   name: 'Pylon Twelve: Conduit Kudu',
   blurb:
     'It grazes in the shadow of the live crossarm, and the Works have written off three crews ' +
     'trying to move it. Something in its horns is drawing charge off the grid, and the grid is noticing.',
-  boundForm: 'kite_bound',
+  boundForm: 'kudu_bound',
   enemyDeck: [
     'induction',
     'capacitor_dump',

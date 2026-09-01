@@ -518,26 +518,26 @@ const SECOND_BLOODLINE_TRAITS: Record<string, CompanionTrait> = {
     boons: { ignoreIceSlip: true, immuneToShatterSplash: true },
   },
 
-  // ---------------------------------------------------------------------- kite (surge)
+  // ---------------------------------------------------------------------- kudu (surge)
   pylon_graze: {
     id: 'pylon_graze',
     name: 'Pylon Graze',
     text: 'Grazes the grid and bleeds it dry. Opens every contract with an extra Bone in hand.',
-    baseId: 'kite',
+    baseId: 'kudu',
     boons: { bones: 1 },
   },
   earthing_hooves: {
     id: 'earthing_hooves',
     name: 'Earthing Hooves',
     text: 'Plants all four hooves into the conduit itself. Arc collateral ignores Armor entirely.',
-    baseId: 'kite',
+    baseId: 'kudu',
     boons: { arcPierces: true },
   },
   braced_stance: {
     id: 'braced_stance',
     name: 'Braced Stance',
     text: 'Braces against the line and will not be moved for anything. No shove, drag or current moves any unit of yours.',
-    baseId: 'kite',
+    baseId: 'kudu',
     boons: { alliesGrounded: true },
   },
 

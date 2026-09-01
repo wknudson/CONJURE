@@ -566,8 +566,8 @@ export const COMPANIONS: CompanionDef[] = [
     unitCardId: 'seal_bound',
   },
   {
-    id: 'kite',
-    artId: 'conduit_kite',
+    id: 'kudu',
+    artId: 'conduit_kudu',
     name: 'Conduit Kudu',
     title: 'Pylon Grazer',
     school: 'surge',
@@ -591,7 +591,7 @@ export const COMPANIONS: CompanionDef[] = [
       'static_arc',
       'discharge',
     ],
-    unitCardId: 'kite_bound',
+    unitCardId: 'kudu_bound',
   },
   {
     id: 'jackal',
