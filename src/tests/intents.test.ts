@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { CombatSession } from '../core/session.js';
 import { ENCOUNTERS } from '../core/data/encounters/index.js';
 import { ADEPT_AI, NOVICE_AI } from '../core/ai/controller.js';
+import { declareIntents } from '../core/engine/intents.js';
+import { makeCtx } from '../core/engine/context.js';
+import { findUnit, giveCard, scenario } from './scenario.js';
 import { replay, type Step } from './replay.js';
 
 /**
@@ -90,6 +93,58 @@ describe('declaration', () => {
     for (const [id, n] of byUnit) {
       expect(n, `${id} declared ${n} intents`).toBe(1);
     }
+  });
+
+  it('gives every declared card either a board anchor or a name the HUD can show', () => {
+    // `at` used to be written for tile targets alone, so a declared mark, aura, targeted
+    // spell or Cataclysmic Core produced an intent that drew nothing — at the one tier
+    // whose whole premise is that nothing is hidden.
+    const state = scenario({
+      units: [
+        { def: 'scout_imp', side: 'enemy', at: { x: 1, y: 5 } },
+        { def: 'scout_imp', side: 'player', at: { x: 2, y: 1 } },
+      ],
+      width: 6,
+      height: 8,
+    });
+    const carrier = findUnit(state, 'scout_imp', 'enemy');
+    const aura = giveCard(state, 'enemy', 'ember_coat');
+    const beam = giveCard(state, 'enemy', 'aether_beam');
+    const core = giveCard(state, 'enemy', 'cataclysmic_core');
+
+    declareIntents(
+      makeCtx(state),
+      [
+        {
+          type: 'playCard',
+          card: aura,
+          target: { kind: 'entity', ref: { kind: 'unit', id: carrier.id } },
+        },
+        { type: 'playCard', card: beam, target: { kind: 'line', from: { x: 2, y: 3 }, dir: { x: 0, y: -1 } } },
+        { type: 'playCard', card: core, target: { kind: 'global' } },
+      ],
+      'all',
+    );
+
+    const cards = state.intents.filter((i) => i.kind === 'card');
+    expect(cards).toHaveLength(3);
+
+    // An entity-targeted card is marked where the target stands and bound to the body,
+    // so the renderer can follow it — unlike a blow, moving away does not dodge it.
+    const onEntity = cards.find((i) => i.targetId);
+    expect(onEntity?.targetId).toBe(carrier.id);
+    expect(onEntity?.at).toEqual({ x: 1, y: 5 });
+    expect(onEntity?.label).toBe('Ember Coat');
+
+    // A line is anchored at its origin.
+    const onLine = cards.find((i) => i.label === 'Aether Beam');
+    expect(onLine?.at).toEqual({ x: 2, y: 3 });
+
+    // A global cast has no tile to mark — it is still declared, and carries the name
+    // the HUD shows instead.
+    const global = cards.find((i) => i.label !== 'Ember Coat' && i.label !== 'Aether Beam');
+    expect(global?.at).toBeUndefined();
+    expect(global?.label).toBeTruthy();
   });
 
   it('declares an attack against a specific tile, not a specific unit', () => {

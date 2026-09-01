@@ -85,6 +85,8 @@ export interface Overlays {
     unitId: UnitId;
     kind: 'attack' | 'commander' | 'card' | 'move' | 'channel';
     at?: Coord;
+    /** The entity a declared card is bound to — the marker follows it. */
+    targetId?: UnitId;
     damage: number;
     label?: string;
   }[];
@@ -649,22 +651,35 @@ export class BoardRenderer {
     }
 
     for (const intent of overlays.intents) {
-      if (!intent.at) continue;
-      const target = cam.tileCenter(intent.at);
+      // A card bound to an entity is marked where that entity *stands*, re-resolved
+      // every frame — unlike a blow it follows its target, and a marker frozen on the
+      // declaration tile would read as dodgeable when it is not. The snapshot anchor is
+      // the authoritative tile; `at` is the fallback for a target that has since left
+      // the board, so the promise stays visible even over empty ground.
+      const followed = intent.targetId ? this.views.get(intent.targetId) : undefined;
+      const at =
+        followed && !followed.dead ? (followed.snapshot?.anchor ?? followed.pos) : intent.at;
+      if (!at) continue;
+      const target = cam.tileCenter(at);
       const source = this.views.get(intent.unitId);
+
+      // A cast reads in amber, a strike in red: an entity-targeted spell cannot be
+      // side-stepped the way a declared blow can, and painting both with the strike's
+      // colour would tell the player that moving away works when it does not.
+      const casting = intent.kind === 'card';
 
       // Marked tile: a filled diamond that breathes, so it reads even under a unit.
       ctx.save();
       ctx.globalAlpha = 0.3 + 0.16 * pulse;
-      fillTile(ctx, cam, intent.at, 'rgba(229, 72, 77, 0.9)');
+      fillTile(ctx, cam, at, casting ? 'rgba(251, 191, 36, 0.85)' : 'rgba(229, 72, 77, 0.9)');
       ctx.restore();
 
       ctx.save();
       ctx.setLineDash([6, 4]);
       ctx.lineDashOffset = -(this.clock / 28) % 10;
-      ctx.strokeStyle = 'rgba(248, 113, 113, 0.95)';
+      ctx.strokeStyle = casting ? 'rgba(252, 211, 77, 0.95)' : 'rgba(248, 113, 113, 0.95)';
       ctx.lineWidth = 2.5;
-      tilePath(ctx, cam, intent.at);
+      tilePath(ctx, cam, at);
       ctx.stroke();
       ctx.restore();
 

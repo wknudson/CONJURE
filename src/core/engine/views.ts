@@ -170,6 +170,7 @@ export function toBoardView(state: GameState): BoardView {
       kind: i.kind,
       ...(i.at ? { at: { ...i.at } } : {}),
       ...(i.path ? { path: i.path.map((c) => ({ ...c })) } : {}),
+      ...(i.targetId ? { targetId: i.targetId } : {}),
       damage: i.damage,
       ...(i.label ? { label: i.label } : {}),
     })),

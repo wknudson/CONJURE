@@ -137,6 +137,22 @@
   opacity: 1;
 }
 
+/* Declared casts with no tile to mark — a global spell lands everywhere, and
+   "everywhere" has no diamond to draw on. Amber, matching the board's casting
+   markers rather than the strike red. */
+.status__declared-cast {
+  margin-top: 2px;
+  font: 700 9.5px var(--font);
+  letter-spacing: 0.6px;
+  color: #fde68a;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.status__declared-cast.is-shown {
+  opacity: 1;
+}
+
 /* ------------------------------------------------------- rules reference */
 
 .help-overlay {

@@ -104,10 +104,27 @@ export function declareIntents(
         const def = inst ? CARDS[inst.defId] : undefined;
         if (!def) break;
 
+        // Where to point the marker. A tile is itself; an entity is marked where it
+        // stands and *followed* if it moves (`targetId`), because unlike a blow the card
+        // is bound to the target rather than the ground and a dodgeable-looking tile
+        // would be a lie in the other direction; a line is marked at its origin. A
+        // global cast has no tile at all — it is still declared, and the HUD names it.
+        // This used to write `at` for tiles alone, so every mark, aura, targeted spell
+        // and Cataclysmic Core was declared and drew nothing — at the one tier whose
+        // whole premise is that nothing is hidden.
+        const target = command.target;
+        const entity =
+          target.kind === 'entity' && target.ref.kind !== 'portrait'
+            ? getEntity(state, target.ref.id)
+            : undefined;
+        const at =
+          target.kind === 'tile' ? target.at : target.kind === 'line' ? target.from : entity?.anchor;
+
         state.intents.push({
           unitId: `card:${command.card}`,
           kind: 'card',
-          ...(command.target.kind === 'tile' ? { at: { ...command.target.at } } : {}),
+          ...(at ? { at: { ...at } } : {}),
+          ...(entity ? { targetId: entity.id } : {}),
           damage: 0,
           label: def.name,
         });

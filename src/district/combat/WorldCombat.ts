@@ -433,6 +433,25 @@ export class WorldCombat {
       }
     }
 
+    // The enemy's declared turn. The world board never drew intents at all — the 2D
+    // shell's trajectory lines were the only telegraph in the game — so out here the
+    // essentials ride the badge helper like everything else: the blow's number on the
+    // tile it lands on, a declared card's name where it is aimed. A card bound to an
+    // entity is re-resolved to where that entity now stands, because unlike a blow it
+    // follows its target; tile-less declarations are the HUD's line, in both shells.
+    for (const intent of this.overlays.intents) {
+      const followed = intent.targetId ? this.views.get(intent.targetId) : undefined;
+      const at =
+        followed && !followed.dead ? (followed.snapshot?.anchor ?? followed.pos) : intent.at;
+      if (!at) continue;
+      const p = this.overlay.tileCenter(at, 42);
+      if (intent.kind === 'attack' || intent.kind === 'commander') {
+        badge(ctx, p.x, p.y, `${intent.damage}`, '#F87171', scale);
+      } else if (intent.kind === 'card' && intent.label) {
+        badge(ctx, p.x, p.y, intent.label, '#FDE68A', scale);
+      }
+    }
+
     // `overlays.badges` is deliberately not drawn. It carries a body's range profile for the
     // 2D board's corner bones, and out here the same fact is already on the ground: the reach
     // ring is a tile layer, which is a better answer to "how far does this thing reach" than
@@ -732,6 +751,10 @@ export class WorldCombat {
     this.hud.setIncoming(
       calculateProjectedDamage(board),
       this.session.getThreat().commanderThreatCount,
+    );
+    // Declared casts the board cannot point at — a global spell has no tile to mark.
+    this.hud.setDeclaredCasts(
+      board.intents.flatMap((i) => (i.kind === 'card' && !i.at && i.label ? [i.label] : [])),
     );
     this.refreshLastStand(board);
     this.grave.sync(board);
