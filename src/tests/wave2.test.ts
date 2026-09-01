@@ -23,6 +23,7 @@ import { DRAW_PER_TURN } from '../core/engine/deck.js';
 import { hashState, replay, type Step } from './replay.js';
 import type { GameState } from '../core/types/state.js';
 import { NOVICE_AI, planTurn } from '../core/ai/controller.js';
+import { canAct } from '../core/engine/movement.js';
 
 /** The pulled squads for the first `n` packs other than the host. */
 function pullsFor(hostId: string, n: number): string[][] {
@@ -78,6 +79,46 @@ describe('the ring delivers what it showed', () => {
       });
     }
   }
+
+  it('lands as a summon: the wave sits out the round it arrives and acts on the next', () => {
+    // The wave used to be placed as an opening line, which clears the arrival flags — so
+    // it skipped the Haste gate and swung on the turn it landed, from ground nothing had
+    // telegraphed a blow from. A body that walks in mid-fight obeys the rule every other
+    // mid-fight arrival does: it stands a round before it may act.
+    const host = PACKS[0]!.encounterId;
+    const session = fight(host, 1);
+    let state = session.debugState;
+    const before = new Set(Object.keys(state.units));
+
+    state = applyCommand(state, { type: 'endTurn' }).state; // player 1 -> enemy 1
+    state = applyCommand(state, { type: 'endTurn' }).state; // enemy 1 -> player 2
+    state = applyCommand(state, { type: 'endTurn' }).state; // player 2 -> enemy 2: it lands
+    expect(state.encounter.firedGates).toContain('wave2:arrived');
+
+    const arrivals = Object.values(state.units).filter((u) => !before.has(u.id));
+    expect(arrivals.length, 'the wave must have put bodies down').toBeGreaterThan(0);
+    for (const u of arrivals) {
+      expect(u.summonedThisTurn, `${u.defId} arrived this turn`).toBe(true);
+      expect(u.freshlySummoned, `${u.defId} has not stood a round`).toBe(true);
+      expect(canAct(u), `${u.defId} may not act on the turn it lands`).toBe(false);
+    }
+
+    // And the planner agrees — nothing it commits to this turn is a wave body.
+    for (const command of planTurn(state, 'enemy', NOVICE_AI)) {
+      const actor =
+        command.type === 'attack' ? command.attacker
+        : command.type === 'moveUnit' || command.type === 'channel' ? command.unit
+        : undefined;
+      if (actor) expect(arrivals.some((u) => u.id === actor), `${command.type} by an arrival`).toBe(false);
+    }
+
+    state = applyCommand(state, { type: 'endTurn' }).state; // enemy 2 -> player 3
+    state = applyCommand(state, { type: 'endTurn' }).state; // player 3 -> enemy 3: refreshed
+    for (const u of arrivals) {
+      const live = state.units[u.id];
+      if (live) expect(canAct(live), `${u.defId} acts once it has stood a round`).toBe(true);
+    }
+  });
 
   it('suppresses the random wander-in, so there is only ever one surprise', () => {
     const host = PACKS[0]!;
