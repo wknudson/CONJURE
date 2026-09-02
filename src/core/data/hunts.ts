@@ -34,6 +34,8 @@
  */
 
 import type { BountyDifficulty } from './bounties.js';
+import { isPack } from './packs.js';
+import { isLair } from './lairs.js';
 
 /**
  * How long a hunt is empty for after it pays out.
@@ -160,6 +162,36 @@ export function huntByEncounter(encounterId: string): Hunt | undefined {
 /** Whether an encounter id is a hunt at all. The board asks this; so does the tier table. */
 export function isHunt(encounterId: string): boolean {
   return HUNTS.some((h) => h.encounterId === encounterId);
+}
+
+/**
+ * Stamps the clock after a fight, for everything that rides it.
+ *
+ * Hunts and lairs are stamped **on a win only**. A hunt is a place with an animal in it, and
+ * a Whisperer who was driven off has not taken the animal — locking the gate for ten minutes
+ * over a defeat would punish the loss twice, once by the loss and once by the wait. Both are
+ * chosen off a board, so a standing gate costs the player nothing but the option.
+ *
+ * A roaming pack is stamped **either way**, host and every squad the ring pulled in. A pack
+ * is not chosen; it is walked into. Stamped on a win alone, the crew that had just beaten a
+ * character was still standing on the road when the rescue put them back on it at a tenth
+ * of their Pact — one stride from the contact radius, with nothing between the two but the
+ * refuge's few tiles. Each loss cost a fifth of the purse, and the road offered the next one
+ * immediately. The fee is the punishment; the cooldown is the same one a win earns, because
+ * either way the crew has had its fight with this character for now.
+ *
+ * `now` is handed in: this module stays clock-free and the caller reads `Date.now()`.
+ */
+export function stampClock(
+  hunts: Record<string, number>,
+  encounterId: string,
+  pulled: readonly string[],
+  won: boolean,
+  now: number,
+): void {
+  if (isPack(encounterId)) hunts[encounterId] = now;
+  else if (won && (isHunt(encounterId) || isLair(encounterId))) hunts[encounterId] = now;
+  for (const id of pulled) if (isPack(id)) hunts[id] = now;
 }
 
 /**
