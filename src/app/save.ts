@@ -1067,9 +1067,21 @@ function migrateProfile(
   // fight in progress and is deliberately never restored: a reload is not a resume, and
   // the open contract on `overworld` is what the forfeit failsafe reads instead.
   const nested = (data.state as { overworld?: unknown } | undefined)?.overworld;
-  const overworld = readOverworld(nested ?? data.overworld, version) ?? newRun(
-    Math.floor(Math.random() * 1e9) >>> 0,
-  );
+  const rawOverworld = nested ?? data.overworld;
+  const readRun = readOverworld(rawOverworld, version);
+  // A run that cannot be rebuilt is dropped whole and a fresh one started — see
+  // `readOverworld` for why partial is worse than nothing. But dropping it costs the player
+  // their purse, their satchel, their relics and their place on the map, and until now it
+  // was the one repair in this file that said nothing: every other one pushes a note, and
+  // this one reset a character to the road with an empty pocket in silence, which from the
+  // player's seat is the save eating their money. Told only when there *was* a run to lose:
+  // a save from before runs existed has nothing to report.
+  if (!readRun && rawOverworld !== undefined && rawOverworld !== null) {
+    notes.push(
+      'Your journey could not be read and was started over: purse, satchel, relics and position were reset. Your cards, decks and Companions are untouched.',
+    );
+  }
+  const overworld = readRun ?? newRun(Math.floor(Math.random() * 1e9) >>> 0);
   if (version < FIRST_STRETCHED_SAVE) {
     notes.push('Health numbers are ten times larger now. Yours were scaled to match.');
   }

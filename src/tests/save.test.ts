@@ -171,6 +171,42 @@ describe('the wall', () => {
     clearSave();
     expect(Object.keys(loadSave().save.profiles)).toHaveLength(0);
   });
+
+  it('says so when a run cannot be rebuilt, rather than quietly emptying the purse', () => {
+    // `readOverworld` drops a run whole when its Pact is missing, and starts a fresh one.
+    // That is the right repair and it used to be the one repair in the file that pushed
+    // no note — a character came back on the road with nothing in their pocket and no
+    // word as to why. The collection is a different field and must survive untouched.
+    const file = fileWith('slot-1');
+    const raw = JSON.parse(JSON.stringify(file)) as {
+      profiles: Record<string, { state: { overworld: unknown }; collection: { unlocked: string[] } }>;
+    };
+    const kept = raw.profiles['slot-1']!.collection.unlocked.length;
+    raw.profiles['slot-1']!.state.overworld = { economy: { ducats: 999 } }; // no pact at all
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const { save, notes } = loadSave();
+    const p = save.profiles['slot-1']!;
+    expect(notes.join(' ')).toMatch(/journey could not be read/);
+    expect(p.state.overworld.economy.ducats, 'the purse was reset, not read').not.toBe(999);
+    expect(p.state.overworld.pact.currentHp).toBeGreaterThan(0);
+    expect(p.collection.unlocked, 'the collection is a different field').toHaveLength(kept);
+  });
+
+  it('stays quiet about a run that was never there', () => {
+    // A save from before runs existed has nothing to lose, so the fresh run is not a
+    // repair and gets no note. Otherwise every legacy upgrade would open with a warning
+    // about a purse the player never had.
+    const file = fileWith('slot-1');
+    const raw = JSON.parse(JSON.stringify(file)) as {
+      profiles: Record<string, { state?: unknown }>;
+    };
+    delete raw.profiles['slot-1']!.state;
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const { notes } = loadSave();
+    expect(notes.join(' ')).not.toMatch(/journey could not be read/);
+  });
 });
 
 describe('the upgrade from one character to three', () => {
