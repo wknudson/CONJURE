@@ -167,6 +167,44 @@ describe('declaration', () => {
     // the other AI-heavy suites carry.
   }, 30_000);
 
+  it('never swings a blow it did not declare, even at Adept', () => {
+    // The Adept's hidden-hand pass re-plans against the live board after the declared blows
+    // have landed, and the planner hands back a whole turn. It used to apply all of it, so
+    // a body that had only walked in the declared plan still had its swing — struck from a
+    // tile no telegraph had named. The tier may keep its *cards* to itself; a blow is a
+    // promise or it is nothing. Swept across encounters and seeds because which body has a
+    // swing left over is a property of the plan.
+    for (let e = 0; e < 4; e += 1) {
+      for (let seed = 1; seed <= 3; seed += 1) {
+        const session = afterEnemyDeclares(e, seed, ADEPT_AI);
+        const board = session.getBoard();
+        if (board.activeSide !== 'player' || session.isOver()) continue;
+
+        const declared = new Set(
+          board.intents.filter((i) => i.kind === 'attack' || i.kind === 'commander').map((i) => i.unitId),
+        );
+        const feral = new Set(
+          board.units.filter((u) => u.keywords.includes('Feral')).map((u) => u.id),
+        );
+
+        session.dispatch({ type: 'endTurn' });
+        const events = session.runAiTurn();
+
+        for (const ev of events) {
+          if (ev.t !== 'attackDeclared') continue;
+          // Wildlife belongs to nobody and is telegraphed by the danger zone, not the plan.
+          if (feral.has(ev.attackerId)) continue;
+          const attacker = board.units.find((u) => u.id === ev.attackerId);
+          if (attacker && attacker.side !== 'enemy') continue;
+          expect(
+            declared.has(ev.attackerId),
+            `${ENCOUNTERS[e]!.id} seed ${seed}: ${ev.attackerId} swung without declaring`,
+          ).toBe(true);
+        }
+      }
+    }
+  }, 120_000);
+
   it('clears the declaration once the turn it described is spent', () => {
     const session = afterEnemyDeclares();
     expect(session.getBoard().intents.length).toBeGreaterThan(0);

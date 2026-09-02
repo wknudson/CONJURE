@@ -628,11 +628,25 @@ export class CombatSession implements RulesQuery {
     const events: GameEvent[] = [];
     if (this.state.result || this.state.activeSide !== 'enemy') return events;
 
-    // An Adept keeps its cards hidden, so it still has undeclared plays to make.
-    if (this.ai.telegraph !== 'all') {
+    // An Adept keeps its cards hidden, so it still has undeclared plays to make — and
+    // *only* those. This pass re-plans against the live board, and the planner hands back
+    // a whole turn: moves, swings, channels, alongside the cards. It used to apply all of
+    // it, so a body that had only walked in the declared plan still had its swing, and
+    // anything that arrived mid-turn was fresh, and both struck from a tile the player had
+    // never been shown a blow from. "What is declared is what happens" is the promise the
+    // whole mechanic rests on; the one thing the tier is allowed to keep hidden is its hand.
+    // A card the dropped moves would have set up throws and is skipped — that is the cost of
+    // hiding it, not a bug.
+    //
+    // Skipped outright when the Monocle has revealed the hand: the declaration was made at
+    // `'all'` and already named every card, so a second pass would play undeclared ones
+    // behind the very relic that bought them into view.
+    const handHidden =
+      this.ai.telegraph !== 'all' && !this.state.players.player.revealsIntents;
+    if (handHidden) {
       for (const command of planTurn(this.state, 'enemy', this.ai)) {
         if (command.type === 'endTurn') break;
-        if (command.type === 'declareIntents') continue;
+        if (command.type !== 'playCard') continue;
         if (this.state.result) break;
         try {
           const res = applyCommand(this.state, command);

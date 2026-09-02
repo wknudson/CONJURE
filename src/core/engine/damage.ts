@@ -349,12 +349,44 @@ function damageEntity(ctx: Ctx, entity: Entity, req: DamageRequest): DamageOutco
   return { absorbedByArmor: absorbed, hpLoss, died };
 }
 
-/** Direct healing / armor grants, kept here so all HP writes live in one file. */
+/**
+ * The most plate a Pact may wear, as a fraction of its ceiling.
+ *
+ * Half. Armour on a Pact had no ceiling at all, and a side that could plate it every turn
+ * — Rime Guard's Resonance, an Aegis Ward on Retain, a Rime Shell refunding itself — grew
+ * a wall the other side could never chip through: measured on the Glacial Field, the
+ * Frost enemy ended every Novice-mirror playout at 160–390 health behind 430 to over a
+ * thousand armour, its health untouched from about turn fifty, while the fight ground on
+ * to turn 81. `PLATE_CAP` already bounds what a Guardian may weld onto itself for exactly
+ * this reason; this is the same rule for the thing the fight is decided over.
+ *
+ * A fraction rather than a number so it scales with the Pact it protects — a Master
+ * hunt's five-hundred-point beast and a levelled Companion's ceiling both carry it — and
+ * half so that plate is a real answer without ever being the whole one: at the cap a Pact
+ * is worth one and a half of itself, and no more.
+ */
+export const PACT_ARMOR_CAP_FRACTION = 0.5;
+
+/** The plate ceiling for one side's Pact. */
+export function pactArmorCap(maxHp: number): number {
+  return Math.floor(maxHp * PACT_ARMOR_CAP_FRACTION);
+}
+
+/**
+ * Direct healing / armor grants, kept here so all HP writes live in one file.
+ *
+ * A Pact takes plate only up to its cap, and silently once it is there — the same shape
+ * `healCommander` has at a full Pact, because a floater reading "+0" is worse than none.
+ * Unit armour is bounded by its own rules (`PLATE_CAP`, an Aura's stacks) and not here.
+ */
 export function grantArmor(ctx: Ctx, target: TargetRef, amount: number): void {
   if (target.kind === 'portrait') {
     const cmd = ctx.state.players[target.side];
-    cmd.armor += amount;
-    emit(ctx, { t: 'armorGained', target, amount, total: cmd.armor });
+    const room = pactArmorCap(cmd.maxHp) - cmd.armor;
+    const plated = Math.min(amount, Math.max(0, room));
+    if (plated <= 0) return;
+    cmd.armor += plated;
+    emit(ctx, { t: 'armorGained', target, amount: plated, total: cmd.armor });
     return;
   }
   const entity = getEntity(ctx.state, target.id);

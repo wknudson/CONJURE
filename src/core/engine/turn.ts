@@ -20,7 +20,7 @@ import { pushUnit } from './displacement.js';
 import { walksFreely } from './movement.js';
 import { tickSubjugation } from './subjugation.js';
 import { DRAW_PER_TURN, drawCards, endOfTurnCleanup, gainBones } from './deck.js';
-import { refreshUnits, startOfTurnStatuses } from './status.js';
+import { liftHolds, refreshUnits, startOfTurnStatuses } from './status.js';
 import { boneIncomeFor } from '../data/economy.js';
 import { checkLethal } from './death.js';
 import { dealDamage } from './damage.js';
@@ -97,6 +97,9 @@ export function endTurn(ctx: Ctx): void {
   ctx.state.phase = 'endOfTurn';
   emit(ctx, { t: 'phaseChanged', phase: 'endOfTurn', side });
   endOfTurnCleanup(ctx, side);
+  // The holds on this side's bodies lift as its turn closes, not as its next one opens —
+  // so a Freeze the opponent landed covers this whole turn. See `liftHolds`.
+  liftHolds(ctx, side);
 
   const next = opposite(side);
   if (next === 'player') {

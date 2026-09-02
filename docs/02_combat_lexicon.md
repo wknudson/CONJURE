@@ -612,9 +612,16 @@ stronger thing.
 
 1. **Toxin**, across all units
 2. **Burn**, across all units
-3. **Freeze / Entangle / Stun / Exhaust / Fleet / Chill / Brittle / Charged** decay
+3. **Chill / Brittle / Charged** decay — the primers the opponent cashes in on their own turn
 4. **Tile hazards** age
 5. **Growth, then Auras** — both fire even on Frozen or Stunned units
+
+The **holds** — Freeze, Stun, Entangle, Exhaust and Fleet — do not decay at the start of the
+turn. They lift at the **end** of their owner's turn, so a one-stack hold covers one full turn
+of the body it is on: a Freeze the player lands on their turn holds the enemy through the whole
+of its next one, and a two-stack Dense Ice through two. (Ruled 2026-09-01. Decayed at the start
+of the owner's turn, before it acted, a one-stack Freeze was gone before the enemy moved and
+held nothing at all.)
 
 ---
 
@@ -652,6 +659,19 @@ off.
 - **Shatter** and **Superconduct** happen to what is *encasing* the target, not to the
   target. Requiring HP loss there would mean armor prevents the one reaction whose entire
   purpose is removing armor — a heavily armoured frozen target could never be broken.
+
+### The Pact's plate has a ceiling
+
+**A Pact may wear at most half its ceiling in Persistent Armor** (`PACT_ARMOR_CAP_FRACTION`,
+`core/engine/damage.ts`); plate offered past that is refused silently, exactly as a heal is
+refused at a full Pact. Ruled 2026-09-01. It had no ceiling, and a side that could plate its
+Pact every turn — Rime Guard's Resonance, an Aegis Ward on Retain, a Rime Shell refunding
+itself — grew a wall the other side could never chip through: on the Glacial Field the Frost
+enemy ended every Novice-mirror playout at 160–390 health behind 430 to over a thousand
+armour, its health untouched from about turn fifty, one game grinding to turn 81. With the
+cap the same eight games end by turn 53 with the enemy pinned at 200. A **unit's** plate is
+bounded by its own rules — `PLATE_CAP` for a Guardian's self-plating, an Aura's stacks — and
+not by this one.
 
 ### Bonus damage vs. true damage
 

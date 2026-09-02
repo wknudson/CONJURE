@@ -14,7 +14,7 @@ import { isUnit } from '../types/units.js';
 import type { ReactionDef } from '../data/reactions.js';
 import { findReaction } from '../data/reactions.js';
 import { coordKey } from '../../contract/ids.js';
-import { DIRS_8 } from '../util/grid.js';
+import { DIRS_8, cellsOf, manhattan } from '../util/grid.js';
 import { inBounds } from '../types/state.js';
 import type { HazardKind } from '../types/state.js';
 import { entityAt } from './board.js';
@@ -119,7 +119,7 @@ export function resolveReaction(
         emit(ctx, { t: 'armorStripped', unitId: host.id, amount: host.armor });
         host.armor = 0;
       }
-      for (const c of adjacentTiles(ctx, at)) {
+      for (const c of ringAround(ctx, host, at)) {
         const victim = entityAt(ctx.state, c);
         if (!victim || (host && victim.id === host.id)) continue;
         // Shrapnel Guard. Scoped to the splash and not to the strip: this is plate against
@@ -144,8 +144,9 @@ export function resolveReaction(
       // any of them move: pushing one unit can vacate a tile another would then be read
       // from, and the blast should be judged on the board as it was when it went off.
       const host = entityAt(ctx.state, at);
+      const hostCells = host ? cellsOf(host) : [at];
       const caught: Unit[] = [];
-      for (const c of adjacentTiles(ctx, at)) {
+      for (const c of ringAround(ctx, host, at)) {
         const victim = entityAt(ctx.state, c);
         if (!victim || !isUnit(victim)) continue;
         if (host && victim.id === host.id) continue;
@@ -157,9 +158,13 @@ export function resolveReaction(
         if (!ctx.state.units[unit.id]) continue;
         // Away from the blast, by the sign of the offset — a diagonal neighbour is thrown
         // diagonally, so nothing is dragged sideways past the tile it was standing on.
+        // Measured from the host *cell* nearest the victim, not from its anchor: a body
+        // standing squarely below a Behemoth's right column is thrown straight down, where
+        // the anchor's offset would have read as diagonal and dragged it sideways.
+        const from = nearestCell(hostCells, unit.anchor);
         const dir = {
-          x: Math.sign(unit.anchor.x - at.x),
-          y: Math.sign(unit.anchor.y - at.y),
+          x: Math.sign(unit.anchor.x - from.x),
+          y: Math.sign(unit.anchor.y - from.y),
         };
         if (dir.x === 0 && dir.y === 0) continue;
         // A shove is a cascade link too: what it slams the body into takes real damage.
@@ -185,7 +190,7 @@ export function resolveReaction(
     case 'consumeForAoe': {
       const amount = consumed * def.outcome.perStack;
       if (amount <= 0) break;
-      for (const c of adjacentTiles(ctx, at)) {
+      for (const c of ringAround(ctx, entityAt(ctx.state, at), at)) {
         const victim = entityAt(ctx.state, c);
         if (!victim) continue;
         dealDamage(ctx, {
@@ -215,12 +220,12 @@ export function resolveReaction(
       // it is what makes casting into a melee in the rain a decision rather than a bonus.
       const host = entityAt(ctx.state, at);
       const struck: UnitId[] = [];
-      for (const c of adjacentTiles(ctx, at)) {
+      for (const c of ringAround(ctx, host, at)) {
         const victim = entityAt(ctx.state, c);
         // Units only: arcing through scenery would make every wall a lightning rod.
         if (!victim || !isUnit(victim)) continue;
-        // A Behemoth occupies cells adjacent to its own anchor, so identity is by id and
-        // never by position — otherwise it would arc into itself.
+        // Identity is by id and never by position, so a body cannot be struck twice for
+        // standing on two tiles of the ring — and the host never arcs into itself.
         if (host && victim.id === host.id) continue;
         if (struck.includes(victim.id)) continue;
         struck.push(victim.id);
@@ -387,18 +392,49 @@ export function spawnHazard(
   emit(ctx, { t: 'hazardSpawned', kind, at: { ...at }, turns });
 }
 
-function adjacentTiles(ctx: Ctx, at: Coord): Coord[] {
+/**
+ * The tiles a reaction on this body reaches: everything touching any cell it stands on,
+ * and none of the cells themselves.
+ *
+ * Around the whole footprint, not the anchor. The old shape expanded the eight neighbours
+ * of the anchor cell alone, which for a 2x2 host was wrong in both directions: it missed
+ * every tile adjacent to the other three cells, and its ring cut through the host's own
+ * body — so a Shatter on a Behemoth sprayed shrapnel at the drake's far flank and never
+ * reached the body standing beside it. `blastTiles` in `marks.ts` had this right from the
+ * start, and this is the same rule. A tile with no host on it — the body left the board
+ * between the hit and the resolution — falls back to the ring around the tile.
+ */
+function ringAround(ctx: Ctx, host: Entity | undefined, at: Coord): Coord[] {
+  const cells = host ? cellsOf(host) : [at];
+  const own = new Set(cells.map(coordKey));
   const out: Coord[] = [];
   const seen = new Set<string>();
-  for (const dir of DIRS_8) {
-    const c = { x: at.x + dir.x, y: at.y + dir.y };
-    if (!inBounds(ctx.state, c)) continue;
-    const key = coordKey(c);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(c);
+  for (const cell of cells) {
+    for (const dir of DIRS_8) {
+      const c = { x: cell.x + dir.x, y: cell.y + dir.y };
+      if (!inBounds(ctx.state, c)) continue;
+      const key = coordKey(c);
+      if (own.has(key) || seen.has(key)) continue;
+      seen.add(key);
+      out.push(c);
+    }
   }
   return out;
+}
+
+/**
+ * The cell of a footprint closest to a point, for measuring a blast's direction from.
+ *
+ * Manhattan rather than Chebyshev, deliberately: every ring tile is one king's move from
+ * *some* host cell, so Chebyshev ties between the cell squarely beside a victim and the one
+ * diagonal to it, and the tie decided whether the throw went straight or slantwise. Manhattan
+ * prefers the cell that shares a rank or file, so an orthogonal neighbour is thrown straight
+ * and only a true corner is thrown diagonally.
+ */
+function nearestCell(cells: Coord[], to: Coord): Coord {
+  let best = cells[0]!;
+  for (const c of cells) if (manhattan(c, to) < manhattan(best, to)) best = c;
+  return best;
 }
 
 /** Ticks hazards down at the hazard slot of the status order, clearing expired ones. */

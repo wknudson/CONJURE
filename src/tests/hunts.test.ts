@@ -16,7 +16,10 @@ import {
   huntCooldownLabel,
   huntCooldownRemaining,
   isHunt,
+  stampClock,
 } from '../core/data/hunts.js';
+import { PACKS } from '../core/data/packs.js';
+import { LAIRS } from '../core/data/lairs.js';
 import { encounterById } from '../core/data/encounters/index.js';
 import { getEncounterScript } from '../core/data/encounters/registry.js';
 import { companionById, COMPANIONS } from '../core/data/companions.js';
@@ -24,6 +27,53 @@ import { traitsFor } from '../core/data/companionTraits.js';
 import { huntBoard, tierOfEncounter } from '../core/data/bounties.js';
 import { tameCompanion } from '../core/overworld/vivarium.js';
 import { makeRng } from '../core/util/rng.js';
+
+describe('the clock after a fight', () => {
+  const NOW = 1_700_000_000_000;
+  const hunt = HUNTS[0]!.encounterId;
+  const lair = LAIRS[0]!.encounterId;
+  const [host, other] = PACKS.map((p) => p.encounterId) as [string, string];
+
+  it('stamps a hunt and a lair on a win only', () => {
+    // A Whisperer driven off has not taken the animal; both are chosen off a board, so a
+    // standing gate costs nothing but the option. Stamping the loss would punish it twice.
+    const won: Record<string, number> = {};
+    stampClock(won, hunt, [], true, NOW);
+    stampClock(won, lair, [], true, NOW);
+    expect(won[hunt]).toBe(NOW);
+    expect(won[lair]).toBe(NOW);
+
+    const lost: Record<string, number> = {};
+    stampClock(lost, hunt, [], false, NOW);
+    stampClock(lost, lair, [], false, NOW);
+    expect(lost[hunt]).toBeUndefined();
+    expect(lost[lair]).toBeUndefined();
+  });
+
+  it('stamps a roaming pack whether the fight was won or lost', () => {
+    // The death-spiral this closes: stamped on a win alone, the crew that had just beaten a
+    // character was still on the road when the rescue put them back beside it at a tenth
+    // of their Pact, and each loss cost a fifth of the purse. The fee is the punishment;
+    // the road stands down for the same ten minutes either way.
+    const lost: Record<string, number> = {};
+    stampClock(lost, host, [], false, NOW);
+    expect(lost[host]).toBe(NOW);
+    expect(huntAvailable(lost[host], NOW + 1)).toBe(false);
+    expect(huntAvailable(lost[host], NOW + HUNT_COOLDOWN_MS)).toBe(true);
+  });
+
+  it('stands down every squad the ring pulled in, on a loss as on a win', () => {
+    const lost: Record<string, number> = {};
+    stampClock(lost, host, [other], false, NOW);
+    expect(lost[other], 'the pulled crew was in the fight too').toBe(NOW);
+
+    // A pulled id that is not a pack -- a story contract dragged in by mistake -- is not
+    // a thing that stands on a road, and takes no stamp.
+    const odd: Record<string, number> = {};
+    stampClock(odd, host, [hunt], false, NOW);
+    expect(odd[hunt]).toBeUndefined();
+  });
+});
 
 describe('the hunt registry', () => {
   it('names a real encounter, a real species, and a beast the encounter actually awards', () => {

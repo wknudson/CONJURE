@@ -433,7 +433,7 @@ slot — several become Part 2 material.
 | `CombatBoons.bones` / `.extraOpeningCards` | **no relic, no trait** — brews only | `run.ts:26-33` |
 | Keywords `Dormant`, `Impact`, `Sacrifice` | **no engine code reads them** — card text | `glossary.ts:23,27,72` |
 | `isAnchor()` | exported, **never called** | `subjugation.ts:42` |
-| `ignoreIceSlip` | reaches `CommanderState`, **movement never reads it** | — |
+| ~~`ignoreIceSlip`~~ | **removed** (2026-09-01) — there was never an ice hazard; its four sources now grant real footing rules | — |
 | Brew `quicksilver` | defined, **not in `APOTHECARY_STOCK`** — unpurchasable | `run.ts:32`, `apothecary.ts:30-50` |
 
 ## 7. The Harpoon Protocol is finished and starving

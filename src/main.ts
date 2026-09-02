@@ -57,9 +57,8 @@ import {
   packBounty,
   type Bounty,
 } from './core/data/bounties.js';
-import { isPack, packByEncounter, reinforceSquad, type PackDef } from './core/data/packs.js';
-import { isHunt } from './core/data/hunts.js';
-import { isLair } from './core/data/lairs.js';
+import { packByEncounter, reinforceSquad, type PackDef } from './core/data/packs.js';
+import { stampClock } from './core/data/hunts.js';
 import { storyContractByEncounter } from './core/data/campaign.js';
 import {
   carryFor,
@@ -927,25 +926,12 @@ function finishCombat(
     pendingNotice = { title: story.crack.title, body: story.crack.body };
   }
 
-  // The hunt clock, stamped only on a win. A hunt is a place with an animal in it, and a
-  // Whisperer who was driven off has not taken the animal — locking the gate for ten minutes
-  // over a defeat would punish the loss twice, once by the loss and once by the wait.
-  //
+  // The clock: hunts and lairs on a win, roaming packs either way. The rule and its reasons
+  // live in `stampClock` — this used to stamp packs on a win alone, which left the crew
+  // that had just beaten a character standing on the road the rescue put them back on.
   // `Date.now()` is read here rather than in `core`, which stays clock-free: the registry
-  // does the arithmetic and is handed the time. See `core/data/hunts.ts`.
-  // Hunts and packs share the clock, because they are the same promise: the thing you
-  // cleared is gone for a while and then it is back. A pack is stamped on a win only, so
-  // being driven off leaves it standing on the road where you left it.
-  // Lairs stamp the same clock: a bound-or-beaten apex leaves its ground quiet for a
-  // while, and a repeat visit rolls a different animal for free.
-  if (won && (isHunt(played.id) || isPack(played.id) || isLair(played.id)))
-    p.hunts[played.id] = Date.now();
-  // A pack the ring dragged in was in the fight and went down in it, so it goes off the
-  // road on the same clock. Only on a win, exactly like the host: driving them off leaves
-  // every one of them standing where you left it.
-  if (won) {
-    for (const id of pulled) if (isPack(id)) p.hunts[id] = Date.now();
-  }
+  // does the arithmetic and is handed the time.
+  stampClock(p.hunts, played.id, pulled, won, Date.now());
 
   const offer = won
     ? rollSchematicOffer(

@@ -9,6 +9,7 @@ import {
   run,
   scenario,
 } from './scenario.js';
+import { PACT_ARMOR_CAP_FRACTION, pactArmorCap } from '../core/engine/damage.js';
 
 describe('persistent armor', () => {
   it('absorbs damage before HP and does not decay between turns', () => {
@@ -38,6 +39,56 @@ describe('persistent armor', () => {
     const res = run(state, play(handCard(state, 'player', 'aegis_ward'), atPortrait('player')));
     expect(res.state.players.player.armor).toBe(40);
   });
+});
+
+/**
+ * The Pact's plate has a ceiling: half of what it protects.
+ *
+ * It had none, and a side that could plate its Pact every turn grew a wall the other side
+ * could never chip through — the Glacial Field's Frost enemy ended every Novice-mirror
+ * playout at 160–390 health behind 430 to over a thousand armour, one of them at turn 81.
+ * Unit plate is bounded by its own rules and is deliberately not touched here.
+ */
+describe('the Pact armour cap', () => {
+  const ward = (armorNow: number) => {
+    const state = scenario({ hand: ['aegis_ward'] });
+    state.players.player.armor = armorNow;
+    const res = run(state, play(handCard(state, 'player', 'aegis_ward'), atPortrait('player')));
+    return { armor: res.state.players.player.armor, gained: eventsOf(res.events, 'armorGained') };
+  };
+
+  it('is half the Pact ceiling, read off the ceiling rather than a number', () => {
+    expect(PACT_ARMOR_CAP_FRACTION).toBe(0.5);
+    expect(pactArmorCap(400)).toBe(200);
+    expect(pactArmorCap(500), 'a Master hunt\'s beast carries more').toBe(250);
+  });
+
+  it('takes only the room that is left', () => {
+    const cap = pactArmorCap(scenario().players.player.maxHp);
+    const { armor, gained } = ward(cap - 10);
+    expect(armor).toBe(cap);
+    expect(gained.filter((e) => e.target.kind === 'portrait').map((e) => e.amount)).toEqual([10]);
+  });
+
+  it('refuses plate at the cap silently, as a heal at full is refused', () => {
+    const cap = pactArmorCap(scenario().players.player.maxHp);
+    const { armor, gained } = ward(cap);
+    expect(armor).toBe(cap);
+    expect(gained.filter((e) => e.target.kind === 'portrait'), 'no "+0" floater').toHaveLength(0);
+  });
+
+  it('does not bound a unit\'s plate, which has its own rules', () => {
+    const state = scenario({
+      units: [{ def: 'scout_imp', side: 'player', at: { x: 2, y: 4 }, armor: 500 }],
+      hand: ['aegis_ward'],
+    });
+    const imp = findUnit(state, 'scout_imp', 'player');
+    const res = run(state, play(handCard(state, 'player', 'aegis_ward'), atUnit(imp.id)));
+    expect(res.state.units[imp.id]!.armor).toBe(540);
+  });
+});
+
+describe('persistent armor, continued', () => {
 
   it('converts blood taken from a minion into Hero armor via Dark Tithe', () => {
     const state = scenario({

@@ -105,7 +105,6 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       ignoresFog: false,
       immuneToBurn: false,
       immuneToToxin: false,
-      ignoresIceSlip: false,
       revealsIntents: false,
       bonusObstacleHp: 0,
       bonusTitheMarrow: 0,
@@ -207,8 +206,6 @@ export interface CombatBoons {
   ignoreFog?: boolean;
   /** Burn stops ticking on this side entirely. */
   immuneToBurn?: boolean;
-  /** Ice underfoot no longer costs this side its footing. */
-  ignoreIceSlip?: boolean;
   /** Toxin stops ticking on this side. The one status armour cannot answer. */
   immuneToToxin?: boolean;
   /**
@@ -585,7 +582,6 @@ export function createCombat(
   if (carry?.boons?.ignoreFog) player.commander.ignoresFog = true;
   if (carry?.boons?.immuneToBurn) player.commander.immuneToBurn = true;
   if (carry?.boons?.immuneToToxin) player.commander.immuneToToxin = true;
-  if (carry?.boons?.ignoreIceSlip) player.commander.ignoresIceSlip = true;
   if (carry?.boons?.revealIntents) player.commander.revealsIntents = true;
 
   // Additive, and floored at zero for the same reason the ceiling only moves up: a

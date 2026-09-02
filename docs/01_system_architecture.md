@@ -218,7 +218,6 @@ trait id ────────┘
 | `maxBones` | raises the Bone **ceiling** for the whole fight |
 | `ignoreFog` | fog and steam no longer break this side's line of sight |
 | `immuneToBurn` | Burn stops ticking on this side |
-| `ignoreIceSlip` | ice underfoot costs this side nothing |
 | `immuneToToxin` | Toxin stops ticking on this side |
 | `revealIntents` | the opposition declares its card plays as well as its blows |
 | `bonusObstacleHp` | added to every wall this side raises from a card |

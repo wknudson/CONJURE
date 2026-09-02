@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { addUnit, scenario } from './scenario.js';
-import { threatMap } from '../core/engine/threat.js';
+import { heldNextTurn, threatMap } from '../core/engine/threat.js';
+import { applyCommand } from '../core/engine/engine.js';
+import { canAct } from '../core/engine/movement.js';
 import { coordKey } from '../contract/ids.js';
+import type { GameState } from '../core/types/state.js';
 
 const has = (tiles: { x: number; y: number }[], x: number, y: number): boolean =>
   tiles.some((t) => t.x === x && t.y === y);
@@ -33,16 +36,6 @@ describe('threat projection', () => {
     });
 
     expect(has(threatMap(state, 'player').tiles, 2, 4)).toBe(true);
-  });
-
-  it('is empty when the enemy cannot act', () => {
-    const state = scenario({
-      units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 } }],
-    });
-    const unitId = Object.keys(state.units)[0]!;
-    state.units[unitId]!.statuses.freeze = 1;
-
-    expect(threatMap(state, 'player').tiles).toHaveLength(0);
   });
 
   it('accumulates damage where several attackers converge', () => {
@@ -99,5 +92,141 @@ describe('threat projection', () => {
     // The wisp is walled into its corner: nothing it can move to reaches far.
     const map = threatMap(blocked, 'player');
     expect(has(map.tiles, 0, 5)).toBe(false);
+  });
+});
+
+/**
+ * The forecast reads the board as the enemy's turn will find it.
+ *
+ * The holds lift at the *end* of their owner's turn, so a hold standing now stands through
+ * the whole of the enemy's next turn. It was not always so: they used to decay at the start
+ * of the owner's turn, before it acted, and a one-stack Freeze held nothing at all while the
+ * map showed the frozen body as harmless. Each case below is checked twice: once against
+ * the map, and once against the engine by actually ending the turn, so the two cannot
+ * drift apart whichever way the timing is ruled.
+ */
+describe('what a held body will and will not do next turn', () => {
+  const lone = (status: 'freeze' | 'stun' | 'entangle' | 'exhaust' | 'anchor', stacks: number) => {
+    const state = scenario({
+      width: 6,
+      height: 6,
+      playerHp: 5000,
+      enemyHp: 5000,
+      units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 1 } }],
+    });
+    const id = Object.keys(state.units)[0]!;
+    state.units[id]!.statuses[status] = stacks;
+    return { state, id };
+  };
+
+  /** The body as the engine leaves it at the start of its own turn. */
+  const atItsTurn = (state: GameState, id: string) =>
+    applyCommand(state, { type: 'endTurn' }).state.units[id]!;
+
+  it('reads a one-stack hold as a body that threatens nothing, for the whole of its turn', () => {
+    // The ruling: a hold covers one full turn of the body it is on. Rime Lock and the third
+    // Chill apply one stack, so this is what "Freeze cancels that specific hit" rests on.
+    for (const status of ['freeze', 'stun', 'exhaust'] as const) {
+      const { state, id } = lone(status, 1);
+      expect(heldNextTurn(state.units[id]!), `${status} 1`).toBe(true);
+      expect(threatMap(state, 'player').tiles, `${status} 1 projects nothing`).toHaveLength(0);
+      // And that is what the engine does: the hold stands when the body would act.
+      expect(canAct(atItsTurn(state, id)), `${status} 1 held at its turn`).toBe(false);
+    }
+  });
+
+  it('lifts a one-stack hold once that turn is over, and a two-stack hold a turn later', () => {
+    // Dense Ice's "lasts one more turn": a second stack is a second turn held.
+    const twoTurns = (state: GameState, id: string) => {
+      const enemyTurn = applyCommand(state, { type: 'endTurn' }).state; // player -> enemy
+      const playerTurn = applyCommand(enemyTurn, { type: 'endTurn' }).state; // enemy -> player
+      const nextEnemyTurn = applyCommand(playerTurn, { type: 'endTurn' }).state; // player -> enemy
+      return { held: !canAct(enemyTurn.units[id]!), heldNext: !canAct(nextEnemyTurn.units[id]!) };
+    };
+    const one = lone('freeze', 1);
+    expect(twoTurns(one.state, one.id)).toEqual({ held: true, heldNext: false });
+    const two = lone('freeze', 2);
+    expect(twoTurns(two.state, two.id)).toEqual({ held: true, heldNext: true });
+  });
+
+  it('reads the Anchor as a hold that does not lift', () => {
+    // The tether does not decay: it holds until it resolves.
+    const { state, id } = lone('anchor', 1);
+    expect(heldNextTurn(state.units[id]!)).toBe(true);
+    expect(threatMap(state, 'player').tiles).toHaveLength(0);
+  });
+
+  it('roots an Entangled body where it stands but lets it swing', () => {
+    const rooted = lone('entangle', 1);
+    const tiles = threatMap(rooted.state, 'player').tiles;
+    expect(has(tiles, 2, 2), 'adjacent').toBe(true);
+    expect(has(tiles, 2, 4), 'nothing it could walk to').toBe(false);
+    // And the engine agrees: rooted at its turn, still able to strike.
+    const atTurn = atItsTurn(rooted.state, rooted.id);
+    expect(canAct(atTurn)).toBe(true);
+    expect(atTurn.statuses.entangle).toBe(1);
+  });
+
+  it('counts Fleet at its full stride', () => {
+    // Scout Imp: MOV 3 from row 0 reaches row 4 with one of reach. One stack of Fleet is one
+    // more stride, and row 5 comes into reach.
+    const board = (fleet: number) => {
+      const state = scenario({
+        width: 6,
+        height: 7,
+        units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 0 } }],
+      });
+      state.units[Object.keys(state.units)[0]!]!.statuses.fleet = fleet;
+      return threatMap(state, 'player').tiles;
+    };
+    expect(has(board(0), 2, 5), 'out of stride unaided').toBe(false);
+    expect(has(board(1), 2, 5), 'one stack is one stride').toBe(true);
+  });
+});
+
+describe('what a Climax lets a body reach', () => {
+  const climaxed = (state: GameState, id: string, aura: string) => {
+    state.units[id]!.aura = { defId: aura, stacks: 3 };
+  };
+
+  it('projects a Blink host onto every tile it can see', () => {
+    // Scout Imp at the far end of a tall board. MOV 3 cannot bring row 8 into reach; the
+    // Written Path's Climax steps there directly.
+    const state = scenario({
+      width: 6,
+      height: 9,
+      units: [{ def: 'scout_imp', side: 'enemy', at: { x: 2, y: 0 } }],
+    });
+    const id = Object.keys(state.units)[0]!;
+    expect(has(threatMap(state, 'player').tiles, 2, 8), 'out of stride before Climax').toBe(false);
+
+    climaxed(state, id, 'aura_written_path');
+    expect(has(threatMap(state, 'player').tiles, 2, 8), 'a step through nothing after').toBe(true);
+  });
+
+  it('projects an Overload host through the body in its way', () => {
+    // Voltaic Hound at (2,0), a wall of one at (2,1). An ordinary body walks around and
+    // still reaches most tiles, so the test looks at the straight line: (2,3) needs the
+    // route through (2,1) to be counted as ground it could stand on the far side of.
+    const build = () => {
+      const state = scenario({
+        width: 3,
+        height: 6,
+        units: [
+          { def: 'voltaic_hound', side: 'enemy', at: { x: 1, y: 0 } },
+          { def: 'scout_imp', side: 'player', at: { x: 0, y: 1 } },
+          { def: 'scout_imp', side: 'player', at: { x: 1, y: 1 } },
+          { def: 'scout_imp', side: 'player', at: { x: 2, y: 1 } },
+        ],
+      });
+      return state;
+    };
+    // A solid row of bodies: nothing beyond row 1 without walking through one.
+    const plain = build();
+    expect(has(threatMap(plain, 'player').tiles, 1, 4), 'walled in').toBe(false);
+
+    const charged = build();
+    climaxed(charged, Object.keys(charged.units)[0]!, 'aura_static_charge');
+    expect(has(threatMap(charged, 'player').tiles, 1, 4), 'charges straight through').toBe(true);
   });
 });

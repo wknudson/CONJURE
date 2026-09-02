@@ -8,14 +8,26 @@
  * A tile is threatened if some enemy unit can reach a position from which that tile
  * falls inside its attack range — so it accounts for movement and reach together, not
  * range alone.
+ *
+ * It is a forecast of the enemy's **next** turn, and it reads the board as the engine will
+ * find it then. The holds — Freeze, Stun, Entangle, Exhaust, Fleet — lift at the **end** of
+ * their owner's turn (`liftHolds`), so a hold standing on an enemy body now stands through
+ * the whole of its next turn: a held body threatens nothing, a rooted one swings from where
+ * it stands, and Fleet is worth its full stride. That is the rule as ruled; it used to be
+ * otherwise, and this map used to read the live stacks against the other timing, so the
+ * two are asserted against each other in `threat.test.ts` by actually ending the turn.
  */
 
 import type { Coord, Side, UnitId } from '../../contract/ids.js';
 import { coordKey } from '../../contract/ids.js';
 import type { GameState } from '../types/state.js';
+import { inBounds, visionClamp } from '../types/state.js';
 import type { Unit } from '../types/units.js';
-import { canPlace, unitsOf, opposite } from './board.js';
+import { unitsOf, opposite } from './board.js';
 import { canStrike } from './targeting.js';
+import { canTraverse, licenseFor } from './movement.js';
+import { climaxTraitOf } from './growth.js';
+import { hasLoS } from './los.js';
 import { cellsAt, DIRS_8, add } from '../util/grid.js';
 
 export interface ThreatMap {
@@ -27,32 +39,94 @@ export interface ThreatMap {
   commanderThreats: UnitId[];
 }
 
+/** A status as it will stand when the body next acts: the holds lift only afterwards. */
+function standing(stacks: number | undefined): number {
+  return Math.max(0, stacks ?? 0);
+}
+
+/**
+ * Whether this body will be unable to act at all on its next turn.
+ *
+ * The same gates `canAct` refuses, read for the coming turn. The Anchor never decays at
+ * all: it holds until the tether resolves.
+ */
+export function heldNextTurn(unit: Unit): boolean {
+  if (standing(unit.statuses.anchor) > 0) return true;
+  return (
+    standing(unit.statuses.freeze) > 0 ||
+    standing(unit.statuses.stun) > 0 ||
+    standing(unit.statuses.exhaust) > 0
+  );
+}
+
+/**
+ * How far this body will stride next turn: its base and whatever Fleet it will still carry.
+ *
+ * A 0-MOV emplacement stays at zero whatever it carries — `canMove` asks the base stat for
+ * the same reason: fleetness lengthens a stride, it does not grant one.
+ */
+function strideNextTurn(unit: Unit): number {
+  if (unit.mov <= 0) return 0;
+  return unit.mov + standing(unit.statuses.fleet);
+}
+
 /**
  * Anchors a unit could occupy next turn, ignoring the friction of other units moving.
  * Deliberately optimistic: a threat display should over-warn rather than under-warn.
+ *
+ * Walked with the body's own licence, so a Climaxed Static Charge is projected straight
+ * through the line it will charge through and a Heavy Footprint through the wall it will
+ * break. Ground costs are ignored on purpose — rubble slows a real route, and a forecast
+ * that assumed the slower route would be the one under-warning.
  */
 function reachableAnchors(state: GameState, unit: Unit): Coord[] {
   const out: Coord[] = [{ ...unit.anchor }];
-  // Entangled units are rooted but can still swing at whatever is beside them.
-  if (unit.statuses.entangle) return out;
+  // Rooted bodies stay put but can still swing at whatever is beside them.
+  if (standing(unit.statuses.entangle) > 0) return out;
 
+  const license = licenseFor(unit);
   const seen = new Set<string>([coordKey(unit.anchor)]);
   let frontier: Coord[] = [unit.anchor];
 
-  for (let step = 0; step < unit.mov; step++) {
+  for (let step = 0; step < strideNextTurn(unit); step++) {
     const next: Coord[] = [];
     for (const cur of frontier) {
       for (const dir of DIRS_8) {
         const anchor = add(cur, dir);
         const key = coordKey(anchor);
         if (seen.has(key)) continue;
-        if (!canPlace(state, anchor, unit.footprint, unit.id)) continue;
+        if (!canTraverse(state, anchor, unit, license)) continue;
         seen.add(key);
         next.push(anchor);
         out.push(anchor);
       }
     }
     frontier = next;
+  }
+
+  // Blink: a Climaxed Written Path steps to any empty tile it can see, stride or no
+  // stride. The same sight the move itself uses — a clear line, no further than the
+  // weather lets anything see.
+  if (climaxTraitOf(unit) === 'blink') {
+    const clamp = visionClamp(state);
+    for (let y = 0; y < state.height; y++) {
+      for (let x = 0; x < state.width; x++) {
+        const to = { x, y };
+        const key = coordKey(to);
+        if (seen.has(key)) continue;
+        if (!inBounds(state, to)) continue;
+        if (
+          clamp !== undefined &&
+          Math.max(Math.abs(x - unit.anchor.x), Math.abs(y - unit.anchor.y)) > clamp
+        ) {
+          continue;
+        }
+        if (!canTraverse(state, to, unit, { throughUnits: false, throughObstacles: false })) continue;
+        if (!hasLoS(state, unit.anchor, to, [unit.id], unit.side)) continue;
+        seen.add(key);
+        out.push(to);
+      }
+    }
   }
 
   return out;
@@ -100,8 +174,9 @@ export function threatMap(state: GameState, side: Side): ThreatMap {
   ];
 
   for (const foe of hostile) {
-    // Held units threaten nothing at all — they can neither move nor strike.
-    if (foe.statuses.freeze || foe.statuses.stun) continue;
+    // A held body threatens nothing at all — it can neither move nor strike, and the hold
+    // does not lift until its turn is over.
+    if (heldNextTurn(foe)) continue;
 
     const anchors = reachableAnchors(state, foe);
     const tiles = new Set<string>();
@@ -118,6 +193,9 @@ export function threatMap(state: GameState, side: Side): ThreatMap {
       }
     }
 
+    // Raw Attack, as the intent's own `damage` is: the two readouts agree with each other,
+    // and neither prices Brittle, brands or weather into a number that is already an upper
+    // bound on where, not a promise of how much.
     for (const key of tiles) {
       damageByTile.set(key, (damageByTile.get(key) ?? 0) + foe.atk);
     }

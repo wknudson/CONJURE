@@ -491,7 +491,13 @@ how *much* it commits to is a difficulty setting:
 - **`'all'`** shows attacks and card plays. The teaching tier, where total clarity is the
   point.
 - **`'attacks'`** shows only the blows. An Adept keeps what it is holding to itself, and
-  `finishEnemyTurn` plays out its undeclared cards after the declared blows have landed.
+  `finishEnemyTurn` plays out its undeclared cards after the declared blows have landed —
+  **cards, and nothing else**. That pass re-plans against the live board and the planner
+  hands back a whole turn, and for a while every command in it was applied: a body that had
+  only walked in the declared plan still had its swing, and struck from a tile no telegraph
+  had named. The pass now applies `playCard` alone; a card the dropped moves would have set
+  up throws and is skipped, which is the price of hiding it. When the Monocle has revealed
+  the hand the pass does not run at all, since the declaration already named every card.
 
 Two rules make a telegraph trustworthy, and both matter more than they look. **A declared
 blow lands on the tile, not the target** — move the victim and the attack strikes empty

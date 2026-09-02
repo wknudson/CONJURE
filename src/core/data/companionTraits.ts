@@ -65,12 +65,19 @@ export const COMPANION_TRAITS: Record<string, CompanionTrait> = {
   },
 
   // --------------------------------------------------------------- boreas
+  /**
+   * Was `ignoreIceSlip`, a boon for a mechanic the game never had: there is no ice hazard
+   * and nothing in movement ever read the flag, so this knack — and two others, and a relic
+   * — could be rolled, equipped and bought for nothing. Each now names the real footing rule
+   * its text was already describing. The ids are kept, so a beast already carrying one
+   * simply starts doing what its card always said.
+   */
   glacial_pacing: {
     id: 'glacial_pacing',
     name: 'Glacial Pacing',
-    text: 'Walks on ice like it is owed something. Slipping is for other people.',
+    text: 'Walks on ice like it is owed something. Nothing shoves, drags, or carries it anywhere.',
     baseId: 'boreas',
-    boons: { ignoreIceSlip: true },
+    boons: { boundFormGrounded: true },
   },
 
   deep_reserve: {
@@ -116,9 +123,9 @@ const VOLTARA_TRAITS: Record<string, CompanionTrait> = {
   static_cling: {
     id: 'static_cling',
     name: 'Static Cling',
-    text: 'Keeps its feet on ground that takes everyone else off theirs.',
+    text: 'Keeps its feet on ground that takes everyone else off theirs. Rubble does not slow it and currents cannot carry it.',
     baseId: 'voltara',
-    boons: { ignoreIceSlip: true },
+    boons: { boundFormIgnoresHazards: true },
   },
 };
 
@@ -513,9 +520,9 @@ const SECOND_BLOODLINE_TRAITS: Record<string, CompanionTrait> = {
   glass_footed: {
     id: 'glass_footed',
     name: 'Glass-Footed',
-    text: 'Born on ice. Keeps its feet where everyone else loses theirs, and the shards of a Shatter never reach it.',
+    text: 'Born on ice. The shards of a Shatter never reach it.',
     baseId: 'seal',
-    boons: { ignoreIceSlip: true, immuneToShatterSplash: true },
+    boons: { immuneToShatterSplash: true },
   },
 
   // ---------------------------------------------------------------------- kudu (surge)

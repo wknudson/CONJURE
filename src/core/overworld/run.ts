@@ -192,7 +192,6 @@ export function carryFor(
     ...(gear.ignoreFog || knack.ignoreFog ? { ignoreFog: true } : {}),
     ...(gear.immuneToBurn || knack.immuneToBurn ? { immuneToBurn: true } : {}),
     ...(gear.immuneToToxin || knack.immuneToToxin ? { immuneToToxin: true } : {}),
-    ...(gear.ignoreIceSlip || knack.ignoreIceSlip ? { ignoreIceSlip: true } : {}),
     ...(gear.revealIntents || knack.revealIntents ? { revealIntents: true } : {}),
     ...(obstacleHp ? { bonusObstacleHp: obstacleHp } : {}),
     ...(titheMarrow ? { bonusTitheMarrow: titheMarrow } : {}),
