@@ -98,11 +98,12 @@ describe('threat projection', () => {
 /**
  * The forecast reads the board as the enemy's turn will find it.
  *
- * Every status that gates an action counts down by one at the start of its owner's turn,
- * before the owner acts. The map used to read the live stacks, and so told the player that
- * a body under a one-stack Freeze threatened nothing — when that ice is gone before the
- * body moves and it acts freely. Each case below is checked twice: once against the map,
- * and once against the engine by actually ending the turn, so the two cannot drift apart.
+ * The holds lift at the *end* of their owner's turn, so a hold standing now stands through
+ * the whole of the enemy's next turn. It was not always so: they used to decay at the start
+ * of the owner's turn, before it acted, and a one-stack Freeze held nothing at all while the
+ * map showed the frozen body as harmless. Each case below is checked twice: once against
+ * the map, and once against the engine by actually ending the turn, so the two cannot
+ * drift apart whichever way the timing is ruled.
  */
 describe('what a held body will and will not do next turn', () => {
   const lone = (status: 'freeze' | 'stun' | 'entangle' | 'exhaust' | 'anchor', stacks: number) => {
@@ -122,23 +123,30 @@ describe('what a held body will and will not do next turn', () => {
   const atItsTurn = (state: GameState, id: string) =>
     applyCommand(state, { type: 'endTurn' }).state.units[id]!;
 
-  it('reads a one-stack hold as a body that acts, because the ice is gone before it moves', () => {
-    for (const status of ['freeze', 'stun'] as const) {
+  it('reads a one-stack hold as a body that threatens nothing, for the whole of its turn', () => {
+    // The ruling: a hold covers one full turn of the body it is on. Rime Lock and the third
+    // Chill apply one stack, so this is what "Freeze cancels that specific hit" rests on.
+    for (const status of ['freeze', 'stun', 'exhaust'] as const) {
       const { state, id } = lone(status, 1);
-      expect(heldNextTurn(state.units[id]!), `${status} 1`).toBe(false);
-      expect(threatMap(state, 'player').tiles.length, `${status} 1 projects`).toBeGreaterThan(0);
-      // And that is what the engine does: the hold has decayed by the time it may act.
-      expect(canAct(atItsTurn(state, id)), `${status} 1 acts`).toBe(true);
+      expect(heldNextTurn(state.units[id]!), `${status} 1`).toBe(true);
+      expect(threatMap(state, 'player').tiles, `${status} 1 projects nothing`).toHaveLength(0);
+      // And that is what the engine does: the hold stands when the body would act.
+      expect(canAct(atItsTurn(state, id)), `${status} 1 held at its turn`).toBe(false);
     }
   });
 
-  it('reads a two-stack hold as a body that threatens nothing', () => {
-    for (const status of ['freeze', 'stun'] as const) {
-      const { state, id } = lone(status, 2);
-      expect(heldNextTurn(state.units[id]!), `${status} 2`).toBe(true);
-      expect(threatMap(state, 'player').tiles, `${status} 2 projects nothing`).toHaveLength(0);
-      expect(canAct(atItsTurn(state, id)), `${status} 2 still held`).toBe(false);
-    }
+  it('lifts a one-stack hold once that turn is over, and a two-stack hold a turn later', () => {
+    // Dense Ice's "lasts one more turn": a second stack is a second turn held.
+    const twoTurns = (state: GameState, id: string) => {
+      const enemyTurn = applyCommand(state, { type: 'endTurn' }).state; // player -> enemy
+      const playerTurn = applyCommand(enemyTurn, { type: 'endTurn' }).state; // enemy -> player
+      const nextEnemyTurn = applyCommand(playerTurn, { type: 'endTurn' }).state; // player -> enemy
+      return { held: !canAct(enemyTurn.units[id]!), heldNext: !canAct(nextEnemyTurn.units[id]!) };
+    };
+    const one = lone('freeze', 1);
+    expect(twoTurns(one.state, one.id)).toEqual({ held: true, heldNext: false });
+    const two = lone('freeze', 2);
+    expect(twoTurns(two.state, two.id)).toEqual({ held: true, heldNext: true });
   });
 
   it('reads the Anchor as a hold that does not lift', () => {
@@ -148,20 +156,20 @@ describe('what a held body will and will not do next turn', () => {
     expect(threatMap(state, 'player').tiles).toHaveLength(0);
   });
 
-  it('roots a two-stack Entangle where it stands but lets it swing', () => {
-    const rooted = lone('entangle', 2);
+  it('roots an Entangled body where it stands but lets it swing', () => {
+    const rooted = lone('entangle', 1);
     const tiles = threatMap(rooted.state, 'player').tiles;
     expect(has(tiles, 2, 2), 'adjacent').toBe(true);
     expect(has(tiles, 2, 4), 'nothing it could walk to').toBe(false);
-
-    // A one-stack Entangle has lifted by the time it moves.
-    const freed = lone('entangle', 1);
-    expect(has(threatMap(freed.state, 'player').tiles, 2, 4)).toBe(true);
+    // And the engine agrees: rooted at its turn, still able to strike.
+    const atTurn = atItsTurn(rooted.state, rooted.id);
+    expect(canAct(atTurn)).toBe(true);
+    expect(atTurn.statuses.entangle).toBe(1);
   });
 
-  it('counts Fleet at what it will be worth after its owner\'s tick', () => {
-    // Scout Imp: MOV 3 from row 0 reaches row 4 with one of reach. Fleet 1 is spent by the
-    // tick and adds nothing; Fleet 2 leaves one stride, and row 5 comes into reach.
+  it('counts Fleet at its full stride', () => {
+    // Scout Imp: MOV 3 from row 0 reaches row 4 with one of reach. One stack of Fleet is one
+    // more stride, and row 5 comes into reach.
     const board = (fleet: number) => {
       const state = scenario({
         width: 6,
@@ -171,8 +179,8 @@ describe('what a held body will and will not do next turn', () => {
       state.units[Object.keys(state.units)[0]!]!.statuses.fleet = fleet;
       return threatMap(state, 'player').tiles;
     };
-    expect(has(board(1), 2, 5), 'one stack is spent by the tick').toBe(false);
-    expect(has(board(2), 2, 5), 'two stacks leave a stride').toBe(true);
+    expect(has(board(0), 2, 5), 'out of stride unaided').toBe(false);
+    expect(has(board(1), 2, 5), 'one stack is one stride').toBe(true);
   });
 });
 

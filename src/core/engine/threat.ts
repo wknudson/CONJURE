@@ -10,12 +10,12 @@
  * range alone.
  *
  * It is a forecast of the enemy's **next** turn, and it reads the board as the engine will
- * find it then, not as it stands now. Every status that gates an action counts down by one
- * at the start of its owner's turn, before that owner acts (`startOfTurnStatuses`), so the
- * question "will this body be held?" is "will it still carry the status after one tick?",
- * and "how far will it stride?" is "what will Fleet be worth after one tick?". Reading the
- * live stacks instead answered both wrong: a one-stack Freeze read as a body that threatens
- * nothing, and it is a body that acts freely, because the ice is gone before it moves.
+ * find it then. The holds — Freeze, Stun, Entangle, Exhaust, Fleet — lift at the **end** of
+ * their owner's turn (`liftHolds`), so a hold standing on an enemy body now stands through
+ * the whole of its next turn: a held body threatens nothing, a rooted one swings from where
+ * it stands, and Fleet is worth its full stride. That is the rule as ruled; it used to be
+ * otherwise, and this map used to read the live stacks against the other timing, so the
+ * two are asserted against each other in `threat.test.ts` by actually ending the turn.
  */
 
 import type { Coord, Side, UnitId } from '../../contract/ids.js';
@@ -39,39 +39,35 @@ export interface ThreatMap {
   commanderThreats: UnitId[];
 }
 
-/**
- * A status as it will stand after its owner's start-of-turn tick.
- *
- * `decay` in `status.ts` takes one stack off freeze, stun, entangle, exhaust and fleet at
- * the start of the owner's turn — before the owner acts. The forecast has to look through
- * that tick or it describes the wrong board. The Anchor is the one gate that does not
- * decay: it holds until the tether resolves.
- */
-function afterTick(stacks: number | undefined): number {
-  return Math.max(0, (stacks ?? 0) - 1);
+/** A status as it will stand when the body next acts: the holds lift only afterwards. */
+function standing(stacks: number | undefined): number {
+  return Math.max(0, stacks ?? 0);
 }
 
-/** Whether this body will be unable to act at all on its next turn. */
+/**
+ * Whether this body will be unable to act at all on its next turn.
+ *
+ * The same gates `canAct` refuses, read for the coming turn. The Anchor never decays at
+ * all: it holds until the tether resolves.
+ */
 export function heldNextTurn(unit: Unit): boolean {
-  if ((unit.statuses.anchor ?? 0) > 0) return true;
+  if (standing(unit.statuses.anchor) > 0) return true;
   return (
-    afterTick(unit.statuses.freeze) > 0 ||
-    afterTick(unit.statuses.stun) > 0 ||
-    afterTick(unit.statuses.exhaust) > 0
+    standing(unit.statuses.freeze) > 0 ||
+    standing(unit.statuses.stun) > 0 ||
+    standing(unit.statuses.exhaust) > 0
   );
 }
 
 /**
- * How far this body will stride next turn.
+ * How far this body will stride next turn: its base and whatever Fleet it will still carry.
  *
- * `movementRange` adds the live Fleet; the forecast adds what Fleet will be worth once its
- * owner's tick has taken a stack. A 0-MOV emplacement stays at zero whatever it carries —
- * `canMove` asks the base stat for the same reason: fleetness lengthens a stride, it does
- * not grant one.
+ * A 0-MOV emplacement stays at zero whatever it carries — `canMove` asks the base stat for
+ * the same reason: fleetness lengthens a stride, it does not grant one.
  */
 function strideNextTurn(unit: Unit): number {
   if (unit.mov <= 0) return 0;
-  return unit.mov + afterTick(unit.statuses.fleet);
+  return unit.mov + standing(unit.statuses.fleet);
 }
 
 /**
@@ -85,9 +81,8 @@ function strideNextTurn(unit: Unit): number {
  */
 function reachableAnchors(state: GameState, unit: Unit): Coord[] {
   const out: Coord[] = [{ ...unit.anchor }];
-  // Rooted bodies stay put but can still swing at whatever is beside them — if the
-  // roots will still hold once their owner's tick has taken a stack.
-  if (afterTick(unit.statuses.entangle) > 0) return out;
+  // Rooted bodies stay put but can still swing at whatever is beside them.
+  if (standing(unit.statuses.entangle) > 0) return out;
 
   const license = licenseFor(unit);
   const seen = new Set<string>([coordKey(unit.anchor)]);
@@ -179,9 +174,8 @@ export function threatMap(state: GameState, side: Side): ThreatMap {
   ];
 
   for (const foe of hostile) {
-    // A body that will still be held once its turn begins threatens nothing at all — it
-    // can neither move nor strike. One that will have shaken the hold off is a full threat,
-    // whatever it looks like standing there frozen now.
+    // A held body threatens nothing at all — it can neither move nor strike, and the hold
+    // does not lift until its turn is over.
     if (heldNextTurn(foe)) continue;
 
     const anchors = reachableAnchors(state, foe);

@@ -78,19 +78,17 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
     if (ctx.state.result) return;
   }
 
-  // 3. Freeze / Entangle decay: these gate actions rather than dealing damage.
+  // 3. The setup statuses decay: Chill, Brittle and Charged are primers the *opponent*
+  //    cashes in during their own turn, so they run down at the start of the turn after.
+  //    The holds — Freeze, Stun, Entangle, Exhaust, Fleet — do not decay here. They lift at
+  //    the **end** of the owner's turn (`liftHolds`), and moving them was a rule change:
+  //    decayed here, before the owner acted, a one-stack Freeze the player landed on their
+  //    own turn was gone before the enemy moved and held nothing at all. Rime Lock and the
+  //    third Chill both apply one stack, so Freeze as "cancel that specific hit" was not a
+  //    thing the engine did. A hold now covers one full turn of the body it is on.
   for (const id of ids) {
     const unit = ctx.state.units[id];
     if (!unit) continue;
-    decay(unit, 'freeze');
-    decay(unit, 'entangle');
-    decay(unit, 'stun');
-    // Exhaustion is spent by the turn it cost. It lands during your turn and clears at the
-    // start of your next one, so a tithed body is idle for exactly one enemy round.
-    decay(unit, 'exhaust');
-    // Fleetness is spent by the turn that granted it: a Rally's +1 MOV is a head start,
-    // not a permanent upgrade.
-    decay(unit, 'fleet');
     decay(unit, 'chill');
     decay(unit, 'brittle');
     decay(unit, 'charged');
@@ -221,6 +219,30 @@ function obstacleUpkeep(ctx: Ctx, side: Side): void {
       applyStatusTo(ctx, unit, spec.status, spec.stacks, obstacle.side);
       if (ctx.state.result) return;
     }
+  }
+}
+
+/**
+ * The holds lift, at the end of the owner's turn.
+ *
+ * Freeze, Stun, Entangle and Exhaust gate what a body may do; Fleet lengthens its stride.
+ * All five are about the turn the body takes, so they count down once that turn is over —
+ * which is what makes a one-stack Freeze landed on the player's turn hold the enemy through
+ * the whole of its next one, and a two-stack Dense Ice hold it through two. A hold landed on
+ * a body *during* its own turn (a trap springing, a Counter, a crystal) holds it for the rest
+ * of that turn and lifts at its close, exactly as before.
+ *
+ * Exhaustion keeps its meaning: it lands during your turn when a body is bled and lifts as
+ * that turn ends, so the body is idle for the enemy round it could not have acted in anyway
+ * and free when you next act — one tithe per body per turn, enforced by the status.
+ */
+export function liftHolds(ctx: Ctx, side: Side): void {
+  for (const unit of unitsOf(ctx.state, side)) {
+    decay(unit, 'freeze');
+    decay(unit, 'stun');
+    decay(unit, 'entangle');
+    decay(unit, 'exhaust');
+    decay(unit, 'fleet');
   }
 }
 

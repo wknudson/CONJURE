@@ -612,9 +612,16 @@ stronger thing.
 
 1. **Toxin**, across all units
 2. **Burn**, across all units
-3. **Freeze / Entangle / Stun / Exhaust / Fleet / Chill / Brittle / Charged** decay
+3. **Chill / Brittle / Charged** decay — the primers the opponent cashes in on their own turn
 4. **Tile hazards** age
 5. **Growth, then Auras** — both fire even on Frozen or Stunned units
+
+The **holds** — Freeze, Stun, Entangle, Exhaust and Fleet — do not decay at the start of the
+turn. They lift at the **end** of their owner's turn, so a one-stack hold covers one full turn
+of the body it is on: a Freeze the player lands on their turn holds the enemy through the whole
+of its next one, and a two-stack Dense Ice through two. (Ruled 2026-09-01. Decayed at the start
+of the owner's turn, before it acted, a one-stack Freeze was gone before the enemy moved and
+held nothing at all.)
 
 ---
 
