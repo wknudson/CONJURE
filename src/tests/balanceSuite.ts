@@ -52,14 +52,48 @@ interface Outcome {
   turns: number;
   playerHp: number;
   enemyHp: number;
+  /** Resolved, but only past the ordinary guard: a grind, not a hang. Worth a look. */
+  slow: boolean;
 }
+
+/**
+ * The ordinary guard, in half-turns. A game still unresolved here is either hung or
+ * grinding; the two are told apart by whether anybody's health is still moving.
+ */
+const GUARD = 120;
+/** How much further a grind may run, as long as a Pact keeps losing health. */
+const GRIND_GUARD = 240;
+/** A game where neither Pact has lost health in this many half-turns is not going anywhere. */
+const PROGRESS_WINDOW = 20;
 
 function playOut(encounterId: string, seed: number): Outcome {
   const encounter = ENCOUNTERS.find((e) => e.id === encounterId)!;
   let state: GameState = createCombat(encounter, seed).state;
   let guard = 0;
+  let lastProgress = 0;
+  // A Pact's pool is its health and the plate in front of it. A blow that only takes
+  // plate is still a blow landing on the thing that decides the game; a blow that takes
+  // nothing is what a stalemate looks like.
+  const pools = () => [
+    state.players.player.hp + state.players.player.armor,
+    state.players.enemy.hp + state.players.enemy.armor,
+  ];
+  let before = pools();
 
-  while (!state.result && guard++ < 120) {
+  // Past the ordinary guard the game may run on **only while something is still landing
+  // on a Pact** — either pool reduced since the last half-turn. A stalemate — two lines
+  // that cannot reach each other, or a lockout that never fires — reduces nothing and
+  // fails exactly where it always did. A grind that is genuinely resolving, just slowly,
+  // is a different thing: the Glacial Field's Frost enemy plates its Pact faster than a
+  // Novice mirror can chip it, and one seed reached its defeat at turn 81, ten of those
+  // turns spent chewing through the player's plate with their health untouched. That is
+  // a balance finding, recorded as one, and not a hang — and telling the two apart is the
+  // whole reason this guard exists.
+  while (!state.result) {
+    if (guard >= GRIND_GUARD) break;
+    if (guard >= GUARD && guard - lastProgress > PROGRESS_WINDOW) break;
+    guard += 1;
+
     const plan = planTurn(state, state.activeSide);
     for (const command of plan) {
       if (state.result) break;
@@ -69,6 +103,10 @@ function playOut(encounterId: string, seed: number): Outcome {
         break;
       }
     }
+
+    const after = pools();
+    if (after[0]! < before[0]! || after[1]! < before[1]!) lastProgress = guard;
+    before = after;
   }
 
   return {
@@ -76,6 +114,7 @@ function playOut(encounterId: string, seed: number): Outcome {
     turns: state.turn,
     playerHp: state.players.player.hp,
     enemyHp: state.players.enemy.hp,
+    slow: state.result !== undefined && guard > GUARD,
   };
 }
 
