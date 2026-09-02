@@ -1114,6 +1114,10 @@ export class CombatScreen implements Screen {
       calculateProjectedDamage(board),
       this.session.getThreat().commanderThreatCount,
     );
+    // Declared casts the board cannot point at — a global spell has no tile to mark.
+    this.hud?.setDeclaredCasts(
+      board.intents.flatMap((i) => (i.kind === 'card' && !i.at && i.label ? [i.label] : [])),
+    );
     this.refreshLastStand(board);
     this.grave?.sync(board);
     // Undo availability and the End Turn warning are both properties of the turn as it

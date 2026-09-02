@@ -4,6 +4,7 @@ import { CombatSession } from '../core/session.js';
 import { applyCommand } from '../core/engine/engine.js';
 import { createCombat } from '../core/engine/setup.js';
 import { IGNIS_TRIAL, NOVICE_DUELIST } from '../core/data/encounters/index.js';
+import { evictAndSpawn } from '../core/data/encounters/bossPhases.js';
 import { planTurn } from '../core/ai/controller.js';
 import { CARDS } from '../core/data/cards/index.js';
 import type { GameState } from '../core/types/state.js';
@@ -303,6 +304,56 @@ describe('Ignis trial phase gates', () => {
 
     // And a fresh Rite is dealt, so the loop can be tried again.
     expect(ctx.events.filter((e) => e.t === 'cardInjected').length).toBe(1);
+  });
+
+  it('snaps the tether when the growing boss evicts the anchor, instead of hanging the phase', () => {
+    const { state, anchor, riteId } = sealedTrial();
+    const tethered = run(state, {
+      type: 'playCard',
+      card: riteId,
+      target: { kind: 'entity', ref: { kind: 'unit', id: anchor.id } },
+    }).state;
+
+    const boss = tethered.units[tethered.players.enemy.companionUnitId!]!;
+    const before = boss.escalation;
+
+    // The drake grows over the tile the anchor is bracing on. The anchor cannot step
+    // aside — standing there is the whole of being an anchor — so the growth throws it
+    // back to hand, a removal that never passes through `killEntity`.
+    const ctx = makeCtx(tethered);
+    const at = { ...tethered.units[anchor.id]!.anchor };
+    expect(evictAndSpawn(ctx, at, false)).toBe(true);
+
+    const sub = tethered.encounter.subjugation;
+    expect(sub.active, 'the phase must not hang open').toBe(false);
+    expect(sub.anchorUnitId).toBeNull();
+    expect(ctx.events.some((e) => e.t === 'tetherSnapped')).toBe(true);
+
+    // The beast is angrier, not merely free, and a fresh Rite is dealt so the bind can
+    // be attempted again — the fight stays winnable.
+    expect(boss.escalation, 'one punitive stack').toBe(before + 1);
+    expect(ctx.events.filter((e) => e.t === 'cardInjected').length).toBe(1);
+  });
+
+  it('snaps rather than hangs when the anchor leaves the board by a route nothing anticipated', () => {
+    const { state, anchor, riteId } = sealedTrial();
+    const tethered = run(state, {
+      type: 'playCard',
+      card: riteId,
+      target: { kind: 'entity', ref: { kind: 'unit', id: anchor.id } },
+    }).state;
+
+    // A removal that bypasses every pipeline — the class of future bug the tick's
+    // backstop exists for. The alternative to snapping here is a fight that can neither
+    // be won (the beast stays sealed) nor lost (the Pacifist Lockout is suspended).
+    delete tethered.units[anchor.id];
+
+    const res = run(tethered, { type: 'endTurn' }, { type: 'endTurn' });
+    const sub = res.state.encounter.subjugation;
+    expect(sub.active).toBe(false);
+    expect(sub.anchorUnitId).toBeNull();
+    expect(eventsOf(res.events, 'tetherSnapped')).toHaveLength(1);
+    expect(eventsOf(res.events, 'subjugationProgress'), 'no round is counted').toHaveLength(0);
   });
 });
 

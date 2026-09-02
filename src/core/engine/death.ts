@@ -12,6 +12,7 @@ import { entityAt, getEntity, unitAt } from './board.js';
 import { evaluateMarkOnDeath } from './marks.js';
 import { placeOpeningUnit } from './spawn.js';
 import { CARDS } from '../data/cards/index.js';
+import { climaxTraitOf } from './growth.js';
 import { creditRefund, spawnHazard } from './reactions.js';
 import { applyStatusTo } from './status.js';
 import { dealDamage } from './damage.js';
@@ -129,7 +130,11 @@ export function killEntity(
  * it worth fielding one deliberately.
  */
 function deathburst(ctx: Ctx, dead: Unit, at: Coord): void {
-  const spec = CARDS[dead.defId]?.unit?.deathburst;
+  // A body's own burst, or the one Overgrowth lends it: a Climaxed Verdant Swell host is
+  // full of Toxin by the time it falls, and that is the second half of what the card
+  // promises. The printed burst wins where a body has one — the trait fills a gap, it
+  // does not double a spec.
+  const spec = CARDS[dead.defId]?.unit?.deathburst ?? climaxBurstOf(dead);
   if (!spec) return;
 
   for (const cell of DIRS_8.map((d) => ({ x: at.x + d.x, y: at.y + d.y }))) {
@@ -138,6 +143,15 @@ function deathburst(ctx: Ctx, dead: Unit, at: Coord): void {
     applyStatusTo(ctx, victim, spec.status, spec.stacks, dead.side);
     if (ctx.state.result) return;
   }
+}
+
+/** What Overgrowth's corpse is full of. Two stacks: the same dose a Spore Cloud lands. */
+export const OVERGROWTH_BURST_TOXIN = 2;
+
+function climaxBurstOf(dead: Unit): { status: 'toxin'; stacks: number } | undefined {
+  return climaxTraitOf(dead) === 'overgrowth'
+    ? { status: 'toxin', stacks: OVERGROWTH_BURST_TOXIN }
+    : undefined;
 }
 
 /**

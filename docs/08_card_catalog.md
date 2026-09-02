@@ -8,22 +8,22 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**216 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**217 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
-| minion | 82 | Hero | Vanguard Roster, never a deck |
+| minion | 83 | Hero | Vanguard Roster, never a deck |
 | spell | 98 | Companion | drafted into a Grimoire |
 | ability | 10 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
 | obstacle | 20 | Hero | Hero Deck, shown as a Construct |
-| **total** | **216** | | |
+| **total** | **217** | | |
 
 ### By school
 
 | School | Cards |
 |---|---:|
-| dusk | 35 |
+| dusk | 36 |
 | frost | 32 |
 | bulwark | 31 |
 | bloom | 29 |
@@ -40,7 +40,7 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`arcane.ts`](#arcanets) | 12 | 1 minion, 3 ability, 6 mark, 2 obstacle |
 | [`pyre.ts`](#pyrets) | 12 | 4 minion, 6 spell, 2 obstacle |
 | [`frost.ts`](#frostts) | 20 | 5 minion, 12 spell, 3 obstacle |
-| [`companionUnits.ts`](#companionunitsts) | 32 | 32 minion |
+| [`companionUnits.ts`](#companionunitsts) | 33 | 33 minion |
 | [`terrain.ts`](#terraints) | 5 | 5 obstacle |
 | [`ranged.ts`](#rangedts) | 3 | 3 minion |
 | [`surge.ts`](#surgets) | 20 | 7 minion, 12 spell, 1 obstacle |
@@ -52,7 +52,7 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`threats.ts`](#threatsts) | 3 | 3 minion |
 | [`hybrid.ts`](#hybridts) | 24 | 23 spell, 1 obstacle |
 | [`auras.ts`](#aurasts) | 13 | 11 spell, 2 ability |
-| **total** | **216** | |
+| **total** | **217** | |
 
 ---
 
@@ -146,7 +146,7 @@ Frost expansion — slow, freeze, shatter. — **20 cards** (5 minion, 12 spell,
 
 ### `companionUnits.ts`
 
-Bound Forms. Placed by setup, never drawn, never bought. — **32 cards** (32 minion).
+Bound Forms. Placed by setup, never drawn, never bought. — **33 cards** (33 minion).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -156,7 +156,7 @@ Bound Forms. Placed by setup, never drawn, never bought. — **32 cards** (32 mi
 | **Chimera of the Caldera** | `chimera_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 2 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Pyre and Frost spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Cinder Shade** | `shade_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Pyre and Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Cinder-Wasp Swarm** | `wasp_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Pyre and Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
-| **Conduit Kite** | `kite_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 3 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
+| **Conduit Kudu** | `kudu_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 3 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Crimson Treant** | `treant_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 1 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Pyre and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Dolmen Crab** | `crab_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 1 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Bulwark and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Ferrum** | `ferrum_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 1 mov, rng 1, bruiser | — | none | BoundForm, Guardian | setup only | Bound Form. Your Bulwark cards are cast from where it stands. Wounds it takes are dealt to your Pact. |
@@ -176,7 +176,8 @@ Bound Forms. Placed by setup, never drawn, never bought. — **32 cards** (32 mi
 | **Saltglass Seal** | `seal_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 1 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Frost spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Storm-Mantis** | `mantis_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 3 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Frost and Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Sylva** | `sylva_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 2 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
-| **The Clockwork Colossus** | `colossus_bound` | minion | 0 | 3 | companion | 60 atk, 440 hp, 1 mov, rng 1, behemoth, **2x2** | — | none | BoundForm | setup only | Bound Form. The Great Quieting, given legs. Blocks sight through itself. |
+| **The Clockwork Colossus** | `colossus_bound` | minion | 0 | 3 | companion | 60 atk, 440 hp, 1 mov, rng 1, behemoth, **2x2** | dmg shock; onHit charged 1; plates 10/turn | none | BoundForm | setup only | Bound Form. The Great Quieting, given legs. Blocks sight through itself. |
+| **The Sovereign, Risen** | `sovereign_behemoth_bound` | minion | 0 | 3 | companion | 50 atk, 440 hp, 1 mov, rng 1, behemoth, **2x2** | — | none | BoundForm | setup only | Bound Form. The Bastion, awake. Blocks sight through itself. |
 | **Umbra** | `umbra_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 2 mov, rng 1-2, skirmisher | — | none | BoundForm | setup only | Bound Form. The Duelist casts from where it stands, and bleeds when it is struck. |
 | **Volatile Geist** | `geist_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Surge and Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Voltara** | `voltara_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-2, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
@@ -376,13 +377,13 @@ The Aura attach cards, their Detonations and Revival. — **13 cards** (11 spell
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
 | **Marrow Burst** | `marrow_burst` | spell | 0 | 1 | hero | — | — | entity (ally, aura climax) | — | — | Spends a Climaxed Aura for 4 Marrow. Use it this turn or lose it. |
 | **Cataclysm** | `cataclysm` | spell | 1P | 1 | hero | — | — | entity (ally, aura climax) | — | R2 | Spends a Climaxed Aura. Everything around the host takes 50 fire. |
-| **Marrow Siphon** | `marrow_siphon` | spell | 1P | 1 | hero | — | — | entity (ally) | — | — | Opens an ally to the dark. Each turn it bleeds 10 and yields 1 Marrow. It does not stop. |
+| **Marrow Siphon** | `marrow_siphon` | spell | 1P | 1 | hero | — | — | entity (ally) | — | — | Opens an ally to the dark. Each turn it bleeds 10 and yields 1 Marrow. It does not stop. At Climax its wounds fester: whatever it hurts is left Brittle. |
 | **Verdant Collapse** | `verdant_collapse` | spell | 1P | 1 | hero | — | — | entity (ally, aura climax) | — | R2 | Spends a Climaxed Aura. The growth goes back into the Pact — heal 80. |
-| **Ember Coat** | `ember_coat` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Wraps an ally in fire. +10 ATK per stack, to two. At Climax it burns what it strikes. |
-| **Petrifying Mantle** | `petrifying_mantle` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Sets an ally in stone. +10 Persistent Armor per stack, to two. At Climax nothing shoves it. |
+| **Ember Coat** | `ember_coat` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Wraps an ally in fire. +20 ATK per stack, to two. At Climax it burns what it strikes, and the ground it leaves. |
+| **Petrifying Mantle** | `petrifying_mantle` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Sets an ally in stone. +20 Persistent Armor per stack, to two. At Climax nothing shoves it. |
 | **Rime Shell** | `rime_shell` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Plates an ally in ice. +20 Max HP and +10 Armor per stack, to two. At Climax it re-forms. |
 | **Static Charge** | `static_charge` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Charges an ally. +1 MOV per stack, to two. At Climax it stops going around things. |
-| **Verdant Swell** | `verdant_swell` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Roots an ally deeper. +20 Max HP per stack, to two. At Climax it drinks what it wounds. |
+| **Verdant Swell** | `verdant_swell` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Roots an ally deeper. +40 Max HP per stack, to two. At Climax it drinks what it wounds, and bursts with Toxin when it dies. |
 | **Written Path** | `written_path` | spell | 2P | 2 | hero | — | — | entity (ally) | — | — | Writes an ally a road. +1 MOV per stack, to two. At Climax it steps to anywhere it sees. |
 | **The Blood & Bone Rally** | `blood_and_bone_rally` | spell | 3M | 2 | hero | — | — | fallen (startingZone) | — | R2 | Costs 3 Marrow, which no bank of Bones will cover. Raises a fallen Vanguard in your starting zone at 10 health, wearing Persistent Armor equal to everything it lost. |
 | **Aetheric Resurgence** | `aetheric_resurgence` | ability | X (max 5) | 1 | hero | — | — | fallen (pyre) | — | — | X Bones, up to 5. Raises a fallen Vanguard on the exact tile it fell, at 20% of its health per Bone spent. Nothing may be standing there. |
@@ -394,7 +395,7 @@ The Aura attach cards, their Detonations and Revival. — **13 cards** (11 spell
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 74 of the 216 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 74 of the 217 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 

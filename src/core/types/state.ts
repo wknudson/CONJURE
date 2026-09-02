@@ -297,6 +297,16 @@ export interface Intent {
   at?: Coord;
   /** Movement committed before the strike, for drawing the approach. */
   path?: Coord[];
+  /**
+   * The entity a declared card is bound to, for drawing the marker where it *stands*.
+   *
+   * Cards are the exception to the tile rule: an attack lands on the ground it named,
+   * but an entity-targeted card follows its target — moving away does not dodge it. A
+   * marker frozen on the declaration tile would teach the player exactly the wrong
+   * lesson, so the renderer re-resolves this id every frame and `at` is only the
+   * fallback for a target that has since left the board.
+   */
+  targetId?: UnitId;
   damage: number;
   /** Card name, for declared card plays. */
   label?: string;

@@ -365,7 +365,7 @@ const HYBRID_TRAITS: Record<string, CompanionTrait> = {
     baseId: 'gargoyle',
     boons: {},
     pending:
-      'No `hollow` status exists. `data/auras.ts` names Hollow as an unbuilt Dusk Climax trait, and nothing applies or reads it.',
+      'No `hollow` status exists to carry. The Hollow Climax trait is built, but as a rider — the host leaves Brittle on what it wounds — so nothing on the board is "carrying Hollow" for a death trigger to read.',
   },
   magnetic_repulsion: {
     id: 'magnetic_repulsion',
@@ -518,26 +518,26 @@ const SECOND_BLOODLINE_TRAITS: Record<string, CompanionTrait> = {
     boons: { ignoreIceSlip: true, immuneToShatterSplash: true },
   },
 
-  // ---------------------------------------------------------------------- kite (surge)
-  pylon_nest: {
-    id: 'pylon_nest',
-    name: 'Pylon Nest',
-    text: 'Roosts on the grid and bleeds it. Opens every contract with an extra Bone in hand.',
-    baseId: 'kite',
+  // ---------------------------------------------------------------------- kudu (surge)
+  pylon_graze: {
+    id: 'pylon_graze',
+    name: 'Pylon Graze',
+    text: 'Grazes the grid and bleeds it dry. Opens every contract with an extra Bone in hand.',
+    baseId: 'kudu',
     boons: { bones: 1 },
   },
-  earthing_claws: {
-    id: 'earthing_claws',
-    name: 'Earthing Claws',
-    text: 'Grips the conduit itself. Arc collateral ignores Armor entirely.',
-    baseId: 'kite',
+  earthing_hooves: {
+    id: 'earthing_hooves',
+    name: 'Earthing Hooves',
+    text: 'Plants all four hooves into the conduit itself. Arc collateral ignores Armor entirely.',
+    baseId: 'kudu',
     boons: { arcPierces: true },
   },
-  updraft: {
-    id: 'updraft',
-    name: 'Updraft',
-    text: 'Nothing on the ground can drag it off station. No shove, drag or current moves any unit of yours.',
-    baseId: 'kite',
+  braced_stance: {
+    id: 'braced_stance',
+    name: 'Braced Stance',
+    text: 'Braces against the line and will not be moved for anything. No shove, drag or current moves any unit of yours.',
+    baseId: 'kudu',
     boons: { alliesGrounded: true },
   },
 

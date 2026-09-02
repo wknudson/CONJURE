@@ -10,6 +10,7 @@ import {
   schematicPool,
 } from '../core/data/schematics.js';
 import { SCHEMATIC_COST_DUCATS, forgeSchematic, schematicRefusal } from '../core/overworld/forge.js';
+import { SPLICE_RECIPES, spliceableBaseIds } from '../core/data/splicing.js';
 import { newRun } from '../core/overworld/state.js';
 import { makeRng } from '../core/util/rng.js';
 import type { GlobalGameState } from '../core/overworld/state.js';
@@ -208,8 +209,9 @@ describe('what the loop can actually reach', () => {
     // the Duelist lays it, because a Mark is Hero kit whatever its blast is made of.)
     'verdant_collapse',
     // Surge: same story.
-    // Bulwark: same story.
-    'avalanche_slam',
+    // Bulwark: same story. (Avalanche Slam left this list when the Quarry Ram's hunt
+    // started casting it -- it was the one splice base no fight taught, which made Kinetic
+    // Arc a pressing the bench could test and no player could ever reach.)
     // Dusk: the Trial is Pyre and the Duelist plays colourless, so none of this is on offer.
     'blood_and_bone_rally',
     // Frost spells the Glacial Field happens not to run.
@@ -236,7 +238,7 @@ describe('what the loop can actually reach', () => {
     // was fought **against** Bloom, Bulwark or Surge, so their plans had nowhere to drop
     // from. A hunt is a fight against a beast of a school, which is exactly the missing
     // shape — the Thorn Warden's grove teaches the Bloom half, the Vault Boar's road the
-    // Bulwark half, and the Conduit Kite's pylon the Surge half. What remains below is what
+    // Bulwark half, and the Conduit Kudu's pylon the Surge half. What remains below is what
     // no authored fight yet casts.)
     'slag_cairn',
     'rime_lance',
@@ -278,6 +280,25 @@ describe('what the loop can actually reach', () => {
           canReach.has(def.id),
           `${def.id}: no fight plays it and nobody starts with it — add an encounter that does, or add it to UNREACHABLE`,
         ).toBe(true);
+      }
+    }
+  });
+
+  it('leaves every pressing reachable, base and prerequisites alike', () => {
+    // The bench gates on the *collection*: `spliceRefusal` refuses a base card that is not
+    // unlocked, and a card is unlocked by forging a plan some fight dropped. So a recipe
+    // whose base no fight teaches is a pressing that can be unit-tested -- the press tests
+    // hand the bench a fabricated collection -- and never reached by a player. Kinetic Arc
+    // was exactly that: Avalanche Slam sat on the ledger above while its pressing passed.
+    // This is the guard the fabricated collection cannot be.
+    const canReach = reachable();
+
+    for (const base of spliceableBaseIds()) {
+      expect(canReach.has(base), `${base}: a splice base no fight teaches`).toBe(true);
+    }
+    for (const recipe of SPLICE_RECIPES) {
+      for (const need of recipe.requiredUnlockedCards ?? []) {
+        expect(canReach.has(need), `${recipe.resultId} needs ${need}, which no fight teaches`).toBe(true);
       }
     }
   });

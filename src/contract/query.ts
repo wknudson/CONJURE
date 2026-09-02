@@ -139,6 +139,8 @@ export interface BoardView {
     kind: 'attack' | 'commander' | 'card' | 'move' | 'channel';
     at?: Coord;
     path?: Coord[];
+    /** The entity a declared card is bound to — the marker follows it. See `Intent`. */
+    targetId?: UnitId;
     damage: number;
     label?: string;
   }[];

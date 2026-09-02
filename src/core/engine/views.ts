@@ -17,6 +17,7 @@ import { rosterBudgetFor, rosterPointsOf } from '../data/roster.js';
 import { allObstacles, allUnits } from './board.js';
 import { isSpent } from './movement.js';
 import { isClimaxed } from './growth.js';
+import { STAT_SCALE } from '../scale.js';
 
 export function toSnapshot(unit: Unit): UnitSnapshot {
   return {
@@ -38,6 +39,16 @@ export function toSnapshot(unit: Unit): UnitSnapshot {
     keywords: [...unit.keywords],
     archetype: unit.archetype,
     escalation: unit.escalation,
+    // The same step and the same fallback `growUnit` pays, so the forecast built on this
+    // cannot disagree with the growth that actually lands.
+    ...(unit.keywords.includes('Growth')
+      ? {
+          growth: {
+            step: CARDS[unit.defId]?.unit?.escalationBonus.atk ?? STAT_SCALE,
+            cap: unit.escalationCap,
+          },
+        }
+      : {}),
     ...(unit.aura
       ? { aura: { ...unit.aura, climaxed: isClimaxed(unit) } }
       : {}),
@@ -170,6 +181,7 @@ export function toBoardView(state: GameState): BoardView {
       kind: i.kind,
       ...(i.at ? { at: { ...i.at } } : {}),
       ...(i.path ? { path: i.path.map((c) => ({ ...c })) } : {}),
+      ...(i.targetId ? { targetId: i.targetId } : {}),
       damage: i.damage,
       ...(i.label ? { label: i.label } : {}),
     })),

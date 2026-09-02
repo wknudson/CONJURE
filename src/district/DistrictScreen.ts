@@ -1876,11 +1876,14 @@ export class DistrictScreen implements Screen {
   private beginFight(encounterId: string, pulled: string[]): boolean {
     const player = this.player;
     const world = this.world;
-    if (!player || !world || !this.camera || this.combat) return false;
+    if (!player || !world || !this.camera || this.combat) {
+      this.declineFight();
+      return false;
+    }
 
     const fight = this.opts.onPack(encounterId, pulled);
     if (!fight) {
-      this.inputLocked = false;
+      this.declineFight();
       return false;
     }
 
@@ -1987,14 +1990,34 @@ export class DistrictScreen implements Screen {
     });
 
     // The circle has done its job; the grid is the thing on the ground now.
-    if (this.ring) {
-      world.scene.remove(this.ring.mesh);
-      const i = this.updatables.indexOf(this.ring);
-      if (i >= 0) this.updatables.splice(i, 1);
-      this.ring.dispose();
-      this.ring = null;
-    }
+    this.clearRing();
     return true;
+  }
+
+  /** Takes the circle off the road and out of the update loop, wherever it ended up. */
+  private clearRing(): void {
+    if (!this.ring) return;
+    this.world?.scene.remove(this.ring.mesh);
+    const i = this.updatables.indexOf(this.ring);
+    if (i >= 0) this.updatables.splice(i, 1);
+    this.ring.dispose();
+    this.ring = null;
+  }
+
+  /**
+   * A closed circle whose fight never started.
+   *
+   * The ring has to go with the refusal, not merely the lock: `ambush` and `arrest` both
+   * guard on `this.ring`, so a ring left standing here means no pack and no Warden can
+   * ever start a fight again on this screen — one refused contract used to disarm the
+   * whole ward until the next reload. And the refuge pin was written for a fight that is
+   * not happening, so walking has to persist again; left latched, the walked position was
+   * silently discarded and the player respawned at a stale refuge.
+   */
+  private declineFight(): void {
+    this.clearRing();
+    this.positionPinned = false;
+    if (!this.combat) this.inputLocked = false;
   }
 
   /**

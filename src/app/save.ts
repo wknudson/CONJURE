@@ -220,11 +220,45 @@ const RENAMED_CARDS: Record<string, string> = {
   // prices; only the word changed, so a save holding one keeps holding it.
   cinder_rune: 'cinder_mark',
   soul_splinter_rune: 'soul_splinter_mark',
+  // Conduit Kite -> Conduit Kudu: the shipped art is a spiral-horned antelope, not the
+  // bird of prey the Bound Form card was originally named for.
+  kite_bound: 'kudu_bound',
 };
 
 function rename(id: string): string {
   return RENAMED_CARDS[id] ?? id;
 }
+
+/**
+ * Species that have been renamed, old id to new.
+ *
+ * A save stores a beast's species as `baseId` (and, pre-v9, as the key of a
+ * `Record<baseId, progress>`), so renaming a species in the registry would otherwise read
+ * as extinction: `readRoster` drops any companion whose `baseId` names nothing in
+ * `COMPANIONS`, because that is exactly the rule that lets a body genuinely removed from
+ * the game stop cluttering the roster. Remapping on load is what tells the two apart —
+ * the same job `RENAMED_CARDS` does for cards, kept separate because a species id and a
+ * card id are read in different places and a beast surviving is a different fact from a
+ * spell surviving.
+ */
+const RENAMED_SPECIES: Record<string, string> = {
+  // Conduit Kite -> Conduit Kudu, alongside the card above.
+  kite: 'kudu',
+};
+
+function renameSpecies(id: string): string {
+  return RENAMED_SPECIES[id] ?? id;
+}
+
+/**
+ * The id a species answers to now, reversed — for the handful of places a save is read
+ * by the *new* id (iterating the current `COMPANIONS` list) against data written under
+ * the old one. One old id per new id is all `RENAMED_SPECIES` can express, which is
+ * exactly as far as `rename`'s own no-chaining rule goes for cards.
+ */
+const OLD_SPECIES_IDS: Record<string, string> = Object.fromEntries(
+  Object.entries(RENAMED_SPECIES).map(([oldId, newId]) => [newId, oldId]),
+);
 
 export interface SavedDeck {
   companionId: string;
@@ -869,7 +903,8 @@ function migrateProfile(
   // --- decks ---
   const decks: Record<string, SavedDeck> = { ...base.decks };
   for (const companion of COMPANIONS) {
-    const saved = data.decks?.[companion.id];
+    const oldId = OLD_SPECIES_IDS[companion.id];
+    const saved = data.decks?.[companion.id] ?? (oldId ? data.decks?.[oldId] : undefined);
     if (!saved || !Array.isArray(saved.cards)) continue;
 
     const renamed = saved.cards.filter((c): c is string => typeof c === 'string').map(rename);
@@ -938,6 +973,7 @@ function migrateProfile(
     ? data.companions
         .map((c) => (c && typeof c === 'object' ? (c as { baseId?: unknown }).baseId : undefined))
         .filter((b): b is string => typeof b === 'string')
+        .map(renameSpecies)
     : [];
   // --- Vanguard unlocks (v17) ---
   //
@@ -992,7 +1028,9 @@ function migrateProfile(
   const legacy = (data as { lastCompanionId?: unknown }).lastCompanionId;
   const claimed = typeof data.activeCompanionId === 'string' ? data.activeCompanionId : legacy;
   const byInstance = companions.find((c) => c.instanceId === claimed);
-  const bySpecies = companions.find((c) => c.baseId === claimed);
+  const bySpecies = companions.find(
+    (c) => c.baseId === (typeof claimed === 'string' ? renameSpecies(claimed) : claimed),
+  );
   const activeCompanionId =
     (byInstance ?? bySpecies ?? companions[0])?.instanceId ?? base.activeCompanionId;
 
@@ -1650,6 +1688,7 @@ function readRoster(
     const seen = new Set<string>();
     const roster = raw
       .filter((v): v is Partial<CompanionInstance> => Boolean(v) && typeof v === 'object')
+      .map((v) => (typeof v.baseId === 'string' ? { ...v, baseId: renameSpecies(v.baseId) } : v))
       .filter((v) => typeof v.baseId === 'string' && known.has(v.baseId))
       .map((v, i) => clean(v, v.baseId as string, `${v.baseId}-${i + 1}`))
       // Two entries claiming one id would make "release this one" ambiguous.
@@ -1662,7 +1701,10 @@ function readRoster(
   const legacy: CompanionInstance[] = [];
   let n = 0;
   for (const companion of COMPANIONS) {
-    const saved = (raw as Record<string, Partial<CompanionInstance>>)[companion.id];
+    const oldId = OLD_SPECIES_IDS[companion.id];
+    const saved =
+      (raw as Record<string, Partial<CompanionInstance>>)[companion.id] ??
+      (oldId ? (raw as Record<string, Partial<CompanionInstance>>)[oldId] : undefined);
     if (!saved || typeof saved !== 'object') continue;
     n += 1;
     // No `baseHpRoll` override: a v8 entry never had one, and `clean` already falls back

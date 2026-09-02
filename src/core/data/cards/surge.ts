@@ -600,9 +600,9 @@ export const SURGE_CARDS: Record<string, CardDef> = {
 
   // -------------------------------------------------------------- the second bloodline
   //
-  // Surge now speaks for the Storm Lynx and the Conduit Kite, which nests on the Magistracy's
-  // own pylons. Three cards to split the shelf on: the cheapest possible setup, a payoff that
-  // eats the charge it finds, and the one thing a school about electricity was missing —
+  // Surge now speaks for the Storm Lynx and the Conduit Kudu, which grazes the Magistracy's
+  // own pylon fields. Three cards to split the shelf on: the cheapest possible setup, a payoff
+  // that eats the charge it finds, and the one thing a school about electricity was missing —
   // ground that is live.
 
   /**

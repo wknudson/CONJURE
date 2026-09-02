@@ -40,6 +40,16 @@ export interface UnitSnapshot {
   archetype: UnitArchetype;
   /** Times this unit has grown by surviving a round. Otherwise invisible to the player. */
   escalation: number;
+  /**
+   * How this body grows, for anything carrying `Growth`: the Attack it gains per stack
+   * and the stack it stops at.
+   *
+   * Travels with the view for the same reason `territoryDepth` does — the HUD forecasts
+   * what a declared blow will *actually* strike for, and that means knowing the step. It
+   * used to guess one point for every grower, which was ten short of the bodies that grow
+   * and one too many for the ones whose stat block grows by nothing.
+   */
+  growth?: { step: number; cap: number };
   /** The Elemental Aura riding this unit, if any, and how far it has grown. */
   aura?: { defId: string; stacks: number; climaxed: boolean };
   /** Already moved or attacked this turn, so it cannot act again. */

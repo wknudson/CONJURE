@@ -107,9 +107,13 @@ export interface SpliceRecipe {
  * decision is *which Core* to spend, not which card to feed in. `flame_surge` is the common
  * Pyre spell every starter deck carries, so the bench is reachable on day one.
  *
- * A base card has to be something a beast can actually be holding — the bench offers
- * pressings from the selected Companion's Grimoire — so every base here is a `spell` or
- * `obstacle` that reaches some species' pool.
+ * A base card has to be something the player can actually *own*: the bench gates on the
+ * collection (`spliceRefusal` refuses a base that is not unlocked), and a card enters the
+ * collection by being forged from a Schematic, which only an enemy deck drops. So every
+ * base here has to be taught by some fight — `schematics.test.ts` holds that for every row,
+ * because a recipe whose base no fight carries is a pressing that can be unit-tested and
+ * never reached. Every base is also a `spell` or `obstacle` in some species' pool, so a
+ * beast can be holding it, but that is the draft's door and not the bench's.
  */
 export const SPLICE_RECIPES: readonly SpliceRecipe[] = [
   {

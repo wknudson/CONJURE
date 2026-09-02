@@ -54,7 +54,7 @@ import {
   HUNT_CHALK_BOAR,
   HUNT_CHALK_CUT_RAM,
   HUNT_CINDERWORKS_SALAMANDER,
-  HUNT_PYLON_KITE,
+  HUNT_PYLON_KUDU,
   HUNT_RIMEFIELD_BEAR,
   HUNT_SALTGLASS_SEAL,
   HUNT_SHELF_LYNX,
@@ -130,7 +130,7 @@ export const ENCOUNTERS: EncounterDef[] = [
   HUNT_CHALK_CUT_RAM,
   HUNT_SALTGLASS_SEAL,
   HUNT_TALLOW_AUROCHS,
-  HUNT_PYLON_KITE,
+  HUNT_PYLON_KUDU,
   HUNT_BARROW_JACKAL,
   // The roaming packs. Spread rather than listed, because what a pack *is* lives in
   // `data/packs.ts` and this file should not be a second place to forget one.

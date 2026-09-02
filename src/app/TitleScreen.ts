@@ -15,7 +15,7 @@
 
 import type { Screen } from './ScreenManager.js';
 import type { Profile, SaveFile, SlotId } from './save.js';
-import { SLOT_IDS } from './save.js';
+import { SLOT_IDS, activeCompanionOf } from './save.js';
 import { companionById } from '../core/data/companions.js';
 import { AI_PROFILES } from '../core/ai/controller.js';
 import { schoolOf } from '../render/palette.js';
@@ -179,7 +179,12 @@ export class TitleScreen implements Screen {
    * about the layout around it.
    */
   private wantedPoster(slot: SlotId, profile: Profile): HTMLElement {
-    const companion = companionById(profile.activeCompanionId);
+    // `activeCompanionId` names a roster *instance* ("ignis-1"), and `companionById` wants
+    // the species. Handing it the instance id resolved nothing, so every poster on the wall
+    // read "unaccompanied" in the neutral tint whatever beast the character walked in
+    // with. `activeCompanionOf` is the one lookup that knows the difference.
+    const species = activeCompanionOf(profile)?.baseId;
+    const companion = species ? companionById(species) : undefined;
     const colors = schoolOf((companion?.school ?? 'neutral') as never);
     const { pact, economy } = profile.state.overworld;
 
@@ -190,7 +195,7 @@ export class TitleScreen implements Screen {
     poster.innerHTML = `
       <i class="wanted-poster__pin"></i>
       <div class="wanted-poster__head">Wanted</div>
-      <div class="wanted-poster__charcoal" data-companion="${profile.activeCompanionId}">
+      <div class="wanted-poster__charcoal" data-companion="${species ?? ''}">
         <span class="wanted-poster__charcoal-note">charcoal, unfinished</span>
       </div>
       <div class="wanted-poster__name">${profile.name}</div>

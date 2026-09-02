@@ -78,7 +78,7 @@ All under `public/assets/sprites/companions/`, three facings each (`-front`, `-b
 |---|---|---|
 | `flue_salamander` | Flue Salamander (pyre) | `ignis` |
 | `saltglass_seal` | Saltglass Seal (frost) | `boreas` |
-| `conduit_kite` | Conduit Kite (surge) | `voltara` |
+| `conduit_kudu` | Conduit Kudu (surge) | `voltara` |
 | `barrow_jackal` | Barrow Jackal (dusk) | `mortis` |
 | `moss_aurochs` | Moss Aurochs (bloom) | `sylva` |
 | `quarry_ram` | Quarry Ram (bulwark) | `ferrum` |

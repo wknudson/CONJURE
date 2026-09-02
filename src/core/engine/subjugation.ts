@@ -156,7 +156,15 @@ export function tickSubjugation(ctx: Ctx): void {
   if (!sub.active || state.result) return;
 
   const anchor = sub.anchorUnitId ? state.units[sub.anchorUnitId] : undefined;
-  if (!anchor) return;
+  if (!anchor) {
+    // The body left the board by a route that bypassed the death pipeline. Every known
+    // route snaps the tether itself; this is the backstop for the one nobody wrote yet,
+    // because the alternative is a fight that can neither be won nor lost — the beast
+    // stays sealed and the Rite is never re-dealt. The snap is drawn at the beast, the
+    // only party still standing anywhere in particular.
+    snapTether(ctx, sub.anchorUnitId!, { ...(bossUnitOf(state)?.anchor ?? { x: 0, y: 0 }) });
+    return;
+  }
 
   sub.turnsSurvived += 1;
   newCause(ctx);
@@ -183,13 +191,18 @@ export function tickSubjugation(ctx: Ctx): void {
 export function onAnchorDied(ctx: Ctx, unit: Unit): void {
   const sub = ctx.state.encounter.subjugation;
   if (!sub.active || sub.anchorUnitId !== unit.id) return;
+  snapTether(ctx, unit.id, { ...unit.anchor });
+}
 
+/** The snap itself, shared by every route the anchor can leave the board. */
+function snapTether(ctx: Ctx, unitId: UnitId, at: { x: number; y: number }): void {
+  const sub = ctx.state.encounter.subjugation;
   sub.active = false;
   sub.anchorUnitId = null;
   sub.turnsSurvived = 0;
 
   newCause(ctx);
-  emit(ctx, { t: 'tetherSnapped', unitId: unit.id, at: { ...unit.anchor } });
+  emit(ctx, { t: 'tetherSnapped', unitId, at });
 
   enrageBoss(ctx);
   dealTheRite(ctx);

@@ -255,7 +255,7 @@ sees one twice.
 | Saltglass | Saltglass Seal, Harbor Ghost | adept |
 | The Tallow Levels | Moss Aurochs, Fallow Warden | adept |
 | The Storm Shelf | Voltara, Storm Lynx | adept |
-| The Storm Shelf (Pylon Twelve) | Conduit Kite, Pylon Nester | master |
+| The Storm Shelf (Pylon Twelve) | Conduit Kudu, Pylon Grazer | master |
 | The Bone Bastion (fringe) | Barrow Jackal, Grave-Digger | master |
 
 The six founding bloodlines are on that list deliberately. A character enrols vowed to one

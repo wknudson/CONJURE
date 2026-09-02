@@ -21,7 +21,8 @@ import type { Ctx } from './context.js';
 import type { GameState } from '../types/state.js';
 import { emit, newCause } from './context.js';
 import { drawCards, gainBones } from './deck.js';
-import { placeOpeningUnit } from './spawn.js';
+import { firstFreeNear, summonUnit } from './spawn.js';
+import { CARDS } from '../data/cards/index.js';
 
 /** The compensation has been paid. */
 const PAID = 'wave2:paid';
@@ -41,7 +42,7 @@ const WAVE_ROUND = 2;
  * Where the wave stands when it arrives.
  *
  * The enemy's own rows, spread rather than clustered, exactly as a pack's opening board
- * is. `placeOpeningUnit` walks to the nearest free tile in that side's territory from each
+ * is. `firstFreeNear` walks to the nearest free tile in that side's territory from each
  * of these, so a crowded back line resolves instead of dropping a body.
  */
 const OPENING: readonly [number, number][] = [
@@ -106,14 +107,23 @@ export function runWave2(ctx: Ctx): void {
 
   state.encounter.firedGates.push(ARRIVED);
 
+  // Summoned, not placed as an opening line. This used to go through `placeOpeningUnit`,
+  // which clears the arrival flags because a body already on the field when the bell rang
+  // has stood its round — and a body walking in on round two has not. Cleared, the wave
+  // skipped the Haste gate and the Growth grace and swung on the turn it landed, from
+  // ground the player had never been shown a blow from. It arrives at the start of the
+  // enemy's turn, after its bodies have refreshed, so a real summon sits this round out and
+  // acts on the next: the same rule every other thing that enters a fight mid-way obeys.
   let placed = 0;
   newCause(ctx);
   for (const squad of state.encounter.wave2 ?? []) {
     for (const defId of squad) {
       const at = OPENING[placed % OPENING.length]!;
-      const id = placeOpeningUnit(ctx, defId, 'enemy', { x: at[0], y: at[1] });
       placed += 1;
-      if (!id) continue;
+      const footprint = CARDS[defId]?.unit?.footprint ?? 1;
+      const spot = firstFreeNear(state, { x: at[0], y: at[1] }, 'enemy', footprint);
+      if (!spot) continue;
+      summonUnit(ctx, defId, 'enemy', spot);
     }
   }
 

@@ -437,6 +437,37 @@ describe('one character on disk', () => {
     ).toMatch(/1 Spell\(s\) left your/);
   });
 
+  it('renames a species the same way, so a rename is not a confiscation', () => {
+    // Conduit Kite -> Conduit Kudu. `readRoster` drops any companion whose `baseId` names
+    // nothing in `COMPANIONS` — the rule that lets a body genuinely removed from the game
+    // stop cluttering the roster — so an unmapped species rename would read as extinction
+    // rather than a rename and silently delete the beast from the save.
+    const file = fileWith('slot-1');
+    writeSave(file);
+    const raw = JSON.parse(localStorage.getItem('conjure.save')!);
+    const profile = raw.profiles['slot-1'];
+
+    // The shape a genuine pre-rename save has on disk: a companion of the old species, an
+    // `activeCompanionId` some saves point at a species rather than an instance (v8 and
+    // earlier), and a deck filed under the old id with no 'kudu' entry to collide with —
+    // that id did not exist when a save like this was written.
+    profile.companions = [{ ...profile.companions[0], instanceId: 'kite-1', baseId: 'kite' }];
+    profile.activeCompanionId = 'kite';
+    delete profile.decks.kudu;
+    // A Hero-legal card, not one of the beast's own Spells — the same reason the rename
+    // test above reaches for `shield_bash` rather than something a Grimoire would hold.
+    profile.decks.kite = { companionId: 'kite', cards: ['shield_bash'] };
+    localStorage.setItem('conjure.save', JSON.stringify(raw));
+
+    const p = loadSave().save.profiles['slot-1']!;
+    const beast = p.companions.find((c) => c.instanceId === 'kite-1');
+
+    expect(beast, 'the beast survives the rename rather than being dropped').toBeDefined();
+    expect(beast!.baseId).toBe('kudu');
+    expect(p.activeCompanionId, 'the species pointer still finds it').toBe('kite-1');
+    expect(p.decks.kudu?.cards, 'the deck moves to the new key').toEqual(['shield_bash']);
+  });
+
   it('takes the Spells out of a deck saved before the Fused Grimoire, and leaves the Mark', () => {
     // Two rules in one deck, and the second one is new. The Companion casts the Spells, so
     // Flame Surge can never be legal here again and is stripped rather than flagged.

@@ -22,7 +22,7 @@
  */
 
 import type { BoardView } from '../contract/query.js';
-import { growthCapFor } from '../core/engine/growth.js';
+import { STAT_SCALE } from '../core/scale.js';
 
 export interface ProjectedDamage {
   /** Everything the Pact is expected to lose before the player acts again. */
@@ -36,10 +36,10 @@ export interface ProjectedDamage {
 }
 
 /**
- * Escalation is capped, so a unit at its ceiling will not grow again and its declared
- * damage is already correct. Mirrors the engine's rule rather than guessing at it.
+ * What one stack of Burn or Toxin costs a turn. Both tick at the stat scale; the engine's
+ * table is not exported and both of its rows say the same number.
  */
-const ESCALATION_STEP = 1;
+const TICK_PER_STACK = STAT_SCALE;
 
 export function calculateProjectedDamage(board: BoardView): ProjectedDamage {
   let fromAttacks = 0;
@@ -55,17 +55,21 @@ export function calculateProjectedDamage(board: BoardView): ProjectedDamage {
     if (intent.kind !== 'commander' && !atBoundForm) continue;
     fromAttacks += intent.damage;
 
-    // Will this attacker be bigger by the time it swings?
+    // Will this attacker be bigger by the time it swings? The view says how it grows —
+    // its own step and its own ceiling, read off its stat block — so the forecast adds
+    // what the engine will actually add. This used to be a constant of one for every
+    // grower, against an engine that grows bodies by ten: ten short for the ones that
+    // grow, one too many for the ones whose block grows in health alone. A keyword the
+    // view has not put numbers to earns nothing rather than a guess.
     const unit = board.units.find((u) => u.id === intent.unitId);
-    if (!unit) continue;
-    if (!unit.keywords.includes('Growth')) continue;
+    if (!unit?.growth) continue;
 
     // A unit already at its ceiling has nothing more to gain, so its declared figure
-    // stands. The cap comes from the engine rather than being restated here — this file
-    // used to carry its own copy, including the `Infinity` that turned out to be a bug.
-    if (unit.escalation >= growthCapFor(unit.footprint)) continue;
+    // stands. The cap is the body's own, not the school default — the day a card grows
+    // further than its kind, the readout follows it.
+    if (unit.escalation >= unit.growth.cap) continue;
 
-    fromEscalation += ESCALATION_STEP;
+    fromEscalation += unit.growth.step;
   }
 
   const fromStatuses = commanderTickDamage(board);
@@ -100,9 +104,11 @@ function boundFormAt(board: BoardView, at: { x: number; y: number }): boolean {
  */
 function commanderTickDamage(board: BoardView): number {
   const onCommander = board.statuses.filter((s) => s.unitId === 'player');
+  // Per stack at the stat scale, as `tickStatus` pays it — the seam this function exists
+  // to keep honest was itself a factor of ten short.
   return onCommander
     .filter((s) => s.kind === 'burn' || s.kind === 'toxin')
-    .reduce((sum, s) => sum + s.stacks, 0);
+    .reduce((sum, s) => sum + s.stacks * TICK_PER_STACK, 0);
 }
 
 /** One line for the HUD, itemised when there is more than one source. */

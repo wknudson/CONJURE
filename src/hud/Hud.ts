@@ -92,6 +92,7 @@ export class Hud {
   private channelBtn!: HTMLButtonElement;
   private helpBtn!: HTMLButtonElement;
   private threatWarnEl!: HTMLElement;
+  private declaredCastEl!: HTMLElement;
   private enemyHandEl!: HTMLElement;
   private enemyBonesEl!: HTMLElement;
   private inspectEl!: HTMLElement;
@@ -149,6 +150,7 @@ export class Hud {
     this.threatBtn = q<HTMLButtonElement>('.threat-toggle');
     this.helpBtn = q<HTMLButtonElement>('.help');
     this.threatWarnEl = q('.status__threat-warning');
+    this.declaredCastEl = q('.status__declared-cast');
     this.enemyHandEl = q('.enemy-read__hand');
     this.enemyBonesEl = q('.enemy-read__bones');
     this.inspectEl = q('.inspect');
@@ -336,6 +338,23 @@ export class Hud {
     }
     this.threatWarnEl.textContent = '';
     this.threatWarnEl.classList.remove('is-shown', 'is-declared');
+  }
+
+  /**
+   * Declared casts the board cannot point at.
+   *
+   * A tiled declaration is drawn on its tile; a global one — a Cataclysmic Core — lands
+   * everywhere, and "everywhere" has no diamond to mark. This line is where those go,
+   * in both shells, so a declared card is never invisible whatever it is aimed at.
+   */
+  setDeclaredCasts(labels: string[]): void {
+    if (labels.length === 0) {
+      this.declaredCastEl.textContent = '';
+      this.declaredCastEl.classList.remove('is-shown');
+      return;
+    }
+    this.declaredCastEl.textContent = `Enemy casts: ${labels.join(' · ')}`;
+    this.declaredCastEl.classList.add('is-shown');
   }
 
   get tips(): Tooltip {
@@ -713,6 +732,7 @@ const TEMPLATE = `
       </div>
       <div class="status__phase"></div>
       <div class="status__threat-warning"></div>
+      <div class="status__declared-cast"></div>
     </div>
   </div>
 

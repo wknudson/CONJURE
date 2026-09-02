@@ -140,8 +140,8 @@ export const HUNTS: readonly Hunt[] = [
     region: 'The Tallow Levels',
   },
   {
-    encounterId: 'hunt_pylon_kite',
-    species: 'kite',
+    encounterId: 'hunt_pylon_kudu',
+    species: 'kudu',
     tier: 'master',
     region: 'The Storm Shelf',
   },

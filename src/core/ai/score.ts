@@ -84,6 +84,32 @@ export interface UtilityWeights {
   armorValue: number;
   markSetup: number;
   /**
+   * Per stack of a debuff landed on a foe, mirrored as a cost when one lands on our own.
+   *
+   * Without it a card whose whole effect is a status — a Spore Cloud, a Rime Touch —
+   * scored exactly zero, and zero sits at the pass threshold: every fight that shipped
+   * one re-enumerated and re-declined it every turn, so the AI's control spells were
+   * dead weight in its hand for the life of the game. Read off `statusApplied` like
+   * everything else, so an attack whose rider applies Burn earns the same credit a
+   * spell does.
+   *
+   * Priced per stack at half an ordinary swing: a Toxin stack ticks 10 — one point of
+   * health a turn until it decays — and Chill is a third of a Freeze, so a stack is
+   * genuinely worth less than damage landed now, and a two-stack area cast across three
+   * bodies still outbids a plain advance.
+   */
+  statusValue: number;
+  /**
+   * Attaching an Elemental Aura to one of our own bodies.
+   *
+   * A flat price rather than a read of the attach's stat delta, because most of an
+   * Aura's value is deferred — two more stacks and a Climax trait — and one of them
+   * (Static Charge) moves a stat the damage terms cannot see at all. Priced above an
+   * ordinary swing (4) and under a real summon (~11): building a carrier up is worth a
+   * turn's attention, but never at the cost of putting a body on the board.
+   */
+  auraValue: number;
+  /**
    * Per point of incoming damage dodged when a unit that has already attacked steps out
    * of reach. Keep it well under `face` so pressing an advantage still wins out.
    */
@@ -129,6 +155,15 @@ export interface UtilityWeights {
 function hpPoints(value: number): number {
   return value / STAT_SCALE;
 }
+
+/**
+ * Statuses that help their carrier; everything else on a body is hurting it.
+ *
+ * `charged` counts as a debuff deliberately: it lands on the *target* of every shock hit
+ * and its whole meaning is the reaction it primes against them, so a Surge card that sets
+ * one up on purpose earns the same small credit the rider version does.
+ */
+const BUFF_STATUSES = new Set<string>(['fleet']);
 
 export const NOVICE_WEIGHTS: UtilityWeights = {
   kill: 50,
@@ -180,6 +215,8 @@ export const NOVICE_WEIGHTS: UtilityWeights = {
   developHp: 1.5,
   armorValue: 1.5,
   markSetup: 12,
+  statusValue: 2,
+  auraValue: 8,
   // Modest for a Novice: it will pull a wounded attacker back, but will not turtle.
   retreat: 2.5,
   // Half. Enough that chewing through armor always beats standing still, never so much that
@@ -626,6 +663,19 @@ export function scoreAction(
       const host = next.units[e.hostId] ?? next.obstacles[e.hostId];
       // Offensive marks go on enemies; Soul Splinter is set up on our own units.
       utility += weights.markSetup * (host && host.side !== side ? 1 : 0.5);
+    }
+    if (e.t === 'statusApplied') {
+      // The protocol's statuses are priced by the protocol terms above — scoring the
+      // seal or the anchor here would double-charge the one fight they appear in.
+      if (e.status === 'aetherPlated' || e.status === 'anchor') continue;
+      const host = state.units[e.unitId] ?? next.units[e.unitId];
+      if (!host) continue;
+      const helpful = (host.side === side) === BUFF_STATUSES.has(e.status);
+      utility += (helpful ? 1 : -1) * weights.statusValue * e.stacks;
+    }
+    if (e.t === 'auraAttached') {
+      const host = next.units[e.unitId];
+      if (host?.side === side) utility += weights.auraValue;
     }
   }
 

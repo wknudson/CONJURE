@@ -79,8 +79,13 @@ the offering was worth any Marrow.
   at trigger time is a one-line change and a real balance shift — deliberately not taken.
 - **`magma_brute`** is a Pyre summon marked `source: 'hero'`, so it never triggers
   Resonance. Moving it is thematically right and a buff; left as a balance decision.
-- **`hud/projection.ts` hardcodes the Growth cap** rather than reading the stat block's
-  `escalationCap` — harmless today, wrong the day a card changes a cap.
+- ~~**`hud/projection.ts` hardcodes the Growth cap** rather than reading the stat block's
+  `escalationCap` — harmless today, wrong the day a card changes a cap.~~ **Landed**
+  (2026-09-01), and it was not harmless: the *step* was hardcoded too, at one point, against
+  an engine that grows bodies by ten — so the "Incoming" readout the E1 trust-gap fix rests
+  on was ten short for every grower and one too many for the Growth bodies whose stat block
+  grows by nothing. The snapshot now carries each grower's real step and cap, and the HUD
+  reads them rather than guessing.
 - **Arena variety.** The engine now supports 4×4 through 12×12, but both shipped
   encounters are still 6×8 and 8×8. Nothing exercises the new shapes in play.
 
