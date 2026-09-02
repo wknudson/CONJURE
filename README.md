@@ -200,6 +200,7 @@ follows, and each is asserted by a test:
 | Hand size | 7; overdraw burns the card for +1 Marrow | `docs/02_combat_lexicon.md` §6 + `core/engine/deck.ts` |
 | Double KO | Both revive at 10 HP, board wiped, armor purged, sudden death | `docs/02_combat_lexicon.md` §11 + `core/engine/death.ts` |
 | Bone cap | 8, enforced only during end-of-turn cleanup | `docs/02_combat_lexicon.md` §2 + `core/engine/deck.ts` |
+| Pact armour cap | Half the Pact's ceiling; plate past it is refused silently, as a heal at full is | `core/engine/damage.ts` (`PACT_ARMOR_CAP_FRACTION`) |
 | Opening hand | 5 cards and 3 banked Bones (frontal contact), then draw 4/turn | `core/engine/setup.ts` + `core/engine/deck.ts` |
 | Status tick order | Toxin → Burn → Chill/Brittle/Charged decay → hazards → Growth at the start of a turn; the holds (Freeze, Stun, Entangle, Exhaust, Fleet) lift at its **end**, so a one-stack hold covers one full turn | `docs/02_combat_lexicon.md` §8 |
 | Reaching a Commander | Only through their Companion's Bound Form; no attack may name a portrait | `docs/02_combat_lexicon.md` §3 |
