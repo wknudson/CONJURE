@@ -85,7 +85,6 @@ export const BOON_LABELS: Record<keyof CombatBoons, string> = {
   ignoreFog: 'Sees through fog',
   fogConceals: 'Hidden by your own steam',
   ignoreGuardians: 'Sees past Guardians',
-  ignoreIceSlip: 'Keeps its footing on ice',
   immuneToBurn: 'Immune to Burn',
   immuneToToxin: 'Immune to Toxin',
   immuneToShatterSplash: 'Untouched by Shatter shrapnel',

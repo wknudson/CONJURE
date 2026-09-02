@@ -139,8 +139,6 @@ export interface CommanderState {
   boundFormIgnoresHazards: boolean;
   /** This side's Bound Form cannot be shoved, pulled, or carried. */
   boundFormGrounded: boolean;
-  /** Ice underfoot costs this side nothing. */
-  ignoresIceSlip: boolean;
 }
 
 /**

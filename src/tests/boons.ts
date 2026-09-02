@@ -18,7 +18,6 @@ export const ALL_BOONS: Record<keyof CombatBoons, true> = {
   maxBones: true,
   ignoreFog: true,
   immuneToBurn: true,
-  ignoreIceSlip: true,
   immuneToToxin: true,
   revealIntents: true,
   bonusObstacleHp: true,

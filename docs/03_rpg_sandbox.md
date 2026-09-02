@@ -161,17 +161,19 @@ number, and `CombatBoons` has nowhere to put one that did.
 | Species | Traits |
 |---|---|
 | **Ignis** (pyre) | Ash-Walker (`immuneToBurn`) · Searing Gaze (`ignoreFog`) · Banked Coals (`armor: 2`) |
-| **Boreas** (frost) | Glacial Pacing (`ignoreIceSlip`) · Deep Reserve (`maxPips: 9`) · Rimed Lungs (`immuneToBurn`) |
-| **Voltara** (surge) | Storm Lungs (`maxPips: 9`) · Earthed Pelt (`armor: 2`) · Static Cling (`ignoreIceSlip`) |
+| **Boreas** (frost) | Glacial Pacing (`boundFormGrounded`) · Deep Reserve (`maxPips: 9`) · Rimed Lungs (`immuneToBurn`) |
+| **Voltara** (surge) | Storm Lungs (`maxPips: 9`) · Earthed Pelt (`armor: 2`) · Static Cling (`boundFormIgnoresHazards`) |
 
 > **Adding a species requires adding its bloodline.** `tameCompanion` rolls from
 > `traitsFor(baseId)`; a species with an empty pool hands every instance `traitId: ''`. A
 > test asserts every species has more than one trait, because one trait makes the roll a
 > formality.
 
-> **Known gap:** `ignoreIceSlip` is carried all the way to `CommanderState.ignoresIceSlip`
-> but **nothing in the movement layer reads it yet.** Glacial Pacing and Static Cling
-> currently do nothing.
+> **Closed gap (2026-09-01):** `ignoreIceSlip` was carried all the way to
+> `CommanderState.ignoresIceSlip` and read by nothing — there was never an ice hazard for
+> it to answer — so Glacial Pacing, Static Cling, Glass-Footed and the Rimewalker Crampons
+> did nothing. The boon is gone; each source now names the real footing rule its text was
+> already describing, ids unchanged so a beast already carrying one simply starts working.
 
 ### The Pact ceiling
 
@@ -499,8 +501,6 @@ losing the fight afterwards does not un-teach it.
 
 Currently true of the implementation, and worth knowing before building on it:
 
-- **`ignoreIceSlip` has no effect.** Carried to `CommanderState.ignoresIceSlip`, read by
-  nothing.
 - **Reagent harvesting from the Overworld map does not exist.** Cores come only from Adept
   and Master bounties.
 - **Companion unlocking is not gated.** Every species is tameable; the roster filter is the

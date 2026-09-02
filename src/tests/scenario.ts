@@ -157,7 +157,6 @@ function blankCommander(
     ignoresFog: false,
     immuneToBurn: false,
     immuneToToxin: false,
-    ignoresIceSlip: false,
     revealsIntents: false,
     bonusObstacleHp: 0,
     bonusTitheMarrow: 0,

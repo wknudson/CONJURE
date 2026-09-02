@@ -391,12 +391,18 @@ export const RELICS: Record<string, RelicDef> = {
     boons: { boundFormGrounded: true },
   },
 
+  /**
+   * Was `ignoreIceSlip`, a boon for a mechanic the game never had — no ice hazard exists and
+   * nothing ever read the flag, so these could be bought and worn for nothing. The id is kept
+   * so a pair already in somebody's bag starts working; the rule is the one the sole was
+   * always describing: whatever throws you, you land on your feet.
+   */
   relic_crampons: {
     id: 'relic_crampons',
     name: 'Rimewalker Crampons',
-    text: 'Spiked straight through the sole. Ice underfoot never costs you your footing.',
+    text: 'Spiked straight through the sole. Your units take 20 less from every collision.',
     slot: 'treads',
-    boons: { ignoreIceSlip: true },
+    boons: { collisionResist: 20 },
   },
 
   relic_sabatons: {
@@ -601,7 +607,6 @@ export function boonsOfRelics(equipped: RelicLoadout): CombatBoons {
     if (b.ignoreFog) out.ignoreFog = true;
     if (b.immuneToBurn) out.immuneToBurn = true;
     if (b.immuneToToxin) out.immuneToToxin = true;
-    if (b.ignoreIceSlip) out.ignoreIceSlip = true;
     if (b.revealIntents) out.revealIntents = true;
     if (b.boundFormIgnoresHazards) out.boundFormIgnoresHazards = true;
     if (b.boundFormGrounded) out.boundFormGrounded = true;
