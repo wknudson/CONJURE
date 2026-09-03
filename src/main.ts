@@ -128,6 +128,18 @@ const bootNotes = loaded.notes;
 let active: Profile | null = null;
 
 /**
+ * A closed tab mid-fight is a forfeit: the boot-time failsafe collects on the open
+ * contract, stake included. That is the right rule, and it should not be walked into by
+ * accident — a reflex F5, a mis-hit shortcut — so the browser asks first while a fight is
+ * open. The wording is the browser's own; nothing here can change it.
+ */
+window.addEventListener('beforeunload', (e) => {
+  if (!active?.state.combat) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
+
+/**
  * Writes the whole file.
  *
  * There is no "save this profile" — `writeSave` takes the file, so the slots nobody is

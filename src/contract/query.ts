@@ -25,6 +25,8 @@ export type Action =
   | { type: 'recallUnit'; unit: UnitId }
   /** Deployment only: set the line and begin turn one. */
   | { type: 'finishDeployment' }
+  /** Gives the fight up as a loss. Legal at any moment; the HUD confirms it first. */
+  | { type: 'concede' }
   | { type: 'endTurn' };
 
 export type TargetSelection =

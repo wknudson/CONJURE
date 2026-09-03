@@ -40,6 +40,16 @@ export type Command =
    * it passes through the one reducer and replays identically from a seed.
    */
   | { type: 'declareIntents'; plan: Command[]; telegraph: 'all' | 'attacks' }
+  /**
+   * The player gives up the fight. It ends as a defeat, through the same bell every
+   * other ending rings, so the results screen, the contract and the rescue all follow.
+   *
+   * A command rather than a screen-side shortcut so it is in the event stream and replays
+   * from a seed like everything else. Legal at any moment of the fight, including the
+   * enemy's turn and deployment: its whole point is to be the exit that always works. The
+   * AI never enumerates it.
+   */
+  | { type: 'concede' }
   | { type: 'endTurn' };
 
 export class IllegalCommandError extends Error {

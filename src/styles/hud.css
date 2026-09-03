@@ -370,6 +370,26 @@
   cursor: pointer;
 }
 
+/* Concede: the white flag. Quiet until armed, then unmistakably red for three seconds. */
+.concede {
+  flex: 0 0 auto;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--text-dim);
+  font: 600 13px var(--font);
+  cursor: pointer;
+}
+
+.concede.is-armed {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 28%, rgba(0, 0, 0, 0.4));
+  color: var(--text);
+}
+
 /* ------------------------------------------------------- notices & banners */
 
 .notice {

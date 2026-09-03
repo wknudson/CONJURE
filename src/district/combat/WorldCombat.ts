@@ -191,6 +191,7 @@ export class WorldCombat {
       onToggleSpeed: () => this.toggleSpeed(),
       onUndo: () => this.undo(),
       onToggleMute: () => this.sfx.toggleMute(),
+      onConcede: () => this.concede(),
       onToggleThreat: () => this.targeting.toggleThreat(),
       onChannel: () => this.channelSelected(),
       onHelp: () => this.help.toggle(),
@@ -692,6 +693,20 @@ export class WorldCombat {
   /* ============================================================
      The synchronisation rule
      ============================================================ */
+
+  /** Gives the fight up. See `CombatScreen.concede` for why it bypasses `commit`'s guards. */
+  private concede(): void {
+    if (this.finished || this.session.isOver()) return;
+    let events;
+    try {
+      events = this.session.dispatch({ type: 'concede' });
+    } catch (err) {
+      this.hud.flashNotice(err instanceof Error ? err.message : 'Cannot concede now');
+      return;
+    }
+    this.lockInput();
+    this.sequencer.enqueue(events);
+  }
 
   private commit(action: Action): void {
     if (this.sequencer.busy || this.finished) return;

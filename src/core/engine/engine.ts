@@ -28,7 +28,7 @@ import { canAct, canAttack, canMove, findMove, licenseFor, setAnchor } from './m
 import { legalAttacks, legalCardTargets } from './targeting.js';
 import { dealDamage, healUnit } from './damage.js';
 import { applyStatusTo } from './status.js';
-import { checkLethal, killEntity } from './death.js';
+import { checkLethal, finish, killEntity } from './death.js';
 import { entityAt, getEntity, refOf } from './board.js';
 import { resonanceLimit, toCardSnapshot } from './views.js';
 import { beginTurn, endTurn } from './turn.js';
@@ -43,7 +43,8 @@ import { declareIntents } from './intents.js';
 import { isSealed } from './subjugation.js';
 
 /** The only commands the deployment phase entertains. */
-const DEPLOYMENT_COMMANDS: Command['type'][] = ['deployUnit', 'recallUnit', 'finishDeployment'];
+// Concede is the exit that always works, so it is allowed here too.
+const DEPLOYMENT_COMMANDS: Command['type'][] = ['deployUnit', 'recallUnit', 'finishDeployment', 'concede'];
 
 /** Points already standing on the board, for the arena-capacity check. */
 function fieldedPoints(state: GameState): number {
@@ -204,8 +205,9 @@ export function applyCommand(prev: GameState, command: Command): StepResult {
   if (state.result) {
     throw new IllegalCommandError('combat is already over');
   }
-  // Deployment accepts its own three commands and nothing else: the board is being built,
-  // not played. Everything the ordinary turn allows is refused until the line is set.
+  // Deployment accepts its own three commands, plus Concede, and nothing else: the board is
+  // being built, not played. Everything the ordinary turn allows is refused until the line
+  // is set.
   if (state.phase === 'deployment') {
     if (!DEPLOYMENT_COMMANDS.includes(command.type)) {
       throw new IllegalCommandError(`cannot ${command.type} during deployment`);
@@ -266,6 +268,11 @@ export function runCommand(ctx: Ctx, command: Command): void {
       break;
     case 'declareIntents':
       declareIntents(ctx, command.plan, command.telegraph);
+      break;
+    case 'concede':
+      // Only the player concedes; the enemy has no hand to raise. `finish` is idempotent,
+      // so conceding a fight already decided changes nothing and emits nothing.
+      finish(ctx, 'defeat');
       break;
     case 'endTurn':
       endTurn(ctx);

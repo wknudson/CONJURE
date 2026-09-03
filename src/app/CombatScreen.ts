@@ -279,6 +279,7 @@ export class CombatScreen implements Screen {
       onToggleSpeed: () => this.toggleSpeed(),
       onUndo: () => this.undo(),
       onToggleMute: () => this.sfx.toggleMute(),
+      onConcede: () => this.concede(),
       onToggleThreat: () => this.targeting?.toggleThreat() ?? false,
       onChannel: () => this.channelSelected(),
       onHelp: () => this.help?.toggle(),
@@ -1044,6 +1045,25 @@ export class CombatScreen implements Screen {
       return;
     }
     this.commit({ type: 'channel', unit });
+  }
+
+  /**
+   * Gives the fight up. Not through `commit`, whose guards exist to keep a turn honest —
+   * whose turn it is, whether the board is still moving — and none of which should stand
+   * between a player and the exit. The bell rings through the sequencer like any other
+   * ending, so `onSequencerIdle` reports the defeat the usual way.
+   */
+  private concede(): void {
+    if (!this.sequencer || this.session.isOver()) return;
+    let events;
+    try {
+      events = this.session.dispatch({ type: 'concede' });
+    } catch (err) {
+      this.hud?.flashNotice(err instanceof Error ? err.message : 'Cannot concede now');
+      return;
+    }
+    this.lockInput();
+    this.sequencer.enqueue(events);
   }
 
   private commit(action: Action): void {

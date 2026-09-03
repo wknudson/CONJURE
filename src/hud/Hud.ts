@@ -19,6 +19,8 @@ export interface HudCallbacks {
   onEndTurn(): void;
   onUndo(): void;
   onToggleMute(): boolean;
+  /** The player has confirmed giving up the fight. The HUD has already asked twice. */
+  onConcede(): void;
   onToggleThreat(): boolean;
   onChannel(): void;
   onHelp(): void;
@@ -82,6 +84,8 @@ export class Hud {
   private warningEl!: HTMLElement;
   private bannerEl!: HTMLElement;
   private endTurnBtn!: HTMLButtonElement;
+  private concedeBtn!: HTMLButtonElement;
+  private concedeArmedUntil = 0;
   private heroArmorEl!: HTMLElement;
   private enemyArmorEl!: HTMLElement;
   private muteBtn!: HTMLButtonElement;
@@ -167,11 +171,36 @@ export class Hud {
     this.threatBtn.addEventListener('click', () => this.setThreatActive(this.cb.onToggleThreat()));
     this.helpBtn.addEventListener('click', () => this.cb.onHelp());
     this.speedBtn.addEventListener('click', () => this.setSpeedLabel(this.cb.onToggleSpeed()));
+    // Two presses, close together. A fight was the one place in the game with no exit —
+    // reloading was the only way out, and the boot-time forfeit then collected on the
+    // Pact as if the player had fled — so this has to exist; but a single stray click
+    // ending a winnable fight would be worse than no button, hence the arming.
+    this.concedeBtn = q<HTMLButtonElement>('.concede');
+    this.concedeBtn.addEventListener('click', () => {
+      const now = performance.now();
+      if (now < this.concedeArmedUntil) {
+        this.disarmConcede();
+        this.cb.onConcede();
+        return;
+      }
+      this.concedeArmedUntil = now + 3000;
+      this.concedeBtn.classList.add('is-armed');
+      this.concedeBtn.textContent = 'Concede?';
+      window.setTimeout(() => {
+        if (performance.now() >= this.concedeArmedUntil) this.disarmConcede();
+      }, 3100);
+    });
     q('.rotate--ccw').addEventListener('click', () => this.cb.onRotate(-1));
     q('.rotate--cw').addEventListener('click', () => this.cb.onRotate(1));
 
     this.tooltip = new Tooltip(document.body);
     this.tooltip.attach(this.root);
+  }
+
+  private disarmConcede(): void {
+    this.concedeArmedUntil = 0;
+    this.concedeBtn.classList.remove('is-armed');
+    this.concedeBtn.textContent = '⚑';
   }
 
   /**
@@ -782,6 +811,7 @@ const TEMPLATE = `
         <button class="rotate rotate--cw" data-tip="Rotate right|Turns the view a quarter-turn clockwise.|Press E.">⟳</button>
         <button class="help" data-tip="Help|Opens the rules reference.|Press H at any time.">?</button>
         <button class="mute" title="Toggle sound">🔊</button>
+        <button class="concede" data-tip="Concede|Gives up this fight. It ends as a loss: the contract is forfeit and the Magistracy's rescue applies as after any defeat.|Press twice within three seconds. Your progress outside the fight is kept.">⚑</button>
       </div>
 
       <!-- The resource dial, mirroring the Pact in the opposite corner. -->
