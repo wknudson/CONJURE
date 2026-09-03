@@ -547,9 +547,15 @@ export class DistrictScreen implements Screen {
         /** Walks into a pack by identity, so a fight can be opened without a collision. */
         ambush: (encounterId: string) => this.ambush(encounterId),
       };
-    }
 
-    this.gui = buildLookGui(this.lookHandles(), this.area.id, this.area.name);
+      // The look-tuning panel is a development tool and lives inside the guard with the
+      // rest of them. It sat two lines outside it for a while, and shipped: every player
+      // who entered the ward got a floating panel of exposure, fog and bloom sliders, and
+      // the legend told them to try it. `import.meta.env.DEV` is statically false in a
+      // production build, so the panel and the lil-gui module behind it are dropped from
+      // the bundle rather than merely hidden.
+      this.gui = buildLookGui(this.lookHandles(), this.area.id, this.area.name);
+    }
 
     this.errands = this.opts.errands;
     this.hud.renderObjective(this.flags, this.errands);
