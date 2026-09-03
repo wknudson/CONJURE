@@ -5,11 +5,14 @@
  * files need Node's globals and `src` must not have them: the game runs in a browser, and
  * putting `process` and `fs` in scope there would make an import that cannot possibly work
  * at runtime typecheck cleanly.
+ *
+ * `vite/client` is kept alongside `node` because the scripts import render-layer data
+ * modules (`render/folk.ts`) that read `import.meta.env` through `render/assetUrl.ts`.
  */
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node", "vite/client"]
   },
   "include": ["scripts"]
 }

@@ -17,6 +17,7 @@ import type { Gender } from '../core/data/characterLook.js';
 import { companionById } from '../core/data/companions.js';
 import type { School } from '../contract/ids.js';
 import { folkSheetSrc, type FolkSheetId } from './folk.js';
+import { assetUrl } from './assetUrl.js';
 
 /** A school's colour on the stage. The same six the enrolment crests use. */
 export const SCHOOL_COLOR: Record<string, string> = {
@@ -51,7 +52,7 @@ export type HeroFacing = 'front' | 'back' | 'side' | 'side-alt';
  * a case slip survives every Windows filesystem to fail only once it is served from Linux.
  */
 export function commanderSpriteSrc(gender: Gender, facing: HeroFacing = 'front'): string {
-  return `/assets/sprites/hero-${gender}-${facing}.png`;
+  return assetUrl(`assets/sprites/hero-${gender}-${facing}.png`);
 }
 
 const spriteCache = new Map<string, HTMLImageElement>();
@@ -279,7 +280,7 @@ export const WALK_FRAME_MS = 120;
  *     hero-male-side-walk-0.png     hero-female-front-walk-3.png
  */
 export function commanderWalkSrc(gender: Gender, facing: WalkFacing, frame: number): string {
-  return `/assets/sprites/hero-${gender}-${facing}-walk-${frame}.png`;
+  return assetUrl(`assets/sprites/hero-${gender}-${facing}-walk-${frame}.png`);
 }
 
 /**
@@ -390,7 +391,7 @@ export const WALK_SHEET_GAIT_CYCLES = 2;
 export const WALK_SHEET_CONTENT = { x: 78, y: 30, w: 95, h: 197 } as const;
 
 export function commanderWalkSheetSrc(gender: Gender): string {
-  return `/assets/sprites/hero-${gender}-walk.png`;
+  return assetUrl(`assets/sprites/hero-${gender}-walk.png`);
 }
 
 /**
@@ -491,7 +492,7 @@ export function companionSpriteSrc(id: string, facing: 'front' | 'back' | 'side'
   // and it was wrong for ten of the seventeen species. `artId` is where the species says
   // so; an unknown id falls through to itself, which is what a test arena wants.
   const art = companionById(id)?.artId ?? id;
-  return `/assets/sprites/companions/${art}-${facing}.png`;
+  return assetUrl(`assets/sprites/companions/${art}-${facing}.png`);
 }
 
 const companionCache = new Map<string, HTMLImageElement>();
