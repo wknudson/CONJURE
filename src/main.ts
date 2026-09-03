@@ -25,6 +25,7 @@ import './styles/district.css';
 import './styles/crash.css';
 
 import { installCrashHandlers } from './app/crash.js';
+import { clearSaveWarning, showSaveWarning } from './app/saveWarning.js';
 
 /**
  * Before anything else can throw. The context is read at crash time, so it can close over
@@ -63,6 +64,7 @@ import {
   grantRosterUnlocks,
   initializeNewProfile,
   loadSave,
+  probeStorage,
   writeSave,
   type Profile,
   type SaveFile,
@@ -119,6 +121,12 @@ const loaded = loadSave();
 const saveFile: SaveFile = loaded.save;
 const bootNotes = loaded.notes;
 
+// Said at the wall, before a single choice is made, if the browser will not keep one.
+{
+  const failure = probeStorage();
+  if (failure) showSaveWarning(failure);
+}
+
 /**
  * The character currently open, or null while the player is at the wall.
  *
@@ -146,7 +154,11 @@ window.addEventListener('beforeunload', (e) => {
  * playing are carried through every write by construction rather than by remembering to.
  */
 function persist(): void {
-  writeSave(saveFile);
+  // The answer was thrown away here for a long time, across some forty call sites: a
+  // browser that refused storage lost the player a whole session with no warning. Now a
+  // failed write raises the banner, and the next one that lands takes it down.
+  if (writeSave(saveFile)) clearSaveWarning();
+  else showSaveWarning(probeStorage() ?? 'blocked');
 }
 
 /** The open character. Every screen below the wall runs with one, so this asserts it. */

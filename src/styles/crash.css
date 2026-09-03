@@ -1,6 +1,22 @@
-/* The crash panel (`app/crash.ts`). Over everything, on the body, because the app root is
-   what may be empty when this shows. Plain and legible on purpose: nothing here should
+/* The shell's own notices: the crash panel (`app/crash.ts`) and the save warning
+   (`app/saveWarning.ts`). Both sit on the body, over everything, because the app root is
+   what may be empty when they show. Plain and legible on purpose: nothing here should
    depend on the rest of the stylesheet having loaded correctly. */
+
+.save-warning {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9000;
+  padding: 8px 16px;
+  background: #7a2e12;
+  border-bottom: 1px solid #f59e0b;
+  color: #fff7ed;
+  font: 600 12.5px/1.45 var(--font, ui-sans-serif, system-ui, sans-serif);
+  text-align: center;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+}
 .crash {
   position: fixed;
   inset: 0;
