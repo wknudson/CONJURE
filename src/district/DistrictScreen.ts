@@ -1231,7 +1231,7 @@ export class DistrictScreen implements Screen {
         e.preventDefault();
         if (this.dialogue?.open) this.dialogue.advance();
         else if (this.hud?.boardIsOpen) this.hud.closeBoard();
-        else if (!this.inputLocked && this.nearest) this.nearest.onInteract();
+        else if (!this.inputLocked && !this.hud?.menuIsOpen && this.nearest) this.nearest.onInteract();
         return;
       }
       if (e.code === 'KeyI') {
@@ -1249,6 +1249,12 @@ export class DistrictScreen implements Screen {
       if (e.code === 'Escape') {
         if (this.hud?.boardIsOpen) this.hud.closeBoard();
         else if (this.hud?.mapIsOpen) this.hud.closeMap();
+        else if (this.hud?.menuIsOpen) this.hud.closeMenu();
+        // With nothing else to close, Escape is the menu — and the only way back to the
+        // title wall. Not over a dialogue line or a bill, which the player should finish.
+        else if (this.hud && !this.dialogue?.open && !this.hud.overlayIsShown) {
+          this.hud.showMenu(() => this.opts.onLeave());
+        }
         return;
       }
     };
@@ -1317,7 +1323,7 @@ export class DistrictScreen implements Screen {
       // Armed only once the screen has settled, and never while something else has the
       // player's attention.
       pack.onContact =
-        this.packArming > 0 || this.inputLocked || this.hud?.boardIsOpen
+        this.packArming > 0 || this.inputLocked || this.hud?.boardIsOpen || this.hud?.menuIsOpen
           ? null
           : () => this.ambush(pack.encounterId);
     }
@@ -1553,7 +1559,8 @@ export class DistrictScreen implements Screen {
     const player = this.player;
     if (!player) return;
 
-    const busy = this.inputLocked || this.dialogue?.open || this.hud?.boardIsOpen;
+    const busy =
+      this.inputLocked || this.dialogue?.open || this.hud?.boardIsOpen || this.hud?.menuIsOpen;
     let dx = 0;
     let dz = 0;
 
@@ -1669,7 +1676,8 @@ export class DistrictScreen implements Screen {
 
   private updateInteraction(): void {
     const player = this.player;
-    const busy = this.inputLocked || this.dialogue?.open || this.hud?.boardIsOpen;
+    const busy =
+      this.inputLocked || this.dialogue?.open || this.hud?.boardIsOpen || this.hud?.menuIsOpen;
     if (!player || busy) {
       this.nearest = null;
       this.hud?.setPrompt(null, null);

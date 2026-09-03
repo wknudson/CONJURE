@@ -607,6 +607,11 @@ function showArea(areaId: string, companionId: string): void {
 }
 
 function showTitle(): void {
+  // Whatever is up comes down first, while the profile is still open: the district writes
+  // the hour and the player's position to it on unmount, and did so into a closed profile
+  // the first time this path was walked from the street.
+  screens.close();
+
   // Leaving a character closes it. Nothing below the wall may run against a profile the
   // player is no longer in, and `profile()` throwing is a better failure than the wrong
   // purse being spent.
