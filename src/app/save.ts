@@ -189,7 +189,21 @@ const FIRST_CLOCK = 24;
  * agree on the spelling — the district raises them, `main.ts` records them — and a typo in
  * either would produce a step that can be reached but never satisfied.
  */
-export const TUTORIAL_FLAGS = ['intro', 'artificer', 'journal', 'bounty_taken', 'complete'] as const;
+export const TUTORIAL_FLAGS = [
+  'intro',
+  'artificer',
+  'journal',
+  'bounty_taken',
+  'complete',
+  /**
+   * The combat coach marks have been finished or skipped, once, by this character. Not a
+   * step of the lap — `quest.ts` never reads it — but the same ledger, because the same
+   * things are true of it: it happened once, nothing removes it, and it belongs to the
+   * profile rather than to the browser. It lived in `localStorage` before, and a second
+   * character on the same machine never saw the marks.
+   */
+  'coach',
+] as const;
 
 export type TutorialFlag = (typeof TUTORIAL_FLAGS)[number];
 

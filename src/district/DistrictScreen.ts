@@ -34,6 +34,7 @@ import {
 } from '../render/sprites.js';
 
 import { LOOK, buildLookGui } from './look.js';
+import type { CoachMarks } from '../hud/Tutorial.js';
 import { ColliderSet } from './collision.js';
 import { DistrictWorld } from './world.js';
 import { buildPostChain, type PostChain } from './post.js';
@@ -168,6 +169,8 @@ export interface WorldFight {
   roster?: string[];
   /** Squads the Combat Ring dragged in, one array of card ids per pulled mob. */
   wave2?: string[][];
+  /** The first-fight coach marks: whether this character has had them, and whom to tell. */
+  coach?: CoachMarks;
   onFinish: (result: CombatResult, encounter: EncounterDef, outcome: CombatOutcome) => void;
 }
 
@@ -1935,6 +1938,7 @@ export class DistrictScreen implements Screen {
       ...(fight.carry ? { carry: fight.carry } : {}),
       ...(fight.roster ? { roster: fight.roster } : {}),
       ...(fight.wave2 ? { wave2: fight.wave2 } : {}),
+      ...(fight.coach ? { coach: fight.coach } : {}),
       onRotate: (steps) => this.nudgeOrbit(steps),
       onFinish: (result, encounter, outcome) => {
         this.endFight();

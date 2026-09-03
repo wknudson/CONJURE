@@ -27,7 +27,7 @@ import { Graveyard } from '../hud/Graveyard.js';
 import { ChannelPicker } from '../hud/ChannelPicker.js';
 import { AI_BEAT_MS, NORMAL_MOTION } from '../anim/Sequencer.js';
 import { HelpOverlay } from '../hud/HelpOverlay.js';
-import { Tutorial } from '../hud/Tutorial.js';
+import { Tutorial, type CoachMarks } from '../hud/Tutorial.js';
 import { readWeather } from '../hud/weather.js';
 import { cellsAt } from '../core/util/grid.js';
 import { coordEq } from '../contract/ids.js';
@@ -221,6 +221,11 @@ export class CombatScreen implements Screen {
        * about the board. Without it the Hero is a prism, which is what it was.
        */
       gender?: Gender;
+      /**
+       * The first-fight coach marks. Absent — the legacy test call sites — means none run:
+       * whether they have been seen is the profile's to say, and there is no profile here.
+       */
+      coach?: CoachMarks;
     },
   ) {
     this.look = look ?? {};
@@ -249,7 +254,7 @@ export class CombatScreen implements Screen {
     this.enemySpeciesId = enemySpecies?.id ?? null;
   }
 
-  private readonly look: { gender?: Gender };
+  private readonly look: { gender?: Gender; coach?: CoachMarks };
   /** The species standing in for the enemy Commander, when the encounter names one. */
   private readonly enemySpeciesId: string | null;
 
@@ -378,11 +383,16 @@ export class CombatScreen implements Screen {
     this.help = new HelpOverlay(root);
 
     // A first-time player gets the danger zone on by default and a short walkthrough.
-    // Both are one keystroke from being turned off, and the tutorial never runs twice.
-    if (!Tutorial.hasSeen()) {
+    // Both are one keystroke from being turned off. Whether this character has had the
+    // walkthrough is the profile's to say; it is recorded only when finished or skipped.
+    const coach = this.look.coach;
+    if (coach && !coach.seen) {
       this.hud.setThreatActive(this.targeting.toggleThreat());
-      this.tutorial = new Tutorial(root, () => {
-        this.hud?.flashNotice('Press H for the rules at any time');
+      this.tutorial = new Tutorial(root, {
+        onDone: () => {
+          coach.onSeen();
+          this.hud?.flashNotice('Press H for the rules at any time');
+        },
       });
       // Let the opening animation settle before pointing at anything.
       window.setTimeout(() => this.tutorial?.start(), 900);

@@ -873,6 +873,12 @@ function startCombat(
     carry,
     roster: profile().roster,
     ...(ring?.wave2 ? { wave2: ring.wave2 } : {}),
+    // Per character, on the same ledger as the district's first lap. Recorded only when the
+    // marks are finished or skipped, so a fight left mid-walkthrough shows them again.
+    coach: {
+      seen: profile().tutorial.includes('coach'),
+      onSeen: () => recordTutorial('coach'),
+    },
     onFinish: (result: CombatResult, played: EncounterDef, outcome: CombatOutcome) =>
       finishCombat(result, played, outcome, companionId, ring?.pulled ?? []),
   };
@@ -892,7 +898,7 @@ function startCombat(
       // The bearing the Hero is painted in. Read from the character rather than the board,
       // which does not carry it -- the same place the district reads it to put a body on the
       // street. Without it the fight draws a prism where the Commander should be standing.
-      { gender: profile().characterLook.gender },
+      { gender: profile().characterLook.gender, coach: opened.coach },
     ),
   );
   return null;

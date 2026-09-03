@@ -38,6 +38,7 @@ import { DeployTray } from '../../hud/DeployTray.js';
 import { Graveyard } from '../../hud/Graveyard.js';
 import { ChannelPicker } from '../../hud/ChannelPicker.js';
 import { HelpOverlay } from '../../hud/HelpOverlay.js';
+import { Tutorial, type CoachMarks } from '../../hud/Tutorial.js';
 import { TargetingController } from '../../hud/TargetingController.js';
 import { calculateProjectedDamage } from '../../hud/projection.js';
 import { Sfx } from '../../sound/Sfx.js';
@@ -98,6 +99,12 @@ export interface WorldCombatOpts {
   roster?: string[];
   /** Squads the Combat Ring dragged in, one array of card ids per pulled mob. */
   wave2?: string[][];
+  /**
+   * The first-fight coach marks. This shell had none — a pack ambush on the street is the
+   * easiest fight to stumble into, and a new player dropped into one got no onboarding at
+   * all — so it now runs the same walkthrough the board does, off the same profile flag.
+   */
+  coach?: CoachMarks;
 
   onFinish: (result: CombatResult, encounter: EncounterDef, outcome: CombatOutcome) => void;
   /**
@@ -127,6 +134,7 @@ export class WorldCombat {
   private readonly grave: Graveyard;
   private readonly channel: ChannelPicker;
   private readonly help: HelpOverlay;
+  private tutorial: Tutorial | null = null;
   private deploy: DeployTray | null = null;
 
   /** The tether the handlers hang on us. Drawn by `drawFurniture`. */
@@ -231,6 +239,24 @@ export class WorldCombat {
     this.grave.sync(this.session.getBoard());
     this.channel = new ChannelPicker(opts.root);
     this.help = new HelpOverlay(opts.root);
+
+    // The same first-fight walkthrough the board shell gives, pointed at this shell's
+    // board. The danger zone comes on with it, as it does there.
+    const coach = opts.coach;
+    if (coach && !coach.seen) {
+      this.tutorial = new Tutorial(opts.root, {
+        boardAnchor: '.world-combat__overlay',
+        onDone: () => {
+          coach.onSeen();
+          this.hud.flashNotice('Press H for the rules at any time');
+        },
+      });
+      window.setTimeout(() => {
+        if (this.disposed || !this.tutorial) return;
+        this.hud.setThreatActive(this.targeting.toggleThreat());
+        this.tutorial.start();
+      }, 900);
+    }
 
     const view: CombatView = {
       views: this.views,
@@ -949,6 +975,9 @@ export class WorldCombat {
     this.deploy?.destroy();
     this.grave.destroy();
     this.channel.close();
+    // Silently: a fight left mid-walkthrough has not been taught, so the marks come back.
+    this.tutorial?.destroy();
+    this.tutorial = null;
     this.help.destroy();
     this.hud.destroy();
     this.overlay.dispose();

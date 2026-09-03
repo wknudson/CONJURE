@@ -6,10 +6,14 @@
  * so this covers only what a player cannot discover by clicking, and everything else
  * lives in the always-available help panel.
  *
- * Steps advance on click and can be skipped outright. It never runs twice.
+ * Steps advance on click and can be skipped outright. Whether it has been seen is the
+ * **profile's** business, not this file's: it used to keep a flag in `localStorage`, which
+ * meant a second character on the same machine never saw it, a tester whose browser had
+ * touched an earlier build never saw it, and a fight left mid-walkthrough marked it seen for
+ * good. Now the caller says whether to run it and hears back when it has been finished or
+ * skipped — and only then. A shell torn down mid-step says nothing, so the marks return
+ * next fight.
  */
-
-const SEEN_KEY = 'conjure.tutorial.seen';
 
 export interface TutorialStep {
   /** CSS selector to point at, or null for a centred message. */
@@ -19,6 +23,9 @@ export interface TutorialStep {
   /** Where the bubble sits relative to the anchor. */
   place?: 'above' | 'below' | 'right';
 }
+
+/** The default anchor for the board step; the district's board is a different element. */
+const BOARD_ANCHOR = 'canvas.board';
 
 const STEPS: TutorialStep[] = [
   {
@@ -39,7 +46,7 @@ const STEPS: TutorialStep[] = [
     place: 'above',
   },
   {
-    anchor: 'canvas.board',
+    anchor: BOARD_ANCHOR,
     title: 'The board is territory',
     body: 'The blue rows nearest you are yours — you summon there. The red rows are theirs, and somewhere in them stands their Companion: the Commander’s body on the board, and the only thing whose wounds they feel.',
     place: 'right',
@@ -58,13 +65,31 @@ const STEPS: TutorialStep[] = [
   },
 ];
 
+/**
+ * What a fight shell is handed about the coach marks: whether this character has had them,
+ * and whom to tell when they have. Both shells take one, so a first fight on the street
+ * teaches the same as a first fight from the board.
+ */
+export interface CoachMarks {
+  seen: boolean;
+  onSeen: () => void;
+}
+
+export interface TutorialOptions {
+  /** Called once, when the player finishes or skips. Never on `destroy`. */
+  onDone: () => void;
+  /** What to ring for the board step, where the board is not `canvas.board`. */
+  boardAnchor?: string;
+}
+
 export class Tutorial {
   private el: HTMLElement;
   private index = 0;
-  private onDone: () => void;
+  private done = false;
+  private readonly opts: TutorialOptions;
 
-  constructor(parent: HTMLElement, onDone: () => void) {
-    this.onDone = onDone;
+  constructor(parent: HTMLElement, opts: TutorialOptions) {
+    this.opts = opts;
     this.el = document.createElement('div');
     this.el.className = 'tutorial';
     parent.appendChild(this.el);
@@ -76,30 +101,6 @@ export class Tutorial {
       }
       this.next();
     });
-  }
-
-  static hasSeen(): boolean {
-    try {
-      return localStorage.getItem(SEEN_KEY) === '1';
-    } catch {
-      return false;
-    }
-  }
-
-  static markSeen(): void {
-    try {
-      localStorage.setItem(SEEN_KEY, '1');
-    } catch {
-      /* private browsing — the tutorial simply runs again next time */
-    }
-  }
-
-  static reset(): void {
-    try {
-      localStorage.removeItem(SEEN_KEY);
-    } catch {
-      /* nothing to clear */
-    }
   }
 
   start(): void {
@@ -118,10 +119,11 @@ export class Tutorial {
   }
 
   private finish(): void {
-    Tutorial.markSeen();
+    if (this.done) return;
+    this.done = true;
     this.el.classList.remove('is-open');
     this.el.innerHTML = '';
-    this.onDone();
+    this.opts.onDone();
   }
 
   private render(): void {
@@ -151,7 +153,9 @@ export class Tutorial {
     const ring = this.el.querySelector<HTMLElement>('.tutorial__ring');
     if (!bubble || !ring) return;
 
-    const target = step.anchor ? document.querySelector<HTMLElement>(step.anchor) : null;
+    const selector =
+      step.anchor === BOARD_ANCHOR && this.opts.boardAnchor ? this.opts.boardAnchor : step.anchor;
+    const target = selector ? document.querySelector<HTMLElement>(selector) : null;
     if (!target) {
       bubble.style.left = `${(window.innerWidth - bubble.offsetWidth) / 2}px`;
       bubble.style.top = `${(window.innerHeight - bubble.offsetHeight) / 2}px`;
@@ -187,6 +191,7 @@ export class Tutorial {
     bubble.style.top = `${Math.max(margin, Math.min(top, window.innerHeight - bh - margin))}px`;
   }
 
+  /** Takes the marks down without a word. A fight left mid-step has not been taught. */
   destroy(): void {
     this.el.remove();
   }
