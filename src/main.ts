@@ -22,6 +22,27 @@ import './styles/creation.css';
 import './styles/builder.css';
 import './styles/safehouse.css';
 import './styles/district.css';
+import './styles/crash.css';
+
+import { installCrashHandlers } from './app/crash.js';
+
+/**
+ * Before anything else can throw. The context is read at crash time, so it can close over
+ * `saveFile` and `active`, which do not exist yet; `try` covers the temporal dead zone.
+ */
+export const crash = installCrashHandlers(() => {
+  const screen = document.querySelector('#app > *')?.className;
+  try {
+    const run = active?.lastRun;
+    return {
+      screen,
+      profile: saveFile.activeProfileId,
+      lastRun: run ? { encounterId: run.encounterId, seed: run.seed, companionId: run.companionId } : undefined,
+    };
+  } catch {
+    return { screen };
+  }
+});
 
 import { ScreenManager } from './app/ScreenManager.js';
 import { TitleScreen } from './app/TitleScreen.js';

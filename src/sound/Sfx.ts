@@ -62,7 +62,15 @@ export class Sfx {
   private activeLoops = new Map<LoopId, number>();
 
   constructor() {
-    this._muted = localStorage.getItem(MUTE_KEY) === '1';
+    // Guarded like `readSpeed` in CombatScreen and for the same reason: with storage
+    // blocked, `getItem` throws, and this runs as a field initialiser while the combat
+    // screen is being constructed — so an unguarded read here was a blank page at the
+    // start of every fight in a locked-down browser. The preference is not worth that.
+    try {
+      this._muted = localStorage.getItem(MUTE_KEY) === '1';
+    } catch {
+      this._muted = false;
+    }
   }
 
   get muted(): boolean {
@@ -71,7 +79,11 @@ export class Sfx {
 
   toggleMute(): boolean {
     this._muted = !this._muted;
-    localStorage.setItem(MUTE_KEY, this._muted ? '1' : '0');
+    try {
+      localStorage.setItem(MUTE_KEY, this._muted ? '1' : '0');
+    } catch {
+      // Storage disabled or full. The toggle still works for this session.
+    }
     return this._muted;
   }
 

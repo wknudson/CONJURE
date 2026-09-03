@@ -94,6 +94,15 @@
   color: var(--text-dim);
 }
 
+/* The build stamp. Small and out of the way, but present: it is what a bug report quotes. */
+.title__build {
+  margin-top: 18px;
+  font: 400 11px var(--font);
+  letter-spacing: 0.5px;
+  color: color-mix(in srgb, var(--text-dim) 60%, transparent);
+  user-select: all;
+}
+
 /* ----------------------------------------------------------------- results */
 
 .screen--results {
