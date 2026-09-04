@@ -286,7 +286,7 @@ export const STORY_CONTRACTS: readonly StoryContract[] = [
     crack: {
       title: 'The Manifest',
       body:
-        'The masked ones never once swung at you — every blow was for the wagon. ' +
+        'The masked ones fought like men with somewhere else to be — it was the wagon they wanted, not you. ' +
         'Delivering it, you sign against the manifest: MEDICAL, it says, in a clerk’s ' +
         'tidy hand. The crates tick. They smell of ozone, not of medicine. And the ' +
         'stencil on the lowest one is a pylon number — Storm Shelf grid, the same ' +

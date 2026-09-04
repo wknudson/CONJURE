@@ -71,9 +71,26 @@ describe('the board with a campaign on it', () => {
   it('gives a finished tier its slot back to the dice', () => {
     const allNovice = STORY_CONTRACTS.filter((c) => c.tier === 'novice').map((c) => c.id);
     const board = composeBoard(1234, allNovice);
-    const rolled = rollBounties(1234);
+    const rolled = rollBounties(1234, allNovice);
     expect(board[0]!.id).toBe(rolled[0]!.id);
     expect(board[0]!.enemySeed).toBe(rolled[0]!.enemySeed);
+    expect(board[0]!.id.startsWith('story_'), 'rolled work, not a writ').toBe(false);
+  });
+
+  it('lets the dice offer a finished story fight again, as plain work', () => {
+    // The board after the campaign used to be the four demo fights forever. A finished
+    // story contract joins its tier's pool; across many seeds one of them comes up.
+    const allNovice = STORY_CONTRACTS.filter((c) => c.tier === 'novice').map((c) => c.id);
+    const seen = new Set<string>();
+    for (let seed = 1; seed <= 200; seed++) seen.add(rollBounties(seed, allNovice)[0]!.enemySeed);
+    expect([...seen].some((id) => allNovice.includes(id))).toBe(true);
+    expect([...seen].length).toBeGreaterThan(1);
+
+    // And never one that is still ahead of the player.
+    const first = nextStoryContract('novice', [])!;
+    for (let seed = 1; seed <= 200; seed++) {
+      expect(rollBounties(seed, [])[0]!.enemySeed).not.toBe(first.id);
+    }
   });
 
   it('keeps a story poster identical across boards until it is done', () => {
