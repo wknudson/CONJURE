@@ -15,6 +15,7 @@
 
 import type { Screen } from './ScreenManager.js';
 import { buildLabel } from './build.js';
+import { openSettings } from './SettingsPanel.js';
 import type { Profile, SaveFile, SlotId } from './save.js';
 import { SLOT_IDS, activeCompanionOf } from './save.js';
 import { companionById } from '../core/data/companions.js';
@@ -73,11 +74,13 @@ export class TitleScreen implements Screen {
         Board on the plaza. <kbd>T</kbd> shows the danger zone in a fight,
         <kbd>H</kbd> the rules.
       </div>
+      <button class="title__settings" type="button">Settings</button>
       <div class="title__build" title="Quote this in a bug report">${buildLabel()}</div>
     `;
 
     this.el = el;
     root.appendChild(el);
+    el.querySelector('.title__settings')!.addEventListener('click', () => openSettings());
 
     this.renderPosters();
     this.buildDifficulty(el);

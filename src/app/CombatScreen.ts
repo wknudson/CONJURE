@@ -23,6 +23,7 @@ import { Sequencer } from '../anim/Sequencer.js';
 import { registerHandlers, type CombatView } from '../anim/handlers.js';
 import { Hud, LAST_STAND_FRACTION } from '../hud/Hud.js';
 import { KEYWORDS, TERMS } from '../hud/glossary.js';
+import { getSettings, onSettingsChange, updateSettings } from './settings.js';
 import { DeployTray } from '../hud/DeployTray.js';
 import { Graveyard } from '../hud/Graveyard.js';
 import { ChannelPicker } from '../hud/ChannelPicker.js';
@@ -83,16 +84,6 @@ import { Sfx } from '../sound/Sfx.js';
  * and a migration for a setting no rule reads. It is also why a missing or corrupt value
  * simply falls back to Normal rather than being repaired.
  */
-const SPEED_KEY = 'conjure.speed';
-
-function readSpeed(): 'normal' | 'fast' {
-  try {
-    return localStorage.getItem(SPEED_KEY) === 'fast' ? 'fast' : 'normal';
-  } catch {
-    // Private browsing, or storage disabled. The preference is not worth a crash.
-    return 'normal';
-  }
-}
 
 /** Coordinate equality that also accepts "both nowhere", for hover tracking. */
 function coordEqOrBothNull(a: Coord | null, b: Coord | null): boolean {
@@ -113,7 +104,14 @@ export class CombatScreen implements Screen {
   private targeting: TargetingController | null = null;
   private sequencer: Sequencer<CombatView> | null = null;
   /** How the player wants the enemy's turn played back. Read from storage on mount. */
-  private speed: 'normal' | 'fast' = readSpeed();
+  private speed: 'normal' | 'fast' = getSettings().speed;
+  /** The settings panel can flip playback mid-fight; the beat follows. Released on unmount. */
+  private readonly unsubscribeSettings = onSettingsChange((s) => {
+    if (s.speed === this.speed) return;
+    this.speed = s.speed;
+    this.applyBeat();
+    this.hud?.setSpeedLabel(s.speed);
+  });
   private fx: Fx | null = null;
 
   /**
@@ -462,6 +460,7 @@ export class CombatScreen implements Screen {
   }
 
   unmount(): void {
+    this.unsubscribeSettings();
     // A fight abandoned mid-Last-Stand would otherwise carry its heartbeat into the
     // overworld; `combatEnded` stops the loops, but not every unmount saw that event.
     this.sfx.stopAllLoops();
@@ -1292,6 +1291,7 @@ export class CombatScreen implements Screen {
         const roster = this.session.rosterOutcome;
         const outcome: CombatOutcome = {
           pactHp: this.session.pactHp,
+          turns: this.session.getBoard().turn,
           encounteredUnitIds: this.session.encounteredEnemies,
           defeatedUnitIds: this.session.defeatedEnemies,
           mastery: this.session.mastery,
@@ -1339,11 +1339,9 @@ export class CombatScreen implements Screen {
    */
   private toggleSpeed(): 'normal' | 'fast' {
     this.speed = this.speed === 'fast' ? 'normal' : 'fast';
-    try {
-      localStorage.setItem(SPEED_KEY, this.speed);
-    } catch {
-      // Not worth a crash; the session keeps the setting either way.
-    }
+    // The store is the one place the preference lives now; the subscription above sees
+    // this write too and finds nothing to do.
+    updateSettings({ speed: this.speed });
     // Re-apply against the side currently acting, so a flip during the enemy's turn takes
     // effect on their next action rather than at the start of the following turn.
     this.applyBeat();

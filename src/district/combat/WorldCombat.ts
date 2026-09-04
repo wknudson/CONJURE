@@ -39,6 +39,7 @@ import { Graveyard } from '../../hud/Graveyard.js';
 import { ChannelPicker } from '../../hud/ChannelPicker.js';
 import { HelpOverlay } from '../../hud/HelpOverlay.js';
 import { Tutorial, type CoachMarks } from '../../hud/Tutorial.js';
+import { getSettings, onSettingsChange, updateSettings } from '../../app/settings.js';
 import { TargetingController } from '../../hud/TargetingController.js';
 import { calculateProjectedDamage } from '../../hud/projection.js';
 import { Sfx } from '../../sound/Sfx.js';
@@ -61,18 +62,6 @@ import type { AreaDef } from '../map.js';
  */
 const BODY_PX = 1.9 / PX_TO_WORLD;
 
-/** Below this share of the Pact the presentation turns to panic. Mirrors `CombatScreen`. */
-
-/** How the player likes to watch the game. The same key the 2D board reads. */
-const SPEED_KEY = 'conjure.speed';
-
-function readSpeed(): 'normal' | 'fast' {
-  try {
-    return localStorage.getItem(SPEED_KEY) === 'fast' ? 'fast' : 'normal';
-  } catch {
-    return 'normal';
-  }
-}
 
 export interface WorldCombatOpts {
   /** Where the HUD and the overlay canvas are parented. The district's own root. */
@@ -139,7 +128,14 @@ export class WorldCombat {
   /** The tether the handlers hang on us. Drawn by `drawFurniture`. */
   private readonly tetherSink: TetherSink = { tether: null };
 
-  private speed: 'normal' | 'fast' = readSpeed();
+  private speed: 'normal' | 'fast' = getSettings().speed;
+  /** The settings panel can flip playback mid-fight; the beat follows. Released on dispose. */
+  private readonly unsubscribeSettings = onSettingsChange((s) => {
+    if (s.speed === this.speed) return;
+    this.speed = s.speed;
+    this.applyBeat();
+    this.hud?.setSpeedLabel(s.speed);
+  });
   private undoStack: ReturnType<CombatSession['snapshot']>[] = [];
   private armedEndTurn = false;
   private turnStamp = 0;
@@ -840,6 +836,7 @@ export class WorldCombat {
         const roster = this.session.rosterOutcome;
         const outcome: CombatOutcome = {
           pactHp: this.session.pactHp,
+          turns: this.session.getBoard().turn,
           encounteredUnitIds: this.session.encounteredEnemies,
           defeatedUnitIds: this.session.defeatedEnemies,
           mastery: this.session.mastery,
@@ -932,11 +929,7 @@ export class WorldCombat {
 
   private toggleSpeed(): 'normal' | 'fast' {
     this.speed = this.speed === 'fast' ? 'normal' : 'fast';
-    try {
-      localStorage.setItem(SPEED_KEY, this.speed);
-    } catch {
-      // Not worth a crash; the session keeps the setting either way.
-    }
+    updateSettings({ speed: this.speed });
     this.applyBeat();
     return this.speed;
   }
@@ -997,6 +990,7 @@ export class WorldCombat {
     this.deploy?.destroy();
     this.grave.destroy();
     this.channel.close();
+    this.unsubscribeSettings();
     // Silently: a fight left mid-walkthrough has not been taught, so the marks come back.
     this.tutorial?.destroy();
     this.tutorial = null;

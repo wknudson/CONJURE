@@ -95,7 +95,7 @@ export interface ErrandLedger {
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 24;
+export const SAVE_VERSION = 25;
 
 /**
  * The first version whose health numbers are written at the stretched scale.
@@ -472,6 +472,14 @@ export interface Profile {
   companions: CompanionInstance[];
   record: { wins: number; losses: number; bound: number };
   /**
+   * The last fights, newest last, capped at `HISTORY_MAX` (v25).
+   *
+   * The roadmap promised per-game stats so playtest feedback could be data rather than
+   * vibes, and `record` was three counters. Each entry names the exact game — encounter,
+   * seed, Companion — and how it went; the diagnostics dump carries it out.
+   */
+  history: GameRecord[];
+  /**
    * What this character has met and put down, by unit definition id (v8).
    *
    * Per character rather than shared, so a second Commander starts the Ledger blank —
@@ -692,8 +700,57 @@ export function initializeNewProfile(profileId: string, rawLook: CharacterLook):
     activeCompanionId: companions[0]!.instanceId,
     companions,
     record: { wins: 0, losses: 0, bound: 0 },
+    history: [],
     bestiary: {},
   };
+}
+
+/** One finished fight, as the history remembers it. */
+export interface GameRecord {
+  /** Epoch milliseconds when the bell rang. */
+  at: number;
+  encounterId: string;
+  seed: number;
+  companionId: string;
+  result: 'victory' | 'defeat' | 'bound';
+  turns: number;
+  /** The Pact when the bell rang. */
+  pactHp: number;
+  difficulty: string;
+}
+
+export const HISTORY_MAX = 30;
+
+/** Appends one game and drops the oldest past the cap. Mutates in place, like `record`. */
+export function pushHistory(profile: Profile, rec: GameRecord): void {
+  profile.history.push(rec);
+  if (profile.history.length > HISTORY_MAX) {
+    profile.history.splice(0, profile.history.length - HISTORY_MAX);
+  }
+}
+
+/** Every entry rebuilt from its parts; a malformed one is dropped rather than repaired. */
+function readHistory(raw: unknown): GameRecord[] {
+  if (!Array.isArray(raw)) return [];
+  const out: GameRecord[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const r = item as Record<string, unknown>;
+    const result = r.result;
+    if (result !== 'victory' && result !== 'defeat' && result !== 'bound') continue;
+    if (typeof r.encounterId !== 'string' || typeof r.companionId !== 'string') continue;
+    out.push({
+      at: numberOr(r.at, 0),
+      encounterId: r.encounterId,
+      seed: numberOr(r.seed, 0),
+      companionId: r.companionId,
+      result,
+      turns: numberOr(r.turns, 0),
+      pactHp: numberOr(r.pactHp, 0),
+      difficulty: typeof r.difficulty === 'string' ? r.difficulty : 'novice',
+    });
+  }
+  return out.slice(-HISTORY_MAX);
 }
 
 /** An empty wall. Three blank posters and nobody chosen. */
@@ -1057,6 +1114,9 @@ function migrateProfile(
         }
       : base.record;
 
+  // --- history (v25) --- a pre-v25 save has none, which is the same as no fights recorded.
+  const history = readHistory((data as { history?: unknown }).history);
+
   // --- last run (added in v2) ---
   // A v1 save simply has none, which is the same as never having played: the field is
   // optional precisely so the absence needs no repair.
@@ -1151,6 +1211,7 @@ function migrateProfile(
     activeCompanionId,
     companions,
     record,
+    history,
     bestiary: readBestiary(data.bestiary),
     ...(lastRun ? { lastRun } : {}),
   };

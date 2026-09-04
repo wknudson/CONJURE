@@ -14,6 +14,7 @@ import { schoolOf } from '../render/palette.js';
 import { describeProjected, type ProjectedDamage } from './projection.js';
 import { fitCardText } from './cardFace.js';
 import { TERMS } from './glossary.js';
+import { openSettings } from '../app/SettingsPanel.js';
 
 /**
  * At or below this share of the Pact's ceiling the fight is a Last Stand: the board
@@ -201,6 +202,8 @@ export class Hud {
     });
     q('.rotate--ccw').addEventListener('click', () => this.cb.onRotate(-1));
     q('.rotate--cw').addEventListener('click', () => this.cb.onRotate(1));
+
+    q('.settings-btn').addEventListener('click', () => openSettings());
 
     this.tooltip = new Tooltip(document.body);
     this.tooltip.attach(this.root);
@@ -823,6 +826,7 @@ const TEMPLATE = `
         <button class="help" data-tip="Help|Opens the rules reference.|Press H at any time.">?</button>
         <button class="mute" title="Toggle sound">🔊</button>
         <button class="concede" data-tip="Concede|Gives up this fight. It ends as a loss: the contract is forfeit and the Magistracy's rescue applies as after any defeat.|Press twice within three seconds. Your progress outside the fight is kept.">⚑</button>
+        <button class="settings-btn" data-tip="Settings|Volume, screen shake, playback speed.|Also on the title wall and the Escape menu.">⚙</button>
       </div>
 
       <!-- The resource dial, mirroring the Pact in the opposite corner. -->
