@@ -9,7 +9,8 @@ against source before this report was written. No code was changed by this audit
 PR #20. A second audit the same week looked at the layer this one did not — the operational
 shell around the game and the first-time player's path through it — and its findings were
 fixed and merged as PRs #21, #22 and #23. That audit and those fixes are recorded in §6; the
-Medium bullets in §5 are annotated where a later PR closed them.*
+Medium bullets in §5 are annotated where a later PR closed them. The three design calls the
+audits had left open were then ruled and built as PRs #25, #26 and #27 — recorded in §7.*
 
 **Bottom line:** the core loop — create a character, take a contract, fight, win or lose,
 get rescued or paid, and go again — is intact, well-tested, and completable. The death
@@ -360,9 +361,13 @@ deck validates clean.
 six starting warbands spend `STARTING_WARBAND_POINTS = 10` **exactly** and validate
 clean; at the 24-point kit ceiling every school reaches 23–24. No bloodline lacks bodies.
 
-- **GAP — one distinct Behemoth in the entire game** (`magma_brute`, pyre). Non-Pyre
-  characters have no Behemoth access; nobody can field two *different* ones.
-- **GAP — 4 of 8 schools have no ranged (3pt) body** (frost, bloom, arcane, neutral),
+- ~~**GAP — one distinct Behemoth in the entire game** (`magma_brute`, pyre). Non-Pyre
+  characters have no Behemoth access; nobody can field two *different* ones.~~ **FIXED in
+  #27**: `bastion_golem` (bulwark) is the second fieldable 2×2 and the first outside Pyre.
+- ~~**GAP — 4 of 8 schools have no ranged (3pt) body** (frost, bloom, arcane, neutral),~~
+  **FIXED in #27** — one per dry school (`rime_archer`, `thorn_lobber`, `glass_arbalest`,
+  `hedge_slinger`), and the opening-warband derivation now takes a school's ranged body
+  first, so every line opens with one. Original finding: four schools had none,
   and the card-draw Channel is exclusive to 3pt bodies (`economy.ts:104-116`) — so
   **five of six starting warbands cannot access the draw channel at all**. Only Pyre
   opens with the mechanic the ranged class exists to provide.
@@ -504,9 +509,10 @@ Either statuses that gate actions should decay at the **end** of the owner's tur
 start of the opponent's), so a one-stack hold covers one full enemy turn — a balance-wide
 rule change worth a ruling — or the cards should apply two stacks. Not changed under the
 danger-zone fix; the forecast now tells the truth about whichever rule stands.
-- `Dormant`/`Impact` keywords with no engine code — **still open, a design call** (drop
-  the two keywords and their glossary entries, or make them real; `PowerTier` turned out to
-  be a live mechanic and is not part of this).
+- ~~`Dormant`/`Impact` keywords with no engine code~~ — **ruled and FIXED in #25**: both
+  named the universal summoning wait as if it were special; dropped from the union, the two
+  cards and the glossary, with the rule stated once under Haste and in the help panel.
+  `PowerTier` turned out to be a live mechanic and was never part of this.
 - ~~Last Stand desaturation dead in the district shell; `LAST_STAND_FRACTION` duplicated;
   `pyreLit` silent; `LAST STAND` naming collision.~~ **FIXED in #23** (the CSS now covers
   the district's two canvases; one export in `Hud.ts`; the fallen body flares where it
@@ -517,12 +523,13 @@ danger-zone fix; the forecast now tells the truth about whichever rule stands.
   move is slate and follows its path). Still open: `bloodTithe` is untelegraphed.
 - ~~Stat Stretch ÷10 strings: `glossary.ts:113,117,191`, `HelpOverlay.ts:68`.~~ **FIXED in
   #22**, and `helpNumbers.test.ts` holds every figure in the copy to its engine constant.
-- Ranged-body/draw-channel drought in 5 of 6 starting warbands; single Behemoth
-  game-wide — **still open, content**.
+- ~~Ranged-body/draw-channel drought in 5 of 6 starting warbands; single Behemoth
+  game-wide~~ — **FIXED in #27** (see §4.2 and §7).
 - ~~Post-campaign board = 4 demo fights (`bounties.ts:71-75`).~~ **FIXED in #23**: a finished
   story contract joins its tier's rolled pool as repeatable arena work.
-- Subjugation polish: ~~clear `sealed` on bind~~ (**FIXED in #23**); per-encounter rounds,
-  partial progress, boss pressure — **still open, design**.
+- ~~Subjugation polish: clear `sealed` on bind (#23); per-encounter rounds, partial
+  progress, boss pressure.~~ **All FIXED**: the seal in #23, the other three ruled and built
+  in #26 (see §7).
 - Two mechanical worldbuild TODOs: wagon win condition (`campaign.adept.ts:217`),
   flee-bias AI (`campaign.novice.ts:174`) — **still open**; the wagon epilogue no longer
   asserts the missing mechanic (#23).
@@ -634,7 +641,7 @@ to report it. All of that is closed. What remains is design work, not holes.
 | Roadmap Phase F promised per-game stats and a dump; `record` was three counters | `Profile.history` (v25): encounter, seed, Companion, result, turns, Pact at the bell, difficulty; capped at 30; "Copy diagnostics" in the settings panel. |
 | Post-campaign board = four demo fights | Finished story contracts join their tier's rolled pool. |
 | Last Stand trio, `pyreLit`, move-intent colour and path, seal on bind, Behemoth ceiling test, wagon epilogue, district shell missing C / Shift / Space | All as annotated in §5 above. |
-| Still open by choice | `Dormant`/`Impact` (design call); Subjugation rounds/progress/pressure; ranged-body drought and single Behemoth; pending companion traits; the 01:00 start; `bloodTithe` telegraph; Last Stand trigger polled; three reactions visually generic. |
+| Still open by choice | ~~`Dormant`/`Impact`~~ (#25); ~~Subjugation rounds/progress/pressure~~ (#26); ~~ranged-body drought and single Behemoth~~ (#27); pending companion traits; the 01:00 start; `bloodTithe` telegraph; Last Stand trigger polled; three reactions visually generic. |
 
 ### 6.4 Two things learned about the repository itself
 
@@ -648,6 +655,75 @@ to report it. All of that is closed. What remains is design work, not holes.
   cannot create the Pages site (`enablement: true` fails with "Resource not accessible by
   integration"); it was created once with the owner's token. Deploys have run unattended
   since.
+
+## 7. The three design calls (2026-09-03) — PRs #25, #26, #27
+
+*Everything both audits had marked "open by choice" that was a ruling rather than a
+scoping decision. Each was decided, built, and merged behind the same gates as §6; the two
+that change the engine or the content the AI plays against also reran the full balance
+ledger (562 playouts, every fight decided).*
+
+### 7.1 `Dormant` and `Impact` — **dropped, PR #25**
+
+Both keywords named the wait every summon already obeys — nothing moves, strikes, channels or
+is bled on the turn it arrives unless it has Haste (`canAct`) — as if the two cards that
+carried them did something special. Nothing in the engine ever read either. `Dormant` on the
+Ash-Ghoul named the universal wait; `Impact` on the Magma Brute claimed credit for a
+`cleaveFront` effect that is authored in the definition and fires regardless. Each had a
+glossary entry, so players were taught two rules that did not exist. Making them real would
+have meant removing the universal wait from every other summon or inventing engine code for a
+keyword that changes nothing. Removed from the union, the cards and the glossary; the cards
+say what happens in plain words; the wait is stated once, under Haste and in a "Fresh
+summons" help row; lexicon and catalog follow. No engine behaviour changed.
+
+### 7.2 The Harpoon Protocol — **three rulings, PR #26**
+
+| Ruling | Was | Is |
+| :-- | :-- | :-- |
+| Rounds belong to the encounter | `SUBJUGATION_ROUNDS` module constant | copied into the fight's state at setup from `EncounterDef.subjugationRounds` (default 3); every event carries the target, so the HUD's pips size themselves |
+| Pressure | a round held cost the beast nothing | the sealed beast gains one stack per round the tether stands, none on the round that binds — a race, not a wait |
+| Memory | a snap zeroed the count | half the rounds held (rounded down) carry to the next tether; `anchorSet` says what the new tether starts with and the HUD shows it |
+
+**Bug found on the way:** every Bound Form's `escalationBonus` is written as zero, so the
+punitive stack on a snap changed nothing — the Ignis Drake came back from a snap exactly as
+strong as it went, and the test allowed it with "not weaker". `enrageBoss` now falls back to
+a flat `STAT_SCALE` of attack when the card's bonus sums to nothing; the test says "stronger".
+Without this the new pressure would also have been a stack that did nothing. Dead `isAnchor()`
+removed. Balance ledger rerun: 562 playouts, all decided.
+
+### 7.3 The ranged drought and the single Behemoth — **content, PR #27**
+
+Four of the eight schools had no 3-point body, and the card-draw Channel belongs to that
+class alone; and the Magma Brute was the only fieldable 2×2 in the game.
+
+- **Four ranged bodies**, one per dry school, each buying reach with a visible weakness in
+  `ranged.ts`'s idiom: `rime_archer` (frost; cheap, one movement), `thorn_lobber` (bloom;
+  arcing, blind adjacent), `glass_arbalest` (arcane; the Stalker's hit on thirty health),
+  `hedge_slinger` (neutral; the Footman's cousin with a sling — the floor under everyone's
+  draw).
+- **`bastion_golem`** (bulwark): the Brute's frame with the school's priorities — less
+  attack, far more health, a Guardian, no arrival effect, a Bone cheaper. The first fieldable
+  Behemoth outside Pyre; the two-Behemoth cap can now be met with two distinct bodies, and the
+  fixture that waited for that day uses them.
+- **Reachability:** archer via the Glacial Field and the Rimefield Bear; lobber via the Thorn
+  Warden; golem via the Vault Boar; the colourless pair via `startingCollection`, since no
+  fight teaches a colourless card.
+- **The ruling that made it matter:** `startingRosterFor` derives the opening warband and
+  took a school's two-pointers before its ranged body, so a new ranged body alone would never
+  have reached an opening line. It now takes the school's cheapest ranged body first. Every
+  line opens with the Footman, the Scout, its ranged body and one of its own, at **nine**
+  points; the enrolment tests already allowed that, and `STARTING_WARBAND_POINTS` stays 10 as
+  the design doc argues.
+
+Verified: `rangedDrought.test.ts`; full non-balance suite 136 files / 2,693 tests; balance
+ledger rerun, 562 playouts, all decided.
+
+### 7.4 What remains, all scoping rather than gaps
+
+Pending companion traits (`echo_chamber`, `death_rattle` — hidden from the player, awaiting
+implementation or rewording); the 01:00 start (a design choice); the `bloodTithe` telegraph;
+the Last Stand trigger polled on board sync rather than sequencer-driven; overload,
+superconduct and arc visually generic.
 
 ### Appendix — documentation drift found along the way
 
