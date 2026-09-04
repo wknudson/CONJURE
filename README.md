@@ -39,6 +39,13 @@ npm run dev
 
 Then open <http://localhost:5173>.
 
+**Playtesters do not need any of that.** Every push to `main` builds the game and publishes
+it to GitHub Pages (`.github/workflows/pages.yml`), so a tester gets a URL —
+`https://wknudson.github.io/CONJURE/` — and a desktop browser with a mouse and keyboard.
+The bundle is built with a relative base and every runtime asset path goes through
+`src/render/assetUrl.ts`, so the same build works at a domain root and under a `/<repo>/`
+prefix alike.
+
 | Command | What it does |
 | :-- | :-- |
 | `npm run dev` | Dev server with hot reload |

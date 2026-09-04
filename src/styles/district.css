@@ -704,3 +704,15 @@ body.is-talking .district-help {
   color: var(--gold, #fde047);
   font-weight: 700;
 }
+
+/* The Escape menu. Same card as the death notice, without the red: nothing has gone
+   wrong, the player is only choosing whether to stay. */
+.district-menu__title {
+  color: var(--brass-lit, #d6c4a0);
+}
+.district-menu__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}

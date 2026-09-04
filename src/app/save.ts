@@ -189,7 +189,21 @@ const FIRST_CLOCK = 24;
  * agree on the spelling — the district raises them, `main.ts` records them — and a typo in
  * either would produce a step that can be reached but never satisfied.
  */
-export const TUTORIAL_FLAGS = ['intro', 'artificer', 'journal', 'bounty_taken', 'complete'] as const;
+export const TUTORIAL_FLAGS = [
+  'intro',
+  'artificer',
+  'journal',
+  'bounty_taken',
+  'complete',
+  /**
+   * The combat coach marks have been finished or skipped, once, by this character. Not a
+   * step of the lap — `quest.ts` never reads it — but the same ledger, because the same
+   * things are true of it: it happened once, nothing removes it, and it belongs to the
+   * profile rather than to the browser. It lived in `localStorage` before, and a second
+   * character on the same machine never saw the marks.
+   */
+  'coach',
+] as const;
 
 export type TutorialFlag = (typeof TUTORIAL_FLAGS)[number];
 
@@ -1772,3 +1786,26 @@ function readRaw(key: string): string | null {
     return null;
   }
 }
+
+/** Why a write cannot land: the browser refuses storage outright, or has run out of it. */
+export type StorageFailure = 'blocked' | 'full';
+
+/**
+ * Whether the browser will keep a save at all, and if not, why.
+ *
+ * A tiny write-and-remove, so the answer is about *this* browser now rather than about the
+ * last attempt. `writeSave` returning `false` says something went wrong; this says what, so
+ * the warning the player reads can tell a private window from a full disk.
+ */
+export function probeStorage(): StorageFailure | null {
+  try {
+    localStorage.setItem(PROBE_KEY, '1');
+    localStorage.removeItem(PROBE_KEY);
+    return null;
+  } catch (err) {
+    const name = err instanceof Error ? err.name : '';
+    return name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' ? 'full' : 'blocked';
+  }
+}
+
+const PROBE_KEY = 'conjure.probe';

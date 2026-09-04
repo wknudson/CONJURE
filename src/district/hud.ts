@@ -167,7 +167,7 @@ export class DistrictHud {
     const help = el('div', 'district-panel district-help');
     this.help = help;
     help.textContent =
-      'WASD / arrows - move\nQ / E - orbit camera\nSpace - interact / advance\nM - map\nI - satchel\nPanel (top right) - tune the look';
+      'WASD / arrows - move\nQ / E - orbit camera\nSpace - interact / advance\nM - map\nI - satchel\nEsc - menu / leave';
     root.appendChild(help);
 
     this.setZone(true);
@@ -904,8 +904,54 @@ export class DistrictHud {
    * scene carries straight through. `combat/Descent.ts` is what replaced it.
    */
 
+  /**
+   * The way out of a character: a small modal with the only two choices the street cannot
+   * otherwise offer, carry on or go back to the title wall.
+   *
+   * It exists because there was no other exit. `onLeave` had been wired to the title screen
+   * since the district was built and nothing ever invoked it, so a player who opened a
+   * character could never switch to another, delete one, or reach the wall again without
+   * clearing the browser's storage. Escape opens and closes it; the legend says so.
+   *
+   * Uses the same overlay as the death notice and refuses to open over one, so a bill is
+   * never covered by a menu. Nothing here saves — progress is written as it happens.
+   */
+  showMenu(onLeave: () => void): void {
+    if (this.overlayIsShown) return;
+    this.overlay.innerHTML = `
+      <div class="hub-notice__card brass-panel district-menu">
+        <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
+        <i class="rivet rivet--bl"></i><i class="rivet rivet--br"></i>
+        <div class="hub-notice__title district-menu__title">The Ward</div>
+        <div class="hub-notice__body">Your progress is kept as you go. Leaving returns you to the title wall, where another commission can be opened or this one burned.</div>
+        <div class="district-menu__actions">
+          <button class="brass-btn district-menu__resume">Back to the street</button>
+          <button class="brass-btn district-menu__leave">Leave to the title wall</button>
+        </div>
+      </div>`;
+    this.overlay.classList.add('is-shown', 'is-menu');
+    this.overlay.querySelector('.district-menu__resume')!.addEventListener('click', () => this.closeMenu());
+    this.overlay.querySelector('.district-menu__leave')!.addEventListener('click', () => {
+      this.closeMenu();
+      onLeave();
+    });
+  }
+
+  get menuIsOpen(): boolean {
+    return this.overlay.classList.contains('is-menu');
+  }
+
+  closeMenu(): void {
+    if (this.menuIsOpen) this.hideOverlay();
+  }
+
+  /** Whether anything at all — a bill, the Warden's hand, the menu — is over the street. */
+  get overlayIsShown(): boolean {
+    return this.overlay.classList.contains('is-shown');
+  }
+
   hideOverlay(): void {
-    this.overlay.classList.remove('is-shown', 'is-passive');
+    this.overlay.classList.remove('is-shown', 'is-passive', 'is-menu');
     this.overlay.innerHTML = '';
   }
 

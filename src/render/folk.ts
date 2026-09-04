@@ -16,6 +16,7 @@
  */
 
 import { FOLK_BOXES } from './folkContent.generated.js';
+import { assetUrl } from './assetUrl.js';
 
 /** Which of the five sheets. */
 export type FolkSheetId = 'painted' | 'trades' | 'crafts' | 'alts' | 'duelists';
@@ -75,7 +76,7 @@ export const FOLK_SHEETS: Record<FolkSheetId, FolkSheet> = {
 
 /** Where the browser fetches a sheet from. The only place these paths are built. */
 export function folkSheetSrc(id: FolkSheetId): string {
-  return encodeURI(`/assets/sprites/${FOLK_SHEETS[id].file}`);
+  return encodeURI(assetUrl(`assets/sprites/${FOLK_SHEETS[id].file}`));
 }
 
 export const FOLK_IDS = Object.keys(FOLK_BOXES) as FolkId[];

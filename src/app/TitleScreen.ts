@@ -14,6 +14,7 @@
  */
 
 import type { Screen } from './ScreenManager.js';
+import { buildLabel } from './build.js';
 import type { Profile, SaveFile, SlotId } from './save.js';
 import { SLOT_IDS, activeCompanionOf } from './save.js';
 import { companionById } from '../core/data/companions.js';
@@ -72,6 +73,7 @@ export class TitleScreen implements Screen {
         Board inside the Safehouse. <kbd>T</kbd> shows the danger zone in a fight,
         <kbd>H</kbd> the rules.
       </div>
+      <div class="title__build" title="Quote this in a bug report">${buildLabel()}</div>
     `;
 
     this.el = el;

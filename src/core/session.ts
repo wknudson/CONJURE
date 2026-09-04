@@ -706,6 +706,8 @@ function toCommand(action: Action): Command {
       return { type: 'recallUnit', unit: action.unit };
     case 'finishDeployment':
       return { type: 'finishDeployment' };
+    case 'concede':
+      return { type: 'concede' };
     case 'endTurn':
       return { type: 'endTurn' };
   }

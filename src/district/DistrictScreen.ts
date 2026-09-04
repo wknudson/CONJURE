@@ -34,6 +34,7 @@ import {
 } from '../render/sprites.js';
 
 import { LOOK, buildLookGui } from './look.js';
+import type { CoachMarks } from '../hud/Tutorial.js';
 import { ColliderSet } from './collision.js';
 import { DistrictWorld } from './world.js';
 import { buildPostChain, type PostChain } from './post.js';
@@ -168,6 +169,8 @@ export interface WorldFight {
   roster?: string[];
   /** Squads the Combat Ring dragged in, one array of card ids per pulled mob. */
   wave2?: string[][];
+  /** The first-fight coach marks: whether this character has had them, and whom to tell. */
+  coach?: CoachMarks;
   onFinish: (result: CombatResult, encounter: EncounterDef, outcome: CombatOutcome) => void;
 }
 
@@ -547,9 +550,15 @@ export class DistrictScreen implements Screen {
         /** Walks into a pack by identity, so a fight can be opened without a collision. */
         ambush: (encounterId: string) => this.ambush(encounterId),
       };
-    }
 
-    this.gui = buildLookGui(this.lookHandles(), this.area.id, this.area.name);
+      // The look-tuning panel is a development tool and lives inside the guard with the
+      // rest of them. It sat two lines outside it for a while, and shipped: every player
+      // who entered the ward got a floating panel of exposure, fog and bloom sliders, and
+      // the legend told them to try it. `import.meta.env.DEV` is statically false in a
+      // production build, so the panel and the lil-gui module behind it are dropped from
+      // the bundle rather than merely hidden.
+      this.gui = buildLookGui(this.lookHandles(), this.area.id, this.area.name);
+    }
 
     this.errands = this.opts.errands;
     this.hud.renderObjective(this.flags, this.errands);
@@ -1231,7 +1240,7 @@ export class DistrictScreen implements Screen {
         e.preventDefault();
         if (this.dialogue?.open) this.dialogue.advance();
         else if (this.hud?.boardIsOpen) this.hud.closeBoard();
-        else if (!this.inputLocked && this.nearest) this.nearest.onInteract();
+        else if (!this.inputLocked && !this.hud?.menuIsOpen && this.nearest) this.nearest.onInteract();
         return;
       }
       if (e.code === 'KeyI') {
@@ -1249,6 +1258,12 @@ export class DistrictScreen implements Screen {
       if (e.code === 'Escape') {
         if (this.hud?.boardIsOpen) this.hud.closeBoard();
         else if (this.hud?.mapIsOpen) this.hud.closeMap();
+        else if (this.hud?.menuIsOpen) this.hud.closeMenu();
+        // With nothing else to close, Escape is the menu — and the only way back to the
+        // title wall. Not over a dialogue line or a bill, which the player should finish.
+        else if (this.hud && !this.dialogue?.open && !this.hud.overlayIsShown) {
+          this.hud.showMenu(() => this.opts.onLeave());
+        }
         return;
       }
     };
@@ -1317,7 +1332,7 @@ export class DistrictScreen implements Screen {
       // Armed only once the screen has settled, and never while something else has the
       // player's attention.
       pack.onContact =
-        this.packArming > 0 || this.inputLocked || this.hud?.boardIsOpen
+        this.packArming > 0 || this.inputLocked || this.hud?.boardIsOpen || this.hud?.menuIsOpen
           ? null
           : () => this.ambush(pack.encounterId);
     }
@@ -1553,7 +1568,8 @@ export class DistrictScreen implements Screen {
     const player = this.player;
     if (!player) return;
 
-    const busy = this.inputLocked || this.dialogue?.open || this.hud?.boardIsOpen;
+    const busy =
+      this.inputLocked || this.dialogue?.open || this.hud?.boardIsOpen || this.hud?.menuIsOpen;
     let dx = 0;
     let dz = 0;
 
@@ -1669,7 +1685,8 @@ export class DistrictScreen implements Screen {
 
   private updateInteraction(): void {
     const player = this.player;
-    const busy = this.inputLocked || this.dialogue?.open || this.hud?.boardIsOpen;
+    const busy =
+      this.inputLocked || this.dialogue?.open || this.hud?.boardIsOpen || this.hud?.menuIsOpen;
     if (!player || busy) {
       this.nearest = null;
       this.hud?.setPrompt(null, null);
@@ -1921,6 +1938,7 @@ export class DistrictScreen implements Screen {
       ...(fight.carry ? { carry: fight.carry } : {}),
       ...(fight.roster ? { roster: fight.roster } : {}),
       ...(fight.wave2 ? { wave2: fight.wave2 } : {}),
+      ...(fight.coach ? { coach: fight.coach } : {}),
       onRotate: (steps) => this.nudgeOrbit(steps),
       onFinish: (result, encounter, outcome) => {
         this.endFight();

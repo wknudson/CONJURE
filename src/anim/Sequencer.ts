@@ -180,6 +180,7 @@ export class Sequencer<T> {
     this.drainStartedAt = performance.now();
     this.budgetScale = 1;
 
+    let playing: GameEvent | null = null;
     try {
       while (this.queue.length > 0) {
         this.updateBudget();
@@ -188,6 +189,7 @@ export class Sequencer<T> {
 
         await Promise.all(
           group.map(async (event) => {
+            playing = event;
             this.onEvent?.(event);
             const handler = this.handlers.get(event.t);
             if (handler) await (handler as (e: GameEvent, c: FxContext<T>) => Promise<void> | void)(event, ctx);
@@ -196,6 +198,19 @@ export class Sequencer<T> {
 
         await this.holdBeat();
       }
+    } catch (err) {
+      // A handler threw. The engine has already moved on — the events were real — so the
+      // board and the state now disagree, and nothing in this queue can be trusted to
+      // land on the picture the next handler expects. Drop the rest rather than replay it
+      // on the next enqueue, and let the failure surface: `drain` is fire-and-forget, so
+      // this rethrow is an unhandled rejection, which the crash panel reports with the
+      // event that was playing. Before this there was no `catch`, the leftover queue
+      // waited for the next turn, and the desync was silent.
+      this.queue.length = 0;
+      const name = (playing as GameEvent | null)?.t ?? 'unknown';
+      throw new Error(`animation failed on ${name}: ${err instanceof Error ? err.message : String(err)}`, {
+        cause: err,
+      });
     } finally {
       this.speed = 1;
       this.budgetScale = 1;

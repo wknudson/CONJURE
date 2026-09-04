@@ -22,6 +22,28 @@ import './styles/creation.css';
 import './styles/builder.css';
 import './styles/safehouse.css';
 import './styles/district.css';
+import './styles/crash.css';
+
+import { installCrashHandlers } from './app/crash.js';
+import { clearSaveWarning, showSaveWarning } from './app/saveWarning.js';
+
+/**
+ * Before anything else can throw. The context is read at crash time, so it can close over
+ * `saveFile` and `active`, which do not exist yet; `try` covers the temporal dead zone.
+ */
+export const crash = installCrashHandlers(() => {
+  const screen = document.querySelector('#app > *')?.className;
+  try {
+    const run = active?.lastRun;
+    return {
+      screen,
+      profile: saveFile.activeProfileId,
+      lastRun: run ? { encounterId: run.encounterId, seed: run.seed, companionId: run.companionId } : undefined,
+    };
+  } catch {
+    return { screen };
+  }
+});
 
 import { ScreenManager } from './app/ScreenManager.js';
 import { TitleScreen } from './app/TitleScreen.js';
@@ -42,6 +64,7 @@ import {
   grantRosterUnlocks,
   initializeNewProfile,
   loadSave,
+  probeStorage,
   writeSave,
   type Profile,
   type SaveFile,
@@ -98,6 +121,12 @@ const loaded = loadSave();
 const saveFile: SaveFile = loaded.save;
 const bootNotes = loaded.notes;
 
+// Said at the wall, before a single choice is made, if the browser will not keep one.
+{
+  const failure = probeStorage();
+  if (failure) showSaveWarning(failure);
+}
+
 /**
  * The character currently open, or null while the player is at the wall.
  *
@@ -107,13 +136,29 @@ const bootNotes = loaded.notes;
 let active: Profile | null = null;
 
 /**
+ * A closed tab mid-fight is a forfeit: the boot-time failsafe collects on the open
+ * contract, stake included. That is the right rule, and it should not be walked into by
+ * accident — a reflex F5, a mis-hit shortcut — so the browser asks first while a fight is
+ * open. The wording is the browser's own; nothing here can change it.
+ */
+window.addEventListener('beforeunload', (e) => {
+  if (!active?.state.combat) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
+
+/**
  * Writes the whole file.
  *
  * There is no "save this profile" — `writeSave` takes the file, so the slots nobody is
  * playing are carried through every write by construction rather than by remembering to.
  */
 function persist(): void {
-  writeSave(saveFile);
+  // The answer was thrown away here for a long time, across some forty call sites: a
+  // browser that refused storage lost the player a whole session with no warning. Now a
+  // failed write raises the banner, and the next one that lands takes it down.
+  if (writeSave(saveFile)) clearSaveWarning();
+  else showSaveWarning(probeStorage() ?? 'blocked');
 }
 
 /** The open character. Every screen below the wall runs with one, so this asserts it. */
@@ -607,6 +652,11 @@ function showArea(areaId: string, companionId: string): void {
 }
 
 function showTitle(): void {
+  // Whatever is up comes down first, while the profile is still open: the district writes
+  // the hour and the player's position to it on unmount, and did so into a closed profile
+  // the first time this path was walked from the street.
+  screens.close();
+
   // Leaving a character closes it. Nothing below the wall may run against a profile the
   // player is no longer in, and `profile()` throwing is a better failure than the wrong
   // purse being spent.
@@ -823,6 +873,12 @@ function startCombat(
     carry,
     roster: profile().roster,
     ...(ring?.wave2 ? { wave2: ring.wave2 } : {}),
+    // Per character, on the same ledger as the district's first lap. Recorded only when the
+    // marks are finished or skipped, so a fight left mid-walkthrough shows them again.
+    coach: {
+      seen: profile().tutorial.includes('coach'),
+      onSeen: () => recordTutorial('coach'),
+    },
     onFinish: (result: CombatResult, played: EncounterDef, outcome: CombatOutcome) =>
       finishCombat(result, played, outcome, companionId, ring?.pulled ?? []),
   };
@@ -842,7 +898,7 @@ function startCombat(
       // The bearing the Hero is painted in. Read from the character rather than the board,
       // which does not carry it -- the same place the district reads it to put a body on the
       // street. Without it the fight draws a prism where the Commander should be standing.
-      { gender: profile().characterLook.gender },
+      { gender: profile().characterLook.gender, coach: opened.coach },
     ),
   );
   return null;
