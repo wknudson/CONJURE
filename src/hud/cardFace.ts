@@ -225,6 +225,33 @@ export function cardFaceHtml(
   `;
 }
 
+/**
+ * Makes the rules text fit its box, once the card is in the document.
+ *
+ * The card is a fixed box and the body hides its overflow, so a long text used to be cut
+ * off mid-sentence with nothing to say so — the rules of the game's most complex cards,
+ * silently halved. The box is sized so every shipped text fits at the base size
+ * (`cardText.test.ts` holds the lengths); this is the backstop for the one that does not,
+ * and for a font the player's machine renders wider. It steps the size down to a floor
+ * and, if even that is not enough, marks the card so the styling can say "there is more".
+ *
+ * Needs layout, so it must run on an attached element; on a detached one it does nothing.
+ */
+export function fitCardText(card: HTMLElement): void {
+  const body = card.querySelector<HTMLElement>('.card__body');
+  const text = card.querySelector<HTMLElement>('.card__text');
+  if (!body || !text || !card.isConnected) return;
+  text.style.fontSize = '';
+  card.classList.remove('is-clipped');
+  if (body.scrollHeight <= body.clientHeight) return;
+  const base = parseFloat(getComputedStyle(text).fontSize) || 8;
+  for (let size = base - 0.5; size >= 6.5; size -= 0.5) {
+    text.style.fontSize = `${size}px`;
+    if (body.scrollHeight <= body.clientHeight) return;
+  }
+  card.classList.add('is-clipped');
+}
+
 /** The same face, as a node. */
 export function cardFaceEl(
   face: CardFace,

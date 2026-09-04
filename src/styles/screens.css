@@ -153,6 +153,19 @@
   color: var(--text-dim);
 }
 
+/* The bill, on the screen that presents it. */
+.results__consequence {
+  max-width: 460px;
+  padding: 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  text-align: center;
+  font: 500 13px var(--font);
+  line-height: 1.6;
+  color: var(--text);
+}
+
 .results__encounter {
   margin-top: 4px;
   font: 600 11px var(--font);

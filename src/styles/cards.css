@@ -1,8 +1,11 @@
 .card {
   position: relative;
   flex: 0 0 auto;
-  width: 104px;
-  height: 142px;
+  /* 112 by 168, up from 104 by 142: the old box cut the longest rules texts off
+     mid-sentence at 7.5px type. Sized so every shipped text fits at 8px — see
+     `cardText.test.ts` for the lengths it holds the data to. */
+  width: 112px;
+  height: 168px;
   padding: 8px 8px 6px;
   border-radius: 9px;
   border: 2px solid var(--school, #94a3b8);
@@ -208,9 +211,16 @@
 }
 
 .card__text {
-  font: 400 7.5px var(--font);
+  font: 400 8px var(--font);
   line-height: 1.35;
   color: #cbd5e1;
+}
+
+/* `fitCardText` could not make it fit even at the floor: say there is more rather than
+   pretend the sentence ended. */
+.card.is-clipped .card__body {
+  -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
 }
 
 .card__keywords {

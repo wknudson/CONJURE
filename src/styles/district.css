@@ -564,6 +564,18 @@ body.is-talking .district-help {
   background: #c2603a;
   border-radius: 50%;
 }
+.district-map__swatch.is-site {
+  background: #e8c86a;
+  transform: rotate(45deg);
+  border-radius: 0;
+}
+
+/* How to reach the ground a writ names. The line that turns a briefing into a walk. */
+.bounty-card__route {
+  margin: 4px 0 6px;
+  font: 500 11px/1.5 var(--font);
+  color: var(--brass-lit, #d6c4a0);
+}
 
 /* --- overlays: the notice, and the Warden's hand ---------------------------- */
 

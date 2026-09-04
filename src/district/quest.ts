@@ -38,7 +38,7 @@ export function currentObjective(flags: readonly TutorialFlag[]): string | null 
   if (!has(flags, 'artificer')) return 'Visit the Ironworks Artificer, north up the walkway';
   if (!has(flags, 'journal')) return 'Visit the Field Journal, across the street';
   if (!has(flags, 'bounty_taken'))
-    return 'Read the Bounty Board, then answer the writ where it names';
+    return 'Read the Bounty Board, then walk to the ground the writ names — the map (M) marks it';
   return 'Survive the contract';
 }
 

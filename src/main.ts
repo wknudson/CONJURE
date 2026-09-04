@@ -26,6 +26,7 @@ import './styles/crash.css';
 
 import { installCrashHandlers } from './app/crash.js';
 import { clearSaveWarning, showSaveWarning } from './app/saveWarning.js';
+import { renderUnsupported, webglAvailable } from './app/unsupported.js';
 
 /**
  * Before anything else can throw. The context is read at crash time, so it can close over
@@ -71,7 +72,7 @@ import {
   type SlotId,
   type TutorialFlag,
 } from './app/save.js';
-import { forfeitIfAbandoned, isDown, rescuePlayer } from './core/overworld/state.js';
+import { RESCUE_FEE_RATE, forfeitIfAbandoned, isDown, rescuePlayer } from './core/overworld/state.js';
 import {
   composeBoard,
   encounterForBounty,
@@ -265,7 +266,7 @@ if (forfeited) {
  * about the state — and the hub is re-entered every time a shop door closes, so a flag
  * that lived on the run would announce the same death over and over.
  */
-let pendingNotice: { title: string; body: string } | null = null;
+let pendingNotice: { title: string; body: string; ack?: string } | null = null;
 
 /** The deck a companion will actually fight with, falling back to its default. */
 function deckFor(companionId: string): string[] {
@@ -324,11 +325,33 @@ function rescueIfDown(): void {
   const state = profile().state;
   if (!isDown(state.overworld)) return;
 
+  const hadBrew = state.overworld.activeBuff !== null;
   const fee = rescuePlayer(state);
   pendingNotice = {
     title: 'Rescued',
-    body: 'You blacked out. The Magistracy rescued you for a fee of ' + fee + ' Ducats.',
+    body:
+      `You blacked out. The Magistracy carried you back to the last safe ground and billed ${fee} Ducats for it. ` +
+      `The Pact stands at ${state.overworld.pact.currentHp} health — heal before taking work.` +
+      (hadBrew ? ' The brew you were holding is spent.' : ''),
+    ack: 'Back to the street',
   };
+}
+
+/**
+ * What the loss the player is looking at is about to cost, in the words the rescue will
+ * use — computed the way `rescuePlayer` computes it, so the two never disagree.
+ */
+function defeatConsequence(): string {
+  const { overworld } = profile().state;
+  if (!isDown(overworld)) return '';
+  const before = overworld.economy.ducats;
+  const fee = before - Math.floor(before * (1 - RESCUE_FEE_RATE));
+  const brew = overworld.activeBuff !== null ? ' The brew you were holding is lost.' : '';
+  return (
+    `The Magistracy will carry you back to the last safe ground and bill ${fee} Ducats for it ` +
+    `(${Math.round(RESCUE_FEE_RATE * 100)}% of your purse). The Pact wakes at 10 health, ` +
+    `not full; heal before taking work. Your cards, decks and Companions are untouched.${brew}`
+  );
 }
 
 /**
@@ -399,6 +422,13 @@ function advanceClock(hours: number): void {
 }
 
 function showArea(areaId: string, companionId: string): void {
+  // The district is the only way in, and it is drawn with WebGL. A browser without it used
+  // to get a blank page here; it gets told what is missing, and a button to try again.
+  if (!webglAvailable()) {
+    screens.close();
+    renderUnsupported(root as HTMLElement, undefined, () => showArea(areaId, companionId));
+    return;
+  }
   rescueIfDown();
   const area = areaById(areaId) ?? DEFAULT_AREA;
   const global = profile().state;
@@ -1028,6 +1058,7 @@ function finishCombat(
     new ResultsScreen({
       result,
       encounter: played,
+      consequence: result === 'defeat' ? defeatConsequence() : undefined,
       // No rematch. In a hub-based RPG the way back to a fight is through the Bounty
       // Board, and a button that re-ran the same contract for the same pay was a money
       // printer sitting on the results screen.

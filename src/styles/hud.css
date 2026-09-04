@@ -269,7 +269,7 @@
 /*
  * The hand scrolls rather than overflowing.
  *
- * A card is a fixed 104px and does not shrink, so seven of them plus the gaps is 764px of
+ * A card is a fixed 112px and does not shrink, so seven of them plus the gaps is 820px of
  * unshrinkable content sitting between two absolutely-positioned corners. Above roughly
  * 1000px that is fine and the row stays centred, which is what it should look like. Below
  * it the cards used to run under the corners and then straight off the viewport.
@@ -288,8 +288,8 @@
  * ## And the padding is what stops it clipping the card you are looking at
  *
  * A hovered card grows *upward*: `transform-origin: bottom center` with `scale(1.55)` on a
- * 142px card puts its top edge 78px up, and `translateY(-26px)` takes it to 104. It also
- * widens 104px to 161px, so the first and last cards grow ~29px sideways. All of that used to
+ * 168px card puts its top edge 92px up, and `translateY(-26px)` takes it to 118. It also
+ * widens 112px to 174px, so the first and last cards grow ~31px sideways. All of that used to
  * be cut off by the scroll box, which is a hand you cannot read.
  *
  * `overflow-y: visible` is not available: CSS forbids one axis being `visible` while the other
@@ -315,9 +315,9 @@
   display: flex;
   align-items: flex-end;
   gap: 6px;
-  /* 142 of card plus the padding below: `box-sizing` is `border-box`, so the padding has to
+  /* 168 of card plus the padding below: `box-sizing` is `border-box`, so the padding has to
      be paid for here or the cards get squashed into what is left. */
-  min-height: 264px;
+  min-height: 290px;
   flex: 1 1 auto;
   min-width: 0;
   overflow-x: auto;

@@ -246,6 +246,7 @@ export class WorldCombat {
     if (coach && !coach.seen) {
       this.tutorial = new Tutorial(opts.root, {
         boardAnchor: '.world-combat__overlay',
+        deployment: this.session.getBoard().phase === 'deployment',
         onDone: () => {
           coach.onSeen();
           this.hud.flashNotice('Press H for the rules at any time');
@@ -686,6 +687,7 @@ export class WorldCombat {
   private exitDeployment(): void {
     this.deploy?.destroy();
     this.deploy = null;
+    this.tutorial?.resume();
     this.setOverlays(emptyOverlays());
   }
 

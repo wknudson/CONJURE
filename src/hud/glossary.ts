@@ -85,7 +85,7 @@ export const TERMS: Record<string, GlossaryEntry> = {
   },
   pact: {
     title: 'The Pact',
-    body: 'Your Hero and Companion share one pool of 40 HP. At zero, you lose.',
+    body: 'Your Hero and Companion share one pool of health — 400 to begin with. At zero, you lose.',
     detail: 'This is what enemy units are marching toward. Defend it or race them.',
   },
   armor: {
@@ -110,11 +110,11 @@ export const TERMS: Record<string, GlossaryEntry> = {
   chill: {
     title: 'Chill',
     body: 'Stacks toward freezing. The third stack freezes the unit solid instead of stacking again.',
-    detail: 'Fire on a Chilled target Vaporizes it: 2 damage through any armor, and the tile fogs.',
+    detail: 'Fire on a Chilled target Vaporizes it: 20 damage through any armor, and the tile fogs.',
   },
   brittle: {
     title: 'Brittle',
-    body: 'The target takes +2 damage from every hit until it wears off.',
+    body: 'The target takes +20 damage from every hit until it wears off.',
   },
   fleet: {
     title: 'Fleet',
@@ -190,7 +190,7 @@ export const TERMS: Record<string, GlossaryEntry> = {
   },
   collision: {
     title: 'Collision',
-    body: 'A shoved unit that hits something takes 3 damage; whatever it hit takes 2.',
+    body: 'A shoved unit that hits something takes 30 damage; whatever it hit takes 20.',
     detail: 'Walls hurt just as much as bodies. Shoving into a wall is free damage.',
   },
   marks: {

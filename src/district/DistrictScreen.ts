@@ -35,6 +35,7 @@ import {
 
 import { LOOK, buildLookGui } from './look.js';
 import type { CoachMarks } from '../hud/Tutorial.js';
+import { renderUnsupported } from '../app/unsupported.js';
 import { ColliderSet } from './collision.js';
 import { DistrictWorld } from './world.js';
 import { buildPostChain, type PostChain } from './post.js';
@@ -212,7 +213,7 @@ export interface DistrictOpts {
   hunts: Readonly<Record<string, number>>;
   collection: Collection;
   deck: string[];
-  notice?: { title: string; body: string };
+  notice?: { title: string; body: string; ack?: string };
   tutorial: readonly TutorialFlag[];
   onTutorialFlag: (flag: TutorialFlag) => void;
   /**
@@ -471,7 +472,18 @@ export class DistrictScreen implements Screen {
     root.appendChild(canvas);
     this.canvas = canvas;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+    // The host probes for WebGL before it builds this screen, but a context can exist and
+    // still be refused here — for the size, the attributes, or a driver that changed its
+    // mind. A throw from the constructor used to leave a blank page; now it leaves the
+    // same explanation the probe would have.
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+    } catch (err) {
+      this.disposed = true;
+      renderUnsupported(root, err instanceof Error ? err.message : String(err));
+      return;
+    }
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(root.clientWidth || innerWidth, root.clientHeight || innerHeight);
     renderer.shadowMap.enabled = true;
@@ -668,7 +680,7 @@ export class DistrictScreen implements Screen {
     if (this.area.props.board) {
       const at = this.area.props.board;
       const board = new Hotspot(at.x, at.z, 'Read the Bounty Board', () =>
-        this.hud!.openBoard(this.opts.bounties, this.flags),
+        this.hud!.openBoard(this.opts.bounties, this.flags, this.area),
       );
       this.interactables.push(board);
     }
@@ -1391,6 +1403,11 @@ export class DistrictScreen implements Screen {
             hunting: p.state !== 'ROAM',
           })),
         ...(this.marker ? { errand: { x: this.marker.hotspot.position.x, z: this.marker.hotspot.position.z } } : {}),
+        // Only the ground a writ on *this* board names, so the map never marks a fight the
+        // player has not been offered.
+        sites: sitesInArea(this.area.id)
+          .filter((site) => this.opts.bounties.some((b) => b.id === `story_${site.encounterId}`))
+          .map((site) => ({ x: site.at.x, z: site.at.z, label: site.label })),
         ...(this.warden
           ? {
               warden: {
