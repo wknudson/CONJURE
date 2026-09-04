@@ -5,6 +5,12 @@ data registries, save system, overworld, and content registries. Every claim car
 file:line evidence; the three highest-severity findings were re-verified line-by-line
 against source before this report was written. No code was changed by this audit.*
 
+*Updated 2026-09-03: every finding below through the High tier was fixed and merged as
+PR #20. A second audit the same week looked at the layer this one did not — the operational
+shell around the game and the first-time player's path through it — and its findings were
+fixed and merged as PRs #21, #22 and #23. That audit and those fixes are recorded in §6; the
+Medium bullets in §5 are annotated where a later PR closed them.*
+
 **Bottom line:** the core loop — create a character, take a contract, fight, win or lose,
 get rescued or paid, and go again — is intact, well-tested, and completable. The death
 penalty, the 3-slot save system, the Harpoon Protocol, and the E5 presentation hooks all
@@ -498,19 +504,28 @@ Either statuses that gate actions should decay at the **end** of the owner's tur
 start of the opponent's), so a one-stack hold covers one full enemy turn — a balance-wide
 rule change worth a ruling — or the cards should apply two stacks. Not changed under the
 danger-zone fix; the forecast now tells the truth about whichever rule stands.
-- `Dormant`/`Impact` keywords with no engine code; `PowerTier` sold as a mechanic.
-- Last Stand desaturation dead in the district shell; trigger polled not
-  sequencer-driven; `LAST_STAND_FRACTION` duplicated; overload/superconduct/arc visually
-  generic; `pyreLit` silent; `LAST STAND` naming collision.
-- `bloodTithe` untelegraphed; `Intent.path` never drawn; move intents painted hostile.
-- Stat Stretch ÷10 strings: `glossary.ts:113,117,191`, `HelpOverlay.ts:68`.
+- `Dormant`/`Impact` keywords with no engine code — **still open, a design call** (drop
+  the two keywords and their glossary entries, or make them real; `PowerTier` turned out to
+  be a live mechanic and is not part of this).
+- ~~Last Stand desaturation dead in the district shell; `LAST_STAND_FRACTION` duplicated;
+  `pyreLit` silent; `LAST STAND` naming collision.~~ **FIXED in #23** (the CSS now covers
+  the district's two canvases; one export in `Hud.ts`; the fallen body flares where it
+  fell; the sudden-death banner says SUDDEN DEATH). Still open: the trigger is polled on
+  board sync rather than sequencer-driven; overload/superconduct/arc remain visually
+  generic.
+- ~~`Intent.path` never drawn; move intents painted hostile.~~ **FIXED in #23** (a declared
+  move is slate and follows its path). Still open: `bloodTithe` is untelegraphed.
+- ~~Stat Stretch ÷10 strings: `glossary.ts:113,117,191`, `HelpOverlay.ts:68`.~~ **FIXED in
+  #22**, and `helpNumbers.test.ts` holds every figure in the copy to its engine constant.
 - Ranged-body/draw-channel drought in 5 of 6 starting warbands; single Behemoth
-  game-wide.
-- Post-campaign board = 4 demo fights (`bounties.ts:71-75`).
-- Subjugation polish: clear `sealed` on bind, per-encounter rounds, partial progress,
-  boss pressure.
+  game-wide — **still open, content**.
+- ~~Post-campaign board = 4 demo fights (`bounties.ts:71-75`).~~ **FIXED in #23**: a finished
+  story contract joins its tier's rolled pool as repeatable arena work.
+- Subjugation polish: ~~clear `sealed` on bind~~ (**FIXED in #23**); per-encounter rounds,
+  partial progress, boss pressure — **still open, design**.
 - Two mechanical worldbuild TODOs: wagon win condition (`campaign.adept.ts:217`),
-  flee-bias AI (`campaign.novice.ts:174`).
+  flee-bias AI (`campaign.novice.ts:174`) — **still open**; the wagon epilogue no longer
+  asserts the missing mechanic (#23).
 
 ### ~~NEW (found under the hold-timing ruling)~~ FIXED (ruling: cap Pact armour) — the Frost enemy's armour race
 
@@ -569,6 +584,70 @@ guard, `balanceSuite.ts`); it does not hide this — seed 1 is flagged `slow`.
   validates; kits reach 23–24/24. ✅
 - **Reagents & schematics**: all 6 Cores multi-sourced; zero dangling ids across every
   registry; the 18 unforgeable cards are known and two-way tripwired. ✅ (minus B6)
+
+## 6. The shell audit (2026-09-03) — PRs #21, #22, #23
+
+*Scope: everything the first audit did not look at — the operational shell a tester needs
+(getting a build, error handling, saving, settings, leaving a screen) and the first-time
+player's path from the title wall to the first fight. Three exploration passes, all findings
+verified against source, then fixed in order of what a tester would hit first. Each PR was
+merged to `main` behind typecheck, build, browser passes on every fix, and the full
+non-balance suite; the balance ledger was not rerun because none of these PRs changes a
+rule the AI plays against (the one engine change, Concede, is a command the AI never sees).
+The game has been live at <https://wknudson.github.io/CONJURE/> since #21.*
+
+**Bottom line:** the engine was ready and the shell was not. A tester could not get a
+build, could not leave the district once a character was opened, would have been greeted
+by a lighting debug panel, and on the first error would have seen a blank page with no way
+to report it. All of that is closed. What remains is design work, not holes.
+
+### 6.1 Alpha blockers — **all FIXED, PR #21**
+
+| # | Finding | Fix |
+| :-- | :-- | :-- |
+| 1 | No way for a tester to get a build: no hosting config, `dist/` ignored, absolute asset paths | GitHub Pages workflow on every push to `main`; relative base; every sprite path through `render/assetUrl.ts`. Pages had to be created once with an admin token after the repo went public. |
+| 2 | No exit from the district: `onLeave` wired since the district was built and never invoked | Escape menu (back / leave to the title wall). Surfaced an ordering bug — the title closed the profile before the district wrote hour and position on unmount — fixed with `ScreenManager.close()`. |
+| 3 | The lil-gui look-tuning panel shipped in production, two lines outside its DEV guard, and the legend advertised it | Moved inside the guard; legend line removed; lil-gui to devDependencies; verified absent from the bundle. |
+| 4 | No error boundary: a throw in any `mount` left a blank page; the animation drain had no `catch`; no build stamp anywhere | Global `error`/`unhandledrejection` handlers raise a crash panel with a copyable report (build, screen, profile, last fight's encounter and seed, stack). Version and commit inlined by Vite and shown on the title wall. The drain drops its queue and rethrows naming the event. The mute-preference storage read is guarded. |
+| 5 | No concede, pause or quit in combat; reload was the only exit and it forfeited the wager | `concede` engine command, legal at any moment and never enumerated by the AI; two-press white-flag button in both shells; `beforeunload` guard while a fight is open. |
+| 6 | `writeSave`'s `false` discarded across ~40 call sites — silent total loss in private browsing or at quota | Banner on the first failed write, worded for the cause by a storage probe, cleared on the next success; probe also runs at boot. |
+| 7 | Combat coach marks keyed to `localStorage`, so a second character never saw them and a mid-run reload marked them seen; the district shell never ran them | Flag on the profile's tutorial ledger, recorded only on finish or skip; both shells run the marks. |
+
+### 6.2 High — **all FIXED, PR #22**
+
+| Finding | Fix |
+| :-- | :-- |
+| Help copy said 40 HP / +2 Brittle / 3–2 collision / 2 Vaporize against 400 / +20 / 30–20 / 20; HUD flashed "PACT 40 / 40" before sync | Corrected; dashes until sync; `docs/03` snippet says 10; `helpNumbers.test.ts` binds each figure to its constant. |
+| Defeat screen said only "the Pact is broken"; fee arrived a screen later, never mentioning the drop to 10 health or the lost brew; every notice said "Begin again" | The bill on the defeat screen, computed as the rescue computes it; rescue notice says the same; notices name their own button. |
+| Coach marks fired over deployment and rang the hidden hand | One tray step, then a pause; both shells `resume()` as Engage drops the tray. |
+| The first contract looked broken: writs are non-clickable briefings for a site in another area, and the map did not mark it | Writ sites marked on the map with the writ's words; route line on every writ card; lap objective says the same. |
+| Blank page without WebGL; the district is the only way in | Probe before the district; plain screen with what to try, the build stamp and a retry; renderer constructor guarded. |
+| Card rules text clipped: 104×142 at 7.5px, overflow hidden | 112×168 at 8px; all 298 texts fit at base (measured); `cardText.test.ts` caps lengths; `fitCardText` backstop. |
+| Laptop height untested | Measured both shells and the district at 1366×650: everything above the fold, before and after the taller cards. No code. |
+
+### 6.3 Medium — **FIXED, PR #23** (except as noted)
+
+| Finding | Fix |
+| :-- | :-- |
+| Four words for one mechanic (Escalation / Growth / Grown / escalated); raw ids on card faces (`BOUNDFORM`) and tooltips (`chill 2`); Hero tab titled "The Commander"; title hint named a Safehouse | Growth everywhere; glossary titles on chips and tooltips; "The Hero"; "on the plaza". `Hero` (the rules term) and `Commander` (the world title) are kept as two words for two things. |
+| No settings: mute and speed only on the combat HUD with their own keys; fixed volume; unconditional shake | One store (volume, mute, shake, playback) migrating the old keys; sound and effects read it at use; panel from the title, the Escape menu and a HUD gear. |
+| Roadmap Phase F promised per-game stats and a dump; `record` was three counters | `Profile.history` (v25): encounter, seed, Companion, result, turns, Pact at the bell, difficulty; capped at 30; "Copy diagnostics" in the settings panel. |
+| Post-campaign board = four demo fights | Finished story contracts join their tier's rolled pool. |
+| Last Stand trio, `pyreLit`, move-intent colour and path, seal on bind, Behemoth ceiling test, wagon epilogue, district shell missing C / Shift / Space | All as annotated in §5 above. |
+| Still open by choice | `Dormant`/`Impact` (design call); Subjugation rounds/progress/pressure; ranged-body drought and single Behemoth; pending companion traits; the 01:00 start; `bloodTithe` telegraph; Last Stand trigger polled; three reactions visually generic. |
+
+### 6.4 Two things learned about the repository itself
+
+- **Squash merges from a long-lived branch conflict the moment later work edits lines a
+  squash touched.** `main` holds each PR as one commit, the branch holds the same content
+  as many; a three-way merge against the old base sees two different changes to one
+  region. #22 and #23 both hit it. The fix is a `git merge -s ours origin/main` on the branch
+  after each squash (tree hash unchanged, verified), which tells git the squash is in.
+- **GitHub Pages on this repo needed two things the workflow could not do:** the plan did
+  not allow Pages on a private repo (the repo went public), and even then the workflow token
+  cannot create the Pages site (`enablement: true` fails with "Resource not accessible by
+  integration"); it was created once with the owner's token. Deploys have run unattended
+  since.
 
 ### Appendix — documentation drift found along the way
 
