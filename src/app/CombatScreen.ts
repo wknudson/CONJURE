@@ -389,6 +389,7 @@ export class CombatScreen implements Screen {
     if (coach && !coach.seen) {
       this.hud.setThreatActive(this.targeting.toggleThreat());
       this.tutorial = new Tutorial(root, {
+        deployment: this.deploying,
         onDone: () => {
           coach.onSeen();
           this.hud?.flashNotice('Press H for the rules at any time');
@@ -768,6 +769,8 @@ export class CombatScreen implements Screen {
     this.deploy = null;
     this.el?.classList.remove('is-deploying');
     this.setOverlays(emptyOverlays());
+    // The line is set, so the hand and the board the rest of the marks point at exist now.
+    this.tutorial?.resume();
   }
 
   /**

@@ -75,17 +75,40 @@ export interface CoachMarks {
   onSeen: () => void;
 }
 
+/**
+ * The one step that comes before the rest, when the fight opens on the deployment phase.
+ *
+ * The marks used to fire over deployment and ring the hand, which is hidden until the line
+ * is set — the first thing a new player had to do was the one thing nothing taught. This
+ * step points at the tray; the walkthrough then waits until the line is set (`resume`)
+ * before the hand, the board and the rest are pointed at, so every ring lands on something
+ * that can be clicked.
+ */
+const DEPLOY_STEP: TutorialStep = {
+  anchor: '.deploy__bar',
+  title: 'Set your line',
+  body: 'Before turn one, place your warband. Pick a body from the tray, then click a glowing Anchor Tile to stand it there; click a placed body to take it back. When the line is set, press Engage.',
+  place: 'above',
+};
+
 export interface TutorialOptions {
   /** Called once, when the player finishes or skips. Never on `destroy`. */
   onDone: () => void;
   /** What to ring for the board step, where the board is not `canvas.board`. */
   boardAnchor?: string;
+  /**
+   * The fight opens on deployment. `start` shows the tray step alone and then waits;
+   * the shell calls `resume` when the line is set and the rest follows.
+   */
+  deployment?: boolean;
 }
 
 export class Tutorial {
   private el: HTMLElement;
   private index = 0;
   private done = false;
+  /** Between the tray step and `resume`: shown nothing, waiting for the line to be set. */
+  private waiting = false;
   private readonly opts: TutorialOptions;
 
   constructor(parent: HTMLElement, opts: TutorialOptions) {
@@ -106,10 +129,34 @@ export class Tutorial {
   start(): void {
     this.index = 0;
     this.el.classList.add('is-open');
+    if (this.opts.deployment) {
+      this.show(DEPLOY_STEP, 'Set the line');
+      return;
+    }
+    this.render();
+  }
+
+  /**
+   * The line is set: carry on with the rest. A no-op unless `start` is waiting for
+   * exactly this, so a shell can call it on every exit from deployment without thinking.
+   */
+  resume(): void {
+    if (!this.waiting || this.done) return;
+    this.waiting = false;
+    this.index = 0;
+    this.el.classList.add('is-open');
     this.render();
   }
 
   private next(): void {
+    // Off the tray step: put the marks away and wait for the line to be set.
+    if (this.opts.deployment && !this.waiting && this.index === 0 && this.el.dataset.step === 'deploy') {
+      this.waiting = true;
+      this.el.classList.remove('is-open');
+      this.el.innerHTML = '';
+      delete this.el.dataset.step;
+      return;
+    }
     this.index++;
     if (this.index >= STEPS.length) {
       this.finish();
@@ -129,17 +176,23 @@ export class Tutorial {
   private render(): void {
     const step = STEPS[this.index];
     if (!step) return;
-
     const isLast = this.index === STEPS.length - 1;
+    this.show(step, isLast ? 'Play' : 'Next', `${this.index + 1} of ${STEPS.length}`);
+  }
+
+  /** Draws one step. The tray step is marked so `next` can tell it from the first real one. */
+  private show(step: TutorialStep, nextLabel: string, counter = ''): void {
+    if (step === DEPLOY_STEP) this.el.dataset.step = 'deploy';
+    else delete this.el.dataset.step;
     this.el.innerHTML = `
       <div class="tutorial__scrim"></div>
       <div class="tutorial__bubble">
-        <div class="tutorial__step">${this.index + 1} of ${STEPS.length}</div>
+        ${counter ? `<div class="tutorial__step">${counter}</div>` : ''}
         <h3>${step.title}</h3>
         <p>${step.body}</p>
         <div class="tutorial__actions">
           <button class="tutorial__skip">Skip</button>
-          <button class="tutorial__next">${isLast ? 'Play' : 'Next'}</button>
+          <button class="tutorial__next">${nextLabel}</button>
         </div>
       </div>
       <div class="tutorial__ring"></div>`;
