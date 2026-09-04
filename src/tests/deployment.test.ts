@@ -113,16 +113,15 @@ describe('point-buy', () => {
     // 24-point kit it does not, so the cap is now a stated rule that matches the deck's own
     // two-Behemoth limit. What an *arena* will seat is a separate question — see below.
     //
-    // Two copies of the same body, because `magma_brute` is the only fieldable 2x2 in the
-    // game. A warband holding two of it holds two of the *same* Behemoth, exactly as it
-    // holds two of the same Footman — the roster has always been a multiset.
+    // Two *distinct* bodies, now that a second 2x2 ships. For as long as `magma_brute` was
+    // the only fieldable Behemoth this held two copies of it — legal, the roster has always
+    // been a multiset — and said so; the day this fixture waited for has come.
     expect(MAX_ROSTER_BEHEMOTHS).toBe(2);
-    expect(
-      rosterPool().filter((d) => d.unit?.footprint === 2).length,
-      'if a second 2x2 body ever ships, this fixture can use distinct ids',
-    ).toBe(1);
+    const behemoths = rosterPool().filter((d) => d.unit?.footprint === 2);
+    expect(behemoths.length, 'two fieldable Behemoths, in two schools').toBeGreaterThanOrEqual(2);
+    expect(new Set(behemoths.map((d) => d.school)).size).toBeGreaterThanOrEqual(2);
 
-    const two = ['magma_brute', 'magma_brute'];
+    const two = ['magma_brute', 'bastion_golem'];
     expect(validateRoster(two).some((p) => p.code === 'too_many_behemoths')).toBe(false);
     const three = [...two, 'magma_brute'];
     expect(validateRoster(three).some((p) => p.code === 'too_many_behemoths')).toBe(true);

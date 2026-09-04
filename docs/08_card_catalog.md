@@ -8,29 +8,29 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**217 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**222 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
-| minion | 83 | Hero | Vanguard Roster, never a deck |
+| minion | 88 | Hero | Vanguard Roster, never a deck |
 | spell | 98 | Companion | drafted into a Grimoire |
 | ability | 10 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
 | obstacle | 20 | Hero | Hero Deck, shown as a Construct |
-| **total** | **217** | | |
+| **total** | **222** | | |
 
 ### By school
 
 | School | Cards |
 |---|---:|
 | dusk | 36 |
-| frost | 32 |
-| bulwark | 31 |
-| bloom | 29 |
+| frost | 33 |
+| bulwark | 32 |
+| bloom | 30 |
 | surge | 29 |
 | pyre | 28 |
-| arcane | 22 |
-| neutral | 10 |
+| arcane | 23 |
+| neutral | 11 |
 
 ### By file
 
@@ -42,17 +42,17 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`frost.ts`](#frostts) | 20 | 5 minion, 12 spell, 3 obstacle |
 | [`companionUnits.ts`](#companionunitsts) | 33 | 33 minion |
 | [`terrain.ts`](#terraints) | 5 | 5 obstacle |
-| [`ranged.ts`](#rangedts) | 3 | 3 minion |
+| [`ranged.ts`](#rangedts) | 7 | 7 minion |
 | [`surge.ts`](#surgets) | 20 | 7 minion, 12 spell, 1 obstacle |
 | [`bloom.ts`](#bloomts) | 19 | 7 minion, 11 spell, 1 obstacle |
-| [`bulwark.ts`](#bulwarkts) | 20 | 7 minion, 11 spell, 2 obstacle |
+| [`bulwark.ts`](#bulwarkts) | 21 | 8 minion, 11 spell, 2 obstacle |
 | [`dusk.ts`](#duskts) | 15 | 5 minion, 8 spell, 2 obstacle |
 | [`gaslamp.ts`](#gaslampts) | 4 | 1 minion, 2 spell, 1 ability |
 | [`wildlife.ts`](#wildlifets) | 2 | 2 minion |
 | [`threats.ts`](#threatsts) | 3 | 3 minion |
 | [`hybrid.ts`](#hybridts) | 24 | 23 spell, 1 obstacle |
 | [`auras.ts`](#aurasts) | 13 | 11 spell, 2 ability |
-| **total** | **217** | |
+| **total** | **222** | |
 
 ---
 
@@ -198,12 +198,16 @@ Encounter scenery. Built by the arena, not by a player. — **5 cards** (5 obsta
 
 ### `ranged.ts`
 
-Bodies that shoot. — **3 cards** (3 minion).
+Bodies that shoot. — **7 cards** (7 minion).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Hedge Slinger** | `hedge_slinger` | minion | 2P | 2 | hero | 10 atk, 40 hp, 2 mov, rng 1-3, sniper | escalate +10/+0 | empty tile (ownTerritory) | Growth | — | A conscript with a sling. Shoots up to three tiles away with a clear line, and not hard. |
+| **Rime Archer** | `rime_archer` | minion | 2P | 2 | hero | 20 atk, 40 hp, 1 mov, rng 1-3, sniper | escalate +10/+0 | empty tile (ownTerritory) | Growth | — | Shoots up to three tiles away with a clear line. Slow: it holds the ground it was set on. |
 | **Cinder Lobber** | `cinder_lobber` | minion | 3P | 2 | hero | 20 atk, 50 hp, 2 mov, rng 2-4, caster | arcing; escalate +10/+0 | empty tile (ownTerritory) | Growth | — | Shoots over anything, needing no line of sight. Cannot hit what is adjacent. |
+| **Glass Arbalest** | `glass_arbalest` | minion | 3P | 2 | hero | 30 atk, 30 hp, 1 mov, rng 1-4, sniper | escalate +10/+0 | empty tile (ownTerritory) | Growth | — | Shoots up to four tiles away with a clear line. Fragile, and slow to reposition. |
 | **Longshot Stalker** | `longshot_stalker` | minion | 3P | 2 | hero | 30 atk, 30 hp, 2 mov, rng 1-99, sniper | lineOnly; escalate +10/+0 | empty tile (ownTerritory) | Growth | — | Fires any distance, but only along a straight line. Anything in the way stops the shot. |
+| **Thorn Lobber** | `thorn_lobber` | minion | 3P | 2 | hero | 20 atk, 50 hp, 1 mov, rng 2-4, caster | arcing; escalate +0/+10 | empty tile (ownTerritory) | Growth | — | Shoots over anything, needing no line of sight. Cannot hit what is adjacent. |
 | **Arc Turret** | `arc_turret` | minion | 4P | 3 | hero | 50 atk, 60 hp, 0 mov, rng 1-5, caster | escalate +0/+10 | empty tile (ownTerritory) | Growth | — | Hits hard at long range and never moves. Blocking its line, or shoving it, is the answer. |
 
 ### `surge.ts`
@@ -261,7 +265,7 @@ Bloom expansion — growth and regrowth. — **19 cards** (7 minion, 11 spell, 1
 
 ### `bulwark.ts`
 
-Bulwark expansion — plate and hold. — **20 cards** (7 minion, 11 spell, 2 obstacle).
+Bulwark expansion — plate and hold. — **21 cards** (8 minion, 11 spell, 2 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -271,6 +275,7 @@ Bulwark expansion — plate and hold. — **20 cards** (7 minion, 11 spell, 2 ob
 | **Siege Ox** | `siege_ox` | minion | 2P | 2 | hero | 30 atk, 50 hp, 1 mov, rng 1, bruiser | onHit brittle 1 | empty tile (ownTerritory) | — | — | Whatever survives its charge is left Brittle, taking +20 damage from every hit until it wears off. |
 | **Stone-Heart Golem** | `stone_heart_golem` | minion | 3P | 2 | hero | 30 atk, 80 hp, 1 mov, rng 1, bruiser | plates 10/turn | empty tile (ownTerritory) | Guardian | — | Guardian. At the start of each of your turns it welds on 10 more Armor, up to 30. |
 | **Anvil Lord** | `anvil_lord` | minion | 4P | 3 | hero | 40 atk, 90 hp, 1 mov, rng 1, bruiser | plates 20/turn | empty tile (ownTerritory) | — | — | At the start of each of your turns it welds on 20 more Armor, up to 60. Slow, short-reached, and very hard to remove. |
+| **Bastion Golem** | `bastion_golem` | minion | 4P | 3 | hero | 30 atk, 160 hp, 1 mov, rng 1, behemoth, **2x2** | escalate +0/+20 | empty tile (ownTerritory, 2x2) | PowerTier, Guardian, Growth | — | Power Tier. 2x2 Behemoth. Guardian: blocks line of sight behind it. Cannot enter 1x1 gaps. |
 | **Slag-Iron Golem** | `slag_iron_golem` | minion | 4P | 3 | hero | 30 atk, 80 hp, 1 mov, rng 1, bruiser | — | empty tile (ownTerritory) | Guardian, Counter | — | Guardian: blocks line of sight behind it. Counter: strikes back for its full Attack whenever it is hit in melee, and survives to do it again. |
 | **Bastion Stance** | `bastion_stance` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 40 Persistent Armor and moves nothing. Armor is spent before health, and does not decay. |
 | **Deadweight** | `deadweight` | spell | 1P | 1 | companion | — | — | entity (ally, unexhausted) — range 3 | — | R2 | Bolts 30 Armor onto an allied body. It digs in and cannot act until your next turn. |
@@ -395,7 +400,7 @@ The Aura attach cards, their Detonations and Revival. — **13 cards** (11 spell
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 74 of the 217 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 74 of the 222 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 

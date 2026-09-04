@@ -162,6 +162,9 @@ export const HUNT_RIMEFIELD_BEAR = hunt({
     'brittle_touch',
     'rimeguard',
     'rimeguard',
+    // Frost's ranged body, so the Bear can teach it: a hunt in the cold is where a Boreas
+    // earns the archer for their own line.
+    'rime_archer',
     'ice_barricade',
     'shield_bash',
     'aegis_ward',
@@ -266,6 +269,8 @@ export const HUNT_ASHWOOD_WARDEN = hunt({
     'verdant_swell',
     'creeping_briar',
     'briar_wolf',
+    // Bloom's mortar, taught by the grove that shells surveyors from behind its cover.
+    'thorn_lobber',
     'shield_bash',
     'aegis_ward',
     'scout_imp',
@@ -298,6 +303,9 @@ export const HUNT_CHALK_BOAR = hunt({
     'shieldbearer',
     'shieldbearer',
     'siege_ox',
+    // Bulwark's Behemoth, taught by the one Bulwark hunt: the Boar's wardens field a wall
+    // of their own, and beating it is how a Ferrum earns one.
+    'bastion_golem',
     'shield_bash',
     'aegis_ward',
     'stone_barricade',

@@ -72,6 +72,11 @@ export function startingCollection(): Collection {
   // until a reward roll happened to offer one.
   for (const id of ['longshot_stalker', 'cinder_lobber']) unlocked.add(id);
 
+  // The two colourless ranged bodies, so every character can field a Sight for a card
+  // from the first fight whatever they caught. Neither belongs to a school, so no fight
+  // teaches them as a Schematic; the collection is the only door.
+  for (const id of ['hedge_slinger', 'glass_arbalest']) unlocked.add(id);
+
   // The Hero's own arcane baseline. Two copies rather than the full Tier allowance: enough
   // to build around, not so many that the deck builds itself. These are the Hero's half of
   // the pairing — a wall, a construct, a hook, and a finisher, none of which belong to a
