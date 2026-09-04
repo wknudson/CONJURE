@@ -11,7 +11,8 @@ shell around the game and the first-time player's path through it — and its fi
 fixed and merged as PRs #21, #22 and #23. That audit and those fixes are recorded in §6; the
 Medium bullets in §5 are annotated where a later PR closed them. The three design calls the
 audits had left open were then ruled and built as PRs #25, #26 and #27, the nine pending
-companion knacks as PR #29, and the blood-tithe telegraph as PR #31 — recorded in §7.*
+companion knacks as PR #29, the blood-tithe telegraph as PR #31, and the sequencer-driven
+Last Stand as PR #33 — recorded in §7.*
 
 **Bottom line:** the core loop — create a character, take a contract, fight, win or lose,
 get rescued or paid, and go again — is intact, well-tested, and completable. The death
@@ -517,9 +518,9 @@ danger-zone fix; the forecast now tells the truth about whichever rule stands.
 - ~~Last Stand desaturation dead in the district shell; `LAST_STAND_FRACTION` duplicated;
   `pyreLit` silent; `LAST STAND` naming collision.~~ **FIXED in #23** (the CSS now covers
   the district's two canvases; one export in `Hud.ts`; the fallen body flares where it
-  fell; the sudden-death banner says SUDDEN DEATH). Still open: the trigger is polled on
-  board sync rather than sequencer-driven; overload/superconduct/arc remain visually
-  generic.
+  fell; the sudden-death banner says SUDDEN DEATH). ~~The trigger is polled on board sync
+  rather than sequencer-driven~~ — **FIXED in #33** (see §7.6). Still open:
+  overload/superconduct/arc remain visually generic.
 - ~~`Intent.path` never drawn; move intents painted hostile.~~ **FIXED in #23** (a declared
   move is slate and follows its path). Still open: `bloodTithe` is untelegraphed.
 - ~~Stat Stretch ÷10 strings: `glossary.ts:113,117,191`, `HelpOverlay.ts:68`.~~ **FIXED in
@@ -642,7 +643,7 @@ to report it. All of that is closed. What remains is design work, not holes.
 | Roadmap Phase F promised per-game stats and a dump; `record` was three counters | `Profile.history` (v25): encounter, seed, Companion, result, turns, Pact at the bell, difficulty; capped at 30; "Copy diagnostics" in the settings panel. |
 | Post-campaign board = four demo fights | Finished story contracts join their tier's rolled pool. |
 | Last Stand trio, `pyreLit`, move-intent colour and path, seal on bind, Behemoth ceiling test, wagon epilogue, district shell missing C / Shift / Space | All as annotated in §5 above. |
-| Still open by choice | ~~`Dormant`/`Impact`~~ (#25); ~~Subjugation rounds/progress/pressure~~ (#26); ~~ranged-body drought and single Behemoth~~ (#27); ~~pending companion traits~~ (#29); ~~`bloodTithe` telegraph~~ (#31); the 01:00 start; Last Stand trigger polled; three reactions visually generic. |
+| Still open by choice | ~~`Dormant`/`Impact`~~ (#25); ~~Subjugation rounds/progress/pressure~~ (#26); ~~ranged-body drought and single Behemoth~~ (#27); ~~pending companion traits~~ (#29); ~~`bloodTithe` telegraph~~ (#31); ~~Last Stand trigger polled~~ (#33); the 01:00 start; three reactions visually generic. |
 
 ### 6.4 Two things learned about the repository itself
 
@@ -763,10 +764,23 @@ now. The README's intent section states which declarations each tier shows. Veri
 tests. Ledger not rerun: intents are derived from the plan after the AI has chosen it and do
 not change what executes.
 
-### 7.6 What remains, all scoping rather than gaps
+### 7.6 The polled Last Stand trigger — **FIXED, PR #33**
 
-The 01:00 start (a design choice); the Last Stand trigger polled on board sync rather than
-sequencer-driven; overload, superconduct and arc visually generic.
+Both fight shells polled Last Stand off the board on every sync, comparing the Pact's health
+to `LAST_STAND_FRACTION` against a logic state already several animation steps ahead — so the
+board drained before the blow that took the Pact to a quarter had landed, and the heartbeat
+came up under a hit the player had not yet seen. The HUD now sets it from the number it is
+told in `setCommanderHp`, which the sequencer calls as each portrait blow and each heal
+replays and the mount-time sync calls once for the opening state: the drain lands on the hit
+and lifts on the heal. The shells' polling and their duplicate comparisons are gone; the
+threshold constant stays in `Hud.ts` and the Pact bar's critical fill reads the same one.
+Verified: browser (the class follows the number the HUD is told); full non-balance suite 138
+files / 2,705 tests. Presentation only, ledger not rerun.
+
+### 7.7 What remains, all scoping rather than gaps
+
+The 01:00 start (a design choice), and overload, superconduct and arc being visually generic
+compared with the other three reactions.
 
 ### Appendix — documentation drift found along the way
 
