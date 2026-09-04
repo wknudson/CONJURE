@@ -282,7 +282,10 @@ never reads as something happening on the board. `pulsePact(side)` is the hook.
 
 At a quarter of the Pact (`LAST_STAND_FRACTION` = 0.25) the presentation changes state:
 the canvas **desaturates**, a red vignette pulses on a 1.15s cycle, the Pact fill goes
-critical, and the heartbeat ambience comes up underneath
+critical, and the heartbeat ambience comes up underneath. The state is set by the HUD as
+the sequencer tells it the Pact's new number — on the blow that took it to a quarter, not on
+the shell's next sync from a logic state already steps ahead (polled that way until
+2026-09-03) — and cleared the same way by a heal.
 everything (§6). This is the old brief's "absolute panic induction" beat, and it is the one
 place the game deliberately degrades its own readability for effect.
 

@@ -9,7 +9,7 @@
  */
 
 import type { Screen } from './ScreenManager.js';
-import type { Action, BoardView } from '../contract/query.js';
+import type { Action } from '../contract/query.js';
 import type { CombatResult } from '../contract/events.js';
 import type { EncounterDef } from '../core/data/encounters/registry.js';
 import { CombatSession } from '../core/session.js';
@@ -21,7 +21,7 @@ import { EntityViewMap } from '../render/EntityViews.js';
 import { Fx } from '../render/Fx.js';
 import { Sequencer } from '../anim/Sequencer.js';
 import { registerHandlers, type CombatView } from '../anim/handlers.js';
-import { Hud, LAST_STAND_FRACTION } from '../hud/Hud.js';
+import { Hud } from '../hud/Hud.js';
 import { KEYWORDS, TERMS } from '../hud/glossary.js';
 import { getSettings, onSettingsChange, updateSettings } from './settings.js';
 import { DeployTray } from '../hud/DeployTray.js';
@@ -444,7 +444,6 @@ export class CombatScreen implements Screen {
     // routinely *starts* a contract already below the line — a wounded Pact carries from
     // the last fight — and a room that only turned red once you moved was telling you
     // something you needed before you decided to.
-    this.refreshLastStand(board);
     this.hud.setInteractive(false);
 
     // A Vanguard came along, so the line is set before anything else happens. With no
@@ -452,11 +451,6 @@ export class CombatScreen implements Screen {
     if (board.phase === 'deployment') this.enterDeployment();
 
     this.sequencer.enqueue(this.session.openingEvents);
-  }
-
-  /** Last Stand is a property of the board, so it is asked wherever the board is read. */
-  private refreshLastStand(board: BoardView): void {
-    this.hud?.setLastStand(board.player.hp <= board.player.maxHp * LAST_STAND_FRACTION);
   }
 
   unmount(): void {
@@ -1151,7 +1145,6 @@ export class CombatScreen implements Screen {
     this.hud?.setDeclaredCasts(
       board.intents.flatMap((i) => (i.kind === 'card' && !i.at && i.label ? [i.label] : [])),
     );
-    this.refreshLastStand(board);
     this.grave?.sync(board);
     // Undo availability and the End Turn warning are both properties of the turn as it
     // now stands, so they are recomputed every time control comes back to the player.
