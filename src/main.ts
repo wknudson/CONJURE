@@ -26,6 +26,7 @@ import './styles/crash.css';
 
 import { installCrashHandlers } from './app/crash.js';
 import { clearSaveWarning, showSaveWarning } from './app/saveWarning.js';
+import { renderUnsupported, webglAvailable } from './app/unsupported.js';
 
 /**
  * Before anything else can throw. The context is read at crash time, so it can close over
@@ -421,6 +422,13 @@ function advanceClock(hours: number): void {
 }
 
 function showArea(areaId: string, companionId: string): void {
+  // The district is the only way in, and it is drawn with WebGL. A browser without it used
+  // to get a blank page here; it gets told what is missing, and a button to try again.
+  if (!webglAvailable()) {
+    screens.close();
+    renderUnsupported(root as HTMLElement, undefined, () => showArea(areaId, companionId));
+    return;
+  }
   rescueIfDown();
   const area = areaById(areaId) ?? DEFAULT_AREA;
   const global = profile().state;

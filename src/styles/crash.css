@@ -3,6 +3,71 @@
    what may be empty when they show. Plain and legible on purpose: nothing here should
    depend on the rest of the stylesheet having loaded correctly. */
 
+/* No WebGL (`app/unsupported.ts`). A screen, not an overlay: there is nothing behind it. */
+.screen--unsupported {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: var(--bg, #14161d);
+  color: var(--text, #f1f5f9);
+  font: 400 14px/1.55 var(--font, ui-sans-serif, system-ui, sans-serif);
+}
+
+.unsupported__card {
+  width: min(560px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 26px;
+  border: 1px solid var(--panel-edge, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  background: var(--panel, rgba(18, 21, 29, 0.92));
+}
+
+.unsupported__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent, #67e8f9);
+}
+
+.unsupported__body,
+.unsupported__list {
+  margin: 0;
+  color: var(--text-dim, #94a3b8);
+}
+
+.unsupported__list {
+  padding-left: 20px;
+}
+
+.unsupported__detail {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  font: 400 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  color: var(--text-dim, #94a3b8);
+}
+
+.unsupported__actions button {
+  padding: 8px 16px;
+  border: 1px solid var(--accent, #67e8f9);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text, #f1f5f9);
+  font: 600 13px var(--font, ui-sans-serif, system-ui, sans-serif);
+  cursor: pointer;
+}
+
+.unsupported__build {
+  font-size: 11px;
+  color: var(--text-dim, #94a3b8);
+  text-align: right;
+}
+
 .save-warning {
   position: fixed;
   top: 0;

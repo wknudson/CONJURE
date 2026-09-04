@@ -35,6 +35,7 @@ import {
 
 import { LOOK, buildLookGui } from './look.js';
 import type { CoachMarks } from '../hud/Tutorial.js';
+import { renderUnsupported } from '../app/unsupported.js';
 import { ColliderSet } from './collision.js';
 import { DistrictWorld } from './world.js';
 import { buildPostChain, type PostChain } from './post.js';
@@ -471,7 +472,18 @@ export class DistrictScreen implements Screen {
     root.appendChild(canvas);
     this.canvas = canvas;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+    // The host probes for WebGL before it builds this screen, but a context can exist and
+    // still be refused here — for the size, the attributes, or a driver that changed its
+    // mind. A throw from the constructor used to leave a blank page; now it leaves the
+    // same explanation the probe would have.
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+    } catch (err) {
+      this.disposed = true;
+      renderUnsupported(root, err instanceof Error ? err.message : String(err));
+      return;
+    }
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(root.clientWidth || innerWidth, root.clientHeight || innerHeight);
     renderer.shadowMap.enabled = true;
