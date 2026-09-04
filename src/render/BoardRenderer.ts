@@ -83,7 +83,7 @@ export interface Overlays {
   /** What the enemy has committed to next turn. */
   intents: {
     unitId: UnitId;
-    kind: 'attack' | 'commander' | 'card' | 'move' | 'channel';
+    kind: 'attack' | 'commander' | 'card' | 'move' | 'channel' | 'tithe';
     at?: Coord;
     /** The tiles a declared move will walk, in order. Drawn as the line for a move. */
     path?: Coord[];
@@ -670,7 +670,15 @@ export class BoardRenderer {
       // strike's colour would tell the player that moving away works when it does not.
       // A declared move is not a threat at all — the badges already said so, but the
       // tile and the line still painted it hostile — so it wears the badge's own grey.
-      const tone = intent.kind === 'card' ? 'cast' : intent.kind === 'move' ? 'move' : 'strike';
+      // A Channel and a Tithe are the body spending itself, not a threat: the same grey as a
+      // move. A Channel painted red for a long time, which told the player a sitting body was
+      // about to strike.
+      const tone =
+        intent.kind === 'card'
+          ? 'cast'
+          : intent.kind === 'move' || intent.kind === 'channel' || intent.kind === 'tithe'
+            ? 'move'
+            : 'strike';
       const fill =
         tone === 'cast'
           ? 'rgba(251, 191, 36, 0.85)'
@@ -805,6 +813,14 @@ export class BoardRenderer {
         ctx.moveTo(-u, u);
         ctx.lineTo(u, u);
         ctx.stroke();
+      } else if (intent.kind === 'tithe') {
+        // A drop: the body is about to be bled for Marrow.
+        ctx.beginPath();
+        ctx.moveTo(0, -u * 1.1);
+        ctx.quadraticCurveTo(u * 0.95, u * 0.1, 0, u * 0.95);
+        ctx.quadraticCurveTo(-u * 0.95, u * 0.1, 0, -u * 1.1);
+        ctx.closePath();
+        ctx.fill();
       } else if (intent.kind === 'channel' || intent.kind === 'card') {
         // An orb with a spark through it.
         ctx.beginPath();

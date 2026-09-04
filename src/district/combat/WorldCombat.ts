@@ -472,6 +472,12 @@ export class WorldCombat {
         badge(ctx, p.x, p.y, `${intent.damage}`, '#F87171', scale);
       } else if (intent.kind === 'card' && intent.label) {
         badge(ctx, p.x, p.y, intent.label, '#FDE68A', scale);
+      } else if (intent.kind === 'tithe') {
+        // The body is about to be bled for Marrow. Not a threat, but a Novice is promised to
+        // see everything coming, and next turn's Marrow is worth a glance.
+        badge(ctx, p.x, p.y, 'TITHE', '#F9A8D4', scale);
+      } else if (intent.kind === 'channel') {
+        badge(ctx, p.x, p.y, 'SIGHT', '#CBD5E1', scale);
       }
     }
 

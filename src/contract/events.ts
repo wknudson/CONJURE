@@ -174,7 +174,7 @@ export type GameEvent = EventBase &
     | {
         t: 'intentDeclared';
         unitId: UnitId;
-        kind: 'attack' | 'commander' | 'card' | 'move' | 'channel';
+        kind: 'attack' | 'commander' | 'card' | 'move' | 'channel' | 'tithe';
         at?: Coord;
         damage: number;
         label?: string;

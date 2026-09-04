@@ -96,6 +96,23 @@ export function declareIntents(
         break;
       }
 
+      case 'bloodTithe': {
+        // The one action the AI could plan that nothing drew. A Tithe is the enemy bleeding
+        // its own body for Marrow — no threat to the player, but a body that is doing
+        // *something*, and next turn's Marrow is exactly the kind of thing a Novice is
+        // promised to see coming. Declared at both tiers, like a Channel: it is a spend, not
+        // a card.
+        const unit = state.units[command.unit];
+        if (!unit) break;
+        state.intents.push({
+          unitId: command.unit,
+          kind: 'tithe',
+          at: { ...unit.anchor },
+          damage: 0,
+        });
+        break;
+      }
+
       case 'playCard': {
         // Card plays are the hidden half at higher difficulty: an Adept keeps what it is
         // holding to itself, so only its blows are foreseeable.
