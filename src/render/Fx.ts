@@ -292,6 +292,153 @@ export class Fx {
   }
 
   /**
+   * Overload: a charge going off. Everything adjacent is thrown a tile directly away, and the
+   * picture says so — eight heavy sparks leave along the eight compass lines rather than
+   * scattering, ahead of a hot ring that runs wider than any other reaction's because the
+   * rule reaches a tile further than the blast. Amber going to fire, as the two elements do.
+   */
+  overloadBlast(at: Coord, duration: number): Promise<void> {
+    const centre = this.cam.tileCenter(at);
+
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const speed = 3.4 + Math.random() * 0.8;
+      this.particles.push({
+        x: centre.x,
+        y: centre.y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed * 0.55 - 0.4,
+        life: 1,
+        color: '#fde047',
+        colorTo: '#FF6B35',
+        size: 3 + Math.random() * 1.5,
+        angle,
+        gravity: 0.6,
+        decay: 0.0032,
+      });
+    }
+    // A second, finer spray between the lines, so the throw reads as an explosion and not
+    // a firework.
+    for (let i = 0; i < 12; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1.2 + Math.random() * 1.6;
+      this.particles.push({
+        x: centre.x,
+        y: centre.y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed * 0.5 - 0.8,
+        life: 1,
+        color: '#fef3c7',
+        colorTo: '#fbbf24',
+        size: 1.4 + Math.random(),
+        gravity: 1.2,
+        decay: 0.0036,
+      });
+    }
+
+    const ring: Ring = { at, radius: 0, alpha: 1, color: '#fbbf24' };
+    const core: Ring = { at, radius: this.cam.tileW * 0.35, alpha: 1, color: 'rgba(255,247,237,0.95)', fill: true, flatten: 0.5 };
+    this.rings.push(core, ring);
+
+    this.flashAlpha = 0.32;
+    void tween(Math.max(1, duration * 0.3), linear, (k) => {
+      this.flashAlpha = 0.32 * (1 - k);
+    });
+
+    return tween(Math.max(1, duration), easeOutQuad, (k) => {
+      ring.radius = k * this.cam.tileW * 2.1;
+      ring.alpha = 1 - k;
+      core.radius = this.cam.tileW * (0.35 + k * 0.25);
+      core.alpha = Math.max(0, 1 - k * 2.2);
+      if (k >= 1) this.rings = this.rings.filter((r) => r !== ring && r !== core);
+    });
+  }
+
+  /**
+   * Superconduct: frost through a charge, straight past the plate. Nothing is thrown; the
+   * cold runs *in*. A ring contracts onto the body instead of leaving it, and a thin column
+   * of frost sparks rises off the tile — the current earthing itself upward — in the cyan
+   * the strip and the Brittle it leaves are drawn in. No white flash: this is not a bang.
+   */
+  superconductArc(at: Coord, duration: number): Promise<void> {
+    const centre = this.cam.tileCenter(at);
+
+    for (let i = 0; i < 14; i++) {
+      this.particles.push({
+        x: centre.x + (Math.random() - 0.5) * this.cam.tileW * 0.35,
+        y: centre.y + (Math.random() - 0.5) * this.cam.tileH * 0.2,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: -2.2 - Math.random() * 1.8,
+        life: 1,
+        color: i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#7dd3fc' : '#bae6fd',
+        size: 1.2 + Math.random() * 1.4,
+        angle: Math.PI / 2,
+        gravity: -0.15,
+        decay: 0.0028,
+      });
+    }
+
+    const collapse: Ring = { at, radius: this.cam.tileW * 1.4, alpha: 0, color: '#7dd3fc' };
+    const seat: Ring = { at, radius: this.cam.tileW * 0.15, alpha: 0.9, color: 'rgba(186,230,253,0.9)', fill: true, flatten: 0.5 };
+    this.rings.push(collapse, seat);
+
+    return tween(Math.max(1, duration), easeInQuad, (k) => {
+      collapse.radius = this.cam.tileW * 1.4 * (1 - k);
+      collapse.alpha = Math.min(1, k * 2.5) * (1 - k * 0.3);
+      seat.radius = this.cam.tileW * (0.15 + k * 0.3);
+      seat.alpha = 0.9 * (1 - k);
+      if (k >= 1) this.rings = this.rings.filter((r) => r !== collapse && r !== seat);
+    });
+  }
+
+  /**
+   * Arc: current earthing itself through everything touching the target. A bolt to each of
+   * the eight neighbours, thrown out in a quick stagger rather than all at once so the eye
+   * reads a chain and not a star, with a spark where each one lands. Yellow, because it is
+   * Surge whatever it hits; the rain it needs is already on the board.
+   */
+  arcChain(at: Coord, duration: number): Promise<void> {
+    const dirs = [
+      { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }, { x: -1, y: 1 },
+      { x: -1, y: 0 }, { x: -1, y: -1 }, { x: 0, y: -1 }, { x: 1, y: -1 },
+    ];
+    const fired = new Set<number>();
+    const bolt = Math.max(60, duration * 0.55);
+
+    this.flashAlpha = 0.18;
+    void tween(Math.max(1, duration * 0.2), linear, (k) => {
+      this.flashAlpha = 0.18 * (1 - k);
+    });
+
+    return tween(Math.max(1, duration), linear, (k) => {
+      // Two bolts per beat, opposite sides first, so the chain visibly spreads.
+      const due = Math.min(dirs.length, Math.floor(k * dirs.length * 1.6) + 2);
+      for (let i = 0; i < due; i++) {
+        if (fired.has(i)) continue;
+        fired.add(i);
+        const d = dirs[(i * 3) % dirs.length]!;
+        const to = { x: at.x + d.x, y: at.y + d.y };
+        this.tracer(at, to, i % 2 === 0 ? '#fde047' : '#fef9c3', false, bolt);
+        const p = this.cam.tileCenter(to);
+        for (let s = 0; s < 3; s++) {
+          const angle = Math.random() * Math.PI * 2;
+          this.particles.push({
+            x: p.x,
+            y: p.y,
+            vx: Math.cos(angle) * 0.9,
+            vy: Math.sin(angle) * 0.5 - 1.2,
+            life: 1,
+            color: '#fde047',
+            size: 1.2 + Math.random(),
+            gravity: 0.8,
+            decay: 0.0045,
+          });
+        }
+      }
+    });
+  }
+
+  /**
    * The moment a card's magic arrives on a tile.
    *
    * Deliberately quieter than a detonation: no white flash and no shake, because a cast is

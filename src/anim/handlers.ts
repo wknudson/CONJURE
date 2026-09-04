@@ -747,6 +747,31 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
         await view.fx.wildfireBloom(e.at, t(460));
         return;
 
+      // The other three shared one generic bang for a long time: a detonate cue, a shake,
+      // and nothing drawn but the name. Each now looks like the rule it is.
+      case 'overload':
+        // A charge going off and throwing everything a tile away: the hardest shove in the
+        // game, so the biggest shake, and a blast that runs a tile wider than the rest.
+        view.sfx.play('detonate', { pitch: 1.1 });
+        view.fx.screenShake(10, t(300));
+        await view.fx.overloadBlast(e.at, t(380));
+        return;
+
+      case 'superconduct':
+        // Cold running in, not out. Barely a tremor; the crash of the strip that follows is
+        // its own event with its own sound.
+        view.sfx.play('shock', { pitch: 0.75 });
+        view.fx.screenShake(3, t(200));
+        await view.fx.superconductArc(e.at, t(420));
+        return;
+
+      case 'arc':
+        // Current earthing through the neighbours: a quick crackle and a chain of bolts.
+        view.sfx.play('shock', { pitch: 1.25 });
+        view.fx.screenShake(4, t(220));
+        await view.fx.arcChain(e.at, t(360));
+        return;
+
       default:
         view.sfx.play('detonate');
         view.fx.screenShake(6, t(260));
