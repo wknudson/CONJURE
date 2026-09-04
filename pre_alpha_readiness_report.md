@@ -12,8 +12,8 @@ fixed and merged as PRs #21, #22 and #23. That audit and those fixes are recorde
 Medium bullets in §5 are annotated where a later PR closed them. The three design calls the
 audits had left open were then ruled and built as PRs #25, #26 and #27, the nine pending
 companion knacks as PR #29, the blood-tithe telegraph as PR #31, the sequencer-driven Last
-Stand as PR #33, and the three generic reactions as PR #35 — recorded in §7. One item remains
-open, and it is a design choice.*
+Stand as PR #33, the three generic reactions as PR #35, and the opening hour as PR #36 —
+recorded in §7. Nothing either audit raised remains open.*
 
 **Bottom line:** the core loop — create a character, take a contract, fight, win or lose,
 get rescued or paid, and go again — is intact, well-tested, and completable. The death
@@ -644,7 +644,7 @@ to report it. All of that is closed. What remains is design work, not holes.
 | Roadmap Phase F promised per-game stats and a dump; `record` was three counters | `Profile.history` (v25): encounter, seed, Companion, result, turns, Pact at the bell, difficulty; capped at 30; "Copy diagnostics" in the settings panel. |
 | Post-campaign board = four demo fights | Finished story contracts join their tier's rolled pool. |
 | Last Stand trio, `pyreLit`, move-intent colour and path, seal on bind, Behemoth ceiling test, wagon epilogue, district shell missing C / Shift / Space | All as annotated in §5 above. |
-| Still open by choice | ~~`Dormant`/`Impact`~~ (#25); ~~Subjugation rounds/progress/pressure~~ (#26); ~~ranged-body drought and single Behemoth~~ (#27); ~~pending companion traits~~ (#29); ~~`bloodTithe` telegraph~~ (#31); ~~Last Stand trigger polled~~ (#33); ~~three reactions visually generic~~ (#35); the 01:00 start. |
+| Still open by choice | ~~`Dormant`/`Impact`~~ (#25); ~~Subjugation rounds/progress/pressure~~ (#26); ~~ranged-body drought and single Behemoth~~ (#27); ~~pending companion traits~~ (#29); ~~`bloodTithe` telegraph~~ (#31); ~~Last Stand trigger polled~~ (#33); ~~three reactions visually generic~~ (#35); ~~the 01:00 start~~ (#36). Nothing remains. |
 
 ### 6.4 Two things learned about the repository itself
 
@@ -793,11 +793,26 @@ where each lands. Verified: each effect's rings, particles and tracers inspected
 on a mounted board, and all settle to nothing; full non-balance suite 138 files / 2,705 tests.
 Presentation only.
 
-### 7.8 What remains
+### 7.8 The opening hour — **ruled and FIXED, PR #36**
 
-One item, and it is a design choice rather than a gap: the game opens at 01:00, at night.
-Every finding either audit ranked as a blocker, High or Medium, and every design call they left
-open, is closed and merged.
+Every character began at `NIGHT_ANCHOR`, one in the morning — the hour the ambience was
+measured at, and the only hour that existed when the clock shipped. Read against the daylight
+curves that is the hardest hour in the world for a stranger: the light at nothing, the Warden's
+grace at two thirds, the curfew on, the night crews at full vigour — and the first thing a
+player ever saw was a dark ward. **Ruling:** a new character opens at `OPENING_HOUR`, six in the
+morning, mid-dawn. The light is coming up under them as they walk the first lap, the lamps are
+half lit and going out one at a time behind the lamplighter, both the night and the day crews
+are on the road, and the Warden's grace is nearly full. The design comment on the daylight
+curve already said the whole value of a cycle in a twenty-minute sitting is being *in* the
+change; this puts a new player in it from the first step. Existing saves are untouched, and
+the anchor keeps its job as the hour a pre-clock save is put back at. Verified: a fresh
+character's ledger reads `06:08 · dawn` with daylight 0.8, lamps 0.68, grace 0.93; the save,
+enrolment and district suites pass and the full non-balance suite follows.
+
+### 7.9 What remains
+
+Nothing. Every finding either audit ranked as a blocker, High or Medium, and every design call
+they left open, is closed and merged. What comes next is a playtest.
 
 ### Appendix — documentation drift found along the way
 

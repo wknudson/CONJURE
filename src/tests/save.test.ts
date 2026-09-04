@@ -17,7 +17,7 @@ import { COMPANIONS } from '../core/data/companions.js';
 import { TIER_WAGER } from '../core/data/bounties.js';
 import { HUNTS } from '../core/data/hunts.js';
 import { ERRANDS } from '../district/errands.js';
-import { dayNumber, NIGHT_ANCHOR } from '../district/daylight.js';
+import { dayNumber, NIGHT_ANCHOR, OPENING_HOUR, phaseAt } from '../district/daylight.js';
 import { traitsFor } from '../core/data/companionTraits.js';
 import { validateDeck } from '../core/data/deckRules.js';
 import { CARDS } from '../core/data/cards/index.js';
@@ -988,11 +988,14 @@ describe('the clock', () => {
     store.set('conjure.save', JSON.stringify(raw));
   }
 
-  it('starts a new character at the hour the world was measured at', () => {
-    // `NIGHT_ANCHOR` is not an arbitrary default. Every value in `AMBIENT` describes the world at
-    // exactly this hour, so a character who has done nothing sees the lighting three separate
-    // measured passes agreed on.
-    expect(newProfile('slot-1').clock).toBe(NIGHT_ANCHOR);
+  it('starts a new character at dawn, not at the night anchor', () => {
+    // Every character used to begin at `NIGHT_ANCHOR` — the hour the ambience was measured at,
+    // and the only hour that existed when the clock shipped. A first-time player walked into a
+    // dark ward under curfew. They open at `OPENING_HOUR` now, mid-dawn, with the light coming
+    // up under them; the anchor keeps its job as the hour a pre-clock save is put back at.
+    expect(newProfile('slot-1').clock).toBe(OPENING_HOUR);
+    expect(OPENING_HOUR).not.toBe(NIGHT_ANCHOR);
+    expect(phaseAt(OPENING_HOUR)).toBe('dawn');
   });
 
   it('puts a character from before the clock at the same hour', () => {

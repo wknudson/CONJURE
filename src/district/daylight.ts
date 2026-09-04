@@ -44,6 +44,22 @@ export const DAY_HOURS = 24;
 export const NIGHT_ANCHOR = 1;
 
 /**
+ * The hour a new character's clock starts at.
+ *
+ * Six in the morning, mid-dawn — and not `NIGHT_ANCHOR`, which is where every character used to
+ * begin because the anchor was the only hour that existed when the clock was added. One in the
+ * morning is the hardest hour in the world for a stranger: the Warden's grace is at two thirds,
+ * the light is at nothing, the curfew is on and the night crews are at full vigour — and the
+ * first thing a player ever saw was a dark ward. Dawn is the opposite of all of that, and it is
+ * also the one hour where the cycle is *visible*: the light is coming up under them as they walk
+ * the first lap, the lamps are half lit and going out one at a time behind the lamplighter, and
+ * both the night crews and the day crews are on the road. "Being in the change" is the whole
+ * value of a clock in a twenty-minute sitting, and this puts a new player in it from the first
+ * step. Existing saves are untouched: this is the opening hour, not a migration.
+ */
+export const OPENING_HOUR = 6;
+
+/**
  * Which day it is, from a clock that counts hours and never resets.
  *
  * The clock used to wrap at twenty-four, which was fine while nothing wanted to know how many
