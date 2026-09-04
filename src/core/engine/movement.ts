@@ -110,6 +110,20 @@ export function movementRange(unit: Unit): number {
   return unit.mov + (unit.statuses.fleet ?? 0);
 }
 
+/**
+ * Tiles a Burning body loses this turn, if its enemy's Commander has the knack for it.
+ *
+ * Read off the *opposing* side, which is why it is not folded into `movementRange`: that
+ * one reads a unit and nothing else, and a penalty owed to the other Commander cannot be
+ * seen from there. Never takes a stride below zero, and never grants one — a 0-MOV
+ * emplacement is unmoved either way.
+ */
+export function burnSlowOn(state: GameState, unit: Unit): number {
+  if ((unit.statuses.burn ?? 0) <= 0) return 0;
+  const foe = unit.side === 'player' ? 'enemy' : 'player';
+  return Math.max(0, state.players[foe].burnSlows);
+}
+
 /** All anchors the unit can legally reach this turn, with the path taken to each. */
 export function legalMoves(state: GameState, unit: Unit): MoveOption[] {
   // canMove is the single source of truth the command validator uses too — checking a
@@ -135,7 +149,7 @@ export function legalMoves(state: GameState, unit: Unit): MoveOption[] {
         if (!canTraverse(state, anchor, unit, license)) continue;
 
         const cost = cur.cost + stepCost(state, unit, anchor);
-        if (cost > movementRange(unit)) continue;
+        if (cost > Math.max(0, movementRange(unit) - burnSlowOn(state, unit))) continue;
         const prior = best.get(key);
         if (prior && prior.cost <= cost) continue;
 

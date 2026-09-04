@@ -25,7 +25,7 @@ import { inBounds, visionClamp } from '../types/state.js';
 import type { Unit } from '../types/units.js';
 import { unitsOf, opposite } from './board.js';
 import { canStrike } from './targeting.js';
-import { canTraverse, licenseFor } from './movement.js';
+import { burnSlowOn, canTraverse, licenseFor } from './movement.js';
 import { climaxTraitOf } from './growth.js';
 import { hasLoS } from './los.js';
 import { cellsAt, DIRS_8, add } from '../util/grid.js';
@@ -65,9 +65,12 @@ export function heldNextTurn(unit: Unit): boolean {
  * A 0-MOV emplacement stays at zero whatever it carries — `canMove` asks the base stat for
  * the same reason: fleetness lengthens a stride, it does not grant one.
  */
-function strideNextTurn(unit: Unit): number {
+function strideNextTurn(state: GameState, unit: Unit): number {
   if (unit.mov <= 0) return 0;
-  return unit.mov + standing(unit.statuses.fleet);
+  // Burn ticks at the start of the body's own turn and comes off a stack, but a body with
+  // one stack left is still Burning when it moves; the slow the forecast shows is the slow
+  // the enemy will suffer. Read the live stacks, as the legal-moves walk does.
+  return Math.max(0, unit.mov + standing(unit.statuses.fleet) - burnSlowOn(state, unit));
 }
 
 /**
@@ -88,7 +91,7 @@ function reachableAnchors(state: GameState, unit: Unit): Coord[] {
   const seen = new Set<string>([coordKey(unit.anchor)]);
   let frontier: Coord[] = [unit.anchor];
 
-  for (let step = 0; step < strideNextTurn(unit); step++) {
+  for (let step = 0; step < strideNextTurn(state, unit); step++) {
     const next: Coord[] = [];
     for (const cur of frontier) {
       for (const dir of DIRS_8) {

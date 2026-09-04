@@ -115,7 +115,8 @@ export function resolveReaction(
     case 'shatter': {
       // Strip armor from whatever is still standing on the tile, then splash outward.
       const host = entityAt(ctx.state, at);
-      if (host && isUnit(host) && host.armor > 0) {
+      // Ossify: bone-set plate. A side with the knack keeps its Armor through the strip.
+      if (host && isUnit(host) && host.armor > 0 && !ctx.state.players[host.side].armorUnstrippable) {
         emit(ctx, { t: 'armorStripped', unitId: host.id, amount: host.armor });
         host.armor = 0;
       }
@@ -176,7 +177,7 @@ export function resolveReaction(
     case 'superconduct': {
       const host = entityAt(ctx.state, at);
       if (!host || !isUnit(host)) break;
-      if (host.armor > 0) {
+      if (host.armor > 0 && !ctx.state.players[host.side].armorUnstrippable) {
         emit(ctx, { t: 'armorStripped', unitId: host.id, amount: host.armor });
         host.armor = 0;
       }

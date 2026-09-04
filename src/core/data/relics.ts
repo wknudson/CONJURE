@@ -633,6 +633,17 @@ export function boonsOfRelics(equipped: RelicLoadout): CombatBoons {
     if (b.bonusShoveDistance) {
       out.bonusShoveDistance = (out.bonusShoveDistance ?? 0) + b.bonusShoveDistance;
     }
+    // The nine knacks built on 2026-09-03. No relic grants one yet; the seam carries them
+    // so the day one does, it works — this is exactly the seam the test exists to hold.
+    if (b.guardiansCharge) out.guardiansCharge = true;
+    if (b.duskBrittlesChilled) out.duskBrittlesChilled = true;
+    if (b.hollowLeavesIce) out.hollowLeavesIce = true;
+    if (b.deathRattle) out.deathRattle = true;
+    if (b.armorUnstrippable) out.armorUnstrippable = true;
+    if (b.burnSlows) out.burnSlows = (out.burnSlows ?? 0) + b.burnSlows;
+    if (b.toxinKindles) out.toxinKindles = (out.toxinKindles ?? 0) + b.toxinKindles;
+    if (b.deathburstReach) out.deathburstReach = (out.deathburstReach ?? 0) + b.deathburstReach;
+    if (b.bonesOnDeath) out.bonesOnDeath = (out.bonesOnDeath ?? 0) + b.bonesOnDeath;
   }
 
   return out;

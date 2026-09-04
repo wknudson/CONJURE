@@ -635,6 +635,12 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
     }
   }
 
+  // What the two defensive knacks below need to know about the target, read before the
+  // blow: a body that dies to it is gone from the map by the time they run.
+  const victim = target.kind === 'unit' ? ctx.state.units[target.id] : undefined;
+  const victimSide = victim?.side;
+  const victimGuards = victim?.keywords.includes('Guardian') ?? false;
+
   newCause(ctx);
   const landed = dealDamage(ctx, {
     target,
@@ -654,6 +660,28 @@ function attack(ctx: Ctx, attackerId: string, target: TargetRef): void {
 
   applyOnHit(ctx, attackerId, target, landed.hpLoss);
   leech(ctx, attackerId, target, landed.hpLoss);
+
+  // Two knacks the *defending* side may hold, both landing on the attacker and both only if
+  // it is still standing — Counter can have killed it inside `dealDamage`.
+  //
+  // Lightning Rod: a Guardian struck from range leaves the shooter Charged. Not damage sent
+  // back — the pipeline has no such thing — but a charge that Surge can cash in, which is
+  // the school's own answer to being shot at.
+  //
+  // Death Rattle: a body killed by the blow leaves its killer Brittle. The design said Frail
+  // on an Overloaded unit; the engine has Brittle for "takes more from every hit" and a
+  // death for the trigger, and the two together are the same threat in the game's own words.
+  if (victimSide && victimSide !== attacker.side && !ctx.state.result) {
+    const defender = ctx.state.players[victimSide];
+    const shooter = ctx.state.units[attackerId];
+    if (shooter && defender.guardiansCharge && victimGuards && !isMelee) {
+      applyStatusTo(ctx, shooter, 'charged', 1, victimSide);
+    }
+    const killer = ctx.state.units[attackerId];
+    if (killer && defender.deathRattle && landed.died && !ctx.state.result) {
+      applyStatusTo(ctx, killer, 'brittle', 1, victimSide);
+    }
+  }
 
   // What the body earns its owner for swinging. Paid whether or not the blow drew blood:
   // this is a generator striking, not a reaction landing, and a Storm Wisp held off by

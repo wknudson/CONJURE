@@ -260,6 +260,17 @@ function damageEntity(ctx: Ctx, entity: Entity, req: DamageRequest): DamageOutco
   const hpLoss = Math.min(entity.hp, Math.max(0, amount));
   entity.hp -= hpLoss;
 
+  // Frost-Reaper: Dusk damage that wounds a Chilled body also leaves it Brittle. The design
+  // asked for +20 on the number, which is the one thing this schema refuses; Brittle is the
+  // engine's own "+20 from every hit", landed as a status rather than folded into the blow.
+  // The dealer is the swinging body where there is one, else whoever's turn it is.
+  if (isUnit(entity) && hpLoss > 0 && req.dtype === 'decay' && (entity.statuses.chill ?? 0) > 0) {
+    const dealer = req.sourceUnitId ? ctx.state.units[req.sourceUnitId]?.side : ctx.state.activeSide;
+    if (dealer && dealer !== entity.side && ctx.state.players[dealer].duskBrittlesChilled && entity.hp > 0) {
+      applyStatusTo(ctx, entity, 'brittle', 1, dealer);
+    }
+  }
+
   emit(ctx, {
     t: 'damageDealt',
     target: isUnit(entity) ? { kind: 'unit', id: entity.id } : { kind: 'obstacle', id: entity.id },

@@ -44,13 +44,25 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
   const ids = unitsOf(ctx.state, side).map((u) => u.id);
 
   // 1. Toxin, then 2. Burn — in that order across all units.
+  //
+  // Ember Spores lights Burn off a Toxin tick, and it is applied *after* both passes rather
+  // than inside the Toxin one: a Burn landed mid-pass would be ticked by the Burn pass a
+  // moment later and be gone, which is a bigger Toxin number wearing a costume. Landed
+  // here it is a real affliction the body carries into the next turn.
+  const kindled: { id: UnitId; stacks: number; by: Side }[] = [];
   for (const status of ['toxin', 'burn'] as const) {
     for (const id of ids) {
       const unit = ctx.state.units[id];
       if (!unit) continue;
-      tickStatus(ctx, unit, status);
+      const stacks = tickStatus(ctx, unit, status);
       if (ctx.state.result) return;
+      if (stacks > 0) kindled.push({ id, stacks, by: unit.side === 'player' ? 'enemy' : 'player' });
     }
+  }
+  for (const k of kindled) {
+    const survivor = ctx.state.units[k.id];
+    if (survivor) applyStatusTo(ctx, survivor, 'burn', k.stacks, k.by);
+    if (ctx.state.result) return;
   }
 
   // 2b/2c. Ground and constructs, both guarded on the board being empty of them.
@@ -115,9 +127,14 @@ export function startOfTurnStatuses(ctx: Ctx, side: Side): void {
   }
 }
 
-function tickStatus(ctx: Ctx, unit: Unit, status: 'toxin' | 'burn'): void {
+/**
+ * One status ticking on one body. Returns the Burn stacks Ember Spores owes the victim for
+ * a Toxin tick — zero for anything else — so the caller can land them once both passes are
+ * done.
+ */
+function tickStatus(ctx: Ctx, unit: Unit, status: 'toxin' | 'burn'): number {
   const stacks = unit.statuses[status] ?? 0;
-  if (stacks <= 0) return;
+  if (stacks <= 0) return 0;
 
   // A side that cannot burn does not burn, and a side that cannot be poisoned does not
   // tick: the stacks still come off, so the affliction runs out at the same rate, it
@@ -130,11 +147,11 @@ function tickStatus(ctx: Ctx, unit: Unit, status: 'toxin' | 'burn'): void {
   if (immune) {
     unit.statuses[status] = stacks - 1;
     if (unit.statuses[status]! <= 0) delete unit.statuses[status];
-    return;
+    return 0;
   }
 
   const spec = TICK_DAMAGE[status];
-  if (!spec) return;
+  if (!spec) return 0;
 
   const damage = spec.amount * stacks;
   emit(ctx, { t: 'statusTicked', unitId: unit.id, status, damage, remaining: stacks - 1 });
@@ -153,6 +170,15 @@ function tickStatus(ctx: Ctx, unit: Unit, status: 'toxin' | 'burn'): void {
     if (next > 0) live.statuses[status] = next;
     else delete live.statuses[status];
   }
+
+  // Ember Spores: the foe's Toxin smoulders. Every tick also owes Burn to whatever survived
+  // it — a new affliction rather than a bigger number, which is the line this schema draws.
+  // Owed here, landed by the caller once the Burn pass is over.
+  if (status === 'toxin' && live) {
+    const foe = unit.side === 'player' ? 'enemy' : 'player';
+    return Math.max(0, ctx.state.players[foe].toxinKindles);
+  }
+  return 0;
 }
 
 /**

@@ -183,6 +183,10 @@ export function carryFor(
   const wildfireToxin = (gear.wildfireSeedsToxin ?? 0) + (knack.wildfireSeedsToxin ?? 0);
   const freezeStacks = (gear.bonusFreezeStacks ?? 0) + (knack.bonusFreezeStacks ?? 0);
   const shoveTiles = (gear.bonusShoveDistance ?? 0) + (knack.bonusShoveDistance ?? 0);
+  const burnSlows = (gear.burnSlows ?? 0) + (knack.burnSlows ?? 0);
+  const toxinKindles = (gear.toxinKindles ?? 0) + (knack.toxinKindles ?? 0);
+  const deathburstReach = (gear.deathburstReach ?? 0) + (knack.deathburstReach ?? 0);
+  const bonesOnDeath = (gear.bonesOnDeath ?? 0) + (knack.bonesOnDeath ?? 0);
 
   const boons: CombatBoons = {
     ...(armor ? { armor } : {}),
@@ -218,6 +222,16 @@ export function carryFor(
     ...(wildfireToxin ? { wildfireSeedsToxin: wildfireToxin } : {}),
     ...(freezeStacks ? { bonusFreezeStacks: freezeStacks } : {}),
     ...(shoveTiles ? { bonusShoveDistance: shoveTiles } : {}),
+    // The nine knacks built on 2026-09-03, on the same two rules as everything above.
+    ...(gear.guardiansCharge || knack.guardiansCharge ? { guardiansCharge: true } : {}),
+    ...(gear.duskBrittlesChilled || knack.duskBrittlesChilled ? { duskBrittlesChilled: true } : {}),
+    ...(gear.hollowLeavesIce || knack.hollowLeavesIce ? { hollowLeavesIce: true } : {}),
+    ...(gear.deathRattle || knack.deathRattle ? { deathRattle: true } : {}),
+    ...(gear.armorUnstrippable || knack.armorUnstrippable ? { armorUnstrippable: true } : {}),
+    ...(burnSlows ? { burnSlows } : {}),
+    ...(toxinKindles ? { toxinKindles } : {}),
+    ...(deathburstReach ? { deathburstReach } : {}),
+    ...(bonesOnDeath ? { bonesOnDeath } : {}),
   };
 
   // The rolls this particular beast is carrying. Resolved here for the same reason the

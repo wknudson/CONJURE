@@ -183,6 +183,15 @@ function blankCommander(
     bonusFreezeStacks: 0,
     immuneToShatterSplash: false,
     bonusShoveDistance: 0,
+    burnSlows: 0,
+    toxinKindles: 0,
+    guardiansCharge: false,
+    duskBrittlesChilled: false,
+    hollowLeavesIce: false,
+    deathburstReach: 0,
+    deathRattle: false,
+    armorUnstrippable: false,
+    bonesOnDeath: 0,
     discountHybrids: false,
   };
 }

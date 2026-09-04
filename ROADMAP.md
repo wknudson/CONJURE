@@ -310,9 +310,10 @@ and walk back — twice in a row without a reload.
   reads as arbitrary.
 - Behemoth Growth caps at `GROWTH_CAP_BEHEMOTH` (99) rather than being unbounded, but there
   is no dedicated long-game test that a Behemoth actually reaches and stops at the cap.
-- Two companion traits describe mechanics the engine does not have and are marked `pending`
-  in `src/core/data/companionTraits.ts`: `echo_chamber` (names a resource that never
-  existed) and `death_rattle`. Each needs either an implementation or a rewrite.
+- ~~Two companion traits describe mechanics the engine does not have and are marked `pending`
+  in `src/core/data/companionTraits.ts`: `echo_chamber` and `death_rattle`.~~ **Landed**
+  (2026-09-03): all nine pending knacks are wired — three as designed, six rewritten to a
+  capability the engine can express in the same flavour. Nothing is `pending` any more.
 - **The player sees two words for one mechanic.** The keyword is `Growth`, but the HUD still
   says "Escalation stacks" (`hud/glossary.ts`), "escalated ×N" (`hud/Hud.ts`) and "N
   escalation" (`hud/projection.ts`), and the stat fields are still `escalationBonus` /

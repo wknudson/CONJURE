@@ -66,6 +66,24 @@ export interface CommanderState {
   immuneToShatterSplash: boolean;
   /** Tiles added to every shove this side's cards deal out. */
   bonusShoveDistance: number;
+  /** Tiles of movement an enemy loses while it Burns. Read off the *burning body's foe*. */
+  burnSlows: number;
+  /** Burn stacks every Toxin tick this side owns also lights on the victim. */
+  toxinKindles: number;
+  /** A Guardian of this side struck from range leaves its attacker Charged. */
+  guardiansCharge: boolean;
+  /** Dusk damage this side deals to a Chilled body also leaves it Brittle. */
+  duskBrittlesChilled: boolean;
+  /** A Climaxed Hollow host of this side leaves an Ice Barricade where it falls. */
+  hollowLeavesIce: boolean;
+  /** Extra rings this side's Deathbursts reach. Zero is the ordinary eight tiles. */
+  deathburstReach: number;
+  /** A unit of this side killed by an attack leaves its killer Brittle. */
+  deathRattle: boolean;
+  /** Shatter and Superconduct cannot strip this side's units' Armor. */
+  armorUnstrippable: boolean;
+  /** Bones every body of this side refunds its owner for dying, on top of its own price. */
+  bonesOnDeath: number;
   /** Spliced cards cost this side 1 Bone less, never below one. */
   discountHybrids: boolean;
   /** Bones refunded by elemental reactions this turn, capped so cascades cannot self-fund. */
