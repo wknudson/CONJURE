@@ -24,7 +24,7 @@ export const RESCUE_FEE_RATE = 0.2;
 export function rescuePlayer(state: GlobalGameState): number {
   const before = overworld.economy.ducats;
   overworld.economy.ducats = Math.floor(before * (1 - RESCUE_FEE_RATE));
-  overworld.pact.currentHp = 1;
+  overworld.pact.currentHp = 10; // one point, on the stretched scale (STAT_SCALE = 10)
   overworld.activeBuff = null;
   overworld.activeEncounter = null;
   state.combat = null;
@@ -33,7 +33,8 @@ export function rescuePlayer(state: GlobalGameState): number {
 ```
 
 Two things make it sting anyway. The fee is a **share** of the purse, so it is felt by a
-rich player as much as a poor one. And the Pact comes back at **1**, not full — upright,
+rich player as much as a poor one. And the Pact comes back at **10** — a single point on the
+stretched scale, out of a 400-point pool — not full: upright,
 but unable to take another contract without spending a tonic or a Clinic fee on getting
 well. Waking at full health would make dying a free ride home.
 

@@ -740,7 +740,7 @@ const TEMPLATE = `
       <div class="enemy-bar__label">ENEMY COMMANDER</div>
       <div class="enemy-bar__track"><div class="enemy-bar__fill"></div></div>
       <div class="enemy-bar__row">
-        <span class="enemy-bar__text">40 / 40</span>
+        <span class="enemy-bar__text">— / —</span>
         <span class="enemy-bar__armor is-hidden" data-tip="armor"></span>
       </div>
       <div class="enemy-read">
@@ -786,7 +786,7 @@ const TEMPLATE = `
             <div class="pact__ticks"></div>
           </div>
           <div class="pact__row">
-            <span class="pact__text">PACT  40 / 40</span>
+            <span class="pact__text">PACT  — / —</span>
             <span class="pact__armor is-hidden" data-tip="armor"></span>
           </div>
         </div>

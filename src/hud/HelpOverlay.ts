@@ -8,12 +8,13 @@
 
 import { KEYWORDS, TERMS } from './glossary.js';
 
-const SECTIONS: { heading: string; rows: [string, string][] }[] = [
+/** Exported so a test can hold the numbers in this copy to the engine's constants. */
+export const SECTIONS: { heading: string; rows: [string, string][] }[] = [
   {
     heading: 'How you win',
     rows: [
       ['Your goal', 'Reduce the enemy Commander to 0 HP. They stand beyond their back row.'],
-      ['How you lose', 'Your Hero and Companion share 40 HP. At zero, the run ends.'],
+      ['How you lose', 'Your Hero and Companion share one pool of health — 400 to begin with. At zero, the fight is lost.'],
       [
         'Reaching them',
         'A Commander cannot be attacked. Break their Companion\'s Bound Form on the board — every wound it takes comes off their pool.',
@@ -65,7 +66,7 @@ const SECTIONS: { heading: string; rows: [string, string][] }[] = [
       ['Superconduct', 'Frost through a Charged target strips all its Armor and leaves it Brittle.'],
       ['Charged', 'Left behind by Surge damage. Harmless alone — it is what fire and frost react to.'],
       ['Chill', 'Three stacks freeze a unit solid instead of stacking a fourth.'],
-      ['Brittle', 'The target takes +2 from every hit until it wears off.'],
+      ['Brittle', 'The target takes +20 from every hit until it wears off.'],
     ],
   },
   {
