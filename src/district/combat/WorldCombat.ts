@@ -33,7 +33,7 @@ import { Fx } from '../../render/Fx.js';
 import { emptyOverlays, type Overlays, type TetherModel } from '../../render/BoardRenderer.js';
 import { Sequencer, AI_BEAT_MS, NORMAL_MOTION } from '../../anim/Sequencer.js';
 import { registerHandlers, type CombatView, type TetherSink } from '../../anim/handlers.js';
-import { Hud } from '../../hud/Hud.js';
+import { Hud, LAST_STAND_FRACTION } from '../../hud/Hud.js';
 import { DeployTray } from '../../hud/DeployTray.js';
 import { Graveyard } from '../../hud/Graveyard.js';
 import { ChannelPicker } from '../../hud/ChannelPicker.js';
@@ -62,7 +62,6 @@ import type { AreaDef } from '../map.js';
 const BODY_PX = 1.9 / PX_TO_WORLD;
 
 /** Below this share of the Pact the presentation turns to panic. Mirrors `CombatScreen`. */
-const LAST_STAND_FRACTION = 0.25;
 
 /** How the player likes to watch the game. The same key the 2D board reads. */
 const SPEED_KEY = 'conjure.speed';
@@ -663,7 +662,28 @@ export class WorldCombat {
       this.help.toggle();
       return true;
     }
+    // The rest of what the rules panel promises. The board shell had these and this one
+    // did not, so the same H panel told a street fight about keys that did nothing.
+    if (code === 'KeyC') {
+      this.channelSelected();
+      return true;
+    }
+    if (code === 'ShiftLeft' || code === 'ShiftRight') {
+      this.targeting.setExpanded(true);
+      return true;
+    }
+    if (code === 'Space') {
+      this.sequencer.fastForward(true);
+      return true;
+    }
     return false;
+  }
+
+  /** The release half of the held keys above. Forwarded by the district like `handleKey`. */
+  handleKeyUp(code: string): void {
+    if (this.disposed) return;
+    if (code === 'ShiftLeft' || code === 'ShiftRight') this.targeting.setExpanded(false);
+    if (code === 'Space') this.sequencer.fastForward(false);
   }
 
   /* ============================================================

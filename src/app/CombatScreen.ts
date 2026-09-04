@@ -21,7 +21,8 @@ import { EntityViewMap } from '../render/EntityViews.js';
 import { Fx } from '../render/Fx.js';
 import { Sequencer } from '../anim/Sequencer.js';
 import { registerHandlers, type CombatView } from '../anim/handlers.js';
-import { Hud } from '../hud/Hud.js';
+import { Hud, LAST_STAND_FRACTION } from '../hud/Hud.js';
+import { KEYWORDS, TERMS } from '../hud/glossary.js';
 import { DeployTray } from '../hud/DeployTray.js';
 import { Graveyard } from '../hud/Graveyard.js';
 import { ChannelPicker } from '../hud/ChannelPicker.js';
@@ -51,7 +52,6 @@ import {
  * A quarter of the gauge. Below this the room changes: the board drains of colour, the
  * edges close in red, and a heartbeat comes up under everything.
  */
-const LAST_STAND_FRACTION = 0.25;
 import type { AiProfile } from '../core/ai/controller.js';
 import { easeOutQuad, tween } from '../anim/tween.js';
 
@@ -644,9 +644,10 @@ export class CombatScreen implements Screen {
       return;
     }
 
+    // Under the glossary's names, not the ids: "chill 2" is code showing through.
     const statuses = board.statuses
       .filter((s) => s.unitId === unit.id)
-      .map((s) => `${s.kind} ${s.stacks}`)
+      .map((s) => `${TERMS[s.kind]?.title ?? s.kind} ${s.stacks}`)
       .join(' · ');
 
     tips.showHtml(
@@ -658,7 +659,7 @@ export class CombatScreen implements Screen {
        }</div>
        ${
          unit.keywords.length
-           ? `<div class="tooltip__detail">${unit.keywords.join(' · ')}</div>`
+           ? `<div class="tooltip__detail">${unit.keywords.map((k) => KEYWORDS[k]?.title ?? k).join(' · ')}</div>`
            : ''
        }
        ${unit.armor > 0 ? `<div class="tooltip__detail">${unit.armor} Armor absorbs damage first</div>` : ''}

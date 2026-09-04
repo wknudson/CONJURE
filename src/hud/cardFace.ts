@@ -14,6 +14,7 @@
  */
 
 import { formatCost } from './cost.js';
+import { KEYWORDS } from './glossary.js';
 import { schoolOf } from '../render/palette.js';
 import { isAscendedId } from '../core/data/cards/index.js';
 import { ASCENSION_PERCENT } from '../core/data/ascension.js';
@@ -181,10 +182,12 @@ export function cardFaceHtml(
        </div>`
     : '';
 
-  // Each keyword carries its own tooltip: they are the densest jargon on screen.
+  // Each keyword carries its own tooltip: they are the densest jargon on screen. Printed
+  // under the glossary's title rather than the id — the id read as BOUNDFORM and
+  // POWERTIER once the styling uppercased it, which is code showing through.
   const keywords = face.keywords.length
     ? `<div class="card__keywords">${face.keywords
-        .map((k) => `<span data-tip="${k}">${k}</span>`)
+        .map((k) => `<span data-tip="${k}">${KEYWORDS[k]?.title ?? k}</span>`)
         .join(' · ')}</div>`
     : '';
 

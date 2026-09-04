@@ -13,6 +13,14 @@ import type { WeatherReading } from './weather.js';
 import { schoolOf } from '../render/palette.js';
 import { describeProjected, type ProjectedDamage } from './projection.js';
 import { fitCardText } from './cardFace.js';
+import { TERMS } from './glossary.js';
+
+/**
+ * At or below this share of the Pact's ceiling the fight is a Last Stand: the board
+ * drains of colour, the vignette closes in, the heartbeat comes up. One number, here,
+ * because both fight shells read it and each used to declare its own copy.
+ */
+export const LAST_STAND_FRACTION = 0.25;
 
 export interface HudCallbacks {
   onCardClick(cardId: CardInstanceId): void;
@@ -456,12 +464,12 @@ export class Hud {
 
     const statuses = board.statuses
       .filter((s) => s.unitId === unitId)
-      .map((s) => `<span class="inspect__status" data-tip="${s.kind}">${s.kind} ${s.stacks}</span>`)
+      .map((s) => `<span class="inspect__status" data-tip="${s.kind}">${TERMS[s.kind]?.title ?? s.kind} ${s.stacks}</span>`)
       .join('');
 
     const actions: string[] = [];
     if (!unit.exhausted) actions.push('can act');
-    if (unit.escalation > 0) actions.push(`escalated ×${unit.escalation}`);
+    if (unit.escalation > 0) actions.push(`Grown ×${unit.escalation}`);
 
     this.inspectEl.innerHTML = `
       <div class="inspect__name">${escapeHtml(unit.name)}</div>

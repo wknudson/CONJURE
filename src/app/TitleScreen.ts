@@ -70,7 +70,7 @@ export class TitleScreen implements Screen {
 
       <div class="title__hint">
         Pick a commission to carry on, or draft a new one. Work is posted on the Bounty
-        Board inside the Safehouse. <kbd>T</kbd> shows the danger zone in a fight,
+        Board on the plaza. <kbd>T</kbd> shows the danger zone in a fight,
         <kbd>H</kbd> the rules.
       </div>
       <div class="title__build" title="Quote this in a bug report">${buildLabel()}</div>

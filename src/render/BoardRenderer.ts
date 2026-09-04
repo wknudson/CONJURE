@@ -85,6 +85,8 @@ export interface Overlays {
     unitId: UnitId;
     kind: 'attack' | 'commander' | 'card' | 'move' | 'channel';
     at?: Coord;
+    /** The tiles a declared move will walk, in order. Drawn as the line for a move. */
+    path?: Coord[];
     /** The entity a declared card is bound to — the marker follows it. */
     targetId?: UnitId;
     damage: number;
@@ -663,38 +665,58 @@ export class BoardRenderer {
       const target = cam.tileCenter(at);
       const source = this.views.get(intent.unitId);
 
-      // A cast reads in amber, a strike in red: an entity-targeted spell cannot be
-      // side-stepped the way a declared blow can, and painting both with the strike's
-      // colour would tell the player that moving away works when it does not.
-      const casting = intent.kind === 'card';
+      // A cast reads in amber, a strike in red, a move in slate: an entity-targeted spell
+      // cannot be side-stepped the way a declared blow can, and painting both with the
+      // strike's colour would tell the player that moving away works when it does not.
+      // A declared move is not a threat at all — the badges already said so, but the
+      // tile and the line still painted it hostile — so it wears the badge's own grey.
+      const tone = intent.kind === 'card' ? 'cast' : intent.kind === 'move' ? 'move' : 'strike';
+      const fill =
+        tone === 'cast'
+          ? 'rgba(251, 191, 36, 0.85)'
+          : tone === 'move'
+            ? 'rgba(148, 163, 184, 0.7)'
+            : 'rgba(229, 72, 77, 0.9)';
+      const stroke =
+        tone === 'cast'
+          ? 'rgba(252, 211, 77, 0.95)'
+          : tone === 'move'
+            ? 'rgba(203, 213, 225, 0.85)'
+            : 'rgba(248, 113, 113, 0.95)';
 
       // Marked tile: a filled diamond that breathes, so it reads even under a unit.
       ctx.save();
       ctx.globalAlpha = 0.3 + 0.16 * pulse;
-      fillTile(ctx, cam, at, casting ? 'rgba(251, 191, 36, 0.85)' : 'rgba(229, 72, 77, 0.9)');
+      fillTile(ctx, cam, at, fill);
       ctx.restore();
 
       ctx.save();
       ctx.setLineDash([6, 4]);
       ctx.lineDashOffset = -(this.clock / 28) % 10;
-      ctx.strokeStyle = casting ? 'rgba(252, 211, 77, 0.95)' : 'rgba(248, 113, 113, 0.95)';
+      ctx.strokeStyle = stroke;
       ctx.lineWidth = 2.5;
       tilePath(ctx, cam, at);
       ctx.stroke();
       ctx.restore();
 
-      // The line of attack, so it is obvious *who* is throwing the blow.
+      // The line from the actor, so it is obvious *who* is doing it. A declared move
+      // follows the path the enemy will actually walk — the engine computes it and, until
+      // now, nothing drew it — where a blow or a cast is a straight line to its mark.
       if (source) {
         const from = cam.worldToScreen(source.pos.x + 0.5, source.pos.y + 0.5, 18 * cam.zoom);
+        const waypoints =
+          tone === 'move' && intent.path && intent.path.length > 0
+            ? intent.path.map((c) => cam.tileCenter(c))
+            : [target];
         ctx.save();
         ctx.globalAlpha = 0.65;
-        ctx.strokeStyle = 'rgba(248, 113, 113, 0.9)';
+        ctx.strokeStyle = stroke;
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 5]);
         ctx.lineDashOffset = -(this.clock / 22) % 10;
         ctx.beginPath();
         ctx.moveTo(from.x, from.y);
-        ctx.lineTo(target.x, target.y);
+        for (const p of waypoints) ctx.lineTo(p.x, p.y);
         ctx.stroke();
         ctx.restore();
       }
