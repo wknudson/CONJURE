@@ -79,7 +79,7 @@ import { isHunt } from '../core/data/hunts.js';
 import { isLair } from '../core/data/lairs.js';
 import { isPack } from '../core/data/packs.js';
 import { errandById } from '../district/errands.js';
-import { NIGHT_ANCHOR } from '../district/daylight.js';
+import { NIGHT_ANCHOR, OPENING_HOUR } from '../district/daylight.js';
 
 /**
  * Errands run, and the one currently open.
@@ -681,7 +681,9 @@ export function initializeNewProfile(profileId: string, rawLook: CharacterLook):
     // Every hunt open. A new Whisperer has not been past the gate.
     hunts: {},
     errands: { done: [], active: null },
-    clock: NIGHT_ANCHOR,
+    // Dawn, not the night anchor. See `OPENING_HOUR` for the ruling; the anchor stays the hour
+    // a pre-clock save is put back at, because that is where those characters were standing.
+    clock: OPENING_HOUR,
     decks,
     // A warband of their own colour, spending as much of the ten as their school's shelf
     // allows -- so a new player meets the deployment phase with a real line to place, and
