@@ -13,9 +13,10 @@
  * Also the same house rule, stated precisely now that a pool has tested it: a trait may
  * grant a **new capability**, numbers and all — steam that scalds, plate that charges off
  * an arc, a Freeze that lasts a turn longer. What it may not do is **scale a number some
- * card already prints**. `ember_spores` and `frost_reaper` below are exactly that, which
- * is why they are the two knacks marked pending for a reason that is not a missing
- * mechanic.
+ * card already prints**. `ember_spores` and `frost_reaper` were written as exactly that
+ * and sat pending for it; both were rewritten (2026-09-03) as a new affliction landed
+ * beside the damage — Burn off a Toxin tick, Brittle off a Dusk wound — which is the same
+ * pressure in the engine's own words and the reason the rule exists.
  */
 
 import type { CombatBoons } from '../engine/setup.js';
@@ -252,18 +253,17 @@ const FERRUM_TRAITS: Record<string, CompanionTrait> = {
 
 
 /**
- * The hybrid bloodlines' knacks — two apiece, and the first pool in the game with a
- * **declared but unbuilt** half.
+ * The hybrid bloodlines' knacks — two apiece, all wired.
  *
- * Eleven of the twenty are wired to real capabilities and roll like every knack above.
- * The other nine name mechanics the engine does not have — Echo, Pierce, Frail, Hollow,
- * Devour, damage reflection — and carry `pending` saying exactly which. They are here
- * rather than deleted because the design is the useful artefact: a trait that says what
- * it needs is a work item, and a trait quietly dropped is a conversation somebody has to
- * have twice.
+ * For a year of this file's life nine of the twenty named mechanics the engine did not
+ * have — Echo, Pierce, Frail, Hollow, Devour, damage reflection — and carried `pending`
+ * saying exactly which; `traitsFor` filtered them out so nothing rollable was a no-op.
+ * On 2026-09-03 each was either built as designed or rewritten to a capability the engine
+ * can express in the same flavour, and the entry's comment says which. The `pending`
+ * field stays on the type: the next knack that outruns the engine has somewhere to be
+ * written down rather than quietly dropped.
  *
- * `traitsFor` filters them out, so nothing rollable is ever a no-op. A hybrid still has
- * plenty to roll: see `TRAIT_LINEAGE` below.
+ * A hybrid also rolls from its parents: see `TRAIT_LINEAGE` below.
  */
 const HYBRID_TRAITS: Record<string, CompanionTrait> = {
   fog_stalker: {
@@ -287,14 +287,15 @@ const HYBRID_TRAITS: Record<string, CompanionTrait> = {
     baseId: 'wasp',
     boons: { arcPierces: true },
   },
+  // Built as designed. The penalty is owed by the *opposing* Commander, which `movementRange`
+  // could not see; `burnSlowOn` reads it off the burning body's foe, in the legal-moves walk
+  // and the danger-zone forecast alike.
   static_burn: {
     id: 'static_burn',
     name: 'Static Burn',
-    text: 'Enemies afflicted with Burn suffer -1 MOV.',
+    text: 'Fire that clings to the legs. Burning enemies move one tile less.',
     baseId: 'wasp',
-    boons: {},
-    pending:
-      'Movement has no per-side hook: `movementRange` reads a unit and nothing else, so a MOV penalty owed to the *opposing* commander cannot be seen from there.',
+    boons: { burnSlows: 1 },
   },
   heavy_tread: {
     id: 'heavy_tread',
@@ -317,14 +318,15 @@ const HYBRID_TRAITS: Record<string, CompanionTrait> = {
     baseId: 'treant',
     boons: { wildfireSeedsToxin: 1 },
   },
+  // Rewritten. "+10 fire on the tick" scaled a printed number; a Burn landed by the tick is
+  // a new affliction the body carries into its next turn, and it is fire, so it feeds
+  // every reaction fire feeds.
   ember_spores: {
     id: 'ember_spores',
     name: 'Ember Spores',
-    text: 'Toxin ticks deal an additional 10 fire damage.',
+    text: 'Your Toxin smoulders. Every Toxin tick also lights one Burn on whatever survived it.',
     baseId: 'treant',
-    boons: {},
-    pending:
-      'Scales an existing damage number, which is the one thing this schema deliberately has nowhere to put. See the note at the top of this file.',
+    boons: { toxinKindles: 1 },
   },
   conductive_ice: {
     id: 'conductive_ice',
@@ -333,14 +335,15 @@ const HYBRID_TRAITS: Record<string, CompanionTrait> = {
     baseId: 'mantis',
     boons: { chillConducts: true },
   },
+  // Rewritten. The pipeline sends nothing back the way it came, but the attacker is known
+  // where the swing resolves, and a charge left on it is Surge's own answer to being shot
+  // at: the next Surge blow Overloads, Superconducts or Arcs off it.
   lightning_rod: {
     id: 'lightning_rod',
     name: 'Lightning Rod',
-    text: 'Allied Guardians reflect 10 shock damage when struck by a ranged attack.',
+    text: 'A Guardian of yours struck from range leaves its attacker Charged.',
     baseId: 'mantis',
-    boons: {},
-    pending:
-      'Reflection does not exist. Nothing in the damage pipeline sends anything back the way it came, and the attacker is not carried to where a defence could read it.',
+    boons: { guardiansCharge: true },
   },
   dense_ice: {
     id: 'dense_ice',
@@ -356,23 +359,25 @@ const HYBRID_TRAITS: Record<string, CompanionTrait> = {
     baseId: 'juggernaut',
     boons: { immuneToShatterSplash: true },
   },
+  // Rewritten. "+20 Dusk damage to Chilled targets" scaled a printed number; Brittle *is*
+  // the engine's "+20 from every hit", landed as a status by the wound instead of folded
+  // into it — so it also lasts, and Frost's own Superconduct lands the same word.
   frost_reaper: {
     id: 'frost_reaper',
     name: 'Frost-Reaper',
-    text: 'Dusk spells deal +20 bonus damage to Chilled targets.',
+    text: 'Dusk damage you deal to a Chilled body also leaves it Brittle.',
     baseId: 'gargoyle',
-    boons: {},
-    pending:
-      'Scales an existing damage number, and additionally by school and by target status. See the note at the top of this file.',
+    boons: { duskBrittlesChilled: true },
   },
+  // Built as designed, with the noun pinned down: nothing "carries Hollow" as a status, but
+  // a body hosting the Hollow Climax is exactly the thing meant, and its tile is free the
+  // moment it falls.
   hollow_ice: {
     id: 'hollow_ice',
     name: 'Hollow Ice',
-    text: 'Units carrying Hollow raise an Ice Barricade on their tile when they die.',
+    text: 'When a Climaxed Hollow host of yours falls, an Ice Barricade rises where it stood.',
     baseId: 'gargoyle',
-    boons: {},
-    pending:
-      'No `hollow` status exists to carry. The Hollow Climax trait is built, but as a rider — the host leaves Brittle on what it wounds — so nothing on the board is "carrying Hollow" for a death trigger to read.',
+    boons: { hollowLeavesIce: true },
   },
   magnetic_repulsion: {
     id: 'magnetic_repulsion',
@@ -388,41 +393,45 @@ const HYBRID_TRAITS: Record<string, CompanionTrait> = {
     baseId: 'dynamo',
     boons: { armorOnArcCollateral: 10 },
   },
+  // Rewritten. There is no Echo to extend, but a corpse's burst that carries a ring further
+  // is that idea in a word the engine has — the ghost's last breath reaching more of the
+  // room.
   echo_chamber: {
     id: 'echo_chamber',
     name: 'Echo Chamber',
-    text: 'Echoes persist for one additional round before expiring.',
+    text: 'Your Deathbursts carry further: one more ring of tiles catches them.',
     baseId: 'geist',
-    boons: {},
-    pending:
-      'Echo does not exist. There is no such resource anywhere in `src/core`, so there is nothing to extend the life of.',
+    boons: { deathburstReach: 1 },
   },
+  // Rewritten. Neither Frail nor "killed while Overloaded" exists; Brittle is the engine's
+  // "takes more from every hit", and a body killed by a blow knows its killer where the
+  // blow resolves. The same threat, in words the board can show.
   death_rattle: {
     id: 'death_rattle',
     name: 'Death Rattle',
-    text: 'Overloaded units apply Frail to their killer as they go.',
+    text: 'A body of yours killed by an attack leaves its killer Brittle.',
     baseId: 'geist',
-    boons: {},
-    pending:
-      'Neither half exists: `frail` is not a StatusKind, and Overload is a reaction rather than a status a body can be killed while carrying.',
+    boons: { deathRattle: true },
   },
+  // Rewritten. Pierce does not exist and `true` damage is a property of the blow; what
+  // *does* take a side's plate away is the strip — Shatter and Superconduct — and that has
+  // a chokepoint a side can be exempted at.
   ossify: {
     id: 'ossify',
     name: 'Ossify',
-    text: 'Persistent Armor on your units cannot be bypassed by Pierce.',
+    text: 'Bone-set plate. Shatter and Superconduct cannot strip the Armor off your units.',
     baseId: 'sovereign',
-    boons: {},
-    pending:
-      'Pierce does not exist as a keyword. Armor is bypassed by the `true` damage type, which is a property of the blow and has no per-side exemption to grant.',
+    boons: { armorUnstrippable: true },
   },
+  // Rewritten. Nothing devours, so nothing returns to hand; but a death that pays is the
+  // same bargain — spend the body, get something back — and the Hollowed Husk already
+  // shows the shape of it.
   grave_robber: {
     id: 'grave_robber',
     name: 'Grave-Robber',
-    text: 'Devoured allied units return to your hand instead of the discard pile.',
+    text: 'Every body of yours that falls refunds a Bone.',
     baseId: 'sovereign',
-    boons: {},
-    pending:
-      'Devour does not exist. Nothing consumes an allied body for stats, so there is no trigger to redirect the card away from the discard pile.',
+    boons: { bonesOnDeath: 1 },
   },
 };
 

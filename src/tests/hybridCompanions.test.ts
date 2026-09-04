@@ -158,21 +158,22 @@ describe('the taming roll', () => {
     }
   });
 
-  it('keeps the declared design visible even where it cannot be rolled', () => {
+  it('has built every knack it declared', () => {
     // Every hybrid was briefed two traits. `declaredTraitsFor` is the Field Journal's
-    // question — what did we design — and `traitsFor` is the roll's.
+    // question — what did we design — and `traitsFor` is the roll's; the two agree now.
     for (const id of BLOODLINES) {
       expect(declaredTraitsFor(id), id).toHaveLength(2);
+      expect(traitsFor(id).filter((t) => t.baseId === id), `${id}'s own knacks`).toHaveLength(2);
     }
-    // Still nine, and all nine belong to the original ten hybrids: the five bloodlines
-    // added when the pairings closed were written against boons the engine already reads,
-    // so none of them owes an IOU.
+    // Nine knacks were declared and not built for a year of the file's life — Echo, Frail,
+    // Pierce, Devour, reflection, and two that scaled a printed number. Each was either
+    // built as designed or rewritten to a capability the engine can express in the same
+    // flavour (2026-09-03). The field stays on the type so the next IOU has somewhere to be
+    // written down; today nothing owes one.
     const pending = Object.values(COMPANION_TRAITS).filter((t) => t.pending);
-    expect(pending).toHaveLength(9);
-    for (const trait of pending) {
-      // A reason, not a TODO. Somebody has to be able to act on it without asking.
-      expect(trait.pending!.length, trait.name).toBeGreaterThan(40);
-      expect(trait.boons, trait.name).toEqual({});
+    expect(pending.map((t) => t.id)).toEqual([]);
+    for (const trait of Object.values(COMPANION_TRAITS)) {
+      expect(Object.keys(trait.boons).length, `${trait.name} does nothing`).toBeGreaterThan(0);
     }
   });
 
@@ -403,8 +404,9 @@ describe('the wired knacks', () => {
       }
     }
     // Counts boon *entries*, not traits — a knack granting two boons contributes two. Rose
-    // from 11 when the five closing hybrids arrived with ten wired knacks between them.
-    expect(checked, 'wired hybrid knacks').toBe(24);
+    // from 11 when the five closing hybrids arrived with ten wired knacks between them, and
+    // to 33 when the nine pending knacks were built (2026-09-03): every hybrid's two, wired.
+    expect(checked, 'wired hybrid knacks').toBe(33);
   });
 
   it('opens a fight with the knack already switched on', () => {

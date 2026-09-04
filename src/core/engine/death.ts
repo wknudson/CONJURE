@@ -10,7 +10,7 @@ import type { Entity, Unit } from '../types/units.js';
 import { isUnit } from '../types/units.js';
 import { entityAt, getEntity, unitAt } from './board.js';
 import { evaluateMarkOnDeath } from './marks.js';
-import { placeOpeningUnit } from './spawn.js';
+import { placeOpeningUnit, spawnObstacle } from './spawn.js';
 import { CARDS } from '../data/cards/index.js';
 import { climaxTraitOf } from './growth.js';
 import { creditRefund, spawnHazard } from './reactions.js';
@@ -97,6 +97,7 @@ export function killEntity(
     payBounty(ctx, live.defId, at);
     deathburst(ctx, live, at);
     payDeathRefund(ctx, live);
+    leaveIce(ctx, live, at);
   } else {
     delete ctx.state.obstacles[live.id];
     emit(ctx, { t: 'obstacleDestroyed', obstacleId: live.id, at });
@@ -137,12 +138,34 @@ function deathburst(ctx: Ctx, dead: Unit, at: Coord): void {
   const spec = CARDS[dead.defId]?.unit?.deathburst ?? climaxBurstOf(dead);
   if (!spec) return;
 
-  for (const cell of DIRS_8.map((d) => ({ x: at.x + d.x, y: at.y + d.y }))) {
-    const victim = entityAt(ctx.state, cell);
-    if (!victim || !isUnit(victim) || victim.side === dead.side) continue;
-    applyStatusTo(ctx, victim, spec.status, spec.stacks, dead.side);
-    if (ctx.state.result) return;
+  // Echo Chamber: the burst carries further. One ring is the ordinary eight tiles; each
+  // extra ring the owner's knack grants widens the square. The design spoke of "echoes
+  // persisting"; a corpse's burst reaching further is that idea in a word the engine has.
+  const reach = 1 + Math.max(0, ctx.state.players[dead.side].deathburstReach);
+  for (let dx = -reach; dx <= reach; dx++) {
+    for (let dy = -reach; dy <= reach; dy++) {
+      if (dx === 0 && dy === 0) continue;
+      const cell = { x: at.x + dx, y: at.y + dy };
+      const victim = entityAt(ctx.state, cell);
+      if (!victim || !isUnit(victim) || victim.side === dead.side) continue;
+      applyStatusTo(ctx, victim, spec.status, spec.stacks, dead.side);
+      if (ctx.state.result) return;
+    }
   }
+}
+
+/**
+ * Hollow Ice: a Climaxed Hollow host of a side with the knack leaves an Ice Barricade where
+ * it fell. The design said "units carrying Hollow"; nothing carries Hollow as a status, but
+ * a body hosting the Hollow Climax is exactly the thing meant, and its tile is free the
+ * moment it is gone. Runs after the burst and the refund so the wall never stands in the
+ * way of what the death itself owed.
+ */
+function leaveIce(ctx: Ctx, dead: Unit, at: Coord): void {
+  if (!ctx.state.players[dead.side].hollowLeavesIce) return;
+  if (climaxTraitOf(dead) !== 'hollow') return;
+  if (ctx.state.result) return;
+  spawnObstacle(ctx, 'ice_barricade', dead.side, at);
 }
 
 /** What Overgrowth's corpse is full of. Two stacks: the same dose a Spore Cloud lands. */
@@ -162,7 +185,13 @@ function climaxBurstOf(dead: Unit): { status: 'toxin'; stacks: number } | undefi
  * Wisp is worth something because it swung, and the payment is identical either way.
  */
 function payDeathRefund(ctx: Ctx, dead: Unit): void {
-  const owed = CARDS[dead.defId]?.unit?.refunds?.onDeath ?? 0;
+  // The body's own price, plus Grave-Robber's: a side with the knack is refunded a Bone for
+  // every body it loses, whatever the card says. The design spoke of Devoured units
+  // returning to hand; nothing devours, but a death that pays is the same bargain — you
+  // spend the body and get something back for it.
+  const owed =
+    (CARDS[dead.defId]?.unit?.refunds?.onDeath ?? 0) +
+    Math.max(0, ctx.state.players[dead.side].bonesOnDeath);
   for (let i = 0; i < owed; i++) {
     creditRefund(ctx, dead.side, { id: dead.defId, name: dead.name }, dead.anchor);
   }

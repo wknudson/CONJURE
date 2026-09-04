@@ -41,6 +41,15 @@ export const ALL_BOONS: Record<keyof CombatBoons, true> = {
   bonusFreezeStacks: true,
   immuneToShatterSplash: true,
   bonusShoveDistance: true,
+  burnSlows: true,
+  toxinKindles: true,
+  guardiansCharge: true,
+  duskBrittlesChilled: true,
+  hollowLeavesIce: true,
+  deathburstReach: true,
+  deathRattle: true,
+  armorUnstrippable: true,
+  bonesOnDeath: true,
 };
 
 export const BOON_KEYS = Object.keys(ALL_BOONS) as (keyof CombatBoons)[];

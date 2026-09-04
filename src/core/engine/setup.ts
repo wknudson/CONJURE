@@ -127,6 +127,15 @@ function buildCommander(o: CommanderOpts): { commander: CommanderState; nextId: 
       bonusFreezeStacks: 0,
       immuneToShatterSplash: false,
       bonusShoveDistance: 0,
+      burnSlows: 0,
+      toxinKindles: 0,
+      guardiansCharge: false,
+      duskBrittlesChilled: false,
+      hollowLeavesIce: false,
+      deathburstReach: 0,
+      deathRattle: false,
+      armorUnstrippable: false,
+      bonesOnDeath: 0,
     },
     nextId: id,
   };
@@ -300,6 +309,30 @@ export interface CombatBoons {
   immuneToShatterSplash?: boolean;
   /** Tiles added to every shove this side's *cards* deal out. Currents are not yours. */
   bonusShoveDistance?: number;
+
+  // The nine knacks that were declared and not built (2026-09-03). Each is still one read at
+  // one existing chokepoint; where the design named a mechanic the engine does not have —
+  // Echo, Frail, Pierce, Devour, reflection — the knack was rewritten to a capability the
+  // engine can express in the same flavour, and the trait text says so.
+
+  /** Tiles of movement an enemy loses while it Burns. */
+  burnSlows?: number;
+  /** Burn stacks every Toxin tick this side owns also lights on the victim. */
+  toxinKindles?: number;
+  /** A Guardian of this side struck from range leaves its attacker Charged. */
+  guardiansCharge?: boolean;
+  /** Dusk damage this side deals to a Chilled body also leaves it Brittle. */
+  duskBrittlesChilled?: boolean;
+  /** A Climaxed Hollow host of this side leaves an Ice Barricade where it falls. */
+  hollowLeavesIce?: boolean;
+  /** Extra rings this side's Deathbursts reach. */
+  deathburstReach?: number;
+  /** A unit of this side killed by an attack leaves its killer Brittle. */
+  deathRattle?: boolean;
+  /** Shatter and Superconduct cannot strip this side's units' Armor. */
+  armorUnstrippable?: boolean;
+  /** Bones every body of this side refunds its owner for dying, on top of its own price. */
+  bonesOnDeath?: number;
 }
 
 /**
@@ -611,6 +644,16 @@ export function createCombat(
   player.commander.wildfireSeedsToxin += Math.max(0, carry?.boons?.wildfireSeedsToxin ?? 0);
   player.commander.bonusFreezeStacks += Math.max(0, carry?.boons?.bonusFreezeStacks ?? 0);
   player.commander.bonusShoveDistance += Math.max(0, carry?.boons?.bonusShoveDistance ?? 0);
+
+  if (carry?.boons?.guardiansCharge) player.commander.guardiansCharge = true;
+  if (carry?.boons?.duskBrittlesChilled) player.commander.duskBrittlesChilled = true;
+  if (carry?.boons?.hollowLeavesIce) player.commander.hollowLeavesIce = true;
+  if (carry?.boons?.deathRattle) player.commander.deathRattle = true;
+  if (carry?.boons?.armorUnstrippable) player.commander.armorUnstrippable = true;
+  player.commander.burnSlows += Math.max(0, carry?.boons?.burnSlows ?? 0);
+  player.commander.toxinKindles += Math.max(0, carry?.boons?.toxinKindles ?? 0);
+  player.commander.deathburstReach += Math.max(0, carry?.boons?.deathburstReach ?? 0);
+  player.commander.bonesOnDeath += Math.max(0, carry?.boons?.bonesOnDeath ?? 0);
 
   // Only ever upward, like the Bone ceiling: gear bends a rule in the player's favour or
   // not at all, so a malformed carry cannot hand them a smaller hand than the rules give.

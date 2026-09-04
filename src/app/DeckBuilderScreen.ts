@@ -81,6 +81,10 @@ export const BOON_LABELS: Record<keyof CombatBoons, string> = {
   collisionResist: 'Collision damage shrugged off',
   steamBurns: 'Damage your steam deals',
   armorOnArcCollateral: 'Armor from Arc collateral',
+  burnSlows: 'Tiles a Burning enemy loses',
+  toxinKindles: 'Burn lit by each Toxin tick',
+  deathburstReach: 'Extra reach of your Deathbursts',
+  bonesOnDeath: 'Bones refunded per fallen body',
   // Then the flags.
   ignoreFog: 'Sees through fog',
   fogConceals: 'Hidden by your own steam',
@@ -96,6 +100,11 @@ export const BOON_LABELS: Record<keyof CombatBoons, string> = {
   boundFormGrounded: 'Bound Form cannot be moved',
   doubleResonance: 'Resonance fires twice',
   discountHybrids: 'Spliced cards cost less',
+  guardiansCharge: 'Guardians charge whoever shoots them',
+  duskBrittlesChilled: 'Dusk wounds leave Chilled bodies Brittle',
+  hollowLeavesIce: 'Fallen Hollow hosts leave ice',
+  deathRattle: 'Killers of your bodies are left Brittle',
+  armorUnstrippable: 'Armor cannot be stripped',
 };
 
 /** The order the sheet reads in — authored order, which a `Record` literal preserves. */
