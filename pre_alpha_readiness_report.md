@@ -11,8 +11,9 @@ shell around the game and the first-time player's path through it — and its fi
 fixed and merged as PRs #21, #22 and #23. That audit and those fixes are recorded in §6; the
 Medium bullets in §5 are annotated where a later PR closed them. The three design calls the
 audits had left open were then ruled and built as PRs #25, #26 and #27, the nine pending
-companion knacks as PR #29, the blood-tithe telegraph as PR #31, and the sequencer-driven
-Last Stand as PR #33 — recorded in §7.*
+companion knacks as PR #29, the blood-tithe telegraph as PR #31, the sequencer-driven Last
+Stand as PR #33, and the three generic reactions as PR #35 — recorded in §7. One item remains
+open, and it is a design choice.*
 
 **Bottom line:** the core loop — create a character, take a contract, fight, win or lose,
 get rescued or paid, and go again — is intact, well-tested, and completable. The death
@@ -519,8 +520,8 @@ danger-zone fix; the forecast now tells the truth about whichever rule stands.
   `pyreLit` silent; `LAST STAND` naming collision.~~ **FIXED in #23** (the CSS now covers
   the district's two canvases; one export in `Hud.ts`; the fallen body flares where it
   fell; the sudden-death banner says SUDDEN DEATH). ~~The trigger is polled on board sync
-  rather than sequencer-driven~~ — **FIXED in #33** (see §7.6). Still open:
-  overload/superconduct/arc remain visually generic.
+  rather than sequencer-driven~~ — **FIXED in #33** (see §7.6). ~~Overload/superconduct/arc
+  remain visually generic~~ — **FIXED in #35** (see §7.7).
 - ~~`Intent.path` never drawn; move intents painted hostile.~~ **FIXED in #23** (a declared
   move is slate and follows its path). Still open: `bloodTithe` is untelegraphed.
 - ~~Stat Stretch ÷10 strings: `glossary.ts:113,117,191`, `HelpOverlay.ts:68`.~~ **FIXED in
@@ -643,7 +644,7 @@ to report it. All of that is closed. What remains is design work, not holes.
 | Roadmap Phase F promised per-game stats and a dump; `record` was three counters | `Profile.history` (v25): encounter, seed, Companion, result, turns, Pact at the bell, difficulty; capped at 30; "Copy diagnostics" in the settings panel. |
 | Post-campaign board = four demo fights | Finished story contracts join their tier's rolled pool. |
 | Last Stand trio, `pyreLit`, move-intent colour and path, seal on bind, Behemoth ceiling test, wagon epilogue, district shell missing C / Shift / Space | All as annotated in §5 above. |
-| Still open by choice | ~~`Dormant`/`Impact`~~ (#25); ~~Subjugation rounds/progress/pressure~~ (#26); ~~ranged-body drought and single Behemoth~~ (#27); ~~pending companion traits~~ (#29); ~~`bloodTithe` telegraph~~ (#31); ~~Last Stand trigger polled~~ (#33); the 01:00 start; three reactions visually generic. |
+| Still open by choice | ~~`Dormant`/`Impact`~~ (#25); ~~Subjugation rounds/progress/pressure~~ (#26); ~~ranged-body drought and single Behemoth~~ (#27); ~~pending companion traits~~ (#29); ~~`bloodTithe` telegraph~~ (#31); ~~Last Stand trigger polled~~ (#33); ~~three reactions visually generic~~ (#35); the 01:00 start. |
 
 ### 6.4 Two things learned about the repository itself
 
@@ -777,10 +778,26 @@ threshold constant stays in `Hud.ts` and the Pact bar's critical fill reads the 
 Verified: browser (the class follows the number the HUD is told); full non-balance suite 138
 files / 2,705 tests. Presentation only, ledger not rerun.
 
-### 7.7 What remains, all scoping rather than gaps
+### 7.7 The three generic reactions — **FIXED, PR #35**
 
-The 01:00 start (a design choice), and overload, superconduct and arc being visually generic
-compared with the other three reactions.
+Six reactions, three presentations: Shatter, Vaporize and Wildfire each had a burst that
+looked like its rule, and Overload, Superconduct and Arc shared one generic bang — a detonate
+cue, a shake, and nothing drawn but the name. Each now looks like the rule it is, built from
+the primitives the other three already use so it runs over both fight shells' cameras.
+**Overload** throws: eight heavy sparks along the eight compass lines ahead of a ring a tile
+wider than any other reaction's, amber going to fire, the biggest shake in the set.
+**Superconduct** runs in: a ring contracts onto the body and a column of frost sparks rises off
+the tile, in the cyan of the strip and the Brittle it leaves, with no flash and barely a
+tremor. **Arc** chains: a bolt to each of the eight neighbours in a quick stagger, with a spark
+where each lands. Verified: each effect's rings, particles and tracers inspected mid-animation
+on a mounted board, and all settle to nothing; full non-balance suite 138 files / 2,705 tests.
+Presentation only.
+
+### 7.8 What remains
+
+One item, and it is a design choice rather than a gap: the game opens at 01:00, at night.
+Every finding either audit ranked as a blocker, High or Medium, and every design call they left
+open, is closed and merged.
 
 ### Appendix — documentation drift found along the way
 
