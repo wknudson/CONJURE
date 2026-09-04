@@ -592,7 +592,13 @@ export class Hud {
       const frac = Math.max(0, hp) / this.maxPlayerHp;
       this.pactFill.style.width = `${frac * 100}%`;
       this.pactText.textContent = `PACT  ${Math.max(0, hp)} / ${this.maxPlayerHp}`;
-      this.pactFill.classList.toggle('is-critical', frac <= 0.25);
+      this.pactFill.classList.toggle('is-critical', frac <= LAST_STAND_FRACTION);
+      // Last Stand follows the number the HUD was just told, and the HUD is told by the
+      // sequencer as each blow and each heal replays — so the board drains on the hit that
+      // took the Pact to a quarter, not when the shell next syncs from a logic state that
+      // is already several steps ahead. Both shells used to poll it from the board on every
+      // sync, which is exactly that early.
+      this.setLastStand(frac <= LAST_STAND_FRACTION);
     } else {
       // Defended even though the bar is hidden in the only case that can produce it: a
       // zero maximum here writes `width: NaN%`, which no later correct value repairs.

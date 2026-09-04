@@ -33,7 +33,7 @@ import { Fx } from '../../render/Fx.js';
 import { emptyOverlays, type Overlays, type TetherModel } from '../../render/BoardRenderer.js';
 import { Sequencer, AI_BEAT_MS, NORMAL_MOTION } from '../../anim/Sequencer.js';
 import { registerHandlers, type CombatView, type TetherSink } from '../../anim/handlers.js';
-import { Hud, LAST_STAND_FRACTION } from '../../hud/Hud.js';
+import { Hud } from '../../hud/Hud.js';
 import { DeployTray } from '../../hud/DeployTray.js';
 import { Graveyard } from '../../hud/Graveyard.js';
 import { ChannelPicker } from '../../hud/ChannelPicker.js';
@@ -305,7 +305,6 @@ export class WorldCombat {
     this.views.syncFrom(board.units, board.obstacles);
     this.hud.setSchoolAccent(board.player.companionSchool);
     this.hud.syncFromBoard(board, this.session.getHand(), this.session.getPlayableCards());
-    this.refreshLastStand(board);
     this.hud.setInteractive(false);
     this.mesh.setResonanceLane(resonanceLaneOf(board));
     this.syncStands(board);
@@ -821,7 +820,6 @@ export class WorldCombat {
     this.hud.setDeclaredCasts(
       board.intents.flatMap((i) => (i.kind === 'card' && !i.at && i.label ? [i.label] : [])),
     );
-    this.refreshLastStand(board);
     this.grave.sync(board);
     this.mesh.setResonanceLane(resonanceLaneOf(board));
     this.syncStands(board);
@@ -950,10 +948,6 @@ export class WorldCombat {
   private channelSelected(): void {
     const unit = this.targeting.selectedUnit;
     if (unit !== null) this.commit({ type: 'channel', unit });
-  }
-
-  private refreshLastStand(board: BoardView): void {
-    this.hud.setLastStand(board.player.hp <= board.player.maxHp * LAST_STAND_FRACTION);
   }
 
   private setOverlays(overlays: Overlays): void {
