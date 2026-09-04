@@ -214,12 +214,12 @@ colour rule is the only thing that does.
 
 **A note on `too_many_behemoths`.** `MAX_BEHEMOTHS = 2`
 ([deckRules.ts:45](src/core/data/deckRules.ts:45)) is currently **unreachable**. Only
-`kind: 'minion'` cards carry `unit.footprint === 2` — verified: `magma_brute`,
-`scrap_titan`, `ignis_behemoth_bound`, and nothing else — and the minion check `continue`s
-before the Behemoth tally is incremented. The rule is a vestige of the era when minions
-were deck cards. It is harmless, and the live Behemoth limit is now
-`MAX_ROSTER_BEHEMOTHS = 1` on the Vanguard side
-([roster.ts:22](src/core/data/roster.ts:22)).
+`kind: 'minion'` cards carry `unit.footprint === 2` — the fieldable `magma_brute` and, since
+2026-09-03, `bastion_golem`, plus the `setupOnly` `scrap_titan` and the Behemoth Bound
+Forms — and the minion check `continue`s before the Behemoth tally is incremented. The rule
+is a vestige of the era when minions were deck cards. It is harmless, and the live Behemoth
+limit is `MAX_ROSTER_BEHEMOTHS = 2` on the Vanguard side
+([roster.ts](src/core/data/roster.ts)), which two distinct bodies can now meet.
 
 ### What the builder shows
 

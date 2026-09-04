@@ -666,4 +666,37 @@ export const BULWARK_CARDS: Record<string, CardDef> = {
       escalationBonus: { atk: 0, hp: 0 },
     },
   },
+
+  /**
+   * The second Behemoth in the game, and the first outside Pyre.
+   *
+   * The Magma Brute was the only fieldable 2x2 for as long as the roster existed, so a
+   * non-Pyre character had no Behemoth at all and the two-Behemoth cap could only ever be
+   * met by owning two of the same body. This is Bulwark's: the Brute's frame with the
+   * school's own priorities — it hits for less, carries far more, and is a Guardian, so
+   * four tiles of wall walk onto the board and everything behind them loses its sightline.
+   * No arrival effect; the wall is the effect. Priced a Bone under the Brute for it.
+   */
+  bastion_golem: {
+    id: 'bastion_golem',
+    name: 'Bastion Golem',
+    cost: { bones: 4, marrow: 0 },
+    school: 'bulwark',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Power Tier. 2x2 Behemoth. Guardian: blocks line of sight behind it. Cannot enter 1x1 gaps.',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 2 },
+    effect: { op: 'summon', unitDef: 'bastion_golem' },
+    keywords: ['PowerTier', 'Guardian', 'Growth'],
+    unit: {
+      atk: 30,
+      hp: 160,
+      mov: 1,
+      rangeMin: 1,
+      rangeMax: 1,
+      footprint: 2,
+      archetype: 'behemoth',
+      escalationBonus: { atk: 0, hp: 20 },
+    },
+  },
 };

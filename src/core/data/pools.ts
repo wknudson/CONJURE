@@ -33,6 +33,7 @@ import {
   UNIVERSAL_ROSTER,
   isRosterEligible,
   rosterCost,
+  rosterPointsOf,
 } from './roster.js';
 import { COMPANIONS, companionById } from './companions.js';
 import { traitsFor } from './companionTraits.js';
@@ -293,10 +294,18 @@ export function startingRosterFor(
     if (fits(id)) roster.push(id);
   };
 
-  const candidates = [...UNIVERSAL_ROSTER, ...minionPool(school).map((d) => d.id)];
+  // The school's ranged body first, then the rest of its shelf. The card-draw Channel
+  // belongs to the 3-point class alone, and with the shelf in id order a school's two-point
+  // bodies filled the allowance before its ranged one was reached — so five of the six
+  // opening warbands could never sit a body down for a card. Taking the cheapest ranged
+  // body first costs one two-pointer and gives every opening line a way to draw.
+  const shelf = minionPool(school);
+  const ranged = shelf.filter((d) => rosterPointsOf(d) === 3).map((d) => d.id);
+  const rest = shelf.filter((d) => rosterPointsOf(d) !== 3).map((d) => d.id);
+  const candidates = [...UNIVERSAL_ROSTER, ...ranged.slice(0, 1), ...rest, ...ranged.slice(1)];
 
-  // One of each first, cheapest-first within each half, so the line is as varied as the
-  // school's shelf allows before it starts doubling up.
+  // One of each first, so the line is as varied as the school's shelf allows before it
+  // starts doubling up.
   for (const id of candidates) {
     if (!roster.includes(id)) take(id);
   }

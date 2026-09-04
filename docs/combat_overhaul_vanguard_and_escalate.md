@@ -163,9 +163,15 @@ draftable and neither becomes roster-eligible. The remaining **sixteen** are the
 | Points | Units |
 |---|---|
 | **2** — basic melee | `vanguard_footman` · `scout_imp` · `creeping_briar` · `concussive_blow` · `marrow_wisp` · `ash_ghoul` · `scrap_phalanx` |
-| **3** — ranged | `longshot_stalker` · `cinder_lobber` · `scrap_metal_mortar` · `clockwork_bombardier` · `voltaic_hound` · `rimeguard` · `grave_sentinel` |
-| **4** — elite | `slag_iron_golem` · `arc_turret` |
-| **6** — Behemoth | `magma_brute` |
+| **3** — ranged | `longshot_stalker` · `cinder_lobber` · `cinder_adder` · `scrap_metal_mortar` · `clockwork_bombardier` · and, since 2026-09-03, one per school that had none: `rime_archer` (frost) · `thorn_lobber` (bloom) · `glass_arbalest` (arcane) · `hedge_slinger` (neutral) |
+| **4** — elite | `slag_iron_golem` · `arc_turret` · `anvil_lord` · `glacier_warden` · `arc_dynamo` · `verdant_colossus` |
+| **6** — Behemoth | `magma_brute` · `bastion_golem` (bulwark, 2026-09-03 — the second, and the first outside Pyre) |
+
+> *Since shipped (2026-09-03):* the opening warband is derived (`startingRosterFor`), and it
+> now takes the school's cheapest **ranged** body before its two-pointers. Four of eight
+> schools had no 3-point body and the card-draw Channel belongs to that class alone, so five
+> of the six opening lines could never Sight for a card. Every line now opens with one
+> ranged body and two of the school's own, at nine or ten points.
 
 Ten points buys, for example: the footman, a scout, and two ranged specialists; or a
 Behemoth and two basics; or an elite, a ranged, and a basic with a point spare. The budget

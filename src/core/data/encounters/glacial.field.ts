@@ -53,6 +53,10 @@ export const GLACIAL_FIELD: EncounterDef = registerEncounter({
     'brittle_touch',
     'frost_nova',
     'rimeguard',
+    // Frost's ranged body, so a win here can teach it. The Field is the one Frost arena on
+    // the board's rolled pool, and the fight it argues for -- distance and sight -- is the
+    // archer's own.
+    'rime_archer',
     'ice_barricade',
     'grave_sentinel',
     'shield_bash',
