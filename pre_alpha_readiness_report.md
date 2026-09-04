@@ -10,7 +10,8 @@ PR #20. A second audit the same week looked at the layer this one did not — th
 shell around the game and the first-time player's path through it — and its findings were
 fixed and merged as PRs #21, #22 and #23. That audit and those fixes are recorded in §6; the
 Medium bullets in §5 are annotated where a later PR closed them. The three design calls the
-audits had left open were then ruled and built as PRs #25, #26 and #27 — recorded in §7.*
+audits had left open were then ruled and built as PRs #25, #26 and #27, and the nine pending
+companion knacks as PR #29 — recorded in §7.*
 
 **Bottom line:** the core loop — create a character, take a contract, fight, win or lose,
 get rescued or paid, and go again — is intact, well-tested, and completable. The death
@@ -84,8 +85,8 @@ Climax it burns what it strikes", "it steps to anywhere it sees"). Five of seven
 have a third stack that does nothing but unlock a Detonation target. The engine's own
 comment concedes this (`growth.ts:144-146`), but nothing player-facing does. Either
 implement, rewrite the card text, or fence them the way `companionTraits.ts` fences its
-`pending:` knacks — that ledger (9 pending traits, correctly excluded from the roll table)
-is the model this should have followed.
+`pending:` knacks — that ledger (9 pending traits at the time, correctly excluded from the
+roll table; all nine built in #29, see §7.4) is the model this should have followed.
 
 **GAP — two keywords have no engine code.** `Dormant` (documented at
 `docs/02_combat_lexicon.md:309`, glossary `src/hud/glossary.ts:22`, carried by
@@ -641,7 +642,7 @@ to report it. All of that is closed. What remains is design work, not holes.
 | Roadmap Phase F promised per-game stats and a dump; `record` was three counters | `Profile.history` (v25): encounter, seed, Companion, result, turns, Pact at the bell, difficulty; capped at 30; "Copy diagnostics" in the settings panel. |
 | Post-campaign board = four demo fights | Finished story contracts join their tier's rolled pool. |
 | Last Stand trio, `pyreLit`, move-intent colour and path, seal on bind, Behemoth ceiling test, wagon epilogue, district shell missing C / Shift / Space | All as annotated in §5 above. |
-| Still open by choice | ~~`Dormant`/`Impact`~~ (#25); ~~Subjugation rounds/progress/pressure~~ (#26); ~~ranged-body drought and single Behemoth~~ (#27); pending companion traits; the 01:00 start; `bloodTithe` telegraph; Last Stand trigger polled; three reactions visually generic. |
+| Still open by choice | ~~`Dormant`/`Impact`~~ (#25); ~~Subjugation rounds/progress/pressure~~ (#26); ~~ranged-body drought and single Behemoth~~ (#27); ~~pending companion traits~~ (#29); the 01:00 start; `bloodTithe` telegraph; Last Stand trigger polled; three reactions visually generic. |
 
 ### 6.4 Two things learned about the repository itself
 
@@ -718,12 +719,39 @@ class alone; and the Magma Brute was the only fieldable 2×2 in the game.
 Verified: `rangedDrought.test.ts`; full non-balance suite 136 files / 2,693 tests; balance
 ledger rerun, 562 playouts, all decided.
 
-### 7.4 What remains, all scoping rather than gaps
+### 7.4 The nine pending companion knacks — **built, PR #29**
 
-Pending companion traits (`echo_chamber`, `death_rattle` — hidden from the player, awaiting
-implementation or rewording); the 01:00 start (a design choice); the `bloodTithe` telegraph;
-the Last Stand trigger polled on board sync rather than sequencer-driven; overload,
-superconduct and arc visually generic.
+Nine of the twenty hybrid knacks were declared and never built: they named mechanics the
+engine does not have — Echo, Frail, Pierce, Devour, damage reflection — or scaled a number a
+card already prints, which `companionTraits.ts` refuses on purpose. They carried a `pending`
+reason and were filtered from the roll, so three hybrids had no knack of their own and the
+Field Journal showed designs that could not happen. Each is now one read at one existing
+chokepoint, in the engine's own words; three built as designed, six rewritten in the same
+flavour, and every entry's comment says which.
+
+| Knack | Bloodline | Now |
+| :-- | :-- | :-- |
+| Static Burn | wasp | a Burning enemy moves one tile less, read off the burning body's foe in the legal-moves walk and the danger-zone forecast |
+| Ember Spores | treant | every Toxin tick also lights a Burn, landed **after** the Burn pass so it is a real affliction rather than a bigger number in a costume |
+| Lightning Rod | mantis | a Guardian struck from range leaves the shooter Charged — nothing reflects, but Surge cashes a charge |
+| Frost-Reaper | gargoyle | Dusk damage on a Chilled body also leaves it Brittle, the engine's own "+20 from every hit", as a status |
+| Hollow Ice | gargoyle | a Climaxed Hollow host leaves an Ice Barricade where it falls |
+| Echo Chamber | geist | Deathbursts carry one ring further |
+| Death Rattle | geist | a body killed by a blow leaves its killer Brittle |
+| Ossify | sovereign | Shatter and Superconduct cannot strip the side's Armor — Pierce does not exist, the strip does |
+| Grave-Robber | sovereign | every fallen body refunds a Bone |
+
+Nine boons on the side's state, carried through setup, the run's carry, the relic seam (the
+one place the full run caught as missed) and the Field Journal's labels. Verified:
+`knacks.test.ts`, one test per knack at its chokepoint with the negative case; the hybrid
+tests assert nothing is pending and every declared knack is wired (carry count 24 → 33);
+full non-balance suite 137 files / 2,703 tests; balance ledger rerun, 562 playouts, all
+decided.
+
+### 7.5 What remains, all scoping rather than gaps
+
+The 01:00 start (a design choice); the `bloodTithe` telegraph; the Last Stand trigger polled
+on board sync rather than sequencer-driven; overload, superconduct and arc visually generic.
 
 ### Appendix — documentation drift found along the way
 
