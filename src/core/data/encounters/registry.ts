@@ -122,6 +122,12 @@ export interface EncounterDef {
    */
   victory?: 'rout';
   subjugationPrize?: string;
+  /**
+   * How many rounds this fight's tether must hold before the beast breaks. Absent means
+   * `SUBJUGATION_ROUNDS` (3). A flagship Alpha can ask for more; a lesser beast for fewer.
+   * The number is the encounter's, the same way the prize is.
+   */
+  subjugationRounds?: number;
   script?: EncounterScript;
 }
 

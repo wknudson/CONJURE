@@ -259,7 +259,7 @@ export class Hud {
     }
     this.subjugationEl.setAttribute(
       'data-tip',
-      `Rite of Subjugation|The tether has held for ${held} of ${of} rounds.|Keep the anchor alive. If it falls the beast breaks free, one stack stronger.`,
+      `Rite of Subjugation|The tether has held for ${held} of ${of} rounds.|Keep the anchor alive. The beast grows a stack angrier every round it is held. If the anchor falls it breaks free, stronger again, and half the rounds held carry to the next tether.`,
     );
 
     if (gained) {

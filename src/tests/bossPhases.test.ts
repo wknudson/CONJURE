@@ -300,7 +300,10 @@ describe('Ignis trial phase gates', () => {
 
     const angrier = tethered.units[tethered.players.enemy.companionUnitId!]!;
     expect(angrier.escalation, 'one punitive stack').toBe(boss.escalation);
-    expect(angrier.atk).toBeGreaterThan(before - 1);
+    // Strictly stronger. This read `before - 1` for a long time, which let a stack that
+    // changed nothing pass — and for the Drake, whose Growth bonus is written as zero, it
+    // did change nothing.
+    expect(angrier.atk).toBeGreaterThan(before);
 
     // And a fresh Rite is dealt, so the loop can be tried again.
     expect(ctx.events.filter((e) => e.t === 'cardInjected').length).toBe(1);

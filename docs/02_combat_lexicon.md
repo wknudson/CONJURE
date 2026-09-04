@@ -924,8 +924,9 @@ itself, and the fight stops being a damage race.
 | **Sealed** | set at the enrage and **never cleared** — a failed tether leaves it just as unkillable, forcing you back to the Rite rather than back to swinging |
 | **Rite of Subjugation** | the card the protocol deals (`RITE_CARD_DEF`) |
 | **Anchor** | the tethered unit. Cannot move, strike, or channel |
-| **Rounds** | 3 (`SUBJUGATION_ROUNDS`). Survive them and the result is `bound` |
-| **Tether snapped** | the anchor fell; the beast is loose again |
+| **Rounds** | 3 by default (`SUBJUGATION_ROUNDS`), or whatever the encounter names in `EncounterDef.subjugationRounds`. Survive them and the result is `bound` |
+| **Pressure** | every round the tether holds, the sealed beast gains one stack (`enrageBoss`), so the third round is harder to hold than the first — a race, not a wait (2026-09-03) |
+| **Tether snapped** | the anchor fell; the beast is loose again, one stack angrier. **Half the rounds held (rounded down) carry to the next tether** — a snap used to zero them (2026-09-03) |
 
 `sealed` is held in `Subjugation` rather than read off the `aetherPlated` status because
 the body carrying that status can leave the board — a wipe, a sudden death — and a boss

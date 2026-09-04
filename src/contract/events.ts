@@ -183,13 +183,16 @@ export type GameEvent = EventBase &
     | { t: 'intentWhiffed'; attackerId: UnitId; at: Coord }
     | { t: 'bossPhaseShift'; side: Side; phase: number; name: string }
     /** A cornered Alpha seals itself. Damage stops mattering; the tether starts. */
-    | { t: 'subjugationBegan'; bossUnitId?: UnitId }
-    /** The Rite lands and a unit takes the strain. */
-    | { t: 'anchorSet'; unitId: UnitId; at: Coord }
+    | { t: 'subjugationBegan'; bossUnitId?: UnitId; rounds: number }
+    /**
+     * The Rite lands and a unit takes the strain. `held` is the progress it starts with —
+     * zero for a first tether, half of what a snapped one had held — and `of` the target.
+     */
+    | { t: 'anchorSet'; unitId: UnitId; at: Coord; held: number; of: number }
     /** One full round endured. `of` is the target, so the UI needs no constant of its own. */
     | { t: 'subjugationProgress'; turnsSurvived: number; of: number }
-    /** The anchor fell. The beast is loose again, and angrier. */
-    | { t: 'tetherSnapped'; unitId: UnitId; at: Coord }
+    /** The anchor fell. The beast is loose again, and angrier. `kept` rounds carry over. */
+    | { t: 'tetherSnapped'; unitId: UnitId; at: Coord; kept: number }
     | { t: 'suddenDeath' }
     | { t: 'combatEnded'; result: CombatResult }
   );

@@ -4,7 +4,7 @@
 
 import type { CardInstanceId, Coord, School, Side } from '../../contract/ids.js';
 import type { GameState, StepResult, CommanderState } from '../types/state.js';
-import { territoryDepthFor, startingZone } from '../types/state.js';
+import { SUBJUGATION_ROUNDS, territoryDepthFor, startingZone } from '../types/state.js';
 import { canPlace } from './board.js';
 import type { Ctx } from './context.js';
 import type { CardInstance, CardModifier } from '../types/cards.js';
@@ -637,7 +637,15 @@ export function createCombat(
       firedGates: [],
       rout: encounter.victory === 'rout',
       chainCancelled: false,
-      subjugation: { sealed: false, active: false, anchorUnitId: null, turnsSurvived: 0 },
+      subjugation: {
+        sealed: false,
+        active: false,
+        anchorUnitId: null,
+        turnsSurvived: 0,
+        // The encounter's number, copied in here so the engine never reads the definition
+        // mid-fight and a saved state carries its own target.
+        rounds: encounter.subjugationRounds ?? SUBJUGATION_ROUNDS,
+      },
       ...(encounter.weather ? { weather: encounter.weather } : {}),
       // Copied rather than kept, so the arena cannot be reached back through by whoever
       // built the list. Spread conditionally: a fight with no ring behind it has no field

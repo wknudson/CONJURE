@@ -219,11 +219,24 @@ export interface Subjugation {
   active: boolean;
   /** The tethered unit. Null whenever `active` is false. */
   anchorUnitId: UnitId | null;
-  /** Completed rounds the anchor has endured. At `SUBJUGATION_ROUNDS` the beast breaks. */
+  /**
+   * Completed rounds the anchor has endured. At `rounds` the beast breaks.
+   *
+   * Not zeroed by a snap: half of what was held (rounded down) carries to the next tether,
+   * so a Rite that nearly landed is worth more than one that never did — the beast
+   * remembers being caged. The rest is paid in the snap's own price, the re-dealt Rite and
+   * the stack the beast gains.
+   */
   turnsSurvived: number;
+  /**
+   * Rounds this fight's tether must hold. `SUBJUGATION_ROUNDS` unless the encounter says
+   * otherwise (`EncounterDef.subjugationRounds`); copied in at setup so the engine never
+   * reads the definition mid-fight.
+   */
+  rounds: number;
 }
 
-/** Rounds the anchor must survive. */
+/** Rounds the anchor must survive, unless the encounter names its own. */
 export const SUBJUGATION_ROUNDS = 3;
 
 /** How far anything can see. Undefined means as far as the board allows. */
