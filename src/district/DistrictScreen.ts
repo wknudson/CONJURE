@@ -668,7 +668,7 @@ export class DistrictScreen implements Screen {
     if (this.area.props.board) {
       const at = this.area.props.board;
       const board = new Hotspot(at.x, at.z, 'Read the Bounty Board', () =>
-        this.hud!.openBoard(this.opts.bounties, this.flags),
+        this.hud!.openBoard(this.opts.bounties, this.flags, this.area),
       );
       this.interactables.push(board);
     }
@@ -1391,6 +1391,11 @@ export class DistrictScreen implements Screen {
             hunting: p.state !== 'ROAM',
           })),
         ...(this.marker ? { errand: { x: this.marker.hotspot.position.x, z: this.marker.hotspot.position.z } } : {}),
+        // Only the ground a writ on *this* board names, so the map never marks a fight the
+        // player has not been offered.
+        sites: sitesInArea(this.area.id)
+          .filter((site) => this.opts.bounties.some((b) => b.id === `story_${site.encounterId}`))
+          .map((site) => ({ x: site.at.x, z: site.at.z, label: site.label })),
         ...(this.warden
           ? {
               warden: {

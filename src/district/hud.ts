@@ -13,7 +13,7 @@ import type { GlobalGameState } from '../core/overworld/state.js';
 import { useConsumable } from '../core/overworld/run.js';
 import type { Bounty } from '../core/data/bounties.js';
 import { encounterById } from '../core/data/encounters/index.js';
-import { siteByEncounter } from './sites.js';
+import { siteByEncounter, type ContractSite } from './sites.js';
 import { areaById } from './areas/index.js';
 import type { TutorialFlag } from '../app/save.js';
 import type { AreaDef } from './map.js';
@@ -159,6 +159,7 @@ export class DistrictHud {
       '<span class="district-map__swatch is-you"></span>you' +
       '<span class="district-map__swatch is-exit"></span>road out' +
       '<span class="district-map__swatch is-pack"></span>pack' +
+      '<span class="district-map__swatch is-site"></span>contract' +
       '</div>';
     root.appendChild(this.mapPanel);
     this.mapCanvas = this.mapPanel.querySelector('.district-map__canvas')!;
@@ -379,8 +380,25 @@ export class DistrictHud {
    * teach a new player that the board has one thing on it; greying them out teaches that
    * it has four and that three are not for them today.
    */
-  openBoard(bounties: readonly Bounty[], flags: readonly TutorialFlag[]): void {
+  openBoard(bounties: readonly Bounty[], flags: readonly TutorialFlag[], area?: AreaDef): void {
     this.boardOpen = true;
+
+    /**
+     * How to get to the ground a writ names, from where the board stands. A site in this
+     * area is on the map; one in another area is reached through a named road out, or —
+     * more than one crossing away — through whichever road leads that way first.
+     */
+    const routeTo = (site: ContractSite): string => {
+      if (!area || site.areaId === area.id) {
+        return 'Marked on your map (M). Walk there to begin the fight — this writ cannot be taken from the board.';
+      }
+      const there = areaById(site.areaId)?.name ?? site.areaId;
+      const road = area.exits.find((e) => e.to === site.areaId);
+      // An exit's label is already a sentence — "Through the south gate to Lamprow".
+      return road
+        ? `In ${there}: ${road.label.replace(/\.$/, '')}. The road out is on your map (M); the fight begins when you reach the ground named.`
+        : `In ${there}, more than one road from here. Take a road out (marked on your map, M) and follow the roads there; the fight begins when you reach the ground named.`;
+    };
     const critical = isCritical(this.opts.global.overworld);
 
     // Whether the guided Novice contract is actually takeable. If its stake is out of
@@ -421,6 +439,7 @@ export class DistrictHud {
           <div class="bounty-card__tier">${bounty.difficulty}</div>
           <div class="bounty-card__title">${bounty.title}</div>
           <div class="bounty-card__where">${whereLine}</div>
+          <div class="bounty-card__route">${routeTo(site)}</div>
           <div class="bounty-card__flavour">${bounty.flavour}</div>
           <div class="bounty-card__pay">
             <span class="bounty-card__coin bounty-card__coin--gold">${bounty.spoils.ducats ?? 0} d</span>
@@ -784,6 +803,29 @@ export class DistrictHud {
       ctx.restore();
     }
 
+    // The ground a writ names: a gold diamond with the writ's own words beside it, drawn
+    // under the bodies so a pack standing on it does not hide it.
+    for (const site of view.sites ?? []) {
+      const x = px(site.x);
+      const z = pz(site.z);
+      ctx.save();
+      ctx.translate(x, z);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#e8c86a';
+      ctx.fillRect(-4, -4, 8, 8);
+      ctx.strokeStyle = '#1b1720';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-4, -4, 8, 8);
+      ctx.restore();
+      ctx.font = '700 9px ui-sans-serif, system-ui, sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(27, 23, 32, 0.9)';
+      ctx.strokeText(site.label, x + 8, z);
+      ctx.fillStyle = '#e8c86a';
+      ctx.fillText(site.label, x + 8, z);
+    }
+
     // What is roaming, and how far it wanders. The circle is the roam radius from the
     // area file, so an overlap you can see here is an overlap the Combat Ring can use.
     for (const pack of view.packs) {
@@ -1017,6 +1059,15 @@ export interface MapView {
    * not an errand, it is a search; the marker is what turns the first into a walk.
    */
   errand?: { x: number; z: number };
+  /**
+   * Where the writs on the board want you, when they want you in *this* area.
+   *
+   * A story contract is a briefing, not a button — the fight starts by walking to the
+   * ground the writ names — and the map used to mark walkway, packs and roads but not that
+   * ground. A tester read "Behind the Lighters' Hall", found nothing to click, and concluded
+   * the board was broken. The mark is what turns the writ into a walk.
+   */
+  sites?: readonly { x: number; z: number; label: string }[];
 }
 
 /**
