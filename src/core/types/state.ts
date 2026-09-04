@@ -322,7 +322,7 @@ export interface Intent {
    * the same vagueness as the rest — where it is going, not what it will do when it
    * arrives.
    */
-  kind: 'attack' | 'commander' | 'card' | 'move' | 'channel';
+  kind: 'attack' | 'commander' | 'card' | 'move' | 'channel' | 'tithe';
   at?: Coord;
   /** Movement committed before the strike, for drawing the approach. */
   path?: Coord[];

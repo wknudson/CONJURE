@@ -138,7 +138,7 @@ export interface BoardView {
   /** What the enemy has committed to next turn. Empty during the enemy's own turn. */
   intents: {
     unitId: UnitId;
-    kind: 'attack' | 'commander' | 'card' | 'move' | 'channel';
+    kind: 'attack' | 'commander' | 'card' | 'move' | 'channel' | 'tithe';
     at?: Coord;
     path?: Coord[];
     /** The entity a declared card is bound to — the marker follows it. See `Intent`. */

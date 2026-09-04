@@ -373,7 +373,11 @@ This is what turns the rest of the game into tools. A shove stops being chip dam
 becomes "push the attacker off its firing line"; a Barricade becomes a body-block; Freeze
 becomes "cancel that specific hit".
 
-How much is declared is a difficulty setting, not a constant.
+How much is declared is a difficulty setting, not a constant. Blows are always declared. A
+body that will only walk, and every card play, are declared at Novice and kept back at
+Adept. A body that will sit down to Channel, or be bled for a Blood Tithe, is declared at
+both tiers — a spend is not a card, and a Novice is promised to see everything that is
+about to happen (the tithe was the one such action nothing drew, until 2026-09-03).
 
 ### Difficulty
 
