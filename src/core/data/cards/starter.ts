@@ -117,7 +117,7 @@ export const STARTER_CARDS: Record<string, CardDef> = {
     school: 'pyre',
     source: 'hero',
     kind: 'minion',
-    text: 'Power Tier. 2x2 Behemoth. Impact: deals 20 fire damage across a 2-tile front cleave. Cannot enter 1x1 gaps.',
+    text: 'Power Tier. 2x2 Behemoth. On arrival, deals 20 fire damage across a 2-tile front cleave. Cannot enter 1x1 gaps.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 2 },
     effect: {
       op: 'seq',
@@ -126,7 +126,9 @@ export const STARTER_CARDS: Record<string, CardDef> = {
         { op: 'cleaveFront', amount: 20, dtype: 'fire', width: 2 },
       ],
     },
-    keywords: ['Impact', 'PowerTier', 'Growth'],
+    // The cleave on arrival is the `cleaveFront` effect above, not a keyword. `Impact` used
+    // to sit here as if it were; nothing read it.
+    keywords: ['PowerTier', 'Growth'],
     unit: {
       atk: 40,
       hp: 120,

@@ -431,7 +431,7 @@ slot — several become Part 2 material.
 | `trail: 'steam_fog'` | legal, **only `rubble` shipped** | `threats.ts:55` |
 | `obstacleDeath.damage` | typed, **both users apply statuses only** | `terrain.ts:85,97` |
 | `CombatBoons.bones` / `.extraOpeningCards` | **no relic, no trait** — brews only | `run.ts:26-33` |
-| Keywords `Dormant`, `Impact`, `Sacrifice` | **no engine code reads them** — card text | `glossary.ts:23,27,72` |
+| ~~Keywords `Dormant`, `Impact`~~ | **removed** (2026-09-03) — both named the universal summoning wait as if it were special; the cards' texts now say what happens and the glossary's Haste entry states the rule | — |
 | `isAnchor()` | exported, **never called** | `subjugation.ts:42` |
 | ~~`ignoreIceSlip`~~ | **removed** (2026-09-01) — there was never an ice hazard; its four sources now grant real footing rules | — |
 | Brew `quicksilver` | defined, **not in `APOTHECARY_STOCK`** — unpurchasable | `run.ts:32`, `apothecary.ts:30-50` |

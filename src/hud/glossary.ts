@@ -17,15 +17,8 @@ export const KEYWORDS: Record<string, GlossaryEntry> = {
   Haste: {
     title: 'Haste',
     body: 'Can move and attack the same turn it is deployed.',
-    detail: 'Units without Haste have to wait a turn before they can act.',
-  },
-  Dormant: {
-    title: 'Dormant',
-    body: 'Cannot move or attack on the turn it is summoned.',
-  },
-  Impact: {
-    title: 'Impact',
-    body: 'Triggers an effect the moment it lands, but cannot act that turn.',
+    detail:
+      'The exception to the rule every other body obeys: a summon cannot move, strike, channel or be bled on the turn it arrives.',
   },
   Counter: {
     title: 'Counter',

@@ -90,9 +90,12 @@ export type StatusKind =
   | 'anchor';
 
 export type Keyword =
+  /**
+   * Can act the turn it arrives. Every other summon waits a turn — that is the rule, not a
+   * keyword. `Dormant` and `Impact` used to sit here naming that same wait as if it were
+   * something the two cards did specially; nothing in the engine ever read either.
+   */
   | 'Haste'
-  | 'Dormant'
-  | 'Impact'
   | 'Counter'
   | 'Guardian'
   /**
