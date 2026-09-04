@@ -1279,7 +1279,12 @@ export class DistrictScreen implements Screen {
         return;
       }
     };
-    this.onKeyUp = (e: KeyboardEvent): void => void this.keys.delete(e.code);
+    this.onKeyUp = (e: KeyboardEvent): void => {
+      this.keys.delete(e.code);
+      // The held keys a fight cares about — Shift for the expanded forecast, Space for
+      // fast-forward — need their release as much as their press.
+      this.combat?.handleKeyUp(e.code);
+    };
     this.onResize = (): void => {
       const camera = this.camera;
       if (!camera || !this.renderer || !this.post) return;

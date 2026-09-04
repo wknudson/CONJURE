@@ -23,10 +23,13 @@ import './styles/builder.css';
 import './styles/safehouse.css';
 import './styles/district.css';
 import './styles/crash.css';
+import './styles/settings.css';
 
 import { installCrashHandlers } from './app/crash.js';
 import { clearSaveWarning, showSaveWarning } from './app/saveWarning.js';
 import { renderUnsupported, webglAvailable } from './app/unsupported.js';
+import { setDiagnosticsProvider } from './app/SettingsPanel.js';
+import { buildDiagnostics, formatDiagnostics } from './app/diagnostics.js';
 
 /**
  * Before anything else can throw. The context is read at crash time, so it can close over
@@ -66,6 +69,7 @@ import {
   initializeNewProfile,
   loadSave,
   probeStorage,
+  pushHistory,
   writeSave,
   type Profile,
   type SaveFile,
@@ -127,6 +131,10 @@ const bootNotes = loaded.notes;
   const failure = probeStorage();
   if (failure) showSaveWarning(failure);
 }
+
+// What "Copy diagnostics" in the settings panel copies: the build, the settings, and every
+// profile with its record and the exact games in its history.
+setDiagnosticsProvider(() => formatDiagnostics(buildDiagnostics(saveFile)));
 
 /**
  * The character currently open, or null while the player is at the wall.
@@ -966,6 +974,17 @@ function finishCombat(
   if (result === 'victory') p.record.wins += 1;
   else if (result === 'bound') p.record.bound += 1;
   else p.record.losses += 1;
+  // The game itself, not just the tally: this is what the diagnostics dump carries out.
+  pushHistory(p, {
+    at: Date.now(),
+    encounterId: played.id,
+    seed: p.lastRun?.seed ?? 0,
+    companionId,
+    result,
+    turns: outcome.turns ?? 0,
+    pactHp: outcome.pactHp,
+    difficulty: saveFile.difficulty,
+  });
 
   // The clock, and it moves whether you won or not. An hour and a half is what the fight took;
   // losing it does not give the time back, which is the one place this system gets to say

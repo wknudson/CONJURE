@@ -14,6 +14,7 @@ import { useConsumable } from '../core/overworld/run.js';
 import type { Bounty } from '../core/data/bounties.js';
 import { encounterById } from '../core/data/encounters/index.js';
 import { siteByEncounter, type ContractSite } from './sites.js';
+import { openSettings } from '../app/SettingsPanel.js';
 import { areaById } from './areas/index.js';
 import type { TutorialFlag } from '../app/save.js';
 import type { AreaDef } from './map.js';
@@ -971,11 +972,13 @@ export class DistrictHud {
         <div class="hub-notice__body">Your progress is kept as you go. Leaving returns you to the title wall, where another commission can be opened or this one burned.</div>
         <div class="district-menu__actions">
           <button class="brass-btn district-menu__resume">Back to the street</button>
+          <button class="brass-btn district-menu__settings">Settings</button>
           <button class="brass-btn district-menu__leave">Leave to the title wall</button>
         </div>
       </div>`;
     this.overlay.classList.add('is-shown', 'is-menu');
     this.overlay.querySelector('.district-menu__resume')!.addEventListener('click', () => this.closeMenu());
+    this.overlay.querySelector('.district-menu__settings')!.addEventListener('click', () => openSettings());
     this.overlay.querySelector('.district-menu__leave')!.addEventListener('click', () => {
       this.closeMenu();
       onLeave();

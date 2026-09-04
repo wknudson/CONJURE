@@ -282,7 +282,7 @@ never reads as something happening on the board. `pulsePact(side)` is the hook.
 
 At a quarter of the Pact (`LAST_STAND_FRACTION` = 0.25) the presentation changes state:
 the canvas **desaturates**, a red vignette pulses on a 1.15s cycle, the Pact fill goes
-critical, a `LAST STAND` banner fires, and the heartbeat ambience comes up underneath
+critical, and the heartbeat ambience comes up underneath
 everything (§6). This is the old brief's "absolute panic induction" beat, and it is the one
 place the game deliberately degrades its own readability for effect.
 

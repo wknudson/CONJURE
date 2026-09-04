@@ -176,6 +176,9 @@ export function tickSubjugation(ctx: Ctx): void {
 
   if (sub.turnsSurvived >= SUBJUGATION_ROUNDS) {
     sub.active = false;
+    // The seal was the Rite's; the Rite is done. Left set it survived into the saved
+    // state of a won fight, where nothing read it but nothing should have to know that.
+    sub.sealed = false;
     finish(ctx, 'bound');
   }
 }

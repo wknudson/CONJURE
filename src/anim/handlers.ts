@@ -546,6 +546,16 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     view.views.remove(e.unitId);
   });
 
+  // A rostered body fell and its tile is remembered for a revive. The event was emitted
+  // and never drawn: the body simply vanished on the next sync, and the player learned
+  // that a pyre existed only when something rose from it. The flare in the Pact's blue is
+  // the same one the revive runs backwards, so the two read as one thing.
+  seq.on('pyreLit', async (e, { view, t }) => {
+    view.fx.label(e.at, 'FALLEN', 'damage');
+    void view.fx.pyreFlare(e.at, t(300));
+    await hold(t(220));
+  });
+
   seq.on('unitRevived', async (e, { view, t }) => {
     // The most dramatic beat the game had, and until now the body simply popped into
     // existence on the next view sync. The pyre flares in its own pact blue, and the
@@ -823,7 +833,9 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
   seq.on('suddenDeath', async (e, { view, t }) => {
     void e;
     view.views.clear();
-    view.hud.banner('LAST STAND', 'danger');
+    // Its own words. It said LAST STAND, which is what the HUD calls a Pact at a quarter
+    // — a different state, and one that may already have been on screen for turns.
+    view.hud.banner('SUDDEN DEATH', 'danger');
     await tween(t(900), easeOutQuad, () => {});
   });
 

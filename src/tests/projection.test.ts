@@ -196,7 +196,7 @@ describe('projected damage', () => {
       }),
     );
     expect(describeProjected(mixed)).toBe(
-      `Incoming: ${30 + STEP} damage (30 attack, ${STEP} escalation)`,
+      `Incoming: ${30 + STEP} damage (30 attack, ${STEP} Growth)`,
     );
   });
 

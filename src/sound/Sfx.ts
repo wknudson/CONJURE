@@ -6,6 +6,8 @@
  * audio identity around.
  */
 
+import { getSettings, updateSettings } from '../app/settings.js';
+
 export type Cue =
   | 'bone'
   | 'chime'
@@ -43,12 +45,12 @@ const LOOP_PERIOD_MS: Record<LoopTrack, number> = {
   winch_grind: 620,
 };
 
-const MUTE_KEY = 'conjure.muted';
+/** The master gain at full volume. The settings' 0–1 volume scales it. */
+const BASE_GAIN = 0.25;
 
 export class Sfx {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
-  private _muted: boolean;
   /** Multiplier applied to the current cue's frequencies. Reset on every play(). */
   private pitch = 1;
   /**
@@ -61,43 +63,36 @@ export class Sfx {
    */
   private activeLoops = new Map<LoopId, number>();
 
-  constructor() {
-    // Guarded like `readSpeed` in CombatScreen and for the same reason: with storage
-    // blocked, `getItem` throws, and this runs as a field initialiser while the combat
-    // screen is being constructed — so an unguarded read here was a blank page at the
-    // start of every fight in a locked-down browser. The preference is not worth that.
-    try {
-      this._muted = localStorage.getItem(MUTE_KEY) === '1';
-    } catch {
-      this._muted = false;
-    }
-  }
-
+  /**
+   * Mute lives in the settings store, not here: the panel and the HUD button both flip it,
+   * and the store is what survives a reload. Read at use rather than cached, so a flip in
+   * the panel mid-fight is heard on the next cue.
+   */
   get muted(): boolean {
-    return this._muted;
+    return getSettings().muted;
   }
 
   toggleMute(): boolean {
-    this._muted = !this._muted;
-    try {
-      localStorage.setItem(MUTE_KEY, this._muted ? '1' : '0');
-    } catch {
-      // Storage disabled or full. The toggle still works for this session.
-    }
-    return this._muted;
+    return updateSettings({ muted: !getSettings().muted }).muted;
+  }
+
+  /** The master gain follows the settings' volume; re-read on every unlock, i.e. every gesture. */
+  private applyVolume(): void {
+    if (this.master) this.master.gain.value = BASE_GAIN * getSettings().volume;
   }
 
   /** Must be called from a user gesture — browsers block audio otherwise. */
   unlock(): void {
     if (this.ctx) {
       if (this.ctx.state === 'suspended') void this.ctx.resume();
+      this.applyVolume();
       return;
     }
     try {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.25;
       this.master.connect(this.ctx.destination);
+      this.applyVolume();
     } catch {
       this.ctx = null;
     }
@@ -119,7 +114,7 @@ export class Sfx {
     if (this.activeLoops.has(id)) return;
 
     const tick = (): void => {
-      if (this._muted || !this.ctx) return;
+      if (this.muted || !this.ctx) return;
       // Reset per tick: `pitch` is shared with `play`, and a cue that scaled it would
       // otherwise leave every later beat of the ambience detuned.
       this.pitch = 1;
@@ -185,7 +180,7 @@ export class Sfx {
   }
 
   play(cue: Cue, opts: { pitch?: number } = {}): void {
-    if (this._muted) return;
+    if (this.muted) return;
     this.unlock();
     const ctx = this.ctx;
     const master = this.master;

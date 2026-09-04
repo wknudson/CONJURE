@@ -271,6 +271,8 @@ export interface SubjugationClaim {
 export interface CombatOutcome {
   /** The Pact as it stood when the bell rang. */
   pactHp: number;
+  /** How many turns the fight ran. Recorded in the profile's history; optional for tests. */
+  turns?: number;
   /**
    * How well the fight was fought, beyond having been won.
    *

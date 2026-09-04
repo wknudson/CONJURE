@@ -453,7 +453,12 @@
  * the edges close in; the heartbeat comes from the synthesised sound layer.
  */
 .hud.is-last-stand ~ canvas.board,
-.screen--combat:has(.hud.is-last-stand) canvas.board {
+.screen--combat:has(.hud.is-last-stand) canvas.board,
+/* The district shell draws its board on these two canvases over the street; the rule
+   matched only the 2D shell's canvas for a long time, so a Last Stand on the road never
+   drained. */
+.screen--district:has(.hud.is-last-stand) .world-combat__overlay,
+.screen--district:has(.hud.is-last-stand) .world-combat__fx {
   filter: saturate(0.55) contrast(1.08);
   transition: filter 900ms ease;
 }

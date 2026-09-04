@@ -169,8 +169,8 @@ export const TERMS: Record<string, GlossaryEntry> = {
       'Conflagration burns what it strikes and the ground it leaves. Overgrowth heals what it deals and bursts with Toxin on death. Overload walks through bodies. Heavy Footprint cannot be shoved and breaks walls. Hollow leaves its victims Brittle. Rime Shell re-forms a step of armour each turn. Blink steps to any tile it can see.',
   },
   escalation: {
-    title: 'Escalation stacks',
-    body: 'How many times this unit has grown by surviving a full round.',
+    title: 'Growth',
+    body: 'How many times this unit has grown by surviving a full round. The keyword is Growth; the same thing under one name.',
   },
   resonance: {
     title: 'Resonance',

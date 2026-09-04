@@ -364,7 +364,7 @@ export class DeckBuilderScreen implements Screen {
 
       <div class="loadout">
         <div class="loadout__head">
-          <span class="loadout__title">The Commander</span>
+          <span class="loadout__title">The Hero</span>
           <span class="loadout__note">
             Five slots, one apiece. Gear here bends a rule — none of it will make anything
             hit harder.
@@ -376,7 +376,7 @@ export class DeckBuilderScreen implements Screen {
             <div class="hero__figure">
               <span class="hero__figure-head"></span>
               <span class="hero__figure-body"></span>
-              <span class="hero__figure-name">Commander</span>
+              <span class="hero__figure-name">Hero</span>
             </div>
           </div>
           <div class="hero__sheet">

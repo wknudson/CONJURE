@@ -7,6 +7,7 @@ import type { Coord, DamageType } from '../contract/ids.js';
 import type { FxCamera } from './IsoCamera.js';
 import { schoolOf } from './palette.js';
 import { tween, easeInQuad, easeOutQuad, linear } from '../anim/tween.js';
+import { getSettings } from '../app/settings.js';
 
 /** The CSS treatments a floating number can take. One class per value, in `board.css`. */
 export type FloaterKind =
@@ -112,8 +113,9 @@ export class Fx {
     private readonly floaterLayer: HTMLElement,
   ) {}
 
-  /** Exponentially decaying camera offset. */
+  /** Exponentially decaying camera offset. Off entirely when the player has turned it off. */
   screenShake(magnitude: number, duration: number): void {
+    if (!getSettings().shake) return;
     this.shakeMag = Math.max(this.shakeMag, magnitude);
     void tween(duration, linear, (k) => {
       this.shakePhase += 0.9;

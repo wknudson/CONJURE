@@ -16,7 +16,12 @@ import type { CombatSpoils } from '../overworld/state.js';
 import { ENCOUNTERS, encounterById } from './encounters/index.js';
 import { hashText, makeRng, nextInt } from '../util/rng.js';
 import { REAGENTS } from './splicing.js';
-import { nextStoryContract, storyContractByEncounter, type StoryContract } from './campaign.js';
+import {
+  STORY_CONTRACTS,
+  nextStoryContract,
+  storyContractByEncounter,
+  type StoryContract,
+} from './campaign.js';
 import { HUNTS, huntByEncounter, type Hunt } from './hunts.js';
 import { LAIRS, lairByEncounter, type Lair } from './lairs.js';
 import { packByEncounter, type PackDef } from './packs.js';
@@ -282,8 +287,13 @@ export const WAGER_MULTIPLIER = 2;
  */
 export const DUEL_ENCOUNTERS: readonly string[] = ['novice_duelist'];
 
-export function rollBounties(seed: number): Bounty[] {
-  const rolled = rollTiers(seed);
+/**
+ * `completed` widens the dice: a story contract this character has finished joins its
+ * tier's rolled pool as ordinary, repeatable arena work. Without it the board after the
+ * campaign was the four demo fights forever.
+ */
+export function rollBounties(seed: number, completed: readonly string[] = []): Bounty[] {
+  const rolled = rollTiers(seed, completed);
   return [rolled[0]!, rolled[1]!, auditBounty(), rolled[2]!];
 }
 
@@ -434,7 +444,7 @@ export function lairBoard(seed: number): Bounty[] {
  * game had before the campaign existed. The audit keeps its slot either way.
  */
 export function composeBoard(seed: number, completed: readonly string[]): Bounty[] {
-  const board = rollBounties(seed);
+  const board = rollBounties(seed, completed);
   const slotByTier: Record<BountyDifficulty, number> = { novice: 0, adept: 1, master: 3 };
   for (const tier of DIFFICULTIES) {
     const next = nextStoryContract(tier, completed);
@@ -444,11 +454,18 @@ export function composeBoard(seed: number, completed: readonly string[]): Bounty
 }
 
 /** The three real contracts, one per tier. */
-function rollTiers(seed: number): Bounty[] {
+function rollTiers(seed: number, completed: readonly string[]): Bounty[] {
   const rng = makeRng(seed);
 
   return DIFFICULTIES.map((difficulty) => {
-    const pool = TIER_ENCOUNTERS[difficulty];
+    // The authored pool, plus every story fight of this tier already walked once: proven
+    // arena fights with a known shape, offered again as plain work rather than as writs.
+    // Only finished ones, so a contract is never offered twice on the same board and the
+    // campaign's own posters keep their order.
+    const replayable = STORY_CONTRACTS.filter(
+      (c) => c.tier === difficulty && completed.includes(c.id),
+    ).map((c) => c.id);
+    const pool = [...TIER_ENCOUNTERS[difficulty], ...replayable];
     const enemySeed = pool[nextInt(rng, pool.length)]!;
     const titles = TITLES[difficulty];
     const title = titles[nextInt(rng, titles.length)]!;

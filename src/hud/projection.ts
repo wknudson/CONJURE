@@ -117,7 +117,7 @@ export function describeProjected(p: ProjectedDamage): string {
 
   const parts: string[] = [];
   if (p.fromAttacks > 0) parts.push(`${p.fromAttacks} attack`);
-  if (p.fromEscalation > 0) parts.push(`${p.fromEscalation} escalation`);
+  if (p.fromEscalation > 0) parts.push(`${p.fromEscalation} Growth`);
   if (p.fromStatuses > 0) parts.push(`${p.fromStatuses} status`);
 
   return parts.length > 1

@@ -25,7 +25,7 @@ export const SECTIONS: { heading: string; rows: [string, string][] }[] = [
     heading: 'A turn, in order',
     rows: [
       ['1 · Upkeep', 'You gain a Bone, draw to four cards, and Burn and Toxin tick.'],
-      ['2 · Escalation', 'Units that survived a full round grow stronger.'],
+      ['2 · Growth', 'Enemy units that survived a full round grow stronger.'],
       ['3 · Your actions', 'Play cards, move units, attack — in any order you like.'],
       ['4 · End turn', 'Unspent Marrow is lost. Unplayed cards are discarded unless they Retain.'],
     ],
