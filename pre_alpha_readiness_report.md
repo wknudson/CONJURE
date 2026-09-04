@@ -10,8 +10,8 @@ PR #20. A second audit the same week looked at the layer this one did not — th
 shell around the game and the first-time player's path through it — and its findings were
 fixed and merged as PRs #21, #22 and #23. That audit and those fixes are recorded in §6; the
 Medium bullets in §5 are annotated where a later PR closed them. The three design calls the
-audits had left open were then ruled and built as PRs #25, #26 and #27, and the nine pending
-companion knacks as PR #29 — recorded in §7.*
+audits had left open were then ruled and built as PRs #25, #26 and #27, the nine pending
+companion knacks as PR #29, and the blood-tithe telegraph as PR #31 — recorded in §7.*
 
 **Bottom line:** the core loop — create a character, take a contract, fight, win or lose,
 get rescued or paid, and go again — is intact, well-tested, and completable. The death
@@ -642,7 +642,7 @@ to report it. All of that is closed. What remains is design work, not holes.
 | Roadmap Phase F promised per-game stats and a dump; `record` was three counters | `Profile.history` (v25): encounter, seed, Companion, result, turns, Pact at the bell, difficulty; capped at 30; "Copy diagnostics" in the settings panel. |
 | Post-campaign board = four demo fights | Finished story contracts join their tier's rolled pool. |
 | Last Stand trio, `pyreLit`, move-intent colour and path, seal on bind, Behemoth ceiling test, wagon epilogue, district shell missing C / Shift / Space | All as annotated in §5 above. |
-| Still open by choice | ~~`Dormant`/`Impact`~~ (#25); ~~Subjugation rounds/progress/pressure~~ (#26); ~~ranged-body drought and single Behemoth~~ (#27); ~~pending companion traits~~ (#29); the 01:00 start; `bloodTithe` telegraph; Last Stand trigger polled; three reactions visually generic. |
+| Still open by choice | ~~`Dormant`/`Impact`~~ (#25); ~~Subjugation rounds/progress/pressure~~ (#26); ~~ranged-body drought and single Behemoth~~ (#27); ~~pending companion traits~~ (#29); ~~`bloodTithe` telegraph~~ (#31); the 01:00 start; Last Stand trigger polled; three reactions visually generic. |
 
 ### 6.4 Two things learned about the repository itself
 
@@ -748,10 +748,25 @@ tests assert nothing is pending and every declared knack is wired (carry count 2
 full non-balance suite 137 files / 2,703 tests; balance ledger rerun, 562 playouts, all
 decided.
 
-### 7.5 What remains, all scoping rather than gaps
+### 7.5 The blood-tithe telegraph — **FIXED, PR #31**
 
-The 01:00 start (a design choice); the `bloodTithe` telegraph; the Last Stand trigger polled
-on board sync rather than sequencer-driven; overload, superconduct and arc visually generic.
+The one action the enemy could plan that the intent layer never drew: `enumerateActions`
+offers the tithe, `declareIntents` had no case for it, and a Novice — the tier whose premise
+is that nothing is hidden — watched a body get bled for Marrow with no warning. A declared
+tithe is now an intent kind of its own, drawn where the body stands at both tiers like a
+Channel (a spend is not a card): a drop for its badge and the grey of a move for its tile on
+the 2D board; `TITHE` and, for a Channel, `SIGHT` badges in the district shell, which drew
+neither. **Found on the way:** the tile marker for a declared Channel was painted in the
+strike's red, telling the player a sitting body was about to hit them; Channels wear the grey
+now. The README's intent section states which declarations each tier shows. Verified:
+`titheIntent.test.ts` at both telegraph settings; full non-balance suite 138 files / 2,705
+tests. Ledger not rerun: intents are derived from the plan after the AI has chosen it and do
+not change what executes.
+
+### 7.6 What remains, all scoping rather than gaps
+
+The 01:00 start (a design choice); the Last Stand trigger polled on board sync rather than
+sequencer-driven; overload, superconduct and arc visually generic.
 
 ### Appendix — documentation drift found along the way
 
