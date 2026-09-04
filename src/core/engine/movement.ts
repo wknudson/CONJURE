@@ -248,7 +248,8 @@ export function canAct(unit: Unit): boolean {
   // tether makes one line above: moving, striking and channelling all ask this question
   // already, so one answer covers the three rules Exhaustion is defined by.
   if (unit.statuses.exhaust) return false;
-  // Dormant and Impact units cannot act on the turn they were deployed. Haste can.
+  // Nothing acts on the turn it was summoned, unless it has Haste. The one rule; there is
+  // no keyword for the wait.
   if (unit.summonedThisTurn && !unit.keywords.includes('Haste')) return false;
   return true;
 }

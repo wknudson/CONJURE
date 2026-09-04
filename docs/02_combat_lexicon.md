@@ -305,9 +305,7 @@ spells — it bends arrows, not sorcery.
 
 | Keyword | Rule |
 |---|---|
-| **Haste** | can move and attack the turn it is deployed |
-| **Dormant** | cannot move or attack the turn it is summoned |
-| **Impact** | triggers an effect the moment it lands, but cannot act that turn |
+| **Haste** | can move and attack the turn it is deployed. Every other summon waits a turn — it cannot move, strike, channel or be bled until its next turn. That wait is the rule, not a keyword; `Dormant` and `Impact` used to name it and were retired (2026-09-03) because nothing read them |
 | **Counter** | strikes back for full Attack whenever hit in melee — **and survives**. A blow that kills it outright takes no counter-damage |
 | **Guardian** | blocks line of sight |
 | **Growth** | grows at the start of its owner's turn, if it survived the opposing round. **Enemy-side only** — see below |

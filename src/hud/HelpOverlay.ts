@@ -35,6 +35,7 @@ export const SECTIONS: { heading: string; rows: [string, string][] }[] = [
     rows: [
       ['Moving', 'Any direction including diagonals, up to the unit\'s MOV.'],
       ['One of each', 'One move and one attack per turn, in either order — so a unit can strike and then withdraw.'],
+      ['Fresh summons', 'A body cannot move, strike, channel or be bled on the turn it arrives. Haste is the exception.'],
       ['No retaliation', 'The attacker wins the exchange outright, unless the defender has Counter.'],
       ['Behemoths', 'Fill a 2×2 space and cannot squeeze through single-tile gaps.'],
     ],

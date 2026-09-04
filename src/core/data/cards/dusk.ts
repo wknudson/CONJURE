@@ -100,11 +100,13 @@ export const DUSK_CARDS: Record<string, CardDef> = {
    * planted beside and nothing else, forever. Deploying it near the fight is committing to
    * the fight being there.
    *
-   * Dormant is the real price, and it is a stricter one than it looks. `canAct` refuses
-   * anything summoned this turn without Haste, and the tithe asks `canAct` —
-   * so a Ghoul **cannot be cashed in on the turn it lands**. One Bone does not buy two
-   * Marrow now; it buys two Marrow next turn, if the thing is still standing. A board that
-   * can reach it has a turn in which to answer.
+   * The wait is the real price, and it is a stricter one than it looks. `canAct` refuses
+   * anything summoned this turn without Haste — the rule every summon obeys, not a keyword
+   * of this card — and the tithe asks `canAct`, so a Ghoul **cannot be cashed in on the
+   * turn it lands**. One Bone does not buy two Marrow now; it buys two Marrow next turn, if
+   * the thing is still standing. A board that can reach it has a turn in which to answer.
+   * The card used to carry a `Dormant` keyword naming that wait; nothing read it, and it
+   * told the player the Ghoul was special in a way it is not.
    */
   ash_ghoul: {
     id: 'ash_ghoul',
@@ -113,10 +115,10 @@ export const DUSK_CARDS: Record<string, CardDef> = {
     school: 'dusk',
     source: 'hero',
     kind: 'minion',
-    text: 'Dormant: cannot act the turn it is summoned, and so cannot be tithed until the next one. Cannot move, ever. Bled for +1 Marrow above the usual.',
+    text: 'Cannot move, ever. Like any summon it cannot act — or be bled — the turn it arrives. Bled for +1 Marrow above the usual.',
     target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
     effect: { op: 'summon', unitDef: 'ash_ghoul' },
-    keywords: ['Dormant'],
+    keywords: [],
     unit: {
       // The whole point of the card, and the same premium the Marrow Wisp charges — bought
       // here with immobility and a turn of waiting rather than with a Bone and mobility.
