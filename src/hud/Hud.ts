@@ -12,6 +12,7 @@ import { Tooltip } from './Tooltip.js';
 import type { WeatherReading } from './weather.js';
 import { schoolOf } from '../render/palette.js';
 import { describeProjected, type ProjectedDamage } from './projection.js';
+import { fitCardText } from './cardFace.js';
 
 export interface HudCallbacks {
   onCardClick(cardId: CardInstanceId): void;
@@ -525,6 +526,7 @@ export class Hud {
         });
         this.cards.set(snapshot.instanceId, card);
         this.handEl.appendChild(card.el);
+        fitCardText(card.el);
       }
       card.setPlayable(this.playable.has(snapshot.instanceId));
       card.setSelected(this.selected === snapshot.instanceId);
@@ -553,6 +555,7 @@ export class Hud {
     });
     this.cards.set(card.instanceId, view);
     this.handEl.appendChild(view.el);
+    fitCardText(view.el);
     view.playDrawAnimation();
   }
 
