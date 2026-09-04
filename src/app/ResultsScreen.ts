@@ -16,7 +16,7 @@ const COPY: Record<CombatResult, { title: string; blurb: string; kind: string }>
   bound: {
     title: 'BOUND',
     blurb:
-      'The Rite takes hold. Ignis kneels — not slain, but sworn. A companion joins your roster.',
+      'The Rite takes hold. The beast kneels — not slain, but sworn. A companion joins your roster.',
     kind: 'bound',
   },
 };
@@ -38,6 +38,14 @@ const COPY: Record<CombatResult, { title: string; blurb: string; kind: string }>
 export interface ResultsOptions {
   result: CombatResult;
   encounter: EncounterDef;
+  /**
+   * What the loss is about to cost, said here rather than a screen later.
+   *
+   * The fee, the health and the lost brew were all real, and none of them were mentioned
+   * until a modal on the street — after the player had already clicked through a screen
+   * that said only "the Pact is broken". The bill belongs on the bill.
+   */
+  consequence?: string;
   onTitle: () => void;
 }
 
@@ -53,6 +61,7 @@ export class ResultsScreen implements Screen {
     el.innerHTML = `
       <div class="results__title">${copy.title}</div>
       <div class="results__blurb">${copy.blurb}</div>
+      ${this.opts.consequence ? `<div class="results__consequence">${this.opts.consequence}</div>` : ''}
       <div class="results__meta">${this.opts.encounter.name}</div>
       <div class="results__buttons">
         <button class="results__btn results__menu">Back to the street</button>

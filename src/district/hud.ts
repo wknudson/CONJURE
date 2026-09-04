@@ -872,7 +872,10 @@ export class DistrictHud {
    * Modal on purpose. A player who lost a run to a fight they thought they could win
    * should have to look at the bill before the doors are in front of them again.
    */
-  showNotice(notice: { title: string; body: string }, onAck: () => void): void {
+  showNotice(notice: { title: string; body: string; ack?: string }, onAck: () => void): void {
+    // The button used to say "Begin again" under every notice — a story reveal, a refused
+    // contract, a bill — and read as a game-over under all of them. The notice names its
+    // own acknowledgement now; the default is neutral.
     this.overlay.innerHTML = `
       <div class="hub-notice__card brass-panel">
         <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
@@ -880,7 +883,7 @@ export class DistrictHud {
         <div class="hub-notice__seal"></div>
         <div class="hub-notice__title">${notice.title}</div>
         <div class="hub-notice__body">${notice.body}</div>
-        <button class="brass-btn hub-notice__ack">Begin again</button>
+        <button class="brass-btn hub-notice__ack">${notice.ack ?? 'Continue'}</button>
       </div>`;
     this.overlay.classList.add('is-shown');
     this.overlay.querySelector('.hub-notice__ack')!.addEventListener('click', () => {

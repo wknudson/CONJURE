@@ -212,7 +212,7 @@ export interface DistrictOpts {
   hunts: Readonly<Record<string, number>>;
   collection: Collection;
   deck: string[];
-  notice?: { title: string; body: string };
+  notice?: { title: string; body: string; ack?: string };
   tutorial: readonly TutorialFlag[];
   onTutorialFlag: (flag: TutorialFlag) => void;
   /**
