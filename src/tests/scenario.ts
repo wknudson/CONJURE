@@ -7,7 +7,7 @@
 
 import type { Coord, Side, TargetRef } from '../contract/ids.js';
 import type { GameEvent } from '../contract/events.js';
-import type { GameState } from '../core/types/state.js';
+import { SUBJUGATION_ROUNDS, type GameState } from '../core/types/state.js';
 import type { Unit } from '../core/types/units.js';
 import type { Command } from '../core/types/commands.js';
 import type { ChosenTarget } from '../core/types/cards.js';
@@ -83,7 +83,13 @@ export function scenario(opts: {
       firedGates: [],
     rout: false,
       chainCancelled: false,
-      subjugation: { sealed: false, active: false, anchorUnitId: null, turnsSurvived: 0 },
+      subjugation: {
+        sealed: false,
+        active: false,
+        anchorUnitId: null,
+        turnsSurvived: 0,
+        rounds: SUBJUGATION_ROUNDS,
+      },
     },
     nextId: 0,
     suddenDeath: false,

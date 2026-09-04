@@ -16,7 +16,6 @@ import type { TargetRef, UnitId } from '../../contract/ids.js';
 import type { Ctx } from './context.js';
 import { emit, newCause } from './context.js';
 import type { GameState } from '../types/state.js';
-import { SUBJUGATION_ROUNDS } from '../types/state.js';
 import type { Unit } from '../types/units.js';
 import { CARDS } from '../data/cards/index.js';
 import { toCardSnapshot } from './views.js';
@@ -38,10 +37,6 @@ const PURGED = ['burn', 'toxin', 'chill', 'freeze', 'entangle', 'stun', 'brittle
 export function bossUnitOf(state: GameState): Unit | undefined {
   const id = state.players.enemy.companionUnitId;
   return id ? state.units[id] : undefined;
-}
-
-export function isAnchor(state: GameState, unitId: UnitId): boolean {
-  return state.encounter.subjugation.anchorUnitId === unitId;
 }
 
 /** Whether this unit is sealed against harm. */
@@ -90,7 +85,11 @@ export function beginSubjugation(ctx: Ctx): void {
     for (const status of PURGED) delete boss.statuses[status];
   }
 
-  emit(ctx, { t: 'subjugationBegan', ...(boss ? { bossUnitId: boss.id } : {}) });
+  emit(ctx, {
+    t: 'subjugationBegan',
+    ...(boss ? { bossUnitId: boss.id } : {}),
+    rounds: state.encounter.subjugation.rounds,
+  });
   if (boss) {
     emit(ctx, { t: 'statusApplied', unitId: boss.id, status: 'aetherPlated', stacks: 1 });
   }
@@ -122,16 +121,17 @@ export function dealTheRite(ctx: Ctx): void {
 }
 
 /**
- * The Rite lands. From here the beast has three rounds to break the tether.
+ * The Rite lands. From here the beast has `rounds` rounds — less whatever a snapped
+ * tether carried over — to break the tether.
  *
  * The anchor keeps its own statuses and armor: everything the player can stack onto it
- * before the storm arrives is the whole of the puzzle, so nothing is cleared here.
+ * before the storm arrives is the whole of the puzzle, so nothing is cleared here. The
+ * progress is not reset either: `snapTether` already decided what carries.
  */
 export function setAnchor(ctx: Ctx, unit: Unit): void {
   const sub = ctx.state.encounter.subjugation;
   sub.active = true;
   sub.anchorUnitId = unit.id;
-  sub.turnsSurvived = 0;
 
   unit.statuses.anchor = 1;
   // Standing still is not resting. Whatever it had planned this turn is over.
@@ -139,7 +139,13 @@ export function setAnchor(ctx: Ctx, unit: Unit): void {
   unit.attackedThisTurn = true;
 
   newCause(ctx);
-  emit(ctx, { t: 'anchorSet', unitId: unit.id, at: { ...unit.anchor } });
+  emit(ctx, {
+    t: 'anchorSet',
+    unitId: unit.id,
+    at: { ...unit.anchor },
+    held: sub.turnsSurvived,
+    of: sub.rounds,
+  });
   emit(ctx, { t: 'statusApplied', unitId: unit.id, status: 'anchor', stacks: 1 });
 }
 
@@ -171,16 +177,24 @@ export function tickSubjugation(ctx: Ctx): void {
   emit(ctx, {
     t: 'subjugationProgress',
     turnsSurvived: sub.turnsSurvived,
-    of: SUBJUGATION_ROUNDS,
+    of: sub.rounds,
   });
 
-  if (sub.turnsSurvived >= SUBJUGATION_ROUNDS) {
+  if (sub.turnsSurvived >= sub.rounds) {
     sub.active = false;
     // The seal was the Rite's; the Rite is done. Left set it survived into the saved
     // state of a won fight, where nothing read it but nothing should have to know that.
     sub.sealed = false;
     finish(ctx, 'bound');
+    return;
   }
+
+  // The pressure. A round held is a round the beast has spent throwing itself at the
+  // cable, and it comes off angrier each time: one stack per round the tether stands,
+  // so the third round is harder to hold than the first and the anchor's survival is a
+  // race rather than a wait. Without this the siege was static — the same beast every
+  // round — and the only thing a longer tether cost the player was patience.
+  enrageBoss(ctx);
 }
 
 /**
@@ -197,15 +211,23 @@ export function onAnchorDied(ctx: Ctx, unit: Unit): void {
   snapTether(ctx, unit.id, { ...unit.anchor });
 }
 
-/** The snap itself, shared by every route the anchor can leave the board. */
+/**
+ * The snap itself, shared by every route the anchor can leave the board.
+ *
+ * Half the rounds held carry to the next tether, rounded down. A snap used to zero the
+ * count, so two rounds endured and a third lost cost exactly what a Rite cast into the
+ * beast's teeth did — the same nothing. Now a tether that nearly held leaves the beast
+ * part-caged, and the price of the snap is the re-dealt Rite and the stack it gains.
+ */
 function snapTether(ctx: Ctx, unitId: UnitId, at: { x: number; y: number }): void {
   const sub = ctx.state.encounter.subjugation;
   sub.active = false;
   sub.anchorUnitId = null;
-  sub.turnsSurvived = 0;
+  const kept = Math.floor(sub.turnsSurvived / 2);
+  sub.turnsSurvived = kept;
 
   newCause(ctx);
-  emit(ctx, { t: 'tetherSnapped', unitId, at });
+  emit(ctx, { t: 'tetherSnapped', unitId, at, kept });
 
   enrageBoss(ctx);
   dealTheRite(ctx);
@@ -223,7 +245,12 @@ function enrageBoss(ctx: Ctx): void {
   const boss = bossUnitOf(ctx.state);
   if (!boss) return;
 
-  const bonus = CARDS[boss.defId]?.unit?.escalationBonus ?? { atk: STAT_SCALE, hp: 0 };
+  // The card's own Growth bonus where it has one worth the name. A Bound Form's is often
+  // written as zero — its power belongs to a Pact that does not grow — and a stack that
+  // changed nothing was no punishment and no pressure; the Ignis Drake came back from a
+  // snap exactly as strong as it went. Anything that sums to nothing takes the default.
+  const own = CARDS[boss.defId]?.unit?.escalationBonus;
+  const bonus = own && own.atk + own.hp > 0 ? own : { atk: STAT_SCALE, hp: 0 };
   boss.escalation += 1;
   boss.atk += bonus.atk;
   boss.maxHp += bonus.hp;

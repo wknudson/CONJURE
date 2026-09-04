@@ -792,8 +792,9 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
       anchorId: e.unitId,
       ...(sealedBossId ? { bossId: sealedBossId } : {}),
     };
-    view.hud.setSubjugation(0);
-    view.fx.label(e.at, 'ANCHORED', 'tether');
+    // Starts from what a snapped tether carried over, not always from nothing.
+    view.hud.setSubjugation(e.held, e.of);
+    view.fx.label(e.at, e.held > 0 ? `ANCHORED · ${e.held} HELD` : 'ANCHORED', 'tether');
     view.fx.screenShake(8, t(300));
     // The cable under load, for as long as it holds. Synthesised for this and never
     // started; it runs under the fight until the snap or the vault lock ends it, and it
