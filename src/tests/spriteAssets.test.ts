@@ -12,14 +12,31 @@
  * either side — the file, or the `artId` that points at it — fails here.
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { COMPANIONS, companionById } from '../core/data/companions.js';
-import { companionSpriteSrc } from '../render/sprites.js';
+import {
+  commanderSpriteSrc,
+  commanderWalkSrc,
+  companionSpriteSrc,
+  WALK_FRAMES,
+} from '../render/sprites.js';
 import { ENCOUNTERS } from '../core/data/encounters/index.js';
 
 /** `/assets/...` as the browser asks for it -> the file on disk that serves it. */
 const onDisk = (src: string): string => `public${src}`;
+
+/**
+ * A PNG's own width and height, read off its IHDR chunk rather than decoded.
+ *
+ * The signature is 8 bytes, the first chunk is always IHDR, and its length+type header is
+ * another 8 — width and height are the four-byte big-endian pair right after that, decoded
+ * without pulling in an image library or a DOM `Image` neither of which this suite has.
+ */
+function pngSize(path: string): { width: number; height: number } {
+  const buf = readFileSync(path);
+  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+}
 
 describe('companion art', () => {
   it('exists for every species the registry knows', () => {
@@ -65,5 +82,39 @@ describe('companion art', () => {
     expect(companionSpriteSrc('not_a_species')).toBe(
       '/assets/sprites/companions/not_a_species-front.png',
     );
+  });
+});
+
+describe('hero art', () => {
+  it('exists for every standing bearing, both genders', () => {
+    const missing: string[] = [];
+    for (const gender of ['male', 'female'] as const) {
+      for (const facing of ['front', 'back', 'side'] as const) {
+        const src = commanderSpriteSrc(gender, facing);
+        if (!existsSync(onDisk(src))) missing.push(src);
+      }
+    }
+    expect(missing, 'standing hero sprites the loader cannot fetch').toEqual([]);
+  });
+
+  it('shares one aspect ratio across the female side-walk frames', () => {
+    // `BillboardSprite` fixes the drawn *height* and derives width from each texture's own
+    // aspect ratio (`aspectOf`) — so four independently-cropped frames at four slightly
+    // different aspect ratios is not a cosmetic quirk, it is the character visibly changing
+    // width every frame she takes a step, at a fixed height. The male bearing cannot have
+    // this problem: `buildSheetActorArt` cuts every one of its twenty frames to the same
+    // `WALK_SHEET_CONTENT` box by construction. The female bearing has no shared box — her
+    // four frames are separate files — so the aspect ratio has to be pinned down here
+    // instead, against the files themselves rather than against `buildActorArt`'s arithmetic
+    // (which `districtWalk.test.ts` already covers with same-sized fixture images and so
+    // could not have caught a real file mismatch).
+    const sizes = Array.from({ length: WALK_FRAMES }, (_u, n) =>
+      pngSize(onDisk(commanderWalkSrc('female', 'side', n))),
+    );
+    const aspects = sizes.map((s) => s.width / s.height);
+    const [first, ...rest] = aspects;
+    for (const [i, a] of rest.entries()) {
+      expect(a, `frame ${i + 1} vs frame 0: ${JSON.stringify(sizes)}`).toBeCloseTo(first!, 3);
+    }
   });
 });
