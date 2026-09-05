@@ -15,6 +15,10 @@ companion knacks as PR #29, the blood-tithe telegraph as PR #31, the sequencer-d
 Stand as PR #33, the three generic reactions as PR #35, and the opening hour as PR #36 —
 recorded in §7. Nothing either audit raised remains open.*
 
+*Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
+side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
+— was merged as PR #37, recorded in §7.9 for the same continuity the audits' own fixes are.*
+
 **Bottom line:** the core loop — create a character, take a contract, fight, win or lose,
 get rescued or paid, and go again — is intact, well-tested, and completable. The death
 penalty, the 3-slot save system, the Harpoon Protocol, and the E5 presentation hooks all
@@ -809,10 +813,33 @@ the anchor keeps its job as the hour a pre-clock save is put back at. Verified: 
 character's ledger reads `06:08 · dawn` with daylight 0.8, lamps 0.68, grace 0.93; the save,
 enrolment and district suites pass and the full non-balance suite follows.
 
-### 7.9 What remains
+### 7.9 The female side-walk — **FIXED, PR #37**
 
-Nothing. Every finding either audit ranked as a blocker, High or Medium, and every design call
-they left open, is closed and merged. What comes next is a playtest.
+Outside either audit's scope: the player asked directly why the female Commander's walk
+looked wrong compared to the male's, rather than an exploration pass surfacing it. Recorded
+here anyway, for the same continuity §6 and the rest of §7 already keep.
+
+Her four side-walk frames were independent files, each cropped tight to its own content at a
+different aspect ratio (143×359, 124×357, 143×372, 131×368). `BillboardSprite` fixes the
+Commander's drawn height and derives width from each texture's own aspect ratio, so four
+ratios meant her on-screen width swung by up to 15% every frame she took a step — the exact
+throbbing the male bearing's walk sheet avoids by cutting all twenty of its frames to one
+fixed box. Padded all four female frames onto a shared 143×372 canvas, bottom-anchored so her
+feet hold the same ground line, leaving the drawn poses untouched. `SIDE_WALK_ORDER` was left
+alone: the art has exactly one true passing pose, so `[0, 1, 2, 1]` is the only arrangement it
+supports, not a bug. Front and back walking turned out to be unrelated — neither gender has
+walk frames for those two facings at all, confirmed live in the browser, so there was nothing
+gender-specific left to fix there; making that look good is unstarted art or animation work,
+not a defect. Verified: a new test reads the four files' real PNG dimensions and fails if they
+drift apart again; full suite 145 files / 3269 tests, including all six balance ledger files
+run individually; `tsc --noEmit` clean.
+
+### 7.10 What remains
+
+Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
+and every design call they left open, is closed and merged. §7.9 is a reminder that "nothing
+remains" describes the audits' own scope, not every gap the game has — the next thing found
+outside it belongs here on the same terms PR #37 did. What comes next is a playtest.
 
 ### Appendix — documentation drift found along the way
 
