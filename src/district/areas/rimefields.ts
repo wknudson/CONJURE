@@ -11,7 +11,7 @@
  * is transparent and what you see through it is not white.
  */
 
-import { defineArea, type AreaDef, type TileDef } from '../map.js';
+import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
 
 /**
  * The field's legend.
@@ -45,6 +45,13 @@ const RIME_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { minHeight: 7.0, maxHeight: 11.0, inset: 0.1, depthInset: 0.1, chimneyChance: 0, split: false },
   },
+  /** The cave mouth: rock, taken whole, with a door in the south face of it. */
+  K: {
+    tex: 'snow',
+    safe: false,
+    walk: false,
+    solid: { minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
+  },
 };
 
 /**
@@ -55,29 +62,38 @@ const RIME_LEGEND: Record<string, TileDef> = {
  * round something.
  */
 const GRID: readonly string[] = [
-  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  0
-  'RddddddddddddddddddddddddddddddR', //  1
-  'RddddIIIIddddddddddIIIIddddddddR', //  2  pressure ridges
-  'RddddIIIIddnndddnddIIIIdddnnnddR', //  3
-  'RddddddddddnnnnnnddddddddnnnnddR', //  4
-  'RddiiiiiiddnnnnnnddddiiiiiinnddR', //  5  swept to the ice
-  'RddiiiiiiddddddddnnddiiiiiiddddR', //  6
-  'RddnnnnddddddddddnnddddddddddddR', //  7
-  'RddnnnnddIIIIIIddnnddIIIIIIddddR', //  8
-  'RddnnnnddddddddddnnddddddddddddR', //  9
-  'R,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,', // 10  the road, east to the Chalk Road
-  'R,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,', // 11
-  'RddnnnnddddddddddnnddddddddddddR', // 12
-  'RddnnnnddIIIIIIddnnddIIIIIIddddR', // 13
-  'RddnnnnddddddddddnnddddddddddddR', // 14
-  'RddiiiiiiddddddddnnddiiiiiiddddR', // 15
-  'RddiiiiiinnnnnnnnnnnniiiiiinnddR', // 16
-  'RddddddddddnnnnnnddddddddnnnnddR', // 17
-  'Rdddd##ddddnnndnndddd##ddnnddddR', // 18
-  'RddddIIIIddddddddddIIIIddddddddR', // 19
-  'RddddddddddddddddddddddddddddddR', // 20
-  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', // 21
+  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  0
+  'RddddddddKKKdddddddddddddddddddddddR', //  1
+  'RddddddddKKKdddddddddddddddddddddddR', //  2
+  'RddddddddddddddddddddddddddddddddddR', //  3
+  'RddddddIIIIddddddddddIIIIddddddddddR', //  4
+  'RddddddIIIIddnndddnddIIIIdddnnnddddR', //  5
+  'RddddddddddddnnnnnnddddddddnnnnddddR', //  6
+  'RddddiiiiiiddnnnnnnddddiiiiiinnddddR', //  7
+  'RddddiiiiiiddddddddnnddiiiiiiddddddR', //  8
+  'RddddnnnnddddddddddnnddddddddddddddR', //  9
+  'RddddnnnnddIIIIIIddnnddIIIIIIddddddR', // 10
+  'RddddnnnnddddddddddnnddddddddddddddR', // 11
+  'Rdd,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,dd,', // 12
+  'Rdd,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,dd,', // 13
+  'RddddnnnnddddddddddnnddddddddddddddR', // 14
+  'RddddnnnnddIIIIIIddnnddIIIIIIddddddR', // 15
+  'RddddnnnnddddddddddnnddddddddddddddR', // 16
+  'RddddiiiiiiddddddddnnddiiiiiiddddddR', // 17
+  'RddddiiiiiinnnnnnnnnnnniiiiiinnddddR', // 18
+  'RddddddddddddnnnnnnddddddddnnnnddddR', // 19
+  'Rdddddd##ddddnnndnndddd##ddnnddddddR', // 20
+  'RddddddIIIIddddddddddIIIIddddddddddR', // 21
+  'RddddddddddddddddddddddddddddddddddR', // 22
+  'RddddddddddddddddddddddddddddddddddR', // 23
+  'RddddddddddddddddddddddddddddddddddR', // 24
+  'RddRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRddR', // 25
 ];
+
+const HALF_X = (GRID[0]!.length * TILE) / 2;
+const HALF_Z = (GRID.length * TILE) / 2;
+const xOfCol = (col: number): number => col * TILE - HALF_X + TILE / 2;
+const zOfRow = (row: number): number => row * TILE - HALF_Z + TILE / 2;
 
 export const RIMEFIELDS_ID = 'rimefields';
 
@@ -91,8 +107,17 @@ export const RIMEFIELDS: AreaDef = defineArea({
   safety: 'none',
   exits: [
     {
+      // The ice cave, cut into the north face. The only shelter past the stones that say there is none.
+      to: 'rimefields_ice_cave',
+      x: xOfCol(10),
+      z: zOfRow(2) + TILE / 2 + 1.4,
+      label: 'Into the ice cave',
+      door: { x: xOfCol(10), z: zOfRow(2) + TILE / 2 + 0.05, facesSouth: true, style: 'cave' },
+      arrive: { x: 0, z: 16 },
+    },
+    {
       to: 'chalk_road',
-      x: 62,
+      x: HALF_X - 2,
       z: -2,
       label: 'East, back down the Chalk Road',
       arrive: { x: -62, z: 2 },
@@ -113,6 +138,15 @@ export const RIMEFIELDS: AreaDef = defineArea({
     ],
     /** Two crates on a snowfield was the whole area. Cairns are what people leave on ice. */
     dressing: [
+      { kind: 'cairn', x: -64, z: -44 },
+      { kind: 'spoilheap', x: 64, z: -16 },
+      { kind: 'cairn', x: -64, z: 8 },
+      { kind: 'bramble', x: 64, z: 20 },
+      { kind: 'spoilheap', x: -64, z: 32 },
+      { kind: 'cairn', x: 64, z: -32 },
+      { kind: 'cairn', x: 20, z: -44 },
+      { kind: 'spoilheap', x: -20, z: 44 },
+      { kind: 'cairn', x: 40, z: 44 },
       { kind: 'cairn', x: -58, z: -38 },
       { kind: 'cairn', x: 50, z: -38 },
       { kind: 'cairn', x: -50, z: -30 },

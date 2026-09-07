@@ -12,7 +12,7 @@
  * with no made ground on it at all.
  */
 
-import { defineArea, type AreaDef, type TileDef } from '../map.js';
+import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
 
 /**
  * The crater's legend.
@@ -45,6 +45,13 @@ const CALDERA_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { minHeight: 2.0, maxHeight: 3.6, inset: 1.1, depthInset: 1.1, chimneyChance: 0.8, split: false },
   },
+  /** The cave mouth: rock, taken whole, with a door in the south face of it. */
+  K: {
+    tex: 'ash',
+    safe: false,
+    walk: false,
+    solid: { minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
+  },
 };
 
 /**
@@ -55,31 +62,40 @@ const CALDERA_LEGEND: Record<string, TileDef> = {
  * leaving it a rectangle, which is most of what makes it read as a crater.
  */
 const GRID: readonly string[] = [
-  'RRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  0
-  'RaaaaaaaaaaaaaaaaaaaaaaaaaaR', //  1  the ash skirt
-  'RaaaaRRRRaaaaaaaaRRRRaaaaaaR', //  2  buttresses
-  'RaaaaRRRRaaaaaaaaRRRRaaaaaaR', //  3
-  'RaaaaffffffaaaffffffaaaaaaaR', //  4
-  'RaassssssssssscssssssssssaaR', //  5  the floor
-  'RascsssVVsssssssVVssssssssaR', //  6  vents
-  'RassssssssssssssssssssssssaR', //  7
-  'RassssssssssssssssssssssssaR', //  8
-  'RascsVVVVssssssscVVVVsssssaR', //  9
-  'RasccsssssssssccccssssssssaR', // 10
-  'Rascccsssssssscccccsssssssas', // 11  the sut east, to the Cinderworks
-  'Rasccccsssssscccccccssssssas', // 12
-  'RasccVVVVssscccccVVVVsssssaR', // 13
-  'RasccccccssccccccccccssscsaR', // 14
-  'RasccccccssccccccccccssscsaR', // 15
-  'RasccccVVsscccccVVcccssscsaR', // 16
-  'RaassssssssscccssssssssssaaR', // 17
-  'RaaaaffffffaaaffffffaaaaaaaR', // 18
-  'RaaaaRRRRaaaaaaaaRRRRaaaaaaR', // 19
-  'RaaaaRRRRaaaaaaaaRRRRaaaaaaR', // 20
-  'RaaaaaaaaaaaaaaaaaaaaaaaaaaR', // 21
-  'RaaaaaaaaaaaaaaaaaaaaaaaaaaR', // 22
-  'RRRRRRRRRRRRRRRRRRRRRRRRRRRR', // 23
+  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  0
+  'RaaaaaaaaaaaaaaaaaaaKKKKaaaaaaaR', //  1
+  'RaaaaaaaaaaaaaaaaaaaKKKKaaaaaaaR', //  2
+  'RaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaR', //  3
+  'RaaaaaaRRRRaaaaaaaaRRRRaaaaaaaaR', //  4
+  'RaaaaaaRRRRaaaaaaaaRRRRaaaaaaaaR', //  5
+  'RaaaaaaffffffaaaffffffaaaaaaaaaR', //  6
+  'RaaaassssssssssscssssssssssaaaaR', //  7
+  'RaaascsssVVsssssssVVssssssssaaaR', //  8
+  'RaaassssssssssssssssssssssssaaaR', //  9
+  'RaaassssssssssssssssssssssssaaaR', // 10
+  'RaaascsVVVVssssssscVVVVsssssaaaR', // 11
+  'RaaasccsssssssssccccssssssssaaaR', // 12
+  'Raaascccsssssssscccccsssssssaaas', // 13
+  'Raaasccccsssssscccccccssssssaaas', // 14
+  'RaaasccVVVVssscccccVVVVsssssaaaR', // 15
+  'RaaasccccccssccccccccccssscsaaaR', // 16
+  'RaaasccccccssccccccccccssscsaaaR', // 17
+  'RaaasccccVVsscccccVVcccssscsaaaR', // 18
+  'RaaaassssssssscccssssssssssaaaaR', // 19
+  'RaaaaaaffffffaaaffffffaaaaaaaaaR', // 20
+  'RaaaaaaRRRRaaaaaaaaRRRRaaaaaaaaR', // 21
+  'RaaaaaaRRRRaaaaaaaaRRRRaaaaaaaaR', // 22
+  'RaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaR', // 23
+  'RaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaR', // 24
+  'RaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaR', // 25
+  'RaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaR', // 26
+  'RaaRRRRRRRRRRRRRRRRRRRRRRRRRRaaR', // 27
 ];
+
+const HALF_X = (GRID[0]!.length * TILE) / 2;
+const HALF_Z = (GRID.length * TILE) / 2;
+const xOfCol = (col: number): number => col * TILE - HALF_X + TILE / 2;
+const zOfRow = (row: number): number => row * TILE - HALF_Z + TILE / 2;
 
 export const CALDERA_ID = 'caldera';
 
@@ -93,8 +109,17 @@ export const CALDERA: AreaDef = defineArea({
   safety: 'none',
   exits: [
     {
+      // The lava tube, in the north wall. The drake denned in it before the tap field was cut.
+      to: 'caldera_lava_tube',
+      x: xOfCol(21.5),
+      z: zOfRow(2) + TILE / 2 + 1.4,
+      label: 'Into the lava tube',
+      door: { x: xOfCol(21.5), z: zOfRow(2) + TILE / 2 + 0.05, facesSouth: true, style: 'cave' },
+      arrive: { x: 0, z: 16 },
+    },
+    {
       to: 'cinderworks',
-      x: 54,
+      x: HALF_X - 2,
       z: -2,
       label: 'East, out through the cut to the Cinderworks',
       arrive: { x: -62, z: 0 },
@@ -117,6 +142,15 @@ export const CALDERA: AreaDef = defineArea({
     ],
     /** The thinnest area in the game had one crate on it. Nothing lives here, so nothing here is built — only left. */
     dressing: [
+      { kind: 'scorch', x: 56, z: -48 },
+      { kind: 'spoilheap', x: -56, z: -12 },
+      { kind: 'cairn', x: 56, z: 12 },
+      { kind: 'scorch', x: -56, z: 20 },
+      { kind: 'spoilheap', x: 56, z: -20 },
+      { kind: 'cairn', x: -56, z: -28 },
+      { kind: 'scorch', x: 40, z: -48 },
+      { kind: 'cairn', x: -20, z: 48 },
+      { kind: 'spoilheap', x: 24, z: 48 },
       { kind: 'scorch', x: -50, z: -42 },
       { kind: 'scorch', x: 6, z: -38 },
       { kind: 'scorch', x: -10, z: -30 },

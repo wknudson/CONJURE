@@ -859,6 +859,56 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#0e120e',
     fogDensity: 0.028,
   },
+  /** The lava tube: the vent's own light, red off the crust, and nothing else. */
+  caldera_lava_tube: {
+    sunIntensity: 1.6,
+    sunColor: '#f08040',
+    ambientIntensity: 1.9,
+    skyColor: '#5a2a18',
+    groundBounce: '#6a2a10',
+    fogColor: '#140806',
+    fogDensity: 0.03,
+  },
+  /** The poacher's hide: one brazier under turf, and the wood's green coming in at the door. */
+  ashwood_poachers_hide: {
+    sunIntensity: 1.4,
+    sunColor: '#c8a870',
+    ambientIntensity: 2.0,
+    skyColor: '#4a5a3a',
+    groundBounce: '#3a4a28',
+    fogColor: '#0c100a',
+    fogDensity: 0.028,
+  },
+  /** The ice cave: blue, and cold enough to see. */
+  rimefields_ice_cave: {
+    sunIntensity: 1.5,
+    sunColor: '#a8c8f0',
+    ambientIntensity: 2.2,
+    skyColor: '#6a86a8',
+    groundBounce: '#4a6080',
+    fogColor: '#0a1018',
+    fogDensity: 0.026,
+  },
+  /** Pylon Nine's base: the hum has a colour, and it is this one. */
+  storm_shelf_pylon_base: {
+    sunIntensity: 1.5,
+    sunColor: '#b8c8e8',
+    ambientIntensity: 2.0,
+    skyColor: '#505868',
+    groundBounce: '#3a4050',
+    fogColor: '#0c0e14',
+    fogDensity: 0.028,
+  },
+  /** The great barrow: bone by one brazier. */
+  bone_bastion_barrow: {
+    sunIntensity: 1.3,
+    sunColor: '#c8b890',
+    ambientIntensity: 1.8,
+    skyColor: '#4a4838',
+    groundBounce: '#3a3828',
+    fogColor: '#0c0b08',
+    fogDensity: 0.032,
+  },
   /** The Undercroft: two braziers under a vault, and the cold coming up through the stone. */
   highcourt_undercroft: {
     sunIntensity: 1.2,

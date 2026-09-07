@@ -798,6 +798,100 @@ export const NOTICES: readonly NoticeDef[] = [
     flag: 'tended_the_stile_candle',
   },
 
+  /* --- the Wildlands ----------------------------------------------------------------- */
+  {
+    id: 'caldera:the_nine',
+    areaId: 'caldera',
+    at: { x: -56, z: -44.6 },
+    form: 'gravestone',
+    label: 'Read the stone on the ash',
+    title: 'THE TAP FIELD TOOK NINE',
+    lines: [
+      'Nine names, cut into a slab of cooled slag by somebody who was not one of them. The tap field is under the rock behind it.',
+      'Under the names: "THE TENTH CUT THIS." No name for the tenth.',
+    ],
+    prop: { kind: 'gravestone', x: -56, z: -48 },
+  },
+  {
+    id: 'ashwood:the_ranger',
+    areaId: 'ashwood',
+    at: { x: -60, z: -48.6 },
+    form: 'gravestone',
+    label: 'Read the stone under the trees',
+    title: 'THE LAST RANGER',
+    lines: [
+      'The Magistracy kept a ranger in the Ashwood once, to keep the ride. The stone is his, and the ride has not been kept since.',
+      'Somebody still leaves snared meat on it. The poachers, by the knots.',
+    ],
+    prop: { kind: 'gravestone', x: -60, z: -52 },
+  },
+  {
+    id: 'rimefields:no_shelter',
+    areaId: 'rimefields',
+    at: { x: 64, z: -40.6 },
+    form: 'gravestone',
+    label: 'Read the stone in the drift',
+    title: 'NO SHELTER PAST HERE',
+    lines: [
+      'Not a grave. A party of six is named on it, and the date they went past the stones, and nothing after the date.',
+      'It stands where the last of them was found, which is the same place the first of them was.',
+    ],
+    prop: { kind: 'gravestone', x: 64, z: -44 },
+  },
+  {
+    id: 'rimefields_ice_cave:the_party',
+    areaId: 'rimefields_ice_cave',
+    at: { x: 18, z: 10 },
+    form: 'gravestone',
+    label: 'Read the cairn',
+    title: 'SIX',
+    lines: [
+      'A cairn built inside a cave, by the one who built it, over the five who did not. The stone on top has six scratches and the sixth is fainter.',
+      'What they were carrying is at the back, in the ice. It is theirs until the face breaks.',
+    ],
+    prop: { kind: 'cairn', x: 18, z: 14 },
+  },
+  {
+    id: 'storm_shelf:the_lineman',
+    areaId: 'storm_shelf',
+    at: { x: 52, z: -44.6 },
+    form: 'gravestone',
+    label: 'Read the stone by the footing',
+    title: 'LINEMAN — PYLON IX',
+    lines: [
+      'The man who kept Nine. The stone says he sheltered under iron, which is what the stones say not to do, in a hand that had painted every one of them.',
+      'It does not say he was struck. It says "NOT AN ACCIDENT", which is what the wall says too.',
+    ],
+    prop: { kind: 'gravestone', x: 52, z: -48 },
+  },
+  {
+    id: 'bone_bastion:the_first_row',
+    areaId: 'bone_bastion',
+    at: { x: -48, z: -48.6 },
+    form: 'gravestone',
+    label: 'Read the first stone',
+    title: 'ROW ONE',
+    lines: [
+      'The Bastion is rows, and this is where the first was laid out from: a marker with a number on it and no name, because names came later.',
+      'The number is one. Somebody has scratched the count under it every time it was taken, and the counts do not agree.',
+    ],
+    prop: { kind: 'gravestone', x: -48, z: -52 },
+  },
+  {
+    id: 'bone_bastion_barrow:the_count',
+    areaId: 'bone_bastion_barrow',
+    at: { x: 18, z: 10 },
+    form: 'plaque',
+    label: 'Read the count on the wall',
+    title: 'COUNT THEM AGAIN',
+    lines: [
+      'The east wall of the barrow is a tally. Every mound in the Bastion, as a mark; every count, as a line struck through them. The lines do not agree with each other.',
+      'The last line is fresh, and it is the Magistracy’s census hand, and it is one more than the one before it.',
+    ],
+    prop: { kind: 'plaque', x: 21.85, z: 10, yaw: -Math.PI / 2 },
+    flag: 'counted_the_barrow',
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     id: 'highcourt:proclamation',

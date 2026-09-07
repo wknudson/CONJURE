@@ -11,7 +11,7 @@
  * plays at a fifth of the size, because this is what that hollow is a corner of.
  */
 
-import { defineArea, type AreaDef, type TileDef } from '../map.js';
+import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
 
 /**
  * The wood's legend.
@@ -39,6 +39,13 @@ const WOOD_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { minHeight: 6.0, maxHeight: 9.5, inset: 1.0, depthInset: 1.0, chimneyChance: 0, split: true },
   },
+  /** The cave mouth: rock, taken whole, with a door in the south face of it. */
+  K: {
+    tex: 'litter',
+    safe: false,
+    walk: false,
+    solid: { minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
+  },
 };
 
 /**
@@ -48,33 +55,42 @@ const WOOD_LEGEND: Record<string, TileDef> = {
  * the wood. Everything else is timber and what grows under it.
  */
 const GRID: readonly string[] = [
-  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', //  0
-  'TllllllllllllllllllllllllllllT', //  1
-  'TlwTTwwwwwwwlTTwwwwwwwlTTwwwlT', //  2
-  'Tllwwwwww####wllwwwww####wwwlT', //  3  clearings
-  'Tlwwwwwww####wwwwwwww####wwwlT', //  4
-  'TlwlwwlwlwwwwwlllwwwllwlwwlllT', //  5
-  'TTTlwwlTTwwwwwwTTwwwlTTlwwlTTT', //  6
-  'TlwwwwwllwwwwwwlwlwwwwllwwwllT', //  7
-  'Tlw####wwwwwwwwww####wwwwwwwlT', //  8
-  'Tlw####wwwwwwwwww####wwwwwwwlT', //  9
-  'TllwllwwwlwwwwwwwwllwwwwllwllT', // 10
-  'TlwTTlwwwTTlwwwwwwwTTlwwlTTwlT', // 11
-  'TlllllwwwllwwwwwwwllwlwwlllllT', // 12
-  'Tlw..wwwwwwww..wwwwwwww..wwwlT', // 13
-  'TllwwwllwlwwwwlllwwwwwlwwwlwlT', // 14
-  'TTTlwwlTTlwwwwlTTlwwwTTwwwlTTT', // 15
-  'TlwwwwllwwwwwwllwwwwwlllwwlllT', // 16
-  'Tlw####wwwwwwwwww####wwwwwwwlT', // 17
-  'Tlw####wwwwwwwwww####wwwwwwwlT', // 18
-  'TlwwwlwwwwwwlwllwwwwwwllwwwwlT', // 19
-  'TllTTwwwwwwwlTTlwwwwwwlTTwwwlT', // 20
-  'TlwlwlwwwwwwwlwwwwwwwwwwllwwlT', // 21
-  'Tlwwwwwwwwwww,,wwwwwwwwwwwwwlT', // 22  the ride
-  'Tlwwwwwwwwwww,,wwwwwwwwwwwwwlT', // 23
-  'Tllllllllllll,,llllllllllllllT', // 24
-  'TTTTTTTTTTTTT,,TTTTTTTTTTTTTTT', // 25  south, down to the Tallow Levels
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', //  0
+  'TlllllllllllllllllllKKKllllllllllT', //  1
+  'TlllllllllllllllllllKKKllllllllllT', //  2
+  'TllllllllllllllllllllllllllllllllT', //  3
+  'TlllwTTwwwwwwwlTTwwwwwwwlTTwwwlllT', //  4
+  'Tllllwwwwww####wllwwwww####wwwlllT', //  5
+  'Tlllwwwwwww####wwwwwwww####wwwlllT', //  6
+  'TlllwlwwlwlwwwwwlllwwwllwlwwlllllT', //  7
+  'TllTTlwwlTTwwwwwwTTwwwlTTlwwlTTllT', //  8
+  'TlllwwwwwllwwwwwwlwlwwwwllwwwllllT', //  9
+  'Tlllw####wwwwwwwwww####wwwwwwwlllT', // 10
+  'Tlllw####wwwwwwwwww####wwwwwwwlllT', // 11
+  'TllllwllwwwlwwwwwwwwllwwwwllwllllT', // 12
+  'TlllwTTlwwwTTlwwwwwwwTTlwwlTTwlllT', // 13
+  'TlllllllwwwllwwwwwwwllwlwwlllllllT', // 14
+  'Tlllw..wwwwwwww..wwwwwwww..wwwlllT', // 15
+  'TllllwwwllwlwwwwlllwwwwwlwwwlwlllT', // 16
+  'TllTTlwwlTTlwwwwlTTlwwwTTwwwlTTllT', // 17
+  'TlllwwwwllwwwwwwllwwwwwlllwwlllllT', // 18
+  'Tlllw####wwwwwwwwww####wwwwwwwlllT', // 19
+  'Tlllw####wwwwwwwwww####wwwwwwwlllT', // 20
+  'TlllwwwlwwwwwwlwllwwwwwwllwwwwlllT', // 21
+  'TllllTTwwwwwwwlTTlwwwwwwlTTwwwlllT', // 22
+  'TlllwlwlwwwwwwwlwwwwwwwwwwllwwlllT', // 23
+  'Tlllwwwwwwwwwww,,wwwwwwwwwwwwwlllT', // 24
+  'Tlllwwwwwwwwwww,,wwwwwwwwwwwwwlllT', // 25
+  'Tllllllllllllll,,llllllllllllllllT', // 26
+  'TllllllllllllllllllllllllllllllllT', // 27
+  'TllllllllllllllllllllllllllllllllT', // 28
+  'TllTTTTTTTTTTTT,,TTTTTTTTTTTTTTllT', // 29
 ];
+
+const HALF_X = (GRID[0]!.length * TILE) / 2;
+const HALF_Z = (GRID.length * TILE) / 2;
+const xOfCol = (col: number): number => col * TILE - HALF_X + TILE / 2;
+const zOfRow = (row: number): number => row * TILE - HALF_Z + TILE / 2;
 
 export const ASHWOOD_ID = 'ashwood';
 
@@ -88,9 +104,18 @@ export const ASHWOOD: AreaDef = defineArea({
   safety: 'none',
   exits: [
     {
+      // The poacher's hide, under the north edge of the wood, with the ride a long way behind it.
+      to: 'ashwood_poachers_hide',
+      x: xOfCol(21),
+      z: zOfRow(2) + TILE / 2 + 1.4,
+      label: 'Into the poacher\'s hide',
+      door: { x: xOfCol(21), z: zOfRow(2) + TILE / 2 + 0.05, facesSouth: true, style: 'cave' },
+      arrive: { x: 0, z: 16 },
+    },
+    {
       to: 'tallow_levels',
       x: -6,
-      z: 50,
+      z: HALF_Z - 2,
       label: 'South, down the ride to the Tallow Levels',
       arrive: { x: -26, z: -34 },
     },
@@ -114,6 +139,15 @@ export const ASHWOOD: AreaDef = defineArea({
     ],
     /** Deep timber. Cut wood, and the marks left by whoever cut it. */
     dressing: [
+      { kind: 'deadfall', x: -60, z: -20 },
+      { kind: 'logpile', x: 60, z: -8 },
+      { kind: 'bramble', x: -60, z: 12 },
+      { kind: 'mushrooms', x: 60, z: 24 },
+      { kind: 'bracken', x: -60, z: 36 },
+      { kind: 'cairn', x: 60, z: -36 },
+      { kind: 'deadfall', x: 40, z: -52 },
+      { kind: 'logpile', x: -30, z: 52 },
+      { kind: 'bracken', x: 30, z: 52 },
       { kind: 'waystone', x: -18, z: 18, text: 'THE RIDE — KEEP TO IT' },
       { kind: 'logpile', x: -54, z: -46 },
       { kind: 'logpile', x: -10, z: -42 },

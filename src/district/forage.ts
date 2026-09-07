@@ -350,6 +350,86 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     prop: { x: 28.2, z: -34 },
   },
 
+  /* --- the Wildlands ----------------------------------------------------------------- */
+  {
+    id: 'caldera:crust_seam',
+    areaId: 'caldera',
+    kind: 'ore',
+    at: { x: -56, z: 48 },
+    prop: { x: -58.2, z: 48 },
+  },
+  {
+    id: 'caldera_lava_tube:the_vent',
+    areaId: 'caldera_lava_tube',
+    kind: 'ember',
+    at: { x: -14, z: 10 },
+    prop: { x: -14, z: 6.8 },
+    bite: { chance: 0.25, encounterId: 'pack_spoil_heap_hollows', line: 'Something in the tube woke.' },
+  },
+  {
+    id: 'ashwood:north_ring',
+    areaId: 'ashwood',
+    kind: 'fungi',
+    at: { x: 60, z: -52 },
+    prop: { x: 62.2, z: -52 },
+  },
+  {
+    id: 'ashwood_poachers_hide:the_rot',
+    areaId: 'ashwood_poachers_hide',
+    kind: 'fungi',
+    at: { x: -14, z: 10 },
+    prop: { x: -14, z: 6.8 },
+    bite: { chance: 0.2, encounterId: 'pack_freight_pickers', line: 'The pickers were not all asleep.' },
+  },
+  {
+    id: 'rimefields:ice_bloom',
+    areaId: 'rimefields',
+    kind: 'ore',
+    at: { x: 64, z: 44 },
+    prop: { x: 66.2, z: 44 },
+    bite: { chance: 0 },
+  },
+  {
+    id: 'rimefields_ice_cave:the_bloom',
+    areaId: 'rimefields_ice_cave',
+    kind: 'ore',
+    at: { x: -14, z: 10 },
+    prop: { x: -14, z: 6.8 },
+    bite: { chance: 0.25, encounterId: 'pack_verge_stray_dogs', line: 'The den was not empty.' },
+  },
+  {
+    id: 'storm_shelf:charged_seam',
+    areaId: 'storm_shelf',
+    kind: 'ore',
+    at: { x: 52, z: 48 },
+    prop: { x: 54.2, z: 48 },
+    bite: { chance: 0.25, encounterId: 'pack_spoil_heap_hollows', line: 'The seam was humming, and it was not the seam.' },
+  },
+  {
+    id: 'storm_shelf_pylon_base:the_run',
+    areaId: 'storm_shelf_pylon_base',
+    kind: 'ore',
+    at: { x: -14, z: 10 },
+    prop: { x: -14, z: 6.8 },
+    bite: { chance: 0.3, encounterId: 'pack_hedgerow_vermin', line: 'The crystal was not the only thing in the run.' },
+  },
+  {
+    id: 'bone_bastion:south_row_bones',
+    areaId: 'bone_bastion',
+    kind: 'bone',
+    at: { x: -48, z: 52 },
+    prop: { x: -50.2, z: 52 },
+    bite: { chance: 0.25, encounterId: 'pack_spoil_heap_hollows', line: 'Something under the row objected.' },
+  },
+  {
+    id: 'bone_bastion_barrow:the_bones',
+    areaId: 'bone_bastion_barrow',
+    kind: 'bone',
+    at: { x: -14, z: 10 },
+    prop: { x: -14, z: 6.8 },
+    bite: { chance: 0.3, encounterId: 'pack_spoil_heap_hollows', line: 'The barrow does not like to be picked through.' },
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     // In the weeds of the service end: the one thing on the court's ground the court did not plant.

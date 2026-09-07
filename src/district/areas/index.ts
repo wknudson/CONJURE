@@ -59,6 +59,11 @@ import { FENWICKS_TOLL_HOUSE } from './interiors/fenwicksTollHouse.js';
 import { FENWICKS_INN } from './interiors/fenwicksInn.js';
 import { FENWICKS_CELLARS } from './interiors/fenwicksCellars.js';
 import { WEEPING_STILE_CHAPEL } from './interiors/weepingStileChapel.js';
+import { CALDERA_LAVA_TUBE } from './interiors/calderaLavaTube.js';
+import { ASHWOOD_POACHERS_HIDE } from './interiors/ashwoodPoachersHide.js';
+import { RIMEFIELDS_ICE_CAVE } from './interiors/rimefieldsIceCave.js';
+import { STORM_SHELF_PYLON_BASE } from './interiors/stormShelfPylonBase.js';
+import { BONE_BASTION_BARROW } from './interiors/boneBastionBarrow.js';
 
 /**
  * Ordered as the city, then the ring, then the wilds — the order they are reached in, which is
@@ -118,6 +123,11 @@ export const AREAS: readonly AreaDef[] = [
   FENWICKS_INN,
   FENWICKS_CELLARS,
   WEEPING_STILE_CHAPEL,
+  CALDERA_LAVA_TUBE,
+  ASHWOOD_POACHERS_HIDE,
+  RIMEFIELDS_ICE_CAVE,
+  STORM_SHELF_PYLON_BASE,
+  BONE_BASTION_BARROW,
 ];
 
 export function areaById(id: string): AreaDef | undefined {
@@ -179,4 +189,9 @@ export {
   FENWICKS_INN,
   FENWICKS_CELLARS,
   WEEPING_STILE_CHAPEL,
+  CALDERA_LAVA_TUBE,
+  ASHWOOD_POACHERS_HIDE,
+  RIMEFIELDS_ICE_CAVE,
+  STORM_SHELF_PYLON_BASE,
+  BONE_BASTION_BARROW,
 };
