@@ -56,7 +56,7 @@ export const ASHFALL_APOTHECARY: AreaDef = defineArea({
       x: (xOfCol(5) + xOfCol(6)) / 2,
       z: zOfRow(0),
       label: 'Out to the cross-street',
-      arrive: { x: -18, z: 11.8 },
+      arrive: { x: -36, z: 7.8 },
     },
   ],
   props: {

@@ -96,7 +96,7 @@ export const WARD_SEVEN: AreaDef = defineArea({
       x: 42,
       z: 6,
       label: 'East, up to Ashfall Ward',
-      arrive: { x: -30, z: 26 },
+      arrive: { x: -54, z: 30 },
     },
   ],
   props: {

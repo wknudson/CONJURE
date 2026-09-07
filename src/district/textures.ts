@@ -3031,6 +3031,39 @@ const SIGN_GLYPHS: Record<SignId, (ctx: CanvasRenderingContext2D) => void> = {
     ctx.fillRect(8, 6, 4, 1);
     ctx.fillRect(8, 8, 3, 1);
   },
+  toll: (ctx) => {
+    // A coin over a bar: what you pay, and the counter you pay it across.
+    ctx.fillRect(8, 2, 4, 1);
+    ctx.fillRect(7, 3, 6, 4);
+    ctx.fillRect(8, 7, 4, 1);
+    ctx.fillRect(5, 9, 10, 1);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(9, 4, 2, 2);
+  },
+  counting: (ctx) => {
+    // Three columns of a ledger, tallied.
+    ctx.fillRect(6, 3, 2, 7);
+    ctx.fillRect(9, 5, 2, 5);
+    ctx.fillRect(12, 2, 2, 8);
+    ctx.fillRect(5, 10, 10, 1);
+  },
+  chapel: (ctx) => {
+    // The Quiet Flame.
+    ctx.fillRect(9, 2, 2, 2);
+    ctx.fillRect(8, 4, 4, 3);
+    ctx.fillRect(7, 7, 6, 2);
+    ctx.fillRect(8, 9, 4, 1);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(9, 6, 2, 2);
+  },
+  tavern: (ctx) => {
+    // A tankard, with a handle and a head on it.
+    ctx.fillRect(6, 3, 6, 7);
+    ctx.fillRect(12, 4, 2, 1);
+    ctx.fillRect(13, 5, 1, 3);
+    ctx.fillRect(12, 8, 2, 1);
+    ctx.fillRect(6, 2, 7, 1);
+  },
 };
 
 export function makeSignTexture(key: SignId): THREE.Texture {

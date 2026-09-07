@@ -995,7 +995,10 @@ export class DistrictWorld {
       // to be: this loop runs every frame and writes `1` to everything it does not consider
       // occluded, so an arena fade applied from outside would be undone on the next frame.
       // One place decides how visible a building is.
-      const want = this.occHit.has(s.hit) || this.inArena(s.hit) ? 0.04 : 1;
+      const want =
+        this.occHit.has(s.hit) || this.inArena(s.hit) || this.underCamera(s.hit, camera.position)
+          ? 0.04
+          : 1;
       for (const mat of s.mats) {
         if (Math.abs(mat.opacity - want) < 0.005) {
           mat.opacity = want;
@@ -1032,6 +1035,22 @@ export class DistrictWorld {
 
   setArena(rect: { x0: number; z0: number; x1: number; z1: number } | null): void {
     this.arena = rect;
+  }
+
+  /**
+   * Whether the camera is standing over this building, or nearly.
+   *
+   * The raycast fades what lies on the line to the player's head, and a terrace directly under
+   * the camera is not on that line: the ray clears its roof by a metre and the roof still fills
+   * the bottom third of the screen, with the player's feet behind its parapet. The yards behind
+   * the terraces -- the Warden's, the back alley, the Counting House door -- are played from
+   * exactly there, so anything within a stride of being under the lens goes with the rest.
+   */
+  private underCamera(hit: THREE.Mesh, cam: THREE.Vector3): boolean {
+    const { width, depth } = (hit.geometry as THREE.BoxGeometry).parameters;
+    const p = hit.position;
+    const margin = 3.5;
+    return Math.abs(cam.x - p.x) < width / 2 + margin && Math.abs(cam.z - p.z) < depth / 2 + margin;
   }
 
   private inArena(hit: THREE.Mesh): boolean {

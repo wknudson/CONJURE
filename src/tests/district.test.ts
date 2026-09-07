@@ -723,9 +723,11 @@ describe('the Chalk Road grid', () => {
 });
 
 describe('the ward grid', () => {
-  it('is square and complete', () => {
-    expect(ASHFALL.grid).toHaveLength(20);
-    for (const row of ASHFALL.grid) expect(row).toHaveLength(20);
+  it('is thirty by twenty-eight, and complete', () => {
+    // Grown from twenty square: a wharf, a sealed yard with a building in it, a chapel and a
+    // tavern below the plaza. Pinned so the next growth is a decision and not a drift.
+    expect(ASHFALL.grid).toHaveLength(28);
+    for (const row of ASHFALL.grid) expect(row).toHaveLength(30);
   });
 
   it('starts the player, the Dispatcher and every door on warded pavement', () => {
@@ -741,8 +743,12 @@ describe('the ward grid', () => {
     expect(isSafeAt(ASHFALL, VEX_POS.x, VEX_POS.z), 'Vex').toBe(true);
     // The doors are exits into rooms now, and the way back out of each room lands you on the
     // pavement too -- the whole lap, in and out of every trade, without leaving the flags.
-    const doors = ASHFALL.exits.filter((e) => e.door);
-    expect(doors.length, 'the four trades').toBe(4);
+    // The four trades specifically. The ward has other doors -- the chapel, the tavern, the
+    // Toll House on the quay, the sealed Counting House in the Warden's yard -- and two of
+    // those are deliberately off the flags; the lap is the trades.
+    const TRADES = ['ashfall_ironworks', 'ashfall_records', 'ashfall_apothecary', 'ashfall_vivarium'];
+    const doors = ASHFALL.exits.filter((e) => e.door && TRADES.includes(e.to));
+    expect(doors.map((d) => d.to).sort(), 'the four trades').toEqual([...TRADES].sort());
     for (const exit of doors) {
       expect(isSafeAt(ASHFALL, exit.x, exit.z), exit.to).toBe(true);
       const back = areaById(exit.to)!.exits.find((e) => e.to === ASHFALL.id)!;
@@ -765,7 +771,7 @@ describe('the ward grid', () => {
     // The restore path asks "can you stand here", not "is this safe", because logging out
     // in an alley is legal and being quietly moved back to the plaza for it is not. This
     // guards the distinction the two questions rest on.
-    const alley = { x: 22, z: -2 };
+    const alley = { x: 36, z: -8 };
     expect(isWalkable(ASHFALL, alley.x, alley.z)).toBe(true);
     expect(isSafeAt(ASHFALL, alley.x, alley.z)).toBe(false);
   });
@@ -778,7 +784,7 @@ describe('the ward grid', () => {
   });
 
   it('bounds itself: the canal and everything off the edge are impassable', () => {
-    expect(isWalkable(ASHFALL, 0, -38)).toBe(false); // the canal
+    expect(isWalkable(ASHFALL, 0, -54)).toBe(false); // the canal
     expect(isWalkable(ASHFALL, 0, 999)).toBe(false); // off the south edge
     expect(isWalkable(ASHFALL, -999, 0)).toBe(false); // off the west edge
     expect(tileAt(ASHFALL, 999, 999).walk).toBe(false);
@@ -850,7 +856,7 @@ describe('collision', () => {
 
   it('will not let a body stand in the canal', () => {
     const set = new ColliderSet(ASHFALL);
-    expect(set.blocked(0, -38)).toBe(true);
+    expect(set.blocked(0, -54)).toBe(true);
   });
 
   it('respects a disabled collider', () => {

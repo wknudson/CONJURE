@@ -395,6 +395,96 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'Whisperers wear through a sole a season. Whatever you are walking on out there, it is not flags.',
     },
   ],
+  ashfall_crier: [
+    {
+      who: 'THE CRIER',
+      text: 'Hear this: the wharf is closed, the Counting House is sealed, and the curfew bell is at nine. Hear this: none of that is new.',
+    },
+    {
+      who: 'THE CRIER',
+      text: 'I am paid by the word and the Magistracy writes the words. If you want the other news, the Cinder Cup has a board.',
+    },
+  ],
+  ashfall_toll_clerk: [
+    {
+      who: 'TOLL CLERK',
+      text: 'Nothing has tied up in eleven days. I open at six and I close at six and in between I count a box that does not change.',
+    },
+    {
+      who: 'TOLL CLERK',
+      text: 'The Counting House is supposed to send for the takings. If you see the Counting House, tell it.',
+    },
+  ],
+  ashfall_barge_hand: [
+    {
+      who: 'BARGEE',
+      text: 'Coal up from the works, grain down from the Ring. That was the run. Now the run is sitting in here waiting for a licence they do not issue.',
+    },
+    {
+      who: 'BARGEE',
+      text: 'The canal is open. Read the writ; it says so itself. It is everything on either bank of it that is shut.',
+    },
+  ],
+  ashfall_records_clerk: [
+    {
+      who: 'RECORDS CLERK',
+      text: 'The roll is on the lectern. You may read it. You may not correct it, and you may not ask why a hearth is marked sealed.',
+    },
+    {
+      who: 'RECORDS CLERK',
+      text: 'I was at Weeping Stile for the last count. I do the counting now and somebody else does the walking.',
+    },
+  ],
+  ashfall_counting_clerk: [
+    {
+      who: 'COUNTING CLERK',
+      text: 'The door was sealed for a reason and the reason has been served, apparently. So. Welcome to the arrears.',
+    },
+    {
+      who: 'COUNTING CLERK',
+      text: 'I remit what the Spire asks for. What is left over after that is a thing I have been told is nil. Look in the box if you like. I do not.',
+    },
+  ],
+  ashfall_priest: [
+    {
+      who: 'KEEPER OF THE FLAME',
+      text: 'Light one if you want. It costs nothing. That is the last thing in this ward of which that is true.',
+    },
+    {
+      who: 'KEEPER OF THE FLAME',
+      text: 'Forty-one names on the wall and sixty-one hearths in the Stile with none. I have asked for a second plaque. I have been assessed for asking.',
+    },
+  ],
+  ashfall_publican: [
+    {
+      who: 'PUBLICAN',
+      text: 'Brews on the shelf, a bed up the stair, and a board by the door that says what the crier is paid not to.',
+    },
+    {
+      who: 'PUBLICAN',
+      text: 'No tab for Whisperers. Nothing personal. You are the only trade in the ward that leaves and might not come back.',
+    },
+  ],
+  ashfall_drinker_a: [
+    {
+      who: 'PIT HAND',
+      text: 'Lamprow pit. Twelve years. Now I drink in the next ward over so nobody I know sees me do it before noon.',
+    },
+    {
+      who: 'PIT HAND',
+      text: 'The Cinderworks is hiring. So is the Warden. One of those you come home from.',
+    },
+  ],
+  ashfall_drinker_b: [
+    {
+      who: 'THE SINGER',
+      text: 'I had a song about the Counting House. The Magistracy assessed it. I have a song about the assessment now; it is shorter.',
+    },
+    {
+      who: 'THE SINGER',
+      text: 'Tip the box by the hearth if you want the long one. The keeper of the Flame gets a cut. Everybody gets a cut.',
+    },
+  ],
 
   /* --- Lamprow ----------------------------------------------------------------------- */
   lamprow_urchin: [

@@ -55,8 +55,8 @@ export const CACHES: readonly CacheDef[] = [
   {
     id: 'ashfall_ward:alley_cache',
     areaId: 'ashfall_ward',
-    at: { x: 27.8, z: -6 },
-    prop: { kind: 'chest', x: 30, z: -6 },
+    at: { x: 41.8, z: -14 },
+    prop: { kind: 'chest', x: 44, z: -14 },
     label: 'Open the chest',
     detail: 'Left in the back alley. Nobody has come back for it.',
     loot: { ducats: 15, marrowShards: 1 },
@@ -90,6 +90,47 @@ export const CACHES: readonly CacheDef[] = [
     detail: 'The arrears, in coin. The clerk has turned her back on purpose.',
     loot: { ducats: 60, marrowShards: 2 },
     gate: { after: ['curfew_breakers'] },
+  },
+  {
+    // The day's takings. The tariff on the wall says what the box is; reading it is what makes
+    // the box yours -- a flag gate, the first in the world, and the reason the flags exist.
+    id: 'ashfall_toll_house:strongbox',
+    areaId: 'ashfall_toll_house',
+    at: { x: 9.8, z: -12 },
+    prop: { kind: 'chest', x: 12, z: -12 },
+    label: 'Open the strongbox',
+    detail: 'The takings the Counting House never sent for.',
+    loot: { ducats: 30, reagents: { core_frost: 1 } },
+    gate: { flags: ['read_toll_tariff'] },
+  },
+  {
+    id: 'ashfall_chapel:alms_box',
+    areaId: 'ashfall_chapel',
+    at: { x: 15.8, z: 14 },
+    prop: { kind: 'chest', x: 18, z: 14 },
+    label: 'Open the alms box',
+    detail: 'The keeper nods. A candle lit is a candle paid for.',
+    loot: { ducats: 20, marrowShards: 1 },
+    gate: { flags: ['lit_a_candle'] },
+  },
+  {
+    id: 'ashfall_cinder_cup:cellar_cask',
+    areaId: 'ashfall_cinder_cup',
+    at: { x: -23.8, z: 18 },
+    prop: { kind: 'barrel', x: -26, z: 18 },
+    label: 'Tap the cask',
+    detail: 'Not on the shelf. The publican keeps one back.',
+    loot: { brew: 'quicksilver' },
+  },
+  {
+    // What "nil remaining in the ward" looks like when you open the box.
+    id: 'ashfall_counting_house:arrears',
+    areaId: 'ashfall_counting_house',
+    at: { x: 11.8, z: -17 },
+    prop: { kind: 'chest', x: 14, z: -17 },
+    label: 'Open the strongbox',
+    detail: 'The figure the Spire asked for was nil.',
+    loot: { ducats: 90, marrowShards: 3 },
   },
 ];
 

@@ -78,12 +78,14 @@ export const ASHFALL_IRONWORKS: AreaDef = defineArea({
       z: IRONWORKS_DOOR.z,
       label: 'Out to the cross-street',
       // Onto the pavement a stride clear of the way back in.
-      arrive: { x: -18, z: 12.2 },
+      arrive: { x: -36, z: 8.2 },
     },
   ],
   props: {
     sky: 'none',
     horizon: 'none',
+    /** The smith, indoors where he belongs. He makes the bar the Artificer cuts. */
+    npcs: [{ id: 'ashfall_smith', x: 10, z: -2, art: 'blacksmith', label: 'Talk to the smith' }],
     /** Fire to see by. A forge has no gas lamps; it has the furnace and two baskets of coals. */
     dressing: [
       { kind: 'brazier', x: xOfCol(3), z: zOfRow(4) },

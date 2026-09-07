@@ -50,7 +50,7 @@ export const NOTICES: readonly NoticeDef[] = [
   {
     id: 'ashfall_ward:magistracy_bill',
     areaId: 'ashfall_ward',
-    at: { x: 22, z: 30 },
+    at: { x: 16, z: 23 },
     form: 'notice',
     label: 'Read the posted bill',
     title: 'BY ORDER OF THE MAGISTRACY OF ASHFALL WARD',
@@ -60,7 +60,137 @@ export const NOTICES: readonly NoticeDef[] = [
       'Assessment is payable in Ducats. Assessment is not a fine. The Magistracy does not levy fines.',
       'Posted by the Ward Clerk. Defacement of this bill is assessable.',
     ],
-    prop: { kind: 'noticepost', x: 22, z: 27.6 },
+    prop: { kind: 'noticepost', x: 16, z: 20.4 },
+  },
+  {
+    id: 'ashfall_ward:harbour_writ',
+    areaId: 'ashfall_ward',
+    at: { x: -20, z: -38.6 },
+    form: 'notice',
+    label: 'Read the harbour writ',
+    title: 'WRIT OF CLOSURE — ASHFALL WHARF',
+    lines: [
+      'The wharf is closed to unlicensed freight by order of the Magistracy. Licences are issued at the Toll House and are not issued.',
+      'Vessels tied up without a licence are impounded. Impounded vessels are auctioned. Auctions are held at the Counting House and are not announced.',
+      'The canal remains open. The canal has never been the problem.',
+    ],
+    prop: { kind: 'noticepost', x: -20, z: -41.6 },
+  },
+  {
+    id: 'ashfall_ward:grave_hollis',
+    areaId: 'ashfall_ward',
+    at: { x: -46, z: 47.6 },
+    form: 'gravestone',
+    label: 'Read the stone',
+    title: 'MARGARET HOLLIS',
+    lines: ['Of the granary.', 'She kept the count honest and the Magistracy kept the count.', 'Assessed in full.'],
+    prop: { kind: 'gravestone', x: -46, z: 50 },
+  },
+  {
+    id: 'ashfall_ward:grave_unnamed',
+    areaId: 'ashfall_ward',
+    at: { x: -30, z: 47.6 },
+    form: 'gravestone',
+    label: 'Read the stone',
+    title: '— — —',
+    lines: ['The name has been chiselled off.', 'Under it, in a different hand and a different tool:', 'RELOCATED.'],
+    prop: { kind: 'gravestone', x: -30, z: 50 },
+  },
+
+  /* --- the Toll House ---------------------------------------------------------------- */
+  {
+    id: 'ashfall_toll_house:tariff',
+    areaId: 'ashfall_toll_house',
+    at: { x: 2, z: -15.6 },
+    form: 'plaque',
+    label: 'Read the tariff',
+    title: 'TARIFF OF THE ASHFALL WHARF',
+    lines: [
+      'Coal, per barge: four Ducats. Grain, per barge: six. Marrow, per barge: assessed on inspection.',
+      'Passengers: one Ducat a head, two if they are carrying anything, three if they will not say what.',
+      'The strongbox behind the desk holds the day’s takings until the Counting House sends for them. The Counting House has not sent for them in some time.',
+    ],
+    prop: { kind: 'plaque', x: 2, z: -17.85 },
+    flag: 'read_toll_tariff',
+  },
+
+  /* --- the Counting House ------------------------------------------------------------ */
+  {
+    id: 'ashfall_counting_house:arrears_ledger',
+    areaId: 'ashfall_counting_house',
+    at: { x: 0, z: -10.8 },
+    form: 'ledger',
+    label: 'Read the arrears',
+    title: 'THE ARREARS — ASHFALL WARD — THIS QUARTER',
+    lines: [
+      'Hearths in arrears: 388. Hearths assessed: 388. Hearths collected: 388.',
+      'Sum collected: 6,208 Ducats. Sum remitted to the Spire: 6,208 Ducats. Sum remaining in the ward: nil.',
+      'Note, in the margin: "Nil is the figure the Spire asked for. The box says otherwise. Do not correct the box."',
+    ],
+    prop: { kind: 'lectern', x: 0, z: -14 },
+    flag: 'read_the_arrears',
+  },
+
+  /* --- the chapel -------------------------------------------------------------------- */
+  {
+    id: 'ashfall_chapel:the_flame',
+    areaId: 'ashfall_chapel',
+    at: { x: 0, z: 13 },
+    form: 'plaque',
+    label: 'Light a candle at the Quiet Flame',
+    title: 'THE QUIET FLAME',
+    lines: [
+      'You take a taper from the box and light it from the Flame, and set it in the sand with the others.',
+      'The words are cut into the hearthstone, worn shallow: WHAT IS BOUND IS NOT OWNED. WHAT IS KEPT IS NOT KEPT FOR EVER.',
+      'The keeper does not look up. He has seen people light candles before.',
+    ],
+    flag: 'lit_a_candle',
+  },
+  {
+    id: 'ashfall_chapel:plaque_of_names',
+    areaId: 'ashfall_chapel',
+    at: { x: -16, z: -2 },
+    form: 'plaque',
+    label: 'Read the plaque',
+    title: 'REMEMBERED HERE',
+    lines: [
+      'Those of the ward who bound and were unbound: forty-one names, and room left for more.',
+      'The last three are cut fresher than the rest. The last one is cut in the same hand as the harbour writ.',
+    ],
+    prop: { kind: 'plaque', x: -19.85, z: -2, yaw: Math.PI / 2 },
+  },
+
+  /* --- the Cinder Cup ---------------------------------------------------------------- */
+  {
+    // What the board says once the Lamprow tithe has been collected. Above the ordinary board
+    // so it wins the same wall -- the `ASIDES` rule.
+    id: 'ashfall_cinder_cup:rumour_board_late',
+    areaId: 'ashfall_cinder_cup',
+    at: { x: -8, z: -19.4 },
+    form: 'notice',
+    label: 'Read the board',
+    title: 'THE CINDER CUP — WHAT IS SAID',
+    lines: [
+      'That the tithe in Lamprow was collected twice, and the second collector has not been seen since.',
+      'That the Warden’s beat now passes the Counting House door, which it never used to.',
+      'That the publican will not serve the Tithe-Takers and the Tithe-Takers have not come in to be refused.',
+    ],
+    gate: { after: ['lamprow_tithe'] },
+    prop: { kind: 'plaque', x: -8, z: -21.85 },
+  },
+  {
+    id: 'ashfall_cinder_cup:rumour_board',
+    areaId: 'ashfall_cinder_cup',
+    at: { x: -8, z: -19.4 },
+    form: 'notice',
+    label: 'Read the board',
+    title: 'THE CINDER CUP — WHAT IS SAID',
+    lines: [
+      'That there is a new Whisperer in the ward, and that the Dispatcher has already found them work.',
+      'That the Lamprow tithe is due again, and that the collectors below the kerb do not carry a ledger.',
+      'That the bed upstairs is twenty Ducats and worth it, and that the publican wrote this himself.',
+    ],
+    prop: { kind: 'plaque', x: -8, z: -21.85 },
   },
 
   /* --- the Ironworks ----------------------------------------------------------------- */

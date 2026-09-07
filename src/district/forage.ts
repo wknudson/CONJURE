@@ -142,8 +142,14 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     id: 'ashfall_ward:quay_reeds',
     areaId: 'ashfall_ward',
     kind: 'reeds',
-    at: { x: 30, z: -30 },
-    prop: { x: 30, z: -32.4 },
+    at: { x: 20, z: -46 },
+    prop: { x: 20, z: -48.4 },
+  },
+  {
+    id: 'ashfall_ward:churchyard_herbs',
+    areaId: 'ashfall_ward',
+    kind: 'herbs',
+    at: { x: -38, z: 50 },
   },
   {
     id: 'ashfall_ironworks:ember_vent',

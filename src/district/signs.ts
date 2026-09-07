@@ -8,7 +8,16 @@
  * Both ways: a test asks that every sign here hangs over at least one door in the world, the
  * discipline the furniture and the animals already keep. Dropping a glyph is a decision.
  */
-export const SIGN_IDS = ['artificer', 'apothecary', 'vivarium', 'records'] as const;
+export const SIGN_IDS = [
+  'artificer',
+  'apothecary',
+  'vivarium',
+  'records',
+  'toll',
+  'counting',
+  'chapel',
+  'tavern',
+] as const;
 
 export type SignId = (typeof SIGN_IDS)[number];
 

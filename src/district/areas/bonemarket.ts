@@ -103,7 +103,7 @@ export const BONEMARKET: AreaDef = defineArea({
       x: -46,
       z: 2,
       label: 'Back onto the cross-street',
-      arrive: { x: 30, z: 10 },
+      arrive: { x: 54, z: 8 },
     },
   ],
   props: {

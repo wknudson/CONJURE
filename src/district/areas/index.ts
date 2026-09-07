@@ -31,6 +31,10 @@ import { ASHFALL_IRONWORKS } from './interiors/ashfallIronworks.js';
 import { ASHFALL_APOTHECARY } from './interiors/ashfallApothecary.js';
 import { ASHFALL_VIVARIUM } from './interiors/ashfallVivarium.js';
 import { ASHFALL_RECORDS } from './interiors/ashfallRecords.js';
+import { ASHFALL_TOLL_HOUSE } from './interiors/ashfallTollHouse.js';
+import { ASHFALL_COUNTING_HOUSE } from './interiors/ashfallCountingHouse.js';
+import { ASHFALL_CHAPEL } from './interiors/ashfallChapel.js';
+import { ASHFALL_CINDER_CUP } from './interiors/ashfallCinderCup.js';
 
 /**
  * Ordered as the city, then the ring, then the wilds — the order they are reached in, which is
@@ -62,6 +66,10 @@ export const AREAS: readonly AreaDef[] = [
   ASHFALL_RECORDS,
   ASHFALL_APOTHECARY,
   ASHFALL_VIVARIUM,
+  ASHFALL_TOLL_HOUSE,
+  ASHFALL_COUNTING_HOUSE,
+  ASHFALL_CHAPEL,
+  ASHFALL_CINDER_CUP,
 ];
 
 export function areaById(id: string): AreaDef | undefined {
@@ -95,4 +103,8 @@ export {
   ASHFALL_RECORDS,
   ASHFALL_APOTHECARY,
   ASHFALL_VIVARIUM,
+  ASHFALL_TOLL_HOUSE,
+  ASHFALL_COUNTING_HOUSE,
+  ASHFALL_CHAPEL,
+  ASHFALL_CINDER_CUP,
 };

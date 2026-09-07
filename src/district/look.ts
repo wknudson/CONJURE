@@ -585,6 +585,46 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#121410',
     fogDensity: 0.026,
   },
+  /** The Toll House: one candle on a desk and limewash to bounce it. */
+  ashfall_toll_house: {
+    sunIntensity: 1.5,
+    sunColor: '#d8c08a',
+    ambientIntensity: 2.2,
+    skyColor: '#5e5a52',
+    groundBounce: '#3e3428',
+    fogColor: '#131110',
+    fogDensity: 0.024,
+  },
+  /** The Counting House: grey stone, grey light, and nothing warm in it but the coin. */
+  ashfall_counting_house: {
+    sunIntensity: 1.4,
+    sunColor: '#c8b8a0',
+    ambientIntensity: 2.0,
+    skyColor: '#585a5e',
+    groundBounce: '#3a3634',
+    fogColor: '#111214',
+    fogDensity: 0.024,
+  },
+  /** The chapel: cold stone and one flame at the far end, which is where the key comes from. */
+  ashfall_chapel: {
+    sunIntensity: 1.2,
+    sunColor: '#e0a060',
+    ambientIntensity: 1.8,
+    skyColor: '#4a5060',
+    groundBounce: '#4a3020',
+    fogColor: '#0e0f12',
+    fogDensity: 0.02,
+  },
+  /** The Cinder Cup: hearthlight. The warmest room in the ward, by a distance. */
+  ashfall_cinder_cup: {
+    sunIntensity: 1.8,
+    sunColor: '#e0a058',
+    ambientIntensity: 2.4,
+    skyColor: '#6a5040',
+    groundBounce: '#6a3a1e',
+    fogColor: '#16110c',
+    fogDensity: 0.028,
+  },
 };
 
 /** An area's ambience, or the ward's if nobody wrote one. */

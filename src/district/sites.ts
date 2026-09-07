@@ -91,7 +91,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'ashfall_ward:bakery_door',
     areaId: 'ashfall_ward',
-    at: { x: 22, z: -4 },
+    at: { x: 36, z: -8 },
     encounterId: 'curfew_breakers',
     label: 'The Bakery Door',
     interactDetail:
@@ -140,7 +140,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     // which is the ward's one lesson.
     id: 'ashfall_ward:hollis_granary',
     areaId: 'ashfall_ward',
-    at: { x: -22, z: -2 },
+    at: { x: -34, z: -18 },
     encounterId: 'gutter_dispute',
     label: 'The Hollis Granary',
     interactDetail:

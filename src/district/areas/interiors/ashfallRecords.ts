@@ -58,7 +58,7 @@ export const ASHFALL_RECORDS: AreaDef = defineArea({
       x: (xOfCol(6) + xOfCol(7)) / 2,
       z: zOfRow(11),
       label: 'Out to the cross-street',
-      arrive: { x: 22, z: 12.2 },
+      arrive: { x: 36, z: 8.2 },
     },
   ],
   props: {
@@ -74,6 +74,8 @@ export const ASHFALL_RECORDS: AreaDef = defineArea({
       { kind: 'sacks', x: xOfCol(12), z: zOfRow(9) },
       { kind: 'brazier', x: xOfCol(1), z: zOfRow(9) },
     ],
+    /** The clerk on duty, between the stacks and her desk. */
+    npcs: [{ id: 'ashfall_records_clerk', x: 10, z: -10, art: 'scribe', label: 'Talk to the records clerk' }],
     graffiti: [
       { text: 'COUNTED, NOT NAMED', wallX: xOfCol(6), wallZ: zOfRow(0) + TILE / 2, dx: 0.8, facesSouth: true, tint: '#8a8070' },
     ],

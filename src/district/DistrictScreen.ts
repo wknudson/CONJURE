@@ -736,13 +736,9 @@ export class DistrictScreen implements Screen {
     }
 
     // Things to open. One already opened, or not yet earned, keeps its furniture and loses
-    // its prompt -- the chest is still in the room; it just has nothing to say.
-    for (const c of cachesInArea(this.area.id)) {
-      if (this.opened.includes(c.id) || !gateOpen(c.gate, this.chronicle)) continue;
-      const spot: Hotspot = new Hotspot(c.at.x, c.at.z, c.label, () => this.open(c, spot));
-      if (c.detail) spot.interactDetail = c.detail;
-      this.interactables.push(spot);
-    }
+    // its prompt -- the chest is still in the room; it just has nothing to say. Asked again
+    // whenever a flag is raised in this room; see `rearmCaches`.
+    this.rearmCaches();
 
     // Things that grow back. The prompt stays up while a node is picked clean and says when it
     // returns, because a node that vanished would read as a thing that was never there.
@@ -1277,7 +1273,32 @@ export class DistrictScreen implements Screen {
     if (this.worldFlags.includes(flag)) return;
     this.worldFlags.push(flag);
     this.opts.onWorldFlag(flag);
+    this.rearmCaches();
   }
+
+  /**
+   * Offers any cache whose gate has just opened.
+   *
+   * Liveness is otherwise decided once at mount, like a site's, and for a contract that is
+   * right: contracts resolve on a screen change. A flag is raised *here*, in this room, by
+   * reading the tariff or lighting the candle -- and a strongbox that stayed shut until you
+   * walked out and back in would teach that the flag did nothing. So the caches, and only the
+   * caches, are asked again. A door is not: its leaf is drawn boarded and would have to be
+   * redrawn, and no door in the world is gated on a flag yet.
+   */
+  private rearmCaches(): void {
+    for (const c of cachesInArea(this.area.id)) {
+      if (this.offered.has(c.id) || this.opened.includes(c.id)) continue;
+      if (!gateOpen(c.gate, this.chronicle)) continue;
+      this.offered.add(c.id);
+      const spot: Hotspot = new Hotspot(c.at.x, c.at.z, c.label, () => this.open(c, spot));
+      if (c.detail) spot.interactDetail = c.detail;
+      this.interactables.push(spot);
+    }
+  }
+
+  /** Which caches have a prompt in this mount, so a re-arm never doubles one. */
+  private readonly offered = new Set<string>();
 
   /**
    * Opens a cache, once.

@@ -43,6 +43,16 @@ export const RESTS: readonly RestDef[] = [
     wakeHour: 6,
     line: 'You wake to jars being counted. It is morning, and you are billed for it.',
   },
+  {
+    id: 'ashfall_cinder_cup:upstairs_bed',
+    areaId: 'ashfall_cinder_cup',
+    at: { x: -26, z: 6 },
+    prop: { x: -26, z: 2, yaw: Math.PI / 2 },
+    label: 'Take the bed upstairs',
+    fee: 20,
+    wakeHour: 7,
+    line: 'You wake to the hearth being raked and the smell of the works on the wind. Seven, and the ward is up.',
+  },
 ];
 
 export const restById = (id: string): RestDef | undefined => RESTS.find((r) => r.id === id);

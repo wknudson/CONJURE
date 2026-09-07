@@ -112,7 +112,7 @@ export const LAMPROW: AreaDef = defineArea({
       z: 4,
       label: 'The road back to Ashfall Ward',
       // Onto Ashfall's south plaza, a stride clear of its own gate hotspot.
-      arrive: { x: 26, z: 32 },
+      arrive: { x: 0, z: 48.4 },
     },
     {
       // East, up off the far end of the High Street. The lamp string stops at the ward line

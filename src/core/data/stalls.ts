@@ -169,6 +169,14 @@ export const STALLS: readonly StallDef[] = [
     sellRate: 0,
   },
   {
+    keeper: 'ashfall_cinder_cup:ashfall_publican',
+    name: 'The Cinder Cup',
+    line: 'Same brews the Apothecary sells, a street away and a fifth dearer, because here you can sit down.',
+    goods: 'brews',
+    buyRate: 1.2,
+    sellRate: 0,
+  },
+  {
     keeper: 'ward_seven:ward_seven_apothecary',
     name: 'The Ward Seven Bench',
     line: 'Boil it first. I have said that to everyone who has ever bought anything from me.',

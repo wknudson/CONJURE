@@ -96,7 +96,7 @@ export const CHALK_VERGE: AreaDef = defineArea({
       z: 26,
       label: 'Back through the gate',
       // South of Ashfall's gate hotspot, a stride clear so the prompt does not re-raise.
-      arrive: { x: 4, z: -12.4 },
+      arrive: { x: 0, z: -24.6 },
     },
     {
       // West, deeper out. No gate and no wall: the Verge *is* the road's first wild stretch,

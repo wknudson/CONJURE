@@ -127,6 +127,56 @@ export interface ErrandDef {
  * ------------------------------------------------------------------------------------ */
 
 export const ERRANDS: readonly ErrandDef[] = [
+  /* --- inside the ward's own rooms -------------------------------------------------- */
+  {
+    id: 'toll_ledger',
+    giver: 'ashfall_toll_house:ashfall_toll_clerk',
+    title: 'Carry the wharf ledger to the Records Office clerk',
+    offer: [
+      { who: 'TOLL CLERK', text: 'Eleven days of nothing, all written down, and the Records Office wants it in their hand by the hour. I cannot leave the box.' },
+      { who: 'TOLL CLERK', text: 'Across the yard, up the walkway, the east door on the cross-street. Tell the clerk it is from the wharf. She will know what to do with eleven pages of nothing.' },
+    ],
+    nudge: [{ who: 'TOLL CLERK', text: 'The ledger. Records Office. The clerk with the roll. It is not far, and I am not allowed to find that out for myself.' }],
+    thanks: [
+      { who: 'RECORDS CLERK', text: 'From the wharf. Eleven days, no vessels, box unchanged.' },
+      { who: 'RECORDS CLERK', text: 'I file it under "as expected". There is a drawer. Here — he pays you out of the takings, and the takings are not his, so take it before he counts it again.' },
+    ],
+    step: { kind: 'deliver', toArea: 'ashfall_records', toNpc: 'ashfall_records_clerk' },
+    reward: { ducats: 40 },
+  },
+  {
+    id: 'bloom_for_the_flame',
+    giver: 'ashfall_chapel:ashfall_priest',
+    title: 'Cut bloom on the Chalk Verge for the Quiet Flame',
+    offer: [
+      { who: 'KEEPER OF THE FLAME', text: 'The Flame takes bloom, when there is any. There is none in the ward; the ward is paved.' },
+      { who: 'KEEPER OF THE FLAME', text: 'Past the yard gate, the first ground that is not paved grows it without being asked. Cut a handful and bring it. It is the one offering the Magistracy has not found a way to assess.' },
+    ],
+    nudge: [{ who: 'KEEPER OF THE FLAME', text: 'The Verge. Past the gate, off the road. It grows where the flags stop.' }],
+    thanks: [
+      { who: 'KEEPER OF THE FLAME', text: 'Bloom. From the Verge, by the smell of it. The Flame will take it tonight.' },
+      { who: 'KEEPER OF THE FLAME', text: 'Take this back. A Core the box has held for a year, from somebody who does not need it where they have gone.' },
+    ],
+    step: { kind: 'gather', area: 'chalk_verge', x: 2, z: -26, art: 'herbpatch', label: 'Cut bloom for the Flame' },
+    reward: { ducats: 30, reagents: { core_bloom: 1 } },
+  },
+  {
+    id: 'the_crew_that_drank',
+    giver: 'ashfall_cinder_cup:ashfall_publican',
+    title: 'Clear the gutter crew that drank here on credit',
+    offer: [
+      { who: 'PUBLICAN', text: 'Lampwick Gutter Crew. Four of them, one night, on a tab I do not run, and they walked out of here and back down to the Sink.' },
+      { who: 'PUBLICAN', text: 'You are the trade that leaves the ward. Deal with them on their own ground and the tab is yours to drink through.' },
+    ],
+    nudge: [{ who: 'PUBLICAN', text: 'The Sink, below the Lamprow kerb, after dark. They are not hard to find. They are hard to find sober.' }],
+    thanks: [
+      { who: 'PUBLICAN', text: 'Heard it from a bargee before you got back. The Sink is quiet and the Cup is square.' },
+      { who: 'PUBLICAN', text: 'Ironbrew, on the tab they left. And the coin they left under the table, which I was never going to hand to the Magistracy.' },
+    ],
+    step: { kind: 'cull', encounterId: 'pack_lamprow_gutter_crew' },
+    reward: { ducats: 70, brew: 'ironbrew' },
+  },
+
   /* --- the ward, and one crossing out ---------------------------------------------- */
   {
     id: 'gutter_crew',
