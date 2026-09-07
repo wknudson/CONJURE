@@ -214,6 +214,15 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     at: { x: 6, z: -34 },
   },
 
+  /* --- Highcourt --------------------------------------------------------------------- */
+  {
+    // In the weeds of the service end: the one thing on the court's ground the court did not plant.
+    id: 'highcourt:service_herbs',
+    areaId: 'highcourt',
+    kind: 'herbs',
+    at: { x: -42, z: 38 },
+  },
+
   /* --- the country ------------------------------------------------------------------ */
   {
     // Where the pavement stops, the first thing that grows without permission.

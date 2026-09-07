@@ -64,6 +64,16 @@ export const RESTS: readonly RestDef[] = [
     wakeHour: 6,
     line: 'You wake damp. Everything in Ward Seven wakes damp. The healer has already seen four people.',
   },
+  {
+    id: 'highcourt_smoke_eaters:upstairs_bed',
+    areaId: 'highcourt_smoke_eaters',
+    at: { x: 18, z: 14 },
+    prop: { x: 18, z: 18 },
+    label: 'Take the bed upstairs',
+    fee: 30,
+    wakeHour: 7,
+    line: 'You wake to bells from the Spire, which is the court waking, and to the Smoke-Eater already at his bench.',
+  },
 ];
 
 export const restById = (id: string): RestDef | undefined => RESTS.find((r) => r.id === id);

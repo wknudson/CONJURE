@@ -263,6 +263,47 @@ export const CACHES: readonly CacheDef[] = [
     loot: { brew: 'ironbrew', ducats: 10 },
     gate: { after: ['clinic_quota'] },
   },
+
+  /* --- Highcourt --------------------------------------------------------------------- */
+  {
+    id: 'highcourt:service_chest',
+    areaId: 'highcourt',
+    at: { x: 43.8, z: 46 },
+    prop: { kind: 'chest', x: 46, z: 46 },
+    label: 'Open the servants’ chest',
+    detail: 'In the weeds at the end the court does not look at. The court does not look at it.',
+    loot: { ducats: 30, marrowShards: 1 },
+  },
+  {
+    id: 'highcourt_spire_lobby:census_strongbox',
+    areaId: 'highcourt_spire_lobby',
+    at: { x: 25.8, z: -16 },
+    prop: { kind: 'chest', x: 28, z: -16 },
+    label: 'Open the census strongbox',
+    detail: 'What the count is worth, sent up. You have been up. It is yours to bring down.',
+    loot: { ducats: 110, marrowShards: 3, reagents: { core_surge: 1 } },
+    gate: { after: ['the_summons'] },
+  },
+  {
+    id: 'highcourt_smoke_eaters:the_tin',
+    areaId: 'highcourt_smoke_eaters',
+    at: { x: 19.8, z: -16 },
+    prop: { kind: 'chest', x: 22, z: -16 },
+    label: "Open the Smoke-Eater's tin",
+    detail: 'His stake, kept by the hearth. He has not lost on this side of the stair; he has now.',
+    loot: { ducats: 60, brew: 'quicksilver' },
+    gate: { after: ['smoke_eaters_rest'] },
+  },
+  {
+    id: 'highcourt_undercroft:the_floor_below',
+    areaId: 'highcourt_undercroft',
+    at: { x: 19.8, z: 24 },
+    prop: { kind: 'chest', x: 22, z: 24 },
+    label: 'Open what is on the floor below',
+    detail: 'A floor. A box on it. The dread was the expensive part.',
+    loot: { ducats: 120, marrowShards: 4, reagents: { core_dusk: 1 } },
+    gate: { after: ['the_quiet_below'] },
+  },
 ];
 
 export const cacheById = (id: string): CacheDef | undefined => CACHES.find((c) => c.id === id);

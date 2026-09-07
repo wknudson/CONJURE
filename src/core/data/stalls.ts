@@ -169,6 +169,14 @@ export const STALLS: readonly StallDef[] = [
     sellRate: 0,
   },
   {
+    keeper: 'highcourt_smoke_eaters:highcourt_smoke_eater',
+    name: "The Smoke-Eater's Rest",
+    line: 'Brewed for the court, sold to whoever the court did not drink it. The court pays without looking. You will look.',
+    goods: 'brews',
+    buyRate: 1.4,
+    sellRate: 0,
+  },
+  {
     keeper: 'ashfall_cinder_cup:ashfall_publican',
     name: 'The Cinder Cup',
     line: 'Same brews the Apothecary sells, a street away and a fifth dearer, because here you can sit down.',

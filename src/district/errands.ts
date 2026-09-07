@@ -252,6 +252,23 @@ export const ERRANDS: readonly ErrandDef[] = [
     reward: { ducats: 35 },
   },
 
+  {
+    id: 'the_census_return',
+    giver: 'highcourt_spire_lobby:highcourt_usher',
+    title: 'Carry the census return down to the Ashfall Records Office',
+    offer: [
+      { who: 'USHER', text: 'The return comes down the stair sealed and goes to the Records Office in Ashfall to be filed, and the runner who takes it has not come back this month.' },
+      { who: 'USHER', text: 'Down the High Street, through the gate, the east door on the cross-street. The clerk with the roll. Do not break the seal; the seal is what is being counted.' },
+    ],
+    nudge: [{ who: 'USHER', text: 'The return. Ashfall, the Records Office, the clerk. Sealed. It is not a heavy thing; it is a long way.' }],
+    thanks: [
+      { who: 'RECORDS CLERK', text: 'From the Spire. Sealed. Good; the last one came open.' },
+      { who: 'RECORDS CLERK', text: 'The runner’s fee is in the drawer with the runner’s name crossed out. It is yours; nobody up there is going to ask.' },
+    ],
+    step: { kind: 'deliver', toArea: 'ashfall_records', toNpc: 'ashfall_records_clerk' },
+    reward: { ducats: 60, marrowShards: 1 },
+  },
+
   /* --- the ward, and one crossing out ---------------------------------------------- */
   {
     id: 'gutter_crew',

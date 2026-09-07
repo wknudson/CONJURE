@@ -24,6 +24,8 @@ export const SIGN_IDS = [
   'press',
   'cistern',
   'clinic',
+  'spire',
+  'undercroft',
 ] as const;
 
 export type SignId = (typeof SIGN_IDS)[number];

@@ -719,6 +719,36 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#131410',
     fogDensity: 0.024,
   },
+  /** The Spire lobby: marble, and a light that is white on purpose. Nothing warm gets in. */
+  highcourt_spire_lobby: {
+    sunIntensity: 1.6,
+    sunColor: '#c8d0e0',
+    ambientIntensity: 2.4,
+    skyColor: '#8a94a8',
+    groundBounce: '#5a5a60',
+    fogColor: '#101218',
+    fogDensity: 0.022,
+  },
+  /** The Smoke-Eater's Rest: the Cinder Cup's hearth, dearer. */
+  highcourt_smoke_eaters: {
+    sunIntensity: 1.7,
+    sunColor: '#e0a058',
+    ambientIntensity: 2.3,
+    skyColor: '#645040',
+    groundBounce: '#6a3a1e',
+    fogColor: '#15100c',
+    fogDensity: 0.026,
+  },
+  /** The Undercroft: two braziers under a vault, and the cold coming up through the stone. */
+  highcourt_undercroft: {
+    sunIntensity: 1.2,
+    sunColor: '#8a90a8',
+    ambientIntensity: 1.8,
+    skyColor: '#3a3e48',
+    groundBounce: '#2a2a30',
+    fogColor: '#0a0b10',
+    fogDensity: 0.03,
+  },
 };
 
 /** An area's ambience, or the ward's if nobody wrote one. */

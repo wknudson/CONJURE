@@ -393,6 +393,94 @@ export const NOTICES: readonly NoticeDef[] = [
     flag: 'read_clinic_quota',
   },
 
+  /* --- Highcourt --------------------------------------------------------------------- */
+  {
+    id: 'highcourt:proclamation',
+    areaId: 'highcourt',
+    at: { x: -34, z: -50.4 },
+    form: 'notice',
+    label: 'Read the proclamation',
+    title: 'PROCLAMATION — THE MAGISTRACY OF JOLREK',
+    lines: [
+      'The census of Azo proceeds. Every hearth in the six wards and the seven towns of the Ring will be counted, and every count will be sent up.',
+      'Relocation for labour is a service the Magistracy provides. Applications are not taken; assignments are made.',
+      'The Spire is not open to the public. The Spire has never been closed to it. Consider the distinction.',
+    ],
+    prop: { kind: 'noticepost', x: -34, z: -53.4 },
+  },
+  {
+    id: 'highcourt_spire_lobby:census_plaque',
+    areaId: 'highcourt_spire_lobby',
+    at: { x: -30, z: -4 },
+    form: 'plaque',
+    label: 'Read the census plaque',
+    title: 'THE CENSUS OF AZO — TO DATE',
+    lines: [
+      'Jolrek, six wards: counted. The Middle Ring, seven towns: counted, save one, which stopped answering.',
+      'The Wildlands: not counted. Nothing in them pays.',
+      'Total souls, sent up: the figure is not on the plaque. The figure has never been on the plaque.',
+    ],
+    prop: { kind: 'plaque', x: -33.85, z: -4, yaw: Math.PI / 2 },
+  },
+  {
+    // What the board by the doors says once the Summons has been answered. Above the other
+    // so it wins the same wall -- the `ASIDES` rule.
+    id: 'highcourt_spire_lobby:the_summons_after',
+    areaId: 'highcourt_spire_lobby',
+    at: { x: 30, z: -16 },
+    form: 'plaque',
+    label: 'Read the board by the doors',
+    title: 'BY THE DOORS',
+    lines: [
+      'The doors stood open. You went through them. The usher still has not.',
+      'Under the summons, in the same hand as the census: "Received. Counted. Sent up."',
+    ],
+    gate: { after: ['the_summons'] },
+    prop: { kind: 'plaque', x: 33.85, z: -16, yaw: -Math.PI / 2 },
+  },
+  {
+    id: 'highcourt_spire_lobby:the_summons',
+    areaId: 'highcourt_spire_lobby',
+    at: { x: 30, z: -16 },
+    form: 'plaque',
+    label: 'Read the board by the doors',
+    title: 'BY THE DOORS',
+    lines: [
+      'Summonses are posted here when the Spire wants somebody. There is one posted now. The name on it is not legible from this side of the rail.',
+      'The usher says it is not for you. The usher says that to everybody. He has been right every time but one.',
+    ],
+    prop: { kind: 'plaque', x: 33.85, z: -16, yaw: -Math.PI / 2 },
+  },
+  {
+    id: 'highcourt_smoke_eaters:board',
+    areaId: 'highcourt_smoke_eaters',
+    at: { x: -8, z: -19.4 },
+    form: 'notice',
+    label: "Read the Rest's board",
+    title: 'THE SMOKE-EATER’S REST — WHAT THE HERALD DOES NOT SAY',
+    lines: [
+      'That the Smoke-Eater takes wagers at the bench by the hearth and has not lost one on this side of the stair.',
+      'That a convoy forms up under the service end after dark, and the servants who see it off are not the servants who see it come back, because it does not.',
+      'That the bed upstairs costs what it costs because the court pays it, and you are not the court.',
+    ],
+    prop: { kind: 'plaque', x: -8, z: -21.85 },
+  },
+  {
+    id: 'highcourt_undercroft:manifest',
+    areaId: 'highcourt_undercroft',
+    at: { x: -20, z: -4.8 },
+    form: 'ledger',
+    label: 'Read the manifest',
+    title: 'MANIFEST — THE RELOCATION TRAIN',
+    lines: [
+      'Berths: sixty. Direction: one. Return: the column is ruled and empty.',
+      'Passengers, by ward: Lamprow 14. Ward Seven 22. Weeping Stile: see the roll. Ashfall: 3, and the three are underlined.',
+      'Clerk’s note: "Counted on the stair, twice. The second count is smaller. Nobody got off."',
+    ],
+    prop: { kind: 'lectern', x: -20, z: -8 },
+    flag: 'read_the_manifest',
+  },
+
   /* --- the Ironworks ----------------------------------------------------------------- */
   {
     id: 'ashfall_ironworks:tally_board',

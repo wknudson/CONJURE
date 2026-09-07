@@ -585,6 +585,56 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'Eleven under that stone, one winter. The Magistracy sent a pump. It did not send a second stone.',
     },
   ],
+  highcourt_musician: [
+    {
+      who: 'COURT MUSICIAN',
+      text: 'I play at the footing every evening and nobody has ever come down to listen. The doors are open. Nothing comes out of them but the bell.',
+    },
+    {
+      who: 'COURT MUSICIAN',
+      text: 'The Cinder Cup has a singer with a song about the Counting House. I have a song about the Spire. Mine is not assessed; nobody has heard it.',
+    },
+  ],
+  highcourt_clerk_of_works: [
+    {
+      who: 'CLERK OF WORKS',
+      text: 'I hold the survey. Every stone on the processional is on it, to the inch. The service end is on the back, in pencil, and the Undercroft is not on it at all.',
+    },
+    {
+      who: 'CLERK OF WORKS',
+      text: 'The stair-head was built the year the survey was drawn. Something was under here before the court was, and the court was built on top of it very carefully.',
+    },
+  ],
+  highcourt_usher: [
+    {
+      who: 'USHER',
+      text: 'The doors stand open. I have stood at them eleven years. I have not been through them and I am not going to be asked.',
+    },
+    {
+      who: 'USHER',
+      text: 'When a summons is posted, the name on it is read from the other side of the rail. If you can read it from this side, it is yours.',
+    },
+  ],
+  highcourt_smoke_eater: [
+    {
+      who: 'THE SMOKE-EATER',
+      text: 'I brew for the court and sell what the court leaves, and I take a wager at the bench by the hearth from anyone who thinks the Rest is a soft house. It is not.',
+    },
+    {
+      who: 'THE SMOKE-EATER',
+      text: 'The bed is thirty. The court pays it without looking; you will look. That is the difference between you and the court, and it is the only one that matters up here.',
+    },
+  ],
+  highcourt_undercroft_clerk: [
+    {
+      who: 'CENSUS CLERK',
+      text: 'I count them onto the train at the gate and I count them on the stair, and the second number is smaller, and nobody got off.',
+    },
+    {
+      who: 'CENSUS CLERK',
+      text: 'The floor below is a floor. I have been told to write that down and I have written it down. I would like it to be true.',
+    },
+  ],
   lamprow_lighter_boy: [
     {
       who: "LIGHTER'S BOY",

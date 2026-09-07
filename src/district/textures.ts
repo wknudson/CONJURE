@@ -3130,6 +3130,24 @@ const SIGN_GLYPHS: Record<SignId, (ctx: CanvasRenderingContext2D) => void> = {
     ctx.fillRect(5, 6, 10, 2);
     ctx.fillRect(5, 4, 3, 2);
   },
+  spire: (ctx) => {
+    // The tower, narrowing to its point.
+    ctx.fillRect(7, 8, 6, 3);
+    ctx.fillRect(8, 5, 4, 3);
+    ctx.fillRect(9, 2, 2, 3);
+    ctx.fillRect(9, 1, 2, 1);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(9, 9, 2, 2);
+  },
+  undercroft: (ctx) => {
+    // A stair going down, under an arch.
+    ctx.fillRect(4, 3, 12, 1);
+    ctx.fillRect(4, 4, 1, 6);
+    ctx.fillRect(15, 4, 1, 6);
+    ctx.fillRect(6, 5, 3, 1);
+    ctx.fillRect(8, 7, 3, 1);
+    ctx.fillRect(10, 9, 4, 1);
+  },
 };
 
 export function makeSignTexture(key: SignId): THREE.Texture {

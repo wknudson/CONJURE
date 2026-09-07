@@ -107,9 +107,10 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
       'A cellar door below the Sink, and the smell of ink through the boards. The warrant says bring gloves.',
   },
   {
-    id: 'highcourt:smoke_eaters_bench',
-    areaId: 'highcourt',
-    at: { x: 6, z: -6 },
+    // Over the tables of the Rest itself now, which is where a bench belongs.
+    id: 'highcourt_smoke_eaters:the_bench',
+    areaId: 'highcourt_smoke_eaters',
+    at: { x: 12, z: -4 },
     encounterId: 'smoke_eaters_rest',
     label: 'The Smoke-Eater’s Bench',
     // The barefoot veteran: the man the blurb says has nothing left to put up but the beast.
@@ -341,9 +342,9 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     // The fiction runs Fenwick's-to-the-undercroft, but Fenwick's already holds two
     // sites and the crack happens at this gate. The walk down Highcourt's service end,
     // past HE COUNTS THE FLOORS, is the better approach.
-    id: 'highcourt:undercroft_gate',
-    areaId: 'highcourt',
-    at: { x: -30, z: 26 },
+    id: 'highcourt_undercroft:the_gate',
+    areaId: 'highcourt_undercroft',
+    at: { x: 0, z: -12 },
     encounterId: 'relocation_train',
     label: 'The Undercroft Gate',
     interactDetail:
@@ -359,9 +360,10 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
       'The graves here are cut square and numbered in a clerk’s hand, and none of the numbers is old. Something large keeps the rows at night.',
   },
   {
-    id: 'highcourt:spire_doors',
-    areaId: 'highcourt',
-    at: { x: -2, z: -30 },
+    // At the far end of the lobby under the footing, where the doors actually are.
+    id: 'highcourt_spire_lobby:the_doors',
+    areaId: 'highcourt_spire_lobby',
+    at: { x: 0, z: -16 },
     encounterId: 'the_summons',
     label: 'The Spire Doors',
     interactDetail:
@@ -372,7 +374,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'highcourt:dispatch_line',
     areaId: 'highcourt',
-    at: { x: 14, z: 26 },
+    at: { x: 14, z: 34 },
     encounterId: 'dead_letters',
     label: 'The Dispatch Line',
     interactDetail:
@@ -380,9 +382,9 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     gate: { after: ['the_summons'] },
   },
   {
-    id: 'highcourt:undercroft_stair',
-    areaId: 'highcourt',
-    at: { x: -30, z: 34 },
+    id: 'highcourt_undercroft:the_stair',
+    areaId: 'highcourt_undercroft',
+    at: { x: -16, z: 8 },
     encounterId: 'undercroft_census',
     label: 'The Undercroft Stair',
     interactDetail:
@@ -402,9 +404,9 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     gate: { after: ['undercroft_census'] },
   },
   {
-    id: 'highcourt:floor_below',
-    areaId: 'highcourt',
-    at: { x: -34, z: 42 },
+    id: 'highcourt_undercroft:the_floor_below',
+    areaId: 'highcourt_undercroft',
+    at: { x: 16, z: 20 },
     encounterId: 'the_quiet_below',
     label: 'The Floor Below',
     interactDetail:
