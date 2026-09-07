@@ -97,6 +97,7 @@ import {
   type CombatOutcome,
 } from './core/overworld/run.js';
 import { errandById } from './district/errands.js';
+import { cacheById, describeLoot } from './district/caches.js';
 import { companionById, DEFAULT_COMPANION } from './core/data/companions.js';
 import { printedDeck } from './core/data/collection.js';
 import { grantSchematic, rollSchematicOffer } from './core/data/schematics.js';
@@ -440,6 +441,9 @@ function showArea(areaId: string, companionId: string): void {
   rescueIfDown();
   const area = areaById(areaId) ?? DEFAULT_AREA;
   const global = profile().state;
+  // Where this character has stood. A ledger, written on the way in rather than the way out,
+  // so a tab closed on the first frame of a new place still counts as having been there.
+  if (!profile().visited.includes(area.id)) profile().visited.push(area.id);
   // The gauge is resynced on every entry rather than only when a Companion changes: it
   // is the one number every clamp in the game reads, and a profile restored with a
   // levelled Companion would otherwise sit at the base ceiling until the next level.
@@ -524,6 +528,28 @@ function showArea(areaId: string, companionId: string): void {
         if (def.reward.brew && !brewTaken) return 'Satchel full. The brew was left behind.';
         const paid = def.reward.ducats ?? 0;
         return paid > 0 ? `Paid: ${paid} Ducats.` : 'Paid.';
+      },
+      // Read fresh on every entry, like the errands, and written the moment a lid comes up.
+      caches: profile().caches,
+      onCacheOpen: (id) => {
+        const p = profile();
+        // Guarded rather than trusted, for the reason `onErrandComplete` is: a cache is paid
+        // once, and the district's own mirror is a second opinion, not the ledger.
+        if (p.caches.includes(id)) return null;
+        const def = cacheById(id);
+        if (!def) return null;
+        p.caches.push(id);
+        persist();
+        const { brewTaken } = payErrand(global, def.loot);
+        persist();
+        if (def.loot.brew && !brewTaken) return 'Satchel full. The brew was left behind.';
+        return describeLoot(def.loot);
+      },
+      worldFlags: profile().worldFlags,
+      onWorldFlag: (flag) => {
+        const p = profile();
+        if (!p.worldFlags.includes(flag)) p.worldFlags.push(flag);
+        persist();
       },
       onChange: persist,
       onApothecary: () =>

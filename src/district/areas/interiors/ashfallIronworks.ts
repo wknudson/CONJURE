@@ -87,6 +87,7 @@ export const ASHFALL_IRONWORKS: AreaDef = defineArea({
     /** Fire to see by. A forge has no gas lamps; it has the furnace and two baskets of coals. */
     dressing: [
       { kind: 'brazier', x: xOfCol(3), z: zOfRow(4) },
+      { kind: 'anvil', x: -2, z: -9.6 },
       { kind: 'brazier', x: xOfCol(12), z: zOfRow(4) },
       { kind: 'barrel', x: xOfCol(1), z: zOfRow(8) },
       { kind: 'barrel', x: xOfCol(1), z: zOfRow(9) },

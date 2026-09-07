@@ -738,3 +738,31 @@ body.is-talking .district-help {
   opacity: 0.72;
   text-transform: none;
 }
+
+/* --- something to read, in the same overlay the board and the stalls use ------------- */
+.district-reading {
+  width: min(680px, 100%);
+}
+.district-reading__body p {
+  margin: 0 0 10px;
+  font: 500 14px/1.6 var(--font);
+  color: #d6c4a0;
+}
+.district-reading__body p:last-child {
+  margin-bottom: 0;
+}
+.district-reading--gravestone .district-reading__body p {
+  text-align: center;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b6ad9a;
+}
+.district-reading--ledger .district-reading__body p,
+.district-reading--book .district-reading__body p {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 13px;
+  color: #cbb98f;
+}
+.district-reading--plaque .district-reading__body p {
+  color: #e0c98a;
+}

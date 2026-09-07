@@ -54,6 +54,7 @@ export const BENCHES: readonly BenchDef[] = [
     at: { x: 2, z: -6 },
     back: { x: 2, z: -2.4 },
     label: "Work the Artificer's bench",
+    prop: { kind: 'workbench', x: 2, z: -9.6 },
   },
   {
     id: 'ashfall_apothecary:counter',
@@ -62,6 +63,7 @@ export const BENCHES: readonly BenchDef[] = [
     at: { x: -2, z: 14 },
     back: { x: -2, z: 10.6 },
     label: 'Speak to the apothecary',
+    prop: { kind: 'counter', x: -2, z: 17.4 },
   },
   {
     id: 'ashfall_vivarium:table',
@@ -70,6 +72,7 @@ export const BENCHES: readonly BenchDef[] = [
     at: { x: 2, z: 14 },
     back: { x: 2, z: 10.6 },
     label: 'Speak to the handler',
+    prop: { kind: 'table', x: 2, z: 17.4 },
   },
 ];
 

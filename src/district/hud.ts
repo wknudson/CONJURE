@@ -724,6 +724,33 @@ export class DistrictHud {
     }
   }
 
+  /**
+   * Something to read: a bill, a plaque, a ledger, the writing on a grave.
+   *
+   * The fourth renderer into the one overlay the board, the gate and the stalls share, for the
+   * reason `openHunts` gives: Space and Escape put it down through `closeBoard`, movement stays
+   * blocked while it is up, and the prompt behaves, with no fourth copy of that logic in the
+   * screen. The form only changes the setting -- a ledger is set in a clerk's hand, a grave in
+   * capitals -- so the same panel reads as several kinds of paper.
+   */
+  openReading(notice: { title: string; lines: readonly string[]; form: string }): void {
+    this.boardOpen = true;
+    this.boardPanel.classList.add('is-open');
+    this.boardPanel.innerHTML = `
+      <div class="district-board__card brass-panel district-reading district-reading--${esc(notice.form)}">
+        <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
+        <i class="rivet rivet--bl"></i><i class="rivet rivet--br"></i>
+        <div class="district-board__head">
+          <div class="district-board__title">${esc(notice.title)}</div>
+          <button class="brass-btn district-board__close">Put it down</button>
+        </div>
+        <div class="district-reading__body">${notice.lines.map((l) => `<p>${esc(l)}</p>`).join('')}</div>
+      </div>`;
+    this.boardPanel
+      .querySelector('.district-board__close')!
+      .addEventListener('click', () => this.closeBoard());
+  }
+
   closeBoard(): void {
     this.boardOpen = false;
     this.boardPanel.classList.remove('is-open');

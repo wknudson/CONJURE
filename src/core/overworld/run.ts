@@ -77,7 +77,7 @@ export function payErrand(
  * not stock the Quicksilver at all. Reading a name out of a shop that may not sell the item
  * would give a brew no name at the one moment it is being handed over.
  */
-const BREW_NAMES: Record<BuffId, string> = {
+export const BREW_NAMES: Record<BuffId, string> = {
   ironbrew: 'Ironbrew',
   kinetic_capacitor: 'Kinetic Capacitor',
   quicksilver: 'Quicksilver',

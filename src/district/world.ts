@@ -17,7 +17,7 @@ import { gateOpen, NOTHING_HAPPENED, type Chronicle } from './chronicle.js';
 import { ambientAt, lampsAt, lightingHour, NIGHT_ANCHOR, type Lit } from './daylight.js';
 import type { ColliderSet } from './collision.js';
 import { DRESSING } from './dressing.js';
-import { staticFootprints } from './footprints.js';
+import { allDressing, staticFootprints } from './footprints.js';
 import {
   TILE,
   extractRects,
@@ -409,7 +409,9 @@ export class DistrictWorld {
 
        Waystones are the exception and cannot share, because the picture is the line carved
        into it. */
-    for (const spec of area.props.dressing ?? []) {
+    // The area's own list and then the registries' -- a bench's workbench, a notice's lectern,
+    // a cache's chest -- through one loop, so a registry prop is furniture like any other.
+    for (const spec of allDressing(area)) {
       let texture = this.dressTex.get(spec.kind);
       if (spec.kind === 'waystone') {
         texture = makeWaystoneTexture(spec.text ?? '');

@@ -17,6 +17,39 @@
 
 import { DRESSING } from './dressing.js';
 import type { AreaDef, DressingSpec } from './map.js';
+import { BENCHES } from './benches.js';
+import { NOTICES } from './notices.js';
+import { CACHES } from './caches.js';
+
+/**
+ * The furniture the registries hang in an area, beside what the area file lists itself.
+ *
+ * A bench's own workbench, a notice's lectern, a cache's chest: the thing you interact with
+ * and the thing you see are one entry in one file, and this is where the world and the tests
+ * both learn that the entry also stands on the floor. Gates are ignored on purpose -- a shut
+ * strongbox is still a strongbox in the room -- so the footprint never comes and goes.
+ */
+export function registryProps(areaId: string): DressingSpec[] {
+  const out: DressingSpec[] = [];
+  for (const b of BENCHES) if (b.areaId === areaId && b.prop) out.push(b.prop);
+  for (const n of NOTICES) if (n.areaId === areaId && n.prop) out.push(n.prop);
+  for (const c of CACHES) if (c.areaId === areaId) out.push(c.prop);
+  return out;
+}
+
+/** Everything standing in an area: the area file's own list, then the registries'. */
+export function allDressing(area: AreaDef): readonly DressingSpec[] {
+  return [...(area.props.dressing ?? []), ...registryProps(area.id)];
+}
+
+/** Every place a registry puts a prompt in an area, for the clearance rules the tests keep. */
+export function registryHotspots(areaId: string): { what: string; x: number; z: number }[] {
+  return [
+    ...BENCHES.filter((b) => b.areaId === areaId).map((b) => ({ what: `the ${b.kind} bench`, x: b.at.x, z: b.at.z })),
+    ...NOTICES.filter((n) => n.areaId === areaId).map((n) => ({ what: `notice ${n.id}`, x: n.at.x, z: n.at.z })),
+    ...CACHES.filter((c) => c.areaId === areaId).map((c) => ({ what: `cache ${c.id}`, x: c.at.x, z: c.at.z })),
+  ];
+}
 
 export interface Footprint {
   readonly x: number;
@@ -49,7 +82,7 @@ export function staticFootprints(
   if (p.board) {
     out.push({ x: p.board.x, z: p.board.z, w: BOARD_FOOTPRINT.w, d: BOARD_FOOTPRINT.d, tag: 'board' });
   }
-  for (const spec of p.dressing ?? []) {
+  for (const spec of allDressing(area)) {
     const kind = DRESSING[spec.kind];
     if (!kind.collides) continue;
     const size = spec.size ?? kind.size;

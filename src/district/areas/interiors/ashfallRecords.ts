@@ -64,12 +64,13 @@ export const ASHFALL_RECORDS: AreaDef = defineArea({
   props: {
     sky: 'none',
     horizon: 'none',
-    /** Racks stand in for shelving until the office has shelves of its own. */
+    /** Shelves down both walls, and the one desk the clerk on duty sits at. */
     dressing: [
-      { kind: 'rack', x: xOfCol(1), z: zOfRow(2) },
-      { kind: 'rack', x: xOfCol(1), z: zOfRow(5) },
-      { kind: 'rack', x: xOfCol(12), z: zOfRow(2) },
-      { kind: 'rack', x: xOfCol(12), z: zOfRow(5) },
+      { kind: 'shelves', x: xOfCol(1), z: zOfRow(2), yaw: Math.PI / 2 },
+      { kind: 'shelves', x: xOfCol(1), z: zOfRow(5), yaw: Math.PI / 2 },
+      { kind: 'shelves', x: xOfCol(12), z: zOfRow(2), yaw: Math.PI / 2 },
+      { kind: 'shelves', x: xOfCol(12), z: zOfRow(5), yaw: Math.PI / 2 },
+      { kind: 'desk', x: 8, z: 10 },
       { kind: 'sacks', x: xOfCol(12), z: zOfRow(9) },
       { kind: 'brazier', x: xOfCol(1), z: zOfRow(9) },
     ],

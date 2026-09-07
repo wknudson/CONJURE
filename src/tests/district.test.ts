@@ -26,7 +26,9 @@ import { SIGN_IDS, isSignId } from '../district/signs.js';
 import { AREAS, ASHFALL, CHALK_ROAD, LAMPROW, areaById } from '../district/areas/index.js';
 import { GROUND_TEXES } from '../district/textures.js';
 import { ColliderSet } from '../district/collision.js';
-import { staticFootprints } from '../district/footprints.js';
+import { allDressing, registryHotspots, staticFootprints } from '../district/footprints.js';
+import { noticesInArea } from '../district/notices.js';
+import { NOTHING_HAPPENED } from '../district/chronicle.js';
 import { FOLK_LINES } from '../district/dialogue.js';
 import { DRESSING, DRESSING_IDS, isDressingId } from '../district/dressing.js';
 import { CRITTERS, CRITTER_IDS, isCritterId } from '../district/wildlife.js';
@@ -79,7 +81,9 @@ describe('the world is populated', () => {
   it('uses every kind of thing it knows how to build', () => {
     // The same both-ways rule the sprite sheets get. Dropping a prop kind should be a decision
     // somebody takes, not a thing that quietly happens while an area is edited.
-    const placed = new Set(AREAS.flatMap((a) => (a.props.dressing ?? []).map((d) => d.kind)));
+    // Counting what the registries hang as well as what the area files list: a chest is
+    // placed by its cache and a lectern by its notice, and both are furniture.
+    const placed = new Set(AREAS.flatMap((a) => allDressing(a).map((d) => d.kind)));
     expect([...DRESSING_IDS].filter((id) => !placed.has(id))).toEqual([]);
   });
 
@@ -98,7 +102,8 @@ describe('the world is populated', () => {
     const mute = AREAS.filter(
       (a) =>
         (a.props.graffiti ?? []).length === 0 &&
-        !(a.props.dressing ?? []).some((d) => d.kind === 'waystone' && d.text),
+        !(a.props.dressing ?? []).some((d) => d.kind === 'waystone' && d.text) &&
+        noticesInArea(a.id, NOTHING_HAPPENED).length === 0,
     );
     expect(mute.map((a) => a.id)).toEqual([]);
   });
@@ -478,7 +483,7 @@ describe('every area', () => {
       });
 
       it('stands its furniture where furniture can stand', () => {
-        for (const d of area.props.dressing ?? []) {
+        for (const d of allDressing(area)) {
           expect(isDressingId(d.kind), `${area.id}: unknown kind '${d.kind}'`).toBe(true);
           const kind = DRESSING[d.kind];
           // Only the things that stop a body have to be on walkable ground. A hoarding is
@@ -504,7 +509,13 @@ describe('every area', () => {
       it('keeps its furniture out of the doorways', () => {
         // A colliding prop on a hotspot is the `ExitSpec.gate` failure again: every individual
         // coordinate is legal, and the door simply cannot be reached.
-        const hotspots = area.exits.map((e) => ({ what: `the ${e.to} exit`, x: e.x, z: e.z }));
+        // The area's own furniture against every prompt, including the ones the registries
+        // put down. A registry's own prop stands beside its own prompt on purpose and is
+        // checked by that registry's test, so it is not in this loop.
+        const hotspots = [
+          ...area.exits.map((e) => ({ what: `the ${e.to} exit`, x: e.x, z: e.z })),
+          ...registryHotspots(area.id),
+        ];
         for (const d of area.props.dressing ?? []) {
           if (!DRESSING[d.kind].collides) continue;
           const size = d.size ?? DRESSING[d.kind].size;
@@ -565,6 +576,7 @@ describe('every area', () => {
         }
         const hotspots = [
           ...area.exits.map((e) => ({ what: `the ${e.to} exit`, x: e.x, z: e.z })),
+          ...registryHotspots(area.id),
           ...(area.props.board ? [{ what: 'the board', ...area.props.board }] : []),
           ...(area.props.huntSignpost
             ? [{ what: 'the signpost', ...area.props.huntSignpost }]

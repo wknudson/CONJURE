@@ -101,6 +101,8 @@ export const WEEPING_STILE: AreaDef = defineArea({
     ],
     /** A village that stopped answering. Everything here is something somebody left. */
     dressing: [
+      // One stone with a name on it, for sixty-one hearths that have none. See the roll.
+      { kind: 'gravestone', x: -14, z: -10 },
       { kind: 'pens', x: -30, z: -38, yaw: 0 },
       { kind: 'pens', x: 18, z: -30, yaw: 0 },
       { kind: 'pens', x: 6, z: -18, yaw: 0 },

@@ -46,9 +46,16 @@ import type { ErrandLine } from './errands.js';
 export interface Chronicle {
   /** Story contracts resolved, by encounter id. `Profile.campaign`, handed over as it is. */
   readonly campaign: readonly string[];
+  /**
+   * The world's own flags: things that happened that are not contracts. A ledger read, a candle
+   * lit, a bell rung. `Profile.worldFlags`, handed over as it is. Free strings, raised by the
+   * content that knows about them and read by the gates that care -- the second field this
+   * interface was always going to grow, and the reason it was an object and not an array.
+   */
+  readonly flags: readonly string[];
 }
 
-export const NOTHING_HAPPENED: Chronicle = { campaign: [] };
+export const NOTHING_HAPPENED: Chronicle = { campaign: [], flags: [] };
 
 /** When a thing is true. Absent lists are not conditions. */
 export interface Gate {
@@ -56,12 +63,18 @@ export interface Gate {
   readonly after?: readonly string[];
   /** None of these may have been walked yet. */
   readonly before?: readonly string[];
+  /** Every one of these flags must be up. */
+  readonly flags?: readonly string[];
+  /** None of these flags may be up. */
+  readonly notFlags?: readonly string[];
 }
 
 export function gateOpen(gate: Gate | undefined, chron: Chronicle): boolean {
   if (!gate) return true;
   if ((gate.after ?? []).some((id) => !chron.campaign.includes(id))) return false;
   if ((gate.before ?? []).some((id) => chron.campaign.includes(id))) return false;
+  if ((gate.flags ?? []).some((f) => !chron.flags.includes(f))) return false;
+  if ((gate.notFlags ?? []).some((f) => chron.flags.includes(f))) return false;
   return true;
 }
 

@@ -116,6 +116,8 @@ import { huntAvailable } from '../core/data/hunts.js';
 import { hashText, makeRng, nextInt } from '../core/util/rng.js';
 import { flagForBench, tutorialActive } from './quest.js';
 import { benchesInArea, type BenchDef, type BenchKind } from './benches.js';
+import { noticesInArea, type NoticeDef } from './notices.js';
+import { cachesInArea, type CacheDef } from './caches.js';
 
 /**
  * How fast the street clock runs: two game-hours a real minute.
@@ -269,6 +271,22 @@ export interface DistrictOpts {
    * which is in `core` and has no HUD. So it says so, and the street shows it.
    */
   onErrandComplete: (id: string) => string | null;
+  /**
+   * Caches this character has opened, and the call that opens one.
+   *
+   * A snapshot in, like `errands`; the write goes up and is paid there, through the same purse
+   * an errand pays into. Returns the line to show, or null if the file already had it open --
+   * a cache prompt is a dialogue-free interaction, and those are the kind that fire twice.
+   */
+  caches: readonly string[];
+  onCacheOpen: (id: string) => string | null;
+  /**
+   * The world's own flags: things that have happened that are not contracts. A ledger read, a
+   * candle lit, a bell rung. Raised by content, read by the Chronicle's gates. A snapshot in
+   * and a ledger write up, the shape `tutorial` has.
+   */
+  worldFlags: readonly string[];
+  onWorldFlag: (flag: string) => void;
   onApothecary: () => void;
   onArtificer: () => void;
   onVivarium: () => void;
@@ -387,10 +405,15 @@ export class DistrictScreen implements Screen {
    */
   private litAtHour = 0;
 
-  /** What the street knows, for the graffiti and for what people say. */
+  /** What the street knows, for the graffiti, the doors, the notices and what people say. */
   private get chronicle(): Chronicle {
-    return { campaign: this.opts.campaign };
+    return { campaign: this.opts.campaign, flags: this.worldFlags };
   }
+
+  /** Local mirror of the world's flags, so a flag raised in this room gates the next thing in it. */
+  private worldFlags: string[] = [];
+  /** Local mirror of the opened caches, so one cannot be opened twice in one visit. */
+  private opened: string[] = [];
 
   /** Whoever walks this ward's lamps, if anybody does. See `walkTheRow`. */
   private lamplighter: NPC | null = null;
@@ -451,6 +474,8 @@ export class DistrictScreen implements Screen {
     this.opts = opts;
     this.area = opts.area;
     this.flags = [...opts.tutorial];
+    this.worldFlags = [...opts.worldFlags];
+    this.opened = [...opts.caches];
     // Here rather than in `mount`, because `unmount` hands the hour back and a screen that was
     // torn down before it finished building would otherwise report midnight -- setting every
     // such character's clock to zero on the way past.
@@ -675,6 +700,20 @@ export class DistrictScreen implements Screen {
     for (const bench of benchesInArea(this.area.id)) {
       const spot = new Hotspot(bench.at.x, bench.at.z, bench.label, () => this.openBench(bench));
       spot.interactDetail = this.benchStatus(bench.kind);
+      this.interactables.push(spot);
+    }
+
+    // Things to read. Gate-filtered and one per lectern, first open wins; see `notices.ts`.
+    for (const n of noticesInArea(this.area.id, this.chronicle)) {
+      this.interactables.push(new Hotspot(n.at.x, n.at.z, n.label, () => this.read(n)));
+    }
+
+    // Things to open. One already opened, or not yet earned, keeps its furniture and loses
+    // its prompt -- the chest is still in the room; it just has nothing to say.
+    for (const c of cachesInArea(this.area.id)) {
+      if (this.opened.includes(c.id) || !gateOpen(c.gate, this.chronicle)) continue;
+      const spot: Hotspot = new Hotspot(c.at.x, c.at.z, c.label, () => this.open(c, spot));
+      if (c.detail) spot.interactDetail = c.detail;
       this.interactables.push(spot);
     }
 
@@ -1180,6 +1219,40 @@ export class DistrictScreen implements Screen {
     this.writePosition({ x: p.position.x, z: p.position.z });
     this.raiseFlag('journal');
     this.opts.onJournal();
+  }
+
+  /** Opens a notice in the panel, and records that it was read if the world wants to know. */
+  private read(n: NoticeDef): void {
+    this.hud?.openReading(n);
+    if (n.flag) this.raiseWorldFlag(n.flag);
+  }
+
+  /** Records a world flag locally so the next interaction in this room sees it, and upward. */
+  private raiseWorldFlag(flag: string): void {
+    if (this.worldFlags.includes(flag)) return;
+    this.worldFlags.push(flag);
+    this.opts.onWorldFlag(flag);
+  }
+
+  /**
+   * Opens a cache, once.
+   *
+   * A brew into a full satchel would evaporate between the lid and the purse, and a cache does
+   * not refill -- so a cache with a brew in it stays shut until there is room, and says so. The
+   * prompt is taken off the hotspot rather than the hotspot off the list, which drops it from
+   * `updateInteraction` without disturbing the list mid-iteration.
+   */
+  private open(c: CacheDef, spot: Hotspot): void {
+    if (this.opened.includes(c.id)) return;
+    if (c.loot.brew && this.opts.global.overworld.inventory.length >= INVENTORY_LIMIT) {
+      this.hud?.flashNotice('Make room in your satchel first.');
+      return;
+    }
+    this.opened.push(c.id);
+    const said = this.opts.onCacheOpen(c.id);
+    spot.interactLabel = null;
+    if (this.nearest === spot) this.nearest = null;
+    if (said) this.hud?.flashNotice(said);
   }
 
   private talkToVex(): void {
