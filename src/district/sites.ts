@@ -241,9 +241,10 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
       'Every door unlocked and every hearth cold. The clerk is waiting at the first of them with the roll open.',
   },
   {
-    id: 'millharrow:mill_sluice',
-    areaId: 'millharrow',
-    at: { x: -18, z: -26 },
+    // In the flooded end of the granary itself now, which is where the water is.
+    id: 'millharrow_granary:the_flooded_end',
+    areaId: 'millharrow_granary',
+    at: { x: 0, z: -6 },
     encounterId: 'drowned_granary',
     label: 'The Mill Sluice',
     interactDetail:

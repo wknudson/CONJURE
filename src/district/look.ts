@@ -759,6 +759,36 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#12110c',
     fogDensity: 0.024,
   },
+  /** The Mill: flour in the air and daylight through the boards. */
+  millharrow_mill: {
+    sunIntensity: 1.7,
+    sunColor: '#e0d0a0',
+    ambientIntensity: 2.3,
+    skyColor: '#786e58',
+    groundBounce: '#6a5a3a',
+    fogColor: '#14120c',
+    fogDensity: 0.024,
+  },
+  /** The drowned granary: green light off standing water, and the cold of it. */
+  millharrow_granary: {
+    sunIntensity: 1.3,
+    sunColor: '#9ab088',
+    ambientIntensity: 2.0,
+    skyColor: '#4a5a48',
+    groundBounce: '#2a3a30',
+    fogColor: '#0c100e',
+    fogDensity: 0.03,
+  },
+  /** The pump house: iron, rust, and one lamp somebody left burning by the log. */
+  tallow_pump_house: {
+    sunIntensity: 1.4,
+    sunColor: '#c0a880',
+    ambientIntensity: 2.0,
+    skyColor: '#585850',
+    groundBounce: '#4a3a28',
+    fogColor: '#100e0c',
+    fogDensity: 0.028,
+  },
   /** The Undercroft: two braziers under a vault, and the cold coming up through the stone. */
   highcourt_undercroft: {
     sunIntensity: 1.2,

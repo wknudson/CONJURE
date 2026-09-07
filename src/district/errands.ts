@@ -360,6 +360,22 @@ export const ERRANDS: readonly ErrandDef[] = [
     reward: { ducats: 95 },
   },
   {
+    id: 'rats_in_the_grain',
+    giver: 'millharrow_mill:millharrow_millhand',
+    title: 'Clear the hedgerow vermin off the Chalk Road',
+    offer: [
+      { who: 'MILLHAND', text: 'The rats in the store are not ours. They come up the hedge from the road every time a cart is stopped out there and the load sits.' },
+      { who: 'MILLHAND', text: 'The miller will not pay to have the hedge cleared because the hedge is not his. I will, out of what I am paid, because the sacks are.' },
+    ],
+    nudge: [{ who: 'MILLHAND', text: 'The road, south. The hedges either side of it. They are in there whenever you are.' }],
+    thanks: [
+      { who: 'MILLHAND', text: 'Two days and nothing in the store has been chewed. That has not happened since the toll went up.' },
+      { who: 'MILLHAND', text: 'Take it. It is not the miller’s money, so he cannot ask for it back.' },
+    ],
+    step: { kind: 'cull', encounterId: 'pack_hedgerow_vermin' },
+    reward: { ducats: 55, brew: 'ironbrew' },
+  },
+  {
     id: 'the_roads_takings',
     giver: 'millharrow:millharrow_tollman',
     title: 'Break up the waywatch on the Chalk Road',

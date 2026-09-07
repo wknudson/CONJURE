@@ -239,6 +239,47 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     prop: { x: -66, z: -8.2 },
   },
 
+  /* --- Millharrow, and the Levels ---------------------------------------------------- */
+  {
+    id: 'millharrow:north_strip_herbs',
+    areaId: 'millharrow',
+    kind: 'herbs',
+    at: { x: 30, z: -42 },
+    prop: { x: 32.2, z: -42 },
+  },
+  {
+    id: 'millharrow:south_hedge_comb',
+    areaId: 'millharrow',
+    kind: 'comb',
+    at: { x: -50, z: 42 },
+    prop: { x: -50, z: 44.2 },
+  },
+  {
+    // Reeds through the boards of the flooded end. Something is in there until the contract is
+    // fought, and the bite says so.
+    id: 'millharrow_granary:the_reeds',
+    areaId: 'millharrow_granary',
+    kind: 'reeds',
+    at: { x: -18, z: -10 },
+    prop: { x: -18, z: -13.8 },
+    bite: { chance: 0.3, encounterId: 'pack_hedgerow_vermin', line: 'The flooded end was not as empty as it looked.' },
+  },
+  {
+    id: 'tallow_levels:west_bank_reeds',
+    areaId: 'tallow_levels',
+    kind: 'reeds',
+    at: { x: -30, z: -2 },
+    prop: { x: -32.2, z: -2 },
+  },
+  {
+    // The rendering yard's bone heap. Dogs, obviously.
+    id: 'tallow_levels:rendering_bones',
+    areaId: 'tallow_levels',
+    kind: 'bone',
+    at: { x: 34, z: 42 },
+    prop: { x: 36.2, z: 42 },
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     // In the weeds of the service end: the one thing on the court's ground the court did not plant.

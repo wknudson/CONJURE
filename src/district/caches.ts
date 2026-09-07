@@ -305,6 +305,47 @@ export const CACHES: readonly CacheDef[] = [
     loot: { ducats: 34, marrowShards: 1 },
   },
 
+  /* --- Millharrow, and the Levels ---------------------------------------------------- */
+  {
+    id: 'millharrow_mill:grain_store',
+    areaId: 'millharrow_mill',
+    at: { x: 15.8, z: -14 },
+    prop: { kind: 'chest', x: 18, z: -14 },
+    label: "Open the miller's box",
+    detail: 'Where the flour money goes before it goes to the toll. The millhand looks the other way.',
+    loot: { ducats: 18, reagents: { core_bloom: 1 } },
+  },
+  {
+    id: 'millharrow_granary:the_dry_box',
+    areaId: 'millharrow_granary',
+    at: { x: 19.8, z: -18 },
+    prop: { kind: 'chest', x: 22, z: -18 },
+    label: 'Open the granary strongbox',
+    detail: 'What the granary was keeping dry, on the one shelf the water did not reach. Now that the water has nothing in it.',
+    loot: { ducats: 48, marrowShards: 2, reagents: { core_bloom: 1 } },
+    gate: { after: ['drowned_granary'] },
+  },
+  {
+    // In the condemned field, once the thing in it is answered for.
+    id: 'tallow_levels:north_field_box',
+    areaId: 'tallow_levels',
+    at: { x: -18, z: -31.8 },
+    prop: { kind: 'chest', x: -18, z: -34 },
+    label: 'Open the box in the north field',
+    detail: 'Half sunk in the field the order says not to cross. The order does not apply to you any more.',
+    loot: { ducats: 30, marrowShards: 1, reagents: { core_dusk: 1 } },
+    gate: { after: ['tallow_blight'] },
+  },
+  {
+    id: 'tallow_pump_house:engineers_box',
+    areaId: 'tallow_pump_house',
+    at: { x: 15.8, z: -14 },
+    prop: { kind: 'chest', x: 18, z: -14 },
+    label: "Open the engineer's strongbox",
+    detail: 'The Magistracy’s engineer left in a hurry and left this. Eleven years of a wage nobody collected.',
+    loot: { ducats: 44, marrowShards: 2 },
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     id: 'highcourt:service_chest',

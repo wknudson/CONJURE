@@ -464,6 +464,93 @@ export const NOTICES: readonly NoticeDef[] = [
     flag: 'read_the_toll_ledger',
   },
 
+  /* --- Millharrow, and the Levels ---------------------------------------------------- */
+  {
+    id: 'millharrow:toll_schedule',
+    areaId: 'millharrow',
+    at: { x: 26, z: 2 },
+    form: 'notice',
+    label: 'Read the toll schedule',
+    title: 'SCHEDULE OF TOLLS — MILLHARROW GATE',
+    lines: [
+      'A Ducat a wheel, a half for a beast, nothing for a person on foot. Payable at the gate, in daylight, to the tollman, against this schedule and no other.',
+      'Any toll taken on the Chalk Road east of this gate is not the Magistracy’s and should be reported to the tollman, who is not permitted to leave the gate to look.',
+    ],
+    prop: { kind: 'noticepost', x: 26, z: -1.4 },
+  },
+  {
+    // What the town puts up for the boy, once the road is opened. The farmer wife's aside,
+    // in stone.
+    id: 'millharrow:the_boys_stone',
+    areaId: 'millharrow',
+    at: { x: -46, z: 33.4 },
+    form: 'gravestone',
+    label: 'Read the stone in the south field',
+    title: 'A BOY. FOURTEEN.',
+    lines: [
+      'No name. A tithe mark cut where the name would go, because that is what he had instead of one.',
+      'Somebody leaves bread on it. The children, probably. They leave it on the waystone too.',
+    ],
+    gate: { after: ['chalk_road_toll'] },
+    prop: { kind: 'gravestone', x: -46, z: 30 },
+  },
+  {
+    id: 'millharrow_mill:the_book',
+    areaId: 'millharrow_mill',
+    at: { x: -10, z: 10 },
+    form: 'ledger',
+    label: "Read the mill's book",
+    title: 'THE MILL’S BOOK',
+    lines: [
+      'Grain in, by the cart, from every strip on the cross. Flour out, by the sack, to Fenwick’s and the Bonemarket and the ward.',
+      'A third column, in the millhand’s hand: what the toll on the road took off each cart before it got here. It is the biggest number on the page.',
+      'Bottom line: "Four sacks in, two paid. Fenwick’s." Underlined twice.',
+    ],
+    prop: { kind: 'lectern', x: -14, z: 10 },
+    flag: 'read_the_mills_book',
+  },
+  {
+    id: 'tallow_levels:condemnation',
+    areaId: 'tallow_levels',
+    at: { x: -6, z: -30 },
+    form: 'notice',
+    label: 'Read the order of condemnation',
+    title: 'ORDER OF CONDEMNATION — THE NORTH FIELD',
+    lines: [
+      'By order of the Magistracy the north field of the Tallow Levels is condemned as blighted and is not to be worked, grazed, or crossed.',
+      'The pump house is sealed pending inspection. The inspection is not scheduled.',
+    ],
+    prop: { kind: 'noticepost', x: -6, z: -33.4 },
+  },
+  {
+    id: 'tallow_levels:drowned_hearth',
+    areaId: 'tallow_levels',
+    at: { x: -54, z: -22.6 },
+    form: 'gravestone',
+    label: 'Read the hearth-stone',
+    title: 'A HEARTH, STOOD ON END',
+    lines: [
+      'A hearth-stone from a house that is under the north cut now, stood up as a marker because there was no other stone to hand.',
+      'Scratched into it: the name of the house, and "DRAINED 1 YEAR. DROWNED 40."',
+    ],
+    prop: { kind: 'gravestone', x: -54, z: -26 },
+  },
+  {
+    id: 'tallow_pump_house:the_log',
+    areaId: 'tallow_pump_house',
+    at: { x: -14, z: 6 },
+    form: 'ledger',
+    label: 'Read the pump log',
+    title: 'PUMP LOG — TALLOW LEVELS ENGINE',
+    lines: [
+      'Daily, for eleven years: hours run, water lifted, coal burned. Then a fortnight of "engine stopped — no coal — sent to Jolrek".',
+      'Then, in a different hand: "Something in the intake. Cleared it. It came back. Cleared it. It came up the pipe."',
+      'The last line is not an entry. It is the chain being put on the door from the outside.',
+    ],
+    prop: { kind: 'lectern', x: -18, z: 6 },
+    flag: 'read_the_pump_log',
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     id: 'highcourt:proclamation',

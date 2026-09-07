@@ -86,6 +86,16 @@ export const RESTS: readonly RestDef[] = [
     line: 'You wake to a cart going by outside without stopping, which is what carts do here now. Six.',
   },
   {
+    id: 'tallow_pump_house:engineers_cot',
+    areaId: 'tallow_pump_house',
+    at: { x: -18, z: 10.6 },
+    prop: { x: -18, z: 14, yaw: Math.PI / 2 },
+    label: "Take the engineer's cot",
+    fee: 4,
+    wakeHour: 6,
+    line: 'You wake to the pipe ticking as it cools, which it has been doing for eleven years. Six.',
+  },
+  {
     id: 'highcourt_smoke_eaters:upstairs_bed',
     areaId: 'highcourt_smoke_eaters',
     at: { x: 18, z: 14 },

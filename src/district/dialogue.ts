@@ -710,6 +710,26 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
   ],
 
   /* --- Millharrow -------------------------------------------------------------------- */
+  millharrow_millhand: [
+    {
+      who: 'MILLHAND',
+      text: 'The stones are upstairs and the sacks are down here and I am the thing in between. Forty a day, when the carts come. They come less.',
+    },
+    {
+      who: 'MILLHAND',
+      text: 'Rats in the grain. Not our rats -- the road’s. They come up the hedge from the east every time a cart gets stopped out there and the load sits.',
+    },
+  ],
+  tallow_renderer: [
+    {
+      who: 'RENDERER',
+      text: 'Everything that dies on the Levels comes to the yard, and I boil it down to what it was worth. Less every year. The ground is taking the good out of them.',
+    },
+    {
+      who: 'RENDERER',
+      text: 'The engineer used to buy tallow off me for the pump. Then he stopped buying, and then he stopped, and then they chained it.',
+    },
+  ],
   millharrow_brewer: [
     {
       who: 'BREWER',
