@@ -42,6 +42,8 @@ import { BONEMARKET_HALL } from './interiors/bonemarketHall.js';
 import { BONEMARKET_PAWNSHOP } from './interiors/bonemarketPawnshop.js';
 import { CINDERWORKS_FOUNDRY } from './interiors/cinderworksFoundry.js';
 import { CINDERWORKS_POSTERS } from './interiors/cinderworksPosters.js';
+import { WARD_SEVEN_CISTERN } from './interiors/wardSevenCistern.js';
+import { WARD_SEVEN_CLINIC } from './interiors/wardSevenClinic.js';
 
 /**
  * Ordered as the city, then the ring, then the wilds — the order they are reached in, which is
@@ -84,6 +86,8 @@ export const AREAS: readonly AreaDef[] = [
   BONEMARKET_PAWNSHOP,
   CINDERWORKS_FOUNDRY,
   CINDERWORKS_POSTERS,
+  WARD_SEVEN_CISTERN,
+  WARD_SEVEN_CLINIC,
 ];
 
 export function areaById(id: string): AreaDef | undefined {
@@ -128,4 +132,6 @@ export {
   BONEMARKET_PAWNSHOP,
   CINDERWORKS_FOUNDRY,
   CINDERWORKS_POSTERS,
+  WARD_SEVEN_CISTERN,
+  WARD_SEVEN_CLINIC,
 };

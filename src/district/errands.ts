@@ -235,6 +235,23 @@ export const ERRANDS: readonly ErrandDef[] = [
     reward: { ducats: 80, marrowShards: 1 },
   },
 
+  {
+    id: 'tincture_for_the_clinic',
+    giver: 'ward_seven:ward_seven_apothecary',
+    title: 'Carry a tincture to the healer at the back-alley clinic',
+    offer: [
+      { who: 'APOTHECARY', text: 'She is through thirty-one this week on a quota of seven, and she is out of the one thing that works on the water.' },
+      { who: 'APOTHECARY', text: 'Boiled, bottled, sealed. The clinic is the plaster front on the terrace lane, the door with the cot on the plate. Put it in her hand and not on her table.' },
+    ],
+    nudge: [{ who: 'APOTHECARY', text: 'The clinic. Terrace lane, east end, the plaster front. She will not come out for it.' }],
+    thanks: [
+      { who: 'WARD HEALER', text: 'Sealed. Good. Half of what reaches me has been opened on the way.' },
+      { who: 'WARD HEALER', text: 'He will not take money for it, so I will not give you his. I will give you mine, which the Magistracy has not yet found.' },
+    ],
+    step: { kind: 'deliver', toArea: 'ward_seven_clinic', toNpc: 'ward_seven_healer' },
+    reward: { ducats: 35 },
+  },
+
   /* --- the ward, and one crossing out ---------------------------------------------- */
   {
     id: 'gutter_crew',

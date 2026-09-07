@@ -699,6 +699,26 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#121110',
     fogDensity: 0.024,
   },
+  /** The cistern: wet rock and standing water, lit green by whatever is in the water. */
+  ward_seven_cistern: {
+    sunIntensity: 1.3,
+    sunColor: '#7aa090',
+    ambientIntensity: 2.0,
+    skyColor: '#3a5048',
+    groundBounce: '#2a3030',
+    fogColor: '#0a1010',
+    fogDensity: 0.03,
+  },
+  /** The clinic: limewash and a lamp, the Apothecary's light with the money taken out. */
+  ward_seven_clinic: {
+    sunIntensity: 1.4,
+    sunColor: '#c9b27a',
+    ambientIntensity: 2.3,
+    skyColor: '#66685a',
+    groundBounce: '#4a3e2a',
+    fogColor: '#131410',
+    fogDensity: 0.024,
+  },
 };
 
 /** An area's ambience, or the ward's if nobody wrote one. */

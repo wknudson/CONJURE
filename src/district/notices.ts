@@ -339,6 +339,60 @@ export const NOTICES: readonly NoticeDef[] = [
     prop: { kind: 'plaque', x: -4, z: -17.85 },
   },
 
+  /* --- Ward Seven -------------------------------------------------------------------- */
+  {
+    id: 'ward_seven:water_notice',
+    areaId: 'ward_seven',
+    at: { x: -14, z: -8.6 },
+    form: 'notice',
+    label: 'Read the water notice',
+    title: 'NOTICE TO THE HEARTHS OF WARD SEVEN',
+    lines: [
+      'The north pipe is closed. The south pipe is closed. The basin is not a pipe and drawing from it is not advised, not forbidden, and not the Magistracy’s concern.',
+      'The pump house is Magistracy property. The pump is running. Where the water it pumps is going is a matter for the Counting House.',
+      'Reports of fouling should be made to the healer, who is assessed for receiving them.',
+    ],
+    prop: { kind: 'noticepost', x: -14, z: -11 },
+  },
+  {
+    id: 'ward_seven:drowned_grave',
+    areaId: 'ward_seven',
+    at: { x: -46, z: 19.6 },
+    form: 'gravestone',
+    label: 'Read the stone',
+    title: 'THE SEEP TOOK THEM',
+    lines: ['Eleven hearths, one winter.', 'The stone was cut before the water reached it. It has reached it.'],
+    prop: { kind: 'gravestone', x: -46, z: 22 },
+  },
+  {
+    id: 'ward_seven_cistern:pump_plate',
+    areaId: 'ward_seven_cistern',
+    at: { x: 6, z: 20.4 },
+    form: 'plaque',
+    label: 'Read the pump plate',
+    title: 'ENGINE No. 3 — MAGISTRACY OF JOLREK',
+    lines: [
+      'Cast at the Cinderworks. Installed the year the basin stopped draining. Rated to lift the cistern in a season.',
+      'It has run for nine years. The cistern is where it was. The pumpman says the pipe it lifts into runs uphill to the Spire, and he has never been told otherwise.',
+    ],
+    prop: { kind: 'plaque', x: 6, z: 23.85, yaw: Math.PI },
+  },
+  {
+    id: 'ward_seven_clinic:quota_ledger',
+    areaId: 'ward_seven_clinic',
+    at: { x: 10, z: 7.4 },
+    form: 'ledger',
+    label: 'Read the quota ledger',
+    title: 'THE CLINIC QUOTA — WARD SEVEN',
+    lines: [
+      'Treatments billed to the Magistracy: seven a week. Treatments given: as many as come through the door, which this week is thirty-one.',
+      'The twenty-four the Magistracy did not pay for are entered under "declined". None of them were declined.',
+      'In the margin: "If the pipe is closed, close the ledger too."',
+    ],
+    prop: { kind: 'lectern', x: 10, z: 4 },
+    flag: 'read_clinic_quota',
+  },
+
   /* --- the Ironworks ----------------------------------------------------------------- */
   {
     id: 'ashfall_ironworks:tally_board',

@@ -565,6 +565,26 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'The spur was for a rail that never came. The Spire ordered the iron for it off this very works, and then ordered the works to melt it back down.',
     },
   ],
+  ward_seven_pumpman: [
+    {
+      who: 'PUMPMAN',
+      text: 'Engine three. Nine years I have kept her turning and the water has not gone down an inch, because the pipe she lifts into runs uphill to somebody’s bath.',
+    },
+    {
+      who: 'PUMPMAN',
+      text: 'The things at the dry end came in through the outfall when it stopped outflowing. I keep to this end. You go to that one if you must.',
+    },
+  ],
+  ward_seven_washerwoman: [
+    {
+      who: 'WASHERWOMAN',
+      text: 'I wash in the seep and I dry on the line and it comes in wetter than it went out. That is Ward Seven, in a sentence, for free.',
+    },
+    {
+      who: 'WASHERWOMAN',
+      text: 'Eleven under that stone, one winter. The Magistracy sent a pump. It did not send a second stone.',
+    },
+  ],
   lamprow_lighter_boy: [
     {
       who: "LIGHTER'S BOY",

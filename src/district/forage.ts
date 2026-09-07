@@ -199,6 +199,21 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     prop: { x: 52, z: 31.6 },
   },
 
+  /* --- Ward Seven -------------------------------------------------------------------- */
+  {
+    id: 'ward_seven:seep_reeds',
+    areaId: 'ward_seven',
+    kind: 'reeds',
+    at: { x: 26, z: 22 },
+    prop: { x: 26, z: 19.6 },
+  },
+  {
+    id: 'ward_seven:bank_herbs',
+    areaId: 'ward_seven',
+    kind: 'herbs',
+    at: { x: 6, z: -34 },
+  },
+
   /* --- the country ------------------------------------------------------------------ */
   {
     // Where the pavement stops, the first thing that grows without permission.

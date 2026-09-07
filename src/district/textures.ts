@@ -3111,6 +3111,25 @@ const SIGN_GLYPHS: Record<SignId, (ctx: CanvasRenderingContext2D) => void> = {
     ctx.fillStyle = '#2a2230';
     ctx.fillRect(8, 8, 4, 1);
   },
+  cistern: (ctx) => {
+    // A pump handle over a wave.
+    ctx.fillRect(9, 2, 2, 5);
+    ctx.fillRect(6, 3, 8, 1);
+    ctx.fillRect(4, 8, 2, 1);
+    ctx.fillRect(6, 9, 2, 1);
+    ctx.fillRect(8, 8, 2, 1);
+    ctx.fillRect(10, 9, 2, 1);
+    ctx.fillRect(12, 8, 2, 1);
+    ctx.fillRect(14, 9, 2, 1);
+  },
+  clinic: (ctx) => {
+    // A cot: the frame, the mattress, the pillow.
+    ctx.fillRect(4, 8, 12, 1);
+    ctx.fillRect(4, 9, 1, 2);
+    ctx.fillRect(15, 9, 1, 2);
+    ctx.fillRect(5, 6, 10, 2);
+    ctx.fillRect(5, 4, 3, 2);
+  },
 };
 
 export function makeSignTexture(key: SignId): THREE.Texture {

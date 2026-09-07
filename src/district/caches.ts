@@ -233,6 +233,36 @@ export const CACHES: readonly CacheDef[] = [
     loot: { ducats: 35, marrowShards: 1 },
     gate: { after: ['poster_work'] },
   },
+
+  /* --- Ward Seven -------------------------------------------------------------------- */
+  {
+    id: 'ward_seven:seep_chest',
+    areaId: 'ward_seven',
+    at: { x: 10.2, z: 38 },
+    prop: { kind: 'chest', x: 8, z: 38 },
+    label: 'Open the sunk chest',
+    detail: 'Half under the peat of the second seep. Whoever buried it did not come back for it either.',
+    loot: { ducats: 20, marrowShards: 1 },
+  },
+  {
+    id: 'ward_seven_cistern:the_sump',
+    areaId: 'ward_seven_cistern',
+    at: { x: 17.8, z: 4 },
+    prop: { kind: 'chest', x: 20, z: 4 },
+    label: 'Open the sump chest',
+    detail: 'What the crew by the pumps has been keeping dry.',
+    loot: { ducats: 40, reagents: { core_bloom: 1 } },
+  },
+  {
+    id: 'ward_seven_clinic:dispensary',
+    areaId: 'ward_seven_clinic',
+    at: { x: 11.8, z: 12 },
+    prop: { kind: 'chest', x: 14, z: 12 },
+    label: 'Open the dispensary',
+    detail: 'The healer nods at it. The quota has been answered for, and what is left is yours.',
+    loot: { brew: 'ironbrew', ducats: 10 },
+    gate: { after: ['clinic_quota'] },
+  },
 ];
 
 export const cacheById = (id: string): CacheDef | undefined => CACHES.find((c) => c.id === id);

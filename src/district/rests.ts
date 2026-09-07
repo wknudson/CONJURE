@@ -53,6 +53,17 @@ export const RESTS: readonly RestDef[] = [
     wakeHour: 7,
     line: 'You wake to the hearth being raked and the smell of the works on the wind. Seven, and the ward is up.',
   },
+  {
+    // The cheapest bed in Jolrek, behind a curtain in a clinic over a cistern.
+    id: 'ward_seven_clinic:the_cot',
+    areaId: 'ward_seven_clinic',
+    at: { x: -6, z: 6 },
+    prop: { x: -6, z: 2, yaw: Math.PI / 2 },
+    label: 'Take the cot behind the curtain',
+    fee: 8,
+    wakeHour: 6,
+    line: 'You wake damp. Everything in Ward Seven wakes damp. The healer has already seen four people.',
+  },
 ];
 
 export const restById = (id: string): RestDef | undefined => RESTS.find((r) => r.id === id);

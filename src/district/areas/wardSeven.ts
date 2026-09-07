@@ -7,12 +7,19 @@
  * problem it did not want to solve, and the ground between the two is somewhere between a
  * street and a bank.
  *
- * It reads wet from one end to the other, which is the point of putting marsh both north of
- * the terraces and south of them: this is not a ward with a pond in it, it is a ward with
+ * Thirty by twenty-six now. Two boardwalks cross the basin so the north bank can be reached
+ * without wading; the pump house on the ring lane goes down into the cistern itself, which
+ * is where the `fouled_cistern` contract is fought and where something has moved in beside
+ * the pumps; and the back-alley clinic the `clinic_quota` contract names is a room off the
+ * terrace lane, with the healer in it and a cot for the night. South of the terraces the
+ * seep runs on, with the drowned graves in it, to a second row of terraces and a second seep.
+ *
+ * It reads wet from one end to the other, which is the point of putting marsh north of the
+ * terraces and south of them twice: this is not a ward with a pond in it, it is a ward with
  * water underneath it.
  */
 
-import { defineArea, type AreaDef, type TileDef } from '../map.js';
+import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
 
 /**
  * The ward's legend.
@@ -20,8 +27,11 @@ import { defineArea, type AreaDef, type TileDef } from '../map.js';
  *   c  cobbles      — the dry lanes, such as they are
  *   .  weeds        — the joints losing the argument
  *   g  soaked peat  — walkable, and it is not pretending otherwise
+ *   k  boardwalk    — planks over the peat, the one thing the ward built for itself
  *   W  open water   — impassable
  *   V  low wall     — impassable, the barrier round the basin
+ *   M  the pump house — impassable; stone, the Magistracy's one answer
+ *   L  the clinic   — impassable; limewashed plaster, one storey
  *   B  terrace      — impassable
  *
  * The `V` walls are shorter than Ashfall's yard wall and taken whole rather than split: this
@@ -31,12 +41,25 @@ const SEVEN_LEGEND: Record<string, TileDef> = {
   c: { tex: 'cobble', safe: false, walk: true },
   '.': { tex: 'weeds', safe: false, walk: true },
   g: { tex: 'marsh', safe: false, walk: true },
+  k: { tex: 'planks', safe: false, walk: true },
   W: { tex: 'water', safe: false, walk: false },
   V: {
     tex: 'cobble',
     safe: false,
     walk: false,
     solid: { minHeight: 2.2, maxHeight: 2.2, inset: 0.2, depthInset: 1.4, chimneyChance: 0, split: false },
+  },
+  M: {
+    tex: 'cobble',
+    safe: false,
+    walk: false,
+    solid: { minHeight: 5.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'stone' },
+  },
+  L: {
+    tex: 'cobble',
+    safe: false,
+    walk: false,
+    solid: { minHeight: 4.4, maxHeight: 4.4, inset: 0.3, depthInset: 0.3, chimneyChance: 0.5, split: false, wall: 'plaster' },
   },
   B: {
     tex: 'cobble',
@@ -49,36 +72,47 @@ const SEVEN_LEGEND: Record<string, TileDef> = {
 /** Three rows of the cistern proper, along the north edge. */
 const WATER_ROWS = 3;
 
+const C28 = 'c'.repeat(28);
+
 /**
- * 22 wide by 22 deep.
+ * 30 wide by 26 deep.
  *
- * Column 21 opens at row 12 — the lane east, back up to the ward. Everything else is terrace
+ * Column 29 opens at row 12 — the lane east, back up to the ward. Everything else is terrace
  * or wall, so the basin has one way in and one way out and you pass the whole of it either way.
  */
 const GRID: readonly string[] = [
-  'WWWWWWWWWWWWWWWWWWWWWW', //  0  the cistern
-  'WWWWWWWWWWWWWWWWWWWWWW', //  1
-  'WWWWWWWWWWWWWWWWWWWWWW', //  2
-  'BccccccccccccccccccccB', //  3  the quay, such as it is
-  'Bcc.ggggggggggggg.cccB', //  4  the north bank
-  'BccggggggggggggggggccB', //  5
-  'BcggggWWWWWWWWggggggcB', //  6  what is left of the water
-  'BcggggWWWWWWWWggggggcB', //  7
-  'BcggggggggggggggggggcB', //  8
-  'Bccgggggggggggggggcc.B', //  9
-  'BccccccccccccccccccccB', // 10  the ring lane
-  'BcVVVVccccccccVVVVcccB', // 11  the wall round the basin
-  'Bccccccccccccccccccccc', // 12  the way out, east to the ward
-  'Bcc.ccccccccccccc.cccB', // 13
-  'BccBBBBcccccccBBBBBccB', // 14  the terraces
-  'BccBBBBcccccccBBBBBccB', // 15
-  'BccccccccccccccccccccB', // 16
-  'Bc..ggggg.cccc.gggg.cB', // 17  the south seep
-  'BccgggggggccccggggggcB', // 18
-  'BccccccccccccccccccccB', // 19
-  'BcVVVVVVccccccVVVVVVcB', // 20
-  'BBBBBBBBBBBBBBBBBBBBBB', // 21  the south range
+  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW', //  0  the cistern
+  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW', //  1
+  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW', //  2
+  `B${C28}B`, //  3  the quay, such as it is
+  'Bcc.gggggggggggggggggggggg.ccB', //  4  the north bank
+  'BckkkkkkkkkkkkkkkkkkkkkkkkkkcB', //  5  the north boardwalk
+  'BcgggWWWWWWWWggggWWWWWWWWgggcB', //  6  what is left of the water
+  'BcgggWWWWWWWWggggWWWWWWWWgggcB', //  7
+  'BckkkkkkkkkkkkkkkkkkkkkkkkkkcB', //  8  the south boardwalk
+  'Bccggggggggggggggggggggggg.ccB', //  9
+  `B${C28}B`, // 10  the ring lane
+  'BcVVVVVccccccMMMMccccccVVVVVcB', // 11  the wall round the basin, and THE PUMP HOUSE
+  `B${'c'.repeat(12)}MMMM${'c'.repeat(13)}`, // 12  the way out, east to the ward
+  `B${C28}B`, // 13  the pump house door, onto the lane
+  'BccBBBBBcccccBBBBBcLLLLLcccccB', // 14  the terraces, and THE CLINIC
+  'BccBBBBBcccccBBBBBcLLLLLcccccB', // 15
+  `B${C28}B`, // 16  the terrace lane; the clinic door
+  'Bc..ggggg.ccccc.gggggg.ccccccB', // 17  the south seep, and the drowned graves
+  'BccggggggggccccgggggggggcccccB', // 18
+  `B${C28}B`, // 19
+  'BccBBBBBBccccccccBBBBBBBcccccB', // 20  the south terraces
+  'BccBBBBBBccccccccBBBBBBBcccccB', // 21
+  `B${C28}B`, // 22
+  'Bcc.ggggggg.cccc.ggggggg.ccccB', // 23  the second seep
+  `B${C28}B`, // 24
+  'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', // 25  the south range
 ];
+
+const HALF_X = (GRID[0]!.length * TILE) / 2;
+const HALF_Z = (GRID.length * TILE) / 2;
+const xOfCol = (col: number): number => col * TILE - HALF_X + TILE / 2;
+const zOfRow = (row: number): number => row * TILE - HALF_Z + TILE / 2;
 
 export const WARD_SEVEN_ID = 'ward_seven';
 
@@ -88,87 +122,109 @@ export const WARD_SEVEN: AreaDef = defineArea({
   grid: GRID,
   legend: SEVEN_LEGEND,
   /** On the ring lane, with the basin in front of you. */
-  spawn: { x: 0, z: 6 },
+  spawn: { x: 0, z: -10 },
   safety: 'none',
   exits: [
     {
       to: 'ashfall_ward',
-      x: 42,
-      z: 6,
+      x: HALF_X - 2,
+      z: -2,
       label: 'East, up to Ashfall Ward',
       arrive: { x: -54, z: 30 },
+    },
+    {
+      // Down through the pump house into the cistern under the ward.
+      to: 'ward_seven_cistern',
+      x: 0,
+      z: zOfRow(12) + TILE / 2 + 1.4,
+      label: 'Into the pump house, and down',
+      door: { x: 0, z: zOfRow(12) + TILE / 2 + 0.05, facesSouth: true, sign: 'cistern', style: 'iron' },
+      arrive: { x: 0, z: 20 },
+    },
+    {
+      to: 'ward_seven_clinic',
+      x: xOfCol(21),
+      z: zOfRow(15) + TILE / 2 + 1.4,
+      label: 'Into the back-alley clinic',
+      door: { x: xOfCol(21), z: zOfRow(15) + TILE / 2 + 0.05, facesSouth: true, sign: 'clinic' },
+      arrive: { x: 0, z: 16 },
     },
   ],
   props: {
     /** Built over a cistern that stopped draining, so: reeds, a heron, and rats. */
     sky: 'drizzle',
     wildlife: [
-      { kind: 'heron', x: -26, z: -30, roam: 6 },
-      { kind: 'rat', x: -18, z: -30, roam: 5, count: 2 },
-      { kind: 'rat', x: 18, z: -14, roam: 5, count: 2 },
-      { kind: 'rat', x: -38, z: 6, roam: 5, count: 2 },
-      { kind: 'rat', x: 22, z: 22, roam: 5, count: 2 },
-      { kind: 'gull', x: -38, z: -42, roam: 20, count: 2 },
+      { kind: 'heron', x: -26, z: -34, roam: 6 },
+      { kind: 'rat', x: -18, z: -34, roam: 5, count: 2 },
+      { kind: 'rat', x: 18, z: -18, roam: 5, count: 2 },
+      { kind: 'rat', x: -38, z: 2, roam: 5, count: 2 },
+      { kind: 'rat', x: 22, z: 26, roam: 5, count: 2 },
+      { kind: 'gull', x: -38, z: -46, roam: 20, count: 2 },
     ],
     /** Built over a cistern that stopped draining. Everything here is about water nobody wants. */
     dressing: [
-      { kind: 'well', x: -38, z: -30 },
-      { kind: 'well', x: 26, z: -22 },
-      { kind: 'well', x: 22, z: -6 },
-      { kind: 'well', x: -6, z: 10 },
+      { kind: 'well', x: -38, z: -10 },
+      { kind: 'well', x: 26, z: -14 },
+      { kind: 'well', x: -26, z: 2 },
       { kind: 'well', x: -10, z: 26 },
-      { kind: 'trough', x: -34, z: -30 },
-      { kind: 'trough', x: 30, z: -22 },
-      { kind: 'trough', x: 26, z: -6 },
-      { kind: 'trough', x: 6, z: 10 },
+      { kind: 'well', x: 14, z: 42 },
+      { kind: 'trough', x: -34, z: -10 },
+      { kind: 'trough', x: 30, z: -14 },
+      { kind: 'trough', x: 22, z: 2 },
       { kind: 'trough', x: -6, z: 26 },
-      { kind: 'washing', x: -42, z: -42, yaw: 0 },
-      { kind: 'washing', x: 6, z: -34, yaw: 0 },
-      { kind: 'washing', x: -26, z: -22, yaw: 0 },
-      { kind: 'washing', x: -42, z: -10, yaw: 0 },
+      { kind: 'washing', x: -42, z: -38, yaw: 0 },
+      { kind: 'washing', x: 6, z: -38, yaw: 0 },
+      { kind: 'washing', x: -50, z: -22, yaw: 0 },
+      { kind: 'washing', x: -42, z: -2, yaw: 0 },
       { kind: 'washing', x: 22, z: -2, yaw: 0 },
-      { kind: 'washing', x: -38, z: 14, yaw: 0 },
+      { kind: 'washing', x: -38, z: 22, yaw: 0 },
       { kind: 'washing', x: 14, z: 22, yaw: 0 },
-      { kind: 'washing', x: -6, z: 34, yaw: 0 },
-      { kind: 'barrel', x: -30, z: -30 },
-      { kind: 'barrel', x: 22, z: -26 },
+      { kind: 'washing', x: -6, z: 38, yaw: 0 },
+      { kind: 'barrel', x: -30, z: -38 },
+      { kind: 'barrel', x: 22, z: -38 },
       { kind: 'barrel', x: -26, z: -14 },
-      { kind: 'barrel', x: -10, z: -6 },
-      { kind: 'barrel', x: 6, z: 2 },
+      { kind: 'barrel', x: -10, z: -2 },
+      { kind: 'barrel', x: 2, z: 18 },
       { kind: 'barrel', x: -34, z: 14 },
-      { kind: 'barrel', x: 10, z: 22 },
-      { kind: 'barrel', x: 2, z: 30 },
-      { kind: 'reeds', x: -26, z: -30 },
-      { kind: 'reeds', x: 22, z: -30 },
+      { kind: 'barrel', x: 10, z: 26 },
+      { kind: 'barrel', x: 2, z: 34 },
+      { kind: 'reeds', x: -26, z: -34 },
+      { kind: 'reeds', x: 22, z: -34 },
       { kind: 'reeds', x: -10, z: -26 },
       { kind: 'reeds', x: -38, z: -22 },
       { kind: 'reeds', x: 14, z: -22 },
-      { kind: 'reeds', x: 26, z: -18 },
+      { kind: 'reeds', x: 26, z: -10 },
+      // The drowned graves, in the south seep.
+      { kind: 'gravestone', x: -42, z: 22 },
+      { kind: 'gravestone', x: -34, z: 18 },
+      { kind: 'bramble', x: 18, z: 42 },
     ],
     /**
-     * The two people treating a ward built over its own water.
+     * The people treating a ward built over its own water.
      *
-     * Both kept off the open pools, which is the only siting note that matters here: a healer
+     * All kept off the open pools, which is the only siting note that matters here: a healer
      * standing in the thing that is making people ill would be the map arguing with itself.
+     * The healer is indoors now, at the clinic; the pumpman is down with his pumps.
      */
     npcs: [
-      { id: 'ward_seven_lamplighter', x: 10, z: -2, art: 'night_watchman', label: 'Talk to the lamplighter' },
-      { id: 'ward_seven_healer', x: -18, z: -6, art: 'healer', label: 'Talk to the ward healer' },
-      { id: 'ward_seven_apothecary', x: 18, z: 10, art: 'apothecary', label: 'Talk to the apothecary' },
+      { id: 'ward_seven_lamplighter', x: 10, z: -10, art: 'night_watchman', label: 'Talk to the lamplighter' },
+      { id: 'ward_seven_apothecary', x: 18, z: 14, art: 'apothecary', label: 'Talk to the apothecary' },
       { id: 'ward_seven_herbalist', x: -22, z: -10, art: 'herbalist', label: 'Talk to the herbalist' },
+      { id: 'ward_seven_washerwoman', x: -30, z: 22, art: 'seamstress', label: 'Talk to the washerwoman' },
     ],
-    /** On the ring lane and the terrace row. None over the basin: nothing is lit out there. */
     /**
      * Who walks the row.
      *
-     * Four lamps over a flooded ward. He lights them and goes.
+     * Six lamps over a flooded ward. He lights them and goes.
      */
     lamplighter: 'ward_seven_lamplighter',
     lamps: [
-      { x: -18, z: 2 },
-      { x: 10, z: 2 },
-      { x: -30, z: 34 },
-      { x: 10, z: 34 },
+      { x: -30, z: -10 },
+      { x: 30, z: -10 },
+      { x: -10, z: 14 },
+      { x: 10, z: 14 },
+      { x: -18, z: 34 },
+      { x: 0, z: 42 },
     ],
     crates: [
       { x: -34, z: -18 },
@@ -179,18 +235,12 @@ export const WARD_SEVEN: AreaDef = defineArea({
     trees: [
       { x: -34, z: -14 },
       { x: 34, z: -14 },
-      { x: -30, z: 30 },
-      { x: 26, z: 30 },
+      { x: -30, z: 42 },
+      { x: 26, z: 42 },
     ],
     graffiti: [
-      {
-        text: 'SEVEN DRINKS FIRST',
-        wallX: -22,
-        wallZ: 14,
-        dx: 3,
-        facesSouth: true,
-        tint: '#5e9e8f',
-      },
+      { text: 'SEVEN DRINKS FIRST', wallX: -36, wallZ: zOfRow(14) - TILE / 2 - 0.05, dx: 0, facesSouth: false, tint: '#5e9e8f' },
+      { text: 'RUNS UPHILL', wallX: 0, wallZ: zOfRow(12) + TILE / 2 + 0.05, dx: 4.6, facesSouth: true, tint: '#5e9e8f' },
     ],
     waterRows: WATER_ROWS,
     horizon: 'city',

@@ -118,9 +118,10 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
       'He has claimed the bench, and the clean-air trade walks the long way round him. He duels anyone the Wardens send — and duels are wagered.',
   },
   {
-    id: 'ward_seven:cistern_mouth',
-    areaId: 'ward_seven',
-    at: { x: -10, z: -22 },
+    // Down in the cistern itself now, at the mouth, past the crew that moved in by the pumps.
+    id: 'ward_seven_cistern:the_mouth',
+    areaId: 'ward_seven_cistern',
+    at: { x: -8, z: -16 },
     encounterId: 'fouled_cistern',
     label: 'The Cistern Mouth',
     interactDetail:
@@ -151,9 +152,10 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     // The fiction names no ward — decided: Ward Seven, the wet poor ward where the
     // healer, apothecary and herbalist already stand. A clinic for unregistered
     // Whisperers belongs where the Magistracy's water went bad.
-    id: 'ward_seven:back_alley_clinic',
-    areaId: 'ward_seven',
-    at: { x: 14, z: 22 },
+    // Inside the clinic, which is a room off the terrace lane now rather than a label on it.
+    id: 'ward_seven_clinic:the_quota',
+    areaId: 'ward_seven_clinic',
+    at: { x: 10, z: -12 },
     encounterId: 'clinic_quota',
     label: 'The Back-Alley Clinic',
     interactDetail:
