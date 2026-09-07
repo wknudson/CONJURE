@@ -13,7 +13,10 @@ Medium bullets in §5 are annotated where a later PR closed them. The three desi
 audits had left open were then ruled and built as PRs #25, #26 and #27, the nine pending
 companion knacks as PR #29, the blood-tithe telegraph as PR #31, the sequencer-driven Last
 Stand as PR #33, the three generic reactions as PR #35, and the opening hour as PR #36 —
-recorded in §7. Nothing either audit raised remains open.*
+recorded in §7. Nothing either audit raised remains open. Outside the audits' scope, the female
+side-walk was fixed as PR #37 and the world itself rebuilt as PR #39 — every area larger,
+thirty-nine rooms behind real doors, four registries of things to do on the ground — recorded in
+§7.9 and §7.10; this note is PR #40.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -834,12 +837,60 @@ not a defect. Verified: a new test reads the four files' real PNG dimensions and
 drift apart again; full suite 145 files / 3269 tests, including all six balance ledger files
 run individually; `tsc --noEmit` clean.
 
-### 7.10 What remains
+### 7.10 The world redesign — **built, PR #39**
+
+Not an audit finding: a verdict. Nineteen hand-painted areas, none of which could be entered;
+the four trades were twenty-pixel plaques on anonymous terraces that swapped the whole screen for
+a menu; every one of the forty-one contract sites was a label on bare ground; and thirty-four of
+forty-eight townsfolk said one line and offered nothing. The owner's reading — *mundane and
+generic* — was fair, and the ask was for every part of the world to be bigger, to have more to do
+in it, to be designed rather than scattered, and for the Artificer to be a place rather than a
+symbol on a wall.
+
+**What was built.** `AreaDef.indoor` and `ExitSpec.door` turn a building's face into a doorway
+onto a room that mounts as its own area — wall textures, no ceiling, a steeper camera, lit at the
+night anchor whatever the clock says — and a door can be shut by the Chronicle and say why.
+Thirty-nine rooms open off all nineteen areas. The three trades are benches inside rooms
+(`benches.ts`); the Field Journal is no longer a building but the **J** key and an Esc-menu
+entry, and the east building it occupied is the Records Office. Four registries, each addressed
+into an area by id on the sites idiom and none of them a new noun on `AreaProps`: notices,
+plaques, graves, ledgers and books you stand at and read (first open one per spot wins, so a
+board changes once a contract is walked); caches opened once per character and paid through the
+errand purse; forage that regrows on the street clock and sometimes bites back with a pack that
+already exists; beds that advance the clock for a fee and heal nothing. Eleven contract sites
+moved indoors — the cellar count, the cistern, the clinic, the Foundry Hall, the Poster's shed,
+the Spire lobby, the Rest, the Undercroft, the drowned granary, the barn, the inn cellars — and
+five Wildlands dens hold a crew behind a cave mouth, the first places in the world you enter to
+fight rather than fight on the way to. Every area grew: the city wards to twenty-eight and
+thirty-odd tiles a side, the Ring towns by about half, the Wildlands with a ring of new ground
+and a north-wall entrance each, with nothing already placed moving. The Chronicle widened to
+`{campaign, flags}` and the save to v26 (`caches`, `worldFlags`, `visited`, `forage`).
+
+**What was found on the way.** Tile-edge arithmetic: a value on a tile boundary belongs to the
+next row, which put waypoints on the Counting House and a cache's opening spot inside a room's
+north wall until every placement was recomputed from row centres. A pack-aggro fixture that
+stood its pack at the Verge's origin and silently depended on a thicket beside it. And the
+browser pane, which was closed for the last third of the work, so the later Ring rooms and all
+five wild dens were verified by the placement suite and by reading prompts off the screen object
+rather than by eye — recorded in the worldbuild to-do's Wave 14.
+
+**Verified.** The full non-balance suite on the exact tip: 143 files, 3,533 tests, green. The
+balance ledger was not run, because `core/data/packs.ts` is untouched and nothing the AI plays
+against changed. The Pages deploy of the squash commit carries its build stamp.
+
+**Open by choice, and written down in Wave 14 rather than here:** the wild dens borrow existing
+road crews instead of themed packs, because a new `PackDef` enters the balance harness; the
+Wildlands floors are still one texture per region with a ring added; a room's cache and door
+liveness is read once at mount; and the bench screens are still screens — the room is the shop
+now, but the shop still swaps the view.
+
+### 7.11 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 is a reminder that "nothing
-remains" describes the audits' own scope, not every gap the game has — the next thing found
-outside it belongs here on the same terms PR #37 did. What comes next is a playtest.
+and every design call they left open, is closed and merged. §7.9 and §7.10 are reminders that
+"nothing remains" describes the audits' own scope, not every gap the game has — the next thing
+found outside it belongs here on the same terms PRs #37 and #39 did. What comes next is a
+playtest, and after #39 there is a great deal more world to hold one in.
 
 ### Appendix — documentation drift found along the way
 
