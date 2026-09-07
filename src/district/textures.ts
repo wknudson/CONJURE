@@ -3064,6 +3064,16 @@ const SIGN_GLYPHS: Record<SignId, (ctx: CanvasRenderingContext2D) => void> = {
     ctx.fillRect(12, 8, 2, 1);
     ctx.fillRect(6, 2, 7, 1);
   },
+  lamp: (ctx) => {
+    // A gas lamp: the head on its post, and the light coming off it.
+    ctx.fillRect(8, 2, 4, 4);
+    ctx.fillRect(9, 6, 2, 4);
+    ctx.fillRect(7, 10, 6, 1);
+    ctx.fillRect(5, 3, 2, 1);
+    ctx.fillRect(13, 3, 2, 1);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(9, 3, 2, 2);
+  },
 };
 
 export function makeSignTexture(key: SignId): THREE.Texture {

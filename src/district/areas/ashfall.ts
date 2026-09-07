@@ -177,7 +177,7 @@ export const ASHFALL: AreaDef = defineArea({
       label: 'Through the south gate to Lamprow',
       gate: { x: SOUTH_GATE.x, z: SOUTH_GATE.z },
       // Onto Lamprow's High Street, a stride clear of its own way back.
-      arrive: { x: -36, z: 4 },
+      arrive: { x: -56, z: -4 },
     },
     {
       // East, off the cross-street into the Bonemarket. Gateless, like every crossing inside

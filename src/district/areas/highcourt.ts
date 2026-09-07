@@ -103,7 +103,7 @@ export const HIGHCOURT: AreaDef = defineArea({
       x: -38,
       z: 2,
       label: 'Down to the High Street',
-      arrive: { x: 34, z: 2 },
+      arrive: { x: 56, z: -4 },
     },
   ],
   props: {

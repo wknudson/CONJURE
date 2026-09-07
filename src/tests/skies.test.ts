@@ -361,8 +361,9 @@ describe('the ground you fight on', () => {
     // The whole point, read off the world rather than asserted about the table. Every fight that
     // can start on its own ground is in a ward that is named for what falls on it, or on a road
     // where nothing does.
+    // Rooms excepted: a cellar with a crew in it has no sky to read, by construction.
     const fightable = AREAS.filter(
-      (a) => (a.props.packs ?? []).length > 0 || (a.props.patrols ?? []).length > 0,
+      (a) => !a.indoor && ((a.props.packs ?? []).length > 0 || (a.props.patrols ?? []).length > 0),
     );
     expect(fightable.length, 'somewhere can start a fight').toBeGreaterThan(2);
 

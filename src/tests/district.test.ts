@@ -657,14 +657,14 @@ describe('every area', () => {
 });
 
 describe('the Lamprow grid', () => {
-  const HIGH_STREET_Z = [2, 6]; // the two rows of flags
-  const KERB_Z = 8; // where they end and the Sink begins
+  const HIGH_STREET_Z = [-6, -2]; // the two rows of flags
+  const KERB_Z = 0; // where they end and the Sink begins
 
   it('runs one unbroken safe lane from one end of the ward to the other', () => {
     // The whole reason the ward is on the map: a walkway long enough to matter, so that
     // stepping off it is a decision rather than an accident of where the paving stopped.
     for (const z of HIGH_STREET_Z) {
-      for (let x = -42; x <= 34; x += 2) {
+      for (let x = -60; x <= 58; x += 2) {
         expect(isSafeAt(LAMPROW, x, z), `the High Street breaks at (${x}, ${z})`).toBe(true);
       }
     }

@@ -35,6 +35,9 @@ import { ASHFALL_TOLL_HOUSE } from './interiors/ashfallTollHouse.js';
 import { ASHFALL_COUNTING_HOUSE } from './interiors/ashfallCountingHouse.js';
 import { ASHFALL_CHAPEL } from './interiors/ashfallChapel.js';
 import { ASHFALL_CINDER_CUP } from './interiors/ashfallCinderCup.js';
+import { LAMPROW_OIL_HOUSE } from './interiors/lamprowOilHouse.js';
+import { LAMPROW_TITHE_OFFICE } from './interiors/lamprowTitheOffice.js';
+import { LAMPROW_SINK_CELLARS } from './interiors/lamprowSinkCellars.js';
 
 /**
  * Ordered as the city, then the ring, then the wilds — the order they are reached in, which is
@@ -70,6 +73,9 @@ export const AREAS: readonly AreaDef[] = [
   ASHFALL_COUNTING_HOUSE,
   ASHFALL_CHAPEL,
   ASHFALL_CINDER_CUP,
+  LAMPROW_OIL_HOUSE,
+  LAMPROW_TITHE_OFFICE,
+  LAMPROW_SINK_CELLARS,
 ];
 
 export function areaById(id: string): AreaDef | undefined {
@@ -107,4 +113,7 @@ export {
   ASHFALL_COUNTING_HOUSE,
   ASHFALL_CHAPEL,
   ASHFALL_CINDER_CUP,
+  LAMPROW_OIL_HOUSE,
+  LAMPROW_TITHE_OFFICE,
+  LAMPROW_SINK_CELLARS,
 };

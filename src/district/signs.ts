@@ -17,6 +17,7 @@ export const SIGN_IDS = [
   'counting',
   'chapel',
   'tavern',
+  'lamp',
 ] as const;
 
 export type SignId = (typeof SIGN_IDS)[number];

@@ -625,6 +625,40 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#16110c',
     fogDensity: 0.028,
   },
+  /** The Lamp-oil House: its own lamp, and oil on everything to catch it. */
+  lamprow_oil_house: {
+    sunIntensity: 1.6,
+    sunColor: '#e0b070',
+    ambientIntensity: 2.2,
+    skyColor: '#5a5040',
+    groundBounce: '#4a3a20',
+    fogColor: '#14110c',
+    fogDensity: 0.026,
+  },
+  /** The Tithe Office: the Counting House's light, one ward over. */
+  lamprow_tithe_office: {
+    sunIntensity: 1.4,
+    sunColor: '#c8b8a0',
+    ambientIntensity: 2.0,
+    skyColor: '#585a5e',
+    groundBounce: '#3a3634',
+    fogColor: '#111214',
+    fogDensity: 0.024,
+  },
+  /**
+   * The Sink cellars: rock, damp, one brazier and the crew's own light. The darkest room in
+   * the world and still legible at combat range -- the fog is at Lamprow's own ceiling, not
+   * past it, because a fight is fought down here.
+   */
+  lamprow_sink_cellars: {
+    sunIntensity: 1.3,
+    sunColor: '#8a9ab0',
+    ambientIntensity: 2.0,
+    skyColor: '#3a4050',
+    groundBounce: '#2a2a30',
+    fogColor: '#0a0c10',
+    fogDensity: 0.03,
+  },
 };
 
 /** An area's ambience, or the ward's if nobody wrote one. */

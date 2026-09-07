@@ -485,6 +485,46 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'Tip the box by the hearth if you want the long one. The keeper of the Flame gets a cut. Everybody gets a cut.',
     },
   ],
+  lamprow_oil_keeper: [
+    {
+      who: 'OIL KEEPER',
+      text: 'Nine gills a night for the row. I measure it out, the boy carries it, the lamplighter burns it, and the ward pays for it three times over.',
+    },
+    {
+      who: 'OIL KEEPER',
+      text: 'The measure is on the wall. Read it before you ask me why the shelf is half empty; the other half is the tithe.',
+    },
+  ],
+  lamprow_bailiff: [
+    {
+      who: 'BAILIFF',
+      text: 'The clerk outside talks about the tithe. I collect it. We do not do each other’s job and we do not stand in each other’s room.',
+    },
+    {
+      who: 'BAILIFF',
+      text: 'The Sink is in arrears to the last hearth and the collectors have been down there every night. Read the ledger and tell me where the money is. I would genuinely like to know.',
+    },
+  ],
+  lamprow_printer: [
+    {
+      who: 'PRINTER',
+      text: 'I print the tithe bills. I print the writs. I printed the notice that closed the Ashfall wharf, and I was paid on time for every one of them.',
+    },
+    {
+      who: 'PRINTER',
+      text: 'What is under my shop is not mine. I lease the cellar to a man I have never met, and the rent arrives in coin that smells of lamp oil.',
+    },
+  ],
+  lamprow_lighter_boy: [
+    {
+      who: "LIGHTER'S BOY",
+      text: 'Nine gills, nine lamps, one bucket, twice a night. Up from the oil house and down the row and back before the bell.',
+    },
+    {
+      who: "LIGHTER'S BOY",
+      text: 'Highcourt is up that way. They have lamps that never go out. Nobody carries a bucket up there; I have looked.',
+    },
+  ],
 
   /* --- Lamprow ----------------------------------------------------------------------- */
   lamprow_urchin: [

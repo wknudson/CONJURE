@@ -132,6 +132,46 @@ export const CACHES: readonly CacheDef[] = [
     detail: 'The figure the Spire asked for was nil.',
     loot: { ducats: 90, marrowShards: 3 },
   },
+
+  /* --- Lamprow ----------------------------------------------------------------------- */
+  {
+    id: 'lamprow:sink_stash',
+    areaId: 'lamprow',
+    at: { x: -49.8, z: 18 },
+    prop: { kind: 'chest', x: -52, z: 18 },
+    label: 'Open the chest',
+    detail: 'Pushed into the corner of the Sink, under the washing, where the Warden does not look.',
+    loot: { ducats: 20 },
+  },
+  {
+    id: 'lamprow_oil_house:keepers_cask',
+    areaId: 'lamprow_oil_house',
+    at: { x: 9.8, z: 8 },
+    prop: { kind: 'barrel', x: 12, z: 8 },
+    label: 'Tap the small cask',
+    detail: 'Not oil. The keeper distils something of his own on the side.',
+    loot: { brew: 'kinetic_capacitor' },
+    gate: { flags: ['read_the_measure'] },
+  },
+  {
+    id: 'lamprow_tithe_office:collected_twice',
+    areaId: 'lamprow_tithe_office',
+    at: { x: 11.8, z: -17 },
+    prop: { kind: 'chest', x: 14, z: -17 },
+    label: 'Open the strongbox',
+    detail: 'What was collected twice, and marked paid once.',
+    loot: { ducats: 50, reagents: { core_surge: 1 } },
+  },
+  {
+    // Behind the crew. What the count is.
+    id: 'lamprow_sink_cellars:the_count',
+    areaId: 'lamprow_sink_cellars',
+    at: { x: 11.8, z: -16 },
+    prop: { kind: 'chest', x: 14, z: -16 },
+    label: 'Open the count',
+    detail: 'Every gill the Sink was assessed for, in coin, in the dark.',
+    loot: { ducats: 45, marrowShards: 2 },
+  },
 ];
 
 export const cacheById = (id: string): CacheDef | undefined => CACHES.find((c) => c.id === id);

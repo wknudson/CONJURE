@@ -166,6 +166,21 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     prop: { x: -22, z: 3.6 },
   },
 
+  /* --- Lamprow ----------------------------------------------------------------------- */
+  {
+    id: 'lamprow:cut_reeds',
+    areaId: 'lamprow',
+    kind: 'reeds',
+    at: { x: -2, z: -42 },
+    prop: { x: -2, z: -45 },
+  },
+  {
+    id: 'lamprow:garden_herbs',
+    areaId: 'lamprow',
+    kind: 'herbs',
+    at: { x: -16, z: 36 },
+  },
+
   /* --- the country ------------------------------------------------------------------ */
   {
     // Where the pavement stops, the first thing that grows without permission.

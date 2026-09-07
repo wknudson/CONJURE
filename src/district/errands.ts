@@ -177,6 +177,23 @@ export const ERRANDS: readonly ErrandDef[] = [
     reward: { ducats: 70, brew: 'ironbrew' },
   },
 
+  {
+    id: 'oil_for_the_row',
+    giver: 'lamprow_oil_house:lamprow_oil_keeper',
+    title: 'Carry a measure of lamp oil to the Ashfall lamplighter',
+    offer: [
+      { who: 'OIL KEEPER', text: 'Ashfall’s row is short by a night. Their man came for it himself last quarter and the Magistracy assessed him for leaving his post.' },
+      { who: 'OIL KEEPER', text: 'One measure, sealed. Down the High Street, through the gate, up the road; he stands on the cross-street. He will know it by the seal.' },
+    ],
+    nudge: [{ who: 'OIL KEEPER', text: 'The measure. Ashfall. Their lamplighter, on the cross-street. It does not improve with keeping.' }],
+    thanks: [
+      { who: 'LAMPLIGHTER', text: 'Lamprow oil. Sealed. I can smell the difference from here, and so can the lamps.' },
+      { who: 'LAMPLIGHTER', text: 'Take this. It is not the Magistracy’s; it is what the row puts in a tin for the man who keeps it lit.' },
+    ],
+    step: { kind: 'deliver', toArea: 'ashfall_ward', toNpc: 'ashfall_lamplighter' },
+    reward: { ducats: 45 },
+  },
+
   /* --- the ward, and one crossing out ---------------------------------------------- */
   {
     id: 'gutter_crew',

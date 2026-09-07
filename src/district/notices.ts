@@ -193,6 +193,51 @@ export const NOTICES: readonly NoticeDef[] = [
     prop: { kind: 'plaque', x: -8, z: -21.85 },
   },
 
+  /* --- Lamprow ----------------------------------------------------------------------- */
+  {
+    id: 'lamprow:tithe_bill',
+    areaId: 'lamprow',
+    at: { x: 20, z: -4.6 },
+    form: 'notice',
+    label: 'Read the tithe bill',
+    title: 'THE LIGHT TITHE — LAMPROW — THIS QUARTER',
+    lines: [
+      'Every hearth on the High Street is assessed for the lamp nearest it. Every hearth in the Sink is assessed for the lamp it can see.',
+      'Payment is taken at the Tithe Office by day and by the collectors by night. The collectors do not issue receipts.',
+      'A hearth that cannot see a lamp is assessed for the dark. The dark is also Magistracy property.',
+    ],
+    prop: { kind: 'noticepost', x: 20, z: -7.6 },
+  },
+  {
+    id: 'lamprow_oil_house:measure',
+    areaId: 'lamprow_oil_house',
+    at: { x: 2, z: -15.6 },
+    form: 'plaque',
+    label: 'Read the measure',
+    title: 'THE MEASURE — LAMP OIL, BY THE WARD',
+    lines: [
+      'One lamp, one night: a gill. One row, one night: nine gills. One ward, one quarter: the keeper will not say, because the number is the tithe.',
+      'Oil is sold to the Magistracy at the measure and to nobody else. What is on the shelf is what the Magistracy did not take.',
+      'A gill spilled is a gill billed. The iron floor is for the drips, not for you.',
+    ],
+    prop: { kind: 'plaque', x: 2, z: -17.85 },
+    flag: 'read_the_measure',
+  },
+  {
+    id: 'lamprow_tithe_office:arrears',
+    areaId: 'lamprow_tithe_office',
+    at: { x: 0, z: -10.8 },
+    form: 'ledger',
+    label: 'Read the arrears',
+    title: 'THE LIGHT TITHE — ARREARS',
+    lines: [
+      'Hearths on the High Street: 62. In arrears: 0. Hearths in the Sink: 140. In arrears: 140.',
+      'Collected from the Sink this quarter, by the office: nil. Collected from the Sink this quarter, by the collectors: not recorded.',
+      'Note, in the bailiff’s hand: "Not recorded is not the same as not collected. Ask the cellar."',
+    ],
+    prop: { kind: 'lectern', x: 0, z: -14 },
+  },
+
   /* --- the Ironworks ----------------------------------------------------------------- */
   {
     id: 'ashfall_ironworks:tally_board',

@@ -64,7 +64,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'lamprow:tithe',
     areaId: 'lamprow',
-    at: { x: 30, z: -10 },
+    at: { x: 44, z: -22 },
     encounterId: 'lamprow_tithe',
     label: 'Behind the Lighters’ Hall',
     interactDetail:
@@ -82,7 +82,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'lamprow:dark_stretch',
     areaId: 'lamprow',
-    at: { x: -14, z: -6 },
+    at: { x: -40, z: 22 },
     encounterId: 'lamplighter_escort',
     label: 'The Dark Stretch',
     interactDetail:
@@ -100,7 +100,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'lamprow:printers_cellar',
     areaId: 'lamprow',
-    at: { x: -22, z: 26 },
+    at: { x: -36, z: 34 },
     encounterId: 'debt_collected_minor',
     label: 'The Printers’ Cellar',
     interactDetail:
