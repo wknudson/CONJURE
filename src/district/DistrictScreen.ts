@@ -74,7 +74,6 @@ import {
   CombatRing,
   CompanionFollower,
   Critter,
-  DoorHotspot,
   Hotspot,
   NPC,
   Pack,
@@ -82,7 +81,7 @@ import {
   type Interactable,
   type Updatable,
 } from './entities.js';
-import { isSafeAt, type AreaDef, type DoorKey, type ExitSpec } from './map.js';
+import { isSafeAt, type AreaDef, type ExitSpec } from './map.js';
 import {
   cullSatisfiedBy,
   errandFor,
@@ -115,7 +114,8 @@ import type { CombatCarry } from '../core/engine/setup.js';
 import type { AiProfile } from '../core/ai/controller.js';
 import { huntAvailable } from '../core/data/hunts.js';
 import { hashText, makeRng, nextInt } from '../core/util/rng.js';
-import { flagForDoor, tutorialActive } from './quest.js';
+import { flagForBench, tutorialActive } from './quest.js';
+import { benchesInArea, type BenchDef, type BenchKind } from './benches.js';
 
 /**
  * How fast the street clock runs: two game-hours a real minute.
@@ -671,12 +671,11 @@ export class DistrictScreen implements Screen {
      ============================================================ */
 
   private buildInteractables(): void {
-    for (const door of this.area.props.doors ?? []) {
-      const hotspot = new DoorHotspot(door.key, door.x, door.z, `Enter ${door.name}`, () =>
-        this.openDoor(door.key, door.returnZ),
-      );
-      hotspot.interactDetail = this.doorStatus(door.key);
-      this.interactables.push(hotspot);
+    // The tills. Inside their rooms now, addressed in by area id; see `benches.ts`.
+    for (const bench of benchesInArea(this.area.id)) {
+      const spot = new Hotspot(bench.at.x, bench.at.z, bench.label, () => this.openBench(bench));
+      spot.interactDetail = this.benchStatus(bench.kind);
+      this.interactables.push(spot);
     }
 
     if (this.area.props.board) {
@@ -691,7 +690,21 @@ export class DistrictScreen implements Screen {
     // now, and the panel moved to a signpost on the far side where the cooldowns are still
     // worth reading.
     for (const exit of this.area.exits) {
-      this.interactables.push(new Hotspot(exit.x, exit.z, exit.label, () => this.travel(exit)));
+      // A way the Chronicle has not opened is still a prompt: it says why it will not, and
+      // the leaf on the wall is drawn boarded. Evaluated once at mount, like a site's liveness
+      // -- a door that opens while you stand in front of it opens on the next visit.
+      const open = gateOpen(exit.when, this.chronicle);
+      const spot = new Hotspot(
+        exit.x,
+        exit.z,
+        exit.label,
+        open
+          ? () => this.travel(exit)
+          : () => this.hud?.flashNotice(exit.lockedReason ?? 'It will not open.'),
+        exit.radius ?? 2.6,
+      );
+      if (!open) spot.interactDetail = exit.lockedReason ?? 'Barred';
+      this.interactables.push(spot);
     }
 
     // The hunts board, where an area posts one.
@@ -1107,25 +1120,28 @@ export class DistrictScreen implements Screen {
      Doors, position, and the guided lap
      ============================================================ */
 
-  /** The status line the old Safehouse door carried, now under the interact prompt. */
-  private doorStatus(key: DoorKey): string {
-    const { global, collection, deck, companionId, companionLevel } = this.opts;
-    if (key === 'apothecary') {
+  /** The status line the old Safehouse door carried, now under a bench's interact prompt. */
+  private benchStatus(kind: BenchKind): string {
+    const { global, collection, companionId, companionLevel } = this.opts;
+    if (kind === 'apothecary') {
       const { inventory } = global.overworld;
       return inventory.length >= INVENTORY_LIMIT
         ? 'Satchel full'
         : `room for ${INVENTORY_LIMIT - inventory.length} more`;
     }
-    if (key === 'artificer') {
+    if (kind === 'artificer') {
       const raise = ascendableFor(collection).length;
       const cut = schematicsFor(collection).length;
       if (raise > 0) return `${raise} ready to ascend · ${cut} schematics`;
       return cut === 0 ? 'nothing on the bench' : `${cut} schematics on file`;
     }
-    if (key === 'vivarium') {
-      const name = companionById(companionId)?.name ?? 'Nobody';
-      return `${name} · Level ${companionLevel}`;
-    }
+    const name = companionById(companionId)?.name ?? 'Nobody';
+    return `${name} · Level ${companionLevel}`;
+  }
+
+  /** What the Journal would say about the deck, under its entry in the menu. */
+  private journalStatus(): string {
+    const { collection, deck } = this.opts;
     const problems = validateDeck(deck, collection);
     const total = fusedDeckSize(deck.length);
     return problems.length > 0
@@ -1133,18 +1149,37 @@ export class DistrictScreen implements Screen {
       : `${total} cards — ${deck.length} yours, ${GRIMOIRE_SIZE} the beast's`;
   }
 
-  private openDoor(key: DoorKey, returnZ: number): void {
-    // Written before the hand-off, not only on unmount: a tab closed inside the Artificer
-    // should still come back to his doorstep rather than to the plaza.
-    this.writePosition({ x: this.player?.position.x ?? 0, z: returnZ });
+  private openBench(bench: BenchDef): void {
+    // Written before the hand-off, not only on unmount: a tab closed inside the Artificer's
+    // screen should still come back to his bench rather than to the doorstep -- and a stride
+    // back from it, or the room remounts with the prompt to reopen it already up.
+    this.writePosition({ x: bench.back.x, z: bench.back.z });
 
-    const flag = flagForDoor(key);
+    const flag = flagForBench(bench.kind);
     if (flag) this.raiseFlag(flag);
 
-    if (key === 'apothecary') this.opts.onApothecary();
-    else if (key === 'artificer') this.opts.onArtificer();
-    else if (key === 'vivarium') this.opts.onVivarium();
-    else this.opts.onJournal();
+    if (bench.kind === 'apothecary') this.opts.onApothecary();
+    else if (bench.kind === 'artificer') this.opts.onArtificer();
+    else this.opts.onVivarium();
+  }
+
+  /**
+   * The Field Journal, from wherever you are standing.
+   *
+   * The one trade you carry. It was a door -- the east building on Ashfall's cross-street --
+   * and a deck is not a place: a Commander three wards out who wants to look over their cards
+   * should not have to walk home to do it. The position is pinned first for the reason
+   * `openBench` pins its own: what comes back is a fresh mount of this very area, street or
+   * room, and it has to know where to put you.
+   */
+  private openJournal(): void {
+    if (this.inputLocked || this.combat || this.dialogue?.open || this.hud?.boardIsOpen) return;
+    const p = this.player;
+    if (!p) return;
+    this.hud?.closeMenu();
+    this.writePosition({ x: p.position.x, z: p.position.z });
+    this.raiseFlag('journal');
+    this.opts.onJournal();
   }
 
   private talkToVex(): void {
@@ -1262,6 +1297,12 @@ export class DistrictScreen implements Screen {
         this.hud?.toggleSatchel();
         return;
       }
+      if (e.code === 'KeyJ') {
+        // The Journal, carried. Not from under the menu -- that has its own entry for it.
+        e.preventDefault();
+        if (!this.hud?.menuIsOpen) this.openJournal();
+        return;
+      }
       if (e.code === 'KeyM') {
         // Deliberately not gated on `inputLocked`: the map is the one thing worth being
         // able to look at while something else has the screen, and it takes no action.
@@ -1276,7 +1317,10 @@ export class DistrictScreen implements Screen {
         // With nothing else to close, Escape is the menu — and the only way back to the
         // title wall. Not over a dialogue line or a bill, which the player should finish.
         else if (this.hud && !this.dialogue?.open && !this.hud.overlayIsShown) {
-          this.hud.showMenu(() => this.opts.onLeave());
+          this.hud.showMenu(() => this.opts.onLeave(), {
+            detail: this.journalStatus(),
+            open: () => this.openJournal(),
+          });
         }
         return;
       }

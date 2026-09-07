@@ -24,6 +24,7 @@ import type { CritterId } from './wildlife.js';
 import type { Gate } from './chronicle.js';
 import type { PackHours } from './daylight.js';
 import type { SkyId } from './skies.js';
+import type { SignId } from './signs.js';
 
 /**
  * World units per tile, global to every area.
@@ -99,36 +100,19 @@ export interface TileDef {
   };
 }
 
-/** Which trade a door leads to. Mirrors the four callbacks the hub screen takes. */
-export type DoorKey = 'apothecary' | 'artificer' | 'vivarium' | 'journal';
-
-export interface DoorSpec {
-  readonly key: DoorKey;
-  /** What the sign over the door says, and what the interact prompt calls it. */
-  readonly name: string;
-  /** Where the player stands to read the prompt — always a walkway tile. */
-  readonly x: number;
-  readonly z: number;
-  /** The plaque on the building face, lifted off the wall so bloom catches it. */
-  readonly signX: number;
-  readonly signZ: number;
-  /**
-   * Where to put the player when they come back out.
-   *
-   * Nudged away from the door along the street, because respawning exactly on the hotspot
-   * re-raises the prompt the instant the screen mounts — the player closes the Artificer
-   * and is immediately invited to open it again.
-   */
-  readonly returnZ: number;
-}
+/**
+ * What a door leaf is drawn as. `cave` is an opening rather than a leaf; `hatch` is a trap
+ * in the ground or a low door in a cellar wall. See `makeDoorTexture`.
+ */
+export type DoorStyle = 'plank' | 'iron' | 'arch' | 'cave' | 'hatch';
 
 /**
  * A way out of an area, and where it puts you down.
  *
- * `arrive` lives on the exit in the area you are **leaving**, which is `DoorSpec.returnZ`
- * generalised to two dimensions and to a destination. Where you come back to is a property of
- * the doorway rather than of the place: the wilds will grow a second way in, and both ways
- * cannot share one arrival tile.
+ * `arrive` lives on the exit in the area you are **leaving**. Where you come back to is a
+ * property of the doorway rather than of the place: the wilds grew a second way in, and both
+ * ways cannot share one arrival tile. The same rule the old `DoorSpec.returnZ` stated for the
+ * four trade doors, which are exits into rooms now and carry it the same way.
  *
  * Deliberately not derived from the reciprocal exit's position plus an offset — the offset's
  * direction depends on which way the doorway faces, the data does not know that, and guessing
@@ -154,6 +138,33 @@ export interface ExitSpec {
    * being a gate.
    */
   readonly gate?: { readonly x: number; readonly z: number };
+  /**
+   * A door in a wall face, if this way in is one.
+   *
+   * `x, z` is the point on the face the leaf hangs at -- the same point a graffiti line or
+   * the old door plaque was anchored to, a hair on the street side of the masonry -- and
+   * `facesSouth` says which way the face looks. The hotspot is still the exit's own `x, z`,
+   * a stride out from the face. A sign, if the place has a trade to name, hangs over the
+   * leaf; a style, if it is not an ordinary planked door.
+   */
+  readonly door?: {
+    readonly x: number;
+    readonly z: number;
+    readonly facesSouth: boolean;
+    readonly sign?: SignId;
+    readonly style?: DoorStyle;
+  };
+  /**
+   * When this way is open. Absent means always.
+   *
+   * Not called `gate`: that field is the drawn gate's *position*, and two fields with one
+   * name on one type is a bug waiting for a reader. A barred way is still shown -- the leaf
+   * is drawn boarded and the prompt says why -- because a door you cannot see is a door you
+   * cannot learn to come back to.
+   */
+  readonly when?: Gate;
+  /** What the prompt says under a barred door. Required whenever `when` is set; a test says so. */
+  readonly lockedReason?: string;
   /** Where the player stands on the far side. Must be walkable there, and clear of its hotspot. */
   readonly arrive: { readonly x: number; readonly z: number };
 }
@@ -285,7 +296,6 @@ export interface DressingSpec {
 
 /** Everything an area may put on top of its ground. All optional; the wilds uses few. */
 export interface AreaProps {
-  readonly doors?: readonly DoorSpec[];
   readonly board?: Vec2;
   readonly npcs?: readonly NpcSpec[];
   /** Warden beats. One patrol per waypoint ring. */

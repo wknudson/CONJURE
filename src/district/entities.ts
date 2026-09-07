@@ -8,7 +8,6 @@
 import * as THREE from 'three';
 import { LOOK } from './look.js';
 import type { ColliderSet } from './collision.js';
-import type { DoorKey } from './map.js';
 import { CRITTERS, type CritterId, type CritterKind } from './wildlife.js';
 import { beatPostAt, type PackHours } from './daylight.js';
 import { Walker, pickFacing, type ActorArt } from './sprites3d.js';
@@ -53,19 +52,6 @@ export class Hotspot implements Interactable {
 
   onInteract(): void {
     this.action();
-  }
-}
-
-/** A door hotspot, which knows which trade it opens onto. */
-export class DoorHotspot extends Hotspot {
-  constructor(
-    readonly key: DoorKey,
-    x: number,
-    z: number,
-    label: string,
-    action: () => void,
-  ) {
-    super(x, z, label, action);
   }
 }
 

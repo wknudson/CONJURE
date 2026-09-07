@@ -555,6 +555,36 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#17110d',
     fogDensity: 0.026,
   },
+  /** The Apothecary: lamplight through jars. Yellow-green, and the stillest air in the ward. */
+  ashfall_apothecary: {
+    sunIntensity: 1.4,
+    sunColor: '#c9b27a',
+    ambientIntensity: 2.4,
+    skyColor: '#6a6a4e',
+    groundBounce: '#4a3e2a',
+    fogColor: '#141410',
+    fogDensity: 0.024,
+  },
+  /** The Records Office: one candle per desk and a great deal of paper to take the light. */
+  ashfall_records: {
+    sunIntensity: 1.5,
+    sunColor: '#d8c08a',
+    ambientIntensity: 2.0,
+    skyColor: '#5e5a52',
+    groundBounce: '#3e3428',
+    fogColor: '#131110',
+    fogDensity: 0.022,
+  },
+  /** The Vivarium: a yard under the ash, lit by a brazier and whatever the sky lets down. */
+  ashfall_vivarium: {
+    sunIntensity: 1.8,
+    sunColor: '#b9a88a',
+    ambientIntensity: 2.4,
+    skyColor: '#5a6058',
+    groundBounce: '#4a4028',
+    fogColor: '#121410',
+    fogDensity: 0.026,
+  },
 };
 
 /** An area's ambience, or the ward's if nobody wrote one. */

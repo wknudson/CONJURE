@@ -78,7 +78,7 @@ export const ASHFALL_IRONWORKS: AreaDef = defineArea({
       z: IRONWORKS_DOOR.z,
       label: 'Out to the cross-street',
       // Onto the pavement a stride clear of the way back in.
-      arrive: { x: -26, z: 12.6 },
+      arrive: { x: -18, z: 12.2 },
     },
   ],
   props: {

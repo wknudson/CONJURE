@@ -17,7 +17,8 @@
  */
 
 import * as THREE from 'three';
-import { groundRowsOf, waterRowsOf, type AreaDef, type WallTex } from './map.js';
+import { groundRowsOf, waterRowsOf, type AreaDef, type DoorStyle, type WallTex } from './map.js';
+import type { SignId } from './signs.js';
 import type { DressingId } from './dressing.js';
 import type { CritterId } from './wildlife.js';
 
@@ -2548,31 +2549,126 @@ export function makeGraffitiTexture(text: string): THREE.Texture {
   return canvasTexture(c);
 }
 
-export function makeSignTexture(key: string): THREE.Texture {
+/**
+ * The glyph on each plaque, white on the plate, drawn into a 20x12 canvas.
+ *
+ * Typed against `SignId` so a sign named on a door and not drawn here is a compile error.
+ * Axis-aligned and near-opaque, every one: at sprite scale a mark either is or is not.
+ */
+const SIGN_GLYPHS: Record<SignId, (ctx: CanvasRenderingContext2D) => void> = {
+  artificer: (ctx) => {
+    ctx.fillRect(6, 7, 8, 2); // anvil base
+    ctx.fillRect(7, 4, 6, 3); // anvil body
+    ctx.fillRect(13, 3, 3, 2); // horn
+  },
+  apothecary: (ctx) => {
+    ctx.fillRect(9, 2, 2, 3); // neck
+    ctx.fillRect(7, 5, 6, 5); // flask body
+    ctx.fillRect(8, 1, 4, 1); // stopper
+  },
+  vivarium: (ctx) => {
+    ctx.fillRect(8, 6, 5, 4); // paw pad
+    ctx.fillRect(7, 3, 2, 2);
+    ctx.fillRect(10, 2, 2, 2);
+    ctx.fillRect(13, 4, 2, 2);
+  },
+  records: (ctx) => {
+    // A ledger, open: a page with three ruled lines cut back out of it.
+    ctx.fillRect(6, 2, 8, 8);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(8, 4, 4, 1);
+    ctx.fillRect(8, 6, 4, 1);
+    ctx.fillRect(8, 8, 3, 1);
+  },
+};
+
+export function makeSignTexture(key: SignId): THREE.Texture {
   const { c, ctx } = makeCanvas(20, 12);
   ctx.fillStyle = '#141118';
   ctx.fillRect(0, 0, 20, 12);
   ctx.fillStyle = '#2a2230';
   ctx.fillRect(1, 1, 18, 10);
-
   ctx.fillStyle = '#ffffff';
-  if (key === 'artificer') {
-    ctx.fillRect(6, 7, 8, 2); // anvil base
-    ctx.fillRect(7, 4, 6, 3); // anvil body
-    ctx.fillRect(13, 3, 3, 2); // horn
-  } else if (key === 'journal') {
-    ctx.fillRect(5, 3, 4, 7); // left leaf
-    ctx.fillRect(11, 3, 4, 7); // right leaf
-    ctx.fillRect(9, 2, 2, 8); // spine
-  } else if (key === 'apothecary') {
-    ctx.fillRect(9, 2, 2, 3); // neck
-    ctx.fillRect(7, 5, 6, 5); // flask body
-    ctx.fillRect(8, 1, 4, 1); // stopper
+  SIGN_GLYPHS[key](ctx);
+  return canvasTexture(c);
+}
+
+/**
+ * A door leaf, for a 2.2 x 3.2 plane -- a little over four pixels a world unit, the ratio
+ * `makeGateTexture` established as the one at which a thing reads as *operable*.
+ *
+ * What makes it a door rather than a dark rectangle: a frame it sits in, hinges that say
+ * which side it swings from, and a latch, the thing a person puts a hand to. `barred` nails
+ * two boards across the lot and leaves one bright pixel for the padlock, which is how a
+ * shut place says "not yet" from across a street.
+ */
+export function makeDoorTexture(style: DoorStyle, barred: boolean): THREE.Texture {
+  const W = 14;
+  const H = 20;
+  const { c, ctx } = makeCanvas(W, H);
+  const rng = mulberry32(style.length * 97 + (barred ? 1 : 0));
+
+  if (style === 'cave') {
+    // An opening, not a leaf: black, with a ragged edge so the rock reads as rock around it.
+    ctx.fillStyle = '#0a0b0d';
+    ctx.fillRect(2, 0, 10, H);
+    ctx.fillStyle = '#2a2d33';
+    for (let y = 0; y < H; y++) {
+      if (rng() < 0.5) ctx.fillRect(1 + ((rng() * 2) | 0), y, 1, 1);
+      if (rng() < 0.5) ctx.fillRect(11 + ((rng() * 2) | 0), y, 1, 1);
+    }
   } else {
-    ctx.fillRect(8, 6, 5, 4); // paw pad
-    ctx.fillRect(7, 3, 2, 2);
-    ctx.fillRect(10, 2, 2, 2);
-    ctx.fillRect(13, 4, 2, 2);
+    ctx.fillStyle = '#231a14';
+    ctx.fillRect(0, 0, W, H);
+    const face =
+      style === 'iron' ? ['#3c4046', '#444951', '#363a40'] : ['#5a3f28', '#634629', '#523a25'];
+    for (let x = 1; x < W - 1; x++) {
+      ctx.fillStyle = face[((x / 3) | 0) % face.length]!;
+      ctx.fillRect(x, 1, 1, H - 1);
+    }
+    if (style === 'arch') {
+      // The corners knocked off the top, which is all an arch is at this size.
+      ctx.fillStyle = '#231a14';
+      ctx.fillRect(1, 1, 2, 1);
+      ctx.fillRect(W - 3, 1, 2, 1);
+      ctx.fillRect(1, 2, 1, 1);
+      ctx.fillRect(W - 2, 2, 1, 1);
+    }
+    if (style === 'iron') {
+      ctx.fillStyle = '#6a7078';
+      for (const y of [3, 9, 15]) {
+        ctx.fillRect(3, y, 1, 1);
+        ctx.fillRect(W - 4, y, 1, 1);
+      }
+    } else {
+      ctx.fillStyle = '#2e2016';
+      for (const x of [4, 7, 10]) ctx.fillRect(x, 1, 1, H - 1);
+      // Hinges on the left. A door swings from somewhere.
+      ctx.fillStyle = '#1a1614';
+      ctx.fillRect(1, 4, 5, 1);
+      ctx.fillRect(1, 14, 5, 1);
+    }
+    if (style === 'hatch') {
+      ctx.fillStyle = '#1a1614';
+      ctx.fillRect(1, (H / 2) | 0, W - 2, 1);
+    }
+    // The latch.
+    ctx.fillStyle = '#9a8c78';
+    ctx.fillRect(W - 4, 10, 2, 1);
+    ctx.fillRect(W - 3, 11, 1, 1);
+    // The threshold's shadow, so the leaf stands on the ground rather than floating on it.
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(1, H - 2, W - 2, 2);
+  }
+
+  if (barred) {
+    ctx.fillStyle = '#3a2a1c';
+    for (let i = 0; i < W; i++) {
+      ctx.fillRect(i, 5 + (((i * 6) / W) | 0), 1, 2);
+      ctx.fillRect(i, 12 + (((i * 4) / W) | 0), 1, 2);
+    }
+    ctx.fillStyle = '#d0c0a0';
+    ctx.fillRect((W / 2) | 0, 9, 1, 1);
   }
   return canvasTexture(c);
 }

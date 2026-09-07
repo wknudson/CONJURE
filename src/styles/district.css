@@ -728,3 +728,13 @@ body.is-talking .district-help {
   gap: 12px;
   justify-content: center;
 }
+
+/* The Journal's line in the menu: what the deck is doing, under the button that opens it. */
+.district-menu__detail {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  opacity: 0.72;
+  text-transform: none;
+}

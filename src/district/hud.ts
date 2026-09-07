@@ -169,7 +169,7 @@ export class DistrictHud {
     const help = el('div', 'district-panel district-help');
     this.help = help;
     help.textContent =
-      'WASD / arrows - move\nQ / E - orbit camera\nSpace - interact / advance\nM - map\nI - satchel\nEsc - menu / leave';
+      'WASD / arrows - move\nQ / E - orbit camera\nSpace - interact / advance\nM - map\nI - satchel\nJ - field journal\nEsc - menu / leave';
     root.appendChild(help);
 
     this.setZone(true);
@@ -972,8 +972,14 @@ export class DistrictHud {
    * Uses the same overlay as the death notice and refuses to open over one, so a bill is
    * never covered by a menu. Nothing here saves — progress is written as it happens.
    */
-  showMenu(onLeave: () => void): void {
+  showMenu(onLeave: () => void, journal?: { detail: string; open: () => void }): void {
     if (this.overlayIsShown) return;
+    // The Journal sits in the menu as well as on `J`, because a thing you carry should be
+    // findable by somebody who has not read the help panel. Its line under the button is the
+    // deck's state, which is what the old Journal door said under its prompt.
+    const journalRow = journal
+      ? `<button class="brass-btn district-menu__journal">Open the Field Journal<small class="district-menu__detail">${esc(journal.detail)}</small></button>`
+      : '';
     this.overlay.innerHTML = `
       <div class="hub-notice__card brass-panel district-menu">
         <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
@@ -982,12 +988,14 @@ export class DistrictHud {
         <div class="hub-notice__body">Your progress is kept as you go. Leaving returns you to the title wall, where another commission can be opened or this one burned.</div>
         <div class="district-menu__actions">
           <button class="brass-btn district-menu__resume">Back to the street</button>
+          ${journalRow}
           <button class="brass-btn district-menu__settings">Settings</button>
           <button class="brass-btn district-menu__leave">Leave to the title wall</button>
         </div>
       </div>`;
     this.overlay.classList.add('is-shown', 'is-menu');
     this.overlay.querySelector('.district-menu__resume')!.addEventListener('click', () => this.closeMenu());
+    this.overlay.querySelector('.district-menu__journal')?.addEventListener('click', () => journal?.open());
     this.overlay.querySelector('.district-menu__settings')!.addEventListener('click', () => openSettings());
     this.overlay.querySelector('.district-menu__leave')!.addEventListener('click', () => {
       this.closeMenu();

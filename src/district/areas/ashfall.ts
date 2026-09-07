@@ -9,7 +9,7 @@
  * pavement. Leaving it is a choice they make, which is the only way the rule teaches.
  */
 
-import { TILE, defineArea, type AreaDef, type DoorSpec, type TileDef } from '../map.js';
+import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
 
 /**
  * The ward's legend.
@@ -85,14 +85,10 @@ const EAST_X = xOfCol(15); // 22, the middle of both east blocks
 /**
  * North-side doors sit at the south face of the row-11 buildings (z = 8); south-side doors
  * at the north face of the row-14 buildings (z = 16). The player stands a stride into the
- * street from each.
+ * street from each. They are exits into rooms -- see the four `door` entries below.
  */
-const DOORS: readonly DoorSpec[] = [
-  { key: 'artificer', name: 'The Ironworks Artificer', x: WEST_X, z: 9.4, signX: WEST_X, signZ: 8.05, returnZ: 10.8 },
-  { key: 'journal', name: 'The Field Journal', x: EAST_X, z: 9.4, signX: EAST_X, signZ: 8.05, returnZ: 10.8 },
-  { key: 'apothecary', name: 'The Apothecary', x: WEST_X, z: 14.6, signX: WEST_X, signZ: 15.95, returnZ: 13.2 },
-  { key: 'vivarium', name: 'The Vivarium', x: EAST_X, z: 14.6, signX: EAST_X, signZ: 15.95, returnZ: 13.2 },
-];
+const NORTH_FACE = 8.05;
+const SOUTH_FACE = 15.95;
 
 /** The gate in the yard wall. The player stands south of it to read the prompt. */
 export const GATE_POS = { x: 4, z: zOfRow(5) } as const;
@@ -159,15 +155,43 @@ export const ASHFALL: AreaDef = defineArea({
       label: 'West into Ward Seven',
       arrive: { x: 34, z: 6 },
     },
+    /* --- the four doors on the cross-street ---
+       Each one opens onto a floor now rather than a menu: the Ironworks and the Records
+       Office on the north side, the Apothecary and the Vivarium on the south. The hotspot is
+       a stride into the street from the face, where the plaque doors always were, and the
+       leaf and the plaque hang on the face itself. Every arrival inside is a stride clear of
+       the room's own way back out. */
     {
-      // The first door in the world that opens onto a floor rather than a menu. At the west
-      // end of the Ironworks' face for now, beside the plaque door it will replace.
       to: 'ashfall_ironworks',
-      x: xOfCol(3),
+      x: WEST_X,
       z: 9.4,
-      label: 'Into the Ironworks',
-      // Just inside the door, a stride clear of the way back out.
+      label: 'Into the Ironworks Artificer',
+      door: { x: WEST_X, z: NORTH_FACE, facesSouth: true, sign: 'artificer' },
       arrive: { x: 0, z: 22 },
+    },
+    {
+      to: 'ashfall_records',
+      x: EAST_X,
+      z: 9.4,
+      label: 'Into the Records Office',
+      door: { x: EAST_X, z: NORTH_FACE, facesSouth: true, sign: 'records', style: 'arch' },
+      arrive: { x: 0, z: 18 },
+    },
+    {
+      to: 'ashfall_apothecary',
+      x: WEST_X,
+      z: 14.6,
+      label: 'Into the Apothecary',
+      door: { x: WEST_X, z: SOUTH_FACE, facesSouth: false, sign: 'apothecary' },
+      arrive: { x: -4, z: -18 },
+    },
+    {
+      to: 'ashfall_vivarium',
+      x: EAST_X,
+      z: 14.6,
+      label: 'Into the Vivarium',
+      door: { x: EAST_X, z: SOUTH_FACE, facesSouth: false, sign: 'vivarium', style: 'iron' },
+      arrive: { x: -4, z: -18 },
     },
   ],
   props: {
@@ -205,7 +229,6 @@ export const ASHFALL: AreaDef = defineArea({
       { kind: 'cart', x: -30, z: -22 },
       { kind: 'cart', x: -38, z: -14 },
     ],
-    doors: DOORS,
     /** The bounty board, on the plaza between the spawn and the cross-street. */
     board: { x: 12, z: 29 },
     /** The Dispatcher, close enough to the spawn to be the obvious first thing. */
@@ -282,16 +305,23 @@ export const ASHFALL: AreaDef = defineArea({
      * carried a `door: number` into `world.ts` and skipped silently when the index missed,
      * so a reordered door list would have quietly erased the graffiti rather than moved it.
      */
+    /*
+     * Each line stands to one side of its door now rather than across it. The doors used to
+     * be a plaque at signage height and nothing at reading height, so a line could run past
+     * the anchor; a leaf is drawn there now, from the ground to over head height, and text
+     * across a door reads as vandalism of the door rather than of the wall. `dx` is the
+     * leaf's half-width plus the line's own, kept inside the terrace it hangs on.
+     */
     graffiti: [
-      { text: 'THE ENGINES EAT OUR MARROW', wallX: WEST_X, wallZ: 8.05, dx: 3.2, facesSouth: true, tint: '#b7ae9d' },
-      { text: 'THE CENSUS COUNTS DOWN', wallX: EAST_X, wallZ: 8.05, dx: -3.4, facesSouth: true, tint: '#a46a4a' },
-      { text: "VANE'S LIGHT IS OUR DARK", wallX: WEST_X, wallZ: 15.95, dx: 3.0, facesSouth: false, tint: '#b7ae9d' },
+      { text: 'ENGINES EAT MARROW', wallX: WEST_X, wallZ: NORTH_FACE, dx: 5.9, facesSouth: true, tint: '#b7ae9d' },
+      { text: 'THE CENSUS COUNTS DOWN', wallX: EAST_X, wallZ: NORTH_FACE, dx: 7.0, facesSouth: true, tint: '#a46a4a' },
+      { text: "VANE'S LIGHT IS OUR DARK", wallX: WEST_X, wallZ: SOUTH_FACE, dx: 7.5, facesSouth: false, tint: '#b7ae9d' },
       // `DON'T CARRY IT IN` used to be here, unconditionally, from the first minute of the
       // game -- a warning about the Spire painted on a wall four crossings from it, aimed at a
       // player who has not been offered the Summons and has no idea what "it" is. It has gone
       // where the doc always said it belonged: Highcourt's service wall, late-campaign. See
       // `areas/highcourt.ts`.
-      { text: 'THE QUOTA IS A NUMBER SOMEBODY CHOSE', wallX: EAST_X, wallZ: 15.95, dx: -3.2, facesSouth: false, tint: '#a4543a' },
+      { text: 'THE QUOTA IS A NUMBER', wallX: EAST_X, wallZ: SOUTH_FACE, dx: 6.8, facesSouth: false, tint: '#a4543a' },
     ],
     waterRows: WATER_ROWS,
     horizon: 'city',

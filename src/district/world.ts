@@ -40,6 +40,7 @@ import {
   makeOutskirtsTexture,
   makeGraffitiTexture,
   makeSignTexture,
+  makeDoorTexture,
   makeTreeTexture,
   WALL_ART,
   makeWaterTexture,
@@ -421,25 +422,46 @@ export class DistrictWorld {
       this.addDressing(spec, texture);
     }
 
-    /* --- door plaques --- */
-    for (const door of area.props.doors ?? []) {
+    /* --- doors ---
+       A doorway is an exit with a `door`: a leaf on the wall face over the hotspot, and a
+       plaque above it if the place has a trade to name. Both hang a hair off the masonry, so
+       bloom catches the plaque and the leaf does not fight the wall for depth. A way the
+       Chronicle has not opened yet is drawn boarded rather than left out -- see `ExitSpec.when`. */
+    for (const exit of area.exits) {
+      const door = exit.door;
+      if (!door) continue;
+      const off = door.facesSouth ? 0.08 : -0.08;
+      const leaf = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.2, 3.2),
+        new THREE.MeshLambertMaterial({
+          map: makeDoorTexture(door.style ?? 'plank', !gateOpen(exit.when, chron)),
+          transparent: false,
+          alphaTest: 0.5,
+          side: THREE.DoubleSide,
+        }),
+      );
+      leaf.geometry.translate(0, 1.6, 0);
+      leaf.position.set(door.x, 0, door.z + off);
+      if (!door.facesSouth) leaf.rotation.y = Math.PI;
+      this.scene.add(leaf);
+      this.attachToStructure(door.x, door.z, leaf.material);
+
+      if (!door.sign) continue;
       const sign = new THREE.Mesh(
         new THREE.PlaneGeometry(2.0, 1.2),
         new THREE.MeshBasicMaterial({
-          map: makeSignTexture(door.key),
+          map: makeSignTexture(door.sign),
           color: new THREE.Color(LOOK.signColor),
           transparent: false,
           alphaTest: 0.1,
           side: THREE.DoubleSide,
         }),
       );
-      // Facing whichever way the street is: north-side doors look south, and vice versa.
-      const facesSouth = door.signZ < door.z;
-      sign.position.set(door.signX, 3.1, door.signZ + (facesSouth ? 0.08 : -0.08));
-      if (!facesSouth) sign.rotation.y = Math.PI;
+      sign.position.set(door.x, 3.95, door.z + off);
+      if (!door.facesSouth) sign.rotation.y = Math.PI;
       this.scene.add(sign);
       this.signs.push(sign);
-      this.attachToStructure(door.signX, door.signZ, sign.material);
+      this.attachToStructure(door.x, door.z, sign.material);
     }
 
     /* --- graffiti ---

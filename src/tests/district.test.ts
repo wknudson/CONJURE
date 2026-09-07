@@ -15,12 +15,14 @@ import {
   tutorialActive,
 } from '../district/quest.js';
 import {
+  TILE,
   isSafeAt,
   isWalkable,
   extractRects,
   splitRun,
   tileAt,
 } from '../district/map.js';
+import { SIGN_IDS, isSignId } from '../district/signs.js';
 import { AREAS, ASHFALL, CHALK_ROAD, LAMPROW, areaById } from '../district/areas/index.js';
 import { GROUND_TEXES } from '../district/textures.js';
 import { ColliderSet } from '../district/collision.js';
@@ -33,7 +35,6 @@ import { FOLK_IDS, isFolkId } from '../render/folk.js';
 import { CONTRACT_SITES } from '../district/sites.js';
 
 const SPAWN = ASHFALL.spawn;
-const DOORS = ASHFALL.props.doors ?? [];
 const BOARD_POS = ASHFALL.props.board!;
 const VEX_POS = ASHFALL.props.npcs![0]!;
 const WARDEN_WAYPOINTS = ASHFALL.props.patrols![0]!;
@@ -80,6 +81,14 @@ describe('the world is populated', () => {
     // somebody takes, not a thing that quietly happens while an area is edited.
     const placed = new Set(AREAS.flatMap((a) => (a.props.dressing ?? []).map((d) => d.kind)));
     expect([...DRESSING_IDS].filter((id) => !placed.has(id))).toEqual([]);
+  });
+
+  it('hangs every sign it can draw over some door', () => {
+    // The same both-ways rule again. A glyph nobody hangs is a decision, not a spare.
+    const hung = new Set(
+      AREAS.flatMap((a) => a.exits.map((e) => e.door?.sign).filter((s): s is NonNullable<typeof s> => !!s)),
+    );
+    expect([...SIGN_IDS].filter((id) => !hung.has(id))).toEqual([]);
   });
 
   it('gives every area something written in it', () => {
@@ -310,6 +319,31 @@ describe('every area', () => {
         }
       });
 
+      it('hangs every door on a wall, over its own hotspot', () => {
+        for (const exit of area.exits) {
+          const d = exit.door;
+          if (!d) continue;
+          // The leaf hangs a hair off the face, so the anchor itself is on the street side;
+          // half a unit into the wall must be solid, or the door is hanging in the air.
+          const into = d.facesSouth ? -0.5 : 0.5;
+          expect(
+            isWalkable(area, d.x, d.z + into),
+            `${area.id} -> ${exit.to}: no wall behind the door`,
+          ).toBe(false);
+          expect(
+            Math.hypot(d.x - exit.x, d.z - exit.z),
+            `${area.id} -> ${exit.to}: the door is far from its hotspot`,
+          ).toBeLessThanOrEqual(TILE + 0.5);
+          if (d.sign) expect(isSignId(d.sign), `${area.id}: unknown sign ${d.sign}`).toBe(true);
+        }
+        // A barred way has to say why, or the prompt is a door that does nothing.
+        for (const exit of area.exits) {
+          if (exit.when) {
+            expect(exit.lockedReason, `${area.id} -> ${exit.to}: barred with nothing to say`).toBeTruthy();
+          }
+        }
+      });
+
       it('lands every exit somewhere real, and clear of the way back', () => {
         for (const exit of area.exits) {
           const target = areaById(exit.to);
@@ -470,10 +504,7 @@ describe('every area', () => {
       it('keeps its furniture out of the doorways', () => {
         // A colliding prop on a hotspot is the `ExitSpec.gate` failure again: every individual
         // coordinate is legal, and the door simply cannot be reached.
-        const hotspots = [
-          ...area.exits.map((e) => ({ what: `the ${e.to} exit`, x: e.x, z: e.z })),
-          ...(area.props.doors ?? []).map((d) => ({ what: `the ${d.key} door`, x: d.x, z: d.z })),
-        ];
+        const hotspots = area.exits.map((e) => ({ what: `the ${e.to} exit`, x: e.x, z: e.z }));
         for (const d of area.props.dressing ?? []) {
           if (!DRESSING[d.kind].collides) continue;
           const size = d.size ?? DRESSING[d.kind].size;
@@ -533,7 +564,6 @@ describe('every area', () => {
           }
         }
         const hotspots = [
-          ...(area.props.doors ?? []).map((d) => ({ what: 'a door', x: d.x, z: d.z })),
           ...area.exits.map((e) => ({ what: `the ${e.to} exit`, x: e.x, z: e.z })),
           ...(area.props.board ? [{ what: 'the board', ...area.props.board }] : []),
           ...(area.props.huntSignpost
@@ -697,9 +727,14 @@ describe('the ward grid', () => {
       expect(isSafeAt(ASHFALL, npc.x, npc.z), npc.id).toBe(true);
     }
     expect(isSafeAt(ASHFALL, VEX_POS.x, VEX_POS.z), 'Vex').toBe(true);
-    for (const door of DOORS) {
-      expect(isSafeAt(ASHFALL, door.x, door.z), door.key).toBe(true);
-      expect(isSafeAt(ASHFALL, door.x, door.returnZ), door.key + ' return').toBe(true);
+    // The doors are exits into rooms now, and the way back out of each room lands you on the
+    // pavement too -- the whole lap, in and out of every trade, without leaving the flags.
+    const doors = ASHFALL.exits.filter((e) => e.door);
+    expect(doors.length, 'the four trades').toBe(4);
+    for (const exit of doors) {
+      expect(isSafeAt(ASHFALL, exit.x, exit.z), exit.to).toBe(true);
+      const back = areaById(exit.to)!.exits.find((e) => e.to === ASHFALL.id)!;
+      expect(isSafeAt(ASHFALL, back.arrive.x, back.arrive.z), exit.to + ' return').toBe(true);
     }
   });
 
