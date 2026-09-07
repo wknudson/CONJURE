@@ -966,3 +966,60 @@ constancy and the on-day strengths are flat across their range.
 | `Chronicle` | does not carry the hour | dialogue that knows what time it is. The asides landed one wave ago and nobody can say "you are out late" |
 | Shadows | one sun angle | the sun tracks the player (`trackSun`) but never moves across the sky, so noon and dusk cast the same shadow in the same direction |
 
+
+## Wave 14 — places you can enter (built)
+
+*"The artificer area shouldn't be a symbol on the wall."* It was, for thirteen waves: four plaques
+on anonymous terraces, forty-one contract sites as labels on bare ground, and a world you could
+walk across but never into. This wave is the doors.
+
+### What a room is
+
+An `AreaDef` with `indoor` set, registered like any other, so that a bench, the J key and every
+travel call return to it for free through `playerPos.mapId`. Walls are solid legend tiles with a
+wall texture and `bare: true`; there is no ceiling, because the occluder would fade it every
+frame; the camera is pitched steeper per room; the lighting is pinned at the night anchor by
+`lightingHour`, so a cellar at noon is a cellar. Rooms have `sky: 'none'`, no horizon, no
+patrols and no lamplighter, and a test refuses one without a way out *and back*.
+
+### What a door is
+
+`ExitSpec.door` — a leaf on a solid tile's face, a sign over it if the trade has one, barred and
+explaining itself when the Chronicle says so. The old `DoorSpec`/`DoorKey` machinery went with the
+plaques it drew.
+
+### What the journal is
+
+**J.** From anywhere, street or room, under the same guard as the satchel, pinning your position
+so the deck closes back onto the same spot. The east building that used to be the Journal is the
+Records Office, which is a place.
+
+### The four registries
+
+| Registry | What it is | Rule it obeys |
+|---|---|---|
+| `notices.ts` | a notice, plaque, gravestone, ledger or book you stand at and read | first open one per spot wins, so a board can say something different after the contract; a notice may raise a world flag |
+| `caches.ts` | a chest, urn, cairn or wreck you open once | pays through `payErrand`'s shape and writer; gated by contract or flag; the furniture stays when the prompt goes |
+| `forage.ts` | herbs, fungi, ore, comb, bone, reeds, ember | regrows on the street clock, not the wall clock, so a bed regrows it; the roll is seeded off the node and the hour; some kinds bite with a pack that already exists |
+| `rests.ts` | a bed | advances the clock to the waking hour, for a fee, and heals nothing |
+
+Every one of them is addressed into an area by `${areaId}:${slug}`. `AreaProps` gained no noun.
+
+### The count
+
+Thirty-nine rooms. Nineteen areas, every one of them larger — the wards to twenty-eight and
+thirty-odd tiles a side, the Ring towns half again, the Wildlands with a ring of new ground and a
+mouth in the north wall of each. Eleven contract sites moved indoors. Sixty-odd readables,
+forty-odd caches, thirty-odd forage nodes, ten beds, two new stalls, eight new townsfolk with
+scripts, eight new errands, two new signs, eighteen new pieces of furniture with textures.
+
+### What is still standing in
+
+| Where | Placeholder | Standing in for |
+|---|---|---|
+| The dens | crews borrowed from the road | a drake's brood, a bear, a geist, wights. Every wild den holds a pack that already existed, because a new `PackDef` enters the balance harness and this wave stayed out of it |
+| A room's liveness | read once at mount | a cache opened or a door unlocked in the same room takes effect on the next visit. `rearmCaches` covers the flag case; the contract case waits for a remount |
+| The bench screens | the three old 2D screens | the room *is* the shop now, but the screen is still a screen. The bench pins your spot and the screen comes back to it, which is the seam you can see |
+| The Wildlands' ground | one texture per region with a ring added | the enrichment pass `enrich-ground.ts` was written for. The rooms landed; the floors did not |
+| Room ceilings | none | a roof. Deliberate — see above — but a room with weather over it is still a courtyard |
+| The Browser pane | spot-checks of every ward and the first Ring rooms | a walk through all thirty-nine. The rest were verified by the placement suite and by prompts read off the screen object, not by eye |

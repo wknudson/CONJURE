@@ -22,7 +22,11 @@ Every entry below carries one of these. The distinction is the entire point of t
 | 🟡 **Arena only** | Fights happen *there* — a registered `EncounterDef` names it — but it is a combat grid, not a place. You never walk to it; you accept a contract and the board loads. |
 | ⚪ **Named only** | Appears in flavour text or dialogue. Nothing in code references it as a location. |
 
-**Nineteen named places. All nineteen are walkable.**
+**Nineteen named places. All nineteen are walkable, and thirty-nine rooms open off them.**
+
+A room is an `AreaDef` like any other, with `indoor` set: you walk through a door drawn on a
+building's face and the room mounts as its own area, lit at the night anchor whatever the clock
+says, with no ceiling and a steeper camera. §2.8 says what is in them.
 
 ---
 
@@ -432,6 +436,58 @@ best thing that can happen in this ward.
 writ cannot be served, and rather than nothing happening you are escorted back onto the flags —
 which is what the arrest always was.
 
+### 2.8 Places you can enter
+
+Every trade, every contract site that named a building, and every "somewhere under here" the
+dialogue used to gesture at is a room now. The rules the rooms follow, so that the next one can
+follow them too:
+
+- **A door is an exit with a leaf.** `ExitSpec.door` puts a plank, iron, arch, cave or hatch leaf
+  on a solid tile's face, with an optional sign glyph over it (`signs.ts`); the hotspot stands a
+  stride in front. A door can be shut by the Chronicle (`when`) and says why (`lockedReason`):
+  the Tithe Office until the tithe is collected, the pump house until the north field is answered
+  for, the Customs House until the riot.
+- **The three trades are benches inside rooms** (`benches.ts`): the Artificer's anvil in the
+  Ironworks, the Apothecary's counter, the Vivarium's yard. The Field Journal is not a building
+  any more; it is **J**, from anywhere, and an entry on the Esc menu.
+- **Everything else is a registry addressed into an area by id**, the sites idiom:
+  `notices.ts` (notices, plaques, gravestones, ledgers, books — the first open one per spot wins,
+  so a plaque can change its text once a contract is walked), `caches.ts` (opened once per
+  character, paid through the errand purse, gated by contract or by a flag a notice raised),
+  `forage.ts` (herbs, fungi, ore, comb, bone, reeds, ember; regrow on the street clock; some bite,
+  with a pack that already lives nearby), `rests.ts` (a bed advances the clock for a fee and does
+  not heal). None of them is a new noun on `AreaProps`.
+- **Nobody lives in the Wildlands or on the Road**, still, and a test still says so. Their rooms
+  are caves and a hut with a crew denned in each, and their readables are stones, because nobody
+  out there is accountable for a notice.
+- **Fights happen in rooms now.** The cellar count, the cistern, the granary's flooded end, the
+  Undercroft, the barn, the inn cellars, and five wild dens hold their contract or their pack
+  behind a door. A room that hosts one keeps an eight-by-nine clear floor for the board.
+
+| Ward | Rooms |
+|---|---|
+| Ashfall Ward | the Ironworks (Artificer's bench, cellar), the Apothecary (bench, the Clinic's cot), the Vivarium (bench), the Records Office, the Toll House, the Counting House (after `curfew_breakers`), the Chapel of the Quiet Flame, the Cinder Cup |
+| Lamprow | the Lamp-oil House, the Tithe Office (after `lamprow_tithe`), the Sink cellars (**Tithe-Takers** inside) |
+| The Bonemarket | the market hall, the pawnshop |
+| The Cinderworks | the Foundry Hall (`dynamo_flats` inside), the Poster's shed (`poster_work` inside) |
+| Ward Seven | the cistern (`fouled_cistern` inside), the back-alley clinic (`clinic_quota` inside) |
+| Highcourt | the Spire lobby (`the_summons` at its doors), the Smoke-Eater's Rest (`smoke_eaters_rest` at the bench), the Undercroft (`relocation_train`, `undercroft_census`, `the_quiet_below`) |
+| The Chalk Verge | the shepherd's bothy |
+| The Chalk Road | the toll waystation |
+| Millharrow | the Mill, the drowned granary (`drowned_granary` inside) |
+| The Tallow Levels | the pump house (after `tallow_blight`) |
+| Saltglass | the Glasshouse (a Pyre stall), the Customs House (after `saltglass_riot`) |
+| Bray's Hollow | the barn (`warrant_of_distraint` inside) |
+| Fenwick's Crossing | the toll house, the coach inn, and down the hatch the cellars (`cellar_clearance` inside) |
+| Weeping Stile | the chapel |
+| The Caldera | the lava tube (**Hollows** denned) |
+| The Ashwood | the poacher's hide (**Freight-Pickers** denned) |
+| The Rimefields | the ice cave (**Strays** denned) |
+| The Storm Shelf | Pylon Nine's base (**Hedgerow Vermin** denned) |
+| The Bone Bastion | the great barrow (**Hollows** denned) |
+
+---
+
 ## 3. Jolrek, the capital
 
 A city built upward because Vane taxed the ground. Six named places, and you can walk all six.
@@ -442,10 +498,10 @@ A city built upward because Vane taxed the ground. Six named places, and you can
 | **Lamprow** | 🟢 walkable | `lamprow_tithe` (N1), `lamplighter_escort` (N3), `debt_collected_minor` (N5); packs **Lampwick Gutter Crew**, **Tithe-Takers** |
 | **The Bonemarket** | 🟢 walkable | `bonemarket_vermin` (N2) → binds **Cinder-Wasp Swarm** |
 | **The Cinderworks** | 🟢 walkable | `poster_work` (N8); `dynamo_flats` (M7, "the flats") → binds **Kinetic Dynamo**; hunt `hunt_cinderworks_salamander` → **Flue Salamander** |
-| **Highcourt & the Spire** | 🟢 walkable | `smoke_eaters_rest` (N6, wager) → binds **Dolmen Crab**; `relocation_train` (M8, the undercroft); `the_summons` (M10, the throne room) |
+| **Highcourt & the Spire** | 🟢 walkable | `smoke_eaters_rest` (N6, wager, over the tables of the Rest) → binds **Dolmen Crab**; `relocation_train` (M8, in the Undercroft); `the_summons` (M10, at the lobby's doors) |
 | **Ward Seven** | 🟢 walkable | `fouled_cistern` (N7) → binds **Grave-Gargoyle** |
 
-`clinic_quota` (N10) is a back-alley clinic in Jolrek with no ward named.
+`clinic_quota` (N10) is the back-alley clinic off Ward Seven's basin now, and you fight it inside.
 
 ---
 
@@ -465,7 +521,7 @@ what turns the Ring from a list into a region.
 | **Fenwick's Crossing** | 🟢 walkable | `night_freight` (A5), `cellar_clearance` (A7) |
 | **Weeping Stile** | 🟢 walkable | `hollow_census` (A8) → binds **Murk Heron** |
 
-`ashwood_poacher` (A6) is fought on the Ashwood fringe — see below.
+`ashwood_poacher` (A6) is fought on the Ashwood fringe — see below. `drowned_granary`, `warrant_of_distraint` and `cellar_clearance` are fought indoors now: the flooded end of the granary, the barn, the inn cellars.
 
 ---
 
@@ -485,7 +541,8 @@ at all, and the Ashwood is the only one with no visible boundary.
 | **The Bone Bastion** | 🟢 walkable | `bone_bastion` (M9) → **Bone Bastion Sovereign** | `hunt_barrow_jackal` → **Barrow Jackal** | — |
 
 `coldwater_duel` (M6) is fought "on ground of her choosing" — the only contract in the game
-that names no place at all.
+that names no place at all. The packs column is the open ground; every wild region has a den
+behind a door now (§2.8), and the den is where the crew is.
 
 ---
 
