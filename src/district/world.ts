@@ -14,9 +14,10 @@ import { SWAYS } from './dressing.js';
 import { SKIES, SkyField, skyStrengthAt, type SkyId } from './skies.js';
 import { hashText } from '../core/util/rng.js';
 import { gateOpen, NOTHING_HAPPENED, type Chronicle } from './chronicle.js';
-import { ambientAt, lampsAt, NIGHT_ANCHOR, type Lit } from './daylight.js';
+import { ambientAt, lampsAt, lightingHour, NIGHT_ANCHOR, type Lit } from './daylight.js';
 import type { ColliderSet } from './collision.js';
 import { DRESSING } from './dressing.js';
+import { allDressing, staticFootprints } from './footprints.js';
 import {
   TILE,
   extractRects,
@@ -27,6 +28,7 @@ import {
   zOfRow,
   type AreaDef,
   type DressingSpec,
+  type WallTex,
 } from './map.js';
 import {
   bakeGround,
@@ -38,8 +40,9 @@ import {
   makeOutskirtsTexture,
   makeGraffitiTexture,
   makeSignTexture,
+  makeDoorTexture,
   makeTreeTexture,
-  makeWallTexture,
+  WALL_ART,
   makeWaterTexture,
   mulberry32,
   configurePixelTexture,
@@ -114,6 +117,13 @@ export class DistrictWorld {
   private readonly lamps: Lamp[] = [];
   /** One picture per kind of furniture, for the life of this world. See the build loop. */
   private readonly dressTex = new Map<string, THREE.Texture>();
+  /**
+   * How wide each piece of furniture's picture is, per placed piece, for the colliders.
+   *
+   * Per piece rather than per kind because a waystone's canvas is cut to its own line, so
+   * two waystones are two widths. Read once, after the textures exist, by `staticFootprints`.
+   */
+  private readonly dressAspect = new Map<DressingSpec, number>();
   private readonly signs: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = [];
   private readonly impacts: ImpactLight[] = [];
   /** Absent in an area with no canal. `dispose` and `scrollWater` both allow for it. */
@@ -159,6 +169,10 @@ export class DistrictWorld {
   private lit: Lit;
   /** What the clock says. See `daylight.ts`; the authored values are one in the morning. */
   private hour = NIGHT_ANCHOR;
+  /** Whether this is a room. Decides what the hour is allowed to do to the light. */
+  private readonly indoor: boolean;
+  /** The void past a room's walls, recoloured with the fog so the two never part. */
+  private voidMat: THREE.MeshBasicMaterial | null = null;
 
   private readonly occRay = new THREE.Raycaster();
   private readonly occDir = new THREE.Vector3();
@@ -194,7 +208,11 @@ export class DistrictWorld {
     // Everything below builds from the *lit* values, so a ward entered at noon is built at noon
     // rather than built at night and corrected on the first frame -- which would have been one
     // visible flash of midnight on every crossing.
-    const lit = ambientAt(amb, hour);
+    // A room is lit at the anchor whatever the clock says -- see `lightingHour`. The clock
+    // itself is kept as handed in, so the street is still at the right hour when you leave.
+    const indoor = !!area.indoor;
+    this.indoor = indoor;
+    const lit = ambientAt(amb, lightingHour(indoor, hour));
     this.lit = lit;
     this.scene.fog = new THREE.FogExp2(lit.fogColor, lit.fogDensity);
     this.scene.background = new THREE.Color(lit.fogColor);
@@ -213,9 +231,18 @@ export class DistrictWorld {
 
     // A big dull plane under everything, so the ward never terminates in visible void.
     // It has to sit below the canal surface or it would cover the water.
+    //
+    // Sized off the area rather than a flat 260: that number was a whisker past the largest
+    // area there was, and an area drawn bigger would have shown its own edge from the far
+    // side of the map. The margin is what the fog needs to close before the plane ends.
+    const reach = Math.max(area.cols, area.rows) * TILE + 120;
+    // Past a room's walls there is nothing, and nothing is painted the fog's colour so the
+    // top of a wall and the void behind it meet without a seam. Unlit, because there is
+    // nothing there to light.
+    if (indoor) this.voidMat = new THREE.MeshBasicMaterial({ color: lit.fogColor });
     const outskirts = new THREE.Mesh(
-      new THREE.PlaneGeometry(260, 260),
-      new THREE.MeshLambertMaterial({ map: makeOutskirtsTexture() }),
+      new THREE.PlaneGeometry(reach, reach),
+      this.voidMat ?? new THREE.MeshLambertMaterial({ map: makeOutskirtsTexture(reach / 4) }),
     );
     outskirts.rotation.x = -Math.PI / 2;
     outskirts.position.y = -0.9;
@@ -255,7 +282,18 @@ export class DistrictWorld {
        hardcoded 'B' and 'V' branches this used to be. The heights, the insets and the
        chimneys live on the tile now, so an area's rock face and a ward's terrace come out of
        one loop and neither character is magic here. */
-    const wallTexture = makeWallTexture();
+    // One texture per wall material standing in this area, made on first use and released
+    // once every box that clones it has been built -- `addStructure` clones per box so each
+    // can carry its own repeat.
+    const wallTextures = new Map<WallTex, THREE.Texture>();
+    const wallTex = (kind: WallTex): THREE.Texture => {
+      let t = wallTextures.get(kind);
+      if (!t) {
+        t = WALL_ART[kind]();
+        wallTextures.set(kind, t);
+      }
+      return t;
+    };
     const buildRng = mulberry32(4242);
     for (const [char, def] of Object.entries(area.legend)) {
       const solid = def.solid;
@@ -288,7 +326,7 @@ export class DistrictWorld {
           const widest = spans.reduce((m, s) => (s[1] - s[0] > m ? s[1] - s[0] : m), 0);
           for (const [a, b] of spans) {
             this.addStructure(
-              wallTexture,
+              wallTex(solid.wall ?? 'brick'),
               (a + b) / 2,
               cz,
               b - a - solid.inset,
@@ -296,24 +334,27 @@ export class DistrictWorld {
               rect.d * TILE - solid.depthInset,
               // One chimney per run, kept to the widest piece, so cutting a gate out of a
               // wall does not mint a second chimney out of thin air.
-              { chimney: b - a === widest ? chimney : 0 },
+              { chimney: b - a === widest ? chimney : 0, bare: solid.bare },
             );
           }
         }
       }
     }
-    wallTexture.dispose();
+    for (const t of wallTextures.values()) t.dispose();
 
     /* --- the horizon, pure silhouette in the smog ---
        A city ring for the ward; low broken humps for open country. Either way it exists so
        the world does not visibly end. */
-    const horizon = area.props.horizon ?? 'none';
+    const horizon = indoor ? 'none' : (area.props.horizon ?? 'none');
     if (horizon !== 'none') {
       const skyRng = mulberry32(88);
       const city = horizon === 'city';
       for (let i = 0; i < 16; i++) {
         const a = (i / 16) * Math.PI * 2 + skyRng() * 0.2;
-        const r = 52 + skyRng() * 22;
+        // Outside the map's own corner, or a wide area would have the horizon standing in
+        // its streets -- the Ashwood's did, at the old flat 52. Never nearer than the ward's
+        // ring was, so the smaller places keep the skyline they were measured with.
+        const r = Math.max(52, Math.hypot(area.halfX, area.halfZ) + 6) + skyRng() * 22;
         const h = city ? 12 + skyRng() * 22 : 7 + skyRng() * 6;
         const block = new THREE.Mesh(
           new THREE.BoxGeometry(6 + skyRng() * 8, h, 6 + skyRng() * 8),
@@ -331,7 +372,8 @@ export class DistrictWorld {
     const skyId = area.props.sky ?? 'none';
     this.areaId = area.id;
     this.skyId = skyId;
-    if (skyId !== 'none') {
+    // A room declares `'none'` and a test insists on it; the guard here is belt and braces.
+    if (!indoor && skyId !== 'none') {
       // Seeded off the area id, so a place's weather is the same weather every time you walk
       // into it rather than a fresh scatter on every shop door.
       this.sky = new SkyField(SKIES[skyId], mulberry32(hashText(area.id) >>> 0));
@@ -367,7 +409,9 @@ export class DistrictWorld {
 
        Waystones are the exception and cannot share, because the picture is the line carved
        into it. */
-    for (const spec of area.props.dressing ?? []) {
+    // The area's own list and then the registries' -- a bench's workbench, a notice's lectern,
+    // a cache's chest -- through one loop, so a registry prop is furniture like any other.
+    for (const spec of allDressing(area)) {
       let texture = this.dressTex.get(spec.kind);
       if (spec.kind === 'waystone') {
         texture = makeWaystoneTexture(spec.text ?? '');
@@ -375,28 +419,51 @@ export class DistrictWorld {
         texture = DRESSING_ART[spec.kind]();
         this.dressTex.set(spec.kind, texture);
       }
+      const img = texture.image as { width?: number; height?: number } | null | undefined;
+      if (img?.width && img.height) this.dressAspect.set(spec, img.width / img.height);
       this.addDressing(spec, texture);
     }
 
-    /* --- door plaques --- */
-    for (const door of area.props.doors ?? []) {
+    /* --- doors ---
+       A doorway is an exit with a `door`: a leaf on the wall face over the hotspot, and a
+       plaque above it if the place has a trade to name. Both hang a hair off the masonry, so
+       bloom catches the plaque and the leaf does not fight the wall for depth. A way the
+       Chronicle has not opened yet is drawn boarded rather than left out -- see `ExitSpec.when`. */
+    for (const exit of area.exits) {
+      const door = exit.door;
+      if (!door) continue;
+      const off = door.facesSouth ? 0.08 : -0.08;
+      const leaf = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.2, 3.2),
+        new THREE.MeshLambertMaterial({
+          map: makeDoorTexture(door.style ?? 'plank', !gateOpen(exit.when, chron)),
+          transparent: false,
+          alphaTest: 0.5,
+          side: THREE.DoubleSide,
+        }),
+      );
+      leaf.geometry.translate(0, 1.6, 0);
+      leaf.position.set(door.x, 0, door.z + off);
+      if (!door.facesSouth) leaf.rotation.y = Math.PI;
+      this.scene.add(leaf);
+      this.attachToStructure(door.x, door.z, leaf.material);
+
+      if (!door.sign) continue;
       const sign = new THREE.Mesh(
         new THREE.PlaneGeometry(2.0, 1.2),
         new THREE.MeshBasicMaterial({
-          map: makeSignTexture(door.key),
+          map: makeSignTexture(door.sign),
           color: new THREE.Color(LOOK.signColor),
           transparent: false,
           alphaTest: 0.1,
           side: THREE.DoubleSide,
         }),
       );
-      // Facing whichever way the street is: north-side doors look south, and vice versa.
-      const facesSouth = door.signZ < door.z;
-      sign.position.set(door.signX, 3.1, door.signZ + (facesSouth ? 0.08 : -0.08));
-      if (!facesSouth) sign.rotation.y = Math.PI;
+      sign.position.set(door.x, 3.95, door.z + off);
+      if (!door.facesSouth) sign.rotation.y = Math.PI;
       this.scene.add(sign);
       this.signs.push(sign);
-      this.attachToStructure(door.signX, door.signZ, sign.material);
+      this.attachToStructure(door.x, door.z, sign.material);
     }
 
     /* --- graffiti ---
@@ -444,7 +511,6 @@ export class DistrictWorld {
       this.scene.add(boardPost);
       const board = this.addBillboard(makeBoardTexture(), 2.4, 2.0, boardAt.x, boardAt.z);
       board.position.y = 1.4;
-      this.colliders.add(boardAt.x, boardAt.z, 0.9, 0.5, 'board');
     }
 
     /* --- the gates ---
@@ -468,7 +534,6 @@ export class DistrictWorld {
       gate.position.set(at.x, 0, at.z);
       gate.castShadow = true;
       this.scene.add(gate);
-      this.colliders.add(at.x, at.z, 8, 1.2, 'gate');
     }
 
     /* --- lighting rig --- */
@@ -491,6 +556,16 @@ export class DistrictWorld {
     this.scene.add(this.sun.target);
 
     for (const l of area.props.lamps ?? []) this.addLamp(l.x, l.z);
+
+    /* --- what the furniture stops ---
+       One pass over `staticFootprints` -- the same list the reachability test floods through
+       -- rather than a `colliders.add` beside each thing as it was built, which is how the
+       test and the world came to disagree three times about what was in the way. The picture
+       decides how wide a box or a panel is, so the aspects recorded while the textures were
+       made are handed in; the test, which has no pictures, walks against squares. */
+    for (const f of staticFootprints(area, (spec) => this.dressAspect.get(spec) ?? 1)) {
+      this.colliders.add(f.x, f.z, f.w, f.d, f.tag);
+    }
 
     /* --- collider wireframes, off by default --- */
     this.colliderHelpers.visible = false;
@@ -614,17 +689,15 @@ export class DistrictWorld {
       const light = new THREE.PointLight(new THREE.Color('#e08040'), LOOK.lampIntensity * 0.8, LOOK.lampDistance * 0.6, 2);
       light.position.set(spec.x, size * 0.9, spec.z);
       this.scene.add(light);
+    } else if (spec.kind === 'embervent') {
+      // Lit from the floor, low and red: a crack that breathes, not a fire in a basket.
+      const light = new THREE.PointLight(new THREE.Color('#ff5a20'), LOOK.lampIntensity * 0.5, LOOK.lampDistance * 0.4, 2);
+      light.position.set(spec.x, 0.4, spec.z);
+      this.scene.add(light);
     }
 
-    if (kind.collides) {
-      // The footprint of the *rotated* box, because `ColliderSet` is axis-aligned only. Without
-      // this a fence turned forty-five degrees would collide as though it still ran east-west,
-      // and the art would be lying about where the wall is.
-      const w = size * aspect;
-      const cos = Math.abs(Math.cos(yaw));
-      const sin = Math.abs(Math.sin(yaw));
-      this.colliders.add(spec.x, spec.z, w * cos + size * sin, w * sin + size * cos, spec.kind);
-    }
+    // Whether it stops anybody is `kind.collides`, and the box it stops them with is built by
+    // `staticFootprints` in one pass after all the furniture stands -- see the constructor.
   }
 
   private addCrate(texture: THREE.Texture, x: number, z: number, s: number): void {
@@ -636,7 +709,6 @@ export class DistrictWorld {
     crate.castShadow = true;
     crate.receiveShadow = true;
     this.scene.add(crate);
-    this.colliders.add(x, z, s, s, 'crate');
   }
 
   private addStructure(
@@ -646,7 +718,7 @@ export class DistrictWorld {
     w: number,
     h: number,
     d: number,
-    opts: { chimney?: number },
+    opts: { chimney?: number; bare?: boolean },
   ): void {
     const tex = wallTexture.clone();
     configurePixelTexture(tex);
@@ -663,21 +735,24 @@ export class DistrictWorld {
     box.receiveShadow = true;
     this.scene.add(box);
 
-    // Flat industrial roofs with a parapet. No fairytale cones in this ward.
-    const parapet = new THREE.Mesh(
-      new THREE.BoxGeometry(w + 0.35, 0.4, d + 0.35),
-      new THREE.MeshLambertMaterial({ color: 0x2b2622 }),
-    );
-    parapet.position.set(x, h + 0.2, z);
-    parapet.castShadow = true;
-    this.scene.add(parapet);
-
     const parts: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [
       box as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>,
-      parapet as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>,
     ];
 
-    if (opts.chimney) {
+    // Flat industrial roofs with a parapet. No fairytale cones in this ward -- and no roofline
+    // at all on a `bare` wall, which is a partition or a rock face and not a building.
+    if (!opts.bare) {
+      const parapet = new THREE.Mesh(
+        new THREE.BoxGeometry(w + 0.35, 0.4, d + 0.35),
+        new THREE.MeshLambertMaterial({ color: 0x2b2622 }),
+      );
+      parapet.position.set(x, h + 0.2, z);
+      parapet.castShadow = true;
+      this.scene.add(parapet);
+      parts.push(parapet as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>);
+    }
+
+    if (opts.chimney && !opts.bare) {
       const stack = new THREE.Mesh(
         new THREE.CylinderGeometry(0.45, 0.55, opts.chimney, 6),
         new THREE.MeshLambertMaterial({ color: 0x241f1c }),
@@ -744,8 +819,12 @@ export class DistrictWorld {
     light.position.set(x, 3.6, z);
     this.scene.add(light);
 
-    this.colliders.add(x, z, 0.5, 0.5, 'lamp');
-    this.lamps.push({ light, head, phase: this.lamps.length * 1.7, lit: lampsAt(this.hour) });
+    this.lamps.push({
+      light,
+      head,
+      phase: this.lamps.length * 1.7,
+      lit: lampsAt(lightingHour(this.indoor, this.hour)),
+    });
   }
 
   /* ============================================================
@@ -916,7 +995,10 @@ export class DistrictWorld {
       // to be: this loop runs every frame and writes `1` to everything it does not consider
       // occluded, so an arena fade applied from outside would be undone on the next frame.
       // One place decides how visible a building is.
-      const want = this.occHit.has(s.hit) || this.inArena(s.hit) ? 0.04 : 1;
+      const want =
+        this.occHit.has(s.hit) || this.inArena(s.hit) || this.underCamera(s.hit, camera.position)
+          ? 0.04
+          : 1;
       for (const mat of s.mats) {
         if (Math.abs(mat.opacity - want) < 0.005) {
           mat.opacity = want;
@@ -953,6 +1035,22 @@ export class DistrictWorld {
 
   setArena(rect: { x0: number; z0: number; x1: number; z1: number } | null): void {
     this.arena = rect;
+  }
+
+  /**
+   * Whether the camera is standing over this building, or nearly.
+   *
+   * The raycast fades what lies on the line to the player's head, and a terrace directly under
+   * the camera is not on that line: the ray clears its roof by a metre and the roof still fills
+   * the bottom third of the screen, with the player's feet behind its parapet. The yards behind
+   * the terraces -- the Warden's, the back alley, the Counting House door -- are played from
+   * exactly there, so anything within a stride of being under the lens goes with the rest.
+   */
+  private underCamera(hit: THREE.Mesh, cam: THREE.Vector3): boolean {
+    const { width, depth } = (hit.geometry as THREE.BoxGeometry).parameters;
+    const p = hit.position;
+    const margin = 3.5;
+    return Math.abs(cam.x - p.x) < width / 2 + margin && Math.abs(cam.z - p.z) < depth / 2 + margin;
   }
 
   private inArena(hit: THREE.Mesh): boolean {
@@ -1081,7 +1179,7 @@ export class DistrictWorld {
    */
   setHour(hour: number): void {
     this.hour = hour;
-    this.lit = ambientAt(this.amb, hour);
+    this.lit = this.litNow();
     this.applyFog();
     this.applySun();
     this.applyAmbient();
@@ -1091,27 +1189,33 @@ export class DistrictWorld {
     this.sky?.setStrength(skyStrengthAt(this.areaId, this.skyId, hour));
     // The default, which is the whole ward fading together on one curve. A lamplighter overrides
     // it lamp by lamp immediately afterwards; everywhere else this is the behaviour, unchanged.
-    const burning = lampsAt(hour);
+    const burning = lampsAt(lightingHour(this.indoor, hour));
     for (const l of this.lamps) l.lit = burning;
+  }
+
+  /** The ambience at the hour this place is lit at -- the clock's, or a room's anchor. */
+  private litNow(): Lit {
+    return ambientAt(this.amb, lightingHour(this.indoor, this.hour));
   }
 
   applyFog(): void {
     // Re-derived here as well as in `setHour`, because the tuning panel calls this directly
     // after editing `amb` and would otherwise be writing last hour's values.
-    this.lit = ambientAt(this.amb, this.hour);
+    this.lit = this.litNow();
     (this.scene.fog as THREE.FogExp2).color.set(this.lit.fogColor);
     (this.scene.fog as THREE.FogExp2).density = this.lit.fogDensity;
     (this.scene.background as THREE.Color).set(this.lit.fogColor);
+    this.voidMat?.color.set(this.lit.fogColor);
   }
 
   applySun(): void {
-    this.lit = ambientAt(this.amb, this.hour);
+    this.lit = this.litNow();
     this.sun.intensity = this.lit.sunIntensity;
     this.sun.color.set(this.lit.sunColor);
   }
 
   applyAmbient(): void {
-    this.lit = ambientAt(this.amb, this.hour);
+    this.lit = this.litNow();
     this.hemi.intensity = this.lit.ambientIntensity;
     this.hemi.color.set(this.lit.skyColor);
     this.hemi.groundColor.set(this.lit.groundBounce);

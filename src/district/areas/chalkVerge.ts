@@ -7,7 +7,7 @@
  * Out here nothing is watching you because nothing needs to be — the things on this road do
  * not require a warrant.
  *
- * Deliberately **oblong** (24 × 16). Ashfall is square and every grid routine assumed that
+ * Deliberately **oblong** (30 × 20). Ashfall is square and every grid routine assumed that
  * silently until `extractRects` was taught otherwise; an oblong second area is the thing that
  * keeps the assumption from creeping back.
  *
@@ -16,9 +16,14 @@
  * no water and no city ring — the horizon is a treeline, and the light comes from the packs
  * and a banked fire at the trailhead rather than from gas lamps, because gas lamps *are* the
  * safe zone and there is no safe zone here.
+ *
+ * Nobody lives here, and a test says so. But somebody used to: a shepherd's bothy stands on
+ * the north track with its door unbarred, and what is in it is what the last person to sleep
+ * there left. It is the one roof between the ward gate and Millharrow, and it belongs to
+ * whoever is under it.
  */
 
-import { defineArea, type AreaDef, type TileDef } from '../map.js';
+import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
 
 /**
  * The verge's legend.
@@ -28,6 +33,7 @@ import { defineArea, type AreaDef, type TileDef } from '../map.js';
  *   .  spoil            — open going, broken underfoot
  *   R  rock outcrop     — impassable, low and lumpy
  *   T  thicket          — impassable, tall
+ *   B  the bothy        — impassable; drystone, one stack
  *
  * No `S`. Nothing here is safe ground, and the absence is the point rather than an oversight
  * — `safety: 'none'` below says so out loud so the HUD does not have to guess.
@@ -51,33 +57,49 @@ const VERGE_LEGEND: Record<string, TileDef> = {
     // Tall enough to break a sightline, so the packs can come round it.
     solid: { minHeight: 4.0, maxHeight: 5.4, inset: 0.7, depthInset: 0.7, chimneyChance: 0, split: true },
   },
+  B: {
+    tex: 'chalk',
+    safe: false,
+    walk: false,
+    solid: { minHeight: 3.4, maxHeight: 3.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'stone' },
+  },
 };
 
 /**
- * 24 wide, 16 deep. The gate is bottom-right; the road runs west.
+ * 30 wide, 20 deep. The gate is bottom-right; the road runs west; the bothy is on the north
+ * track under the treeline.
  *
- * Open enough to roam — 300-odd walkable tiles with three broad pockets the packs beat around
+ * Open enough to roam — 400-odd walkable tiles with three broad pockets the packs beat around
  * — and broken enough that you can put a rock between yourself and something you would rather
  * not meet yet.
  */
 const GRID: readonly string[] = [
-  'TTTTTTTTTTTTTTTTTTTTTTTT', //  0  the treeline, north
-  'TT####..####..####..##TT', //  1
-  'T#,,,,,,,,,,,,,,,,,,,,#T', //  2  the north track
-  'T#,,,,RR,,,,,,,,RR,,,,#T', //  3
-  'T#,,,,RR,,,,,,,,RR,,,,#T', //  4
-  ',#,,,,,,,,,,,,,,,,,,,,#T', //  5  the west cut, out onto the Chalk Road
-  ',#..,,,,,,TT,,,,,,,,..#T', //  6  the middle thicket
-  'T#..,,,,,,TT,,,,,,,,..#T', //  7
-  'T#,,,,,,,,,,,,,,,,,,,,#T', //  8
-  'T#,,,,RR,,,,,,,,RR,,,,#T', //  9
-  'T#,,,,RR,,,,,,,,RR,,,,#T', // 10
-  'T#,,,,,,,,,,,,,,,,,,,,#T', // 11  the south track
-  'T#....,,,,,,,,,,,,....#T', // 12
-  'TT####..####..####..,,TT', // 13  the gate approach, bottom-right
-  'TTTTTTTTTTTTTTTTTTTT,,TT', // 14  the cut back to the ward
-  'TTTTTTTTTTTTTTTTTTTTTTTT', // 15
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', //  0  the treeline, north
+  'TT####..####..####..##BBB###TT', //  1  THE BOTHY, under the trees
+  'T#,,,,,,,,,,,,,,,,,,,,BBB,,,#T', //  2
+  'T#,,,,,,,,,,,,,,,,,,,,,,,,,,#T', //  3  the north track; the bothy door
+  'T#,,,,RR,,,,,,,,,,RR,,,,,,,,#T', //  4
+  'T#,,,,RR,,,,,,,,,,RR,,,,,,,,#T', //  5
+  'T#,,,,,,,,,,,,,,,,,,,,,,,,,,#T', //  6
+  ',#..,,,,,,,,,,,,,,,,,,,,,..,#T', //  7  the west cut, out onto the Chalk Road
+  ',#..,,,,,,,,,TT,,,,,,,,,,..,#T', //  8  the middle thicket
+  'T#,,,,,,,,,,,TT,,,,,,,,,,,,,#T', //  9
+  'T#,,,,,,,,,,,,,,,,,,,,,,,,,,#T', // 10
+  'T#,,,,RR,,,,,,,,,,RR,,,,,,,,#T', // 11
+  'T#,,,,RR,,,,,,,,,,RR,,,,,,,,#T', // 12
+  'T#,,,,,,,,,,,,,,,,,,,,,,,,,,#T', // 13  the south track
+  'T#....,,,,,,,,,,,,,,,,,,....#T', // 14
+  'T#....,,,,,,,,,,,,,,,,,,....#T', // 15
+  'TT####..####..####..####,,##TT', // 16  the gate approach, bottom-right
+  'TTTTTTTTTTTTTTTTTTTTTTTT,,TTTT', // 17  the cut back to the ward
+  'TTTTTTTTTTTTTTTTTTTTTTTT,,TTTT', // 18
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', // 19
 ];
+
+const HALF_X = (GRID[0]!.length * TILE) / 2;
+const HALF_Z = (GRID.length * TILE) / 2;
+const xOfCol = (col: number): number => col * TILE - HALF_X + TILE / 2;
+const zOfRow = (row: number): number => row * TILE - HALF_Z + TILE / 2;
 
 export const CHALK_VERGE_ID = 'chalk_verge';
 
@@ -87,68 +109,80 @@ export const CHALK_VERGE: AreaDef = defineArea({
   grid: GRID,
   legend: VERGE_LEGEND,
   /** The trailhead, just inside the cut. Where a lost fight puts you back. */
-  spawn: { x: 34, z: 22 },
+  spawn: { x: 40, z: 22 },
   safety: 'none',
   exits: [
     {
       to: 'ashfall_ward',
-      x: 34,
-      z: 26,
+      x: 40,
+      z: 34,
       label: 'Back through the gate',
       // South of Ashfall's gate hotspot, a stride clear so the prompt does not re-raise.
-      arrive: { x: 4, z: -12.4 },
+      arrive: { x: 0, z: -24.6 },
     },
     {
       // West, deeper out. No gate and no wall: the Verge *is* the road's first wild stretch,
       // so the two are the same ground and the join is only where the fields start.
       to: 'chalk_road',
-      x: -46,
-      z: -8,
+      x: -HALF_X + 2,
+      z: -6,
       label: 'Follow the road west',
-      arrive: { x: 56, z: 2 },
+      arrive: { x: 64, z: 2 },
+    },
+    {
+      // The shepherd's bothy. Unbarred, because there is nobody left to bar it.
+      to: 'chalk_verge_bothy',
+      x: xOfCol(23),
+      z: zOfRow(2) + TILE / 2 + 1.4,
+      label: 'Into the bothy',
+      door: { x: xOfCol(23), z: zOfRow(2) + TILE / 2 + 0.05, facesSouth: true, style: 'plank' },
+      arrive: { x: 0, z: 14 },
     },
   ],
   props: {
     /** The first ground outside the ward, and it shows: hares, and a verge that flowers. */
     sky: 'pollen',
     wildlife: [
-      { kind: 'hare', x: -22, z: -26, roam: 8 },
-      { kind: 'hare', x: 38, z: -6, roam: 8 },
-      { kind: 'rook', x: -46, z: -30, roam: 24, count: 3 },
+      { kind: 'hare', x: -26, z: -34, roam: 8 },
+      { kind: 'hare', x: 42, z: -6, roam: 8 },
+      { kind: 'rook', x: -50, z: -34, roam: 24, count: 3 },
     ],
     /** Spoil and abandoned kit, and the first waystones the road puts up. */
     dressing: [
-      { kind: 'spoilheap', x: -38, z: -26 },
-      { kind: 'spoilheap', x: -10, z: -22 },
-      { kind: 'spoilheap', x: 30, z: -18 },
-      { kind: 'spoilheap', x: -22, z: -10 },
-      { kind: 'spoilheap', x: 42, z: -6 },
-      { kind: 'spoilheap', x: 38, z: 2 },
-      { kind: 'spoilheap', x: 42, z: 10 },
-      { kind: 'spoilheap', x: -2, z: 18 },
-      { kind: 'cairn', x: -34, z: -26 },
-      { kind: 'cairn', x: 26, z: -22 },
-      { kind: 'cairn', x: 30, z: -14 },
-      { kind: 'cairn', x: -42, z: -2 },
-      { kind: 'cairn', x: 30, z: 6 },
-      { kind: 'cairn', x: -34, z: 18 },
-      { kind: 'waystone', x: -30, z: -26, text: 'THE WARD ENDS HERE' },
-      { kind: 'waystone', x: 34, z: -18, text: 'NO WRIT PAST THIS STONE' },
-      { kind: 'waystone', x: -38, z: -2, text: 'THE WARD ENDS HERE' },
-      { kind: 'waystone', x: -38, z: 14, text: 'NO WRIT PAST THIS STONE' },
-      { kind: 'fence', x: -26, z: -26, yaw: 0 },
-      { kind: 'fence', x: 38, z: -18, yaw: 0 },
-      { kind: 'fence', x: -34, z: -2, yaw: 0 },
-      { kind: 'fence', x: -34, z: 14, yaw: 0 },
-      { kind: 'wildflowers', x: -22, z: -26 },
-      { kind: 'wildflowers', x: 14, z: -22 },
-      { kind: 'wildflowers', x: -2, z: -14 },
-      { kind: 'wildflowers', x: 38, z: -6 },
-      { kind: 'wildflowers', x: -26, z: 6 },
-      { kind: 'wildflowers', x: -30, z: 18 },
-      { kind: 'bramble', x: -18, z: -26 },
-      { kind: 'bramble', x: 10, z: -18 },
-      { kind: 'bramble', x: 42, z: 6 },
+      { kind: 'spoilheap', x: -46, z: -30 },
+      { kind: 'spoilheap', x: -14, z: -30 },
+      { kind: 'spoilheap', x: 26, z: -22 },
+      { kind: 'spoilheap', x: -26, z: -10 },
+      { kind: 'spoilheap', x: 46, z: -6 },
+      { kind: 'spoilheap', x: 42, z: 2 },
+      { kind: 'spoilheap', x: 46, z: 10 },
+      { kind: 'spoilheap', x: -2, z: 22 },
+      { kind: 'cairn', x: -42, z: -30 },
+      { kind: 'cairn', x: 22, z: -30 },
+      { kind: 'cairn', x: 34, z: -18 },
+      { kind: 'cairn', x: -50, z: -2 },
+      { kind: 'cairn', x: 34, z: 10 },
+      { kind: 'cairn', x: -42, z: 22 },
+      { kind: 'waystone', x: -38, z: -30, text: 'THE WARD ENDS HERE' },
+      { kind: 'waystone', x: 38, z: -22, text: 'NO WRIT PAST THIS STONE' },
+      { kind: 'waystone', x: -46, z: -2, text: 'THE WARD ENDS HERE' },
+      { kind: 'waystone', x: -42, z: 18, text: 'NO WRIT PAST THIS STONE' },
+      { kind: 'fence', x: -34, z: -30, yaw: 0 },
+      { kind: 'fence', x: 42, z: -22, yaw: 0 },
+      { kind: 'fence', x: -42, z: -2, yaw: 0 },
+      { kind: 'fence', x: -42, z: 14, yaw: 0 },
+      { kind: 'wildflowers', x: -30, z: -30 },
+      { kind: 'wildflowers', x: 10, z: -30 },
+      { kind: 'wildflowers', x: -6, z: -18 },
+      { kind: 'wildflowers', x: 46, z: -10 },
+      { kind: 'wildflowers', x: -34, z: 2 },
+      { kind: 'wildflowers', x: -38, z: 18 },
+      { kind: 'bramble', x: -22, z: -30 },
+      { kind: 'bramble', x: 6, z: -22 },
+      { kind: 'bramble', x: 46, z: 2 },
+      // The shepherd's things, outside the door: a pen with nothing in it, and the woodpile.
+      { kind: 'pens', x: 46, z: -30 },
+      { kind: 'logpile', x: 26, z: -30 },
     ],
     /**
      * Three packs, working one shared stretch of road.
@@ -183,12 +217,12 @@ export const CHALK_VERGE: AreaDef = defineArea({
       { x: -4, z: -18 },
     ],
     trees: [
-      { x: -40, z: -24 },
-      { x: -14, z: -26 },
-      { x: 18, z: -26 },
-      { x: 40, z: -20 },
-      { x: -40, z: 20 },
-      { x: 40, z: 8 },
+      { x: -50, z: -30 },
+      { x: -18, z: -30 },
+      { x: 18, z: -30 },
+      { x: 50, z: -22 },
+      { x: -50, z: 22 },
+      { x: 50, z: 10 },
     ],
     horizon: 'treeline',
   },

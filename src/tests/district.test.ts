@@ -15,15 +15,20 @@ import {
   tutorialActive,
 } from '../district/quest.js';
 import {
+  TILE,
   isSafeAt,
   isWalkable,
   extractRects,
   splitRun,
   tileAt,
 } from '../district/map.js';
+import { SIGN_IDS, isSignId } from '../district/signs.js';
 import { AREAS, ASHFALL, CHALK_ROAD, LAMPROW, areaById } from '../district/areas/index.js';
 import { GROUND_TEXES } from '../district/textures.js';
 import { ColliderSet } from '../district/collision.js';
+import { allDressing, registryHotspots, staticFootprints } from '../district/footprints.js';
+import { noticesInArea } from '../district/notices.js';
+import { NOTHING_HAPPENED } from '../district/chronicle.js';
 import { FOLK_LINES } from '../district/dialogue.js';
 import { DRESSING, DRESSING_IDS, isDressingId } from '../district/dressing.js';
 import { CRITTERS, CRITTER_IDS, isCritterId } from '../district/wildlife.js';
@@ -32,7 +37,6 @@ import { FOLK_IDS, isFolkId } from '../render/folk.js';
 import { CONTRACT_SITES } from '../district/sites.js';
 
 const SPAWN = ASHFALL.spawn;
-const DOORS = ASHFALL.props.doors ?? [];
 const BOARD_POS = ASHFALL.props.board!;
 const VEX_POS = ASHFALL.props.npcs![0]!;
 const WARDEN_WAYPOINTS = ASHFALL.props.patrols![0]!;
@@ -77,8 +81,18 @@ describe('the world is populated', () => {
   it('uses every kind of thing it knows how to build', () => {
     // The same both-ways rule the sprite sheets get. Dropping a prop kind should be a decision
     // somebody takes, not a thing that quietly happens while an area is edited.
-    const placed = new Set(AREAS.flatMap((a) => (a.props.dressing ?? []).map((d) => d.kind)));
+    // Counting what the registries hang as well as what the area files list: a chest is
+    // placed by its cache and a lectern by its notice, and both are furniture.
+    const placed = new Set(AREAS.flatMap((a) => allDressing(a).map((d) => d.kind)));
     expect([...DRESSING_IDS].filter((id) => !placed.has(id))).toEqual([]);
+  });
+
+  it('hangs every sign it can draw over some door', () => {
+    // The same both-ways rule again. A glyph nobody hangs is a decision, not a spare.
+    const hung = new Set(
+      AREAS.flatMap((a) => a.exits.map((e) => e.door?.sign).filter((s): s is NonNullable<typeof s> => !!s)),
+    );
+    expect([...SIGN_IDS].filter((id) => !hung.has(id))).toEqual([]);
   });
 
   it('gives every area something written in it', () => {
@@ -88,7 +102,8 @@ describe('the world is populated', () => {
     const mute = AREAS.filter(
       (a) =>
         (a.props.graffiti ?? []).length === 0 &&
-        !(a.props.dressing ?? []).some((d) => d.kind === 'waystone' && d.text),
+        !(a.props.dressing ?? []).some((d) => d.kind === 'waystone' && d.text) &&
+        noticesInArea(a.id, NOTHING_HAPPENED).length === 0,
     );
     expect(mute.map((a) => a.id)).toEqual([]);
   });
@@ -121,7 +136,11 @@ describe('the world is populated', () => {
     // The lamps used to fade together on one curve everywhere, which is the right picture drawn
     // by the wrong cause: nothing dims a gas lamp. Somewhere with lamps and nobody to light them
     // is that cause again, so this asks that every lit street have a person on it.
-    const unlit = AREAS.filter((a) => (a.props.lamps ?? []).length > 0 && !a.props.lamplighter);
+    // Rooms excepted: a lamp under a roof is a sconce that burns at the anchor whatever the
+    // clock says (`lightingHour`), so there is no row to walk and nobody to walk it.
+    const unlit = AREAS.filter(
+      (a) => !a.indoor && (a.props.lamps ?? []).length > 0 && !a.props.lamplighter,
+    );
     expect(unlit.map((a) => a.id)).toEqual(['brays_hollow']);
   });
 
@@ -286,6 +305,50 @@ describe('every area', () => {
         expect(tileAt(area, 9999, 9999).walk).toBe(false);
       });
 
+      it('behaves like a room, if it says it is one', () => {
+        // What `IndoorSpec` promises and `world.ts` leans on. A room with weather would draw
+        // ash through its roof; a room with a Warden would have a beat with no pavement to
+        // step back onto; a room with a lamplighter would have a row nobody can see him walk.
+        // And a room you can walk into must be a room you can walk out of -- the first room
+        // in the world had exactly that bug in its first draft, from the other side.
+        if (!area.indoor) return;
+        expect(area.props.sky, `${area.id}: a room has no weather`).toBe('none');
+        expect(area.props.horizon ?? 'none', `${area.id}: a room has no skyline`).toBe('none');
+        expect(area.safety, `${area.id}: the pavement rule stops at the door`).toBe('none');
+        expect(area.props.patrols ?? [], `${area.id}: no Warden walks a room`).toHaveLength(0);
+        expect(area.props.lamplighter, `${area.id}: nobody walks a row indoors`).toBeUndefined();
+        expect(area.exits.length, `${area.id}: a room needs a way out`).toBeGreaterThan(0);
+        for (const exit of area.exits) {
+          const back = areaById(exit.to)?.exits.some((e) => e.to === area.id);
+          expect(back, `${exit.to} has no way back into ${area.id}`).toBe(true);
+        }
+      });
+
+      it('hangs every door on a wall, over its own hotspot', () => {
+        for (const exit of area.exits) {
+          const d = exit.door;
+          if (!d) continue;
+          // The leaf hangs a hair off the face, so the anchor itself is on the street side;
+          // half a unit into the wall must be solid, or the door is hanging in the air.
+          const into = d.facesSouth ? -0.5 : 0.5;
+          expect(
+            isWalkable(area, d.x, d.z + into),
+            `${area.id} -> ${exit.to}: no wall behind the door`,
+          ).toBe(false);
+          expect(
+            Math.hypot(d.x - exit.x, d.z - exit.z),
+            `${area.id} -> ${exit.to}: the door is far from its hotspot`,
+          ).toBeLessThanOrEqual(TILE + 0.5);
+          if (d.sign) expect(isSignId(d.sign), `${area.id}: unknown sign ${d.sign}`).toBe(true);
+        }
+        // A barred way has to say why, or the prompt is a door that does nothing.
+        for (const exit of area.exits) {
+          if (exit.when) {
+            expect(exit.lockedReason, `${area.id} -> ${exit.to}: barred with nothing to say`).toBeTruthy();
+          }
+        }
+      });
+
       it('lands every exit somewhere real, and clear of the way back', () => {
         for (const exit of area.exits) {
           const target = areaById(exit.to);
@@ -318,26 +381,12 @@ describe('every area', () => {
         // Walked rather than reasoned about: a straight line from the spawn to each exit,
         // sampled against the same collision the player is subject to.
         const set = new ColliderSet(area);
-        // Every collider the world actually puts down, which this walk has never quite been.
-        // Three gaps, all of them pre-existing and all of them making the test weaker than it
-        // reads: the crate size was hardcoded at 1.1 while `world.ts` uses `c.size ?? 1.1`, so
-        // a crate authored bigger was wider in play than in the walk; and lamps and the board
-        // were simply absent, though both collide.
-        for (const c of area.props.crates ?? []) {
-          const w = c.size ?? 1.1;
-          set.add(c.x, c.z, w, w, 'crate');
-        }
-        for (const l of area.props.lamps ?? []) set.add(l.x, l.z, 0.5, 0.5, 'lamp');
-        if (area.props.board) set.add(area.props.board.x, area.props.board.z, 0.9, 0.5, 'board');
-        for (const d of area.props.dressing ?? []) {
-          const kind = DRESSING[d.kind];
-          if (!kind.collides) continue;
-          const size = d.size ?? kind.size;
-          set.add(d.x, d.z, size, size, d.kind);
-        }
-        for (const exit of area.exits) {
-          if (exit.gate) set.add(exit.gate.x, exit.gate.z, 8, 1.2, 'gate');
-        }
+        // Every collider the world puts down, from the list the world itself reads. This walk
+        // used to keep its own copy and the copy drifted three times -- a crate hardcoded at
+        // 1.1 while `world.ts` read `c.size`, lamps and the board simply absent -- each drift
+        // making the test weaker than it read. `staticFootprints` is the one list now; what
+        // this walk cannot have is the pictures, so it walks against square furniture.
+        for (const f of staticFootprints(area)) set.add(f.x, f.z, f.w, f.d, f.tag);
 
         for (const exit of area.exits) {
           // A coarse flood from the spawn: if the hotspot is reachable at all, some route
@@ -434,7 +483,7 @@ describe('every area', () => {
       });
 
       it('stands its furniture where furniture can stand', () => {
-        for (const d of area.props.dressing ?? []) {
+        for (const d of allDressing(area)) {
           expect(isDressingId(d.kind), `${area.id}: unknown kind '${d.kind}'`).toBe(true);
           const kind = DRESSING[d.kind];
           // Only the things that stop a body have to be on walkable ground. A hoarding is
@@ -460,9 +509,12 @@ describe('every area', () => {
       it('keeps its furniture out of the doorways', () => {
         // A colliding prop on a hotspot is the `ExitSpec.gate` failure again: every individual
         // coordinate is legal, and the door simply cannot be reached.
+        // The area's own furniture against every prompt, including the ones the registries
+        // put down. A registry's own prop stands beside its own prompt on purpose and is
+        // checked by that registry's test, so it is not in this loop.
         const hotspots = [
           ...area.exits.map((e) => ({ what: `the ${e.to} exit`, x: e.x, z: e.z })),
-          ...(area.props.doors ?? []).map((d) => ({ what: `the ${d.key} door`, x: d.x, z: d.z })),
+          ...registryHotspots(area.id),
         ];
         for (const d of area.props.dressing ?? []) {
           if (!DRESSING[d.kind].collides) continue;
@@ -523,8 +575,8 @@ describe('every area', () => {
           }
         }
         const hotspots = [
-          ...(area.props.doors ?? []).map((d) => ({ what: 'a door', x: d.x, z: d.z })),
           ...area.exits.map((e) => ({ what: `the ${e.to} exit`, x: e.x, z: e.z })),
+          ...registryHotspots(area.id),
           ...(area.props.board ? [{ what: 'the board', ...area.props.board }] : []),
           ...(area.props.huntSignpost
             ? [{ what: 'the signpost', ...area.props.huntSignpost }]
@@ -605,14 +657,14 @@ describe('every area', () => {
 });
 
 describe('the Lamprow grid', () => {
-  const HIGH_STREET_Z = [2, 6]; // the two rows of flags
-  const KERB_Z = 8; // where they end and the Sink begins
+  const HIGH_STREET_Z = [-6, -2]; // the two rows of flags
+  const KERB_Z = 0; // where they end and the Sink begins
 
   it('runs one unbroken safe lane from one end of the ward to the other', () => {
     // The whole reason the ward is on the map: a walkway long enough to matter, so that
     // stepping off it is a decision rather than an accident of where the paving stopped.
     for (const z of HIGH_STREET_Z) {
-      for (let x = -42; x <= 34; x += 2) {
+      for (let x = -60; x <= 58; x += 2) {
         expect(isSafeAt(LAMPROW, x, z), `the High Street breaks at (${x}, ${z})`).toBe(true);
       }
     }
@@ -671,9 +723,11 @@ describe('the Chalk Road grid', () => {
 });
 
 describe('the ward grid', () => {
-  it('is square and complete', () => {
-    expect(ASHFALL.grid).toHaveLength(20);
-    for (const row of ASHFALL.grid) expect(row).toHaveLength(20);
+  it('is thirty by twenty-eight, and complete', () => {
+    // Grown from twenty square: a wharf, a sealed yard with a building in it, a chapel and a
+    // tavern below the plaza. Pinned so the next growth is a decision and not a drift.
+    expect(ASHFALL.grid).toHaveLength(28);
+    for (const row of ASHFALL.grid) expect(row).toHaveLength(30);
   });
 
   it('starts the player, the Dispatcher and every door on warded pavement', () => {
@@ -687,9 +741,18 @@ describe('the ward grid', () => {
       expect(isSafeAt(ASHFALL, npc.x, npc.z), npc.id).toBe(true);
     }
     expect(isSafeAt(ASHFALL, VEX_POS.x, VEX_POS.z), 'Vex').toBe(true);
-    for (const door of DOORS) {
-      expect(isSafeAt(ASHFALL, door.x, door.z), door.key).toBe(true);
-      expect(isSafeAt(ASHFALL, door.x, door.returnZ), door.key + ' return').toBe(true);
+    // The doors are exits into rooms now, and the way back out of each room lands you on the
+    // pavement too -- the whole lap, in and out of every trade, without leaving the flags.
+    // The four trades specifically. The ward has other doors -- the chapel, the tavern, the
+    // Toll House on the quay, the sealed Counting House in the Warden's yard -- and two of
+    // those are deliberately off the flags; the lap is the trades.
+    const TRADES = ['ashfall_ironworks', 'ashfall_records', 'ashfall_apothecary', 'ashfall_vivarium'];
+    const doors = ASHFALL.exits.filter((e) => e.door && TRADES.includes(e.to));
+    expect(doors.map((d) => d.to).sort(), 'the four trades').toEqual([...TRADES].sort());
+    for (const exit of doors) {
+      expect(isSafeAt(ASHFALL, exit.x, exit.z), exit.to).toBe(true);
+      const back = areaById(exit.to)!.exits.find((e) => e.to === ASHFALL.id)!;
+      expect(isSafeAt(ASHFALL, back.arrive.x, back.arrive.z), exit.to + ' return').toBe(true);
     }
   });
 
@@ -708,7 +771,7 @@ describe('the ward grid', () => {
     // The restore path asks "can you stand here", not "is this safe", because logging out
     // in an alley is legal and being quietly moved back to the plaza for it is not. This
     // guards the distinction the two questions rest on.
-    const alley = { x: 22, z: -2 };
+    const alley = { x: 36, z: -8 };
     expect(isWalkable(ASHFALL, alley.x, alley.z)).toBe(true);
     expect(isSafeAt(ASHFALL, alley.x, alley.z)).toBe(false);
   });
@@ -721,7 +784,7 @@ describe('the ward grid', () => {
   });
 
   it('bounds itself: the canal and everything off the edge are impassable', () => {
-    expect(isWalkable(ASHFALL, 0, -38)).toBe(false); // the canal
+    expect(isWalkable(ASHFALL, 0, -54)).toBe(false); // the canal
     expect(isWalkable(ASHFALL, 0, 999)).toBe(false); // off the south edge
     expect(isWalkable(ASHFALL, -999, 0)).toBe(false); // off the west edge
     expect(tileAt(ASHFALL, 999, 999).walk).toBe(false);
@@ -793,7 +856,7 @@ describe('collision', () => {
 
   it('will not let a body stand in the canal', () => {
     const set = new ColliderSet(ASHFALL);
-    expect(set.blocked(0, -38)).toBe(true);
+    expect(set.blocked(0, -54)).toBe(true);
   });
 
   it('respects a disabled collider', () => {

@@ -122,6 +122,17 @@ export const STALLS: readonly StallDef[] = [
     sellRate: 0.4,
   },
   {
+    // Not the source -- the Cinderworks is -- but a furnace is a furnace, and it is a long way to
+    // the Cinderworks from the flats. A small mark-up for the distance, which the map is.
+    keeper: 'saltglass_glasshouse:saltglass_glassblower',
+    name: 'The Saltglass Glasshouse',
+    line: 'Pyre, off a furnace that has not been let out in thirty years. Dearer than the works. Nearer than the works.',
+    goods: 'cores',
+    cores: ['core_pyre'],
+    buyRate: 1.2,
+    sellRate: 0.4,
+  },
+  {
     keeper: 'lamprow:lamprow_urchin',
     name: 'Under the Kerb',
     line: 'I do not ask where it came off and you do not ask where I got it. Surge, if you want it.',
@@ -166,6 +177,22 @@ export const STALLS: readonly StallDef[] = [
     line: 'I brew for the harvest and I brew for whatever you are about to walk into. Same barrel.',
     goods: 'brews',
     buyRate: 1.35,
+    sellRate: 0,
+  },
+  {
+    keeper: 'highcourt_smoke_eaters:highcourt_smoke_eater',
+    name: "The Smoke-Eater's Rest",
+    line: 'Brewed for the court, sold to whoever the court did not drink it. The court pays without looking. You will look.',
+    goods: 'brews',
+    buyRate: 1.4,
+    sellRate: 0,
+  },
+  {
+    keeper: 'ashfall_cinder_cup:ashfall_publican',
+    name: 'The Cinder Cup',
+    line: 'Same brews the Apothecary sells, a street away and a fifth dearer, because here you can sit down.',
+    goods: 'brews',
+    buyRate: 1.2,
     sellRate: 0,
   },
   {

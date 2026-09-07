@@ -17,7 +17,8 @@
  */
 
 import * as THREE from 'three';
-import { groundRowsOf, waterRowsOf, type AreaDef } from './map.js';
+import { groundRowsOf, waterRowsOf, type AreaDef, type DoorStyle, type WallTex } from './map.js';
+import type { SignId } from './signs.js';
 import type { DressingId } from './dressing.js';
 import type { CritterId } from './wildlife.js';
 
@@ -198,6 +199,13 @@ const PAINTS = {
   litter: paintLitter,
   barrow: paintBarrow,
   heath: paintHeath,
+  // Wave 14: floors. The first surfaces with a roof over them.
+  planks: paintPlanks,
+  rug: paintRug,
+  hearth: paintHearth,
+  ironplate: paintIronplate,
+  straw: paintStraw,
+  cave: paintCave,
 } as const satisfies Record<string, PaintFn>;
 
 export type GroundTex = keyof typeof PAINTS;
@@ -612,6 +620,139 @@ function paintFlagstone(ctx: CanvasRenderingContext2D, px: number, py: number, r
   ctx.fillRect(px, py + 1, PX, 1);
 }
 
+/* --- floors ---
+   The first paints with a roof over them. A room's camera stands closer than the street's
+   (see `IndoorSpec.camera`), so every mark here is a pixel bolder than it would be outside:
+   a seam that reads at twenty-two units is a hairline at fourteen. */
+
+/** Floorboards laid along x: four a tile, grain in the lit tone, a dark seam, a nail. */
+function paintPlanks(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  const wood = ['#5a3f28', '#634629', '#523a25', '#6b4c2e'];
+  for (let b = 0; b < 4; b++) {
+    ctx.fillStyle = wood[(rng() * wood.length) | 0]!;
+    ctx.fillRect(px, py + b * 4, PX, 4);
+    ctx.fillStyle = '#7a5a38';
+    ctx.fillRect(px + ((rng() * (PX - 6)) | 0), py + b * 4 + 1 + ((rng() * 2) | 0), 3 + ((rng() * 3) | 0), 1);
+    ctx.fillStyle = '#2e2016';
+    ctx.fillRect(px, py + b * 4 + 3, PX, 1);
+  }
+  // A board end now and then, with the nail that holds it down.
+  if (rng() < 0.5) {
+    const bx = px + 4 + ((rng() * 8) | 0);
+    const by = py + ((rng() * 4) | 0) * 4;
+    ctx.fillStyle = '#2e2016';
+    ctx.fillRect(bx, by, 1, 3);
+    ctx.fillStyle = '#9a8c78';
+    ctx.fillRect(bx + 1, by + 1, 1, 1);
+  }
+}
+
+/** A woven rug: deep red, a paler weave, a gold diamond on every other tile. */
+function paintRug(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  ctx.fillStyle = '#5c2a2a';
+  ctx.fillRect(px, py, PX, PX);
+  for (let y = 0; y < PX; y += 2) {
+    for (let x = (y / 2) % 2; x < PX; x += 4) {
+      ctx.fillStyle = rng() < 0.85 ? '#7a3a34' : '#9a7a3a';
+      ctx.fillRect(px + x, py + y, 1, 1);
+    }
+  }
+  if (rng() < 0.5) {
+    ctx.fillStyle = '#a88a48';
+    for (let i = 0; i < 4; i++) {
+      ctx.fillRect(px + 7 - i, py + 4 + i, 1, 1);
+      ctx.fillRect(px + 8 + i, py + 4 + i, 1, 1);
+      ctx.fillRect(px + 7 - i, py + 11 - i, 1, 1);
+      ctx.fillRect(px + 8 + i, py + 11 - i, 1, 1);
+    }
+  }
+}
+
+/** Hearthstone: a dark slab, soot thickest toward the fire, an ember or two still live. */
+function paintHearth(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  ctx.fillStyle = '#2e2b2a';
+  ctx.fillRect(px, py, PX, PX);
+  ctx.fillStyle = '#383433';
+  for (let i = 0; i < 5; i++) ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 2, 1);
+  ctx.fillStyle = '#1c1a1a';
+  for (let i = 0; i < 8; i++) {
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * 6) | 0), 1 + ((rng() * 2) | 0), 1);
+  }
+  if (rng() < 0.6) {
+    ctx.fillStyle = '#e06a2a';
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 1, 1);
+  }
+  if (rng() < 0.3) {
+    ctx.fillStyle = '#ffb060';
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 1, 1);
+  }
+  ctx.fillStyle = '#1c1a1a';
+  ctx.fillRect(px, py, PX, 1);
+  ctx.fillRect(px, py, 1, PX);
+}
+
+/** Riveted iron plate, the foundry floor: a lit edge, a dark edge, four rivets, some rust. */
+function paintIronplate(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  const iron = ['#3a3f47', '#3f444c', '#363b42'];
+  ctx.fillStyle = iron[(rng() * iron.length) | 0]!;
+  ctx.fillRect(px, py, PX, PX);
+  ctx.fillStyle = '#4c525a';
+  ctx.fillRect(px, py, PX, 1);
+  ctx.fillRect(px, py, 1, PX);
+  ctx.fillStyle = '#22262c';
+  ctx.fillRect(px, py + PX - 1, PX, 1);
+  ctx.fillRect(px + PX - 1, py, 1, PX);
+  for (const [rx, ry] of [
+    [2, 2],
+    [PX - 4, 2],
+    [2, PX - 4],
+    [PX - 4, PX - 4],
+  ] as const) {
+    ctx.fillStyle = '#5a6068';
+    ctx.fillRect(px + rx, py + ry, 2, 2);
+    ctx.fillStyle = '#22262c';
+    ctx.fillRect(px + rx + 1, py + ry + 1, 1, 1);
+  }
+  if (rng() < 0.4) {
+    ctx.fillStyle = '#6a4a30';
+    ctx.fillRect(px + 4 + ((rng() * 6) | 0), py + 4 + ((rng() * 6) | 0), 3, 1);
+  }
+}
+
+/** Straw over packed earth: pens and barns. Strewn both ways, so it is loose and not thatch. */
+function paintStraw(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  ctx.fillStyle = '#4a3a24';
+  ctx.fillRect(px, py, PX, PX);
+  const straw = ['#a88a48', '#c0a058', '#8a6e38'];
+  for (let i = 0; i < 14; i++) {
+    ctx.fillStyle = straw[(rng() * straw.length) | 0]!;
+    const len = 2 + ((rng() * 4) | 0);
+    if (rng() < 0.5) ctx.fillRect(px + ((rng() * (PX - len)) | 0), py + ((rng() * PX) | 0), len, 1);
+    else ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * (PX - len)) | 0), 1, len);
+  }
+}
+
+/** Cave floor: wet rock, uneven, a damp glint, and once in a while a pale mineral vein. */
+function paintCave(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  const rock = ['#23262b', '#282b31', '#1f2226', '#2c3036'];
+  ctx.fillStyle = rock[(rng() * rock.length) | 0]!;
+  ctx.fillRect(px, py, PX, PX);
+  for (let i = 0; i < 4; i++) {
+    ctx.fillStyle = rock[(rng() * rock.length) | 0]!;
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 2 + ((rng() * 4) | 0), 1 + ((rng() * 2) | 0));
+  }
+  ctx.fillStyle = '#3e454e';
+  for (let i = 0; i < 3; i++) ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 1, 1);
+  if (rng() < 0.15) {
+    ctx.fillStyle = '#7a8a7a';
+    let vx = px + ((rng() * PX) | 0);
+    for (let y = 0; y < PX; y++) {
+      ctx.fillRect(vx, py + y, 1, 1);
+      if (rng() < 0.3) vx += rng() < 0.5 ? 1 : -1;
+    }
+  }
+}
+
 /**
  * Salt crust, for the pans at Saltglass.
  *
@@ -888,7 +1029,7 @@ export function bakeGround(area: AreaDef, maxAnisotropy: number): THREE.Texture 
 }
 
 /** The dull plane under everything, so the ward never terminates in visible void. */
-export function makeOutskirtsTexture(): THREE.Texture {
+export function makeOutskirtsTexture(repeat = 65): THREE.Texture {
   const { c, ctx } = makeCanvas(16, 16);
   const rng = mulberry32(55);
   const palette = ['#1d211c', '#22261f', '#191d18', '#262b22'];
@@ -900,7 +1041,8 @@ export function makeOutskirtsTexture(): THREE.Texture {
   }
   const t = canvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(65, 65);
+  // One repeat per four world units, whatever the plane's size: the grain stays the grain.
+  t.repeat.set(repeat, repeat);
   return t;
 }
 
@@ -935,6 +1077,127 @@ export function makeWallTexture(): THREE.Texture {
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   return t;
 }
+
+/** Dressed stone in irregular courses: a furnace, a cistern, a chapel. */
+export function makeStoneWallTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(31);
+  const stone = ['#5a5750', '#63605a', '#524f49', '#6b685f'];
+  ctx.fillStyle = '#4a4741';
+  ctx.fillRect(0, 0, 16, 16);
+  // Three courses of unequal height, each broken at a different place.
+  const courses = [0, 5, 11, 16];
+  for (let i = 0; i < 3; i++) {
+    const y0 = courses[i]!;
+    const y1 = courses[i + 1]!;
+    let x = 0;
+    while (x < 16) {
+      const w = 3 + ((rng() * 5) | 0);
+      ctx.fillStyle = stone[(rng() * stone.length) | 0]!;
+      ctx.fillRect(x, y0, Math.min(w, 16 - x) - 1, y1 - y0 - 1);
+      x += w;
+    }
+  }
+  // Mortar lines dark, one highlight per course where the light catches a top edge.
+  ctx.fillStyle = '#75726a';
+  for (const y of [1, 6, 12]) ctx.fillRect(0, y, 16, 1);
+  const t = canvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+/** Timber framing over plaster: an inn, a barn, a mill. The posts are what read. */
+export function makeTimberWallTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(47);
+  ctx.fillStyle = '#8a7c66';
+  ctx.fillRect(0, 0, 16, 16);
+  for (let i = 0; i < 18; i++) {
+    ctx.fillStyle = rng() < 0.5 ? '#948670' : '#80735e';
+    ctx.fillRect((rng() * 16) | 0, (rng() * 16) | 0, 2, 1);
+  }
+  // Two uprights and a sill, dark and a shade of red in the wood.
+  ctx.fillStyle = '#3a2a1e';
+  ctx.fillRect(1, 0, 2, 16);
+  ctx.fillRect(10, 0, 2, 16);
+  ctx.fillRect(0, 13, 16, 2);
+  // A brace across the bay.
+  for (let i = 0; i < 8; i++) ctx.fillRect(3 + i, 12 - i, 1, 1);
+  ctx.fillStyle = '#4e3a2a';
+  ctx.fillRect(1, 0, 1, 16);
+  ctx.fillRect(10, 0, 1, 16);
+  const t = canvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+/** Limewashed plaster, stained where the damp gets in. A shop, an office, an apothecary. */
+export function makePlasterWallTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(53);
+  ctx.fillStyle = '#b8ad98';
+  ctx.fillRect(0, 0, 16, 16);
+  for (let i = 0; i < 24; i++) {
+    ctx.fillStyle = rng() < 0.5 ? '#c2b7a2' : '#aea38e';
+    ctx.fillRect((rng() * 16) | 0, (rng() * 16) | 0, 1 + ((rng() * 2) | 0), 1);
+  }
+  // Damp rising from the skirting, and a crack.
+  for (let y = 11; y < 16; y++) {
+    ctx.fillStyle = `rgba(60,50,40,${(y - 10) * 0.08})`;
+    ctx.fillRect(0, y, 16, 1);
+  }
+  ctx.fillStyle = '#8a8070';
+  let cx = 4 + ((rng() * 6) | 0);
+  for (let y = 0; y < 9; y++) {
+    ctx.fillRect(cx, y, 1, 1);
+    if (rng() < 0.4) cx += rng() < 0.5 ? 1 : -1;
+  }
+  const t = canvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+/** Living rock: a cave, a lava tube, a barrow. No courses at all, which is the point. */
+export function makeRockWallTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(61);
+  const rock = ['#3a3d43', '#41454c', '#34373d', '#474b52'];
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      ctx.fillStyle = rock[(rng() * rock.length) | 0]!;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  // Fractures: a few dark lines that wander, and a lit edge above each.
+  for (let i = 0; i < 3; i++) {
+    let y = (rng() * 16) | 0;
+    for (let x = 0; x < 16; x++) {
+      ctx.fillStyle = '#22252a';
+      ctx.fillRect(x, y, 1, 1);
+      ctx.fillStyle = '#565b63';
+      ctx.fillRect(x, (y + 15) % 16, 1, 1);
+      if (rng() < 0.35) y = (y + (rng() < 0.5 ? 1 : 15)) % 16;
+    }
+  }
+  const t = canvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+/**
+ * Every wall a solid tile may be faced with, by name.
+ *
+ * Typed against `WallTex` so that naming a material in a legend before drawing it is a compile
+ * error -- the same discipline `DRESSING_ART` keeps for the furniture. `brick` is the wall every
+ * ward has always worn; the others arrived with the first rooms.
+ */
+export const WALL_ART: Record<WallTex, () => THREE.Texture> = {
+  brick: makeWallTexture,
+  stone: makeStoneWallTexture,
+  timber: makeTimberWallTexture,
+  plaster: makePlasterWallTexture,
+  rock: makeRockWallTexture,
+};
 
 export function makeWaterTexture(): THREE.Texture {
   const { c, ctx } = makeCanvas(32, 16);
@@ -1621,7 +1884,458 @@ export const DRESSING_ART: Record<Exclude<DressingId, 'waystone'>, () => THREE.T
   bramble: makeBrambleTexture,
   deadfall: makeDeadfallTexture,
   mushrooms: makeMushroomsTexture,
+  chest: makeChestTexture,
+  urn: makeUrnTexture,
+  plaque: makePlaqueTexture,
+  gravestone: makeGravestoneTexture,
+  lectern: makeLecternTexture,
+  noticepost: makeNoticepostTexture,
+  workbench: makeWorkbenchTexture,
+  anvil: makeAnvilTexture,
+  counter: makeCounterTexture,
+  shelves: makeShelvesTexture,
+  desk: makeDeskTexture,
+  table: makeTableTexture,
+  herbpatch: makeHerbpatchTexture,
+  orevein: makeOreveinTexture,
+  honeycomb: makeHoneycombTexture,
+  bonepile: makeBonepileTexture,
+  embervent: makeEmberventTexture,
+  bed: makeBedTexture,
 };
+
+/* --- what grows back --- the forage nodes, and a bed. */
+
+/** A patch of herbs: leaves low and wide, pale flower heads above, mostly negative space. */
+export function makeHerbpatchTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 10);
+  const leaf = ramp('#4e7a3a');
+  const rng = mulberry32(83);
+  for (let i = 0; i < 9; i++) {
+    const x = 1 + ((rng() * 11) | 0);
+    const h = 3 + ((rng() * 5) | 0);
+    ctx.fillStyle = rng() < 0.5 ? leaf[1]! : leaf[2]!;
+    ctx.fillRect(x, 9 - h, 1, h);
+    if (rng() < 0.6) {
+      ctx.fillStyle = leaf[2]!;
+      ctx.fillRect(x - 1, 10 - h, 3, 1);
+    }
+  }
+  ctx.fillStyle = '#e8e0c0';
+  for (const x of [3, 7, 11]) ctx.fillRect(x, 1 + ((rng() * 2) | 0), 1, 1);
+  ctx.fillStyle = leaf[3]!;
+  ctx.fillRect(0, 9, 14, 1);
+  outline(ctx, 14, 10, leaf[4]!);
+  return canvasTexture(c);
+}
+
+/** A seam of ore: a lump of the rock with a glinting vein wandering across it. */
+export function makeOreveinTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 14);
+  const rock = ramp('#4e5058');
+  const rng = mulberry32(89);
+  mound(ctx, 8, 13, 15, 10, rock, rng);
+  ctx.fillStyle = '#c8a850';
+  let y = 6;
+  for (let x = 3; x < 13; x++) {
+    ctx.fillRect(x, y, 1, 1);
+    if (rng() < 0.5) y += rng() < 0.5 ? 1 : -1;
+    y = Math.max(4, Math.min(10, y));
+  }
+  ctx.fillStyle = '#f0e0a0';
+  ctx.fillRect(7, 6, 1, 1);
+  contact(ctx, 8, 13, 14);
+  outline(ctx, 16, 14, rock[4]!);
+  return canvasTexture(c);
+}
+
+/** A comb in a hedge: cells suggested by a stagger, honey running off the bottom edge. */
+export function makeHoneycombTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(12, 14);
+  const wax = ramp('#c89a3a');
+  const hedge = ramp('#3e5a2e');
+  ctx.fillStyle = hedge[2]!;
+  ctx.fillRect(0, 0, 12, 4);
+  ctx.fillStyle = hedge[1]!;
+  ctx.fillRect(1, 0, 4, 2);
+  ctx.fillStyle = wax[2]!;
+  ctx.fillRect(2, 3, 8, 8);
+  ctx.fillRect(3, 11, 6, 1);
+  ctx.fillStyle = wax[3]!;
+  for (let yy = 4; yy < 11; yy += 2) {
+    for (let x = 3 + ((yy / 2) % 2); x < 10; x += 2) ctx.fillRect(x, yy, 1, 1);
+  }
+  ctx.fillStyle = wax[0]!;
+  ctx.fillRect(2, 3, 3, 1);
+  ctx.fillStyle = '#e0a020';
+  ctx.fillRect(4, 12, 1, 2);
+  ctx.fillRect(8, 12, 1, 1);
+  outline(ctx, 12, 14, wax[4]!);
+  return canvasTexture(c);
+}
+
+/** A pile of bones: a pale heap with the long ones lying across it and two dark sockets. */
+export function makeBonepileTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 10);
+  const bone = ramp('#c8c0a8');
+  const rng = mulberry32(97);
+  mound(ctx, 8, 9, 15, 6, bone, rng);
+  ctx.fillStyle = bone[0]!;
+  ctx.fillRect(2, 5, 7, 1);
+  ctx.fillRect(7, 3, 6, 1);
+  ctx.fillRect(1, 5, 1, 2);
+  ctx.fillRect(8, 4, 1, 2);
+  ctx.fillRect(12, 2, 1, 2);
+  ctx.fillStyle = bone[4]!;
+  ctx.fillRect(10, 6, 2, 1);
+  ctx.fillRect(4, 7, 1, 1);
+  contact(ctx, 8, 9, 14);
+  outline(ctx, 16, 10, bone[4]!);
+  return canvasTexture(c);
+}
+
+/**
+ * An ember vent: a crack in the floor, black at its edges and glowing along its length. A
+ * ground decal, so the scorch sits *in* the floor rather than on a card standing over it.
+ */
+export function makeEmberventTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 20);
+  const rng = mulberry32(101);
+  for (let i = 0; i < 60; i++) {
+    const a = rng() * Math.PI * 2;
+    const r = 4 + rng() * 5;
+    ctx.fillStyle = `rgba(10,8,8,${(0.5 - r * 0.04).toFixed(2)})`;
+    ctx.fillRect(Math.round(10 + Math.cos(a) * r), Math.round(10 + Math.sin(a) * r), 2, 2);
+  }
+  let x = 4;
+  let y = 10;
+  ctx.fillStyle = '#0a0808';
+  for (let i = 0; i < 12; i++) {
+    ctx.fillRect(x, y, 2, 2);
+    x += 1;
+    if (rng() < 0.5) y += rng() < 0.5 ? 1 : -1;
+  }
+  x = 5;
+  y = 10;
+  for (let i = 0; i < 10; i++) {
+    ctx.fillStyle = rng() < 0.5 ? '#ff7a2a' : '#ffb050';
+    ctx.fillRect(x, y, 1, 1);
+    x += 1;
+    if (rng() < 0.5) y += rng() < 0.5 ? 1 : -1;
+  }
+  return canvasTexture(c);
+}
+
+/** A bed: a mattress on a frame, the blanket turned down, a pillow. Box form; fills its canvas. */
+export function makeBedTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 10);
+  const wood = ramp('#5a3e28');
+  const cloth = ramp('#7a5a5a');
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(0, 0, 20, 10);
+  ctx.fillStyle = cloth[2]!;
+  ctx.fillRect(1, 1, 18, 6);
+  ctx.fillStyle = cloth[1]!;
+  ctx.fillRect(1, 1, 18, 2);
+  ctx.fillStyle = '#e0d8c8';
+  ctx.fillRect(2, 2, 4, 3);
+  ctx.fillStyle = cloth[3]!;
+  ctx.fillRect(7, 6, 12, 1);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(0, 7, 20, 3);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(0, 7, 20, 1);
+  return canvasTexture(c);
+}
+
+/* ============================================================
+   What rooms are furnished with
+
+   Drawn to the same rules as the street's furniture: a lit side and a dark side, an ink line
+   that is not black, and for the boxes a canvas filled edge to edge, because a box wears its
+   picture on six faces and any transparent pixel cuts a hole through all of them. The room
+   camera stands closer than the street's, so these run a pixel or two finer than the barrels.
+   ============================================================ */
+
+/** A chest: banded lid, a hasp, the keyhole's one glint. Box form; it fills its canvas. */
+export function makeChestTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 12);
+  const wood = ramp('#6b4a2c');
+  const iron = ramp('#3c3a38');
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(0, 0, 16, 12);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(0, 0, 16, 4);
+  ctx.fillStyle = wood[0]!;
+  ctx.fillRect(1, 0, 6, 1);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(0, 4, 16, 1);
+  for (const x of [2, 13]) {
+    ctx.fillStyle = iron[2]!;
+    ctx.fillRect(x, 0, 2, 12);
+    ctx.fillStyle = iron[1]!;
+    ctx.fillRect(x, 0, 1, 12);
+  }
+  ctx.fillStyle = iron[1]!;
+  ctx.fillRect(7, 3, 3, 4);
+  ctx.fillStyle = '#d0b060';
+  ctx.fillRect(8, 5, 1, 1);
+  return canvasTexture(c);
+}
+
+/** An urn: neck, belly and foot as three widths of one cylinder, and a dark mouth. */
+export function makeUrnTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(12, 16);
+  const clay = ramp('#8a5a3a');
+  cylinder(ctx, 3, 1, 6, 3, clay);
+  cylinder(ctx, 1, 4, 10, 8, clay);
+  cylinder(ctx, 3, 12, 6, 2, clay);
+  ctx.fillStyle = clay[4]!;
+  ctx.fillRect(1, 7, 10, 1);
+  ctx.fillStyle = '#2a2018';
+  ctx.fillRect(4, 0, 4, 1);
+  contact(ctx, 6, 15, 8);
+  outline(ctx, 12, 16, clay[4]!);
+  return canvasTexture(c);
+}
+
+/** A brass plaque: a lit top edge, a dark bottom one, four screws, three ruled lines. */
+export function makePlaqueTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 12);
+  const brass = ramp('#a08040');
+  ctx.fillStyle = brass[2]!;
+  ctx.fillRect(1, 1, 14, 10);
+  ctx.fillStyle = brass[0]!;
+  ctx.fillRect(1, 1, 14, 1);
+  ctx.fillRect(1, 1, 1, 10);
+  ctx.fillStyle = brass[3]!;
+  ctx.fillRect(1, 10, 14, 1);
+  ctx.fillRect(14, 1, 1, 10);
+  ctx.fillStyle = brass[4]!;
+  ctx.fillRect(3, 4, 10, 1);
+  ctx.fillRect(3, 6, 10, 1);
+  ctx.fillRect(3, 8, 6, 1);
+  for (const [x, y] of [
+    [2, 2],
+    [13, 2],
+    [2, 9],
+    [13, 9],
+  ] as const) {
+    ctx.fillRect(x, y, 1, 1);
+  }
+  outline(ctx, 16, 12, '#2a2418');
+  return canvasTexture(c);
+}
+
+/** A gravestone: a rounded slab, a lit edge, cut lines where the name is, lichen at the foot. */
+export function makeGravestoneTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(12, 16);
+  const stone = ramp('#6e6c66');
+  ctx.fillStyle = stone[2]!;
+  ctx.fillRect(2, 3, 8, 12);
+  ctx.fillRect(3, 2, 6, 1);
+  ctx.fillRect(4, 1, 4, 1);
+  ctx.fillStyle = stone[1]!;
+  ctx.fillRect(2, 3, 2, 12);
+  ctx.fillRect(3, 2, 2, 1);
+  ctx.fillStyle = stone[3]!;
+  ctx.fillRect(8, 3, 2, 12);
+  ctx.fillStyle = stone[4]!;
+  ctx.fillRect(4, 6, 4, 1);
+  ctx.fillRect(4, 8, 3, 1);
+  ctx.fillRect(4, 10, 4, 1);
+  ctx.fillStyle = '#5a6a3a';
+  ctx.fillRect(2, 12, 2, 2);
+  ctx.fillRect(8, 13, 1, 1);
+  contact(ctx, 6, 15, 10);
+  outline(ctx, 12, 16, stone[4]!);
+  return canvasTexture(c);
+}
+
+/** A lectern: a post, a sloped top, and the book lying open on it. */
+export function makeLecternTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(12, 18);
+  const wood = ramp('#5a3a22');
+  cylinder(ctx, 5, 6, 3, 10, wood);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(2, 16, 8, 1);
+  ctx.fillStyle = wood[1]!;
+  for (let i = 0; i < 4; i++) ctx.fillRect(1, 2 + i, 10, 1);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(1, 6, 10, 1);
+  ctx.fillStyle = '#e0d4b8';
+  ctx.fillRect(2, 1, 8, 3);
+  ctx.fillStyle = '#8a7a5a';
+  ctx.fillRect(6, 1, 1, 3);
+  ctx.fillRect(3, 2, 2, 1);
+  ctx.fillRect(7, 2, 2, 1);
+  contact(ctx, 6, 17, 8);
+  outline(ctx, 12, 18, wood[4]!);
+  return canvasTexture(c);
+}
+
+/** A notice post: a board on a post, two bills pinned to it, a red seal on each. */
+export function makeNoticepostTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 24);
+  const wood = ramp('#4e3a28');
+  cylinder(ctx, 6, 8, 2, 15, wood);
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(1, 1, 12, 9);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(1, 9, 12, 1);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(1, 1, 12, 1);
+  ctx.fillStyle = '#d8ccb0';
+  ctx.fillRect(2, 2, 5, 6);
+  ctx.fillStyle = '#c8b898';
+  ctx.fillRect(8, 3, 4, 5);
+  ctx.fillStyle = '#6a5a4a';
+  ctx.fillRect(3, 3, 3, 1);
+  ctx.fillRect(3, 5, 3, 1);
+  ctx.fillRect(9, 4, 2, 1);
+  ctx.fillRect(9, 6, 2, 1);
+  ctx.fillStyle = '#b02020';
+  ctx.fillRect(4, 2, 1, 1);
+  ctx.fillRect(9, 3, 1, 1);
+  contact(ctx, 7, 23, 6);
+  outline(ctx, 14, 24, wood[4]!);
+  return canvasTexture(c);
+}
+
+/** A workbench: a thick top, two legs, a hammer and tongs left where they were put down. */
+export function makeWorkbenchTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 10);
+  const wood = ramp('#5e4228');
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(0, 0, 20, 10);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(0, 0, 20, 3);
+  ctx.fillStyle = wood[0]!;
+  ctx.fillRect(1, 0, 8, 1);
+  ctx.fillStyle = wood[4]!;
+  ctx.fillRect(0, 3, 20, 1);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(2, 4, 2, 6);
+  ctx.fillRect(16, 4, 2, 6);
+  ctx.fillStyle = '#5a5e64';
+  ctx.fillRect(4, 1, 3, 1);
+  ctx.fillRect(12, 0, 1, 3);
+  ctx.fillRect(14, 1, 4, 1);
+  return canvasTexture(c);
+}
+
+/** An anvil on its stump: the lit face is the one mark that says iron rather than stone. */
+export function makeAnvilTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 12);
+  const iron = ramp('#4a4e56');
+  const wood = ramp('#4e3a28');
+  cylinder(ctx, 4, 7, 8, 4, wood);
+  ctx.fillStyle = iron[2]!;
+  ctx.fillRect(3, 4, 10, 3);
+  ctx.fillRect(5, 6, 6, 2);
+  ctx.fillStyle = iron[1]!;
+  ctx.fillRect(2, 3, 12, 1);
+  ctx.fillStyle = iron[0]!;
+  ctx.fillRect(3, 3, 4, 1);
+  ctx.fillStyle = iron[2]!;
+  ctx.fillRect(13, 3, 3, 2);
+  ctx.fillRect(14, 4, 1, 1);
+  contact(ctx, 8, 11, 10);
+  outline(ctx, 16, 12, iron[4]!);
+  return canvasTexture(c);
+}
+
+/** A shop counter: a lit top, panelling below, and a coin somebody left on it. */
+export function makeCounterTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(24, 10);
+  const wood = ramp('#6a4a30');
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(0, 0, 24, 10);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(0, 0, 24, 2);
+  ctx.fillStyle = wood[0]!;
+  ctx.fillRect(1, 0, 10, 1);
+  ctx.fillStyle = wood[4]!;
+  ctx.fillRect(0, 2, 24, 1);
+  ctx.fillStyle = wood[3]!;
+  for (const x of [2, 10, 18]) ctx.fillRect(x, 4, 4, 5);
+  ctx.fillStyle = '#d0b060';
+  ctx.fillRect(12, 1, 2, 1);
+  return canvasTexture(c);
+}
+
+/** Shelves: two uprights, three boards, and jars in whatever colours the trade keeps. */
+export function makeShelvesTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 22);
+  const wood = ramp('#5a3e28');
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(0, 0, 2, 22);
+  ctx.fillRect(14, 0, 2, 22);
+  for (const y of [5, 11, 17]) {
+    ctx.fillStyle = wood[1]!;
+    ctx.fillRect(0, y, 16, 1);
+    ctx.fillStyle = wood[4]!;
+    ctx.fillRect(0, y + 1, 16, 1);
+  }
+  const rng = mulberry32(73);
+  const jars = ['#7a9a6a', '#c8b060', '#6a5a8a', '#a86a4a', '#d8d0b8'];
+  for (const top of [1, 7, 13]) {
+    let x = 3;
+    while (x < 13) {
+      const w = 1 + ((rng() * 2) | 0);
+      ctx.fillStyle = jars[(rng() * jars.length) | 0]!;
+      ctx.fillRect(x, top + 1, w, 3);
+      x += w + 1;
+    }
+  }
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(0, 21, 16, 1);
+  outline(ctx, 16, 22, wood[4]!);
+  return canvasTexture(c);
+}
+
+/** A clerk's desk: two pedestals with brass pulls, paper on top, an inkwell. */
+export function makeDeskTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 10);
+  const wood = ramp('#4e3626');
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(0, 0, 20, 10);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(0, 0, 20, 3);
+  ctx.fillStyle = wood[4]!;
+  ctx.fillRect(0, 3, 20, 1);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(1, 4, 6, 5);
+  ctx.fillRect(13, 4, 6, 5);
+  ctx.fillStyle = '#d0b060';
+  ctx.fillRect(3, 6, 2, 1);
+  ctx.fillRect(15, 6, 2, 1);
+  ctx.fillStyle = '#e0d4b8';
+  ctx.fillRect(7, 0, 6, 2);
+  ctx.fillStyle = '#2a2018';
+  ctx.fillRect(15, 1, 1, 1);
+  return canvasTexture(c);
+}
+
+/** A table: boards on trestles, a stretcher between them. An inn is these. */
+export function makeTableTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(18, 10);
+  const wood = ramp('#6a4e34');
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(0, 0, 18, 10);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(0, 0, 18, 3);
+  ctx.fillStyle = wood[0]!;
+  ctx.fillRect(1, 0, 7, 1);
+  ctx.fillStyle = wood[4]!;
+  ctx.fillRect(0, 3, 18, 1);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(1, 4, 2, 6);
+  ctx.fillRect(15, 4, 2, 6);
+  ctx.fillStyle = '#8a6a4a';
+  ctx.fillRect(4, 4, 10, 1);
+  return canvasTexture(c);
+}
 
 
 /* ============================================================
@@ -2286,31 +3000,243 @@ export function makeGraffitiTexture(text: string): THREE.Texture {
   return canvasTexture(c);
 }
 
-export function makeSignTexture(key: string): THREE.Texture {
+/**
+ * The glyph on each plaque, white on the plate, drawn into a 20x12 canvas.
+ *
+ * Typed against `SignId` so a sign named on a door and not drawn here is a compile error.
+ * Axis-aligned and near-opaque, every one: at sprite scale a mark either is or is not.
+ */
+const SIGN_GLYPHS: Record<SignId, (ctx: CanvasRenderingContext2D) => void> = {
+  artificer: (ctx) => {
+    ctx.fillRect(6, 7, 8, 2); // anvil base
+    ctx.fillRect(7, 4, 6, 3); // anvil body
+    ctx.fillRect(13, 3, 3, 2); // horn
+  },
+  apothecary: (ctx) => {
+    ctx.fillRect(9, 2, 2, 3); // neck
+    ctx.fillRect(7, 5, 6, 5); // flask body
+    ctx.fillRect(8, 1, 4, 1); // stopper
+  },
+  vivarium: (ctx) => {
+    ctx.fillRect(8, 6, 5, 4); // paw pad
+    ctx.fillRect(7, 3, 2, 2);
+    ctx.fillRect(10, 2, 2, 2);
+    ctx.fillRect(13, 4, 2, 2);
+  },
+  records: (ctx) => {
+    // A ledger, open: a page with three ruled lines cut back out of it.
+    ctx.fillRect(6, 2, 8, 8);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(8, 4, 4, 1);
+    ctx.fillRect(8, 6, 4, 1);
+    ctx.fillRect(8, 8, 3, 1);
+  },
+  toll: (ctx) => {
+    // A coin over a bar: what you pay, and the counter you pay it across.
+    ctx.fillRect(8, 2, 4, 1);
+    ctx.fillRect(7, 3, 6, 4);
+    ctx.fillRect(8, 7, 4, 1);
+    ctx.fillRect(5, 9, 10, 1);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(9, 4, 2, 2);
+  },
+  counting: (ctx) => {
+    // Three columns of a ledger, tallied.
+    ctx.fillRect(6, 3, 2, 7);
+    ctx.fillRect(9, 5, 2, 5);
+    ctx.fillRect(12, 2, 2, 8);
+    ctx.fillRect(5, 10, 10, 1);
+  },
+  chapel: (ctx) => {
+    // The Quiet Flame.
+    ctx.fillRect(9, 2, 2, 2);
+    ctx.fillRect(8, 4, 4, 3);
+    ctx.fillRect(7, 7, 6, 2);
+    ctx.fillRect(8, 9, 4, 1);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(9, 6, 2, 2);
+  },
+  tavern: (ctx) => {
+    // A tankard, with a handle and a head on it.
+    ctx.fillRect(6, 3, 6, 7);
+    ctx.fillRect(12, 4, 2, 1);
+    ctx.fillRect(13, 5, 1, 3);
+    ctx.fillRect(12, 8, 2, 1);
+    ctx.fillRect(6, 2, 7, 1);
+  },
+  lamp: (ctx) => {
+    // A gas lamp: the head on its post, and the light coming off it.
+    ctx.fillRect(8, 2, 4, 4);
+    ctx.fillRect(9, 6, 2, 4);
+    ctx.fillRect(7, 10, 6, 1);
+    ctx.fillRect(5, 3, 2, 1);
+    ctx.fillRect(13, 3, 2, 1);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(9, 3, 2, 2);
+  },
+  market: (ctx) => {
+    // A pair of scales.
+    ctx.fillRect(9, 2, 2, 8);
+    ctx.fillRect(4, 3, 12, 1);
+    ctx.fillRect(4, 4, 1, 3);
+    ctx.fillRect(15, 4, 1, 3);
+    ctx.fillRect(3, 7, 3, 1);
+    ctx.fillRect(14, 7, 3, 1);
+    ctx.fillRect(7, 10, 6, 1);
+  },
+  pawn: (ctx) => {
+    // The three balls, hung from a bar.
+    ctx.fillRect(5, 2, 10, 1);
+    ctx.fillRect(5, 3, 1, 2);
+    ctx.fillRect(10, 3, 1, 2);
+    ctx.fillRect(15, 3, 1, 2);
+    ctx.fillRect(4, 5, 3, 3);
+    ctx.fillRect(9, 5, 3, 3);
+    ctx.fillRect(14, 5, 3, 3);
+  },
+  foundry: (ctx) => {
+    // A furnace mouth with its stack: a box, an arch cut out of it, a chimney off the top.
+    ctx.fillRect(5, 5, 10, 5);
+    ctx.fillRect(12, 2, 2, 3);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(8, 7, 4, 3);
+    ctx.fillRect(9, 6, 2, 1);
+  },
+  press: (ctx) => {
+    // A sheet coming off the platen: the frame, the screw, and the page.
+    ctx.fillRect(6, 2, 8, 1);
+    ctx.fillRect(9, 3, 2, 3);
+    ctx.fillRect(5, 6, 10, 1);
+    ctx.fillRect(7, 7, 6, 3);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(8, 8, 4, 1);
+  },
+  cistern: (ctx) => {
+    // A pump handle over a wave.
+    ctx.fillRect(9, 2, 2, 5);
+    ctx.fillRect(6, 3, 8, 1);
+    ctx.fillRect(4, 8, 2, 1);
+    ctx.fillRect(6, 9, 2, 1);
+    ctx.fillRect(8, 8, 2, 1);
+    ctx.fillRect(10, 9, 2, 1);
+    ctx.fillRect(12, 8, 2, 1);
+    ctx.fillRect(14, 9, 2, 1);
+  },
+  clinic: (ctx) => {
+    // A cot: the frame, the mattress, the pillow.
+    ctx.fillRect(4, 8, 12, 1);
+    ctx.fillRect(4, 9, 1, 2);
+    ctx.fillRect(15, 9, 1, 2);
+    ctx.fillRect(5, 6, 10, 2);
+    ctx.fillRect(5, 4, 3, 2);
+  },
+  spire: (ctx) => {
+    // The tower, narrowing to its point.
+    ctx.fillRect(7, 8, 6, 3);
+    ctx.fillRect(8, 5, 4, 3);
+    ctx.fillRect(9, 2, 2, 3);
+    ctx.fillRect(9, 1, 2, 1);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(9, 9, 2, 2);
+  },
+  undercroft: (ctx) => {
+    // A stair going down, under an arch.
+    ctx.fillRect(4, 3, 12, 1);
+    ctx.fillRect(4, 4, 1, 6);
+    ctx.fillRect(15, 4, 1, 6);
+    ctx.fillRect(6, 5, 3, 1);
+    ctx.fillRect(8, 7, 3, 1);
+    ctx.fillRect(10, 9, 4, 1);
+  },
+};
+
+export function makeSignTexture(key: SignId): THREE.Texture {
   const { c, ctx } = makeCanvas(20, 12);
   ctx.fillStyle = '#141118';
   ctx.fillRect(0, 0, 20, 12);
   ctx.fillStyle = '#2a2230';
   ctx.fillRect(1, 1, 18, 10);
-
   ctx.fillStyle = '#ffffff';
-  if (key === 'artificer') {
-    ctx.fillRect(6, 7, 8, 2); // anvil base
-    ctx.fillRect(7, 4, 6, 3); // anvil body
-    ctx.fillRect(13, 3, 3, 2); // horn
-  } else if (key === 'journal') {
-    ctx.fillRect(5, 3, 4, 7); // left leaf
-    ctx.fillRect(11, 3, 4, 7); // right leaf
-    ctx.fillRect(9, 2, 2, 8); // spine
-  } else if (key === 'apothecary') {
-    ctx.fillRect(9, 2, 2, 3); // neck
-    ctx.fillRect(7, 5, 6, 5); // flask body
-    ctx.fillRect(8, 1, 4, 1); // stopper
+  SIGN_GLYPHS[key](ctx);
+  return canvasTexture(c);
+}
+
+/**
+ * A door leaf, for a 2.2 x 3.2 plane -- a little over four pixels a world unit, the ratio
+ * `makeGateTexture` established as the one at which a thing reads as *operable*.
+ *
+ * What makes it a door rather than a dark rectangle: a frame it sits in, hinges that say
+ * which side it swings from, and a latch, the thing a person puts a hand to. `barred` nails
+ * two boards across the lot and leaves one bright pixel for the padlock, which is how a
+ * shut place says "not yet" from across a street.
+ */
+export function makeDoorTexture(style: DoorStyle, barred: boolean): THREE.Texture {
+  const W = 14;
+  const H = 20;
+  const { c, ctx } = makeCanvas(W, H);
+  const rng = mulberry32(style.length * 97 + (barred ? 1 : 0));
+
+  if (style === 'cave') {
+    // An opening, not a leaf: black, with a ragged edge so the rock reads as rock around it.
+    ctx.fillStyle = '#0a0b0d';
+    ctx.fillRect(2, 0, 10, H);
+    ctx.fillStyle = '#2a2d33';
+    for (let y = 0; y < H; y++) {
+      if (rng() < 0.5) ctx.fillRect(1 + ((rng() * 2) | 0), y, 1, 1);
+      if (rng() < 0.5) ctx.fillRect(11 + ((rng() * 2) | 0), y, 1, 1);
+    }
   } else {
-    ctx.fillRect(8, 6, 5, 4); // paw pad
-    ctx.fillRect(7, 3, 2, 2);
-    ctx.fillRect(10, 2, 2, 2);
-    ctx.fillRect(13, 4, 2, 2);
+    ctx.fillStyle = '#231a14';
+    ctx.fillRect(0, 0, W, H);
+    const face =
+      style === 'iron' ? ['#3c4046', '#444951', '#363a40'] : ['#5a3f28', '#634629', '#523a25'];
+    for (let x = 1; x < W - 1; x++) {
+      ctx.fillStyle = face[((x / 3) | 0) % face.length]!;
+      ctx.fillRect(x, 1, 1, H - 1);
+    }
+    if (style === 'arch') {
+      // The corners knocked off the top, which is all an arch is at this size.
+      ctx.fillStyle = '#231a14';
+      ctx.fillRect(1, 1, 2, 1);
+      ctx.fillRect(W - 3, 1, 2, 1);
+      ctx.fillRect(1, 2, 1, 1);
+      ctx.fillRect(W - 2, 2, 1, 1);
+    }
+    if (style === 'iron') {
+      ctx.fillStyle = '#6a7078';
+      for (const y of [3, 9, 15]) {
+        ctx.fillRect(3, y, 1, 1);
+        ctx.fillRect(W - 4, y, 1, 1);
+      }
+    } else {
+      ctx.fillStyle = '#2e2016';
+      for (const x of [4, 7, 10]) ctx.fillRect(x, 1, 1, H - 1);
+      // Hinges on the left. A door swings from somewhere.
+      ctx.fillStyle = '#1a1614';
+      ctx.fillRect(1, 4, 5, 1);
+      ctx.fillRect(1, 14, 5, 1);
+    }
+    if (style === 'hatch') {
+      ctx.fillStyle = '#1a1614';
+      ctx.fillRect(1, (H / 2) | 0, W - 2, 1);
+    }
+    // The latch.
+    ctx.fillStyle = '#9a8c78';
+    ctx.fillRect(W - 4, 10, 2, 1);
+    ctx.fillRect(W - 3, 11, 1, 1);
+    // The threshold's shadow, so the leaf stands on the ground rather than floating on it.
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(1, H - 2, W - 2, 2);
+  }
+
+  if (barred) {
+    ctx.fillStyle = '#3a2a1c';
+    for (let i = 0; i < W; i++) {
+      ctx.fillRect(i, 5 + (((i * 6) / W) | 0), 1, 2);
+      ctx.fillRect(i, 12 + (((i * 4) / W) | 0), 1, 2);
+    }
+    ctx.fillStyle = '#d0c0a0';
+    ctx.fillRect((W / 2) | 0, 9, 1, 1);
   }
   return canvasTexture(c);
 }

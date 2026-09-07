@@ -1,7 +1,7 @@
 /**
  * Weeping Stile — the smallest, closest place in the world.
  *
- * A wet hollow that the wood took back. Eighteen columns by twenty-two rows, no buildings, no
+ * A wet hollow that the wood took back. Twenty-four columns by twenty-six rows, one ruin, no
  * roads, and thicket standing in the middle of it rather than politely around the edge — so
  * unlike everywhere else in the Ring, you cannot see across it.
  *
@@ -10,9 +10,12 @@
  * where the boundary material and the obstacles are the same thing, which is what makes the
  * edge of it ambiguous: you are never quite sure whether the thicket ahead is the far side or
  * just more of it.
+ *
+ * The one roof is the chapel, and the roof is gone. What is left of it is where the sixty-one
+ * are named, on a wall, in the same hand that wrote RELOCATED beside them on the roll.
  */
 
-import { defineArea, type AreaDef, type TileDef } from '../map.js';
+import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
 
 /**
  * The Stile's legend.
@@ -21,6 +24,7 @@ import { defineArea, type AreaDef, type TileDef } from '../map.js';
  *   w  leaf litter   — where it is dry enough for the wood
  *   .  weeds
  *   ,  chalk         — the lane east, and the only made ground here
+ *   C  the chapel    — impassable; stone, and the roof off it
  *   T  thicket       — impassable, and both the boundary and the obstacles
  */
 const STILE_LEGEND: Record<string, TileDef> = {
@@ -28,6 +32,12 @@ const STILE_LEGEND: Record<string, TileDef> = {
   w: { tex: 'forest', safe: false, walk: true },
   '.': { tex: 'weeds', safe: false, walk: true },
   ',': { tex: 'chalk', safe: false, walk: true },
+  C: {
+    tex: 'marsh',
+    safe: false,
+    walk: false,
+    solid: { minHeight: 3.8, maxHeight: 3.8, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone', bare: true },
+  },
   T: {
     tex: 'forest',
     safe: false,
@@ -38,36 +48,47 @@ const STILE_LEGEND: Record<string, TileDef> = {
   },
 };
 
+const OPEN = `T${'g'.repeat(22)}T`;
+
 /**
- * 18 wide by 22 deep.
+ * 24 wide by 26 deep.
  *
- * Column 17 opens at rows 10 and 11 — the lane east to Fenwick's Crossing, and the only way in
+ * Column 23 opens at rows 13 and 14 — the lane east to Fenwick's Crossing, and the only way in
  * or out of the hollow.
  */
 const GRID: readonly string[] = [
-  'TTTTTTTTTTTTTTTTTT', //  0
-  'TggggggwwggggggwwT', //  1
-  'TggwwgggggggwwgggT', //  2
-  'TggggggggggggggggT', //  3
-  'TgwwgggggwwggggggT', //  4
-  'TggggggggggggggggT', //  5
-  'TgggTTggggggTTgggT', //  6  thicket standing in the open
-  'TggggggggggggggggT', //  7
-  'TggwwggggwwggggggT', //  8
-  'TggggggggggggggggT', //  9
-  'Tgggggggggggggggg,', // 10  the lane east, to the Crossing
-  'Tgggggggggggggggg,', // 11
-  'TggggggggggggggggT', // 12
-  'TggwwgggggggwwgggT', // 13
-  'TggggggggggggggggT', // 14
-  'TgwwgggggwwgggggwT', // 15
-  'TggggggggggggggggT', // 16
-  'Tggg..gggggg..gggT', // 17
-  'TggggggggggggggggT', // 18
-  'TggwwggggwwggggggT', // 19
-  'TggggggggggggggggT', // 20
-  'TTTTTTTTTTTTTTTTTT', // 21
+  'T'.repeat(24), //  0
+  'TggggggwwggggggwwggggggT', //  1
+  'TggwwgggggggwwgggggggggT', //  2
+  OPEN, //  3
+  'TgwwgggggwwggggggggggggT', //  4
+  'TgggCCCCgggggggggggggggT', //  5  THE CHAPEL, the roof off it
+  'TgggCCCCgggggggggggggggT', //  6
+  'TgggCCCCgggggggggggggggT', //  7
+  OPEN, //  8  the chapel door
+  `T${'g'.repeat(14)}TT${'g'.repeat(6)}T`, //  9  thicket standing in the open
+  OPEN, // 10
+  'TggwwggggwwggggggggggggT', // 11
+  OPEN, // 12
+  `T${'g'.repeat(22)},`, // 13  the lane east, to the Crossing
+  `T${'g'.repeat(22)},`, // 14
+  OPEN, // 15
+  'TggwwgggggggwwgggggggggT', // 16
+  OPEN, // 17
+  'TgwwgggggwwgggggwggggggT', // 18
+  'TgggTTgggggggggggTTggggT', // 19
+  'Tggg..gggggg..gggggggggT', // 20
+  OPEN, // 21
+  'TggwwggggwwggggggggggggT', // 22
+  OPEN, // 23
+  OPEN, // 24
+  'T'.repeat(24), // 25
 ];
+
+const HALF_X = (GRID[0]!.length * TILE) / 2;
+const HALF_Z = (GRID.length * TILE) / 2;
+const xOfCol = (col: number): number => col * TILE - HALF_X + TILE / 2;
+const zOfRow = (row: number): number => row * TILE - HALF_Z + TILE / 2;
 
 export const WEEPING_STILE_ID = 'weeping_stile';
 
@@ -82,10 +103,19 @@ export const WEEPING_STILE: AreaDef = defineArea({
   exits: [
     {
       to: 'fenwicks_crossing',
-      x: 34,
-      z: -2,
+      x: HALF_X - 2,
+      z: 2,
       label: "East, down the lane to Fenwick's Crossing",
       arrive: { x: -46, z: -2 },
+    },
+    {
+      // The chapel. The door is the only part of it that still shuts.
+      to: 'weeping_stile_chapel',
+      x: xOfCol(5.5),
+      z: zOfRow(7) + TILE / 2 + 1.4,
+      label: 'Into the chapel',
+      door: { x: xOfCol(5.5), z: zOfRow(7) + TILE / 2 + 0.05, facesSouth: true, sign: 'chapel', style: 'arch' },
+      arrive: { x: 0, z: 14 },
     },
   ],
   props: {
@@ -125,17 +155,17 @@ export const WEEPING_STILE: AreaDef = defineArea({
       { kind: 'waystone', x: -10, z: -38, text: 'RELOCATED — LABOUR — 61' },
       { kind: 'waystone', x: 6, z: 2, text: 'RELOCATED — LABOUR — 61' },
       { kind: 'reeds', x: -6, z: -38 },
-      { kind: 'reeds', x: -30, z: -22 },
+      { kind: 'reeds', x: -38, z: -22 },
       { kind: 'reeds', x: -30, z: -6 },
       { kind: 'reeds', x: 6, z: 10 },
       { kind: 'reeds', x: -10, z: 26 },
       { kind: 'bracken', x: -2, z: -38 },
-      { kind: 'bracken', x: -26, z: -22 },
+      { kind: 'bracken', x: -34, z: -26 },
       { kind: 'bracken', x: -26, z: -6 },
       { kind: 'bracken', x: 10, z: 10 },
       { kind: 'bracken', x: -6, z: 26 },
       { kind: 'bramble', x: 2, z: -38 },
-      { kind: 'bramble', x: -26, z: -18 },
+      { kind: 'bramble', x: -34, z: -14 },
       { kind: 'bramble', x: 18, z: 2 },
       { kind: 'bramble', x: -2, z: 22 },
       { kind: 'mushrooms', x: 10, z: -38 },
@@ -155,7 +185,7 @@ export const WEEPING_STILE: AreaDef = defineArea({
      * back out. Nobody from the village answers.
      */
     npcs: [
-      { id: 'stile_census_clerk', x: -10, z: -6, art: 'scribe', label: 'Talk to the Census clerk' },
+      { id: 'stile_census_clerk', x: -6, z: -10, art: 'scribe', label: 'Talk to the Census clerk' },
       { id: 'stile_mercenary', x: 10, z: 2, art: 'mercenary', label: 'Talk to the hired blade' },
     ],
     // No lamps. Nobody lives here, and the one thing this place has to be is unlit.
@@ -164,12 +194,15 @@ export const WEEPING_STILE: AreaDef = defineArea({
     trees: [
       { x: -26, z: -38 },
       { x: 6, z: -38 },
-      { x: -30, z: -26 },
+      { x: -38, z: -30 },
       { x: 10, z: -10 },
       { x: -26, z: 10 },
       { x: 2, z: 22 },
       { x: -18, z: 34 },
       { x: 18, z: 34 },
+      { x: 34, z: -34 },
+      { x: -38, z: 14 },
+      { x: 34, z: 30 },
     ],
     horizon: 'treeline',
   },

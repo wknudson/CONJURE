@@ -86,7 +86,25 @@ export type DressingId =
   | 'wildflowers'
   | 'bramble'
   | 'deadfall'
-  | 'mushrooms';
+  | 'mushrooms'
+  | 'chest'
+  | 'urn'
+  | 'plaque'
+  | 'gravestone'
+  | 'lectern'
+  | 'noticepost'
+  | 'workbench'
+  | 'anvil'
+  | 'counter'
+  | 'shelves'
+  | 'desk'
+  | 'table'
+  | 'herbpatch'
+  | 'orevein'
+  | 'honeycomb'
+  | 'bonepile'
+  | 'embervent'
+  | 'bed';
 
 /**
  * The vocabulary.
@@ -131,6 +149,35 @@ export const DRESSING: Record<DressingId, DressingKind> = {
   bramble: { form: 'billboard', size: 1.5, collides: true, note: 'A thicket. The one plant with enough of itself to go round rather than through.' },
   deadfall: { form: 'billboard', size: 1.2, collides: false, note: 'A fallen limb, gone soft. Lies where it came down.' },
   mushrooms: { form: 'billboard', size: 0.45, collides: false, note: 'Rot and shade. Grows on the deadfall it came out of.' },
+
+  /* --- what rooms are furnished with ---
+     Wave 14: the first furniture with a roof over it. Most of it is hung in by a registry --
+     a bench's own workbench, a notice's lectern, a cache's chest -- rather than listed in the
+     room file, so the thing you interact with and the thing you see are one entry. The rule
+     on `collides` is the same as above and it bites harder indoors: a room is small, and a
+     table in the wrong place is a room you cannot cross. */
+  chest: { form: 'box', size: 1.3, collides: true, note: 'Banded, hasped. What a cache is kept in.' },
+  urn: { form: 'billboard', size: 1.4, collides: true, note: 'Clay, sealed once. A cache in a corner.' },
+  plaque: { form: 'panel', size: 1.2, collides: false, note: 'Brass on a wall. Rates, terms, a name. Read, not walked round.' },
+  gravestone: { form: 'billboard', size: 1.3, collides: true, note: 'A slab with a name cut in it. The wilds have cairns; the wards have these.' },
+  lectern: { form: 'billboard', size: 1.6, collides: true, note: 'A ledger stands open on it. The Records Office is lecterns.' },
+  noticepost: { form: 'billboard', size: 2.4, collides: true, note: 'A board on a post with bills pinned to it. The Magistracy speaks through these.' },
+  workbench: { form: 'box', size: 1.2, collides: true, note: "The Artificer's. Tools on top, a vice at one end." },
+  anvil: { form: 'billboard', size: 1.1, collides: true, note: 'On its stump. What a forge is for.' },
+  counter: { form: 'box', size: 1.1, collides: true, note: 'Between the customer and the trade. A shop is a counter with a roof.' },
+  shelves: { form: 'panel', size: 2.4, collides: true, note: 'Jars, books, boxes. Stands against a wall, and reads from one side.' },
+  desk: { form: 'box', size: 1.1, collides: true, note: "A clerk's. Two pedestals, an inkwell, paper." },
+  table: { form: 'box', size: 1.0, collides: true, note: 'Plain boards on trestles. An inn is tables.' },
+
+  /* --- what grows back, and where you sleep ---
+     The forage nodes (`forage.ts`) and the one piece of furniture a rest needs. A node's prop
+     is the node: cut the herbs and the patch is still there, because it grows back. */
+  herbpatch: { form: 'billboard', size: 0.8, collides: false, note: 'Bloom, where nobody weeds. Cut it and it grows back.' },
+  orevein: { form: 'billboard', size: 1.6, collides: true, note: 'A lump of the rock with a seam through it. Worked, not mined.' },
+  honeycomb: { form: 'billboard', size: 1.3, collides: false, note: 'In a hedge. Wild honey, wild wasps.' },
+  bonepile: { form: 'billboard', size: 1.2, collides: true, note: 'Old bones, heaped. Something keeps them.' },
+  embervent: { form: 'ground', size: 3.0, collides: false, note: 'A crack in a foundry floor that breathes. Rake it for what it coughs up.' },
+  bed: { form: 'box', size: 1.0, collides: true, note: 'A mattress on a frame. Buys the morning, and nothing else.' },
 };
 
 /**
@@ -148,6 +195,7 @@ export const SWAYS: ReadonlySet<DressingId> = new Set<DressingId>([
   'bramble',
   'washing',
   'awning',
+  'herbpatch',
 ]);
 
 export const DRESSING_IDS = Object.keys(DRESSING) as DressingId[];

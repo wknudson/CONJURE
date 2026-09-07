@@ -127,6 +127,148 @@ export interface ErrandDef {
  * ------------------------------------------------------------------------------------ */
 
 export const ERRANDS: readonly ErrandDef[] = [
+  /* --- inside the ward's own rooms -------------------------------------------------- */
+  {
+    id: 'toll_ledger',
+    giver: 'ashfall_toll_house:ashfall_toll_clerk',
+    title: 'Carry the wharf ledger to the Records Office clerk',
+    offer: [
+      { who: 'TOLL CLERK', text: 'Eleven days of nothing, all written down, and the Records Office wants it in their hand by the hour. I cannot leave the box.' },
+      { who: 'TOLL CLERK', text: 'Across the yard, up the walkway, the east door on the cross-street. Tell the clerk it is from the wharf. She will know what to do with eleven pages of nothing.' },
+    ],
+    nudge: [{ who: 'TOLL CLERK', text: 'The ledger. Records Office. The clerk with the roll. It is not far, and I am not allowed to find that out for myself.' }],
+    thanks: [
+      { who: 'RECORDS CLERK', text: 'From the wharf. Eleven days, no vessels, box unchanged.' },
+      { who: 'RECORDS CLERK', text: 'I file it under "as expected". There is a drawer. Here — he pays you out of the takings, and the takings are not his, so take it before he counts it again.' },
+    ],
+    step: { kind: 'deliver', toArea: 'ashfall_records', toNpc: 'ashfall_records_clerk' },
+    reward: { ducats: 40 },
+  },
+  {
+    id: 'bloom_for_the_flame',
+    giver: 'ashfall_chapel:ashfall_priest',
+    title: 'Cut bloom on the Chalk Verge for the Quiet Flame',
+    offer: [
+      { who: 'KEEPER OF THE FLAME', text: 'The Flame takes bloom, when there is any. There is none in the ward; the ward is paved.' },
+      { who: 'KEEPER OF THE FLAME', text: 'Past the yard gate, the first ground that is not paved grows it without being asked. Cut a handful and bring it. It is the one offering the Magistracy has not found a way to assess.' },
+    ],
+    nudge: [{ who: 'KEEPER OF THE FLAME', text: 'The Verge. Past the gate, off the road. It grows where the flags stop.' }],
+    thanks: [
+      { who: 'KEEPER OF THE FLAME', text: 'Bloom. From the Verge, by the smell of it. The Flame will take it tonight.' },
+      { who: 'KEEPER OF THE FLAME', text: 'Take this back. A Core the box has held for a year, from somebody who does not need it where they have gone.' },
+    ],
+    step: { kind: 'gather', area: 'chalk_verge', x: 2, z: -26, art: 'herbpatch', label: 'Cut bloom for the Flame' },
+    reward: { ducats: 30, reagents: { core_bloom: 1 } },
+  },
+  {
+    id: 'the_crew_that_drank',
+    giver: 'ashfall_cinder_cup:ashfall_publican',
+    title: 'Clear the gutter crew that drank here on credit',
+    offer: [
+      { who: 'PUBLICAN', text: 'Lampwick Gutter Crew. Four of them, one night, on a tab I do not run, and they walked out of here and back down to the Sink.' },
+      { who: 'PUBLICAN', text: 'You are the trade that leaves the ward. Deal with them on their own ground and the tab is yours to drink through.' },
+    ],
+    nudge: [{ who: 'PUBLICAN', text: 'The Sink, below the Lamprow kerb, after dark. They are not hard to find. They are hard to find sober.' }],
+    thanks: [
+      { who: 'PUBLICAN', text: 'Heard it from a bargee before you got back. The Sink is quiet and the Cup is square.' },
+      { who: 'PUBLICAN', text: 'Ironbrew, on the tab they left. And the coin they left under the table, which I was never going to hand to the Magistracy.' },
+    ],
+    step: { kind: 'cull', encounterId: 'pack_lamprow_gutter_crew' },
+    reward: { ducats: 70, brew: 'ironbrew' },
+  },
+
+  {
+    id: 'oil_for_the_row',
+    giver: 'lamprow_oil_house:lamprow_oil_keeper',
+    title: 'Carry a measure of lamp oil to the Ashfall lamplighter',
+    offer: [
+      { who: 'OIL KEEPER', text: 'Ashfall’s row is short by a night. Their man came for it himself last quarter and the Magistracy assessed him for leaving his post.' },
+      { who: 'OIL KEEPER', text: 'One measure, sealed. Down the High Street, through the gate, up the road; he stands on the cross-street. He will know it by the seal.' },
+    ],
+    nudge: [{ who: 'OIL KEEPER', text: 'The measure. Ashfall. Their lamplighter, on the cross-street. It does not improve with keeping.' }],
+    thanks: [
+      { who: 'LAMPLIGHTER', text: 'Lamprow oil. Sealed. I can smell the difference from here, and so can the lamps.' },
+      { who: 'LAMPLIGHTER', text: 'Take this. It is not the Magistracy’s; it is what the row puts in a tin for the man who keeps it lit.' },
+    ],
+    step: { kind: 'deliver', toArea: 'ashfall_ward', toNpc: 'ashfall_lamplighter' },
+    reward: { ducats: 45 },
+  },
+
+  {
+    id: 'bone_from_the_barrows',
+    giver: 'bonemarket:bonemarket_boiler',
+    title: 'Fetch a barrow bone from the Bone Bastion for the boiler',
+    offer: [
+      { who: 'BONE-BOILER', text: 'Market bone is beef and dog. There is a bone out past the Levels that boils to something the Artificer will pay me for, and I have never had one whole.' },
+      { who: 'BONE-BOILER', text: 'The Bastion. Behind the wall, in the mounds, the ground is made of it. Bring me one I do not have to explain and I pay you like it was five crossings, because it is.' },
+    ],
+    nudge: [{ who: 'BONE-BOILER', text: 'The Bastion. Past the Levels, over the causeway. The ground is bone; you will know it when you are standing on it.' }],
+    thanks: [
+      { who: 'BONE-BOILER', text: 'That is old. That is older than the ward. It will boil for a week.' },
+      { who: 'BONE-BOILER', text: 'Take the coin, and the shards that were in the last heap; I have no use for marrow and you have.' },
+    ],
+    step: {
+      kind: 'gather',
+      area: 'bone_bastion',
+      x: -2,
+      z: -46,
+      art: 'bonepile',
+      label: 'Take a barrow bone',
+    },
+    reward: { ducats: 150, marrowShards: 2 },
+  },
+
+  {
+    id: 'the_spoil_heap_hollows',
+    giver: 'cinderworks_foundry:cinderworks_foreman',
+    title: 'Clear the Hollows off the spoil heaps on the Chalk Verge',
+    offer: [
+      { who: 'FOREMAN', text: 'Our spoil goes out past the ward gate and gets tipped on the Verge, and something has moved into it. The carters will not tip any more.' },
+      { who: 'FOREMAN', text: 'Which means the spoil stays here, which means the heaps out there in the yard get taller until they are in my hall. Clear the heaps on the Verge and the carts roll again.' },
+    ],
+    nudge: [{ who: 'FOREMAN', text: 'The Verge, past Ashfall’s gate. The heaps. Whatever is living in them.' }],
+    thanks: [
+      { who: 'FOREMAN', text: 'The carts tipped at dawn. First time in a month. The yard is a foot lower already.' },
+      { who: 'FOREMAN', text: 'The works pays by the heat and this was worth two. Take it before the Spire counts it.' },
+    ],
+    step: { kind: 'cull', encounterId: 'pack_spoil_heap_hollows' },
+    reward: { ducats: 80, marrowShards: 1 },
+  },
+
+  {
+    id: 'tincture_for_the_clinic',
+    giver: 'ward_seven:ward_seven_apothecary',
+    title: 'Carry a tincture to the healer at the back-alley clinic',
+    offer: [
+      { who: 'APOTHECARY', text: 'She is through thirty-one this week on a quota of seven, and she is out of the one thing that works on the water.' },
+      { who: 'APOTHECARY', text: 'Boiled, bottled, sealed. The clinic is the plaster front on the terrace lane, the door with the cot on the plate. Put it in her hand and not on her table.' },
+    ],
+    nudge: [{ who: 'APOTHECARY', text: 'The clinic. Terrace lane, east end, the plaster front. She will not come out for it.' }],
+    thanks: [
+      { who: 'WARD HEALER', text: 'Sealed. Good. Half of what reaches me has been opened on the way.' },
+      { who: 'WARD HEALER', text: 'He will not take money for it, so I will not give you his. I will give you mine, which the Magistracy has not yet found.' },
+    ],
+    step: { kind: 'deliver', toArea: 'ward_seven_clinic', toNpc: 'ward_seven_healer' },
+    reward: { ducats: 35 },
+  },
+
+  {
+    id: 'the_census_return',
+    giver: 'highcourt_spire_lobby:highcourt_usher',
+    title: 'Carry the census return down to the Ashfall Records Office',
+    offer: [
+      { who: 'USHER', text: 'The return comes down the stair sealed and goes to the Records Office in Ashfall to be filed, and the runner who takes it has not come back this month.' },
+      { who: 'USHER', text: 'Down the High Street, through the gate, the east door on the cross-street. The clerk with the roll. Do not break the seal; the seal is what is being counted.' },
+    ],
+    nudge: [{ who: 'USHER', text: 'The return. Ashfall, the Records Office, the clerk. Sealed. It is not a heavy thing; it is a long way.' }],
+    thanks: [
+      { who: 'RECORDS CLERK', text: 'From the Spire. Sealed. Good; the last one came open.' },
+      { who: 'RECORDS CLERK', text: 'The runner’s fee is in the drawer with the runner’s name crossed out. It is yours; nobody up there is going to ask.' },
+    ],
+    step: { kind: 'deliver', toArea: 'ashfall_records', toNpc: 'ashfall_records_clerk' },
+    reward: { ducats: 60, marrowShards: 1 },
+  },
+
   /* --- the ward, and one crossing out ---------------------------------------------- */
   {
     id: 'gutter_crew',
@@ -218,6 +360,22 @@ export const ERRANDS: readonly ErrandDef[] = [
     reward: { ducats: 95 },
   },
   {
+    id: 'rats_in_the_grain',
+    giver: 'millharrow_mill:millharrow_millhand',
+    title: 'Clear the hedgerow vermin off the Chalk Road',
+    offer: [
+      { who: 'MILLHAND', text: 'The rats in the store are not ours. They come up the hedge from the road every time a cart is stopped out there and the load sits.' },
+      { who: 'MILLHAND', text: 'The miller will not pay to have the hedge cleared because the hedge is not his. I will, out of what I am paid, because the sacks are.' },
+    ],
+    nudge: [{ who: 'MILLHAND', text: 'The road, south. The hedges either side of it. They are in there whenever you are.' }],
+    thanks: [
+      { who: 'MILLHAND', text: 'Two days and nothing in the store has been chewed. That has not happened since the toll went up.' },
+      { who: 'MILLHAND', text: 'Take it. It is not the miller’s money, so he cannot ask for it back.' },
+    ],
+    step: { kind: 'cull', encounterId: 'pack_hedgerow_vermin' },
+    reward: { ducats: 55, brew: 'ironbrew' },
+  },
+  {
     id: 'the_roads_takings',
     giver: 'millharrow:millharrow_tollman',
     title: 'Break up the waywatch on the Chalk Road',
@@ -273,6 +431,22 @@ export const ERRANDS: readonly ErrandDef[] = [
     reward: { ducats: 120, reagents: { core_frost: 1 } },
   },
   {
+    id: 'two_tolls',
+    giver: 'fenwicks_toll_house:fenwick_tollkeeper',
+    title: 'Carry the bridge book’s tally up to the Millharrow tollman',
+    offer: [
+      { who: 'TOLL-KEEPER', text: 'The same carts pay here and pay at Millharrow, and the two books should agree, and I have never once seen the other one.' },
+      { who: 'TOLL-KEEPER', text: 'Take him my month’s tally. If his matches, good. If it does not, one of us is being robbed, and I would like to know which.' },
+    ],
+    nudge: [{ who: 'TOLL-KEEPER', text: 'Millharrow, over the bridge and up the road. The tollman at the gate. The tally is sealed; leave it sealed.' }],
+    thanks: [
+      { who: 'TOLLMAN', text: 'His tally. Let me see. Six carts short of mine, every week, and the six are all night carts.' },
+      { who: 'TOLLMAN', text: 'So it is neither of us being robbed. Take this for the walk, and tell him I said so.' },
+    ],
+    step: { kind: 'deliver', toArea: 'millharrow', toNpc: 'millharrow_tollman' },
+    reward: { ducats: 65, marrowShards: 1 },
+  },
+  {
     id: 'the_stile_report',
     giver: 'fenwicks_crossing:fenwick_cartographer',
     title: 'Walk to the Weeping Stile and see what is still standing',
@@ -287,6 +461,22 @@ export const ERRANDS: readonly ErrandDef[] = [
     ],
     step: { kind: 'survey', area: 'weeping_stile', x: -2, z: 14 },
     reward: { ducats: 145 },
+  },
+  {
+    id: 'the_fleece_count',
+    giver: 'brays_barn:brays_herdsman',
+    title: 'Carry the fleece count out to the weaver',
+    offer: [
+      { who: 'HERDSMAN', text: 'Sixty-one fleeces this year and the weaver needs the number before she sets the loom, and I am not leaving this door while there is a warrant on it.' },
+      { who: 'HERDSMAN', text: 'She is out in the bowl. Tell her sixty-one, and tell her four of them are black.' },
+    ],
+    nudge: [{ who: 'HERDSMAN', text: 'The weaver. Out in the grass, below the barn. Sixty-one, four black.' }],
+    thanks: [
+      { who: 'WEAVER', text: 'Sixty-one. And four black -- good, the black ones do not take the dye and the court will not buy them, so I get to keep them.' },
+      { who: 'WEAVER', text: 'For the walk down the slope. It is not far, but he would not have come.' },
+    ],
+    step: { kind: 'deliver', toArea: 'brays_hollow', toNpc: 'brays_weaver' },
+    reward: { ducats: 35 },
   },
   {
     id: 'what_the_child_saw',
@@ -332,7 +522,7 @@ export const ERRANDS: readonly ErrandDef[] = [
   },
   {
     id: 'bone_meal',
-    giver: 'bonemarket:bonemarket_grocer',
+    giver: 'bonemarket_hall:bonemarket_grocer',
     title: 'Bring back barrow chalk from the Bone Bastion',
     offer: [
       { who: 'GROCER', text: 'You will think this is a joke because of where I keep my stall. It is not.' },

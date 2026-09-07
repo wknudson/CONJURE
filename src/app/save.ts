@@ -80,6 +80,9 @@ import { isLair } from '../core/data/lairs.js';
 import { isPack } from '../core/data/packs.js';
 import { errandById } from '../district/errands.js';
 import { NIGHT_ANCHOR, OPENING_HOUR } from '../district/daylight.js';
+import { cacheById } from '../district/caches.js';
+import { forageNodeById } from '../district/forage.js';
+import { areaById } from '../district/areas/index.js';
 
 /**
  * Errands run, and the one currently open.
@@ -95,7 +98,7 @@ export interface ErrandLedger {
 
 const KEY = 'conjure.save';
 const BACKUP_KEY = 'conjure.save.bak';
-export const SAVE_VERSION = 25;
+export const SAVE_VERSION = 26;
 
 /**
  * The first version whose health numbers are written at the stretched scale.
@@ -181,6 +184,15 @@ const FIRST_ERRANDS = 23;
  * left, and the upgrade is invisible until they next cross a road.
  */
 const FIRST_CLOCK = 24;
+
+/**
+ * The first version with places you can enter, and the things in them.
+ *
+ * Three ledgers. A pre-v26 character has opened no caches and raised no flags, and as far as
+ * the file knows has stood nowhere -- `visited` starts empty and fills from the next mount,
+ * which is honest: it records where the file saw them, not where they were.
+ */
+const FIRST_WORLD_PLACES = 26;
 
 /**
  * The steps of the first lap, in the order a new Commander meets them.
@@ -442,6 +454,26 @@ export interface Profile {
    */
   clock: number;
   /**
+   * Caches opened, by id (v26). A ledger: nothing removes from it. A chest opens once per
+   * character, which is the whole difference between a cache and a forage node.
+   */
+  caches: string[];
+  /**
+   * The world's own flags, by name (v26). A ledger. Free strings on purpose: the content that
+   * raises one is the only thing that knows what it means, and the Chronicle's gates read them
+   * back -- a ledger read, a candle lit, a bell rung.
+   */
+  worldFlags: string[];
+  /** Areas ever stood in, by id (v26). A ledger, for the atlas to grey what has not been. */
+  visited: string[];
+  /**
+   * When each forage node was last picked, on the **street clock** (v26). Overwritten, like
+   * `hunts`, but in this character's hours rather than the wall's: a bed advances the clock and
+   * sleeping should regrow the herbs, and a node on wall time would refill while the tab was
+   * closed and never while you slept.
+   */
+  forage: Record<string, number>;
+  /**
    * Who the player said they were, at the desk (v18).
    *
    * Five fields and deliberately **no gear**: optics, vestment, trinket, treads and will
@@ -684,6 +716,11 @@ export function initializeNewProfile(profileId: string, rawLook: CharacterLook):
     // Dawn, not the night anchor. See `OPENING_HOUR` for the ruling; the anchor stays the hour
     // a pre-clock save is put back at, because that is where those characters were standing.
     clock: OPENING_HOUR,
+    // Nothing opened, nothing happened, nowhere stood. The first mount writes the first entry.
+    caches: [],
+    worldFlags: [],
+    visited: [],
+    forage: {},
     decks,
     // A warband of their own colour, spending as much of the ten as their school's shelf
     // allows -- so a new player meets the deployment phase with a real line to place, and
@@ -1205,6 +1242,10 @@ function migrateProfile(
     hunts: readHunts(data.hunts, version),
     errands: readErrands(data.errands, version),
     clock: readClock(data.clock, version),
+    caches: readCaches(data.caches, version),
+    worldFlags: readWorldFlags(data.worldFlags, version),
+    visited: readVisited(data.visited, version),
+    forage: readForage(data.forage, version),
     decks,
     roster,
     rosterUnlocks: unlocks,
@@ -1600,6 +1641,51 @@ function readClock(raw: unknown, version: number): number {
   // sky reads the day off it. A v24 save holds a number between 0 and 24, which is day zero and
   // needs nothing done to it -- which is why the sky changing did not cost a version.
   return Math.max(0, raw);
+}
+
+/**
+ * Caches opened, filtered against the registry: a chest that has left the game should not
+ * haunt the ledger, and one that never existed is a hand-edited file.
+ */
+function readCaches(raw: unknown, version: number): string[] {
+  if (version < FIRST_WORLD_PLACES) return [];
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((x): x is string => typeof x === 'string' && !!cacheById(x)))];
+}
+
+/**
+ * The world's flags, **not** filtered against anything -- like `campaign`, and for the same
+ * reason: a flag the content stopped raising is still a thing that happened, and a rename that
+ * silently un-happened it would be the Chronicle forgetting on the player's behalf.
+ */
+function readWorldFlags(raw: unknown, version: number): string[] {
+  if (version < FIRST_WORLD_PLACES) return [];
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((x): x is string => typeof x === 'string' && x.trim() !== ''))];
+}
+
+/** Areas ever stood in, filtered against the atlas. An area that was cut was never stood in. */
+function readVisited(raw: unknown, version: number): string[] {
+  if (version < FIRST_WORLD_PLACES) return [];
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((x): x is string => typeof x === 'string' && !!areaById(x)))];
+}
+
+/**
+ * Forage stamps, by node id: finite, not negative, and only for nodes that still exist. A
+ * stamp in the future is kept -- `forageReady` reads it as ready, the rule the hunt clock
+ * keeps -- rather than clamped to now, which would lock a wound-back character out for a day.
+ */
+function readForage(raw: unknown, version: number): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (version < FIRST_WORLD_PLACES) return out;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!forageNodeById(id)) continue;
+    if (typeof value !== 'number' || !Number.isFinite(value)) continue;
+    out[id] = Math.max(0, value);
+  }
+  return out;
 }
 
 function readTutorialFlags(raw: unknown, version: number): TutorialFlag[] {

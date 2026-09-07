@@ -85,6 +85,12 @@ the field.
 - **H** opens the rules reference. **Esc** or right-click cancels. **Space** fast-forwards
   the enemy turn. **Enter** ends yours.
 
+Between fights you are on the street. **WASD** walks, **Space** interacts with whatever the
+prompt names — a door, a bench, a notice, a chest, a patch of herbs, a bed — **I** opens the
+satchel, **J** opens the Field Journal from anywhere, **M** the map, **Q** and **E** turn the
+camera, **Esc** the menu. Doors lead into rooms: the trades are benches inside them, and a
+good many contracts are fought behind one.
+
 ### Learning it
 
 A first-time player gets a six-step walkthrough and the danger zone switched on by

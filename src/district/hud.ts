@@ -169,7 +169,7 @@ export class DistrictHud {
     const help = el('div', 'district-panel district-help');
     this.help = help;
     help.textContent =
-      'WASD / arrows - move\nQ / E - orbit camera\nSpace - interact / advance\nM - map\nI - satchel\nEsc - menu / leave';
+      'WASD / arrows - move\nQ / E - orbit camera\nSpace - interact / advance\nM - map\nI - satchel\nJ - field journal\nEsc - menu / leave';
     root.appendChild(help);
 
     this.setZone(true);
@@ -724,6 +724,33 @@ export class DistrictHud {
     }
   }
 
+  /**
+   * Something to read: a bill, a plaque, a ledger, the writing on a grave.
+   *
+   * The fourth renderer into the one overlay the board, the gate and the stalls share, for the
+   * reason `openHunts` gives: Space and Escape put it down through `closeBoard`, movement stays
+   * blocked while it is up, and the prompt behaves, with no fourth copy of that logic in the
+   * screen. The form only changes the setting -- a ledger is set in a clerk's hand, a grave in
+   * capitals -- so the same panel reads as several kinds of paper.
+   */
+  openReading(notice: { title: string; lines: readonly string[]; form: string }): void {
+    this.boardOpen = true;
+    this.boardPanel.classList.add('is-open');
+    this.boardPanel.innerHTML = `
+      <div class="district-board__card brass-panel district-reading district-reading--${esc(notice.form)}">
+        <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
+        <i class="rivet rivet--bl"></i><i class="rivet rivet--br"></i>
+        <div class="district-board__head">
+          <div class="district-board__title">${esc(notice.title)}</div>
+          <button class="brass-btn district-board__close">Put it down</button>
+        </div>
+        <div class="district-reading__body">${notice.lines.map((l) => `<p>${esc(l)}</p>`).join('')}</div>
+      </div>`;
+    this.boardPanel
+      .querySelector('.district-board__close')!
+      .addEventListener('click', () => this.closeBoard());
+  }
+
   closeBoard(): void {
     this.boardOpen = false;
     this.boardPanel.classList.remove('is-open');
@@ -769,16 +796,24 @@ export class DistrictHud {
     const ctx = this.mapCanvas.getContext('2d');
     if (!ctx) return;
 
-    this.mapCanvas.width = ground.width;
-    this.mapCanvas.height = ground.height;
+    // A big area's bake outgrows the panel. Rather than shrinking the cells until a lane is a
+    // pixel wide, the panel becomes a window onto the bake: centred on you, clamped to the
+    // bake's edges so it never shows void, and the same size as ever for a small ward.
+    const cw = Math.min(MAP_PANEL_W, ground.width);
+    const ch = Math.min(MAP_PANEL_H, ground.height);
+    const clamp = (v: number, hi: number): number => Math.round(Math.max(0, Math.min(hi, v)));
+    const ox = clamp(((view.player.x + area.halfX) / 4) * cell - cw / 2, ground.width - cw);
+    const oy = clamp(((view.player.z + area.halfZ) / 4) * cell - ch / 2, ground.height - ch);
+    this.mapCanvas.width = cw;
+    this.mapCanvas.height = ch;
     ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, ground.width, ground.height);
-    ctx.drawImage(ground, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.drawImage(ground, ox, oy, cw, ch, 0, 0, cw, ch);
 
     // World units to map pixels. The grid is the same grid `tileAt` reads, so a marker
     // landing on the wrong square means the position is wrong, not the drawing.
-    const px = (x: number): number => ((x + area.halfX) / 4) * cell;
-    const pz = (z: number): number => ((z + area.halfZ) / 4) * cell;
+    const px = (x: number): number => ((x + area.halfX) / 4) * cell - ox;
+    const pz = (z: number): number => ((z + area.halfZ) / 4) * cell - oy;
 
     const dot = (x: number, z: number, r: number, fill: string, ring?: string): void => {
       ctx.beginPath();
@@ -887,7 +922,9 @@ export class DistrictHud {
   private bakeMapGround(area: AreaDef): HTMLCanvasElement {
     if (this.mapGround && this.mapGroundFor === area.id) return this.mapGround;
 
-    const cell = Math.max(6, Math.min(16, Math.floor(Math.min(520 / area.cols, 360 / area.rows))));
+    // Never under eight: below that a lane is one pixel and the map stops being a map. A bake
+    // that outgrows the panel at eight is shown through a window instead -- see `drawMap`.
+    const cell = Math.max(8, Math.min(16, Math.floor(Math.min(MAP_PANEL_W / area.cols, MAP_PANEL_H / area.rows))));
     const canvas = document.createElement('canvas');
     canvas.width = area.cols * cell;
     canvas.height = area.rows * cell;
@@ -962,8 +999,14 @@ export class DistrictHud {
    * Uses the same overlay as the death notice and refuses to open over one, so a bill is
    * never covered by a menu. Nothing here saves — progress is written as it happens.
    */
-  showMenu(onLeave: () => void): void {
+  showMenu(onLeave: () => void, journal?: { detail: string; open: () => void }): void {
     if (this.overlayIsShown) return;
+    // The Journal sits in the menu as well as on `J`, because a thing you carry should be
+    // findable by somebody who has not read the help panel. Its line under the button is the
+    // deck's state, which is what the old Journal door said under its prompt.
+    const journalRow = journal
+      ? `<button class="brass-btn district-menu__journal">Open the Field Journal<small class="district-menu__detail">${esc(journal.detail)}</small></button>`
+      : '';
     this.overlay.innerHTML = `
       <div class="hub-notice__card brass-panel district-menu">
         <i class="rivet rivet--tl"></i><i class="rivet rivet--tr"></i>
@@ -972,12 +1015,14 @@ export class DistrictHud {
         <div class="hub-notice__body">Your progress is kept as you go. Leaving returns you to the title wall, where another commission can be opened or this one burned.</div>
         <div class="district-menu__actions">
           <button class="brass-btn district-menu__resume">Back to the street</button>
+          ${journalRow}
           <button class="brass-btn district-menu__settings">Settings</button>
           <button class="brass-btn district-menu__leave">Leave to the title wall</button>
         </div>
       </div>`;
     this.overlay.classList.add('is-shown', 'is-menu');
     this.overlay.querySelector('.district-menu__resume')!.addEventListener('click', () => this.closeMenu());
+    this.overlay.querySelector('.district-menu__journal')?.addEventListener('click', () => journal?.open());
     this.overlay.querySelector('.district-menu__settings')!.addEventListener('click', () => openSettings());
     this.overlay.querySelector('.district-menu__leave')!.addEventListener('click', () => {
       this.closeMenu();
@@ -1093,10 +1138,27 @@ function mapTileColor(def: { safe: boolean; walk: boolean; tex: string }): strin
       return '#2a3327';
     case 'weeds':
       return '#2f3238';
+    // Floors. Warmer than any street, so a room reads as a room on the map too.
+    case 'planks':
+      return '#4a3624';
+    case 'rug':
+      return '#5a2a2a';
+    case 'hearth':
+      return '#33302e';
+    case 'ironplate':
+      return '#33383f';
+    case 'straw':
+      return '#5a4a2a';
+    case 'cave':
+      return '#23262a';
     default:
       return '#282c33';
   }
 }
+
+/** The map panel's window, in pixels. A bake larger than this is scrolled, not shrunk. */
+const MAP_PANEL_W = 520;
+const MAP_PANEL_H = 360;
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,

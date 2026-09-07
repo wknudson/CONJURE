@@ -24,9 +24,10 @@ import {
 import { FOLK_LINES } from '../district/dialogue.js';
 import { STORY_CONTRACTS } from '../core/data/campaign.js';
 import { AREAS } from '../district/areas/index.js';
+import { NOTICES } from '../district/notices.js';
 
 const CONTRACTS = new Set(STORY_CONTRACTS.map((c) => c.id));
-const walked = (...ids: string[]): Chronicle => ({ campaign: ids });
+const walked = (...ids: string[]): Chronicle => ({ campaign: ids, flags: [] });
 
 /** Every id any gate anywhere names — asides and graffiti alike. */
 function allGateIds(): { where: string; id: string }[] {
@@ -215,7 +216,8 @@ describe('the walls', () => {
     for (const area of AREAS) {
       const always =
         (area.props.graffiti ?? []).some((g) => !g.gate) ||
-        (area.props.dressing ?? []).some((d) => d.kind === 'waystone' && d.text);
+        (area.props.dressing ?? []).some((d) => d.kind === 'waystone' && d.text) ||
+        NOTICES.some((n) => n.areaId === area.id && !n.gate);
       expect(always, `${area.id} is mute until the campaign is walked`).toBe(true);
     }
   });

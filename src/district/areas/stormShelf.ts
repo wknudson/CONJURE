@@ -12,7 +12,7 @@
  * way and then left.
  */
 
-import { defineArea, type AreaDef, type TileDef } from '../map.js';
+import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
 
 /**
  * The Shelf's legend.
@@ -45,6 +45,13 @@ const SHELF_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { minHeight: 5.0, maxHeight: 8.0, inset: 0.15, depthInset: 0.15, chimneyChance: 0, split: false },
   },
+  /** The cave mouth: rock, taken whole, with a door in the south face of it. */
+  K: {
+    tex: 'blasted',
+    safe: false,
+    walk: false,
+    solid: { minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
+  },
 };
 
 /**
@@ -55,31 +62,40 @@ const SHELF_LEGEND: Record<string, TileDef> = {
  * track.
  */
 const GRID: readonly string[] = [
-  'RRRRRRRRRRRRRRRRRRRRRRRRRR', //  0
-  'RhhhhhhhhhhbbbbhhhhhhhhhhR', //  1
-  'RhbbbhhhhbbbbbbbbbbhhhbbbR', //  2
-  'RhbPbhhhhbPbbbbbbPbhhhbPbR', //  3  a rank of footings
-  'RhbbbhhhbbbbbbbbbbbhhhbbbR', //  4
-  'Rbbhh##bbbbbbbbbb##hhhhbbR', //  5
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', //  6
-  'RbbPbbbbbbPbbbbbbPbbbbbPbR', //  7
-  'RbbbbbbbbbbbbbbbbbbbhhbbbR', //  8
-  'RbhhhhhbbbbbbbbbbbbhhhhbbR', //  9
-  ',,,,,,,,,,,,,,,,,,,,,,,,,R', // 10  the track west, to the Crossing
-  ',,,,,,,,,,,,,,,,,,,,,,,,,R', // 11
-  'RhbbbhhhhbbbbbbhbbbhhhbbbR', // 12
-  'RhbPbhhhhbPbbbhhbPbhhhbPbR', // 13
-  'RhbbbhhhhbbbbbhhbbbhhhbbbR', // 14
-  'Rhhhh##hhhhbbbbhh##hhhhhhR', // 15
-  'RhbbbhhhhbbbbbbbbbbhhhbbbR', // 16
-  'RhbPbhhhhbPbbbbbbPbhhhbPbR', // 17
-  'RbbbbhhbbbbbbbbbbbbhhhbbbR', // 18
-  'Rbbhh##bbbbbbbbbb##bhhhbbR', // 19
-  'RbbbbbbbbbbbbbbbbbbbbbbbbR', // 20
-  'RbbPbbbbbbPbbbbbbPbbbbbPbR', // 21
-  'RbbbbhbbbbbbbbbbbbbbhhbbbR', // 22
-  'RRRRRRRRRRRRRRRRRRRRRRRRRR', // 23
+  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  0
+  'RhhhhhhhhhhhKKKKhhhhhhhhhhhhhR', //  1
+  'RhhhhhhhhhhhKKKKhhhhhhhhhhhhhR', //  2
+  'RhhhhhhhhhhhhbbbbhhhhhhhhhhhhR', //  3
+  'RhhhbbbhhhhbbbbbbbbbbhhhbbbhhR', //  4
+  'RhhhbPbhhhhbPbbbbbbPbhhhbPbhhR', //  5
+  'RhhhbbbhhhbbbbbbbbbbbhhhbbbhhR', //  6
+  'Rhhbbhh##bbbbbbbbbb##hhhhbbhhR', //  7
+  'RhhbbbbbbbbbbbbbbbbbbbbbbbbhhR', //  8
+  'RhhbbPbbbbbbPbbbbbbPbbbbbPbhhR', //  9
+  'RhhbbbbbbbbbbbbbbbbbbbhhbbbhhR', // 10
+  'RhhbhhhhhbbbbbbbbbbbbhhhhbbhhR', // 11
+  ',hh,,,,,,,,,,,,,,,,,,,,,,,,hhR', // 12
+  ',hh,,,,,,,,,,,,,,,,,,,,,,,,hhR', // 13
+  'RhhhbbbhhhhbbbbbbhbbbhhhbbbhhR', // 14
+  'RhhhbPbhhhhbPbbbhhbPbhhhbPbhhR', // 15
+  'RhhhbbbhhhhbbbbbhhbbbhhhbbbhhR', // 16
+  'Rhhhhhh##hhhhbbbbhh##hhhhhhhhR', // 17
+  'RhhhbbbhhhhbbbbbbbbbbhhhbbbhhR', // 18
+  'RhhhbPbhhhhbPbbbbbbPbhhhbPbhhR', // 19
+  'RhhbbbbhhbbbbbbbbbbbbhhhbbbhhR', // 20
+  'Rhhbbhh##bbbbbbbbbb##bhhhbbhhR', // 21
+  'RhhbbbbbbbbbbbbbbbbbbbbbbbbhhR', // 22
+  'RhhbbPbbbbbbPbbbbbbPbbbbbPbhhR', // 23
+  'RhhbbbbhbbbbbbbbbbbbbbhhbbbhhR', // 24
+  'RhhhhhhhhhhhhhhhhhhhhhhhhhhhhR', // 25
+  'RhhhhhhhhhhhhhhhhhhhhhhhhhhhhR', // 26
+  'RhhRRRRRRRRRRRRRRRRRRRRRRRRhhR', // 27
 ];
+
+const HALF_X = (GRID[0]!.length * TILE) / 2;
+const HALF_Z = (GRID.length * TILE) / 2;
+const xOfCol = (col: number): number => col * TILE - HALF_X + TILE / 2;
+const zOfRow = (row: number): number => row * TILE - HALF_Z + TILE / 2;
 
 export const STORM_SHELF_ID = 'storm_shelf';
 
@@ -93,11 +109,20 @@ export const STORM_SHELF: AreaDef = defineArea({
   safety: 'none',
   exits: [
     {
+      // Pylon Nine's base, in the north face of the shelf. The iron the warnings are about goes down into it.
+      to: 'storm_shelf_pylon_base',
+      x: xOfCol(13.5),
+      z: zOfRow(2) + TILE / 2 + 1.4,
+      label: 'Into Pylon Nine\'s base',
+      door: { x: xOfCol(13.5), z: zOfRow(2) + TILE / 2 + 0.05, facesSouth: true, style: 'cave' },
+      arrive: { x: 0, z: 16 },
+    },
+    {
       to: 'fenwicks_crossing',
-      x: -50,
+      x: -HALF_X + 2,
       z: -6,
       label: "West, down off the shelf to Fenwick's Crossing",
-      arrive: { x: 46, z: -2 },
+      arrive: { x: 46, z: -6 },
     },
   ],
   props: {
@@ -118,6 +143,15 @@ export const STORM_SHELF: AreaDef = defineArea({
     ],
     /** Pylon country. Scorch where the sky has been down, and cairns where shepherds have been. */
     dressing: [
+      { kind: 'scorch', x: -52, z: -48 },
+      { kind: 'cairn', x: 52, z: -20 },
+      { kind: 'spoilheap', x: -52, z: -16 },
+      { kind: 'bracken', x: 52, z: 16 },
+      { kind: 'scorch', x: -52, z: 28 },
+      { kind: 'cairn', x: 52, z: 36 },
+      { kind: 'scorch', x: 28, z: -48 },
+      { kind: 'spoilheap', x: -28, z: 48 },
+      { kind: 'cairn', x: 20, z: 48 },
       { kind: 'scorch', x: -46, z: -42 },
       { kind: 'scorch', x: -14, z: -38 },
       { kind: 'scorch', x: 34, z: -34 },

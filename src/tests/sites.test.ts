@@ -80,7 +80,11 @@ describe('contract sites', () => {
   });
 
   it('answers area lookups', () => {
-    expect(sitesInArea('highcourt').length).toBeGreaterThanOrEqual(7);
+    // Highcourt's seven sites are split between the street and its three rooms now.
+    expect(sitesInArea('highcourt').length).toBeGreaterThanOrEqual(2);
+    expect(sitesInArea('highcourt_undercroft').length).toBe(3);
+    expect(sitesInArea('highcourt_spire_lobby').length).toBe(1);
+    expect(sitesInArea('highcourt_smoke_eaters').length).toBe(1);
     expect(sitesInArea('nowhere')).toHaveLength(0);
   });
 

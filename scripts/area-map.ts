@@ -29,8 +29,8 @@ for (const area of areas) {
   };
 
   put(area.spawn.x, area.spawn.z, 'S');
-  for (const d of area.props.doors ?? []) put(d.x, d.z, 'D');
-  for (const e of area.exits) put(e.x, e.z, 'X');
+
+  for (const e of area.exits) put(e.x, e.z, e.door ? 'D' : 'X');
   if (area.props.board) put(area.props.board.x, area.props.board.z, 'B');
   if (area.props.huntSignpost) put(area.props.huntSignpost.x, area.props.huntSignpost.z, 'H');
   for (const n of area.props.npcs ?? []) put(n.x, n.z, 'N');

@@ -64,7 +64,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'lamprow:tithe',
     areaId: 'lamprow',
-    at: { x: 30, z: -10 },
+    at: { x: 44, z: -22 },
     encounterId: 'lamprow_tithe',
     label: 'Behind the Lighters’ Hall',
     interactDetail:
@@ -73,7 +73,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'bonemarket:vermin',
     areaId: 'bonemarket',
-    at: { x: 34, z: -14 },
+    at: { x: 30, z: -22 },
     encounterId: 'bonemarket_vermin',
     label: 'Stall Row',
     interactDetail:
@@ -82,7 +82,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'lamprow:dark_stretch',
     areaId: 'lamprow',
-    at: { x: -14, z: -6 },
+    at: { x: -40, z: 22 },
     encounterId: 'lamplighter_escort',
     label: 'The Dark Stretch',
     interactDetail:
@@ -91,7 +91,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'ashfall_ward:bakery_door',
     areaId: 'ashfall_ward',
-    at: { x: 22, z: -4 },
+    at: { x: 36, z: -8 },
     encounterId: 'curfew_breakers',
     label: 'The Bakery Door',
     interactDetail:
@@ -100,16 +100,17 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'lamprow:printers_cellar',
     areaId: 'lamprow',
-    at: { x: -22, z: 26 },
+    at: { x: -36, z: 34 },
     encounterId: 'debt_collected_minor',
     label: 'The Printers’ Cellar',
     interactDetail:
       'A cellar door below the Sink, and the smell of ink through the boards. The warrant says bring gloves.',
   },
   {
-    id: 'highcourt:smoke_eaters_bench',
-    areaId: 'highcourt',
-    at: { x: 6, z: -6 },
+    // Over the tables of the Rest itself now, which is where a bench belongs.
+    id: 'highcourt_smoke_eaters:the_bench',
+    areaId: 'highcourt_smoke_eaters',
+    at: { x: 12, z: -4 },
     encounterId: 'smoke_eaters_rest',
     label: 'The Smoke-Eater’s Bench',
     // The barefoot veteran: the man the blurb says has nothing left to put up but the beast.
@@ -118,20 +119,22 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
       'He has claimed the bench, and the clean-air trade walks the long way round him. He duels anyone the Wardens send — and duels are wagered.',
   },
   {
-    id: 'ward_seven:cistern_mouth',
-    areaId: 'ward_seven',
-    at: { x: -10, z: -22 },
+    // Down in the cistern itself now, at the mouth, past the crew that moved in by the pumps.
+    id: 'ward_seven_cistern:the_mouth',
+    areaId: 'ward_seven_cistern',
+    at: { x: -8, z: -16 },
     encounterId: 'fouled_cistern',
     label: 'The Cistern Mouth',
     interactDetail:
       'The pumps foul by noon and the water tastes of what is living in it. The ward has stopped drawing from the north pipe.',
   },
   {
-    id: 'cinderworks:bill_fence',
-    areaId: 'cinderworks',
-    at: { x: -26, z: 30 },
+    // Inside the shed behind the fence now, at the press the bills come off.
+    id: 'cinderworks_posters:the_press',
+    areaId: 'cinderworks_posters',
+    at: { x: 6, z: 12 },
     encounterId: 'poster_work',
-    label: 'The Bill Fence',
+    label: 'The Press',
     interactDetail:
       'Fresh paste every morning, the length of the fence. Somebody wants these read more than they want to be paid.',
   },
@@ -140,7 +143,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     // which is the ward's one lesson.
     id: 'ashfall_ward:hollis_granary',
     areaId: 'ashfall_ward',
-    at: { x: -22, z: -2 },
+    at: { x: -34, z: -18 },
     encounterId: 'gutter_dispute',
     label: 'The Hollis Granary',
     interactDetail:
@@ -150,9 +153,10 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     // The fiction names no ward — decided: Ward Seven, the wet poor ward where the
     // healer, apothecary and herbalist already stand. A clinic for unregistered
     // Whisperers belongs where the Magistracy's water went bad.
-    id: 'ward_seven:back_alley_clinic',
-    areaId: 'ward_seven',
-    at: { x: 14, z: 22 },
+    // Inside the clinic, which is a room off the terrace lane now rather than a label on it.
+    id: 'ward_seven_clinic:the_quota',
+    areaId: 'ward_seven_clinic',
+    at: { x: 10, z: -12 },
     encounterId: 'clinic_quota',
     label: 'The Back-Alley Clinic',
     interactDetail:
@@ -183,16 +187,17 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'saltglass:customs_chain',
     areaId: 'saltglass',
-    at: { x: -6, z: -30 },
+    at: { x: 30, z: -38 },
     encounterId: 'saltglass_riot',
     label: 'The Customs Chain',
     interactDetail:
       'The crowd on the quay is not dispersing, and the chain across the harbour mouth has a writ tag nobody will read aloud.',
   },
   {
-    id: 'brays_hollow:marsh_farmstead',
-    areaId: 'brays_hollow',
-    at: { x: -10, z: -6 },
+    // Over the straw in the barn itself now, which is where the herd is.
+    id: 'brays_barn:the_distraint',
+    areaId: 'brays_barn',
+    at: { x: 0, z: -4 },
     encounterId: 'warrant_of_distraint',
     label: 'The Marsh Farmstead',
     interactDetail:
@@ -219,13 +224,14 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
       'A banked fire just off the ride, laid by somebody who wants to be found by the right person. Duels are wagered.',
   },
   {
-    id: 'fenwicks_crossing:inn_cellar',
-    areaId: 'fenwicks_crossing',
-    at: { x: -26, z: 18 },
+    // Down the hatch behind the bar now, among the casks, where the barking is.
+    id: 'fenwicks_cellars:the_cellar',
+    areaId: 'fenwicks_cellars',
+    at: { x: 0, z: -4 },
     encounterId: 'cellar_clearance',
     label: 'The Inn Cellar',
     interactDetail:
-      'The trapdoor behind the coach inn, and the barking underneath it, and a landlord who would rather the Crossing were not burnt down.',
+      'The casks the brewer cannot get at, and the barking from the dark end, and a landlord upstairs who would rather the Crossing were not burnt down.',
   },
   {
     id: 'weeping_stile:cold_hearths',
@@ -237,9 +243,10 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
       'Every door unlocked and every hearth cold. The clerk is waiting at the first of them with the roll open.',
   },
   {
-    id: 'millharrow:mill_sluice',
-    areaId: 'millharrow',
-    at: { x: -18, z: -26 },
+    // In the flooded end of the granary itself now, which is where the water is.
+    id: 'millharrow_granary:the_flooded_end',
+    areaId: 'millharrow_granary',
+    at: { x: 0, z: -6 },
     encounterId: 'drowned_granary',
     label: 'The Mill Sluice',
     interactDetail:
@@ -326,11 +333,11 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     // Cinderworks, not the Caldera road: the code seats the fight there, the atlas
     // concurs, and the ward's south ash yards literally read as flats. A Caldera lair
     // would put four sites in one crater.
-    id: 'cinderworks:slag_flats',
-    areaId: 'cinderworks',
-    at: { x: 10, z: 10 },
+    id: 'cinderworks_foundry:the_flats',
+    areaId: 'cinderworks_foundry',
+    at: { x: 0, z: -4 },
     encounterId: 'dynamo_flats',
-    label: 'The Slag Flats',
+    label: 'The Flats',
     interactDetail:
       'Pit-brands on every track in the ash, and every track leads out. Nothing here is being stolen; it is being let go.',
   },
@@ -338,9 +345,9 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     // The fiction runs Fenwick's-to-the-undercroft, but Fenwick's already holds two
     // sites and the crack happens at this gate. The walk down Highcourt's service end,
     // past HE COUNTS THE FLOORS, is the better approach.
-    id: 'highcourt:undercroft_gate',
-    areaId: 'highcourt',
-    at: { x: -30, z: 26 },
+    id: 'highcourt_undercroft:the_gate',
+    areaId: 'highcourt_undercroft',
+    at: { x: 0, z: -12 },
     encounterId: 'relocation_train',
     label: 'The Undercroft Gate',
     interactDetail:
@@ -356,9 +363,10 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
       'The graves here are cut square and numbered in a clerk’s hand, and none of the numbers is old. Something large keeps the rows at night.',
   },
   {
-    id: 'highcourt:spire_doors',
-    areaId: 'highcourt',
-    at: { x: -2, z: -30 },
+    // At the far end of the lobby under the footing, where the doors actually are.
+    id: 'highcourt_spire_lobby:the_doors',
+    areaId: 'highcourt_spire_lobby',
+    at: { x: 0, z: -16 },
     encounterId: 'the_summons',
     label: 'The Spire Doors',
     interactDetail:
@@ -369,7 +377,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'highcourt:dispatch_line',
     areaId: 'highcourt',
-    at: { x: 14, z: 26 },
+    at: { x: 14, z: 34 },
     encounterId: 'dead_letters',
     label: 'The Dispatch Line',
     interactDetail:
@@ -377,9 +385,9 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     gate: { after: ['the_summons'] },
   },
   {
-    id: 'highcourt:undercroft_stair',
-    areaId: 'highcourt',
-    at: { x: -30, z: 34 },
+    id: 'highcourt_undercroft:the_stair',
+    areaId: 'highcourt_undercroft',
+    at: { x: -16, z: 8 },
     encounterId: 'undercroft_census',
     label: 'The Undercroft Stair',
     interactDetail:
@@ -399,9 +407,9 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     gate: { after: ['undercroft_census'] },
   },
   {
-    id: 'highcourt:floor_below',
-    areaId: 'highcourt',
-    at: { x: -34, z: 42 },
+    id: 'highcourt_undercroft:the_floor_below',
+    areaId: 'highcourt_undercroft',
+    at: { x: 16, z: 20 },
     encounterId: 'the_quiet_below',
     label: 'The Floor Below',
     interactDetail:

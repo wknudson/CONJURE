@@ -53,7 +53,6 @@ function occupied(a: AreaDef): { x: number; z: number; r: number }[] {
   for (const c of a.props.crates ?? []) out.push({ x: c.x, z: c.z, r: 2.2 });
   for (const l of a.props.lamps ?? []) out.push({ x: l.x, z: l.z, r: 2.2 });
   for (const t of a.props.trees ?? []) out.push({ x: t.x, z: t.z, r: 2.2 });
-  for (const d of a.props.doors ?? []) out.push({ x: d.x, z: d.z, r: 5.6 });
   for (const e of a.exits) out.push({ x: e.x, z: e.z, r: 6.0 });
   if (a.props.board) out.push({ x: a.props.board.x, z: a.props.board.z, r: 5.6 });
   if (a.props.huntSignpost) out.push({ x: a.props.huntSignpost.x, z: a.props.huntSignpost.z, r: 5.6 });

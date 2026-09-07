@@ -24,6 +24,7 @@ import {
   lamplighterPost,
   lampsAt,
   lampsLitAt,
+  lightingHour,
   mixHex,
   packOutAt,
   packSightAt,
@@ -32,9 +33,12 @@ import {
   wardenSightAt,
 } from '../district/daylight.js';
 import { AMBIENT } from '../district/look.js';
-import { AREAS } from '../district/areas/index.js';
+import { AREAS, areaById } from '../district/areas/index.js';
 
-const areas = Object.keys(AMBIENT);
+// The places that have a day. A room is lit at the anchor whatever the clock says -- see
+// `lightingHour` -- so its ambience is never put through the transform these blocks test, and
+// a dim warm forge would only fail "one sky" by being asked a question it never answers.
+const areas = Object.keys(AMBIENT).filter((id) => !areaById(id)?.indoor);
 const luma = (hex: string): number => {
   const n = parseInt(hex.slice(1), 16);
   return 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
@@ -448,5 +452,38 @@ describe('the lamplighter walks the row', () => {
 
     expect(lampsLitAt(5, ROW), 'untouched an hour into dawn').toBe(ROW);
     expect(lampsLitAt(8, ROW), 'and out an hour into full light').toBe(0);
+  });
+});
+
+describe('a room is lit at the anchor, whatever the clock says', () => {
+  it('pins the lighting hour indoors and leaves it alone outdoors', () => {
+    // The whole of `lightingHour`. A room's ambience is authored at the anchor like everybody
+    // else's and has no sky for the day curve to lift, so noon in a forge is the forge.
+    expect(lightingHour(true, 12)).toBe(NIGHT_ANCHOR);
+    expect(lightingHour(true, 0)).toBe(NIGHT_ANCHOR);
+    expect(lightingHour(true, 37.5)).toBe(NIGHT_ANCHOR);
+    expect(lightingHour(false, 12)).toBe(12);
+    expect(lightingHour(false, 37.5)).toBe(37.5);
+  });
+
+  it('means a room wears exactly its authored ambience at every hour', () => {
+    for (const area of AREAS) {
+      if (!area.indoor) continue;
+      const amb = AMBIENT[area.id]!;
+      for (const h of [0, 6, 12, 18, 23.9]) {
+        const { day, ...bare } = amb;
+        void day;
+        expect(ambientAt(amb, lightingHour(true, h)), `${area.id} at ${h}`).toEqual(bare);
+      }
+    }
+  });
+
+  it('keeps every room legible: thin, dark air, so the far wall is a wall', () => {
+    // `worldCombatSeams` asks the same of every area at combat range; this is the room-side
+    // statement of why. Lamprow's 0.036 is the thickest air anywhere is allowed to be.
+    for (const area of AREAS) {
+      if (!area.indoor) continue;
+      expect(AMBIENT[area.id]!.fogDensity, area.id).toBeLessThanOrEqual(0.036);
+    }
   });
 });

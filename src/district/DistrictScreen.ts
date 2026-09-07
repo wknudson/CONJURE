@@ -74,7 +74,6 @@ import {
   CombatRing,
   CompanionFollower,
   Critter,
-  DoorHotspot,
   Hotspot,
   NPC,
   Pack,
@@ -82,7 +81,7 @@ import {
   type Interactable,
   type Updatable,
 } from './entities.js';
-import { isSafeAt, type AreaDef, type DoorKey, type ExitSpec } from './map.js';
+import { isSafeAt, type AreaDef, type ExitSpec } from './map.js';
 import {
   cullSatisfiedBy,
   errandFor,
@@ -115,7 +114,20 @@ import type { CombatCarry } from '../core/engine/setup.js';
 import type { AiProfile } from '../core/ai/controller.js';
 import { huntAvailable } from '../core/data/hunts.js';
 import { hashText, makeRng, nextInt } from '../core/util/rng.js';
-import { flagForDoor, tutorialActive } from './quest.js';
+import { flagForBench, tutorialActive } from './quest.js';
+import { benchesInArea, type BenchDef, type BenchKind } from './benches.js';
+import { noticesInArea, type NoticeDef } from './notices.js';
+import { cachesInArea, type CacheDef, type CacheLoot } from './caches.js';
+import {
+  FORAGE_KINDS,
+  forageBite,
+  forageInArea,
+  forageLabel,
+  forageRemaining,
+  rollForage,
+  type ForageNode,
+} from './forage.js';
+import { restsInArea, restUntil, type RestDef } from './rests.js';
 
 /**
  * How fast the street clock runs: two game-hours a real minute.
@@ -269,6 +281,36 @@ export interface DistrictOpts {
    * which is in `core` and has no HUD. So it says so, and the street shows it.
    */
   onErrandComplete: (id: string) => string | null;
+  /**
+   * Caches this character has opened, and the call that opens one.
+   *
+   * A snapshot in, like `errands`; the write goes up and is paid there, through the same purse
+   * an errand pays into. Returns the line to show, or null if the file already had it open --
+   * a cache prompt is a dialogue-free interaction, and those are the kind that fire twice.
+   */
+  caches: readonly string[];
+  onCacheOpen: (id: string) => string | null;
+  /**
+   * The world's own flags: things that have happened that are not contracts. A ledger read, a
+   * candle lit, a bell rung. Raised by content, read by the Chronicle's gates. A snapshot in
+   * and a ledger write up, the shape `tutorial` has.
+   */
+  worldFlags: readonly string[];
+  onWorldFlag: (flag: string) => void;
+  /**
+   * When each forage node was last picked, on the street clock, and the call that picks one.
+   *
+   * Hours rather than the wall clock the hunts use: a bed advances the street clock and
+   * sleeping should regrow the herbs. The write goes up with the loot and the hour; it is paid
+   * there through the errand purse, and the line that comes back says what was found.
+   */
+  forage: Readonly<Record<string, number>>;
+  onForage: (id: string, loot: CacheLoot, clock: number) => string | null;
+  /**
+   * Takes a bed. Returns whether the fee was paid; the screen moves the clock itself, because
+   * the clock is the screen's while the player is standing in the world.
+   */
+  onRest: (id: string, fee: number) => boolean;
   onApothecary: () => void;
   onArtificer: () => void;
   onVivarium: () => void;
@@ -387,10 +429,17 @@ export class DistrictScreen implements Screen {
    */
   private litAtHour = 0;
 
-  /** What the street knows, for the graffiti and for what people say. */
+  /** What the street knows, for the graffiti, the doors, the notices and what people say. */
   private get chronicle(): Chronicle {
-    return { campaign: this.opts.campaign };
+    return { campaign: this.opts.campaign, flags: this.worldFlags };
   }
+
+  /** Local mirror of the world's flags, so a flag raised in this room gates the next thing in it. */
+  private worldFlags: string[] = [];
+  /** Local mirror of the opened caches, so one cannot be opened twice in one visit. */
+  private opened: string[] = [];
+  /** Local mirror of the forage stamps, so a node picked this visit reads as picked. */
+  private picked: Record<string, number> = {};
 
   /** Whoever walks this ward's lamps, if anybody does. See `walkTheRow`. */
   private lamplighter: NPC | null = null;
@@ -451,6 +500,9 @@ export class DistrictScreen implements Screen {
     this.opts = opts;
     this.area = opts.area;
     this.flags = [...opts.tutorial];
+    this.worldFlags = [...opts.worldFlags];
+    this.opened = [...opts.caches];
+    this.picked = { ...opts.forage };
     // Here rather than in `mount`, because `unmount` hands the hour back and a screen that was
     // torn down before it finished building would otherwise report midnight -- setting every
     // such character's clock to zero on the way past.
@@ -499,10 +551,12 @@ export class DistrictScreen implements Screen {
     this.world = world;
 
     const camera = new THREE.PerspectiveCamera(
-      LOOK.fov,
+      this.walkFov(),
       this.width() / this.height(),
       0.1,
-      220,
+      // Far enough to see the horizon ring from the opposite corner of the map, whatever
+      // size the map is; 220 was the flat number and it was tuned for a twenty-tile ward.
+      Math.max(220, Math.hypot(this.area.halfX, this.area.halfZ) * 2 + 60),
     );
     this.camera = camera;
 
@@ -669,12 +723,39 @@ export class DistrictScreen implements Screen {
      ============================================================ */
 
   private buildInteractables(): void {
-    for (const door of this.area.props.doors ?? []) {
-      const hotspot = new DoorHotspot(door.key, door.x, door.z, `Enter ${door.name}`, () =>
-        this.openDoor(door.key, door.returnZ),
-      );
-      hotspot.interactDetail = this.doorStatus(door.key);
-      this.interactables.push(hotspot);
+    // The tills. Inside their rooms now, addressed in by area id; see `benches.ts`.
+    for (const bench of benchesInArea(this.area.id)) {
+      const spot = new Hotspot(bench.at.x, bench.at.z, bench.label, () => this.openBench(bench));
+      spot.interactDetail = this.benchStatus(bench.kind);
+      this.interactables.push(spot);
+    }
+
+    // Things to read. Gate-filtered and one per lectern, first open wins; see `notices.ts`.
+    for (const n of noticesInArea(this.area.id, this.chronicle)) {
+      this.interactables.push(new Hotspot(n.at.x, n.at.z, n.label, () => this.read(n)));
+    }
+
+    // Things to open. One already opened, or not yet earned, keeps its furniture and loses
+    // its prompt -- the chest is still in the room; it just has nothing to say. Asked again
+    // whenever a flag is raised in this room; see `rearmCaches`.
+    this.rearmCaches();
+
+    // Things that grow back. The prompt stays up while a node is picked clean and says when it
+    // returns, because a node that vanished would read as a thing that was never there.
+    for (const node of forageInArea(this.area.id)) {
+      if (!gateOpen(node.gate, this.chronicle)) continue;
+      const kind = FORAGE_KINDS[node.kind];
+      const spot: Hotspot = new Hotspot(node.at.x, node.at.z, kind.label, () => this.harvest(node, spot));
+      const left = forageRemaining(this.picked[node.id], this.hour, kind.cooldownHours);
+      spot.interactDetail = left > 0 ? `Picked clean — ${forageLabel(left)}` : kind.detail;
+      this.interactables.push(spot);
+    }
+
+    // Somewhere to sleep, and what it costs.
+    for (const bed of restsInArea(this.area.id)) {
+      const spot = new Hotspot(bed.at.x, bed.at.z, bed.label, () => this.rest(bed));
+      spot.interactDetail = `${bed.fee} Ducats · wakes at ${String(bed.wakeHour).padStart(2, '0')}:00`;
+      this.interactables.push(spot);
     }
 
     if (this.area.props.board) {
@@ -689,7 +770,21 @@ export class DistrictScreen implements Screen {
     // now, and the panel moved to a signpost on the far side where the cooldowns are still
     // worth reading.
     for (const exit of this.area.exits) {
-      this.interactables.push(new Hotspot(exit.x, exit.z, exit.label, () => this.travel(exit)));
+      // A way the Chronicle has not opened is still a prompt: it says why it will not, and
+      // the leaf on the wall is drawn boarded. Evaluated once at mount, like a site's liveness
+      // -- a door that opens while you stand in front of it opens on the next visit.
+      const open = gateOpen(exit.when, this.chronicle);
+      const spot = new Hotspot(
+        exit.x,
+        exit.z,
+        exit.label,
+        open
+          ? () => this.travel(exit)
+          : () => this.hud?.flashNotice(exit.lockedReason ?? 'It will not open.'),
+        exit.radius ?? 2.6,
+      );
+      if (!open) spot.interactDetail = exit.lockedReason ?? 'Barred';
+      this.interactables.push(spot);
     }
 
     // The hunts board, where an area posts one.
@@ -1105,25 +1200,28 @@ export class DistrictScreen implements Screen {
      Doors, position, and the guided lap
      ============================================================ */
 
-  /** The status line the old Safehouse door carried, now under the interact prompt. */
-  private doorStatus(key: DoorKey): string {
-    const { global, collection, deck, companionId, companionLevel } = this.opts;
-    if (key === 'apothecary') {
+  /** The status line the old Safehouse door carried, now under a bench's interact prompt. */
+  private benchStatus(kind: BenchKind): string {
+    const { global, collection, companionId, companionLevel } = this.opts;
+    if (kind === 'apothecary') {
       const { inventory } = global.overworld;
       return inventory.length >= INVENTORY_LIMIT
         ? 'Satchel full'
         : `room for ${INVENTORY_LIMIT - inventory.length} more`;
     }
-    if (key === 'artificer') {
+    if (kind === 'artificer') {
       const raise = ascendableFor(collection).length;
       const cut = schematicsFor(collection).length;
       if (raise > 0) return `${raise} ready to ascend · ${cut} schematics`;
       return cut === 0 ? 'nothing on the bench' : `${cut} schematics on file`;
     }
-    if (key === 'vivarium') {
-      const name = companionById(companionId)?.name ?? 'Nobody';
-      return `${name} · Level ${companionLevel}`;
-    }
+    const name = companionById(companionId)?.name ?? 'Nobody';
+    return `${name} · Level ${companionLevel}`;
+  }
+
+  /** What the Journal would say about the deck, under its entry in the menu. */
+  private journalStatus(): string {
+    const { collection, deck } = this.opts;
     const problems = validateDeck(deck, collection);
     const total = fusedDeckSize(deck.length);
     return problems.length > 0
@@ -1131,18 +1229,138 @@ export class DistrictScreen implements Screen {
       : `${total} cards — ${deck.length} yours, ${GRIMOIRE_SIZE} the beast's`;
   }
 
-  private openDoor(key: DoorKey, returnZ: number): void {
-    // Written before the hand-off, not only on unmount: a tab closed inside the Artificer
-    // should still come back to his doorstep rather than to the plaza.
-    this.writePosition({ x: this.player?.position.x ?? 0, z: returnZ });
+  private openBench(bench: BenchDef): void {
+    // Written before the hand-off, not only on unmount: a tab closed inside the Artificer's
+    // screen should still come back to his bench rather than to the doorstep -- and a stride
+    // back from it, or the room remounts with the prompt to reopen it already up.
+    this.writePosition({ x: bench.back.x, z: bench.back.z });
 
-    const flag = flagForDoor(key);
+    const flag = flagForBench(bench.kind);
     if (flag) this.raiseFlag(flag);
 
-    if (key === 'apothecary') this.opts.onApothecary();
-    else if (key === 'artificer') this.opts.onArtificer();
-    else if (key === 'vivarium') this.opts.onVivarium();
-    else this.opts.onJournal();
+    if (bench.kind === 'apothecary') this.opts.onApothecary();
+    else if (bench.kind === 'artificer') this.opts.onArtificer();
+    else this.opts.onVivarium();
+  }
+
+  /**
+   * The Field Journal, from wherever you are standing.
+   *
+   * The one trade you carry. It was a door -- the east building on Ashfall's cross-street --
+   * and a deck is not a place: a Commander three wards out who wants to look over their cards
+   * should not have to walk home to do it. The position is pinned first for the reason
+   * `openBench` pins its own: what comes back is a fresh mount of this very area, street or
+   * room, and it has to know where to put you.
+   */
+  private openJournal(): void {
+    if (this.inputLocked || this.combat || this.dialogue?.open || this.hud?.boardIsOpen) return;
+    const p = this.player;
+    if (!p) return;
+    this.hud?.closeMenu();
+    this.writePosition({ x: p.position.x, z: p.position.z });
+    this.raiseFlag('journal');
+    this.opts.onJournal();
+  }
+
+  /** Opens a notice in the panel, and records that it was read if the world wants to know. */
+  private read(n: NoticeDef): void {
+    this.hud?.openReading(n);
+    if (n.flag) this.raiseWorldFlag(n.flag);
+  }
+
+  /** Records a world flag locally so the next interaction in this room sees it, and upward. */
+  private raiseWorldFlag(flag: string): void {
+    if (this.worldFlags.includes(flag)) return;
+    this.worldFlags.push(flag);
+    this.opts.onWorldFlag(flag);
+    this.rearmCaches();
+  }
+
+  /**
+   * Offers any cache whose gate has just opened.
+   *
+   * Liveness is otherwise decided once at mount, like a site's, and for a contract that is
+   * right: contracts resolve on a screen change. A flag is raised *here*, in this room, by
+   * reading the tariff or lighting the candle -- and a strongbox that stayed shut until you
+   * walked out and back in would teach that the flag did nothing. So the caches, and only the
+   * caches, are asked again. A door is not: its leaf is drawn boarded and would have to be
+   * redrawn, and no door in the world is gated on a flag yet.
+   */
+  private rearmCaches(): void {
+    for (const c of cachesInArea(this.area.id)) {
+      if (this.offered.has(c.id) || this.opened.includes(c.id)) continue;
+      if (!gateOpen(c.gate, this.chronicle)) continue;
+      this.offered.add(c.id);
+      const spot: Hotspot = new Hotspot(c.at.x, c.at.z, c.label, () => this.open(c, spot));
+      if (c.detail) spot.interactDetail = c.detail;
+      this.interactables.push(spot);
+    }
+  }
+
+  /** Which caches have a prompt in this mount, so a re-arm never doubles one. */
+  private readonly offered = new Set<string>();
+
+  /**
+   * Opens a cache, once.
+   *
+   * A brew into a full satchel would evaporate between the lid and the purse, and a cache does
+   * not refill -- so a cache with a brew in it stays shut until there is room, and says so. The
+   * prompt is taken off the hotspot rather than the hotspot off the list, which drops it from
+   * `updateInteraction` without disturbing the list mid-iteration.
+   */
+  private open(c: CacheDef, spot: Hotspot): void {
+    if (this.opened.includes(c.id)) return;
+    if (c.loot.brew && this.opts.global.overworld.inventory.length >= INVENTORY_LIMIT) {
+      this.hud?.flashNotice('Make room in your satchel first.');
+      return;
+    }
+    this.opened.push(c.id);
+    const said = this.opts.onCacheOpen(c.id);
+    spot.interactLabel = null;
+    if (this.nearest === spot) this.nearest = null;
+    if (said) this.hud?.flashNotice(said);
+  }
+
+  /**
+   * Picks a forage node, and takes the bite if it has one.
+   *
+   * The roll is seeded off the node and the hour (`rollForage`), and the stamp is written
+   * before the purse is paid, so a reload between the two cannot try again. A bite is the
+   * ordinary pack ambush on a pack that already exists -- the ring draws, the board lands on
+   * the floor you are standing on, and `endFight` puts the room back.
+   */
+  private harvest(node: ForageNode, spot: Hotspot): void {
+    const kind = FORAGE_KINDS[node.kind];
+    const left = forageRemaining(this.picked[node.id], this.hour, kind.cooldownHours);
+    if (left > 0) {
+      this.hud?.flashNotice(`Picked clean — ${forageLabel(left)}.`);
+      return;
+    }
+    const { loot, bit } = rollForage(node, this.hour);
+    this.picked[node.id] = this.hour;
+    const said = this.opts.onForage(node.id, loot, this.hour);
+    spot.interactDetail = `Picked clean — ${forageLabel(kind.cooldownHours)}`;
+    const bite = bit ? forageBite(node) : null;
+    const line = [said, bite?.line].filter((s): s is string => !!s).join(' ');
+    if (line) this.hud?.flashNotice(line);
+    if (bite) this.ambush(bite.encounterId);
+  }
+
+  /**
+   * Takes a bed: pays the fee, and moves the clock to the waking hour.
+   *
+   * The hour is handed up at once rather than on unmount, so a tab closed on the pillow keeps
+   * the morning it paid for. Everything the clock drives -- the light, the lamps, the shifts,
+   * the sky -- follows on the next tick through `tickClock`'s own gate; nothing here relights.
+   */
+  private rest(bed: RestDef): void {
+    if (!this.opts.onRest(bed.id, bed.fee)) {
+      this.hud?.flashNotice(`Not enough Ducats. The bed is ${bed.fee}.`);
+      return;
+    }
+    this.hour = restUntil(this.hour, bed.wakeHour);
+    this.opts.onHour?.(this.hour);
+    this.hud?.flashNotice(bed.line);
   }
 
   private talkToVex(): void {
@@ -1260,6 +1478,12 @@ export class DistrictScreen implements Screen {
         this.hud?.toggleSatchel();
         return;
       }
+      if (e.code === 'KeyJ') {
+        // The Journal, carried. Not from under the menu -- that has its own entry for it.
+        e.preventDefault();
+        if (!this.hud?.menuIsOpen) this.openJournal();
+        return;
+      }
       if (e.code === 'KeyM') {
         // Deliberately not gated on `inputLocked`: the map is the one thing worth being
         // able to look at while something else has the screen, and it takes no action.
@@ -1274,7 +1498,10 @@ export class DistrictScreen implements Screen {
         // With nothing else to close, Escape is the menu — and the only way back to the
         // title wall. Not over a dialogue line or a bill, which the player should finish.
         else if (this.hud && !this.dialogue?.open && !this.hud.overlayIsShown) {
-          this.hud.showMenu(() => this.opts.onLeave());
+          this.hud.showMenu(() => this.opts.onLeave(), {
+            detail: this.journalStatus(),
+            open: () => this.openJournal(),
+          });
         }
         return;
       }
@@ -1659,6 +1886,11 @@ export class DistrictScreen implements Screen {
     this.yawGoal = (this.yawGoal ?? this.cameraYaw) + (steps * Math.PI) / 2;
   }
 
+  /** The lens for walking about: the game's, unless this is a room with its own. */
+  private walkFov(): number {
+    return this.area.indoor?.camera?.fov ?? LOOK.fov;
+  }
+
   private updateCamera(): void {
     const camera = this.camera;
     if (!camera) return;
@@ -1694,9 +1926,13 @@ export class DistrictScreen implements Screen {
     }
 
     const anchor = this.player?.position ?? new THREE.Vector3(this.area.spawn.x, 0, this.area.spawn.z);
-    const pitch = THREE.MathUtils.degToRad(LOOK.cameraPitch);
-    const horizontal = Math.cos(pitch) * LOOK.cameraDistance;
-    const height = Math.sin(pitch) * LOOK.cameraDistance;
+    // A room frames itself closer and steeper than the street -- see `IndoorSpec.camera`.
+    // The street's numbers are the game's, in `LOOK`; a room's are its own.
+    const room = this.area.indoor?.camera;
+    const distance = room?.distance ?? LOOK.cameraDistance;
+    const pitch = THREE.MathUtils.degToRad(room?.pitch ?? LOOK.cameraPitch);
+    const horizontal = Math.cos(pitch) * distance;
+    const height = Math.sin(pitch) * distance;
     camera.position.set(
       anchor.x + Math.sin(this.cameraYaw) * horizontal,
       height,
@@ -2083,7 +2319,7 @@ export class DistrictScreen implements Screen {
     this.world?.setArena(null);
     this.world?.setFogScale(1);
     if (this.camera) {
-      this.camera.fov = LOOK.fov;
+      this.camera.fov = this.walkFov();
       this.camera.updateProjectionMatrix();
     }
   }
@@ -2159,7 +2395,7 @@ export class DistrictScreen implements Screen {
       },
       onCamera: () => {
         if (!this.camera) return;
-        this.camera.fov = LOOK.fov;
+        this.camera.fov = this.walkFov();
         this.camera.updateProjectionMatrix();
       },
       onSun: () => this.world?.applySun(),

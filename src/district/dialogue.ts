@@ -395,6 +395,256 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'Whisperers wear through a sole a season. Whatever you are walking on out there, it is not flags.',
     },
   ],
+  ashfall_crier: [
+    {
+      who: 'THE CRIER',
+      text: 'Hear this: the wharf is closed, the Counting House is sealed, and the curfew bell is at nine. Hear this: none of that is new.',
+    },
+    {
+      who: 'THE CRIER',
+      text: 'I am paid by the word and the Magistracy writes the words. If you want the other news, the Cinder Cup has a board.',
+    },
+  ],
+  ashfall_toll_clerk: [
+    {
+      who: 'TOLL CLERK',
+      text: 'Nothing has tied up in eleven days. I open at six and I close at six and in between I count a box that does not change.',
+    },
+    {
+      who: 'TOLL CLERK',
+      text: 'The Counting House is supposed to send for the takings. If you see the Counting House, tell it.',
+    },
+  ],
+  ashfall_barge_hand: [
+    {
+      who: 'BARGEE',
+      text: 'Coal up from the works, grain down from the Ring. That was the run. Now the run is sitting in here waiting for a licence they do not issue.',
+    },
+    {
+      who: 'BARGEE',
+      text: 'The canal is open. Read the writ; it says so itself. It is everything on either bank of it that is shut.',
+    },
+  ],
+  ashfall_records_clerk: [
+    {
+      who: 'RECORDS CLERK',
+      text: 'The roll is on the lectern. You may read it. You may not correct it, and you may not ask why a hearth is marked sealed.',
+    },
+    {
+      who: 'RECORDS CLERK',
+      text: 'I was at Weeping Stile for the last count. I do the counting now and somebody else does the walking.',
+    },
+  ],
+  ashfall_counting_clerk: [
+    {
+      who: 'COUNTING CLERK',
+      text: 'The door was sealed for a reason and the reason has been served, apparently. So. Welcome to the arrears.',
+    },
+    {
+      who: 'COUNTING CLERK',
+      text: 'I remit what the Spire asks for. What is left over after that is a thing I have been told is nil. Look in the box if you like. I do not.',
+    },
+  ],
+  ashfall_priest: [
+    {
+      who: 'KEEPER OF THE FLAME',
+      text: 'Light one if you want. It costs nothing. That is the last thing in this ward of which that is true.',
+    },
+    {
+      who: 'KEEPER OF THE FLAME',
+      text: 'Forty-one names on the wall and sixty-one hearths in the Stile with none. I have asked for a second plaque. I have been assessed for asking.',
+    },
+  ],
+  ashfall_publican: [
+    {
+      who: 'PUBLICAN',
+      text: 'Brews on the shelf, a bed up the stair, and a board by the door that says what the crier is paid not to.',
+    },
+    {
+      who: 'PUBLICAN',
+      text: 'No tab for Whisperers. Nothing personal. You are the only trade in the ward that leaves and might not come back.',
+    },
+  ],
+  ashfall_drinker_a: [
+    {
+      who: 'PIT HAND',
+      text: 'Lamprow pit. Twelve years. Now I drink in the next ward over so nobody I know sees me do it before noon.',
+    },
+    {
+      who: 'PIT HAND',
+      text: 'The Cinderworks is hiring. So is the Warden. One of those you come home from.',
+    },
+  ],
+  ashfall_drinker_b: [
+    {
+      who: 'THE SINGER',
+      text: 'I had a song about the Counting House. The Magistracy assessed it. I have a song about the assessment now; it is shorter.',
+    },
+    {
+      who: 'THE SINGER',
+      text: 'Tip the box by the hearth if you want the long one. The keeper of the Flame gets a cut. Everybody gets a cut.',
+    },
+  ],
+  lamprow_oil_keeper: [
+    {
+      who: 'OIL KEEPER',
+      text: 'Nine gills a night for the row. I measure it out, the boy carries it, the lamplighter burns it, and the ward pays for it three times over.',
+    },
+    {
+      who: 'OIL KEEPER',
+      text: 'The measure is on the wall. Read it before you ask me why the shelf is half empty; the other half is the tithe.',
+    },
+  ],
+  lamprow_bailiff: [
+    {
+      who: 'BAILIFF',
+      text: 'The clerk outside talks about the tithe. I collect it. We do not do each other’s job and we do not stand in each other’s room.',
+    },
+    {
+      who: 'BAILIFF',
+      text: 'The Sink is in arrears to the last hearth and the collectors have been down there every night. Read the ledger and tell me where the money is. I would genuinely like to know.',
+    },
+  ],
+  lamprow_printer: [
+    {
+      who: 'PRINTER',
+      text: 'I print the tithe bills. I print the writs. I printed the notice that closed the Ashfall wharf, and I was paid on time for every one of them.',
+    },
+    {
+      who: 'PRINTER',
+      text: 'What is under my shop is not mine. I lease the cellar to a man I have never met, and the rent arrives in coin that smells of lamp oil.',
+    },
+  ],
+  bonemarket_boiler: [
+    {
+      who: 'BONE-BOILER',
+      text: 'Everything the market cannot sell comes to me, and I boil it down, and what comes out goes back to the market as glue and lamp-black and meal. Nothing leaves this ward. That is the whole economy.',
+    },
+    {
+      who: 'BONE-BOILER',
+      text: 'The heap is picked over by the time the bell goes. Pick it yourself if you want the marrow; I only want the bone.',
+    },
+  ],
+  bonemarket_pawnbroker: [
+    {
+      who: 'PAWNBROKER',
+      text: 'I held a title once and now I hold tickets. The Magistracy assessed the one and licenses the other; I am not sure which I mind more.',
+    },
+    {
+      who: 'PAWNBROKER',
+      text: 'The shelf behind me is not on the inventory. When the market has seen you clear its vermin, I shall not notice you looking at it.',
+    },
+  ],
+  cinderworks_foreman: [
+    {
+      who: 'FOREMAN',
+      text: 'Six heats a day and the flats take one of them. I have stopped writing the fourth column. The Spire only reads the first.',
+    },
+    {
+      who: 'FOREMAN',
+      text: 'You want the flats, they are behind you, and I will not stop you. I have four men who walked off them and I am not sending a fifth to fetch them.',
+    },
+  ],
+  cinderworks_poster: [
+    {
+      who: 'THE POSTER',
+      text: 'I print at night and paste at dawn and they take it down by noon. Four hours. It is more than the count gets.',
+    },
+    {
+      who: 'THE POSTER',
+      text: 'Nobody pays me. Somebody pays for the paper. I have never met them and I have stopped asking the printer in Lamprow whose hand the coin comes in.',
+    },
+  ],
+  cinderworks_carter: [
+    {
+      who: 'CARTER',
+      text: 'Coal down from the cut, pigs up to the ward. Same cart, same road, and the road got longer this year without moving.',
+    },
+    {
+      who: 'CARTER',
+      text: 'The spur was for a rail that never came. The Spire ordered the iron for it off this very works, and then ordered the works to melt it back down.',
+    },
+  ],
+  ward_seven_pumpman: [
+    {
+      who: 'PUMPMAN',
+      text: 'Engine three. Nine years I have kept her turning and the water has not gone down an inch, because the pipe she lifts into runs uphill to somebody’s bath.',
+    },
+    {
+      who: 'PUMPMAN',
+      text: 'The things at the dry end came in through the outfall when it stopped outflowing. I keep to this end. You go to that one if you must.',
+    },
+  ],
+  ward_seven_washerwoman: [
+    {
+      who: 'WASHERWOMAN',
+      text: 'I wash in the seep and I dry on the line and it comes in wetter than it went out. That is Ward Seven, in a sentence, for free.',
+    },
+    {
+      who: 'WASHERWOMAN',
+      text: 'Eleven under that stone, one winter. The Magistracy sent a pump. It did not send a second stone.',
+    },
+  ],
+  highcourt_musician: [
+    {
+      who: 'COURT MUSICIAN',
+      text: 'I play at the footing every evening and nobody has ever come down to listen. The doors are open. Nothing comes out of them but the bell.',
+    },
+    {
+      who: 'COURT MUSICIAN',
+      text: 'The Cinder Cup has a singer with a song about the Counting House. I have a song about the Spire. Mine is not assessed; nobody has heard it.',
+    },
+  ],
+  highcourt_clerk_of_works: [
+    {
+      who: 'CLERK OF WORKS',
+      text: 'I hold the survey. Every stone on the processional is on it, to the inch. The service end is on the back, in pencil, and the Undercroft is not on it at all.',
+    },
+    {
+      who: 'CLERK OF WORKS',
+      text: 'The stair-head was built the year the survey was drawn. Something was under here before the court was, and the court was built on top of it very carefully.',
+    },
+  ],
+  highcourt_usher: [
+    {
+      who: 'USHER',
+      text: 'The doors stand open. I have stood at them eleven years. I have not been through them and I am not going to be asked.',
+    },
+    {
+      who: 'USHER',
+      text: 'When a summons is posted, the name on it is read from the other side of the rail. If you can read it from this side, it is yours.',
+    },
+  ],
+  highcourt_smoke_eater: [
+    {
+      who: 'THE SMOKE-EATER',
+      text: 'I brew for the court and sell what the court leaves, and I take a wager at the bench by the hearth from anyone who thinks the Rest is a soft house. It is not.',
+    },
+    {
+      who: 'THE SMOKE-EATER',
+      text: 'The bed is thirty. The court pays it without looking; you will look. That is the difference between you and the court, and it is the only one that matters up here.',
+    },
+  ],
+  highcourt_undercroft_clerk: [
+    {
+      who: 'CENSUS CLERK',
+      text: 'I count them onto the train at the gate and I count them on the stair, and the second number is smaller, and nobody got off.',
+    },
+    {
+      who: 'CENSUS CLERK',
+      text: 'The floor below is a floor. I have been told to write that down and I have written it down. I would like it to be true.',
+    },
+  ],
+  lamprow_lighter_boy: [
+    {
+      who: "LIGHTER'S BOY",
+      text: 'Nine gills, nine lamps, one bucket, twice a night. Up from the oil house and down the row and back before the bell.',
+    },
+    {
+      who: "LIGHTER'S BOY",
+      text: 'Highcourt is up that way. They have lamps that never go out. Nobody carries a bucket up there; I have looked.',
+    },
+  ],
 
   /* --- Lamprow ----------------------------------------------------------------------- */
   lamprow_urchin: [
@@ -460,6 +710,26 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
   ],
 
   /* --- Millharrow -------------------------------------------------------------------- */
+  millharrow_millhand: [
+    {
+      who: 'MILLHAND',
+      text: 'The stones are upstairs and the sacks are down here and I am the thing in between. Forty a day, when the carts come. They come less.',
+    },
+    {
+      who: 'MILLHAND',
+      text: 'Rats in the grain. Not our rats -- the road’s. They come up the hedge from the east every time a cart gets stopped out there and the load sits.',
+    },
+  ],
+  tallow_renderer: [
+    {
+      who: 'RENDERER',
+      text: 'Everything that dies on the Levels comes to the yard, and I boil it down to what it was worth. Less every year. The ground is taking the good out of them.',
+    },
+    {
+      who: 'RENDERER',
+      text: 'The engineer used to buy tallow off me for the pump. Then he stopped buying, and then he stopped, and then they chained it.',
+    },
+  ],
   millharrow_brewer: [
     {
       who: 'BREWER',
@@ -488,6 +758,26 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'I have every reach and every bar off this coast drawn true, and a writ says none of it may be used.',
     },
   ],
+  saltglass_glassblower: [
+    {
+      who: 'GLASSBLOWER',
+      text: 'The furnace has not been let out in thirty years. Let it out and it cracks; keep it in and it eats a cart of coal a week. The coal comes. The fish do not go.',
+    },
+    {
+      who: 'GLASSBLOWER',
+      text: 'Pyre, if you want it. It is what the furnace makes when it is not making glass. The Cinderworks sells it cheaper; the Cinderworks is four days from here.',
+    },
+  ],
+  brays_herdsman: [
+    {
+      who: 'HERDSMAN',
+      text: 'Sixty head, eleven goat, one barn, one warrant. They came for the beasts and found me in the door, and went away to get a bigger piece of paper.',
+    },
+    {
+      who: 'HERDSMAN',
+      text: 'The weaver will want to know the fleece count. I have it in my head and nowhere else, which is where the Magistracy cannot distrain it.',
+    },
+  ],
   saltglass_bard: [
     {
       who: 'A QUAY SINGER',
@@ -504,6 +794,26 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
   ],
 
   /* --- Fenwick Crossing -------------------------------------------------------------- */
+  fenwick_tollkeeper: [
+    {
+      who: 'TOLL-KEEPER',
+      text: 'Fenwick took the toll. The Magistracy took it off Fenwick. I take it off the carts, same as I did for him, and nobody has ever asked me which book I write it in.',
+    },
+    {
+      who: 'TOLL-KEEPER',
+      text: 'The night column is not mine. The men who fill it in wear masks and pay in advance, and the book does not ask them for a name any more than it asks you.',
+    },
+  ],
+  fenwick_potboy: [
+    {
+      who: 'POT-BOY',
+      text: 'I hear everything in this room and I am paid not to repeat it, and the board by the hearth is where I put what I am not repeating.',
+    },
+    {
+      who: 'POT-BOY',
+      text: 'The barking under the floor started in the spring. The brewer says it is the river. The river does not bark.',
+    },
+  ],
   fenwick_carpenter: [
     {
       who: 'CARPENTER',

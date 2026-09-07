@@ -12,7 +12,7 @@
  * cut it was not going to walk round them.
  */
 
-import { defineArea, type AreaDef, type TileDef } from '../map.js';
+import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
 
 /**
  * The Bastion's legend.
@@ -44,6 +44,13 @@ const BASTION_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { minHeight: 12.0, maxHeight: 14.0, inset: 0.05, depthInset: 0.05, chimneyChance: 0, split: false },
   },
+  /** The cave mouth: rock, taken whole, with a door in the south face of it. */
+  K: {
+    tex: 'bone',
+    safe: false,
+    walk: false,
+    solid: { minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
+  },
 };
 
 /**
@@ -54,33 +61,42 @@ const BASTION_LEGEND: Record<string, TileDef> = {
  * so that no straight line north to south exists.
  */
 const GRID: readonly string[] = [
-  'XXXXXXXXXXXXXXXXXXXXXXXX', //  0
-  'XttttttttooottttttttoooX', //  1
-  'XttttttttooottttttttoooX', //  2
-  'XttMMMMttooottMMMMttoooX', //  3  a rank of barrows
-  'XttMMMMtttttttMMMMttoooX', //  4
-  'XtttttttttttttttttttoooX', //  5
-  'XttttttMMMMMMtttttttoooX', //  6
-  'XttttttMMMMMMtttttoooooX', //  7
-  'XtttttttttttttttttoooooX', //  8
-  'XttMMMMtttttMMMMttoooo#X', //  9
-  'XttMMMMttottMMMMttoooo#X', // 10
-  'XttttttttottttttttoooooX', // 11
-  'X,,,,,,,,,,,,,,,,,,,,,,,', // 12  the causeway east, to the Tallow Levels
-  'X,,,,,,,,,,,,,,,,,,,,,,,', // 13
-  'XttttttttottttttttoooooX', // 14
-  'XttMMMMttottMMMMttoooo#X', // 15
-  'XttMMMMtttttMMMMttoooo#X', // 16
-  'XtttttttttttttttttoooooX', // 17
-  'XttttttMMMMMMtttttoooooX', // 18
-  'XttttttMMMMMMtttttttoooX', // 19
-  'XtttttttttttttttttttoooX', // 20
-  'XttMMMMtttttttMMMMttoooX', // 21
-  'XttMMMMttooottMMMMttoooX', // 22
-  'XttttttttooottttttttoooX', // 23
-  'XttttttttooottttttttoooX', // 24
-  'XXXXXXXXXXXXXXXXXXXXXXXX', // 25
+  'XXXXXXXXXXXXXXXXXXXXXXXXXXXX', //  0
+  'XtttttttttttttttKKKKtttttttX', //  1
+  'XtttttttttttttttKKKKtttttttX', //  2
+  'XttttttttttooottttttttooottX', //  3
+  'XttttttttttooottttttttooottX', //  4
+  'XttttMMMMttooottMMMMttooottX', //  5
+  'XttttMMMMtttttttMMMMttooottX', //  6
+  'XtttttttttttttttttttttooottX', //  7
+  'XttttttttMMMMMMtttttttooottX', //  8
+  'XttttttttMMMMMMtttttooooottX', //  9
+  'XtttttttttttttttttttooooottX', // 10
+  'XttttMMMMtttttMMMMttoooo#ttX', // 11
+  'XttttMMMMttottMMMMttoooo#ttX', // 12
+  'XttttttttttottttttttooooottX', // 13
+  'Xtt,,,,,,,,,,,,,,,,,,,,,,tt,', // 14
+  'Xtt,,,,,,,,,,,,,,,,,,,,,,tt,', // 15
+  'XttttttttttottttttttooooottX', // 16
+  'XttttMMMMttottMMMMttoooo#ttX', // 17
+  'XttttMMMMtttttMMMMttoooo#ttX', // 18
+  'XtttttttttttttttttttooooottX', // 19
+  'XttttttttMMMMMMtttttooooottX', // 20
+  'XttttttttMMMMMMtttttttooottX', // 21
+  'XtttttttttttttttttttttooottX', // 22
+  'XttttMMMMtttttttMMMMttooottX', // 23
+  'XttttMMMMttooottMMMMttooottX', // 24
+  'XttttttttttooottttttttooottX', // 25
+  'XttttttttttooottttttttooottX', // 26
+  'XttttttttttttttttttttttttttX', // 27
+  'XttttttttttttttttttttttttttX', // 28
+  'XttXXXXXXXXXXXXXXXXXXXXXXttX', // 29
 ];
+
+const HALF_X = (GRID[0]!.length * TILE) / 2;
+const HALF_Z = (GRID.length * TILE) / 2;
+const xOfCol = (col: number): number => col * TILE - HALF_X + TILE / 2;
+const zOfRow = (row: number): number => row * TILE - HALF_Z + TILE / 2;
 
 export const BONE_BASTION_ID = 'bone_bastion';
 
@@ -94,8 +110,17 @@ export const BONE_BASTION: AreaDef = defineArea({
   safety: 'none',
   exits: [
     {
+      // The great barrow, in the north wall. The one mound the rows were laid out from.
+      to: 'bone_bastion_barrow',
+      x: xOfCol(17.5),
+      z: zOfRow(2) + TILE / 2 + 1.4,
+      label: 'Into the great barrow',
+      door: { x: xOfCol(17.5), z: zOfRow(2) + TILE / 2 + 0.05, facesSouth: true, style: 'cave' },
+      arrive: { x: 0, z: 16 },
+    },
+    {
       to: 'tallow_levels',
-      x: 46,
+      x: HALF_X - 2,
       z: -2,
       label: 'East, along the causeway to the Tallow Levels',
       arrive: { x: -50, z: -6 },
@@ -122,6 +147,15 @@ export const BONE_BASTION: AreaDef = defineArea({
     ],
     /** Barrow country behind an enormous wall. Standing stones, and cairns on the mounds. */
     dressing: [
+      { kind: 'cairn', x: 48, z: -52 },
+      { kind: 'spoilheap', x: -48, z: -20 },
+      { kind: 'cairn', x: 48, z: -8 },
+      { kind: 'logpile', x: -48, z: 16 },
+      { kind: 'bracken', x: 48, z: 28 },
+      { kind: 'cairn', x: -48, z: 40 },
+      { kind: 'cairn', x: -20, z: -52 },
+      { kind: 'spoilheap', x: 24, z: 52 },
+      { kind: 'cairn', x: -28, z: 52 },
       { kind: 'cairn', x: -42, z: -46 },
       { kind: 'cairn', x: -18, z: -42 },
       { kind: 'cairn', x: 38, z: -38 },

@@ -1058,3 +1058,116 @@ describe('the clock', () => {
     expect(loadSave().save.profiles['slot-1']!.clock).toBe(9.25);
   });
 });
+
+describe('places you can enter (v26): caches, flags, and where you have been', () => {
+  let store: Map<string, string>;
+  beforeEach(() => {
+    store = installStorage();
+  });
+
+  function writeRaw(version: number, fields: Record<string, unknown>): void {
+    const file = fileWith('slot-1');
+    const raw = JSON.parse(JSON.stringify(file)) as Record<string, unknown>;
+    raw.version = version;
+    const profiles = raw.profiles as Record<string, Record<string, unknown>>;
+    for (const [k, v] of Object.entries(fields)) {
+      if (v === undefined) delete profiles['slot-1']![k];
+      else profiles['slot-1']![k] = v;
+    }
+    store.set('conjure.save', JSON.stringify(raw));
+  }
+
+  it('starts a new character with nothing opened, nothing happened, nowhere stood', () => {
+    const p = newProfile('slot-1');
+    expect(p.caches).toEqual([]);
+    expect(p.worldFlags).toEqual([]);
+    expect(p.visited).toEqual([]);
+  });
+
+  it('gives a character from before the rooms the same three empty ledgers', () => {
+    // Pinned to the literal version before the rooms shipped, not `SAVE_VERSION - 1`.
+    writeRaw(25, { caches: ['ashfall_ward:alley_cache'], worldFlags: ['x'], visited: ['lamprow'] });
+    const p = loadSave().save.profiles['slot-1']!;
+    expect(p.caches).toEqual([]);
+    expect(p.worldFlags).toEqual([]);
+    expect(p.visited).toEqual([]);
+  });
+
+  it('carries the ledgers a character actually wrote', () => {
+    writeRaw(SAVE_VERSION, {
+      caches: ['ashfall_ward:alley_cache', 'ashfall_ward:alley_cache'],
+      worldFlags: ['read_the_roll', 'bell_rung'],
+      visited: ['ashfall_ward', 'ashfall_ironworks'],
+    });
+    const p = loadSave().save.profiles['slot-1']!;
+    expect(p.caches).toEqual(['ashfall_ward:alley_cache']);
+    expect(p.worldFlags).toEqual(['read_the_roll', 'bell_rung']);
+    expect(p.visited).toEqual(['ashfall_ward', 'ashfall_ironworks']);
+  });
+
+  it('drops a cache or an area that no longer exists, and keeps a flag it does not know', () => {
+    // A chest cut from the game should not haunt the ledger; a flag the content stopped raising
+    // is still a thing that happened, the rule `campaign` keeps.
+    writeRaw(SAVE_VERSION, {
+      caches: ['nowhere:nothing', 'ashfall_ironworks:scrap_chest', 7],
+      worldFlags: ['a_flag_nobody_raises', '', 3],
+      visited: ['atlantis', 'ashfall_ward'],
+    });
+    const p = loadSave().save.profiles['slot-1']!;
+    expect(p.caches).toEqual(['ashfall_ironworks:scrap_chest']);
+    expect(p.worldFlags).toEqual(['a_flag_nobody_raises']);
+    expect(p.visited).toEqual(['ashfall_ward']);
+  });
+
+  it('reads a file with the fields missing as empty rather than broken', () => {
+    writeRaw(SAVE_VERSION, { caches: undefined, worldFlags: undefined, visited: undefined });
+    const p = loadSave().save.profiles['slot-1']!;
+    expect(p.caches).toEqual([]);
+    expect(p.worldFlags).toEqual([]);
+    expect(p.visited).toEqual([]);
+  });
+});
+
+describe('the forage stamps (v26)', () => {
+  let store: Map<string, string>;
+  beforeEach(() => {
+    store = installStorage();
+  });
+
+  function writeRawForage(version: number, forage?: unknown): void {
+    const file = fileWith('slot-1');
+    const raw = JSON.parse(JSON.stringify(file)) as Record<string, unknown>;
+    raw.version = version;
+    const profiles = raw.profiles as Record<string, Record<string, unknown>>;
+    if (forage === undefined) delete profiles['slot-1']!.forage;
+    else profiles['slot-1']!.forage = forage;
+    store.set('conjure.save', JSON.stringify(raw));
+  }
+
+  it('starts empty, and reads a pre-v26 file as empty', () => {
+    expect(newProfile('slot-1').forage).toEqual({});
+    writeRawForage(25, { 'ashfall_ward:quay_reeds': 12 });
+    expect(loadSave().save.profiles['slot-1']!.forage).toEqual({});
+  });
+
+  it('keeps a stamp for a node that exists, including one in the future', () => {
+    // A future stamp reads as ready rather than as locked for a day; see `forageReady`.
+    writeRawForage(SAVE_VERSION, { 'ashfall_ward:quay_reeds': 12.5, 'ashfall_ironworks:ember_vent': 9000 });
+    expect(loadSave().save.profiles['slot-1']!.forage).toEqual({
+      'ashfall_ward:quay_reeds': 12.5,
+      'ashfall_ironworks:ember_vent': 9000,
+    });
+  });
+
+  it('drops a node that does not exist and a stamp that is not a number', () => {
+    writeRawForage(SAVE_VERSION, { 'nowhere:nothing': 3, 'ashfall_ward:quay_reeds': 'noon', 'ashfall_ironworks:ember_vent': -4 });
+    expect(loadSave().save.profiles['slot-1']!.forage).toEqual({ 'ashfall_ironworks:ember_vent': 0 });
+  });
+
+  it('reads a missing or malformed field as empty', () => {
+    writeRawForage(SAVE_VERSION, undefined);
+    expect(loadSave().save.profiles['slot-1']!.forage).toEqual({});
+    writeRawForage(SAVE_VERSION, [1, 2, 3]);
+    expect(loadSave().save.profiles['slot-1']!.forage).toEqual({});
+  });
+});

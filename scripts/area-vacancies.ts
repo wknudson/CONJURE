@@ -21,7 +21,6 @@ const PROP_CLEARANCE = 5.4;
 
 function hotspots(area: AreaDef): { x: number; z: number }[] {
   return [
-    ...(area.props.doors ?? []),
     ...area.exits,
     ...(area.props.board ? [area.props.board] : []),
     ...(area.props.huntSignpost ? [area.props.huntSignpost] : []),

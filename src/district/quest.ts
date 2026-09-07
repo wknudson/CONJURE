@@ -11,6 +11,7 @@
  */
 
 import type { TutorialFlag } from '../app/save.js';
+import type { BenchKind } from './benches.js';
 
 export interface Pip {
   readonly key: 'artificer' | 'journal' | 'contract';
@@ -35,8 +36,9 @@ export function tutorialActive(flags: readonly TutorialFlag[]): boolean {
 export function currentObjective(flags: readonly TutorialFlag[]): string | null {
   if (has(flags, 'complete')) return null;
   if (!has(flags, 'intro')) return 'Report to Dispatcher Vex on the plaza';
-  if (!has(flags, 'artificer')) return 'Visit the Ironworks Artificer, north up the walkway';
-  if (!has(flags, 'journal')) return 'Visit the Field Journal, across the street';
+  if (!has(flags, 'artificer'))
+    return 'Visit the Ironworks Artificer — the anvil door, north up the walkway — and find his bench';
+  if (!has(flags, 'journal')) return 'Open your Field Journal (J) and look over the deck';
   if (!has(flags, 'bounty_taken'))
     return 'Read the Bounty Board, then walk to the ground the writ names — the map (M) marks it';
   return 'Survive the contract';
@@ -80,9 +82,12 @@ export function bountyAvailable(
 /** Why a contract is greyed out, for the card that is greyed out. */
 export const LOCKED_REASON = 'Prove yourself on a Novice contract first';
 
-/** Which flag, if any, a door visit records. Only two of the four are steps. */
-export function flagForDoor(key: string): TutorialFlag | null {
-  if (key === 'artificer') return 'artificer';
-  if (key === 'journal') return 'journal';
-  return null;
+/**
+ * Which flag, if any, working a bench records. Only the Artificer's is a step.
+ *
+ * The Journal used to be the other one, as a door; it is carried now, and opening it with
+ * `J` is what records `'journal'` -- see `DistrictScreen.openJournal`.
+ */
+export function flagForBench(kind: BenchKind): TutorialFlag | null {
+  return kind === 'artificer' ? 'artificer' : null;
 }

@@ -530,6 +530,395 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#2e2c24',
     fogDensity: 0.012,
   },
+
+  /* --- rooms ---
+     Lit at the anchor whatever the clock says (`lightingHour`), so these are the only entries
+     in the table that are never put through the day transform. Warm where the street is cold:
+     a room is lit by what burns in it, not by the moon. The fog is the room's own air and its
+     colour is the void past the walls, so it is dark and it is thin -- a workshop you cannot
+     see across is not a workshop, and `worldCombatSeams` asks every area to be legible at
+     combat range. */
+
+  /**
+   * The Ironworks: a forge floor, lit from the furnace mouth.
+   *
+   * The strongest bounce of anywhere indoors and an orange key from low on one side, which
+   * is what a room with a fire in it looks like. The hemisphere is dim and brown -- the light
+   * that has already been round the room twice.
+   */
+  ashfall_ironworks: {
+    sunIntensity: 1.6,
+    sunColor: '#d99a5a',
+    ambientIntensity: 2.2,
+    skyColor: '#5c4636',
+    groundBounce: '#6a3c1e',
+    fogColor: '#17110d',
+    fogDensity: 0.026,
+  },
+  /** The Apothecary: lamplight through jars. Yellow-green, and the stillest air in the ward. */
+  ashfall_apothecary: {
+    sunIntensity: 1.4,
+    sunColor: '#c9b27a',
+    ambientIntensity: 2.4,
+    skyColor: '#6a6a4e',
+    groundBounce: '#4a3e2a',
+    fogColor: '#141410',
+    fogDensity: 0.024,
+  },
+  /** The Records Office: one candle per desk and a great deal of paper to take the light. */
+  ashfall_records: {
+    sunIntensity: 1.5,
+    sunColor: '#d8c08a',
+    ambientIntensity: 2.0,
+    skyColor: '#5e5a52',
+    groundBounce: '#3e3428',
+    fogColor: '#131110',
+    fogDensity: 0.022,
+  },
+  /** The Vivarium: a yard under the ash, lit by a brazier and whatever the sky lets down. */
+  ashfall_vivarium: {
+    sunIntensity: 1.8,
+    sunColor: '#b9a88a',
+    ambientIntensity: 2.4,
+    skyColor: '#5a6058',
+    groundBounce: '#4a4028',
+    fogColor: '#121410',
+    fogDensity: 0.026,
+  },
+  /** The Toll House: one candle on a desk and limewash to bounce it. */
+  ashfall_toll_house: {
+    sunIntensity: 1.5,
+    sunColor: '#d8c08a',
+    ambientIntensity: 2.2,
+    skyColor: '#5e5a52',
+    groundBounce: '#3e3428',
+    fogColor: '#131110',
+    fogDensity: 0.024,
+  },
+  /** The Counting House: grey stone, grey light, and nothing warm in it but the coin. */
+  ashfall_counting_house: {
+    sunIntensity: 1.4,
+    sunColor: '#c8b8a0',
+    ambientIntensity: 2.0,
+    skyColor: '#585a5e',
+    groundBounce: '#3a3634',
+    fogColor: '#111214',
+    fogDensity: 0.024,
+  },
+  /** The chapel: cold stone and one flame at the far end, which is where the key comes from. */
+  ashfall_chapel: {
+    sunIntensity: 1.2,
+    sunColor: '#e0a060',
+    ambientIntensity: 1.8,
+    skyColor: '#4a5060',
+    groundBounce: '#4a3020',
+    fogColor: '#0e0f12',
+    fogDensity: 0.02,
+  },
+  /** The Cinder Cup: hearthlight. The warmest room in the ward, by a distance. */
+  ashfall_cinder_cup: {
+    sunIntensity: 1.8,
+    sunColor: '#e0a058',
+    ambientIntensity: 2.4,
+    skyColor: '#6a5040',
+    groundBounce: '#6a3a1e',
+    fogColor: '#16110c',
+    fogDensity: 0.028,
+  },
+  /** The Lamp-oil House: its own lamp, and oil on everything to catch it. */
+  lamprow_oil_house: {
+    sunIntensity: 1.6,
+    sunColor: '#e0b070',
+    ambientIntensity: 2.2,
+    skyColor: '#5a5040',
+    groundBounce: '#4a3a20',
+    fogColor: '#14110c',
+    fogDensity: 0.026,
+  },
+  /** The Tithe Office: the Counting House's light, one ward over. */
+  lamprow_tithe_office: {
+    sunIntensity: 1.4,
+    sunColor: '#c8b8a0',
+    ambientIntensity: 2.0,
+    skyColor: '#585a5e',
+    groundBounce: '#3a3634',
+    fogColor: '#111214',
+    fogDensity: 0.024,
+  },
+  /**
+   * The Sink cellars: rock, damp, one brazier and the crew's own light. The darkest room in
+   * the world and still legible at combat range -- the fog is at Lamprow's own ceiling, not
+   * past it, because a fight is fought down here.
+   */
+  lamprow_sink_cellars: {
+    sunIntensity: 1.3,
+    sunColor: '#8a9ab0',
+    ambientIntensity: 2.0,
+    skyColor: '#3a4050',
+    groundBounce: '#2a2a30',
+    fogColor: '#0a0c10',
+    fogDensity: 0.03,
+  },
+  /** The Market Hall: the market's own light with a roof over it -- braziers, and stone to hold the warmth. */
+  bonemarket_hall: {
+    sunIntensity: 1.8,
+    sunColor: '#d8b880',
+    ambientIntensity: 2.6,
+    skyColor: '#8a8068',
+    groundBounce: '#7a5a3a',
+    fogColor: '#1a1610',
+    fogDensity: 0.026,
+  },
+  /** The pawnshop: dust, one brazier, and nothing on the shelves that wants to be seen clearly. */
+  bonemarket_pawnshop: {
+    sunIntensity: 1.3,
+    sunColor: '#c0a878',
+    ambientIntensity: 1.9,
+    skyColor: '#5a5648',
+    groundBounce: '#3e3020',
+    fogColor: '#121008',
+    fogDensity: 0.024,
+  },
+  /** The Foundry Hall: lit from the furnace bank. The hottest light indoors anywhere. */
+  cinderworks_foundry: {
+    sunIntensity: 2.2,
+    sunColor: '#e08040',
+    ambientIntensity: 2.6,
+    skyColor: '#6a4a30',
+    groundBounce: '#8a4020',
+    fogColor: '#1a1008',
+    fogDensity: 0.026,
+  },
+  /** The poster's shed: one lamp over a press, and ink on everything to drink it. */
+  cinderworks_posters: {
+    sunIntensity: 1.5,
+    sunColor: '#d8c898',
+    ambientIntensity: 2.1,
+    skyColor: '#5a5a58',
+    groundBounce: '#3a342a',
+    fogColor: '#121110',
+    fogDensity: 0.024,
+  },
+  /** The cistern: wet rock and standing water, lit green by whatever is in the water. */
+  ward_seven_cistern: {
+    sunIntensity: 1.3,
+    sunColor: '#7aa090',
+    ambientIntensity: 2.0,
+    skyColor: '#3a5048',
+    groundBounce: '#2a3030',
+    fogColor: '#0a1010',
+    fogDensity: 0.03,
+  },
+  /** The clinic: limewash and a lamp, the Apothecary's light with the money taken out. */
+  ward_seven_clinic: {
+    sunIntensity: 1.4,
+    sunColor: '#c9b27a',
+    ambientIntensity: 2.3,
+    skyColor: '#66685a',
+    groundBounce: '#4a3e2a',
+    fogColor: '#131410',
+    fogDensity: 0.024,
+  },
+  /** The Spire lobby: marble, and a light that is white on purpose. Nothing warm gets in. */
+  highcourt_spire_lobby: {
+    sunIntensity: 1.6,
+    sunColor: '#c8d0e0',
+    ambientIntensity: 2.4,
+    skyColor: '#8a94a8',
+    groundBounce: '#5a5a60',
+    fogColor: '#101218',
+    fogDensity: 0.022,
+  },
+  /** The Smoke-Eater's Rest: the Cinder Cup's hearth, dearer. */
+  highcourt_smoke_eaters: {
+    sunIntensity: 1.7,
+    sunColor: '#e0a058',
+    ambientIntensity: 2.3,
+    skyColor: '#645040',
+    groundBounce: '#6a3a1e',
+    fogColor: '#15100c',
+    fogDensity: 0.026,
+  },
+  /** The bothy: a low room lit from one cold hearth and the door. Straw-coloured, and it should be. */
+  chalk_verge_bothy: {
+    sunIntensity: 1.5,
+    sunColor: '#d8c090',
+    ambientIntensity: 2.2,
+    skyColor: '#6a6650',
+    groundBounce: '#5a4a2a',
+    fogColor: '#121008',
+    fogDensity: 0.026,
+  },
+  /** The waystation: daylight through a door nobody shuts, on planks nobody sweeps. */
+  chalk_road_waystation: {
+    sunIntensity: 1.6,
+    sunColor: '#d0c8a8',
+    ambientIntensity: 2.2,
+    skyColor: '#70705c',
+    groundBounce: '#5a4a30',
+    fogColor: '#12110c',
+    fogDensity: 0.024,
+  },
+  /** The Mill: flour in the air and daylight through the boards. */
+  millharrow_mill: {
+    sunIntensity: 1.7,
+    sunColor: '#e0d0a0',
+    ambientIntensity: 2.3,
+    skyColor: '#786e58',
+    groundBounce: '#6a5a3a',
+    fogColor: '#14120c',
+    fogDensity: 0.024,
+  },
+  /** The drowned granary: green light off standing water, and the cold of it. */
+  millharrow_granary: {
+    sunIntensity: 1.3,
+    sunColor: '#9ab088',
+    ambientIntensity: 2.0,
+    skyColor: '#4a5a48',
+    groundBounce: '#2a3a30',
+    fogColor: '#0c100e',
+    fogDensity: 0.03,
+  },
+  /** The pump house: iron, rust, and one lamp somebody left burning by the log. */
+  tallow_pump_house: {
+    sunIntensity: 1.4,
+    sunColor: '#c0a880',
+    ambientIntensity: 2.0,
+    skyColor: '#585850',
+    groundBounce: '#4a3a28',
+    fogColor: '#100e0c',
+    fogDensity: 0.028,
+  },
+  /** The Glasshouse: the furnace, and nothing else. Orange on iron. */
+  saltglass_glasshouse: {
+    sunIntensity: 1.9,
+    sunColor: '#f0a050',
+    ambientIntensity: 2.2,
+    skyColor: '#6a4a30',
+    groundBounce: '#7a3a18',
+    fogColor: '#160e08',
+    fogDensity: 0.026,
+  },
+  /** The Customs House: grey light on grey stone, the way the Magistracy likes its rooms. */
+  saltglass_customs_house: {
+    sunIntensity: 1.4,
+    sunColor: '#b8c0d0',
+    ambientIntensity: 2.2,
+    skyColor: '#6a7080',
+    groundBounce: '#4a4a50',
+    fogColor: '#0e1014',
+    fogDensity: 0.024,
+  },
+  /** The barn: daylight through the boards, and dust in it. */
+  brays_barn: {
+    sunIntensity: 1.7,
+    sunColor: '#e8d8a8',
+    ambientIntensity: 2.3,
+    skyColor: '#7a7060',
+    groundBounce: '#6a5a38',
+    fogColor: '#14120c',
+    fogDensity: 0.024,
+  },
+  /** The toll house: a Magistracy counter on a river, lit like every other Magistracy counter. */
+  fenwicks_toll_house: {
+    sunIntensity: 1.5,
+    sunColor: '#c8c8d0',
+    ambientIntensity: 2.2,
+    skyColor: '#6a7078',
+    groundBounce: '#4a4a48',
+    fogColor: '#0e1012',
+    fogDensity: 0.024,
+  },
+  /** The coach inn: the busiest hearth in the Ring. */
+  fenwicks_inn: {
+    sunIntensity: 1.8,
+    sunColor: '#e8a858',
+    ambientIntensity: 2.3,
+    skyColor: '#6a5040',
+    groundBounce: '#6a3a1e',
+    fogColor: '#15100c',
+    fogDensity: 0.026,
+  },
+  /** The cellars: one brazier and the river coming through the wall. */
+  fenwicks_cellars: {
+    sunIntensity: 1.1,
+    sunColor: '#8a8a70',
+    ambientIntensity: 1.8,
+    skyColor: '#3a3a30',
+    groundBounce: '#2a2a20',
+    fogColor: '#0a0a08',
+    fogDensity: 0.032,
+  },
+  /** The Stile chapel: no roof, so the hollow's own grey light, and one candle. */
+  weeping_stile_chapel: {
+    sunIntensity: 1.3,
+    sunColor: '#a8b0a0',
+    ambientIntensity: 2.0,
+    skyColor: '#586058',
+    groundBounce: '#3a4a3a',
+    fogColor: '#0e120e',
+    fogDensity: 0.028,
+  },
+  /** The lava tube: the vent's own light, red off the crust, and nothing else. */
+  caldera_lava_tube: {
+    sunIntensity: 1.6,
+    sunColor: '#f08040',
+    ambientIntensity: 1.9,
+    skyColor: '#5a2a18',
+    groundBounce: '#6a2a10',
+    fogColor: '#140806',
+    fogDensity: 0.03,
+  },
+  /** The poacher's hide: one brazier under turf, and the wood's green coming in at the door. */
+  ashwood_poachers_hide: {
+    sunIntensity: 1.4,
+    sunColor: '#c8a870',
+    ambientIntensity: 2.0,
+    skyColor: '#4a5a3a',
+    groundBounce: '#3a4a28',
+    fogColor: '#0c100a',
+    fogDensity: 0.028,
+  },
+  /** The ice cave: blue, and cold enough to see. */
+  rimefields_ice_cave: {
+    sunIntensity: 1.5,
+    sunColor: '#a8c8f0',
+    ambientIntensity: 2.2,
+    skyColor: '#6a86a8',
+    groundBounce: '#4a6080',
+    fogColor: '#0a1018',
+    fogDensity: 0.026,
+  },
+  /** Pylon Nine's base: the hum has a colour, and it is this one. */
+  storm_shelf_pylon_base: {
+    sunIntensity: 1.5,
+    sunColor: '#b8c8e8',
+    ambientIntensity: 2.0,
+    skyColor: '#505868',
+    groundBounce: '#3a4050',
+    fogColor: '#0c0e14',
+    fogDensity: 0.028,
+  },
+  /** The great barrow: bone by one brazier. */
+  bone_bastion_barrow: {
+    sunIntensity: 1.3,
+    sunColor: '#c8b890',
+    ambientIntensity: 1.8,
+    skyColor: '#4a4838',
+    groundBounce: '#3a3828',
+    fogColor: '#0c0b08',
+    fogDensity: 0.032,
+  },
+  /** The Undercroft: two braziers under a vault, and the cold coming up through the stone. */
+  highcourt_undercroft: {
+    sunIntensity: 1.2,
+    sunColor: '#8a90a8',
+    ambientIntensity: 1.8,
+    skyColor: '#3a3e48',
+    groundBounce: '#2a2a30',
+    fogColor: '#0a0b10',
+    fogDensity: 0.03,
+  },
 };
 
 /** An area's ambience, or the ward's if nobody wrote one. */
