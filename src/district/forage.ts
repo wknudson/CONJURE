@@ -211,8 +211,30 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     id: 'cinderworks:slag_seam',
     areaId: 'cinderworks',
     kind: 'ore',
-    at: { x: -14, z: -38 },
-    prop: { x: -16.2, z: -38 },
+    at: { x: -30, z: 38 },
+    prop: { x: -32.2, z: 38 },
+  },
+  {
+    id: 'cinderworks:terrace_vent',
+    areaId: 'cinderworks',
+    kind: 'ember',
+    at: { x: 10, z: 42 },
+    prop: { x: 10, z: 39.6 },
+  },
+  {
+    id: 'cinderworks:spur_vent',
+    areaId: 'cinderworks',
+    kind: 'ember',
+    at: { x: 46, z: 38 },
+    prop: { x: 46, z: 35.6 },
+  },
+  {
+    // Inside the Hall, by the east wall: what the furnace bank does not draw.
+    id: 'cinderworks_foundry:hall_vent',
+    areaId: 'cinderworks_foundry',
+    kind: 'ember',
+    at: { x: 14, z: 4 },
+    prop: { x: 14, z: 1 },
   },
   {
     id: 'bone_bastion:barrow_bones',

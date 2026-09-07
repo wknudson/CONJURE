@@ -295,6 +295,50 @@ export const NOTICES: readonly NoticeDef[] = [
     prop: { kind: 'plaque', x: 4, z: -15.85 },
   },
 
+  /* --- the Cinderworks --------------------------------------------------------------- */
+  {
+    id: 'cinderworks:quota_board',
+    areaId: 'cinderworks',
+    at: { x: 34, z: -15 },
+    form: 'notice',
+    label: 'Read the quota board',
+    title: 'THE WORKS — THIS QUARTER',
+    lines: [
+      'Pig iron, the Spire’s order: 400 pigs. Cast: 412. Delivered: 400. Remaining in the yard: 12, and do not ask which yard.',
+      'Casualties, furnace: 3. Casualties, flats: not recorded. The flats are not part of the works.',
+      'Coal from the Caldera cut is short by a third. The wind has changed. The quota has not.',
+    ],
+    prop: { kind: 'noticepost', x: 34, z: -18 },
+  },
+  {
+    id: 'cinderworks_foundry:tally',
+    areaId: 'cinderworks_foundry',
+    at: { x: -26, z: -4 },
+    form: 'plaque',
+    label: "Read the foreman's tally",
+    title: 'THE HALL — TALLY',
+    lines: [
+      'Heats today: 6. Heats lost: 1, to the flats. Men on the flats when it went: 4. Men off the flats after: 4, walking.',
+      'Nothing is stolen from this hall. The flats let things go, and what they let go walks out the door on its own legs.',
+      'Whisperers wanting the flats: speak to the foreman. He will not stop you. He will not come.',
+    ],
+    prop: { kind: 'plaque', x: -29.85, z: -4, yaw: Math.PI / 2 },
+  },
+  {
+    id: 'cinderworks_posters:the_bill',
+    areaId: 'cinderworks_posters',
+    at: { x: -4, z: -15.6 },
+    form: 'notice',
+    label: "Read tonight's bill",
+    title: 'TO THE WARD, FROM NOBODY',
+    lines: [
+      'THE LID IS OURS TOO. THE STACK NEVER SLEEPS AND NEITHER DO WE.',
+      'The Magistracy counts the pigs and not the men. Count yourselves. Then count who is missing off the flats.',
+      'Pasted at dawn. Taken down by noon. Read it in the four hours it exists, which is four more than the count gets.',
+    ],
+    prop: { kind: 'plaque', x: -4, z: -17.85 },
+  },
+
   /* --- the Ironworks ----------------------------------------------------------------- */
   {
     id: 'ashfall_ironworks:tally_board',

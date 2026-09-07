@@ -3094,6 +3094,23 @@ const SIGN_GLYPHS: Record<SignId, (ctx: CanvasRenderingContext2D) => void> = {
     ctx.fillRect(9, 5, 3, 3);
     ctx.fillRect(14, 5, 3, 3);
   },
+  foundry: (ctx) => {
+    // A furnace mouth with its stack: a box, an arch cut out of it, a chimney off the top.
+    ctx.fillRect(5, 5, 10, 5);
+    ctx.fillRect(12, 2, 2, 3);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(8, 7, 4, 3);
+    ctx.fillRect(9, 6, 2, 1);
+  },
+  press: (ctx) => {
+    // A sheet coming off the platen: the frame, the screw, and the page.
+    ctx.fillRect(6, 2, 8, 1);
+    ctx.fillRect(9, 3, 2, 3);
+    ctx.fillRect(5, 6, 10, 1);
+    ctx.fillRect(7, 7, 6, 3);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillRect(8, 8, 4, 1);
+  },
 };
 
 export function makeSignTexture(key: SignId): THREE.Texture {

@@ -202,6 +202,37 @@ export const CACHES: readonly CacheDef[] = [
     loot: { ducats: 40, reagents: { core_dusk: 1 } },
     gate: { after: ['bonemarket_vermin'] },
   },
+
+  /* --- the Cinderworks --------------------------------------------------------------- */
+  {
+    id: 'cinderworks:spur_crate',
+    areaId: 'cinderworks',
+    at: { x: 55.8, z: 34 },
+    prop: { kind: 'chest', x: 58, z: 34 },
+    label: 'Open the wagon chest',
+    detail: 'Chocked at the end of the spur, and the wagon it came off is long gone.',
+    loot: { ducats: 22, reagents: { core_pyre: 1 } },
+  },
+  {
+    id: 'cinderworks_foundry:foremans_box',
+    areaId: 'cinderworks_foundry',
+    at: { x: 23.8, z: -4 },
+    prop: { kind: 'chest', x: 26, z: -4 },
+    label: "Open the foreman's box",
+    detail: 'The flats are quiet. He said you could.',
+    loot: { ducats: 55, marrowShards: 2, reagents: { core_pyre: 1 } },
+    gate: { after: ['dynamo_flats'] },
+  },
+  {
+    id: 'cinderworks_posters:type_case',
+    areaId: 'cinderworks_posters',
+    at: { x: 9.8, z: 12 },
+    prop: { kind: 'chest', x: 12, z: 12 },
+    label: 'Open the type case',
+    detail: 'Lead sorts, and under them what the poster is really paid in.',
+    loot: { ducats: 35, marrowShards: 1 },
+    gate: { after: ['poster_work'] },
+  },
 ];
 
 export const cacheById = (id: string): CacheDef | undefined => CACHES.find((c) => c.id === id);

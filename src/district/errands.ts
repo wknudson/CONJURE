@@ -218,6 +218,23 @@ export const ERRANDS: readonly ErrandDef[] = [
     reward: { ducats: 150, marrowShards: 2 },
   },
 
+  {
+    id: 'the_spoil_heap_hollows',
+    giver: 'cinderworks_foundry:cinderworks_foreman',
+    title: 'Clear the Hollows off the spoil heaps on the Chalk Verge',
+    offer: [
+      { who: 'FOREMAN', text: 'Our spoil goes out past the ward gate and gets tipped on the Verge, and something has moved into it. The carters will not tip any more.' },
+      { who: 'FOREMAN', text: 'Which means the spoil stays here, which means the heaps out there in the yard get taller until they are in my hall. Clear the heaps on the Verge and the carts roll again.' },
+    ],
+    nudge: [{ who: 'FOREMAN', text: 'The Verge, past Ashfall’s gate. The heaps. Whatever is living in them.' }],
+    thanks: [
+      { who: 'FOREMAN', text: 'The carts tipped at dawn. First time in a month. The yard is a foot lower already.' },
+      { who: 'FOREMAN', text: 'The works pays by the heat and this was worth two. Take it before the Spire counts it.' },
+    ],
+    step: { kind: 'cull', encounterId: 'pack_spoil_heap_hollows' },
+    reward: { ducats: 80, marrowShards: 1 },
+  },
+
   /* --- the ward, and one crossing out ---------------------------------------------- */
   {
     id: 'gutter_crew',

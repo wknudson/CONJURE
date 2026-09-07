@@ -127,11 +127,12 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
       'The pumps foul by noon and the water tastes of what is living in it. The ward has stopped drawing from the north pipe.',
   },
   {
-    id: 'cinderworks:bill_fence',
-    areaId: 'cinderworks',
-    at: { x: -26, z: 30 },
+    // Inside the shed behind the fence now, at the press the bills come off.
+    id: 'cinderworks_posters:the_press',
+    areaId: 'cinderworks_posters',
+    at: { x: 6, z: 12 },
     encounterId: 'poster_work',
-    label: 'The Bill Fence',
+    label: 'The Press',
     interactDetail:
       'Fresh paste every morning, the length of the fence. Somebody wants these read more than they want to be paid.',
   },
@@ -326,11 +327,11 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     // Cinderworks, not the Caldera road: the code seats the fight there, the atlas
     // concurs, and the ward's south ash yards literally read as flats. A Caldera lair
     // would put four sites in one crater.
-    id: 'cinderworks:slag_flats',
-    areaId: 'cinderworks',
-    at: { x: 10, z: 10 },
+    id: 'cinderworks_foundry:the_flats',
+    areaId: 'cinderworks_foundry',
+    at: { x: 0, z: -4 },
     encounterId: 'dynamo_flats',
-    label: 'The Slag Flats',
+    label: 'The Flats',
     interactDetail:
       'Pit-brands on every track in the ash, and every track leads out. Nothing here is being stolen; it is being let go.',
   },

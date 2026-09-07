@@ -40,6 +40,8 @@ import { LAMPROW_TITHE_OFFICE } from './interiors/lamprowTitheOffice.js';
 import { LAMPROW_SINK_CELLARS } from './interiors/lamprowSinkCellars.js';
 import { BONEMARKET_HALL } from './interiors/bonemarketHall.js';
 import { BONEMARKET_PAWNSHOP } from './interiors/bonemarketPawnshop.js';
+import { CINDERWORKS_FOUNDRY } from './interiors/cinderworksFoundry.js';
+import { CINDERWORKS_POSTERS } from './interiors/cinderworksPosters.js';
 
 /**
  * Ordered as the city, then the ring, then the wilds — the order they are reached in, which is
@@ -80,6 +82,8 @@ export const AREAS: readonly AreaDef[] = [
   LAMPROW_SINK_CELLARS,
   BONEMARKET_HALL,
   BONEMARKET_PAWNSHOP,
+  CINDERWORKS_FOUNDRY,
+  CINDERWORKS_POSTERS,
 ];
 
 export function areaById(id: string): AreaDef | undefined {
@@ -122,4 +126,6 @@ export {
   LAMPROW_SINK_CELLARS,
   BONEMARKET_HALL,
   BONEMARKET_PAWNSHOP,
+  CINDERWORKS_FOUNDRY,
+  CINDERWORKS_POSTERS,
 };

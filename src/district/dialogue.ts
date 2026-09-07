@@ -535,6 +535,36 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'The shelf behind me is not on the inventory. When the market has seen you clear its vermin, I shall not notice you looking at it.',
     },
   ],
+  cinderworks_foreman: [
+    {
+      who: 'FOREMAN',
+      text: 'Six heats a day and the flats take one of them. I have stopped writing the fourth column. The Spire only reads the first.',
+    },
+    {
+      who: 'FOREMAN',
+      text: 'You want the flats, they are behind you, and I will not stop you. I have four men who walked off them and I am not sending a fifth to fetch them.',
+    },
+  ],
+  cinderworks_poster: [
+    {
+      who: 'THE POSTER',
+      text: 'I print at night and paste at dawn and they take it down by noon. Four hours. It is more than the count gets.',
+    },
+    {
+      who: 'THE POSTER',
+      text: 'Nobody pays me. Somebody pays for the paper. I have never met them and I have stopped asking the printer in Lamprow whose hand the coin comes in.',
+    },
+  ],
+  cinderworks_carter: [
+    {
+      who: 'CARTER',
+      text: 'Coal down from the cut, pigs up to the ward. Same cart, same road, and the road got longer this year without moving.',
+    },
+    {
+      who: 'CARTER',
+      text: 'The spur was for a rail that never came. The Spire ordered the iron for it off this very works, and then ordered the works to melt it back down.',
+    },
+  ],
   lamprow_lighter_boy: [
     {
       who: "LIGHTER'S BOY",

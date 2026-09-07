@@ -97,7 +97,7 @@ export const CALDERA: AreaDef = defineArea({
       x: 54,
       z: -2,
       label: 'East, out through the cut to the Cinderworks',
-      arrive: { x: -42, z: 2 },
+      arrive: { x: -62, z: 0 },
     },
   ],
   props: {

@@ -679,6 +679,26 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#121008',
     fogDensity: 0.024,
   },
+  /** The Foundry Hall: lit from the furnace bank. The hottest light indoors anywhere. */
+  cinderworks_foundry: {
+    sunIntensity: 2.2,
+    sunColor: '#e08040',
+    ambientIntensity: 2.6,
+    skyColor: '#6a4a30',
+    groundBounce: '#8a4020',
+    fogColor: '#1a1008',
+    fogDensity: 0.026,
+  },
+  /** The poster's shed: one lamp over a press, and ink on everything to drink it. */
+  cinderworks_posters: {
+    sunIntensity: 1.5,
+    sunColor: '#d8c898',
+    ambientIntensity: 2.1,
+    skyColor: '#5a5a58',
+    groundBounce: '#3a342a',
+    fogColor: '#121110',
+    fogDensity: 0.024,
+  },
 };
 
 /** An area's ambience, or the ward's if nobody wrote one. */
