@@ -1127,3 +1127,47 @@ describe('places you can enter (v26): caches, flags, and where you have been', (
     expect(p.visited).toEqual([]);
   });
 });
+
+describe('the forage stamps (v26)', () => {
+  let store: Map<string, string>;
+  beforeEach(() => {
+    store = installStorage();
+  });
+
+  function writeRawForage(version: number, forage?: unknown): void {
+    const file = fileWith('slot-1');
+    const raw = JSON.parse(JSON.stringify(file)) as Record<string, unknown>;
+    raw.version = version;
+    const profiles = raw.profiles as Record<string, Record<string, unknown>>;
+    if (forage === undefined) delete profiles['slot-1']!.forage;
+    else profiles['slot-1']!.forage = forage;
+    store.set('conjure.save', JSON.stringify(raw));
+  }
+
+  it('starts empty, and reads a pre-v26 file as empty', () => {
+    expect(newProfile('slot-1').forage).toEqual({});
+    writeRawForage(25, { 'ashfall_ward:quay_reeds': 12 });
+    expect(loadSave().save.profiles['slot-1']!.forage).toEqual({});
+  });
+
+  it('keeps a stamp for a node that exists, including one in the future', () => {
+    // A future stamp reads as ready rather than as locked for a day; see `forageReady`.
+    writeRawForage(SAVE_VERSION, { 'ashfall_ward:quay_reeds': 12.5, 'ashfall_ironworks:ember_vent': 9000 });
+    expect(loadSave().save.profiles['slot-1']!.forage).toEqual({
+      'ashfall_ward:quay_reeds': 12.5,
+      'ashfall_ironworks:ember_vent': 9000,
+    });
+  });
+
+  it('drops a node that does not exist and a stamp that is not a number', () => {
+    writeRawForage(SAVE_VERSION, { 'nowhere:nothing': 3, 'ashfall_ward:quay_reeds': 'noon', 'ashfall_ironworks:ember_vent': -4 });
+    expect(loadSave().save.profiles['slot-1']!.forage).toEqual({ 'ashfall_ironworks:ember_vent': 0 });
+  });
+
+  it('reads a missing or malformed field as empty', () => {
+    writeRawForage(SAVE_VERSION, undefined);
+    expect(loadSave().save.profiles['slot-1']!.forage).toEqual({});
+    writeRawForage(SAVE_VERSION, [1, 2, 3]);
+    expect(loadSave().save.profiles['slot-1']!.forage).toEqual({});
+  });
+});

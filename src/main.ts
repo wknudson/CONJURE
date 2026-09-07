@@ -551,6 +551,23 @@ function showArea(areaId: string, companionId: string): void {
         if (!p.worldFlags.includes(flag)) p.worldFlags.push(flag);
         persist();
       },
+      forage: profile().forage,
+      onForage: (id, loot, clock) => {
+        // The stamp first, then the purse, so a write that lands between them errs toward a
+        // node that is picked and unpaid rather than one that pays twice.
+        profile().forage[id] = clock;
+        persist();
+        payErrand(global, loot);
+        persist();
+        return describeLoot(loot);
+      },
+      onRest: (_id, fee) => {
+        const purse = global.overworld.economy;
+        if (purse.ducats < fee) return false;
+        purse.ducats -= fee;
+        persist();
+        return true;
+      },
       onChange: persist,
       onApothecary: () =>
         screens.go(

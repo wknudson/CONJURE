@@ -20,6 +20,8 @@ import type { AreaDef, DressingSpec } from './map.js';
 import { BENCHES } from './benches.js';
 import { NOTICES } from './notices.js';
 import { CACHES } from './caches.js';
+import { FORAGE_KINDS, FORAGE_NODES, foragePropAt } from './forage.js';
+import { RESTS } from './rests.js';
 
 /**
  * The furniture the registries hang in an area, beside what the area file lists itself.
@@ -34,6 +36,10 @@ export function registryProps(areaId: string): DressingSpec[] {
   for (const b of BENCHES) if (b.areaId === areaId && b.prop) out.push(b.prop);
   for (const n of NOTICES) if (n.areaId === areaId && n.prop) out.push(n.prop);
   for (const c of CACHES) if (c.areaId === areaId) out.push(c.prop);
+  for (const n of FORAGE_NODES) {
+    if (n.areaId === areaId) out.push({ kind: FORAGE_KINDS[n.kind].prop, ...foragePropAt(n) });
+  }
+  for (const r of RESTS) if (r.areaId === areaId) out.push({ kind: 'bed', ...r.prop });
   return out;
 }
 
@@ -48,6 +54,8 @@ export function registryHotspots(areaId: string): { what: string; x: number; z: 
     ...BENCHES.filter((b) => b.areaId === areaId).map((b) => ({ what: `the ${b.kind} bench`, x: b.at.x, z: b.at.z })),
     ...NOTICES.filter((n) => n.areaId === areaId).map((n) => ({ what: `notice ${n.id}`, x: n.at.x, z: n.at.z })),
     ...CACHES.filter((c) => c.areaId === areaId).map((c) => ({ what: `cache ${c.id}`, x: c.at.x, z: c.at.z })),
+    ...FORAGE_NODES.filter((n) => n.areaId === areaId).map((n) => ({ what: `node ${n.id}`, x: n.at.x, z: n.at.z })),
+    ...RESTS.filter((r) => r.areaId === areaId).map((r) => ({ what: `bed ${r.id}`, x: r.at.x, z: r.at.z })),
   ];
 }
 

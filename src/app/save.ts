@@ -81,6 +81,7 @@ import { isPack } from '../core/data/packs.js';
 import { errandById } from '../district/errands.js';
 import { NIGHT_ANCHOR, OPENING_HOUR } from '../district/daylight.js';
 import { cacheById } from '../district/caches.js';
+import { forageNodeById } from '../district/forage.js';
 import { areaById } from '../district/areas/index.js';
 
 /**
@@ -466,6 +467,13 @@ export interface Profile {
   /** Areas ever stood in, by id (v26). A ledger, for the atlas to grey what has not been. */
   visited: string[];
   /**
+   * When each forage node was last picked, on the **street clock** (v26). Overwritten, like
+   * `hunts`, but in this character's hours rather than the wall's: a bed advances the clock and
+   * sleeping should regrow the herbs, and a node on wall time would refill while the tab was
+   * closed and never while you slept.
+   */
+  forage: Record<string, number>;
+  /**
    * Who the player said they were, at the desk (v18).
    *
    * Five fields and deliberately **no gear**: optics, vestment, trinket, treads and will
@@ -712,6 +720,7 @@ export function initializeNewProfile(profileId: string, rawLook: CharacterLook):
     caches: [],
     worldFlags: [],
     visited: [],
+    forage: {},
     decks,
     // A warband of their own colour, spending as much of the ten as their school's shelf
     // allows -- so a new player meets the deployment phase with a real line to place, and
@@ -1236,6 +1245,7 @@ function migrateProfile(
     caches: readCaches(data.caches, version),
     worldFlags: readWorldFlags(data.worldFlags, version),
     visited: readVisited(data.visited, version),
+    forage: readForage(data.forage, version),
     decks,
     roster,
     rosterUnlocks: unlocks,
@@ -1659,6 +1669,23 @@ function readVisited(raw: unknown, version: number): string[] {
   if (version < FIRST_WORLD_PLACES) return [];
   if (!Array.isArray(raw)) return [];
   return [...new Set(raw.filter((x): x is string => typeof x === 'string' && !!areaById(x)))];
+}
+
+/**
+ * Forage stamps, by node id: finite, not negative, and only for nodes that still exist. A
+ * stamp in the future is kept -- `forageReady` reads it as ready, the rule the hunt clock
+ * keeps -- rather than clamped to now, which would lock a wound-back character out for a day.
+ */
+function readForage(raw: unknown, version: number): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (version < FIRST_WORLD_PLACES) return out;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!forageNodeById(id)) continue;
+    if (typeof value !== 'number' || !Number.isFinite(value)) continue;
+    out[id] = Math.max(0, value);
+  }
+  return out;
 }
 
 function readTutorialFlags(raw: unknown, version: number): TutorialFlag[] {

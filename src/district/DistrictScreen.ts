@@ -117,7 +117,17 @@ import { hashText, makeRng, nextInt } from '../core/util/rng.js';
 import { flagForBench, tutorialActive } from './quest.js';
 import { benchesInArea, type BenchDef, type BenchKind } from './benches.js';
 import { noticesInArea, type NoticeDef } from './notices.js';
-import { cachesInArea, type CacheDef } from './caches.js';
+import { cachesInArea, type CacheDef, type CacheLoot } from './caches.js';
+import {
+  FORAGE_KINDS,
+  forageBite,
+  forageInArea,
+  forageLabel,
+  forageRemaining,
+  rollForage,
+  type ForageNode,
+} from './forage.js';
+import { restsInArea, restUntil, type RestDef } from './rests.js';
 
 /**
  * How fast the street clock runs: two game-hours a real minute.
@@ -287,6 +297,20 @@ export interface DistrictOpts {
    */
   worldFlags: readonly string[];
   onWorldFlag: (flag: string) => void;
+  /**
+   * When each forage node was last picked, on the street clock, and the call that picks one.
+   *
+   * Hours rather than the wall clock the hunts use: a bed advances the street clock and
+   * sleeping should regrow the herbs. The write goes up with the loot and the hour; it is paid
+   * there through the errand purse, and the line that comes back says what was found.
+   */
+  forage: Readonly<Record<string, number>>;
+  onForage: (id: string, loot: CacheLoot, clock: number) => string | null;
+  /**
+   * Takes a bed. Returns whether the fee was paid; the screen moves the clock itself, because
+   * the clock is the screen's while the player is standing in the world.
+   */
+  onRest: (id: string, fee: number) => boolean;
   onApothecary: () => void;
   onArtificer: () => void;
   onVivarium: () => void;
@@ -414,6 +438,8 @@ export class DistrictScreen implements Screen {
   private worldFlags: string[] = [];
   /** Local mirror of the opened caches, so one cannot be opened twice in one visit. */
   private opened: string[] = [];
+  /** Local mirror of the forage stamps, so a node picked this visit reads as picked. */
+  private picked: Record<string, number> = {};
 
   /** Whoever walks this ward's lamps, if anybody does. See `walkTheRow`. */
   private lamplighter: NPC | null = null;
@@ -476,6 +502,7 @@ export class DistrictScreen implements Screen {
     this.flags = [...opts.tutorial];
     this.worldFlags = [...opts.worldFlags];
     this.opened = [...opts.caches];
+    this.picked = { ...opts.forage };
     // Here rather than in `mount`, because `unmount` hands the hour back and a screen that was
     // torn down before it finished building would otherwise report midnight -- setting every
     // such character's clock to zero on the way past.
@@ -714,6 +741,24 @@ export class DistrictScreen implements Screen {
       if (this.opened.includes(c.id) || !gateOpen(c.gate, this.chronicle)) continue;
       const spot: Hotspot = new Hotspot(c.at.x, c.at.z, c.label, () => this.open(c, spot));
       if (c.detail) spot.interactDetail = c.detail;
+      this.interactables.push(spot);
+    }
+
+    // Things that grow back. The prompt stays up while a node is picked clean and says when it
+    // returns, because a node that vanished would read as a thing that was never there.
+    for (const node of forageInArea(this.area.id)) {
+      if (!gateOpen(node.gate, this.chronicle)) continue;
+      const kind = FORAGE_KINDS[node.kind];
+      const spot: Hotspot = new Hotspot(node.at.x, node.at.z, kind.label, () => this.harvest(node, spot));
+      const left = forageRemaining(this.picked[node.id], this.hour, kind.cooldownHours);
+      spot.interactDetail = left > 0 ? `Picked clean — ${forageLabel(left)}` : kind.detail;
+      this.interactables.push(spot);
+    }
+
+    // Somewhere to sleep, and what it costs.
+    for (const bed of restsInArea(this.area.id)) {
+      const spot = new Hotspot(bed.at.x, bed.at.z, bed.label, () => this.rest(bed));
+      spot.interactDetail = `${bed.fee} Ducats · wakes at ${String(bed.wakeHour).padStart(2, '0')}:00`;
       this.interactables.push(spot);
     }
 
@@ -1253,6 +1298,48 @@ export class DistrictScreen implements Screen {
     spot.interactLabel = null;
     if (this.nearest === spot) this.nearest = null;
     if (said) this.hud?.flashNotice(said);
+  }
+
+  /**
+   * Picks a forage node, and takes the bite if it has one.
+   *
+   * The roll is seeded off the node and the hour (`rollForage`), and the stamp is written
+   * before the purse is paid, so a reload between the two cannot try again. A bite is the
+   * ordinary pack ambush on a pack that already exists -- the ring draws, the board lands on
+   * the floor you are standing on, and `endFight` puts the room back.
+   */
+  private harvest(node: ForageNode, spot: Hotspot): void {
+    const kind = FORAGE_KINDS[node.kind];
+    const left = forageRemaining(this.picked[node.id], this.hour, kind.cooldownHours);
+    if (left > 0) {
+      this.hud?.flashNotice(`Picked clean — ${forageLabel(left)}.`);
+      return;
+    }
+    const { loot, bit } = rollForage(node, this.hour);
+    this.picked[node.id] = this.hour;
+    const said = this.opts.onForage(node.id, loot, this.hour);
+    spot.interactDetail = `Picked clean — ${forageLabel(kind.cooldownHours)}`;
+    const bite = bit ? forageBite(node) : null;
+    const line = [said, bite?.line].filter((s): s is string => !!s).join(' ');
+    if (line) this.hud?.flashNotice(line);
+    if (bite) this.ambush(bite.encounterId);
+  }
+
+  /**
+   * Takes a bed: pays the fee, and moves the clock to the waking hour.
+   *
+   * The hour is handed up at once rather than on unmount, so a tab closed on the pillow keeps
+   * the morning it paid for. Everything the clock drives -- the light, the lamps, the shifts,
+   * the sky -- follows on the next tick through `tickClock`'s own gate; nothing here relights.
+   */
+  private rest(bed: RestDef): void {
+    if (!this.opts.onRest(bed.id, bed.fee)) {
+      this.hud?.flashNotice(`Not enough Ducats. The bed is ${bed.fee}.`);
+      return;
+    }
+    this.hour = restUntil(this.hour, bed.wakeHour);
+    this.opts.onHour?.(this.hour);
+    this.hud?.flashNotice(bed.line);
   }
 
   private talkToVex(): void {

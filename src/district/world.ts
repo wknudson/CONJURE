@@ -689,6 +689,11 @@ export class DistrictWorld {
       const light = new THREE.PointLight(new THREE.Color('#e08040'), LOOK.lampIntensity * 0.8, LOOK.lampDistance * 0.6, 2);
       light.position.set(spec.x, size * 0.9, spec.z);
       this.scene.add(light);
+    } else if (spec.kind === 'embervent') {
+      // Lit from the floor, low and red: a crack that breathes, not a fire in a basket.
+      const light = new THREE.PointLight(new THREE.Color('#ff5a20'), LOOK.lampIntensity * 0.5, LOOK.lampDistance * 0.4, 2);
+      light.position.set(spec.x, 0.4, spec.z);
+      this.scene.add(light);
     }
 
     // Whether it stops anybody is `kind.collides`, and the box it stops them with is built by

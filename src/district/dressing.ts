@@ -98,7 +98,13 @@ export type DressingId =
   | 'counter'
   | 'shelves'
   | 'desk'
-  | 'table';
+  | 'table'
+  | 'herbpatch'
+  | 'orevein'
+  | 'honeycomb'
+  | 'bonepile'
+  | 'embervent'
+  | 'bed';
 
 /**
  * The vocabulary.
@@ -162,6 +168,16 @@ export const DRESSING: Record<DressingId, DressingKind> = {
   shelves: { form: 'panel', size: 2.4, collides: true, note: 'Jars, books, boxes. Stands against a wall, and reads from one side.' },
   desk: { form: 'box', size: 1.1, collides: true, note: "A clerk's. Two pedestals, an inkwell, paper." },
   table: { form: 'box', size: 1.0, collides: true, note: 'Plain boards on trestles. An inn is tables.' },
+
+  /* --- what grows back, and where you sleep ---
+     The forage nodes (`forage.ts`) and the one piece of furniture a rest needs. A node's prop
+     is the node: cut the herbs and the patch is still there, because it grows back. */
+  herbpatch: { form: 'billboard', size: 0.8, collides: false, note: 'Bloom, where nobody weeds. Cut it and it grows back.' },
+  orevein: { form: 'billboard', size: 1.6, collides: true, note: 'A lump of the rock with a seam through it. Worked, not mined.' },
+  honeycomb: { form: 'billboard', size: 1.3, collides: false, note: 'In a hedge. Wild honey, wild wasps.' },
+  bonepile: { form: 'billboard', size: 1.2, collides: true, note: 'Old bones, heaped. Something keeps them.' },
+  embervent: { form: 'ground', size: 3.0, collides: false, note: 'A crack in a foundry floor that breathes. Rake it for what it coughs up.' },
+  bed: { form: 'box', size: 1.0, collides: true, note: 'A mattress on a frame. Buys the morning, and nothing else.' },
 };
 
 /**
@@ -179,6 +195,7 @@ export const SWAYS: ReadonlySet<DressingId> = new Set<DressingId>([
   'bramble',
   'washing',
   'awning',
+  'herbpatch',
 ]);
 
 export const DRESSING_IDS = Object.keys(DRESSING) as DressingId[];

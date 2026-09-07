@@ -1896,7 +1896,157 @@ export const DRESSING_ART: Record<Exclude<DressingId, 'waystone'>, () => THREE.T
   shelves: makeShelvesTexture,
   desk: makeDeskTexture,
   table: makeTableTexture,
+  herbpatch: makeHerbpatchTexture,
+  orevein: makeOreveinTexture,
+  honeycomb: makeHoneycombTexture,
+  bonepile: makeBonepileTexture,
+  embervent: makeEmberventTexture,
+  bed: makeBedTexture,
 };
+
+/* --- what grows back --- the forage nodes, and a bed. */
+
+/** A patch of herbs: leaves low and wide, pale flower heads above, mostly negative space. */
+export function makeHerbpatchTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 10);
+  const leaf = ramp('#4e7a3a');
+  const rng = mulberry32(83);
+  for (let i = 0; i < 9; i++) {
+    const x = 1 + ((rng() * 11) | 0);
+    const h = 3 + ((rng() * 5) | 0);
+    ctx.fillStyle = rng() < 0.5 ? leaf[1]! : leaf[2]!;
+    ctx.fillRect(x, 9 - h, 1, h);
+    if (rng() < 0.6) {
+      ctx.fillStyle = leaf[2]!;
+      ctx.fillRect(x - 1, 10 - h, 3, 1);
+    }
+  }
+  ctx.fillStyle = '#e8e0c0';
+  for (const x of [3, 7, 11]) ctx.fillRect(x, 1 + ((rng() * 2) | 0), 1, 1);
+  ctx.fillStyle = leaf[3]!;
+  ctx.fillRect(0, 9, 14, 1);
+  outline(ctx, 14, 10, leaf[4]!);
+  return canvasTexture(c);
+}
+
+/** A seam of ore: a lump of the rock with a glinting vein wandering across it. */
+export function makeOreveinTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 14);
+  const rock = ramp('#4e5058');
+  const rng = mulberry32(89);
+  mound(ctx, 8, 13, 15, 10, rock, rng);
+  ctx.fillStyle = '#c8a850';
+  let y = 6;
+  for (let x = 3; x < 13; x++) {
+    ctx.fillRect(x, y, 1, 1);
+    if (rng() < 0.5) y += rng() < 0.5 ? 1 : -1;
+    y = Math.max(4, Math.min(10, y));
+  }
+  ctx.fillStyle = '#f0e0a0';
+  ctx.fillRect(7, 6, 1, 1);
+  contact(ctx, 8, 13, 14);
+  outline(ctx, 16, 14, rock[4]!);
+  return canvasTexture(c);
+}
+
+/** A comb in a hedge: cells suggested by a stagger, honey running off the bottom edge. */
+export function makeHoneycombTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(12, 14);
+  const wax = ramp('#c89a3a');
+  const hedge = ramp('#3e5a2e');
+  ctx.fillStyle = hedge[2]!;
+  ctx.fillRect(0, 0, 12, 4);
+  ctx.fillStyle = hedge[1]!;
+  ctx.fillRect(1, 0, 4, 2);
+  ctx.fillStyle = wax[2]!;
+  ctx.fillRect(2, 3, 8, 8);
+  ctx.fillRect(3, 11, 6, 1);
+  ctx.fillStyle = wax[3]!;
+  for (let yy = 4; yy < 11; yy += 2) {
+    for (let x = 3 + ((yy / 2) % 2); x < 10; x += 2) ctx.fillRect(x, yy, 1, 1);
+  }
+  ctx.fillStyle = wax[0]!;
+  ctx.fillRect(2, 3, 3, 1);
+  ctx.fillStyle = '#e0a020';
+  ctx.fillRect(4, 12, 1, 2);
+  ctx.fillRect(8, 12, 1, 1);
+  outline(ctx, 12, 14, wax[4]!);
+  return canvasTexture(c);
+}
+
+/** A pile of bones: a pale heap with the long ones lying across it and two dark sockets. */
+export function makeBonepileTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 10);
+  const bone = ramp('#c8c0a8');
+  const rng = mulberry32(97);
+  mound(ctx, 8, 9, 15, 6, bone, rng);
+  ctx.fillStyle = bone[0]!;
+  ctx.fillRect(2, 5, 7, 1);
+  ctx.fillRect(7, 3, 6, 1);
+  ctx.fillRect(1, 5, 1, 2);
+  ctx.fillRect(8, 4, 1, 2);
+  ctx.fillRect(12, 2, 1, 2);
+  ctx.fillStyle = bone[4]!;
+  ctx.fillRect(10, 6, 2, 1);
+  ctx.fillRect(4, 7, 1, 1);
+  contact(ctx, 8, 9, 14);
+  outline(ctx, 16, 10, bone[4]!);
+  return canvasTexture(c);
+}
+
+/**
+ * An ember vent: a crack in the floor, black at its edges and glowing along its length. A
+ * ground decal, so the scorch sits *in* the floor rather than on a card standing over it.
+ */
+export function makeEmberventTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 20);
+  const rng = mulberry32(101);
+  for (let i = 0; i < 60; i++) {
+    const a = rng() * Math.PI * 2;
+    const r = 4 + rng() * 5;
+    ctx.fillStyle = `rgba(10,8,8,${(0.5 - r * 0.04).toFixed(2)})`;
+    ctx.fillRect(Math.round(10 + Math.cos(a) * r), Math.round(10 + Math.sin(a) * r), 2, 2);
+  }
+  let x = 4;
+  let y = 10;
+  ctx.fillStyle = '#0a0808';
+  for (let i = 0; i < 12; i++) {
+    ctx.fillRect(x, y, 2, 2);
+    x += 1;
+    if (rng() < 0.5) y += rng() < 0.5 ? 1 : -1;
+  }
+  x = 5;
+  y = 10;
+  for (let i = 0; i < 10; i++) {
+    ctx.fillStyle = rng() < 0.5 ? '#ff7a2a' : '#ffb050';
+    ctx.fillRect(x, y, 1, 1);
+    x += 1;
+    if (rng() < 0.5) y += rng() < 0.5 ? 1 : -1;
+  }
+  return canvasTexture(c);
+}
+
+/** A bed: a mattress on a frame, the blanket turned down, a pillow. Box form; fills its canvas. */
+export function makeBedTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(20, 10);
+  const wood = ramp('#5a3e28');
+  const cloth = ramp('#7a5a5a');
+  ctx.fillStyle = wood[2]!;
+  ctx.fillRect(0, 0, 20, 10);
+  ctx.fillStyle = cloth[2]!;
+  ctx.fillRect(1, 1, 18, 6);
+  ctx.fillStyle = cloth[1]!;
+  ctx.fillRect(1, 1, 18, 2);
+  ctx.fillStyle = '#e0d8c8';
+  ctx.fillRect(2, 2, 4, 3);
+  ctx.fillStyle = cloth[3]!;
+  ctx.fillRect(7, 6, 12, 1);
+  ctx.fillStyle = wood[3]!;
+  ctx.fillRect(0, 7, 20, 3);
+  ctx.fillStyle = wood[1]!;
+  ctx.fillRect(0, 7, 20, 1);
+  return canvasTexture(c);
+}
 
 /* ============================================================
    What rooms are furnished with
