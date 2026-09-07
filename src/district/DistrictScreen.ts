@@ -499,7 +499,7 @@ export class DistrictScreen implements Screen {
     this.world = world;
 
     const camera = new THREE.PerspectiveCamera(
-      LOOK.fov,
+      this.walkFov(),
       this.width() / this.height(),
       0.1,
       // Far enough to see the horizon ring from the opposite corner of the map, whatever
@@ -1661,6 +1661,11 @@ export class DistrictScreen implements Screen {
     this.yawGoal = (this.yawGoal ?? this.cameraYaw) + (steps * Math.PI) / 2;
   }
 
+  /** The lens for walking about: the game's, unless this is a room with its own. */
+  private walkFov(): number {
+    return this.area.indoor?.camera?.fov ?? LOOK.fov;
+  }
+
   private updateCamera(): void {
     const camera = this.camera;
     if (!camera) return;
@@ -1696,9 +1701,13 @@ export class DistrictScreen implements Screen {
     }
 
     const anchor = this.player?.position ?? new THREE.Vector3(this.area.spawn.x, 0, this.area.spawn.z);
-    const pitch = THREE.MathUtils.degToRad(LOOK.cameraPitch);
-    const horizontal = Math.cos(pitch) * LOOK.cameraDistance;
-    const height = Math.sin(pitch) * LOOK.cameraDistance;
+    // A room frames itself closer and steeper than the street -- see `IndoorSpec.camera`.
+    // The street's numbers are the game's, in `LOOK`; a room's are its own.
+    const room = this.area.indoor?.camera;
+    const distance = room?.distance ?? LOOK.cameraDistance;
+    const pitch = THREE.MathUtils.degToRad(room?.pitch ?? LOOK.cameraPitch);
+    const horizontal = Math.cos(pitch) * distance;
+    const height = Math.sin(pitch) * distance;
     camera.position.set(
       anchor.x + Math.sin(this.cameraYaw) * horizontal,
       height,
@@ -2085,7 +2094,7 @@ export class DistrictScreen implements Screen {
     this.world?.setArena(null);
     this.world?.setFogScale(1);
     if (this.camera) {
-      this.camera.fov = LOOK.fov;
+      this.camera.fov = this.walkFov();
       this.camera.updateProjectionMatrix();
     }
   }
@@ -2161,7 +2170,7 @@ export class DistrictScreen implements Screen {
       },
       onCamera: () => {
         if (!this.camera) return;
-        this.camera.fov = LOOK.fov;
+        this.camera.fov = this.walkFov();
         this.camera.updateProjectionMatrix();
       },
       onSun: () => this.world?.applySun(),

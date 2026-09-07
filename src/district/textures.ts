@@ -17,7 +17,7 @@
  */
 
 import * as THREE from 'three';
-import { groundRowsOf, waterRowsOf, type AreaDef } from './map.js';
+import { groundRowsOf, waterRowsOf, type AreaDef, type WallTex } from './map.js';
 import type { DressingId } from './dressing.js';
 import type { CritterId } from './wildlife.js';
 
@@ -1076,6 +1076,127 @@ export function makeWallTexture(): THREE.Texture {
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   return t;
 }
+
+/** Dressed stone in irregular courses: a furnace, a cistern, a chapel. */
+export function makeStoneWallTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(31);
+  const stone = ['#5a5750', '#63605a', '#524f49', '#6b685f'];
+  ctx.fillStyle = '#4a4741';
+  ctx.fillRect(0, 0, 16, 16);
+  // Three courses of unequal height, each broken at a different place.
+  const courses = [0, 5, 11, 16];
+  for (let i = 0; i < 3; i++) {
+    const y0 = courses[i]!;
+    const y1 = courses[i + 1]!;
+    let x = 0;
+    while (x < 16) {
+      const w = 3 + ((rng() * 5) | 0);
+      ctx.fillStyle = stone[(rng() * stone.length) | 0]!;
+      ctx.fillRect(x, y0, Math.min(w, 16 - x) - 1, y1 - y0 - 1);
+      x += w;
+    }
+  }
+  // Mortar lines dark, one highlight per course where the light catches a top edge.
+  ctx.fillStyle = '#75726a';
+  for (const y of [1, 6, 12]) ctx.fillRect(0, y, 16, 1);
+  const t = canvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+/** Timber framing over plaster: an inn, a barn, a mill. The posts are what read. */
+export function makeTimberWallTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(47);
+  ctx.fillStyle = '#8a7c66';
+  ctx.fillRect(0, 0, 16, 16);
+  for (let i = 0; i < 18; i++) {
+    ctx.fillStyle = rng() < 0.5 ? '#948670' : '#80735e';
+    ctx.fillRect((rng() * 16) | 0, (rng() * 16) | 0, 2, 1);
+  }
+  // Two uprights and a sill, dark and a shade of red in the wood.
+  ctx.fillStyle = '#3a2a1e';
+  ctx.fillRect(1, 0, 2, 16);
+  ctx.fillRect(10, 0, 2, 16);
+  ctx.fillRect(0, 13, 16, 2);
+  // A brace across the bay.
+  for (let i = 0; i < 8; i++) ctx.fillRect(3 + i, 12 - i, 1, 1);
+  ctx.fillStyle = '#4e3a2a';
+  ctx.fillRect(1, 0, 1, 16);
+  ctx.fillRect(10, 0, 1, 16);
+  const t = canvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+/** Limewashed plaster, stained where the damp gets in. A shop, an office, an apothecary. */
+export function makePlasterWallTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(53);
+  ctx.fillStyle = '#b8ad98';
+  ctx.fillRect(0, 0, 16, 16);
+  for (let i = 0; i < 24; i++) {
+    ctx.fillStyle = rng() < 0.5 ? '#c2b7a2' : '#aea38e';
+    ctx.fillRect((rng() * 16) | 0, (rng() * 16) | 0, 1 + ((rng() * 2) | 0), 1);
+  }
+  // Damp rising from the skirting, and a crack.
+  for (let y = 11; y < 16; y++) {
+    ctx.fillStyle = `rgba(60,50,40,${(y - 10) * 0.08})`;
+    ctx.fillRect(0, y, 16, 1);
+  }
+  ctx.fillStyle = '#8a8070';
+  let cx = 4 + ((rng() * 6) | 0);
+  for (let y = 0; y < 9; y++) {
+    ctx.fillRect(cx, y, 1, 1);
+    if (rng() < 0.4) cx += rng() < 0.5 ? 1 : -1;
+  }
+  const t = canvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+/** Living rock: a cave, a lava tube, a barrow. No courses at all, which is the point. */
+export function makeRockWallTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(61);
+  const rock = ['#3a3d43', '#41454c', '#34373d', '#474b52'];
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      ctx.fillStyle = rock[(rng() * rock.length) | 0]!;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  // Fractures: a few dark lines that wander, and a lit edge above each.
+  for (let i = 0; i < 3; i++) {
+    let y = (rng() * 16) | 0;
+    for (let x = 0; x < 16; x++) {
+      ctx.fillStyle = '#22252a';
+      ctx.fillRect(x, y, 1, 1);
+      ctx.fillStyle = '#565b63';
+      ctx.fillRect(x, (y + 15) % 16, 1, 1);
+      if (rng() < 0.35) y = (y + (rng() < 0.5 ? 1 : 15)) % 16;
+    }
+  }
+  const t = canvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+/**
+ * Every wall a solid tile may be faced with, by name.
+ *
+ * Typed against `WallTex` so that naming a material in a legend before drawing it is a compile
+ * error -- the same discipline `DRESSING_ART` keeps for the furniture. `brick` is the wall every
+ * ward has always worn; the others arrived with the first rooms.
+ */
+export const WALL_ART: Record<WallTex, () => THREE.Texture> = {
+  brick: makeWallTexture,
+  stone: makeStoneWallTexture,
+  timber: makeTimberWallTexture,
+  plaster: makePlasterWallTexture,
+  rock: makeRockWallTexture,
+};
 
 export function makeWaterTexture(): THREE.Texture {
   const { c, ctx } = makeCanvas(32, 16);

@@ -159,6 +159,16 @@ export const ASHFALL: AreaDef = defineArea({
       label: 'West into Ward Seven',
       arrive: { x: 34, z: 6 },
     },
+    {
+      // The first door in the world that opens onto a floor rather than a menu. At the west
+      // end of the Ironworks' face for now, beside the plaque door it will replace.
+      to: 'ashfall_ironworks',
+      x: xOfCol(3),
+      z: 9.4,
+      label: 'Into the Ironworks',
+      // Just inside the door, a stride clear of the way back out.
+      arrive: { x: 0, z: 22 },
+    },
   ],
   props: {
     /** The ward is named for what falls on it. Rats in the yards, rooks over the terraces. */

@@ -14,7 +14,7 @@ import { SWAYS } from './dressing.js';
 import { SKIES, SkyField, skyStrengthAt, type SkyId } from './skies.js';
 import { hashText } from '../core/util/rng.js';
 import { gateOpen, NOTHING_HAPPENED, type Chronicle } from './chronicle.js';
-import { ambientAt, lampsAt, NIGHT_ANCHOR, type Lit } from './daylight.js';
+import { ambientAt, lampsAt, lightingHour, NIGHT_ANCHOR, type Lit } from './daylight.js';
 import type { ColliderSet } from './collision.js';
 import { DRESSING } from './dressing.js';
 import { staticFootprints } from './footprints.js';
@@ -28,6 +28,7 @@ import {
   zOfRow,
   type AreaDef,
   type DressingSpec,
+  type WallTex,
 } from './map.js';
 import {
   bakeGround,
@@ -40,7 +41,7 @@ import {
   makeGraffitiTexture,
   makeSignTexture,
   makeTreeTexture,
-  makeWallTexture,
+  WALL_ART,
   makeWaterTexture,
   mulberry32,
   configurePixelTexture,
@@ -167,6 +168,10 @@ export class DistrictWorld {
   private lit: Lit;
   /** What the clock says. See `daylight.ts`; the authored values are one in the morning. */
   private hour = NIGHT_ANCHOR;
+  /** Whether this is a room. Decides what the hour is allowed to do to the light. */
+  private readonly indoor: boolean;
+  /** The void past a room's walls, recoloured with the fog so the two never part. */
+  private voidMat: THREE.MeshBasicMaterial | null = null;
 
   private readonly occRay = new THREE.Raycaster();
   private readonly occDir = new THREE.Vector3();
@@ -202,7 +207,11 @@ export class DistrictWorld {
     // Everything below builds from the *lit* values, so a ward entered at noon is built at noon
     // rather than built at night and corrected on the first frame -- which would have been one
     // visible flash of midnight on every crossing.
-    const lit = ambientAt(amb, hour);
+    // A room is lit at the anchor whatever the clock says -- see `lightingHour`. The clock
+    // itself is kept as handed in, so the street is still at the right hour when you leave.
+    const indoor = !!area.indoor;
+    this.indoor = indoor;
+    const lit = ambientAt(amb, lightingHour(indoor, hour));
     this.lit = lit;
     this.scene.fog = new THREE.FogExp2(lit.fogColor, lit.fogDensity);
     this.scene.background = new THREE.Color(lit.fogColor);
@@ -226,9 +235,13 @@ export class DistrictWorld {
     // area there was, and an area drawn bigger would have shown its own edge from the far
     // side of the map. The margin is what the fog needs to close before the plane ends.
     const reach = Math.max(area.cols, area.rows) * TILE + 120;
+    // Past a room's walls there is nothing, and nothing is painted the fog's colour so the
+    // top of a wall and the void behind it meet without a seam. Unlit, because there is
+    // nothing there to light.
+    if (indoor) this.voidMat = new THREE.MeshBasicMaterial({ color: lit.fogColor });
     const outskirts = new THREE.Mesh(
       new THREE.PlaneGeometry(reach, reach),
-      new THREE.MeshLambertMaterial({ map: makeOutskirtsTexture(reach / 4) }),
+      this.voidMat ?? new THREE.MeshLambertMaterial({ map: makeOutskirtsTexture(reach / 4) }),
     );
     outskirts.rotation.x = -Math.PI / 2;
     outskirts.position.y = -0.9;
@@ -268,7 +281,18 @@ export class DistrictWorld {
        hardcoded 'B' and 'V' branches this used to be. The heights, the insets and the
        chimneys live on the tile now, so an area's rock face and a ward's terrace come out of
        one loop and neither character is magic here. */
-    const wallTexture = makeWallTexture();
+    // One texture per wall material standing in this area, made on first use and released
+    // once every box that clones it has been built -- `addStructure` clones per box so each
+    // can carry its own repeat.
+    const wallTextures = new Map<WallTex, THREE.Texture>();
+    const wallTex = (kind: WallTex): THREE.Texture => {
+      let t = wallTextures.get(kind);
+      if (!t) {
+        t = WALL_ART[kind]();
+        wallTextures.set(kind, t);
+      }
+      return t;
+    };
     const buildRng = mulberry32(4242);
     for (const [char, def] of Object.entries(area.legend)) {
       const solid = def.solid;
@@ -301,7 +325,7 @@ export class DistrictWorld {
           const widest = spans.reduce((m, s) => (s[1] - s[0] > m ? s[1] - s[0] : m), 0);
           for (const [a, b] of spans) {
             this.addStructure(
-              wallTexture,
+              wallTex(solid.wall ?? 'brick'),
               (a + b) / 2,
               cz,
               b - a - solid.inset,
@@ -309,18 +333,18 @@ export class DistrictWorld {
               rect.d * TILE - solid.depthInset,
               // One chimney per run, kept to the widest piece, so cutting a gate out of a
               // wall does not mint a second chimney out of thin air.
-              { chimney: b - a === widest ? chimney : 0 },
+              { chimney: b - a === widest ? chimney : 0, bare: solid.bare },
             );
           }
         }
       }
     }
-    wallTexture.dispose();
+    for (const t of wallTextures.values()) t.dispose();
 
     /* --- the horizon, pure silhouette in the smog ---
        A city ring for the ward; low broken humps for open country. Either way it exists so
        the world does not visibly end. */
-    const horizon = area.props.horizon ?? 'none';
+    const horizon = indoor ? 'none' : (area.props.horizon ?? 'none');
     if (horizon !== 'none') {
       const skyRng = mulberry32(88);
       const city = horizon === 'city';
@@ -347,7 +371,8 @@ export class DistrictWorld {
     const skyId = area.props.sky ?? 'none';
     this.areaId = area.id;
     this.skyId = skyId;
-    if (skyId !== 'none') {
+    // A room declares `'none'` and a test insists on it; the guard here is belt and braces.
+    if (!indoor && skyId !== 'none') {
       // Seeded off the area id, so a place's weather is the same weather every time you walk
       // into it rather than a fresh scatter on every shop door.
       this.sky = new SkyField(SKIES[skyId], mulberry32(hashText(area.id) >>> 0));
@@ -664,7 +689,7 @@ export class DistrictWorld {
     w: number,
     h: number,
     d: number,
-    opts: { chimney?: number },
+    opts: { chimney?: number; bare?: boolean },
   ): void {
     const tex = wallTexture.clone();
     configurePixelTexture(tex);
@@ -681,21 +706,24 @@ export class DistrictWorld {
     box.receiveShadow = true;
     this.scene.add(box);
 
-    // Flat industrial roofs with a parapet. No fairytale cones in this ward.
-    const parapet = new THREE.Mesh(
-      new THREE.BoxGeometry(w + 0.35, 0.4, d + 0.35),
-      new THREE.MeshLambertMaterial({ color: 0x2b2622 }),
-    );
-    parapet.position.set(x, h + 0.2, z);
-    parapet.castShadow = true;
-    this.scene.add(parapet);
-
     const parts: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [
       box as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>,
-      parapet as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>,
     ];
 
-    if (opts.chimney) {
+    // Flat industrial roofs with a parapet. No fairytale cones in this ward -- and no roofline
+    // at all on a `bare` wall, which is a partition or a rock face and not a building.
+    if (!opts.bare) {
+      const parapet = new THREE.Mesh(
+        new THREE.BoxGeometry(w + 0.35, 0.4, d + 0.35),
+        new THREE.MeshLambertMaterial({ color: 0x2b2622 }),
+      );
+      parapet.position.set(x, h + 0.2, z);
+      parapet.castShadow = true;
+      this.scene.add(parapet);
+      parts.push(parapet as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>);
+    }
+
+    if (opts.chimney && !opts.bare) {
       const stack = new THREE.Mesh(
         new THREE.CylinderGeometry(0.45, 0.55, opts.chimney, 6),
         new THREE.MeshLambertMaterial({ color: 0x241f1c }),
@@ -762,7 +790,12 @@ export class DistrictWorld {
     light.position.set(x, 3.6, z);
     this.scene.add(light);
 
-    this.lamps.push({ light, head, phase: this.lamps.length * 1.7, lit: lampsAt(this.hour) });
+    this.lamps.push({
+      light,
+      head,
+      phase: this.lamps.length * 1.7,
+      lit: lampsAt(lightingHour(this.indoor, this.hour)),
+    });
   }
 
   /* ============================================================
@@ -1098,7 +1131,7 @@ export class DistrictWorld {
    */
   setHour(hour: number): void {
     this.hour = hour;
-    this.lit = ambientAt(this.amb, hour);
+    this.lit = this.litNow();
     this.applyFog();
     this.applySun();
     this.applyAmbient();
@@ -1108,27 +1141,33 @@ export class DistrictWorld {
     this.sky?.setStrength(skyStrengthAt(this.areaId, this.skyId, hour));
     // The default, which is the whole ward fading together on one curve. A lamplighter overrides
     // it lamp by lamp immediately afterwards; everywhere else this is the behaviour, unchanged.
-    const burning = lampsAt(hour);
+    const burning = lampsAt(lightingHour(this.indoor, hour));
     for (const l of this.lamps) l.lit = burning;
+  }
+
+  /** The ambience at the hour this place is lit at -- the clock's, or a room's anchor. */
+  private litNow(): Lit {
+    return ambientAt(this.amb, lightingHour(this.indoor, this.hour));
   }
 
   applyFog(): void {
     // Re-derived here as well as in `setHour`, because the tuning panel calls this directly
     // after editing `amb` and would otherwise be writing last hour's values.
-    this.lit = ambientAt(this.amb, this.hour);
+    this.lit = this.litNow();
     (this.scene.fog as THREE.FogExp2).color.set(this.lit.fogColor);
     (this.scene.fog as THREE.FogExp2).density = this.lit.fogDensity;
     (this.scene.background as THREE.Color).set(this.lit.fogColor);
+    this.voidMat?.color.set(this.lit.fogColor);
   }
 
   applySun(): void {
-    this.lit = ambientAt(this.amb, this.hour);
+    this.lit = this.litNow();
     this.sun.intensity = this.lit.sunIntensity;
     this.sun.color.set(this.lit.sunColor);
   }
 
   applyAmbient(): void {
-    this.lit = ambientAt(this.amb, this.hour);
+    this.lit = this.litNow();
     this.hemi.intensity = this.lit.ambientIntensity;
     this.hemi.color.set(this.lit.skyColor);
     this.hemi.groundColor.set(this.lit.groundBounce);

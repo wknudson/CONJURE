@@ -44,6 +44,21 @@ export const DAY_HOURS = 24;
 export const NIGHT_ANCHOR = 1;
 
 /**
+ * The hour a place is *lit* at, which for a room is not the hour it is.
+ *
+ * A room's ambience is authored like every other area's -- at the anchor, and measured there
+ * -- and a room has no sky for the day curve to lift. So a room is lit at the anchor whatever
+ * the clock says, and the clock goes on ticking: the street outside is at noon when you walk
+ * back out, the packs in a cellar keep their hours, and the one thing that does not happen is
+ * the sun coming up under a roof. One function so that every reader of the ambience -- the
+ * fog, the key light, the hemisphere, the lamps -- asks the same question and gets the same
+ * answer.
+ */
+export function lightingHour(indoor: boolean, hour: number): number {
+  return indoor ? NIGHT_ANCHOR : hour;
+}
+
+/**
  * The hour a new character's clock starts at.
  *
  * Six in the morning, mid-dawn — and not `NIGHT_ANCHOR`, which is where every character used to

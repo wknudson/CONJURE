@@ -35,6 +35,37 @@ import type { SkyId } from './skies.js';
  */
 export const TILE = 4;
 
+/**
+ * What a solid tile's faces are made of. A name into `WALL_ART` in `textures.ts`, typed so a
+ * new material is a compile error until somebody draws it. Absent means the brick every ward
+ * already wears.
+ */
+export type WallTex = 'brick' | 'stone' | 'timber' | 'plaster' | 'rock';
+
+/**
+ * What makes an area a room.
+ *
+ * Present means: no sky, no horizon ring, no day curve -- the place is lit at the hour its
+ * ambience was authored whatever the clock says -- and a camera of its own, because a forge
+ * floor seen from the street's twenty-two units out is a forge floor seen through its own
+ * roof. Everything else about a room is an area: the same grid, the same exits, the same
+ * furniture, the same save slot for where you are standing. That is the whole design. A room
+ * that was a second kind of place would need a second kind of everything.
+ *
+ * No ceiling, on purpose. The walls are solid tiles and the camera looks down at fifty-odd
+ * degrees, so what you see over the wall is the void the fog colour paints; a ceiling would be
+ * a slab between the camera and the player that the occlusion fade had to dissolve every
+ * frame, buying nothing.
+ */
+export interface IndoorSpec {
+  /** The room's framing. Absent fields fall back to `LOOK`. A workshop wants about 15 / 56. */
+  readonly camera?: {
+    readonly distance?: number;
+    readonly pitch?: number;
+    readonly fov?: number;
+  };
+}
+
 export interface TileDef {
   /** Which paint `bakeGround` puts down. Open-ended: the wilds grows its own. */
   readonly tex: string;
@@ -58,6 +89,13 @@ export interface TileDef {
     readonly chimneyChance: number;
     /** Chunk long runs into two- and three-tile pieces, for a skyline. */
     readonly split: boolean;
+    /** Which wall art. Absent means brick. */
+    readonly wall?: WallTex;
+    /**
+     * No parapet and no chimney: a partition inside a room, or a cave face. A building is
+     * a box with a roofline; a wall is just the box.
+     */
+    readonly bare?: boolean;
   };
 }
 
@@ -332,6 +370,8 @@ export interface AreaDef {
    */
   readonly safety: 'sidewalk' | 'none';
   readonly props: AreaProps;
+  /** Present means this is a room. See `IndoorSpec`. */
+  readonly indoor?: IndoorSpec;
 }
 
 /** What an area is written as. The derived fields are filled in by `defineArea`. */

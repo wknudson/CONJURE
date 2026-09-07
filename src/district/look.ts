@@ -530,6 +530,31 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#2e2c24',
     fogDensity: 0.012,
   },
+
+  /* --- rooms ---
+     Lit at the anchor whatever the clock says (`lightingHour`), so these are the only entries
+     in the table that are never put through the day transform. Warm where the street is cold:
+     a room is lit by what burns in it, not by the moon. The fog is the room's own air and its
+     colour is the void past the walls, so it is dark and it is thin -- a workshop you cannot
+     see across is not a workshop, and `worldCombatSeams` asks every area to be legible at
+     combat range. */
+
+  /**
+   * The Ironworks: a forge floor, lit from the furnace mouth.
+   *
+   * The strongest bounce of anywhere indoors and an orange key from low on one side, which
+   * is what a room with a fire in it looks like. The hemisphere is dim and brown -- the light
+   * that has already been round the room twice.
+   */
+  ashfall_ironworks: {
+    sunIntensity: 1.6,
+    sunColor: '#d99a5a',
+    ambientIntensity: 2.2,
+    skyColor: '#5c4636',
+    groundBounce: '#6a3c1e',
+    fogColor: '#17110d',
+    fogDensity: 0.026,
+  },
 };
 
 /** An area's ambience, or the ward's if nobody wrote one. */

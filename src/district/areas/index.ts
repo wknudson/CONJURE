@@ -27,6 +27,7 @@ import { ASHWOOD } from './ashwood.js';
 import { RIMEFIELDS } from './rimefields.js';
 import { STORM_SHELF } from './stormShelf.js';
 import { BONE_BASTION } from './boneBastion.js';
+import { ASHFALL_IRONWORKS } from './interiors/ashfallIronworks.js';
 
 /**
  * Ordered as the city, then the ring, then the wilds — the order they are reached in, which is
@@ -53,6 +54,8 @@ export const AREAS: readonly AreaDef[] = [
   RIMEFIELDS,
   STORM_SHELF,
   BONE_BASTION,
+  // The rooms, after the streets they open off. `interiors/` holds them; see `IndoorSpec`.
+  ASHFALL_IRONWORKS,
 ];
 
 export function areaById(id: string): AreaDef | undefined {
@@ -82,4 +85,5 @@ export {
   RIMEFIELDS,
   STORM_SHELF,
   BONE_BASTION,
+  ASHFALL_IRONWORKS,
 };

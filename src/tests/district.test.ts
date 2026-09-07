@@ -122,7 +122,11 @@ describe('the world is populated', () => {
     // The lamps used to fade together on one curve everywhere, which is the right picture drawn
     // by the wrong cause: nothing dims a gas lamp. Somewhere with lamps and nobody to light them
     // is that cause again, so this asks that every lit street have a person on it.
-    const unlit = AREAS.filter((a) => (a.props.lamps ?? []).length > 0 && !a.props.lamplighter);
+    // Rooms excepted: a lamp under a roof is a sconce that burns at the anchor whatever the
+    // clock says (`lightingHour`), so there is no row to walk and nobody to walk it.
+    const unlit = AREAS.filter(
+      (a) => !a.indoor && (a.props.lamps ?? []).length > 0 && !a.props.lamplighter,
+    );
     expect(unlit.map((a) => a.id)).toEqual(['brays_hollow']);
   });
 
@@ -285,6 +289,25 @@ describe('every area', () => {
         expect(isWalkable(area, 0, 9999)).toBe(false);
         expect(isWalkable(area, -9999, 0)).toBe(false);
         expect(tileAt(area, 9999, 9999).walk).toBe(false);
+      });
+
+      it('behaves like a room, if it says it is one', () => {
+        // What `IndoorSpec` promises and `world.ts` leans on. A room with weather would draw
+        // ash through its roof; a room with a Warden would have a beat with no pavement to
+        // step back onto; a room with a lamplighter would have a row nobody can see him walk.
+        // And a room you can walk into must be a room you can walk out of -- the first room
+        // in the world had exactly that bug in its first draft, from the other side.
+        if (!area.indoor) return;
+        expect(area.props.sky, `${area.id}: a room has no weather`).toBe('none');
+        expect(area.props.horizon ?? 'none', `${area.id}: a room has no skyline`).toBe('none');
+        expect(area.safety, `${area.id}: the pavement rule stops at the door`).toBe('none');
+        expect(area.props.patrols ?? [], `${area.id}: no Warden walks a room`).toHaveLength(0);
+        expect(area.props.lamplighter, `${area.id}: nobody walks a row indoors`).toBeUndefined();
+        expect(area.exits.length, `${area.id}: a room needs a way out`).toBeGreaterThan(0);
+        for (const exit of area.exits) {
+          const back = areaById(exit.to)?.exits.some((e) => e.to === area.id);
+          expect(back, `${exit.to} has no way back into ${area.id}`).toBe(true);
+        }
       });
 
       it('lands every exit somewhere real, and clear of the way back', () => {
