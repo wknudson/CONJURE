@@ -502,7 +502,9 @@ export class DistrictScreen implements Screen {
       LOOK.fov,
       this.width() / this.height(),
       0.1,
-      220,
+      // Far enough to see the horizon ring from the opposite corner of the map, whatever
+      // size the map is; 220 was the flat number and it was tuned for a twenty-tile ward.
+      Math.max(220, Math.hypot(this.area.halfX, this.area.halfZ) * 2 + 60),
     );
     this.camera = camera;
 

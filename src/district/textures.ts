@@ -198,6 +198,13 @@ const PAINTS = {
   litter: paintLitter,
   barrow: paintBarrow,
   heath: paintHeath,
+  // Wave 14: floors. The first surfaces with a roof over them.
+  planks: paintPlanks,
+  rug: paintRug,
+  hearth: paintHearth,
+  ironplate: paintIronplate,
+  straw: paintStraw,
+  cave: paintCave,
 } as const satisfies Record<string, PaintFn>;
 
 export type GroundTex = keyof typeof PAINTS;
@@ -612,6 +619,139 @@ function paintFlagstone(ctx: CanvasRenderingContext2D, px: number, py: number, r
   ctx.fillRect(px, py + 1, PX, 1);
 }
 
+/* --- floors ---
+   The first paints with a roof over them. A room's camera stands closer than the street's
+   (see `IndoorSpec.camera`), so every mark here is a pixel bolder than it would be outside:
+   a seam that reads at twenty-two units is a hairline at fourteen. */
+
+/** Floorboards laid along x: four a tile, grain in the lit tone, a dark seam, a nail. */
+function paintPlanks(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  const wood = ['#5a3f28', '#634629', '#523a25', '#6b4c2e'];
+  for (let b = 0; b < 4; b++) {
+    ctx.fillStyle = wood[(rng() * wood.length) | 0]!;
+    ctx.fillRect(px, py + b * 4, PX, 4);
+    ctx.fillStyle = '#7a5a38';
+    ctx.fillRect(px + ((rng() * (PX - 6)) | 0), py + b * 4 + 1 + ((rng() * 2) | 0), 3 + ((rng() * 3) | 0), 1);
+    ctx.fillStyle = '#2e2016';
+    ctx.fillRect(px, py + b * 4 + 3, PX, 1);
+  }
+  // A board end now and then, with the nail that holds it down.
+  if (rng() < 0.5) {
+    const bx = px + 4 + ((rng() * 8) | 0);
+    const by = py + ((rng() * 4) | 0) * 4;
+    ctx.fillStyle = '#2e2016';
+    ctx.fillRect(bx, by, 1, 3);
+    ctx.fillStyle = '#9a8c78';
+    ctx.fillRect(bx + 1, by + 1, 1, 1);
+  }
+}
+
+/** A woven rug: deep red, a paler weave, a gold diamond on every other tile. */
+function paintRug(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  ctx.fillStyle = '#5c2a2a';
+  ctx.fillRect(px, py, PX, PX);
+  for (let y = 0; y < PX; y += 2) {
+    for (let x = (y / 2) % 2; x < PX; x += 4) {
+      ctx.fillStyle = rng() < 0.85 ? '#7a3a34' : '#9a7a3a';
+      ctx.fillRect(px + x, py + y, 1, 1);
+    }
+  }
+  if (rng() < 0.5) {
+    ctx.fillStyle = '#a88a48';
+    for (let i = 0; i < 4; i++) {
+      ctx.fillRect(px + 7 - i, py + 4 + i, 1, 1);
+      ctx.fillRect(px + 8 + i, py + 4 + i, 1, 1);
+      ctx.fillRect(px + 7 - i, py + 11 - i, 1, 1);
+      ctx.fillRect(px + 8 + i, py + 11 - i, 1, 1);
+    }
+  }
+}
+
+/** Hearthstone: a dark slab, soot thickest toward the fire, an ember or two still live. */
+function paintHearth(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  ctx.fillStyle = '#2e2b2a';
+  ctx.fillRect(px, py, PX, PX);
+  ctx.fillStyle = '#383433';
+  for (let i = 0; i < 5; i++) ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 2, 1);
+  ctx.fillStyle = '#1c1a1a';
+  for (let i = 0; i < 8; i++) {
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * 6) | 0), 1 + ((rng() * 2) | 0), 1);
+  }
+  if (rng() < 0.6) {
+    ctx.fillStyle = '#e06a2a';
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 1, 1);
+  }
+  if (rng() < 0.3) {
+    ctx.fillStyle = '#ffb060';
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 1, 1);
+  }
+  ctx.fillStyle = '#1c1a1a';
+  ctx.fillRect(px, py, PX, 1);
+  ctx.fillRect(px, py, 1, PX);
+}
+
+/** Riveted iron plate, the foundry floor: a lit edge, a dark edge, four rivets, some rust. */
+function paintIronplate(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  const iron = ['#3a3f47', '#3f444c', '#363b42'];
+  ctx.fillStyle = iron[(rng() * iron.length) | 0]!;
+  ctx.fillRect(px, py, PX, PX);
+  ctx.fillStyle = '#4c525a';
+  ctx.fillRect(px, py, PX, 1);
+  ctx.fillRect(px, py, 1, PX);
+  ctx.fillStyle = '#22262c';
+  ctx.fillRect(px, py + PX - 1, PX, 1);
+  ctx.fillRect(px + PX - 1, py, 1, PX);
+  for (const [rx, ry] of [
+    [2, 2],
+    [PX - 4, 2],
+    [2, PX - 4],
+    [PX - 4, PX - 4],
+  ] as const) {
+    ctx.fillStyle = '#5a6068';
+    ctx.fillRect(px + rx, py + ry, 2, 2);
+    ctx.fillStyle = '#22262c';
+    ctx.fillRect(px + rx + 1, py + ry + 1, 1, 1);
+  }
+  if (rng() < 0.4) {
+    ctx.fillStyle = '#6a4a30';
+    ctx.fillRect(px + 4 + ((rng() * 6) | 0), py + 4 + ((rng() * 6) | 0), 3, 1);
+  }
+}
+
+/** Straw over packed earth: pens and barns. Strewn both ways, so it is loose and not thatch. */
+function paintStraw(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  ctx.fillStyle = '#4a3a24';
+  ctx.fillRect(px, py, PX, PX);
+  const straw = ['#a88a48', '#c0a058', '#8a6e38'];
+  for (let i = 0; i < 14; i++) {
+    ctx.fillStyle = straw[(rng() * straw.length) | 0]!;
+    const len = 2 + ((rng() * 4) | 0);
+    if (rng() < 0.5) ctx.fillRect(px + ((rng() * (PX - len)) | 0), py + ((rng() * PX) | 0), len, 1);
+    else ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * (PX - len)) | 0), 1, len);
+  }
+}
+
+/** Cave floor: wet rock, uneven, a damp glint, and once in a while a pale mineral vein. */
+function paintCave(ctx: CanvasRenderingContext2D, px: number, py: number, rng: () => number): void {
+  const rock = ['#23262b', '#282b31', '#1f2226', '#2c3036'];
+  ctx.fillStyle = rock[(rng() * rock.length) | 0]!;
+  ctx.fillRect(px, py, PX, PX);
+  for (let i = 0; i < 4; i++) {
+    ctx.fillStyle = rock[(rng() * rock.length) | 0]!;
+    ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 2 + ((rng() * 4) | 0), 1 + ((rng() * 2) | 0));
+  }
+  ctx.fillStyle = '#3e454e';
+  for (let i = 0; i < 3; i++) ctx.fillRect(px + ((rng() * PX) | 0), py + ((rng() * PX) | 0), 1, 1);
+  if (rng() < 0.15) {
+    ctx.fillStyle = '#7a8a7a';
+    let vx = px + ((rng() * PX) | 0);
+    for (let y = 0; y < PX; y++) {
+      ctx.fillRect(vx, py + y, 1, 1);
+      if (rng() < 0.3) vx += rng() < 0.5 ? 1 : -1;
+    }
+  }
+}
+
 /**
  * Salt crust, for the pans at Saltglass.
  *
@@ -888,7 +1028,7 @@ export function bakeGround(area: AreaDef, maxAnisotropy: number): THREE.Texture 
 }
 
 /** The dull plane under everything, so the ward never terminates in visible void. */
-export function makeOutskirtsTexture(): THREE.Texture {
+export function makeOutskirtsTexture(repeat = 65): THREE.Texture {
   const { c, ctx } = makeCanvas(16, 16);
   const rng = mulberry32(55);
   const palette = ['#1d211c', '#22261f', '#191d18', '#262b22'];
@@ -900,7 +1040,8 @@ export function makeOutskirtsTexture(): THREE.Texture {
   }
   const t = canvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(65, 65);
+  // One repeat per four world units, whatever the plane's size: the grain stays the grain.
+  t.repeat.set(repeat, repeat);
   return t;
 }
 

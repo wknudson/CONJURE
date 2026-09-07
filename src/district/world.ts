@@ -17,6 +17,7 @@ import { gateOpen, NOTHING_HAPPENED, type Chronicle } from './chronicle.js';
 import { ambientAt, lampsAt, NIGHT_ANCHOR, type Lit } from './daylight.js';
 import type { ColliderSet } from './collision.js';
 import { DRESSING } from './dressing.js';
+import { staticFootprints } from './footprints.js';
 import {
   TILE,
   extractRects,
@@ -114,6 +115,13 @@ export class DistrictWorld {
   private readonly lamps: Lamp[] = [];
   /** One picture per kind of furniture, for the life of this world. See the build loop. */
   private readonly dressTex = new Map<string, THREE.Texture>();
+  /**
+   * How wide each piece of furniture's picture is, per placed piece, for the colliders.
+   *
+   * Per piece rather than per kind because a waystone's canvas is cut to its own line, so
+   * two waystones are two widths. Read once, after the textures exist, by `staticFootprints`.
+   */
+  private readonly dressAspect = new Map<DressingSpec, number>();
   private readonly signs: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = [];
   private readonly impacts: ImpactLight[] = [];
   /** Absent in an area with no canal. `dispose` and `scrollWater` both allow for it. */
@@ -213,9 +221,14 @@ export class DistrictWorld {
 
     // A big dull plane under everything, so the ward never terminates in visible void.
     // It has to sit below the canal surface or it would cover the water.
+    //
+    // Sized off the area rather than a flat 260: that number was a whisker past the largest
+    // area there was, and an area drawn bigger would have shown its own edge from the far
+    // side of the map. The margin is what the fog needs to close before the plane ends.
+    const reach = Math.max(area.cols, area.rows) * TILE + 120;
     const outskirts = new THREE.Mesh(
-      new THREE.PlaneGeometry(260, 260),
-      new THREE.MeshLambertMaterial({ map: makeOutskirtsTexture() }),
+      new THREE.PlaneGeometry(reach, reach),
+      new THREE.MeshLambertMaterial({ map: makeOutskirtsTexture(reach / 4) }),
     );
     outskirts.rotation.x = -Math.PI / 2;
     outskirts.position.y = -0.9;
@@ -313,7 +326,10 @@ export class DistrictWorld {
       const city = horizon === 'city';
       for (let i = 0; i < 16; i++) {
         const a = (i / 16) * Math.PI * 2 + skyRng() * 0.2;
-        const r = 52 + skyRng() * 22;
+        // Outside the map's own corner, or a wide area would have the horizon standing in
+        // its streets -- the Ashwood's did, at the old flat 52. Never nearer than the ward's
+        // ring was, so the smaller places keep the skyline they were measured with.
+        const r = Math.max(52, Math.hypot(area.halfX, area.halfZ) + 6) + skyRng() * 22;
         const h = city ? 12 + skyRng() * 22 : 7 + skyRng() * 6;
         const block = new THREE.Mesh(
           new THREE.BoxGeometry(6 + skyRng() * 8, h, 6 + skyRng() * 8),
@@ -375,6 +391,8 @@ export class DistrictWorld {
         texture = DRESSING_ART[spec.kind]();
         this.dressTex.set(spec.kind, texture);
       }
+      const img = texture.image as { width?: number; height?: number } | null | undefined;
+      if (img?.width && img.height) this.dressAspect.set(spec, img.width / img.height);
       this.addDressing(spec, texture);
     }
 
@@ -444,7 +462,6 @@ export class DistrictWorld {
       this.scene.add(boardPost);
       const board = this.addBillboard(makeBoardTexture(), 2.4, 2.0, boardAt.x, boardAt.z);
       board.position.y = 1.4;
-      this.colliders.add(boardAt.x, boardAt.z, 0.9, 0.5, 'board');
     }
 
     /* --- the gates ---
@@ -468,7 +485,6 @@ export class DistrictWorld {
       gate.position.set(at.x, 0, at.z);
       gate.castShadow = true;
       this.scene.add(gate);
-      this.colliders.add(at.x, at.z, 8, 1.2, 'gate');
     }
 
     /* --- lighting rig --- */
@@ -491,6 +507,16 @@ export class DistrictWorld {
     this.scene.add(this.sun.target);
 
     for (const l of area.props.lamps ?? []) this.addLamp(l.x, l.z);
+
+    /* --- what the furniture stops ---
+       One pass over `staticFootprints` -- the same list the reachability test floods through
+       -- rather than a `colliders.add` beside each thing as it was built, which is how the
+       test and the world came to disagree three times about what was in the way. The picture
+       decides how wide a box or a panel is, so the aspects recorded while the textures were
+       made are handed in; the test, which has no pictures, walks against squares. */
+    for (const f of staticFootprints(area, (spec) => this.dressAspect.get(spec) ?? 1)) {
+      this.colliders.add(f.x, f.z, f.w, f.d, f.tag);
+    }
 
     /* --- collider wireframes, off by default --- */
     this.colliderHelpers.visible = false;
@@ -616,15 +642,8 @@ export class DistrictWorld {
       this.scene.add(light);
     }
 
-    if (kind.collides) {
-      // The footprint of the *rotated* box, because `ColliderSet` is axis-aligned only. Without
-      // this a fence turned forty-five degrees would collide as though it still ran east-west,
-      // and the art would be lying about where the wall is.
-      const w = size * aspect;
-      const cos = Math.abs(Math.cos(yaw));
-      const sin = Math.abs(Math.sin(yaw));
-      this.colliders.add(spec.x, spec.z, w * cos + size * sin, w * sin + size * cos, spec.kind);
-    }
+    // Whether it stops anybody is `kind.collides`, and the box it stops them with is built by
+    // `staticFootprints` in one pass after all the furniture stands -- see the constructor.
   }
 
   private addCrate(texture: THREE.Texture, x: number, z: number, s: number): void {
@@ -636,7 +655,6 @@ export class DistrictWorld {
     crate.castShadow = true;
     crate.receiveShadow = true;
     this.scene.add(crate);
-    this.colliders.add(x, z, s, s, 'crate');
   }
 
   private addStructure(
@@ -744,7 +762,6 @@ export class DistrictWorld {
     light.position.set(x, 3.6, z);
     this.scene.add(light);
 
-    this.colliders.add(x, z, 0.5, 0.5, 'lamp');
     this.lamps.push({ light, head, phase: this.lamps.length * 1.7, lit: lampsAt(this.hour) });
   }
 

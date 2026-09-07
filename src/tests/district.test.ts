@@ -24,6 +24,7 @@ import {
 import { AREAS, ASHFALL, CHALK_ROAD, LAMPROW, areaById } from '../district/areas/index.js';
 import { GROUND_TEXES } from '../district/textures.js';
 import { ColliderSet } from '../district/collision.js';
+import { staticFootprints } from '../district/footprints.js';
 import { FOLK_LINES } from '../district/dialogue.js';
 import { DRESSING, DRESSING_IDS, isDressingId } from '../district/dressing.js';
 import { CRITTERS, CRITTER_IDS, isCritterId } from '../district/wildlife.js';
@@ -318,26 +319,12 @@ describe('every area', () => {
         // Walked rather than reasoned about: a straight line from the spawn to each exit,
         // sampled against the same collision the player is subject to.
         const set = new ColliderSet(area);
-        // Every collider the world actually puts down, which this walk has never quite been.
-        // Three gaps, all of them pre-existing and all of them making the test weaker than it
-        // reads: the crate size was hardcoded at 1.1 while `world.ts` uses `c.size ?? 1.1`, so
-        // a crate authored bigger was wider in play than in the walk; and lamps and the board
-        // were simply absent, though both collide.
-        for (const c of area.props.crates ?? []) {
-          const w = c.size ?? 1.1;
-          set.add(c.x, c.z, w, w, 'crate');
-        }
-        for (const l of area.props.lamps ?? []) set.add(l.x, l.z, 0.5, 0.5, 'lamp');
-        if (area.props.board) set.add(area.props.board.x, area.props.board.z, 0.9, 0.5, 'board');
-        for (const d of area.props.dressing ?? []) {
-          const kind = DRESSING[d.kind];
-          if (!kind.collides) continue;
-          const size = d.size ?? kind.size;
-          set.add(d.x, d.z, size, size, d.kind);
-        }
-        for (const exit of area.exits) {
-          if (exit.gate) set.add(exit.gate.x, exit.gate.z, 8, 1.2, 'gate');
-        }
+        // Every collider the world puts down, from the list the world itself reads. This walk
+        // used to keep its own copy and the copy drifted three times -- a crate hardcoded at
+        // 1.1 while `world.ts` read `c.size`, lamps and the board simply absent -- each drift
+        // making the test weaker than it read. `staticFootprints` is the one list now; what
+        // this walk cannot have is the pictures, so it walks against square furniture.
+        for (const f of staticFootprints(area)) set.add(f.x, f.z, f.w, f.d, f.tag);
 
         for (const exit of area.exits) {
           // A coarse flood from the spawn: if the hotspot is reachable at all, some route
