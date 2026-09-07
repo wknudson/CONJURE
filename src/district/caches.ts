@@ -264,6 +264,47 @@ export const CACHES: readonly CacheDef[] = [
     gate: { after: ['clinic_quota'] },
   },
 
+  /* --- the Chalk Verge, and the road ------------------------------------------------- */
+  {
+    // Under the big cairn on the south track, where a shepherd hid what a shepherd has.
+    id: 'chalk_verge:the_cairn',
+    areaId: 'chalk_verge',
+    at: { x: -47.8, z: 18 },
+    prop: { kind: 'cairn', x: -50, z: 18 },
+    label: 'Lift the cairn stones',
+    detail: 'Stacked too neatly to be a marker. Somebody put something under it and meant to come back.',
+    loot: { ducats: 14, reagents: { core_bloom: 1 } },
+  },
+  {
+    id: 'chalk_verge_bothy:the_tin',
+    areaId: 'chalk_verge_bothy',
+    at: { x: 11.8, z: 14 },
+    prop: { kind: 'chest', x: 14, z: 14 },
+    label: "Open the shepherd's box",
+    detail: 'What the last person left, as the tally says to. It is not much. It is yours.',
+    loot: { ducats: 9, brew: 'ironbrew' },
+  },
+  {
+    // The wreck at the stretch, once the men who stopped it there are dealt with.
+    id: 'chalk_road:wrecked_cart',
+    areaId: 'chalk_road',
+    at: { x: -30, z: 7.2 },
+    prop: { kind: 'cart', x: -30, z: 10 },
+    label: 'Search the wrecked cart',
+    detail: 'Axle gone, load half-taken. What the Waywatch left because they could not carry it.',
+    loot: { ducats: 26, marrowShards: 1, reagents: { core_bulwark: 1 } },
+    gate: { after: ['chalk_road_toll'] },
+  },
+  {
+    id: 'chalk_road_waystation:strongbox',
+    areaId: 'chalk_road_waystation',
+    at: { x: 15.8, z: -14 },
+    prop: { kind: 'chest', x: 18, z: -14 },
+    label: 'Open the toll strongbox',
+    detail: 'Never sent to Jolrek. Nobody came for it, and the road did not send anybody.',
+    loot: { ducats: 34, marrowShards: 1 },
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     id: 'highcourt:service_chest',

@@ -65,6 +65,27 @@ export const RESTS: readonly RestDef[] = [
     line: 'You wake damp. Everything in Ward Seven wakes damp. The healer has already seen four people.',
   },
   {
+    // Nobody's bed, and the tally says to pay for it anyway. The cheapest sleep in Azo.
+    id: 'chalk_verge_bothy:shepherds_bed',
+    areaId: 'chalk_verge_bothy',
+    at: { x: -14, z: -14.6 },
+    prop: { x: -14, z: -18, yaw: Math.PI / 2 },
+    label: "Take the shepherd's bed",
+    fee: 2,
+    wakeHour: 6,
+    line: 'You wake cold, and leave two Ducats in the tin under the rafter, because the last person did.',
+  },
+  {
+    id: 'chalk_road_waystation:the_cot',
+    areaId: 'chalk_road_waystation',
+    at: { x: -18, z: 13.6 },
+    prop: { x: -18, z: 10, yaw: Math.PI / 2 },
+    label: "Take the toll-keeper's cot",
+    fee: 6,
+    wakeHour: 6,
+    line: 'You wake to a cart going by outside without stopping, which is what carts do here now. Six.',
+  },
+  {
     id: 'highcourt_smoke_eaters:upstairs_bed',
     areaId: 'highcourt_smoke_eaters',
     at: { x: 18, z: 14 },

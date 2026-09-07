@@ -165,7 +165,7 @@ export const ASHFALL: AreaDef = defineArea({
       gate: { x: GATE_POS.x, z: GATE_POS.z },
       // Onto the verge's trailhead, north of its own gate hotspot so stepping through does
       // not immediately offer to send you back.
-      arrive: { x: 34, z: 22 },
+      arrive: { x: 40, z: 30 },
     },
     {
       // South out of the plaza and down the road, into Lamprow. A second sealed crossing rather

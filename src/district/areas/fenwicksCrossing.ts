@@ -90,7 +90,7 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
       x: -2,
       z: -26,
       label: 'North, over the bridge to the Chalk Road',
-      arrive: { x: 30, z: 14 },
+      arrive: { x: 38, z: 14 },
     },
     {
       to: 'weeping_stile',

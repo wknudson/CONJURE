@@ -47,6 +47,8 @@ import { WARD_SEVEN_CLINIC } from './interiors/wardSevenClinic.js';
 import { HIGHCOURT_SPIRE_LOBBY } from './interiors/highcourtSpireLobby.js';
 import { HIGHCOURT_SMOKE_EATERS } from './interiors/highcourtSmokeEaters.js';
 import { HIGHCOURT_UNDERCROFT } from './interiors/highcourtUndercroft.js';
+import { CHALK_VERGE_BOTHY } from './interiors/chalkVergeBothy.js';
+import { CHALK_ROAD_WAYSTATION } from './interiors/chalkRoadWaystation.js';
 
 /**
  * Ordered as the city, then the ring, then the wilds — the order they are reached in, which is
@@ -94,6 +96,8 @@ export const AREAS: readonly AreaDef[] = [
   HIGHCOURT_SPIRE_LOBBY,
   HIGHCOURT_SMOKE_EATERS,
   HIGHCOURT_UNDERCROFT,
+  CHALK_VERGE_BOTHY,
+  CHALK_ROAD_WAYSTATION,
 ];
 
 export function areaById(id: string): AreaDef | undefined {
@@ -143,4 +147,6 @@ export {
   HIGHCOURT_SPIRE_LOBBY,
   HIGHCOURT_SMOKE_EATERS,
   HIGHCOURT_UNDERCROFT,
+  CHALK_VERGE_BOTHY,
+  CHALK_ROAD_WAYSTATION,
 };

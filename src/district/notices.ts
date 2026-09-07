@@ -393,6 +393,77 @@ export const NOTICES: readonly NoticeDef[] = [
     flag: 'read_clinic_quota',
   },
 
+  /* --- the Chalk Verge, and the road ------------------------------------------------- */
+  {
+    id: 'chalk_verge:gate_grave',
+    areaId: 'chalk_verge',
+    at: { x: 46, z: 22.6 },
+    form: 'gravestone',
+    label: 'Read the stone by the gate',
+    title: 'A CARTER',
+    lines: [
+      'Read the stone. Then read it again, the far side of the gate, where it is the last thing you read.',
+      'Cut by the ward, which does not cut stones for carters, which tells you who was on the cart.',
+    ],
+    prop: { kind: 'gravestone', x: 46, z: 26 },
+  },
+  {
+    id: 'chalk_verge_bothy:shepherds_tally',
+    areaId: 'chalk_verge_bothy',
+    at: { x: -10, z: 10 },
+    form: 'book',
+    label: "Read the shepherd's tally",
+    title: 'THE TALLY — FOUR WINTERS',
+    lines: [
+      'Scavengers: any hour. They are the road, not something on it.',
+      'Dogs: after dark. The heaps: after dark, and never once in the light, whatever the thing in them is.',
+      'Fourth winter, last line: "Taking the flock down to the Crossing. If the bothy is open, it is yours. Leave something in the tin."',
+    ],
+    prop: { kind: 'lectern', x: -14, z: 10 },
+    flag: 'read_the_tally',
+  },
+  {
+    id: 'chalk_road:yard_grave_west',
+    areaId: 'chalk_road',
+    at: { x: 20, z: -9 },
+    form: 'gravestone',
+    label: 'Read the west grave',
+    title: 'TOLL-KEEPER',
+    lines: [
+      'The Magistracy’s keeper, buried by the Magistracy, at the Magistracy’s expense. The stone says the expense.',
+      'It does not say what he was keeping the toll from. The next stone does.',
+    ],
+    prop: { kind: 'gravestone', x: 20, z: -6.4 },
+  },
+  {
+    id: 'chalk_road:yard_grave_east',
+    areaId: 'chalk_road',
+    at: { x: 30, z: -9 },
+    form: 'gravestone',
+    label: 'Read the east grave',
+    title: 'NO NAME',
+    lines: [
+      'A cart-load, one grave. Cut by whoever cut the keeper’s, in the same hand, without the expense.',
+      'Underneath, newer, scratched: "WAYWATCH". Nobody has scratched it out.',
+    ],
+    prop: { kind: 'gravestone', x: 30, z: -6.4 },
+  },
+  {
+    id: 'chalk_road_waystation:ledger',
+    areaId: 'chalk_road_waystation',
+    at: { x: -14, z: -14 },
+    form: 'ledger',
+    label: 'Read the toll ledger',
+    title: 'TOLL LEDGER — THE CHALK ROAD BAR',
+    lines: [
+      'Carts by day, six a week, a Ducat a wheel. Freight by night, unlisted, a column of its own that is not added up.',
+      'Last page: "Waywatch at the stretch again. Sent to Jolrek for men. Sent again."',
+      'Under it, the line stops half way through a word, and the ink went somewhere else.',
+    ],
+    prop: { kind: 'lectern', x: -18, z: -14 },
+    flag: 'read_the_toll_ledger',
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     id: 'highcourt:proclamation',

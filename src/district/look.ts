@@ -739,6 +739,26 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#15100c',
     fogDensity: 0.026,
   },
+  /** The bothy: a low room lit from one cold hearth and the door. Straw-coloured, and it should be. */
+  chalk_verge_bothy: {
+    sunIntensity: 1.5,
+    sunColor: '#d8c090',
+    ambientIntensity: 2.2,
+    skyColor: '#6a6650',
+    groundBounce: '#5a4a2a',
+    fogColor: '#121008',
+    fogDensity: 0.026,
+  },
+  /** The waystation: daylight through a door nobody shuts, on planks nobody sweeps. */
+  chalk_road_waystation: {
+    sunIntensity: 1.6,
+    sunColor: '#d0c8a8',
+    ambientIntensity: 2.2,
+    skyColor: '#70705c',
+    groundBounce: '#5a4a30',
+    fogColor: '#12110c',
+    fogDensity: 0.024,
+  },
   /** The Undercroft: two braziers under a vault, and the cold coming up through the stone. */
   highcourt_undercroft: {
     sunIntensity: 1.2,

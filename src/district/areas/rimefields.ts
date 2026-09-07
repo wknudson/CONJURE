@@ -95,7 +95,7 @@ export const RIMEFIELDS: AreaDef = defineArea({
       x: 62,
       z: -2,
       label: 'East, back down the Chalk Road',
-      arrive: { x: -54, z: 2 },
+      arrive: { x: -62, z: 2 },
     },
   ],
   props: {

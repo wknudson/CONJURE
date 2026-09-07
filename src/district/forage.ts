@@ -214,6 +214,31 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     at: { x: 6, z: -34 },
   },
 
+  /* --- the Chalk Verge, and the road ------------------------------------------------- */
+  {
+    // In the spoil by the gate. What the dogs have been keeping.
+    id: 'chalk_verge:spoil_bones',
+    areaId: 'chalk_verge',
+    kind: 'bone',
+    at: { x: 38, z: 6 },
+    prop: { x: 40.2, z: 6 },
+  },
+  {
+    id: 'chalk_verge:thicket_fungi',
+    areaId: 'chalk_verge',
+    kind: 'fungi',
+    at: { x: -14, z: -2 },
+    prop: { x: -11.8, z: -4 },
+  },
+  {
+    // In the west hedge, where the vermin are, which the bite already knows.
+    id: 'chalk_road:hedge_comb',
+    areaId: 'chalk_road',
+    kind: 'comb',
+    at: { x: -66, z: -6 },
+    prop: { x: -66, z: -8.2 },
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     // In the weeds of the service end: the one thing on the court's ground the court did not plant.
