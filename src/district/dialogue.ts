@@ -758,6 +758,26 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'I have every reach and every bar off this coast drawn true, and a writ says none of it may be used.',
     },
   ],
+  saltglass_glassblower: [
+    {
+      who: 'GLASSBLOWER',
+      text: 'The furnace has not been let out in thirty years. Let it out and it cracks; keep it in and it eats a cart of coal a week. The coal comes. The fish do not go.',
+    },
+    {
+      who: 'GLASSBLOWER',
+      text: 'Pyre, if you want it. It is what the furnace makes when it is not making glass. The Cinderworks sells it cheaper; the Cinderworks is four days from here.',
+    },
+  ],
+  brays_herdsman: [
+    {
+      who: 'HERDSMAN',
+      text: 'Sixty head, eleven goat, one barn, one warrant. They came for the beasts and found me in the door, and went away to get a bigger piece of paper.',
+    },
+    {
+      who: 'HERDSMAN',
+      text: 'The weaver will want to know the fleece count. I have it in my head and nowhere else, which is where the Magistracy cannot distrain it.',
+    },
+  ],
   saltglass_bard: [
     {
       who: 'A QUAY SINGER',

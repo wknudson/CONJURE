@@ -447,6 +447,22 @@ export const ERRANDS: readonly ErrandDef[] = [
     reward: { ducats: 145 },
   },
   {
+    id: 'the_fleece_count',
+    giver: 'brays_barn:brays_herdsman',
+    title: 'Carry the fleece count out to the weaver',
+    offer: [
+      { who: 'HERDSMAN', text: 'Sixty-one fleeces this year and the weaver needs the number before she sets the loom, and I am not leaving this door while there is a warrant on it.' },
+      { who: 'HERDSMAN', text: 'She is out in the bowl. Tell her sixty-one, and tell her four of them are black.' },
+    ],
+    nudge: [{ who: 'HERDSMAN', text: 'The weaver. Out in the grass, below the barn. Sixty-one, four black.' }],
+    thanks: [
+      { who: 'WEAVER', text: 'Sixty-one. And four black -- good, the black ones do not take the dye and the court will not buy them, so I get to keep them.' },
+      { who: 'WEAVER', text: 'For the walk down the slope. It is not far, but he would not have come.' },
+    ],
+    step: { kind: 'deliver', toArea: 'brays_hollow', toNpc: 'brays_weaver' },
+    reward: { ducats: 35 },
+  },
+  {
     id: 'what_the_child_saw',
     giver: 'brays_hollow:brays_child',
     title: 'Go up to the Rimefields and see if the lights are real',

@@ -280,6 +280,37 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     prop: { x: 36.2, z: 42 },
   },
 
+  /* --- Saltglass, and the Hollow ----------------------------------------------------- */
+  {
+    id: 'saltglass:pan_reeds',
+    areaId: 'saltglass',
+    kind: 'reeds',
+    at: { x: -50, z: -34 },
+    prop: { x: -52.2, z: -34 },
+  },
+  {
+    // What the gulls leave on the south quay. What the dogs come for.
+    id: 'saltglass:quay_bones',
+    areaId: 'saltglass',
+    kind: 'bone',
+    at: { x: -14, z: 38 },
+    prop: { x: -16.2, z: 38 },
+  },
+  {
+    id: 'brays_hollow:rim_herbs',
+    areaId: 'brays_hollow',
+    kind: 'herbs',
+    at: { x: -42, z: -38 },
+    prop: { x: -44.2, z: -38 },
+  },
+  {
+    id: 'brays_hollow:rim_comb',
+    areaId: 'brays_hollow',
+    kind: 'comb',
+    at: { x: 42, z: 30 },
+    prop: { x: 44.2, z: 30 },
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     // In the weeds of the service end: the one thing on the court's ground the court did not plant.

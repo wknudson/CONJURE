@@ -346,6 +346,56 @@ export const CACHES: readonly CacheDef[] = [
     loot: { ducats: 44, marrowShards: 2 },
   },
 
+  /* --- Saltglass, and the Hollow ----------------------------------------------------- */
+  {
+    id: 'saltglass:salt_store',
+    areaId: 'saltglass',
+    at: { x: -47.8, z: 26 },
+    prop: { kind: 'chest', x: -50, z: 26 },
+    label: 'Open the salt store',
+    detail: 'Under a pane rank, out of the glare. Salt that was never bonded because nobody wrote it down.',
+    loot: { ducats: 16, reagents: { core_frost: 1 } },
+  },
+  {
+    id: 'saltglass_glasshouse:cullet_box',
+    areaId: 'saltglass_glasshouse',
+    at: { x: 15.8, z: 6 },
+    prop: { kind: 'chest', x: 18, z: 6 },
+    label: 'Open the cullet box',
+    detail: 'Broken panes, kept to melt back. Something in the bottom of it is not glass.',
+    loot: { ducats: 20, reagents: { core_pyre: 1 } },
+  },
+  {
+    // The bond. Held, as the wall says, and then not.
+    id: 'saltglass_customs_house:the_bond',
+    areaId: 'saltglass_customs_house',
+    at: { x: 15.8, z: -14 },
+    prop: { kind: 'chest', x: 18, z: -14 },
+    label: 'Open the bond chest',
+    detail: 'A year of a fishing town’s catch and salt, in coin, behind a chain. The quay knows where it is now.',
+    loot: { ducats: 70, marrowShards: 3, reagents: { core_frost: 1 } },
+    gate: { after: ['saltglass_riot'] },
+  },
+  {
+    id: 'brays_hollow:hedge_hoard',
+    areaId: 'brays_hollow',
+    at: { x: 39.8, z: -38 },
+    prop: { kind: 'chest', x: 42, z: -38 },
+    label: 'Open the box in the hedge',
+    detail: 'Pushed into the north hedge at the rim. The child’s, probably. It is everything they have.',
+    loot: { ducats: 12, marrowShards: 1 },
+  },
+  {
+    id: 'brays_barn:the_licence_money',
+    areaId: 'brays_barn',
+    at: { x: -15.8, z: -6 },
+    prop: { kind: 'chest', x: -18, z: -6 },
+    label: 'Open the box under the hay',
+    detail: 'What the licence would have cost, saved a coin at a time and never enough. The herd is still here; so is this.',
+    loot: { ducats: 55, marrowShards: 2, reagents: { core_bulwark: 1 } },
+    gate: { after: ['warrant_of_distraint'] },
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     id: 'highcourt:service_chest',

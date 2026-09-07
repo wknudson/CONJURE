@@ -96,6 +96,27 @@ export const RESTS: readonly RestDef[] = [
     line: 'You wake to the pipe ticking as it cools, which it has been doing for eleven years. Six.',
   },
   {
+    // The bench by the furnace. Warm, which on the flats is the whole of the sales pitch.
+    id: 'saltglass_glasshouse:furnace_bench',
+    areaId: 'saltglass_glasshouse',
+    at: { x: -18, z: 2.6 },
+    prop: { x: -18, z: -1, yaw: Math.PI / 2 },
+    label: 'Sleep on the furnace bench',
+    fee: 10,
+    wakeHour: 5,
+    line: 'You wake warm, for the first time since Millharrow, and the pan-wife is already out on the flats. Five.',
+  },
+  {
+    id: 'brays_barn:the_loft',
+    areaId: 'brays_barn',
+    at: { x: 10, z: 14 },
+    prop: { x: 6, z: 14 },
+    label: 'Sleep in the loft',
+    fee: 5,
+    wakeHour: 6,
+    line: 'You wake to sixty head of sheep wanting to be let out, and the herdsman already letting them. Six.',
+  },
+  {
     id: 'highcourt_smoke_eaters:upstairs_bed',
     areaId: 'highcourt_smoke_eaters',
     at: { x: 18, z: 14 },

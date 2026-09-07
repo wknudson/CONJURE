@@ -789,6 +789,36 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#100e0c',
     fogDensity: 0.028,
   },
+  /** The Glasshouse: the furnace, and nothing else. Orange on iron. */
+  saltglass_glasshouse: {
+    sunIntensity: 1.9,
+    sunColor: '#f0a050',
+    ambientIntensity: 2.2,
+    skyColor: '#6a4a30',
+    groundBounce: '#7a3a18',
+    fogColor: '#160e08',
+    fogDensity: 0.026,
+  },
+  /** The Customs House: grey light on grey stone, the way the Magistracy likes its rooms. */
+  saltglass_customs_house: {
+    sunIntensity: 1.4,
+    sunColor: '#b8c0d0',
+    ambientIntensity: 2.2,
+    skyColor: '#6a7080',
+    groundBounce: '#4a4a50',
+    fogColor: '#0e1014',
+    fogDensity: 0.024,
+  },
+  /** The barn: daylight through the boards, and dust in it. */
+  brays_barn: {
+    sunIntensity: 1.7,
+    sunColor: '#e8d8a8',
+    ambientIntensity: 2.3,
+    skyColor: '#7a7060',
+    groundBounce: '#6a5a38',
+    fogColor: '#14120c',
+    fogDensity: 0.024,
+  },
   /** The Undercroft: two braziers under a vault, and the cold coming up through the stone. */
   highcourt_undercroft: {
     sunIntensity: 1.2,

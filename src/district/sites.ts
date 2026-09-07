@@ -187,16 +187,17 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'saltglass:customs_chain',
     areaId: 'saltglass',
-    at: { x: -6, z: -30 },
+    at: { x: 30, z: -38 },
     encounterId: 'saltglass_riot',
     label: 'The Customs Chain',
     interactDetail:
       'The crowd on the quay is not dispersing, and the chain across the harbour mouth has a writ tag nobody will read aloud.',
   },
   {
-    id: 'brays_hollow:marsh_farmstead',
-    areaId: 'brays_hollow',
-    at: { x: -10, z: -6 },
+    // Over the straw in the barn itself now, which is where the herd is.
+    id: 'brays_barn:the_distraint',
+    areaId: 'brays_barn',
+    at: { x: 0, z: -4 },
     encounterId: 'warrant_of_distraint',
     label: 'The Marsh Farmstead',
     interactDetail:

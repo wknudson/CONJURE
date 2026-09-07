@@ -52,6 +52,9 @@ import { CHALK_ROAD_WAYSTATION } from './interiors/chalkRoadWaystation.js';
 import { MILLHARROW_MILL } from './interiors/millharrowMill.js';
 import { MILLHARROW_GRANARY } from './interiors/millharrowGranary.js';
 import { TALLOW_PUMP_HOUSE } from './interiors/tallowPumpHouse.js';
+import { SALTGLASS_GLASSHOUSE } from './interiors/saltglassGlasshouse.js';
+import { SALTGLASS_CUSTOMS_HOUSE } from './interiors/saltglassCustomsHouse.js';
+import { BRAYS_BARN } from './interiors/braysBarn.js';
 
 /**
  * Ordered as the city, then the ring, then the wilds — the order they are reached in, which is
@@ -104,6 +107,9 @@ export const AREAS: readonly AreaDef[] = [
   MILLHARROW_MILL,
   MILLHARROW_GRANARY,
   TALLOW_PUMP_HOUSE,
+  SALTGLASS_GLASSHOUSE,
+  SALTGLASS_CUSTOMS_HOUSE,
+  BRAYS_BARN,
 ];
 
 export function areaById(id: string): AreaDef | undefined {
@@ -158,4 +164,7 @@ export {
   MILLHARROW_MILL,
   MILLHARROW_GRANARY,
   TALLOW_PUMP_HOUSE,
+  SALTGLASS_GLASSHOUSE,
+  SALTGLASS_CUSTOMS_HOUSE,
+  BRAYS_BARN,
 };
