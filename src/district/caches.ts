@@ -172,6 +172,36 @@ export const CACHES: readonly CacheDef[] = [
     detail: 'Every gill the Sink was assessed for, in coin, in the dark.',
     loot: { ducats: 45, marrowShards: 2 },
   },
+
+  /* --- the Bonemarket ---------------------------------------------------------------- */
+  {
+    id: 'bonemarket:back_lane_crate',
+    areaId: 'bonemarket',
+    at: { x: -51.8, z: 26 },
+    prop: { kind: 'chest', x: -54, z: 26 },
+    label: 'Open the crate',
+    detail: 'Fell off a cart on the back lane, and nobody has claimed it because claiming it is admitting the cart.',
+    loot: { ducats: 18 },
+  },
+  {
+    id: 'bonemarket_hall:under_the_slab',
+    areaId: 'bonemarket_hall',
+    at: { x: 27.8, z: 4 },
+    prop: { kind: 'chest', x: 30, z: 4 },
+    label: 'Look under the slab',
+    detail: 'The fishmonger keeps the sea money here. There has been no sea money for a year.',
+    loot: { ducats: 24, marrowShards: 1 },
+  },
+  {
+    id: 'bonemarket_pawnshop:unredeemed',
+    areaId: 'bonemarket_pawnshop',
+    at: { x: 9.8, z: 12 },
+    prop: { kind: 'chest', x: 12, z: 12 },
+    label: 'Open the unredeemed shelf',
+    detail: 'The broker turns a page. She is not selling; she is failing to notice.',
+    loot: { ducats: 40, reagents: { core_dusk: 1 } },
+    gate: { after: ['bonemarket_vermin'] },
+  },
 ];
 
 export const cacheById = (id: string): CacheDef | undefined => CACHES.find((c) => c.id === id);

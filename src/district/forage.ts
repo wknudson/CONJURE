@@ -181,6 +181,24 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     at: { x: -16, z: 36 },
   },
 
+  /* --- the Bonemarket ---------------------------------------------------------------- */
+  {
+    id: 'bonemarket:boilers_bones',
+    areaId: 'bonemarket',
+    kind: 'bone',
+    at: { x: -26, z: 34 },
+    prop: { x: -28.2, z: 34 },
+    // The boiler's heap, not a barrow's: nothing has been keeping these but him.
+    bite: { chance: 0 },
+  },
+  {
+    id: 'bonemarket:eaves_comb',
+    areaId: 'bonemarket',
+    kind: 'comb',
+    at: { x: 52, z: 34 },
+    prop: { x: 52, z: 31.6 },
+  },
+
   /* --- the country ------------------------------------------------------------------ */
   {
     // Where the pavement stops, the first thing that grows without permission.

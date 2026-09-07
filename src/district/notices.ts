@@ -238,6 +238,63 @@ export const NOTICES: readonly NoticeDef[] = [
     prop: { kind: 'lectern', x: 0, z: -14 },
   },
 
+  /* --- the Bonemarket ---------------------------------------------------------------- */
+  {
+    id: 'bonemarket:weigh_house_rates',
+    areaId: 'bonemarket',
+    at: { x: 14, z: -40.6 },
+    form: 'notice',
+    label: 'Read the weigh-house rates',
+    title: 'THE WEIGH-HOUSE — RATES AND RULINGS',
+    lines: [
+      'Every slab is weighed at the weigh-house before it opens and the weigh-house is paid by the pound. The weigh-house is also paid by the trader. Both of these are the same coin.',
+      'Disputes are settled by a second weighing. The second weighing is also paid for.',
+      'Bone is weighed dry. Meat is weighed wet. Fish is weighed whenever the fishmonger is not looking.',
+    ],
+    prop: { kind: 'noticepost', x: 14, z: -43.4 },
+  },
+  {
+    id: 'bonemarket_hall:weigh_house_board',
+    areaId: 'bonemarket_hall',
+    at: { x: 0, z: -21.6 },
+    form: 'plaque',
+    label: "Read the stallkeeper's board",
+    title: "SUNDRIES — TODAY'S BOARD",
+    lines: [
+      'Twine, tallow, nails by the handful, a boot without its brother, a hat somebody died in.',
+      'Nothing on this board can be carried out of here in a Whisperer’s satchel; the satchel is for brews. The stallkeeper is aware of this and finds it funny.',
+      'Cores are the alchemist’s, on the floor, at his price.',
+    ],
+    prop: { kind: 'plaque', x: 0, z: -23.85 },
+  },
+  {
+    id: 'bonemarket_hall:slab_board',
+    areaId: 'bonemarket_hall',
+    at: { x: 30, z: -8 },
+    form: 'plaque',
+    label: "Read the fishmonger's board",
+    title: 'OFF THE CUT — TODAY',
+    lines: [
+      'Eel, canal. Roach, canal. Something with too many fins, canal, do not ask.',
+      'Nothing off the sea since the harbour writ. The board used to be longer.',
+    ],
+    prop: { kind: 'plaque', x: 31.85, z: -8, yaw: -Math.PI / 2 },
+  },
+  {
+    id: 'bonemarket_pawnshop:terms',
+    areaId: 'bonemarket_pawnshop',
+    at: { x: 4, z: -12 },
+    form: 'plaque',
+    label: 'Read the terms of pledge',
+    title: 'TERMS OF PLEDGE',
+    lines: [
+      'A pledge is held one quarter. Interest is a tenth by the month. Redemption is in coin, in person, in daylight.',
+      'A pledge not redeemed is sold. A pledge sold is not discussed.',
+      'The Magistracy assesses the shop on what it holds, so the shop holds as little as it can and the shelf behind the desk is not on the inventory.',
+    ],
+    prop: { kind: 'plaque', x: 4, z: -15.85 },
+  },
+
   /* --- the Ironworks ----------------------------------------------------------------- */
   {
     id: 'ashfall_ironworks:tally_board',

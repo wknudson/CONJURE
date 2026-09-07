@@ -659,6 +659,26 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#0a0c10',
     fogDensity: 0.03,
   },
+  /** The Market Hall: the market's own light with a roof over it -- braziers, and stone to hold the warmth. */
+  bonemarket_hall: {
+    sunIntensity: 1.8,
+    sunColor: '#d8b880',
+    ambientIntensity: 2.6,
+    skyColor: '#8a8068',
+    groundBounce: '#7a5a3a',
+    fogColor: '#1a1610',
+    fogDensity: 0.026,
+  },
+  /** The pawnshop: dust, one brazier, and nothing on the shelves that wants to be seen clearly. */
+  bonemarket_pawnshop: {
+    sunIntensity: 1.3,
+    sunColor: '#c0a878',
+    ambientIntensity: 1.9,
+    skyColor: '#5a5648',
+    groundBounce: '#3e3020',
+    fogColor: '#121008',
+    fogDensity: 0.024,
+  },
 };
 
 /** An area's ambience, or the ward's if nobody wrote one. */

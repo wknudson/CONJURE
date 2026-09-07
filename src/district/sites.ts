@@ -73,7 +73,7 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
   {
     id: 'bonemarket:vermin',
     areaId: 'bonemarket',
-    at: { x: 34, z: -14 },
+    at: { x: 30, z: -22 },
     encounterId: 'bonemarket_vermin',
     label: 'Stall Row',
     interactDetail:

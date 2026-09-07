@@ -3074,6 +3074,26 @@ const SIGN_GLYPHS: Record<SignId, (ctx: CanvasRenderingContext2D) => void> = {
     ctx.fillStyle = '#2a2230';
     ctx.fillRect(9, 3, 2, 2);
   },
+  market: (ctx) => {
+    // A pair of scales.
+    ctx.fillRect(9, 2, 2, 8);
+    ctx.fillRect(4, 3, 12, 1);
+    ctx.fillRect(4, 4, 1, 3);
+    ctx.fillRect(15, 4, 1, 3);
+    ctx.fillRect(3, 7, 3, 1);
+    ctx.fillRect(14, 7, 3, 1);
+    ctx.fillRect(7, 10, 6, 1);
+  },
+  pawn: (ctx) => {
+    // The three balls, hung from a bar.
+    ctx.fillRect(5, 2, 10, 1);
+    ctx.fillRect(5, 3, 1, 2);
+    ctx.fillRect(10, 3, 1, 2);
+    ctx.fillRect(15, 3, 1, 2);
+    ctx.fillRect(4, 5, 3, 3);
+    ctx.fillRect(9, 5, 3, 3);
+    ctx.fillRect(14, 5, 3, 3);
+  },
 };
 
 export function makeSignTexture(key: SignId): THREE.Texture {

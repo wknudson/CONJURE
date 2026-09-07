@@ -38,6 +38,8 @@ import { ASHFALL_CINDER_CUP } from './interiors/ashfallCinderCup.js';
 import { LAMPROW_OIL_HOUSE } from './interiors/lamprowOilHouse.js';
 import { LAMPROW_TITHE_OFFICE } from './interiors/lamprowTitheOffice.js';
 import { LAMPROW_SINK_CELLARS } from './interiors/lamprowSinkCellars.js';
+import { BONEMARKET_HALL } from './interiors/bonemarketHall.js';
+import { BONEMARKET_PAWNSHOP } from './interiors/bonemarketPawnshop.js';
 
 /**
  * Ordered as the city, then the ring, then the wilds — the order they are reached in, which is
@@ -76,6 +78,8 @@ export const AREAS: readonly AreaDef[] = [
   LAMPROW_OIL_HOUSE,
   LAMPROW_TITHE_OFFICE,
   LAMPROW_SINK_CELLARS,
+  BONEMARKET_HALL,
+  BONEMARKET_PAWNSHOP,
 ];
 
 export function areaById(id: string): AreaDef | undefined {
@@ -116,4 +120,6 @@ export {
   LAMPROW_OIL_HOUSE,
   LAMPROW_TITHE_OFFICE,
   LAMPROW_SINK_CELLARS,
+  BONEMARKET_HALL,
+  BONEMARKET_PAWNSHOP,
 };

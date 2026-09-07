@@ -515,6 +515,26 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'What is under my shop is not mine. I lease the cellar to a man I have never met, and the rent arrives in coin that smells of lamp oil.',
     },
   ],
+  bonemarket_boiler: [
+    {
+      who: 'BONE-BOILER',
+      text: 'Everything the market cannot sell comes to me, and I boil it down, and what comes out goes back to the market as glue and lamp-black and meal. Nothing leaves this ward. That is the whole economy.',
+    },
+    {
+      who: 'BONE-BOILER',
+      text: 'The heap is picked over by the time the bell goes. Pick it yourself if you want the marrow; I only want the bone.',
+    },
+  ],
+  bonemarket_pawnbroker: [
+    {
+      who: 'PAWNBROKER',
+      text: 'I held a title once and now I hold tickets. The Magistracy assessed the one and licenses the other; I am not sure which I mind more.',
+    },
+    {
+      who: 'PAWNBROKER',
+      text: 'The shelf behind me is not on the inventory. When the market has seen you clear its vermin, I shall not notice you looking at it.',
+    },
+  ],
   lamprow_lighter_boy: [
     {
       who: "LIGHTER'S BOY",

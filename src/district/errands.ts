@@ -194,6 +194,30 @@ export const ERRANDS: readonly ErrandDef[] = [
     reward: { ducats: 45 },
   },
 
+  {
+    id: 'bone_from_the_barrows',
+    giver: 'bonemarket:bonemarket_boiler',
+    title: 'Fetch a barrow bone from the Bone Bastion for the boiler',
+    offer: [
+      { who: 'BONE-BOILER', text: 'Market bone is beef and dog. There is a bone out past the Levels that boils to something the Artificer will pay me for, and I have never had one whole.' },
+      { who: 'BONE-BOILER', text: 'The Bastion. Behind the wall, in the mounds, the ground is made of it. Bring me one I do not have to explain and I pay you like it was five crossings, because it is.' },
+    ],
+    nudge: [{ who: 'BONE-BOILER', text: 'The Bastion. Past the Levels, over the causeway. The ground is bone; you will know it when you are standing on it.' }],
+    thanks: [
+      { who: 'BONE-BOILER', text: 'That is old. That is older than the ward. It will boil for a week.' },
+      { who: 'BONE-BOILER', text: 'Take the coin, and the shards that were in the last heap; I have no use for marrow and you have.' },
+    ],
+    step: {
+      kind: 'gather',
+      area: 'bone_bastion',
+      x: -2,
+      z: -46,
+      art: 'bonepile',
+      label: 'Take a barrow bone',
+    },
+    reward: { ducats: 150, marrowShards: 2 },
+  },
+
   /* --- the ward, and one crossing out ---------------------------------------------- */
   {
     id: 'gutter_crew',
@@ -399,7 +423,7 @@ export const ERRANDS: readonly ErrandDef[] = [
   },
   {
     id: 'bone_meal',
-    giver: 'bonemarket:bonemarket_grocer',
+    giver: 'bonemarket_hall:bonemarket_grocer',
     title: 'Bring back barrow chalk from the Bone Bastion',
     offer: [
       { who: 'GROCER', text: 'You will think this is a joke because of where I keep my stall. It is not.' },
