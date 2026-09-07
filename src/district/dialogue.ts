@@ -794,6 +794,26 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
   ],
 
   /* --- Fenwick Crossing -------------------------------------------------------------- */
+  fenwick_tollkeeper: [
+    {
+      who: 'TOLL-KEEPER',
+      text: 'Fenwick took the toll. The Magistracy took it off Fenwick. I take it off the carts, same as I did for him, and nobody has ever asked me which book I write it in.',
+    },
+    {
+      who: 'TOLL-KEEPER',
+      text: 'The night column is not mine. The men who fill it in wear masks and pay in advance, and the book does not ask them for a name any more than it asks you.',
+    },
+  ],
+  fenwick_potboy: [
+    {
+      who: 'POT-BOY',
+      text: 'I hear everything in this room and I am paid not to repeat it, and the board by the hearth is where I put what I am not repeating.',
+    },
+    {
+      who: 'POT-BOY',
+      text: 'The barking under the floor started in the spring. The brewer says it is the river. The river does not bark.',
+    },
+  ],
   fenwick_carpenter: [
     {
       who: 'CARPENTER',

@@ -396,6 +396,77 @@ export const CACHES: readonly CacheDef[] = [
     gate: { after: ['warrant_of_distraint'] },
   },
 
+  /* --- Fenwick's Crossing, and the Stile --------------------------------------------- */
+  {
+    id: 'fenwicks_crossing:under_the_span',
+    areaId: 'fenwicks_crossing',
+    at: { x: 59.8, z: -34 },
+    prop: { kind: 'chest', x: 62, z: -34 },
+    label: 'Open the box under the span',
+    detail: 'Wedged against the east abutment, where the carpenter keeps what the river brings him.',
+    loot: { ducats: 18, marrowShards: 1 },
+  },
+  {
+    // The toll, in coin. Reading the book is what tells you which column it came from.
+    id: 'fenwicks_toll_house:the_night_column',
+    areaId: 'fenwicks_toll_house',
+    at: { x: 15.8, z: -14 },
+    prop: { kind: 'chest', x: 18, z: -14 },
+    label: 'Open the toll strongbox',
+    detail: 'The night column, in coin. The keeper has turned to the window.',
+    loot: { ducats: 40, marrowShards: 1, reagents: { core_surge: 1 } },
+    gate: { flags: ['read_the_toll_book'] },
+  },
+  {
+    id: 'fenwicks_inn:the_strongroom',
+    areaId: 'fenwicks_inn',
+    at: { x: -19.8, z: -14 },
+    prop: { kind: 'chest', x: -22, z: -14 },
+    label: 'Open the strongroom chest',
+    detail: 'Behind the bar, under the stair. The innkeeper is outside lighting the lamps.',
+    loot: { ducats: 26, brew: 'quicksilver' },
+  },
+  {
+    id: 'fenwicks_cellars:what_was_kept',
+    areaId: 'fenwicks_cellars',
+    at: { x: 19.8, z: 14 },
+    prop: { kind: 'chest', x: 22, z: 14 },
+    label: 'Open what was kept',
+    detail: 'In the dark end, behind where the dogs were. What the brewer put down in the spring, and what the dogs had been keeping on top of it.',
+    loot: { ducats: 60, marrowShards: 2, reagents: { core_dusk: 1 } },
+    gate: { after: ['cellar_clearance'] },
+  },
+  {
+    // The oak at the lane end, hollow, and something in it that is not an owl.
+    id: 'weeping_stile:the_hollow_oak',
+    areaId: 'weeping_stile',
+    at: { x: 35.8, z: -6 },
+    prop: { kind: 'deadfall', x: 38, z: -6 },
+    label: 'Reach into the hollow oak',
+    detail: 'Somebody in the village kept things here. The village is gone; the things are not.',
+    loot: { ducats: 22, marrowShards: 1, reagents: { core_dusk: 1 } },
+  },
+  {
+    id: 'weeping_stile_chapel:the_plate',
+    areaId: 'weeping_stile_chapel',
+    at: { x: 15.8, z: -14 },
+    prop: { kind: 'chest', x: 18, z: -14 },
+    label: 'Open the plate box',
+    detail: 'The chapel plate. Nobody took it, because nobody was left to, and the candle-keeper is not a thief.',
+    loot: { ducats: 20, marrowShards: 2 },
+    gate: { flags: ['tended_the_stile_candle'] },
+  },
+  {
+    id: 'weeping_stile_chapel:under_the_altar',
+    areaId: 'weeping_stile_chapel',
+    at: { x: -15.8, z: -14 },
+    prop: { kind: 'chest', x: -18, z: -14 },
+    label: 'Open the box under the altar',
+    detail: 'What the clerk was not shown. The page that is missing from the roll is folded on top of it.',
+    loot: { ducats: 40, marrowShards: 2, reagents: { core_dusk: 1 } },
+    gate: { after: ['hollow_census'] },
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     id: 'highcourt:service_chest',

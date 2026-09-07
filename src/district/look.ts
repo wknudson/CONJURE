@@ -819,6 +819,46 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#14120c',
     fogDensity: 0.024,
   },
+  /** The toll house: a Magistracy counter on a river, lit like every other Magistracy counter. */
+  fenwicks_toll_house: {
+    sunIntensity: 1.5,
+    sunColor: '#c8c8d0',
+    ambientIntensity: 2.2,
+    skyColor: '#6a7078',
+    groundBounce: '#4a4a48',
+    fogColor: '#0e1012',
+    fogDensity: 0.024,
+  },
+  /** The coach inn: the busiest hearth in the Ring. */
+  fenwicks_inn: {
+    sunIntensity: 1.8,
+    sunColor: '#e8a858',
+    ambientIntensity: 2.3,
+    skyColor: '#6a5040',
+    groundBounce: '#6a3a1e',
+    fogColor: '#15100c',
+    fogDensity: 0.026,
+  },
+  /** The cellars: one brazier and the river coming through the wall. */
+  fenwicks_cellars: {
+    sunIntensity: 1.1,
+    sunColor: '#8a8a70',
+    ambientIntensity: 1.8,
+    skyColor: '#3a3a30',
+    groundBounce: '#2a2a20',
+    fogColor: '#0a0a08',
+    fogDensity: 0.032,
+  },
+  /** The Stile chapel: no roof, so the hollow's own grey light, and one candle. */
+  weeping_stile_chapel: {
+    sunIntensity: 1.3,
+    sunColor: '#a8b0a0',
+    ambientIntensity: 2.0,
+    skyColor: '#586058',
+    groundBounce: '#3a4a3a',
+    fogColor: '#0e120e',
+    fogDensity: 0.028,
+  },
   /** The Undercroft: two braziers under a vault, and the cold coming up through the stone. */
   highcourt_undercroft: {
     sunIntensity: 1.2,

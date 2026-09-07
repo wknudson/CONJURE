@@ -311,6 +311,45 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     prop: { x: 44.2, z: 30 },
   },
 
+  /* --- Fenwick's Crossing, and the Stile --------------------------------------------- */
+  {
+    id: 'fenwicks_crossing:river_reeds',
+    areaId: 'fenwicks_crossing',
+    kind: 'reeds',
+    at: { x: -54, z: -30 },
+    prop: { x: -56.2, z: -30 },
+  },
+  {
+    id: 'fenwicks_crossing:field_herbs',
+    areaId: 'fenwicks_crossing',
+    kind: 'herbs',
+    at: { x: 42, z: 34 },
+    prop: { x: 44.2, z: 34 },
+  },
+  {
+    // In the wet end of the cellar. The dogs are the bite, until the cellar is cleared.
+    id: 'fenwicks_cellars:cellar_fungi',
+    areaId: 'fenwicks_cellars',
+    kind: 'fungi',
+    at: { x: -18, z: 6 },
+    prop: { x: -20.2, z: 6 },
+    bite: { chance: 0.3, encounterId: 'pack_verge_stray_dogs', line: 'The dark end was not as empty as the brewer hoped.' },
+  },
+  {
+    id: 'weeping_stile:stile_fungi',
+    areaId: 'weeping_stile',
+    kind: 'fungi',
+    at: { x: -30, z: 30 },
+    prop: { x: -32.2, z: 30 },
+  },
+  {
+    id: 'weeping_stile:cold_hearth_bones',
+    areaId: 'weeping_stile',
+    kind: 'bone',
+    at: { x: 26, z: -34 },
+    prop: { x: 28.2, z: -34 },
+  },
+
   /* --- Highcourt --------------------------------------------------------------------- */
   {
     // In the weeds of the service end: the one thing on the court's ground the court did not plant.

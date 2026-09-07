@@ -431,6 +431,22 @@ export const ERRANDS: readonly ErrandDef[] = [
     reward: { ducats: 120, reagents: { core_frost: 1 } },
   },
   {
+    id: 'two_tolls',
+    giver: 'fenwicks_toll_house:fenwick_tollkeeper',
+    title: 'Carry the bridge book’s tally up to the Millharrow tollman',
+    offer: [
+      { who: 'TOLL-KEEPER', text: 'The same carts pay here and pay at Millharrow, and the two books should agree, and I have never once seen the other one.' },
+      { who: 'TOLL-KEEPER', text: 'Take him my month’s tally. If his matches, good. If it does not, one of us is being robbed, and I would like to know which.' },
+    ],
+    nudge: [{ who: 'TOLL-KEEPER', text: 'Millharrow, over the bridge and up the road. The tollman at the gate. The tally is sealed; leave it sealed.' }],
+    thanks: [
+      { who: 'TOLLMAN', text: 'His tally. Let me see. Six carts short of mine, every week, and the six are all night carts.' },
+      { who: 'TOLLMAN', text: 'So it is neither of us being robbed. Take this for the walk, and tell him I said so.' },
+    ],
+    step: { kind: 'deliver', toArea: 'millharrow', toNpc: 'millharrow_tollman' },
+    reward: { ducats: 65, marrowShards: 1 },
+  },
+  {
     id: 'the_stile_report',
     giver: 'fenwicks_crossing:fenwick_cartographer',
     title: 'Walk to the Weeping Stile and see what is still standing',

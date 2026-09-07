@@ -130,7 +130,7 @@ export const CHALK_ROAD: AreaDef = defineArea({
       x: 38,
       z: zOfRow(12),
       label: "South, down to Fenwick's Crossing",
-      arrive: { x: -2, z: -18 },
+      arrive: { x: -2, z: -22 },
     },
     {
       // West, out of the cut and into the snow. The road does not end here so much as stop

@@ -117,6 +117,16 @@ export const RESTS: readonly RestDef[] = [
     line: 'You wake to sixty head of sheep wanting to be let out, and the herdsman already letting them. Six.',
   },
   {
+    id: 'fenwicks_inn:the_good_room',
+    areaId: 'fenwicks_inn',
+    at: { x: 22, z: -16.4 },
+    prop: { x: 22, z: -20, yaw: Math.PI / 2 },
+    label: 'Take the good room',
+    fee: 18,
+    wakeHour: 7,
+    line: 'You wake to carts on the bridge and the pot-boy raking the hearth. Seven, and the Crossing is already crossing.',
+  },
+  {
     id: 'highcourt_smoke_eaters:upstairs_bed',
     areaId: 'highcourt_smoke_eaters',
     at: { x: 18, z: 14 },

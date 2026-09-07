@@ -55,6 +55,10 @@ import { TALLOW_PUMP_HOUSE } from './interiors/tallowPumpHouse.js';
 import { SALTGLASS_GLASSHOUSE } from './interiors/saltglassGlasshouse.js';
 import { SALTGLASS_CUSTOMS_HOUSE } from './interiors/saltglassCustomsHouse.js';
 import { BRAYS_BARN } from './interiors/braysBarn.js';
+import { FENWICKS_TOLL_HOUSE } from './interiors/fenwicksTollHouse.js';
+import { FENWICKS_INN } from './interiors/fenwicksInn.js';
+import { FENWICKS_CELLARS } from './interiors/fenwicksCellars.js';
+import { WEEPING_STILE_CHAPEL } from './interiors/weepingStileChapel.js';
 
 /**
  * Ordered as the city, then the ring, then the wilds — the order they are reached in, which is
@@ -110,6 +114,10 @@ export const AREAS: readonly AreaDef[] = [
   SALTGLASS_GLASSHOUSE,
   SALTGLASS_CUSTOMS_HOUSE,
   BRAYS_BARN,
+  FENWICKS_TOLL_HOUSE,
+  FENWICKS_INN,
+  FENWICKS_CELLARS,
+  WEEPING_STILE_CHAPEL,
 ];
 
 export function areaById(id: string): AreaDef | undefined {
@@ -167,4 +175,8 @@ export {
   SALTGLASS_GLASSHOUSE,
   SALTGLASS_CUSTOMS_HOUSE,
   BRAYS_BARN,
+  FENWICKS_TOLL_HOUSE,
+  FENWICKS_INN,
+  FENWICKS_CELLARS,
+  WEEPING_STILE_CHAPEL,
 };

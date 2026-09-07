@@ -224,13 +224,14 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
       'A banked fire just off the ride, laid by somebody who wants to be found by the right person. Duels are wagered.',
   },
   {
-    id: 'fenwicks_crossing:inn_cellar',
-    areaId: 'fenwicks_crossing',
-    at: { x: -26, z: 18 },
+    // Down the hatch behind the bar now, among the casks, where the barking is.
+    id: 'fenwicks_cellars:the_cellar',
+    areaId: 'fenwicks_cellars',
+    at: { x: 0, z: -4 },
     encounterId: 'cellar_clearance',
     label: 'The Inn Cellar',
     interactDetail:
-      'The trapdoor behind the coach inn, and the barking underneath it, and a landlord who would rather the Crossing were not burnt down.',
+      'The casks the brewer cannot get at, and the barking from the dark end, and a landlord upstairs who would rather the Crossing were not burnt down.',
   },
   {
     id: 'weeping_stile:cold_hearths',
