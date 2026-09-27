@@ -442,6 +442,86 @@ export const isSafeAt = (a: AreaDef, x: number, z: number): boolean => tileAt(a,
 export const isWalkable = (a: AreaDef, x: number, z: number): boolean => tileAt(a, x, z).walk;
 
 /* ============================================================
+   Sight
+   ============================================================ */
+
+/**
+ * How tall a solid tile must stand to hide somebody behind it.
+ *
+ * Eye height, near enough. A rock outcrop at two metres and a terrace at seven both hide you; a
+ * canal does not, because it is not solid, and neither does anything that is furniture rather
+ * than map -- a fence or a cart is a prop, and props are not in the grid.
+ */
+export const SIGHT_HEIGHT = 1.6;
+
+/** Whether the tile at (col, row) stands between two people. Off the map counts as a wall. */
+function blocksSight(a: AreaDef, col: number, row: number): boolean {
+  if (row < 0 || row >= a.rows || col < 0 || col >= a.cols) return true;
+  const solid = a.legend[a.grid[row]![col]!]?.solid;
+  return !!solid && solid.minHeight >= SIGHT_HEIGHT;
+}
+
+/**
+ * How far along a ray somebody standing at (x, z) can see, up to `max`.
+ *
+ * Walked tile by tile through the grid (Amanatides and Woo's traversal), so it visits exactly the
+ * tiles the line crosses and costs one step per tile, not per unit. The tile the ray starts in
+ * never blocks: a watcher is standing on walkable ground by construction, and a body pressed
+ * against a wall still sees along it.
+ */
+export function sightReach(a: AreaDef, x: number, z: number, dx: number, dz: number, max: number): number {
+  const len = Math.hypot(dx, dz);
+  if (len < 1e-9 || max <= 0) return max;
+  const ux = dx / len;
+  const uz = dz / len;
+  const gx = x + a.halfX;
+  const gz = z + a.halfZ;
+  let col = Math.floor(gx / TILE);
+  let row = Math.floor(gz / TILE);
+  const stepC = ux > 0 ? 1 : -1;
+  const stepR = uz > 0 ? 1 : -1;
+  const tDeltaC = ux !== 0 ? Math.abs(TILE / ux) : Infinity;
+  const tDeltaR = uz !== 0 ? Math.abs(TILE / uz) : Infinity;
+  let tMaxC = ux !== 0 ? ((ux > 0 ? (col + 1) * TILE : col * TILE) - gx) / ux : Infinity;
+  let tMaxR = uz !== 0 ? ((uz > 0 ? (row + 1) * TILE : row * TILE) - gz) / uz : Infinity;
+  for (;;) {
+    // The distance at which the ray leaves the current tile and enters the next.
+    const t = Math.min(tMaxC, tMaxR);
+    if (t >= max) return max;
+    if (Math.abs(tMaxC - tMaxR) < 1e-9) {
+      // Exactly through a corner. The ray touches both tiles beside it only at a point, so it is
+      // stopped only if *both* would stop it -- a gap between two walls meeting at a corner is no
+      // gap, and grazing the corner of one wall is not being behind it. Picking one side, which
+      // the plain traversal does, makes sight depend on which way you are looking.
+      if (blocksSight(a, col + stepC, row) && blocksSight(a, col, row + stepR)) return t;
+      col += stepC;
+      row += stepR;
+      tMaxC += tDeltaC;
+      tMaxR += tDeltaR;
+    } else if (tMaxC < tMaxR) {
+      col += stepC;
+      tMaxC += tDeltaC;
+    } else {
+      row += stepR;
+      tMaxR += tDeltaR;
+    }
+    if (blocksSight(a, col, row)) return t;
+  }
+}
+
+/**
+ * Whether somebody at `a` can see somebody at `b` -- nothing solid and tall between them.
+ *
+ * What makes a thicket worth putting on a map: the verge's `T` was drawn "tall enough to break a
+ * sightline, so the packs can come round it", and until this existed nothing looked through it or
+ * round it -- a pack saw through a terrace as easily as across a road.
+ */
+export function sightClear(area: AreaDef, ax: number, az: number, bx: number, bz: number): boolean {
+  const d = Math.hypot(bx - ax, bz - az);
+  return sightReach(area, ax, az, bx - ax, bz - az, d) >= d;
+}
+
+/* ============================================================
    Building extraction
    ============================================================ */
 

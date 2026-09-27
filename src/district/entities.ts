@@ -11,6 +11,7 @@ import type { ColliderSet } from './collision.js';
 import { CRITTERS, type CritterId, type CritterKind } from './wildlife.js';
 import { beatPostAt, type PackHours } from './daylight.js';
 import { Walker, pickFacing, type ActorArt } from './sprites3d.js';
+import { sightClear, sightReach, type AreaDef } from './map.js';
 
 /** Anything the player can stand near and press a key at. */
 export interface Interactable {
@@ -24,6 +25,66 @@ export interface Interactable {
 
 export interface Updatable {
   update(dt: number, t: number, cameraYaw: number): void;
+}
+
+/**
+ * A vision cone drawn the way the watcher actually sees: each ray stops at the first wall.
+ *
+ * It used to be a `CircleGeometry` sector, which promised sight straight through a terrace --
+ * and was right to, because nothing checked. Now that walls block sight (`sightClear`), a sector
+ * would show the player a danger that is not there, and worse, hide the shadow behind a building
+ * that is the whole reason to stand in it. So it is a fan of rays, one allocation for the life of
+ * the watcher, re-cut in place as it turns and walks.
+ *
+ * Built flat in world orientation around the watcher's feet; the mesh carrying it is positioned
+ * but never rotated.
+ */
+export class SightFan {
+  static readonly RAYS = 28;
+  readonly geometry = new THREE.BufferGeometry();
+  private readonly pos: Float32Array;
+
+  constructor() {
+    this.pos = new Float32Array((SightFan.RAYS + 1) * 3);
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
+    const index: number[] = [];
+    for (let i = 1; i < SightFan.RAYS; i++) index.push(0, i, i + 1);
+    this.geometry.setIndex(index);
+    this.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1);
+  }
+
+  /**
+   * Re-cuts the fan for a watcher at (x, z) facing `heading` radians (atan2 of its heading's z
+   * over x), `half` either side, out to `range`, stopping each ray at the first thing in `area`
+   * tall enough to hide somebody. With no area it is the plain sector.
+   */
+  cut(area: AreaDef | null, x: number, z: number, heading: number, half: number, range: number): void {
+    const n = SightFan.RAYS;
+    for (let i = 0; i < n; i++) {
+      const a = heading - half + (2 * half * i) / (n - 1);
+      const ux = Math.cos(a);
+      const uz = Math.sin(a);
+      const r = area ? sightReach(area, x, z, ux, uz, range) : range;
+      const k = (i + 1) * 3;
+      this.pos[k] = ux * r;
+      this.pos[k + 1] = 0;
+      this.pos[k + 2] = uz * r;
+    }
+    (this.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+    // Fixed rather than recomputed: the fan never reaches past its range, and a sphere that big
+    // is what the frustum test needs.
+    this.geometry.boundingSphere!.radius = range;
+  }
+
+  /** How far one ray of the last cut reached. For tests; the drawing needs nothing else. */
+  reachOf(i: number): number {
+    const k = (i + 1) * 3;
+    return Math.hypot(this.pos[k]!, this.pos[k + 2]!);
+  }
+
+  dispose(): void {
+    this.geometry.dispose();
+  }
 }
 
 /**
@@ -270,6 +331,8 @@ export class Warden implements Updatable {
   private detect = 0;
   private readonly heading = new THREE.Vector2(0, 1);
   private coneAlpha = 0;
+  /** The cone as drawn, clipped by the walls it cannot see through. See `SightFan`. */
+  private readonly fan = new SightFan();
 
   private static readonly SPEED = 2.4;
   private static readonly CHASE_SPEED = 4.6;
@@ -296,7 +359,7 @@ export class Warden implements Updatable {
     this.position = this.walker.position;
 
     this.cone = new THREE.Mesh(
-      new THREE.BufferGeometry(),
+      this.fan.geometry,
       new THREE.MeshBasicMaterial({
         color: new THREE.Color('#d8b13a'),
         transparent: true,
@@ -310,10 +373,16 @@ export class Warden implements Updatable {
     this.rebuildCone();
   }
 
+  /** Re-cuts the cone where it stands -- after the tuning panel or the hour moves the numbers. */
   rebuildCone(): void {
-    const half = THREE.MathUtils.degToRad(LOOK.visionAngle) / 2;
-    this.cone.geometry.dispose();
-    this.cone.geometry = new THREE.CircleGeometry(this.range, 28, -half, half * 2);
+    this.fan.cut(
+      this.colliders.area,
+      this.position.x,
+      this.position.z,
+      Math.atan2(this.heading.y, this.heading.x),
+      THREE.MathUtils.degToRad(LOOK.visionAngle) / 2,
+      this.range,
+    );
   }
 
   /** How far it can actually see, this hour. The cone drawn on the road is this long. */
@@ -322,10 +391,8 @@ export class Warden implements Updatable {
   }
 
   /**
-   * Re-cuts the cone for a new hour, and only when the hour has actually moved it.
-   *
-   * `rebuildCone` disposes and re-allocates geometry, and the street clock ticks every frame --
-   * so this is the guard that keeps a slow dusk from being a geometry churn sixty times a second.
+   * Takes a new hour's sight, and only when the hour has actually moved it -- the street clock
+   * ticks every frame, and nothing needs to change for a dusk that has not got any darker.
    */
   setSight(k: number): void {
     if (Math.abs(k - this.sight) < 0.01) return;
@@ -367,7 +434,9 @@ export class Warden implements Updatable {
     const dist = Math.hypot(dx, dz);
     if (dist > this.range || dist < 0.001) return false;
     const dot = (dx * this.heading.x + dz * this.heading.y) / dist;
-    return dot > Math.cos(THREE.MathUtils.degToRad(LOOK.visionAngle) / 2);
+    if (dot <= Math.cos(THREE.MathUtils.degToRad(LOOK.visionAngle) / 2)) return false;
+    // Last, because it is the one that walks the grid: a Warden cannot see through a terrace.
+    return sightClear(this.colliders.area, this.position.x, this.position.z, this.playerAt.x, this.playerAt.z);
   }
 
   private steer(tx: number, tz: number, speed: number, dt: number, cameraYaw: number): number {
@@ -443,7 +512,8 @@ export class Warden implements Updatable {
     this.cone.material.opacity = this.coneAlpha;
     this.cone.material.color.set(this.state === 'PATROL' ? '#d8b13a' : '#e04422');
     this.cone.position.set(this.position.x, 0.06, this.position.z);
-    this.cone.rotation.set(-Math.PI / 2, 0, Math.atan2(-this.heading.y, this.heading.x));
+    // Only while it can be seen: a fan nobody is looking at does not need its walls found.
+    if (this.cone.visible && this.coneAlpha > 0.005) this.rebuildCone();
   }
 
   /** Back to the beat, after a catch. */
@@ -521,6 +591,8 @@ export class Pack implements Updatable {
   private spent = false;
   private detect = 0;
   private coneAlpha = 0;
+  /** The cone as drawn, clipped by the walls it cannot see through. See `SightFan`. */
+  private readonly fan = new SightFan();
 
   /**
    * Under the player's six, and under the Warden's chase.
@@ -567,7 +639,7 @@ export class Pack implements Updatable {
     // The Warden's recipe, because it is the established visual language for "this thing
     // can see you": additive and unlit so the bloom pass finds it, no depth write so it
     // lies over the ground rather than fighting it.
-    this.cone = new THREE.Mesh(new THREE.BufferGeometry(), Pack.sightMaterial('#c2603a'));
+    this.cone = new THREE.Mesh(this.fan.geometry, Pack.sightMaterial('#c2603a'));
     this.cone.renderOrder = 2;
     this.aggroRing = new THREE.Mesh(new THREE.BufferGeometry(), Pack.sightMaterial('#c2603a'));
     this.aggroRing.renderOrder = 2;
@@ -586,13 +658,28 @@ export class Pack implements Updatable {
     });
   }
 
-  /** Re-cut the cone and the ring after the tuning panel moves the numbers. */
+  /** Re-cut the cone and the ring after the tuning panel or the hour moves the numbers. */
   rebuildCone(): void {
-    const half = THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2;
-    this.cone.geometry.dispose();
-    this.cone.geometry = new THREE.CircleGeometry(this.range, 28, -half, half * 2);
+    this.recutFan();
     this.aggroRing.geometry.dispose();
     this.aggroRing.geometry = new THREE.RingGeometry(this.range * 0.96, this.range, 40);
+  }
+
+  /** The cone where the pack stands and faces, stopped at the walls. */
+  private recutFan(): void {
+    this.fan.cut(
+      this.colliders.area,
+      this.position.x,
+      this.position.z,
+      Math.atan2(this.heading.y, this.heading.x),
+      THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2,
+      this.range,
+    );
+  }
+
+  /** How far one ray of the drawn cone reaches. See `SightFan.reachOf`. */
+  coneReach(i: number): number {
+    return this.fan.reachOf(i);
   }
 
   /** How far it can actually see, this hour. The cone and the ring are both this long. */
@@ -616,7 +703,11 @@ export class Pack implements Updatable {
     const dist = Math.hypot(dx, dz);
     if (dist > this.range || dist < 0.001) return false;
     const dot = (dx * this.heading.x + dz * this.heading.y) / dist;
-    return dot > Math.cos(THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2);
+    if (dot <= Math.cos(THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2)) return false;
+    // Last, because it is the one that walks the grid. A thicket, a spoil heap, a terrace: what
+    // is between you and them now hides you, which is what gives a map with walls in it a
+    // shadow worth standing in.
+    return sightClear(this.colliders.area, this.position.x, this.position.z, this.playerAt.x, this.playerAt.z);
   }
 
   /**
@@ -837,7 +928,8 @@ export class Pack implements Updatable {
     this.cone.material.opacity = this.coneAlpha;
     this.cone.material.color.set(this.state === 'ROAM' ? '#c2603a' : '#e04422');
     this.cone.position.set(this.position.x, 0.06, this.position.z);
-    this.cone.rotation.set(-Math.PI / 2, 0, Math.atan2(-this.heading.y, this.heading.x));
+    // Only while it can be seen: a fan nobody is looking at does not need its walls found.
+    if (this.cone.visible && this.coneAlpha > 0.005) this.recutFan();
 
     const ringWant = LOOK.packConeOpacity > 0 ? LOOK.packAggroRingOpacity / LOOK.packConeOpacity : 0;
     this.aggroRing.material.opacity = this.coneAlpha * ringWant;
