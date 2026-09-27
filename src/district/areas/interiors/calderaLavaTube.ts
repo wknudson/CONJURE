@@ -4,8 +4,8 @@
  * A tunnel the mountain blew and the drake denned in, before the tap field was cut and the
  * nine went in after it. Crust underfoot, slag where the floor slumped, a vent at the far end
  * that breathes embers, and something living in the dark past it that does not come out into
- * the light -- the same hollows that live in the Verge's spoil, further from the ward and
- * nearer the fire. What the drake hoarded is behind them, once the chimera is answered for.
+ * the light -- a brood born in the vents, which the drake left behind when the nine drove it
+ * out. What the drake hoarded is behind them, once the chimera is answered for.
  */
 
 import { TILE, defineArea, type AreaDef, type TileDef } from '../../map.js';
@@ -73,10 +73,10 @@ export const CALDERA_LAVA_TUBE: AreaDef = defineArea({
       { kind: 'brazier', x: xOfCol(10), z: zOfRow(10) },
     ],
     /**
-     * The hollows, in the dark end. Short roam: a tube is not a road, and a crew that wandered
+     * The brood, in the dark end. Short roam: a tube is not a road, and a crew that wandered
      * to the mouth would jump you on the first step in.
      */
-    packs: [{ encounterId: 'pack_spoil_heap_hollows', x: 0, z: zOfRow(3), roam: 5 }],
+    packs: [{ encounterId: 'pack_magma_brood', x: 0, z: zOfRow(3), roam: 5 }],
     graffiti: [
       { text: 'NINE WENT IN', wallX: xOfCol(3), wallZ: zOfRow(0) + TILE / 2, dx: 0, facesSouth: true, tint: '#a4543a' },
     ],

@@ -69,8 +69,8 @@ export const RIMEFIELDS_ICE_CAVE: AreaDef = defineArea({
       { kind: 'bonepile', x: xOfCol(10), z: zOfRow(6) },
       { kind: 'scorch', x: xOfCol(5.5), z: zOfRow(10) },
     ],
-    /** What dens here. Dogs, the atlas would say; the snow does not care what you call them. */
-    packs: [{ encounterId: 'pack_verge_stray_dogs', x: 0, z: zOfRow(4), roam: 5 }],
+    /** What dens here: the hoarhounds, white on white until they move. */
+    packs: [{ encounterId: 'pack_hoarhounds', x: 0, z: zOfRow(4), roam: 5 }],
     graffiti: [
       { text: 'COUNT YOUR PARTY', wallX: xOfCol(3), wallZ: zOfRow(0) + TILE / 2, dx: 0, facesSouth: true, tint: '#8caacc' },
     ],

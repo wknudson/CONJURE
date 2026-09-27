@@ -4,7 +4,7 @@
  * Bone underfoot and bone in the walls, the way the whole Bastion is, and the difference is
  * that in here it is arranged. The first sarcophagus is at the door and nobody has ever
  * opened it, because nothing is buried shallow and everybody knows what that means. The
- * hollows have the middle. The antechamber at the back is the sovereign's, and what is in it
+ * Barrow Watch has the middle, as it has the causeway outside. The antechamber at the back is the sovereign's, and what is in it
  * waits for the sovereign to be answered for.
  */
 
@@ -71,8 +71,8 @@ export const BONE_BASTION_BARROW: AreaDef = defineArea({
       { kind: 'cairn', x: xOfCol(1), z: zOfRow(10) },
       { kind: 'brazier', x: xOfCol(10), z: zOfRow(10) },
     ],
-    /** The hollows have the middle. Short roam, and they do not come to the door. */
-    packs: [{ encounterId: 'pack_spoil_heap_hollows', x: 0, z: zOfRow(4), roam: 5 }],
+    /** The Watch has the middle. Short roam, and it does not come to the door. */
+    packs: [{ encounterId: 'pack_barrow_watch', x: 0, z: zOfRow(4), roam: 5 }],
     graffiti: [
       { text: 'NOTHING IS BURIED SHALLOW', wallX: xOfCol(4), wallZ: zOfRow(0) + TILE / 2, dx: 0, facesSouth: true, tint: '#b7ae9d' },
     ],

@@ -364,7 +364,7 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     kind: 'ember',
     at: { x: -14, z: 10 },
     prop: { x: -14, z: 6.8 },
-    bite: { chance: 0.25, encounterId: 'pack_spoil_heap_hollows', line: 'Something in the tube woke.' },
+    bite: { chance: 0.25, encounterId: 'pack_magma_brood', line: 'Something in the tube woke.' },
   },
   {
     id: 'ashwood:north_ring',
@@ -379,7 +379,7 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     kind: 'fungi',
     at: { x: -14, z: 10 },
     prop: { x: -14, z: 6.8 },
-    bite: { chance: 0.2, encounterId: 'pack_freight_pickers', line: 'The pickers were not all asleep.' },
+    bite: { chance: 0.2, encounterId: 'pack_poacher_band', line: 'The poachers were not all asleep.' },
   },
   {
     id: 'rimefields:ice_bloom',
@@ -395,7 +395,7 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     kind: 'ore',
     at: { x: -14, z: 10 },
     prop: { x: -14, z: 6.8 },
-    bite: { chance: 0.25, encounterId: 'pack_verge_stray_dogs', line: 'The den was not empty.' },
+    bite: { chance: 0.25, encounterId: 'pack_hoarhounds', line: 'The den was not empty.' },
   },
   {
     id: 'storm_shelf:charged_seam',
@@ -403,7 +403,7 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     kind: 'ore',
     at: { x: 52, z: 48 },
     prop: { x: 54.2, z: 48 },
-    bite: { chance: 0.25, encounterId: 'pack_spoil_heap_hollows', line: 'The seam was humming, and it was not the seam.' },
+    bite: { chance: 0.25, encounterId: 'pack_static_swarm', line: 'The seam was humming, and it was not the seam.' },
   },
   {
     id: 'storm_shelf_pylon_base:the_run',
@@ -411,7 +411,7 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     kind: 'ore',
     at: { x: -14, z: 10 },
     prop: { x: -14, z: 6.8 },
-    bite: { chance: 0.3, encounterId: 'pack_hedgerow_vermin', line: 'The crystal was not the only thing in the run.' },
+    bite: { chance: 0.3, encounterId: 'pack_pylon_keepers', line: 'The crystal was not the only thing in the run.' },
   },
   {
     id: 'bone_bastion:south_row_bones',
@@ -419,7 +419,7 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     kind: 'bone',
     at: { x: -48, z: 52 },
     prop: { x: -50.2, z: 52 },
-    bite: { chance: 0.25, encounterId: 'pack_spoil_heap_hollows', line: 'Something under the row objected.' },
+    bite: { chance: 0.25, encounterId: 'pack_barrow_watch', line: 'Something under the row objected.' },
   },
   {
     id: 'bone_bastion_barrow:the_bones',
@@ -427,7 +427,7 @@ export const FORAGE_NODES: readonly ForageNode[] = [
     kind: 'bone',
     at: { x: -14, z: 10 },
     prop: { x: -14, z: 6.8 },
-    bite: { chance: 0.3, encounterId: 'pack_spoil_heap_hollows', line: 'The barrow does not like to be picked through.' },
+    bite: { chance: 0.3, encounterId: 'pack_barrow_watch', line: 'The barrow does not like to be picked through.' },
   },
 
   /* --- Highcourt --------------------------------------------------------------------- */

@@ -3,8 +3,8 @@
  *
  * The warnings on the stones are about the pylons; this is what they are anchored to. An iron
  * floor that hums, the lineman's bench nobody has sat at since Nine was not an accident, and
- * in the works something that has made a nest of the cable runs -- vermin, of the hedgerow
- * kind, further from a hedge than vermin should be. The conductor's box is at the back, and
+ * in the works the machines left to mind the machines, which nobody has told the survey was
+ * abandoned. The conductor's box is at the back, and
  * opens once Nine itself has been fought.
  */
 
@@ -72,8 +72,8 @@ export const STORM_SHELF_PYLON_BASE: AreaDef = defineArea({
       { kind: 'brazier', x: xOfCol(5.5), z: zOfRow(7) },
       { kind: 'urn', x: xOfCol(1), z: zOfRow(10) },
     ],
-    /** The nest in the cable runs. Short roam; the works are not big. */
-    packs: [{ encounterId: 'pack_hedgerow_vermin', x: 0, z: zOfRow(4), roam: 5 }],
+    /** The keepers, in the works. Short roam; the works are not big. */
+    packs: [{ encounterId: 'pack_pylon_keepers', x: 0, z: zOfRow(4), roam: 5 }],
     graffiti: [
       { text: 'NINE IS STILL LIVE', wallX: xOfCol(3), wallZ: zOfRow(0) + TILE / 2, dx: 0, facesSouth: true, tint: '#b7ae9d' },
     ],
