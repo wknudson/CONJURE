@@ -28,8 +28,29 @@ export interface Collider {
   enabled: boolean;
 }
 
+/**
+ * How wide a bucket of the box index is, in world units. One tile: most footprints are a
+ * tile or less across, so a box lands in one to four buckets and a query reads one to four.
+ */
+const CELL = 4;
+
 export class ColliderSet {
+  /**
+   * Every box, in the order it was added. The one list — the index below is a lookup over it,
+   * never a second copy of what is solid, so `enabled` is read off the box at query time and a
+   * gate that opens is open in every bucket at once.
+   */
   readonly boxes: Collider[] = [];
+  /**
+   * The boxes again, bucketed by the cells their footprint covers.
+   *
+   * `blocked` used to scan every box for every probe, and it is asked constantly: twice per mover
+   * per frame, a dozen times per wander pick, and once per cell of every reachability flood the
+   * tests run. That was fine at twenty tiles and forty boxes and is not at twice the ground and
+   * three times the furniture. Boxes are only ever added while an area is being built, so the
+   * index is filled once and never rebalanced.
+   */
+  private readonly cells = new Map<number, Collider[]>();
 
   constructor(private readonly area: AreaDef) {}
 
@@ -43,6 +64,14 @@ export class ColliderSet {
       enabled: true,
     };
     this.boxes.push(box);
+    for (let cx = Math.floor(box.minX / CELL); cx <= Math.floor(box.maxX / CELL); cx++) {
+      for (let cz = Math.floor(box.minZ / CELL); cz <= Math.floor(box.maxZ / CELL); cz++) {
+        const key = cellKey(cx, cz);
+        const bucket = this.cells.get(key);
+        if (bucket) bucket.push(box);
+        else this.cells.set(key, [box]);
+      }
+    }
     return box;
   }
 
@@ -59,9 +88,17 @@ export class ColliderSet {
     if (!isWalkable(a, x + r, z) || !isWalkable(a, x - r, z)) return true;
     if (!isWalkable(a, x, z + r) || !isWalkable(a, x, z - r)) return true;
 
-    for (const c of this.boxes) {
-      if (!c.enabled) continue;
-      if (x > c.minX - r && x < c.maxX + r && z > c.minZ - r && z < c.maxZ + r) return true;
+    // Only the buckets the body's own square touches. A box that overlaps the body shares at
+    // least one point with that square, and every point's bucket holds every box covering it.
+    for (let cx = Math.floor((x - r) / CELL); cx <= Math.floor((x + r) / CELL); cx++) {
+      for (let cz = Math.floor((z - r) / CELL); cz <= Math.floor((z + r) / CELL); cz++) {
+        const bucket = this.cells.get(cellKey(cx, cz));
+        if (!bucket) continue;
+        for (const c of bucket) {
+          if (!c.enabled) continue;
+          if (x > c.minX - r && x < c.maxX + r && z > c.minZ - r && z < c.maxZ + r) return true;
+        }
+      }
     }
     return false;
   }
@@ -80,4 +117,13 @@ export class ColliderSet {
     const nz = pos.z + dz;
     if (!this.blocked(pos.x, nz, r)) pos.z = nz;
   }
+}
+
+/**
+ * One number per bucket, so the index is a `Map` of numbers rather than of strings built per
+ * probe. Cells are a few hundred units either side of the origin at most, far inside the
+ * sixteen bits each half gets.
+ */
+function cellKey(cx: number, cz: number): number {
+  return (cx + 0x8000) * 0x10000 + (cz + 0x8000);
 }

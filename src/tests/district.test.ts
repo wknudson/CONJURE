@@ -866,4 +866,29 @@ describe('collision', () => {
     box.enabled = false;
     expect(set.blocked(SPAWN.x, SPAWN.z)).toBe(false);
   });
+
+  it('answers from its index exactly as a scan of every box would', () => {
+    // The index is a lookup over `boxes`, not a second opinion. Probed on every area's real
+    // furniture at a lattice finer than a tile and offset from it, so probes fall on bucket
+    // edges, box edges and between -- at every radius a caller actually passes.
+    const scan = (set: ColliderSet, x: number, z: number, r: number): boolean =>
+      set.boxes.some((c) => c.enabled && x > c.minX - r && x < c.maxX + r && z > c.minZ - r && z < c.maxZ + r);
+    for (const area of AREAS) {
+      const set = new ColliderSet(area);
+      for (const f of staticFootprints(area)) set.add(f.x, f.z, f.w, f.d, f.tag);
+      // One disabled box, so the index is seen to read `enabled` off the box itself.
+      if (set.boxes[0]) set.boxes[0].enabled = false;
+      const bare = new ColliderSet(area);
+      let disagreements = 0;
+      for (let x = -area.halfX; x <= area.halfX; x += 0.7) {
+        for (let z = -area.halfZ; z <= area.halfZ; z += 0.7) {
+          for (const r of [0.3, 0.4, 0.6]) {
+            const want = bare.blocked(x, z, r) || scan(set, x, z, r);
+            if (set.blocked(x, z, r) !== want) disagreements++;
+          }
+        }
+      }
+      expect(disagreements, area.id).toBe(0);
+    }
+  });
 });
