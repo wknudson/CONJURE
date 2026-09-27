@@ -165,6 +165,25 @@ export function isHunt(encounterId: string): boolean {
 }
 
 /**
+ * The clock key for one pack on one map: `encounter@area`, with `#id` when an area fields two of a kind.
+ *
+ * A roaming pack used to be stamped by its encounter id, which made every crew of a kind one crew:
+ * clear the waywatch on the Chalk Road and the waywatch posted in the Pylon Base went too, and an
+ * area with two packs of wolves could not have one of them still out. The key is what the street
+ * spawns and the save stores; the encounter before the `@` is what the fight is and what is
+ * checked when a save is read.
+ */
+export function packClockKey(encounterId: string, areaId: string, id?: string): string {
+  return id ? `${encounterId}@${areaId}#${id}` : `${encounterId}@${areaId}`;
+}
+
+/** The encounter a clock key belongs to. A key with no `@` -- a hunt, a lair, an old save's pack -- is its own. */
+export function encounterOfKey(key: string): string {
+  const at = key.indexOf('@');
+  return at < 0 ? key : key.slice(0, at);
+}
+
+/**
  * Stamps the clock after a fight, for everything that rides it.
  *
  * Hunts and lairs are stamped **on a win only**. A hunt is a place with an animal in it, and
@@ -185,13 +204,16 @@ export function isHunt(encounterId: string): boolean {
 export function stampClock(
   hunts: Record<string, number>,
   encounterId: string,
+  /** The packs the ring pulled in, by clock key (see `packClockKey`) or by bare encounter id. */
   pulled: readonly string[],
   won: boolean,
   now: number,
+  /** The host pack's clock key, when the street knows which crew it was. */
+  hostKey?: string,
 ): void {
-  if (isPack(encounterId)) hunts[encounterId] = now;
+  if (isPack(encounterId)) hunts[hostKey && encounterOfKey(hostKey) === encounterId ? hostKey : encounterId] = now;
   else if (won && (isHunt(encounterId) || isLair(encounterId))) hunts[encounterId] = now;
-  for (const id of pulled) if (isPack(id)) hunts[id] = now;
+  for (const id of pulled) if (isPack(encounterOfKey(id))) hunts[id] = now;
 }
 
 /**

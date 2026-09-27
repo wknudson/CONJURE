@@ -11,7 +11,7 @@ import type { ColliderSet } from './collision.js';
 import { CRITTERS, type CritterId, type CritterKind } from './wildlife.js';
 import { beatPostAt, type PackHours } from './daylight.js';
 import { Walker, pickFacing, type ActorArt } from './sprites3d.js';
-import { sightClear, sightReach, type AreaDef } from './map.js';
+import { sightClear, sightReach, type AreaDef, type PackBehaviour } from './map.js';
 import { NavAgent, type NavGrid } from './nav.js';
 
 /** Anything the player can stand near and press a key at. */
@@ -528,23 +528,6 @@ export class Warden implements Updatable {
     this.onAlertChange?.(false);
   }
 }
-
-/**
- * How a pack spends the time it is not hunting you.
- *
- * - **roam** -- wanders a circle round its home, a beat of standing about at each spot. What
- *   every pack did until these existed, and still the default.
- * - **beat** -- walks a fixed route of posts in order and round again, pausing at each. A crew
- *   on a beat is a crew you can time: stand in the lee of the warehouse, watch it pass, go.
- * - **sentry** -- holds one post and sweeps its gaze between two headings. The thing guarding a
- *   gate or a bridge-end: it never comes to you, and the dark wedge behind its sweep is the way
- *   past.
- * - **prowl** -- wanders the whole area over a lattice of waypoints, always to the nearest one it
- *   has not been to yet, and when it has been everywhere, starting again. Brian Walker's wandering
- *   monster from Brogue; the thing you meet on the far side of the wood because it was going
- *   there too.
- */
-export type PackBehaviour = 'roam' | 'beat' | 'sentry' | 'prowl';
 
 /** What a pack is doing about you. `ROAM` covers all four ways of doing nothing about you. */
 export type PackState = 'ROAM' | 'SUSPICIOUS' | 'ALERT' | 'CHASE' | 'SEARCH';
@@ -1499,6 +1482,10 @@ export class CombatRing implements Updatable {
   readonly mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   /** Encounter ids of the packs caught, in the order the circle reached them. */
   readonly pulled: string[] = [];
+  /** The same packs' clock keys, in the same order. See `Pack.key`. */
+  readonly pulledKeys: string[] = [];
+  /** The packs themselves, so two crews of one kind are two catches rather than one. */
+  private readonly caught = new Set<Pack>();
 
   private elapsed = 0;
   private finished = false;
@@ -1514,7 +1501,7 @@ export class CombatRing implements Updatable {
     readonly originX: number,
     readonly originZ: number,
     private readonly candidates: readonly Pack[],
-    private readonly onDone: (pulled: string[]) => void,
+    private readonly onDone: (pulled: string[], keys: string[]) => void,
   ) {
     this.mesh = new THREE.Mesh(
       new THREE.BufferGeometry(),
@@ -1559,10 +1546,12 @@ export class CombatRing implements Updatable {
       // thing that *catches what is nearby*, and something off shift is not nearby -- it is not
       // there at all, and dragging it in would put a body on the grid that nobody had seen.
       if (!pack.onShift) continue;
-      if (this.pulled.includes(pack.encounterId)) continue;
+      if (this.caught.has(pack)) continue;
       const d = Math.hypot(pack.position.x - this.originX, pack.position.z - this.originZ);
       if (d > radius) continue;
+      this.caught.add(pack);
       this.pulled.push(pack.encounterId);
+      this.pulledKeys.push(pack.key);
       // It turns and comes in. Being caught by the circle has to look like a decision the
       // pack made, not like the ground claiming it.
       pack.answerTheCall(this.originX, this.originZ);
@@ -1570,7 +1559,7 @@ export class CombatRing implements Updatable {
 
     if (this.elapsed >= CombatRing.DURATION) {
       this.finished = true;
-      this.onDone([...this.pulled]);
+      this.onDone([...this.pulled], [...this.pulledKeys]);
     }
   }
 

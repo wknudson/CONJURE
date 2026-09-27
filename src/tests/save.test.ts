@@ -15,7 +15,8 @@ import {
 } from '../app/save.js';
 import { COMPANIONS } from '../core/data/companions.js';
 import { TIER_WAGER } from '../core/data/bounties.js';
-import { HUNTS } from '../core/data/hunts.js';
+import { HUNTS, packClockKey } from '../core/data/hunts.js';
+import { PACKS } from '../core/data/packs.js';
 import { ERRANDS } from '../district/errands.js';
 import { dayNumber, NIGHT_ANCHOR, OPENING_HOUR, phaseAt } from '../district/daylight.js';
 import { traitsFor } from '../core/data/companionTraits.js';
@@ -855,6 +856,14 @@ describe('the hunt clock', () => {
   it('drops stamps for hunts that no longer exist, rather than growing forever', () => {
     writeRawHunts(SAVE_VERSION, { [A_HUNT]: 1_000, hunt_retired_long_ago: 2_000 });
     expect(loadSave().save.profiles['slot-1']!.hunts).toEqual({ [A_HUNT]: 1_000 });
+  });
+
+  it("carries one crew's stamp by its clock key", () => {
+    // Packs are stamped per crew per map (`packClockKey`), and a key whose encounter is a pack
+    // is a real stamp. One whose encounter is nothing is dropped like any retired id.
+    const key = packClockKey(PACKS[0]!.encounterId, 'chalk_road');
+    writeRawHunts(SAVE_VERSION, { [key]: 5_000, 'pack_long_gone@chalk_road': 6_000 });
+    expect(loadSave().save.profiles['slot-1']!.hunts).toEqual({ [key]: 5_000 });
   });
 
   it('refuses a stamp that is not a finite number', () => {
