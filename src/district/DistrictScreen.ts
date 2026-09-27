@@ -1746,6 +1746,7 @@ export class DistrictScreen implements Screen {
     // hour moving re-applies the fog unscaled. A fight's descent owns the fog while it runs.
     if (!this.combat) world.setFogScale(1 / this.zoom);
     world.updateLamps(this.elapsed, anchor.x, anchor.z);
+    world.updateSmoke(dt);
     world.updateImpactLights(dt);
     world.scrollWater(dt);
     world.updateRises(dt, Math.random);

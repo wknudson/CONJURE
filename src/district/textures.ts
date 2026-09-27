@@ -3456,3 +3456,310 @@ export function makeMarkTexture(mark: '?' | '!'): THREE.Texture {
   }
   return canvasTexture(c);
 }
+
+/* ============================================================
+   The building kit's surfaces
+   ============================================================
+
+   One picture per surface the kit builds in (see `buildings.ts` `SurfaceKey`), drawn at the
+   scale its `UV` entry says one repeat covers -- a facade bay is two units by two point four, so
+   one window a bay, one storey a repeat. All pixel art, nearest-filtered, lit from the upper
+   left like everything else in this file. */
+
+/** How a building's windows are cut, by kind of building. */
+export type WindowKind = 'house' | 'tall' | 'wide' | 'slit';
+
+/** Which wall a facade is drawn in, and how its windows are cut. The wall is the room's own texture, tiled. */
+export function makeFacadeTextures(wall: WallTex, kind: WindowKind): { map: THREE.Texture; glow: THREE.Texture } {
+  const W = 16;
+  const H = 20;
+  const { c, ctx } = makeCanvas(W, H);
+  const { c: gc, ctx: gx } = makeCanvas(W, H);
+  const base = WALL_ART[wall]();
+  const img = base.image as CanvasImageSource;
+  // The wall itself, tiled down the bay.
+  ctx.drawImage(img, 0, 0);
+  ctx.drawImage(img, 0, 16);
+  base.dispose();
+  gx.fillStyle = '#000';
+  gx.fillRect(0, 0, W, H);
+
+  const frame = '#1c1714';
+  const glass = '#26303a';
+  const shine = '#46586a';
+  const lit = '#ffc478';
+  const sill = wall === 'timber' ? '#8a6a44' : '#8c8278';
+  const pane = (x: number, y: number, w: number, h: number): void => {
+    ctx.fillStyle = glass;
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = shine;
+    ctx.fillRect(x, y, 1, Math.max(1, h - 1)); // the lit edge, upper left
+    gx.fillStyle = lit;
+    gx.fillRect(x, y, w, h);
+  };
+
+  if (kind === 'wide') {
+    // A works window: a grid of small panes, most of the bay.
+    ctx.fillStyle = frame;
+    ctx.fillRect(1, 5, 14, 9);
+    for (let y = 6; y < 13; y += 3) for (let x = 2; x < 14; x += 3) pane(x, y, 2, 2);
+    ctx.fillStyle = sill;
+    ctx.fillRect(1, 14, 14, 1);
+  } else if (kind === 'tall') {
+    // A hall window: tall, round-headed, leaded.
+    ctx.fillStyle = frame;
+    ctx.fillRect(5, 3, 6, 14);
+    ctx.fillRect(6, 2, 4, 1);
+    pane(6, 3, 4, 13);
+    ctx.fillStyle = frame;
+    ctx.fillRect(8, 3, 1, 13);
+    ctx.fillRect(6, 9, 4, 1);
+    gx.fillStyle = '#000';
+    gx.fillRect(8, 3, 1, 13);
+    gx.fillRect(6, 9, 4, 1);
+    ctx.fillStyle = sill;
+    ctx.fillRect(4, 17, 8, 1);
+  } else if (kind === 'slit') {
+    ctx.fillStyle = frame;
+    ctx.fillRect(7, 5, 3, 9);
+    pane(8, 6, 1, 7);
+  } else {
+    // A house window: sash, four panes, a sill, and shutters on a timber or plaster wall.
+    ctx.fillStyle = frame;
+    ctx.fillRect(4, 4, 8, 10);
+    pane(5, 5, 3, 4);
+    pane(8, 5, 3, 4);
+    pane(5, 9, 3, 4);
+    pane(8, 9, 3, 4);
+    ctx.fillStyle = sill;
+    ctx.fillRect(3, 14, 10, 1);
+    if (wall === 'timber' || wall === 'plaster') {
+      ctx.fillStyle = wall === 'timber' ? '#3e5a44' : '#5a4a3a';
+      ctx.fillRect(2, 4, 2, 10);
+      ctx.fillRect(12, 4, 2, 10);
+    }
+  }
+
+  const map = canvasTexture(c);
+  const glow = canvasTexture(gc);
+  for (const t of [map, glow]) t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return { map, glow };
+}
+
+/** What a roof is covered in. */
+export type RoofKind = 'slate' | 'tile' | 'thatch' | 'tin';
+
+export function makeRoofTexture(kind: RoofKind): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(kind.length * 131 + 7);
+  const t = ramp(kind === 'slate' ? '#3a4150' : kind === 'tile' ? '#7a3f2c' : kind === 'thatch' ? '#8a7440' : '#5a5e62');
+  ctx.fillStyle = t[2];
+  ctx.fillRect(0, 0, 16, 16);
+  if (kind === 'tin') {
+    // Corrugations running down the slope.
+    for (let x = 0; x < 16; x += 2) {
+      ctx.fillStyle = t[1];
+      ctx.fillRect(x, 0, 1, 16);
+    }
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = 'rgba(120,70,40,0.5)';
+      ctx.fillRect((rng() * 16) | 0, (rng() * 16) | 0, 1, 2);
+    }
+  } else if (kind === 'thatch') {
+    for (let y = 0; y < 16; y++) {
+      for (let x = 0; x < 16; x++) {
+        const k = rng();
+        ctx.fillStyle = k < 0.25 ? t[1] : k < 0.5 ? t[3] : t[2];
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+    ctx.fillStyle = t[4];
+    ctx.fillRect(0, 7, 16, 1);
+    ctx.fillRect(0, 15, 16, 1);
+  } else {
+    // Courses of tiles or slates, staggered, the lower edge of each course in shadow.
+    for (let y = 0; y < 16; y += 4) {
+      const off = (y / 4) % 2 ? 2 : 0;
+      for (let x = -off; x < 16; x += 4) {
+        ctx.fillStyle = rng() < 0.3 ? t[1] : t[2];
+        ctx.fillRect(x + 1, y, 3, 3);
+      }
+      ctx.fillStyle = t[4];
+      ctx.fillRect(0, y + 3, 16, 1);
+    }
+  }
+  const tex = canvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+/**
+ * The decorations a building wears on its street face, on one atlas: a door, a shop window, an
+ * awning's stripes, a hanging sign, a loading door. The layout is `buildings.ts` `TRIM`, in units
+ * of sixteen pixels.
+ */
+export function makeTrimAtlas(): THREE.Texture {
+  const { c, ctx } = makeCanvas(64, 32);
+  const wood = ramp('#5c3e26');
+  // The door: planks, a frame, a handle, a step of shadow at the foot.
+  ctx.fillStyle = '#1c1714';
+  ctx.fillRect(1, 1, 14, 31);
+  for (let x = 2; x < 14; x += 3) {
+    ctx.fillStyle = wood[(x / 3) % 2 ? 1 : 2];
+    ctx.fillRect(x, 2, 2, 29);
+  }
+  ctx.fillStyle = wood[3];
+  ctx.fillRect(2, 10, 12, 1);
+  ctx.fillRect(2, 22, 12, 1);
+  ctx.fillStyle = '#c8a050';
+  ctx.fillRect(11, 17, 1, 2);
+  // The shop window: a display behind glass, bottles and bolts of cloth.
+  ctx.fillStyle = '#1c1714';
+  ctx.fillRect(16, 0, 32, 16);
+  ctx.fillStyle = '#2a3440';
+  ctx.fillRect(17, 1, 30, 13);
+  const goods = ['#8a5a3a', '#6a8a5a', '#a0784a', '#5a6a8a', '#9a4a3a'];
+  for (let i = 0; i < 9; i++) {
+    ctx.fillStyle = goods[i % goods.length]!;
+    ctx.fillRect(18 + i * 3, 8 + (i % 3), 2, 6 - (i % 3));
+  }
+  ctx.fillStyle = '#46586a';
+  ctx.fillRect(17, 1, 1, 12);
+  ctx.fillStyle = '#1c1714';
+  ctx.fillRect(32, 1, 1, 13);
+  ctx.fillStyle = '#6a5a48';
+  ctx.fillRect(16, 14, 32, 2);
+  // The awning: stripes, and a scalloped edge.
+  for (let x = 16; x < 48; x++) {
+    ctx.fillStyle = ((x - 16) >> 2) % 2 ? '#d8cbb0' : '#8a3a30';
+    ctx.fillRect(x, 16, 1, 14);
+  }
+  for (let x = 16; x < 48; x += 4) {
+    ctx.fillStyle = 'rgba(0,0,0,0)';
+    ctx.clearRect(x + 1, 30, 2, 2);
+  }
+  // The sign: a board on two chains, a device painted on it.
+  ctx.fillStyle = '#2a2420';
+  ctx.fillRect(51, 0, 1, 3);
+  ctx.fillRect(59, 0, 1, 3);
+  ctx.fillStyle = wood[2];
+  ctx.fillRect(49, 3, 14, 11);
+  ctx.fillStyle = wood[4];
+  ctx.fillRect(49, 13, 14, 1);
+  ctx.fillStyle = '#c8a050';
+  ctx.fillRect(54, 6, 4, 5);
+  ctx.fillRect(53, 7, 6, 3);
+  // The loading door: two leaves, braced.
+  ctx.fillStyle = '#1c1714';
+  ctx.fillRect(48, 16, 16, 16);
+  for (const [x0] of [[49], [57]] as const) {
+    ctx.fillStyle = wood[2];
+    ctx.fillRect(x0, 17, 6, 15);
+    ctx.fillStyle = wood[3];
+    for (let i = 0; i < 6; i++) ctx.fillRect(x0 + i, 17 + i * 2.5, 1, 1);
+  }
+  return canvasTexture(c);
+}
+
+/** Leaves, for thickets, hedges and canopies. Three greens and a scatter of the dark between them. */
+export function makeLeafTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(311);
+  const t = ramp('#3e5a2e');
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const k = rng();
+      ctx.fillStyle = k < 0.18 ? t[1] : k < 0.3 ? t[0] : k < 0.72 ? t[2] : k < 0.9 ? t[3] : t[4];
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  const tex = canvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function makeBarkTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(8, 16);
+  const rng = mulberry32(97);
+  const t = ramp('#4a3a2c');
+  for (let x = 0; x < 8; x++) {
+    ctx.fillStyle = x < 2 ? t[1] : x < 6 ? t[2] : t[3];
+    ctx.fillRect(x, 0, 1, 16);
+  }
+  for (let i = 0; i < 10; i++) {
+    ctx.fillStyle = t[4];
+    ctx.fillRect((rng() * 8) | 0, (rng() * 16) | 0, 1, 2 + ((rng() * 3) | 0));
+  }
+  const tex = canvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+/** Grass over earth, for a mound: green on top of the colour, the earth showing through. */
+export function makeTurfTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(53);
+  const g = ramp('#4c5a36');
+  const e = ramp('#4a3e30');
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const k = rng();
+      ctx.fillStyle = k < 0.12 ? e[2] : k < 0.3 ? g[1] : k < 0.8 ? g[2] : g[3];
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  const tex = canvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+/** Ice: pale, streaked along the grain, a hard highlight on the lit face. */
+export function makeIceTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  const rng = mulberry32(29);
+  const t = ramp('#8aa8c0');
+  ctx.fillStyle = t[2];
+  ctx.fillRect(0, 0, 16, 16);
+  for (let i = 0; i < 14; i++) {
+    ctx.fillStyle = rng() < 0.5 ? t[1] : t[3];
+    const x = (rng() * 16) | 0;
+    ctx.fillRect(x, 0, 1, 16);
+  }
+  ctx.fillStyle = t[0];
+  ctx.fillRect(2, 2, 1, 5);
+  ctx.fillRect(9, 6, 1, 4);
+  const tex = canvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+/** Iron, rusting: the pylons. */
+export function makeIronTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(8, 8);
+  const rng = mulberry32(41);
+  ctx.fillStyle = '#2e3034';
+  ctx.fillRect(0, 0, 8, 8);
+  for (let i = 0; i < 8; i++) {
+    ctx.fillStyle = rng() < 0.5 ? '#5a3a28' : '#3e4248';
+    ctx.fillRect((rng() * 8) | 0, (rng() * 8) | 0, 1, 1);
+  }
+  const tex = canvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+/** A puff of smoke: a soft disc, for the chimneys. */
+export function makeSmokeTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(16, 16);
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const d = Math.hypot(x - 7.5, y - 7.5) / 7.5;
+      if (d >= 1) continue;
+      ctx.fillStyle = `rgba(150,146,140,${(1 - d) * 0.8})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
