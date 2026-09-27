@@ -88,7 +88,7 @@ the field.
 Between fights you are on the street. **WASD** walks, **Space** interacts with whatever the
 prompt names — a door, a bench, a notice, a chest, a patch of herbs, a bed — **I** opens the
 satchel, **J** opens the Field Journal from anywhere, **M** the map, **Q** and **E** turn the
-camera, **Esc** the menu. Doors lead into rooms: the trades are benches inside them, and a
+camera, the **mouse wheel** (or **+** and **-**) pulls it in and back, **Esc** the menu. Doors lead into rooms: the trades are benches inside them, and a
 good many contracts are fought behind one.
 
 ### Learning it
