@@ -83,6 +83,7 @@ import {
 } from './entities.js';
 import { isSafeAt, type AreaDef, type ExitSpec } from './map.js';
 import { NavGrid } from './nav.js';
+import { memberArt, memberTint, packBodies } from './memberArt.js';
 import {
   cullSatisfiedBy,
   errandFor,
@@ -1160,6 +1161,8 @@ export class DistrictScreen implements Screen {
     }
     if (packSpecs.length > 0) {
       const now = Date.now();
+      // One drawing per kind of body in this area, shared by every pack fielding it.
+      const memberArts = new Map<string, ActorArt>();
       for (const spec of packSpecs) {
         // Which crew this is, on which map -- the key its cooldown is kept under.
         const key = packClockKey(spec.encounterId, this.area.id, spec.id);
@@ -1167,12 +1170,22 @@ export class DistrictScreen implements Screen {
         if (!huntAvailable(last, now)) continue;
 
         const seed = hashText(key);
-        const art = actorArtFromTextures(
-          makeMinionTexture('front', seed),
-          makeMinionTexture('back', seed),
-          makeMinionTexture('side', seed),
-        );
-        this.heroArt.push(art);
+        // Its members, drawn the way the board will draw them. The hooded figure is for an
+        // encounter that is not a pack, which nothing places today.
+        const bodies = packBodies(spec.encounterId);
+        const bodyArt = bodies.map((defId) => {
+          let a = memberArts.get(defId);
+          if (!a) {
+            a = memberArt(defId);
+            memberArts.set(defId, a);
+            this.heroArt.push(a);
+          }
+          return a;
+        });
+        const art =
+          bodyArt[0] ??
+          actorArtFromTextures(makeMinionTexture('front', seed), makeMinionTexture('back', seed), makeMinionTexture('side', seed));
+        if (!bodyArt[0]) this.heroArt.push(art);
 
         const rng = makeRng(seed >>> 0);
         const pack = new Pack(
@@ -1187,12 +1200,18 @@ export class DistrictScreen implements Screen {
           {
             key,
             nav: this.nav ?? undefined,
+            ...(bodyArt.length > 0 ? { bodies: bodyArt.length, bodyArt } : {}),
             ...(spec.behaviour ? { behaviour: spec.behaviour } : {}),
             ...(spec.route ? { route: spec.route } : {}),
             ...(spec.sweep ? { sweep: spec.sweep } : {}),
           },
         );
         pack.onContact = () => this.ambush(spec.encounterId, key, pack);
+        // Each in its school's colour, as the board washes them.
+        pack.walkers.forEach((w, i) => {
+          const tint = bodies[i] ? memberTint(bodies[i]!) : null;
+          if (tint !== null) w.sprite.setTint(tint);
+        });
         pack.setSight(packSightAt(this.hour));
         // Spawned whatever the hour, and put on or off shift by the clock -- see
         // `Pack.setOnShift`. Skipping the build for an off-hours crew was the first version and

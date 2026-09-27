@@ -20,10 +20,8 @@ import type { UnitId } from '../../contract/ids.js';
 import type { EntityView, EntityViewMap } from '../../render/EntityViews.js';
 import { PALETTE, schoolOf } from '../../render/palette.js';
 import { loadCompanionSprite } from '../../render/sprites.js';
-import { hashText } from '../../core/util/rng.js';
-import { makeMinionTexture } from '../textures.js';
+import { memberArt } from '../memberArt.js';
 import {
-  actorArtFromTextures,
   buildActorArt,
   disposeActorArt,
   pickFacing,
@@ -292,16 +290,16 @@ export class BodyLayer {
     this.enemyStand = null;
   }
 
-  /** A procedural silhouette for an arbitrary key, cut once and shared with the bodies. */
+  /**
+   * A procedural silhouette for an arbitrary key, cut once and shared with the bodies.
+   *
+   * From `memberArt`, which is where the road's packs get theirs too -- so the crew that walked
+   * into you and the squad standing on the grid are the same drawings.
+   */
   private silhouette(key: string): ActorArt {
     const cached = this.artCache.get(key);
     if (cached) return cached;
-    const seed = hashText(key);
-    const art = actorArtFromTextures(
-      makeMinionTexture('front', seed),
-      makeMinionTexture('back', seed),
-      makeMinionTexture('side', seed),
-    );
+    const art = memberArt(key);
     this.artCache.set(key, art);
     return art;
   }

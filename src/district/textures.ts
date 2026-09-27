@@ -3286,3 +3286,140 @@ export function makeMinionTexture(facing: 'front' | 'back' | 'side', seed: numbe
   }
   return canvasTexture(c);
 }
+
+/**
+ * What a body out on the road is shaped like, read off the card it is.
+ *
+ * Every body used to be the same hooded figure -- a stray dog, a boar and a crow all walked the
+ * verge in a cowl -- which told the player nothing about what they were about to fight, and made
+ * a road with six packs on it read as one crowd. Six shapes is not a bestiary, and it is not
+ * meant to be: it is enough that a hound reads as four legs, a wisp as a light, a golem as a
+ * block and a crow as something with wings, at the distance the walk camera keeps.
+ */
+export type CreatureShape = 'humanoid' | 'beast' | 'flyer' | 'wisp' | 'crawler' | 'construct';
+
+/**
+ * The same 14 by 22 canvas every minion is drawn on, so a body's size on screen is its height
+ * and nothing else -- a hound is short because it is drawn in the bottom half, not because the
+ * sprite was scaled. Colours are mid-dark and near neutral on purpose: the school tint laid over
+ * a body on the board (and now on the road) multiplies them, and a saturated base would fight
+ * it. One warm mark per body -- an eye, a slit, a core -- is what reads across a dark road.
+ */
+export function makeCreatureTexture(facing: 'front' | 'back' | 'side', seed: number, shape: CreatureShape): THREE.Texture {
+  if (shape === 'humanoid') return makeMinionTexture(facing, seed);
+  const { c, ctx } = makeCanvas(14, 22);
+  const rng = mulberry32(seed);
+  const hide = ['#5a5650', '#57524a', '#4f5552', '#5b5049'][(rng() * 4) | 0]!;
+  const shade = '#34312d';
+  const mark = '#e07a42';
+  const px = (x: number, y: number, w: number, h: number, col: string): void => {
+    ctx.fillStyle = col;
+    ctx.fillRect(x, y, w, h);
+  };
+
+  if (shape === 'beast') {
+    if (facing === 'side') {
+      px(2, 12, 10, 5, hide); // body
+      px(2, 16, 10, 1, shade); // belly
+      px(10, 10, 4, 5, hide); // head
+      px(11, 9, 1, 1, hide); // ear
+      px(12, 11, 1, 1, mark); // eye
+      px(0, 11, 2, 2, hide); // tail
+      for (const lx of [3, 5, 8, 10]) px(lx, 17, 1, 5, shade); // legs
+    } else {
+      px(3, 13, 8, 5, hide); // body behind
+      if (facing === 'front') {
+        px(5, 10, 4, 5, hide); // head
+        px(5, 9, 1, 1, hide);
+        px(8, 9, 1, 1, hide); // ears
+        px(5, 11, 1, 1, mark);
+        px(8, 11, 1, 1, mark); // eyes
+      } else {
+        px(6, 10, 2, 3, hide); // tail up
+      }
+      for (const lx of [4, 9]) px(lx, 18, 1, 4, shade);
+    }
+  } else if (shape === 'flyer') {
+    if (facing === 'side') {
+      px(5, 8, 5, 4, hide); // body
+      px(3, 4, 5, 2, hide);
+      px(4, 6, 4, 2, hide); // wing raised
+      px(9, 7, 3, 3, hide); // head
+      px(10, 8, 1, 1, mark); // eye
+      px(2, 9, 3, 2, shade); // tail
+      px(6, 12, 1, 2, shade); // a leg tucked
+    } else {
+      px(5, 7, 4, 6, hide); // body
+      px(0, 6, 5, 2, hide);
+      px(9, 6, 5, 2, hide); // wings out
+      px(1, 8, 3, 1, shade);
+      px(10, 8, 3, 1, shade); // wing edge
+      px(5, 4, 4, 3, hide); // head
+      if (facing === 'front') {
+        px(5, 5, 1, 1, mark);
+        px(8, 5, 1, 1, mark);
+      }
+    }
+  } else if (shape === 'wisp') {
+    // A light, not a body: a core with a halo, flames licking up off it, nothing touching the
+    // ground. Lighter than the others so the tint reads as the colour of the light.
+    const halo = '#a8a294';
+    const core = '#e8e0cc';
+    px(4, 8, 6, 7, halo);
+    px(3, 9, 8, 5, halo);
+    px(5, 9, 4, 5, core);
+    px(6, 5, 2, 3, halo);
+    px(5, 6, 1, 2, halo);
+    px(8, 6, 1, 2, halo); // flames
+    px(6, 15, 2, 2, halo); // a wisp of tail
+    if (facing !== 'back') {
+      px(5, 10, 1, 1, shade);
+      px(8, 10, 1, 1, shade); // eyes, dark on the light
+    }
+  } else if (shape === 'crawler') {
+    if (facing === 'side') {
+      px(1, 17, 10, 3, hide); // long low body
+      px(1, 19, 10, 1, shade);
+      px(10, 15, 4, 4, hide); // head
+      px(12, 16, 1, 1, mark); // eye
+      px(0, 18, 1, 2, hide); // tail tip
+      for (const lx of [2, 5, 8]) px(lx, 20, 1, 2, shade); // stubby legs
+    } else {
+      px(2, 16, 10, 4, hide);
+      px(2, 19, 10, 1, shade);
+      px(4, 14, 6, 3, hide); // head, low
+      if (facing === 'front') {
+        px(5, 15, 1, 1, mark);
+        px(8, 15, 1, 1, mark);
+      }
+      px(2, 20, 1, 2, shade);
+      px(11, 20, 1, 2, shade);
+    }
+  } else {
+    // A construct: shoulders wider than anything alive, a small square head, one lit slit.
+    const plate = '#6a655c';
+    if (facing === 'side') {
+      px(4, 5, 7, 6, hide); // shoulder
+      px(5, 11, 5, 5, hide); // torso
+      px(6, 2, 4, 3, hide); // head
+      px(9, 3, 1, 1, mark); // slit, side-on
+      px(2, 6, 2, 8, shade); // the near arm
+      px(5, 16, 2, 6, shade);
+      px(8, 16, 2, 6, shade); // legs
+      px(5, 11, 5, 1, plate);
+    } else {
+      px(1, 5, 12, 5, hide); // shoulders
+      px(3, 10, 8, 6, hide); // torso
+      px(5, 2, 4, 3, hide); // head
+      if (facing === 'front') px(5, 3, 4, 1, mark); // slit
+      px(0, 6, 1, 8, shade);
+      px(13, 6, 1, 8, shade); // arms
+      px(3, 16, 3, 6, shade);
+      px(8, 16, 3, 6, shade); // legs
+      px(3, 10, 8, 1, plate);
+      px(3, 13, 8, 1, plate); // plating
+    }
+  }
+  return canvasTexture(c);
+}
+
