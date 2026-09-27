@@ -354,12 +354,17 @@ export function dayOf(night: AmbientDef): Lit {
     ),
     skyColor: mixHex(night.skyColor, DAY_SKY, 0.7),
     groundBounce: mixHex(night.groundBounce, DAY_BOUNCE, 0.5),
-    // The one that actually does the work. See the header: fog colour is a ceiling, and a day
-    // that raised the lights inside the same grey box would be a brighter lamp in the same room.
-    fogColor: mixHex(night.fogColor, DAY_FOG, 0.72),
-    // Barely thinner. A smog city in daylight is not a clear one -- it is a place where you can
-    // finally see how much smog there is.
-    fogDensity: night.fogDensity * 0.9,
+    // Lifted, because fog colour is a ceiling (see the header) and a day that raised the lights
+    // inside the same dark box would be a brighter lamp in the same room -- but only halfway to
+    // the day's grey. At three quarters, which it was, the fog was the brightest thing on screen:
+    // noon in Ashfall was a beige sheet with the player standing in it.
+    fogColor: mixHex(night.fogColor, DAY_FOG, 0.5),
+    // Half as thick. It was nine tenths, on the reading that a smog city by day is a place where
+    // you can finally see how much smog there is -- and seen from the walk camera that meant a
+    // third of the fog's colour laid over the player and more over everything past them, which
+    // reads as a washed-out screen rather than as smog. Half keeps the air visible past the
+    // frame and gives the street its contrast back.
+    fogDensity: night.fogDensity * 0.5,
   };
   return { ...base, ...(night.day ?? {}) };
 }
