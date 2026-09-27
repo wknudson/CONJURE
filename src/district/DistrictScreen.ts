@@ -57,6 +57,7 @@ import {
 } from './sprites3d.js';
 import {
   CRITTER_ART,
+  makeMarkTexture,
   makeMinionTexture,
   makeWardenTexture,
   sheetFrameTexture,
@@ -442,6 +443,9 @@ export class DistrictScreen implements Screen {
    * are complete, and only where something walks with a purpose -- see `nav.ts`.
    */
   private nav: NavGrid | null = null;
+  /** The `?` or `!` over each pack's head. See `Pack.mark` and `updateMarks`. */
+  private readonly marks = new Map<Pack, THREE.Sprite>();
+  private markTex: { '?': THREE.Texture; '!': THREE.Texture } | null = null;
   /**
    * The animals.
    *
@@ -1230,6 +1234,19 @@ export class DistrictScreen implements Screen {
         this.world.scene.add(pack.aggroRing);
         this.packs.push(pack);
         this.updatables.push(pack);
+
+        // Its mark, hidden until it has something to say. Over the depth buffer, so a mark over
+        // a pack standing behind a wall is still read -- it is the one thing that tells you a
+        // hunter you cannot see has noticed you.
+        this.markTex ??= { '?': makeMarkTexture('?'), '!': makeMarkTexture('!') };
+        const bubble = new THREE.Sprite(
+          new THREE.SpriteMaterial({ map: this.markTex['?'], depthTest: false, transparent: true }),
+        );
+        bubble.scale.set(0.75, 0.92, 1);
+        bubble.renderOrder = 30;
+        bubble.visible = false;
+        this.world.scene.add(bubble);
+        this.marks.set(pack, bubble);
       }
     }
 
@@ -1711,6 +1728,8 @@ export class DistrictScreen implements Screen {
       this.ring?.update(dt);
     }
 
+    this.updateMarks();
+
     // The clock, and everything that reads it. See `hour` above for why this ticks on the
     // street rather than only on a crossing.
     this.tickClock(dt);
@@ -1838,6 +1857,23 @@ export class DistrictScreen implements Screen {
     if (import.meta.env.DEV) this.samplePerf(dt);
     this.raf = requestAnimationFrame(this.loop);
   };
+
+  /** Each pack's mark, over its leader's head, showing what `Pack.mark` says it is thinking. */
+  private updateMarks(): void {
+    const tex = this.markTex;
+    if (!tex) return;
+    for (const [pack, bubble] of this.marks) {
+      const mark = this.combat ? null : pack.mark;
+      bubble.visible = mark !== null;
+      if (!mark) continue;
+      if (bubble.material.map !== tex[mark]) {
+        bubble.material.map = tex[mark];
+        bubble.material.needsUpdate = true;
+      }
+      // A bob, so it reads as a thought rather than a label nailed over them.
+      bubble.position.set(pack.position.x, 2.75 + Math.sin(this.elapsed * 5) * 0.06, pack.position.z);
+    }
+  }
 
   /** Frames and seconds since `PERF` was last written. Development only. */
   private perfFrames = 0;

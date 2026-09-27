@@ -3423,3 +3423,36 @@ export function makeCreatureTexture(facing: 'front' | 'back' | 'side', seed: num
   return canvasTexture(c);
 }
 
+/**
+ * The mark over a pack's head: `?` while it is making up its mind or looking for you, `!` when
+ * it has decided.
+ *
+ * The one thing on the road that tells a player what a hunter is *thinking*, which is what makes
+ * the suspicion meter a thing you can play against rather than a number you find out about by
+ * being chased. Pixel art on a small bubble, amber for a question and red for an answer, so it
+ * reads against both the night and the noon.
+ */
+export function makeMarkTexture(mark: '?' | '!'): THREE.Texture {
+  const { c, ctx } = makeCanvas(9, 11);
+  const fill = mark === '?' ? '#e8b04a' : '#e8553a';
+  ctx.fillStyle = '#17141a';
+  ctx.fillRect(1, 0, 7, 9);
+  ctx.fillRect(0, 1, 9, 7); // the outline
+  ctx.fillRect(3, 9, 3, 1);
+  ctx.fillRect(4, 10, 1, 1); // the tail
+  ctx.fillStyle = fill;
+  ctx.fillRect(2, 1, 5, 7);
+  ctx.fillRect(1, 2, 7, 5); // the bubble
+  ctx.fillRect(4, 9, 1, 1);
+  ctx.fillStyle = '#17141a';
+  if (mark === '!') {
+    ctx.fillRect(4, 2, 1, 3);
+    ctx.fillRect(4, 6, 1, 1);
+  } else {
+    ctx.fillRect(3, 2, 3, 1);
+    ctx.fillRect(5, 3, 1, 1);
+    ctx.fillRect(4, 4, 1, 1);
+    ctx.fillRect(4, 6, 1, 1);
+  }
+  return canvasTexture(c);
+}
