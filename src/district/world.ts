@@ -157,6 +157,15 @@ export class DistrictWorld {
   private readonly pool: THREE.PointLight[] = [];
   /** Each fire's share of a pool light this frame. Sized once the fires are all known. */
   private shares = new Float32Array(0);
+  /**
+   * Everything standing loose on the ground that is not a building: trees, plants, fences,
+   * decals, crates, lamp posts, the board. See `setArena` -- these are hidden, not faded, when a
+   * fight is laid over them, because the arena search looks for ground free of *walls* and
+   * leaves the furniture where it stands.
+   */
+  private readonly loose: { obj: THREE.Object3D; x: number; z: number; r: number }[] = [];
+  /** What `setArena` hid, so clearing it shows exactly those and nothing that was already out. */
+  private readonly hiddenForArena: THREE.Object3D[] = [];
   /** One picture per kind of furniture, for the life of this world. See the build loop. */
   private readonly dressTex = new Map<string, THREE.Texture>();
   /**
@@ -433,7 +442,11 @@ export class DistrictWorld {
       // Trees are not `dressing` -- `props.trees` predates the registry -- so the sway that the
       // plants get from `SWAYS` is applied here directly. A quarter of a plant's amplitude:
       // a tree is a trunk with a canopy on it, and bracken-sized movement makes it rubber.
-      for (const t of trees) this.addBillboard(treeTexture, 3, 4, t.x, t.z).setSway(0.05);
+      for (const t of trees) {
+        const tree = this.addBillboard(treeTexture, 3, 4, t.x, t.z);
+        tree.setSway(0.05);
+        this.loose.push({ obj: tree, x: t.x, z: t.z, r: 1.5 });
+      }
     }
 
     const crates = area.props.crates ?? [];
@@ -553,6 +566,7 @@ export class DistrictWorld {
       this.scene.add(boardPost);
       const board = this.addBillboard(makeBoardTexture(), 2.4, 2.0, boardAt.x, boardAt.z);
       board.position.y = 1.4;
+      this.loose.push({ obj: boardPost, x: boardAt.x, z: boardAt.z, r: 1.2 }, { obj: board, x: boardAt.x, z: boardAt.z, r: 1.2 });
     }
 
     /* --- the gates ---
@@ -668,6 +682,7 @@ export class DistrictWorld {
       // Scaled by the prop's own height, so a tall reed leans further than a mushroom does
       // while both bend by the same angle. A flat amplitude makes the small things wobble.
       if (SWAYS.has(spec.kind)) b.setSway(0.035 * size);
+      this.loose.push({ obj: b, x: spec.x, z: spec.z, r: (size * aspect) / 2 });
     } else if (kind.form === 'panel') {
       // Deliberately not a `BillboardSprite`, and deliberately not pushed into `billboards`:
       // holding the yaw it was given is the entire reason this form exists.
@@ -694,6 +709,7 @@ export class DistrictWorld {
       // awning swing through most of a metre.
       if (SWAYS.has(spec.kind)) applySway(panel.material, 0.03 * size, size);
       this.scene.add(panel);
+      this.loose.push({ obj: panel, x: spec.x, z: spec.z, r: (size * aspect) / 2 });
     } else if (kind.form === 'ground') {
       // Lambert, not Basic: the ground plane it lies on is Lambert, and an unlit decal would
       // glow on a dark street instead of taking the ward's light with everything else.
@@ -712,6 +728,7 @@ export class DistrictWorld {
       decal.position.set(spec.x, 0.03, spec.z);
       decal.renderOrder = 1;
       this.scene.add(decal);
+      this.loose.push({ obj: decal, x: spec.x, z: spec.z, r: size / 2 });
     } else {
       const box = new THREE.Mesh(
         new THREE.BoxGeometry(size * aspect, size, size),
@@ -758,6 +775,7 @@ export class DistrictWorld {
     crate.castShadow = true;
     crate.receiveShadow = true;
     this.scene.add(crate);
+    this.loose.push({ obj: crate, x, z, r: s / 2 });
   }
 
   private addStructure(
@@ -857,6 +875,10 @@ export class DistrictWorld {
     );
     head.position.set(x, 3.6, z);
     this.scene.add(head);
+    // The post and its head go if a fight is laid over them; the light it casts is the pool's,
+    // and a fire in the arena keeps lighting it -- which is the right picture for a street lamp
+    // whose post is simply out of the shot.
+    this.loose.push({ obj: pole, x, z, r: 0.3 }, { obj: head, x, z, r: 0.3 });
 
     const lamp: Lamp = {
       x,
@@ -1104,6 +1126,19 @@ export class DistrictWorld {
 
   setArena(rect: { x0: number; z0: number; x1: number; z1: number } | null): void {
     this.arena = rect;
+    // Buildings and box props fade through `updateOccluders`. Everything else loose on the ground
+    // inside the footprint is simply taken away while the board is up: a tree or a fence standing
+    // in the middle of the grid is the same complaint as a wall, and nothing fades a billboard.
+    for (const o of this.hiddenForArena) o.visible = true;
+    this.hiddenForArena.length = 0;
+    if (!rect) return;
+    for (const l of this.loose) {
+      if (!l.obj.visible) continue;
+      if (l.x + l.r > rect.x0 && l.x - l.r < rect.x1 && l.z + l.r > rect.z0 && l.z - l.r < rect.z1) {
+        l.obj.visible = false;
+        this.hiddenForArena.push(l.obj);
+      }
+    }
   }
 
   /**
@@ -1347,5 +1382,7 @@ export class DistrictWorld {
     this.hitboxes.length = 0;
     this.lamps.length = 0;
     this.signs.length = 0;
+    this.loose.length = 0;
+    this.hiddenForArena.length = 0;
   }
 }
