@@ -1007,7 +1007,8 @@ Every one of them is addressed into an area by `${areaId}:${slug}`. `AreaProps` 
 
 ### The count
 
-Thirty-nine rooms. Nineteen areas, every one of them larger — the wards to twenty-eight and
+Thirty-seven rooms (the count said thirty-nine for a wave; `areas/index.ts` registers thirty-seven,
+and so does §2.8 of the atlas when its table is added up). Nineteen areas, every one of them larger — the wards to twenty-eight and
 thirty-odd tiles a side, the Ring towns half again, the Wildlands with a ring of new ground and a
 mouth in the north wall of each. Eleven contract sites moved indoors. Sixty-odd readables,
 forty-odd caches, thirty-odd forage nodes, ten beds, two new stalls, eight new townsfolk with
@@ -1022,4 +1023,50 @@ scripts, eight new errands, two new signs, eighteen new pieces of furniture with
 | The bench screens | the three old 2D screens | the room *is* the shop now, but the screen is still a screen. The bench pins your spot and the screen comes back to it, which is the seam you can see |
 | The Wildlands' ground | one texture per region with a ring added | the enrichment pass `enrich-ground.ts` was written for. The rooms landed; the floors did not |
 | Room ceilings | none | a roof. Deliberate — see above — but a room with weather over it is still a courtyard |
-| The Browser pane | spot-checks of every ward and the first Ring rooms | a walk through all thirty-nine. The rest were verified by the placement suite and by prompts read off the screen object, not by eye |
+| The Browser pane | spot-checks of every ward and the first Ring rooms | a walk through all thirty-seven. The rest were verified by the placement suite and by prompts read off the screen object, not by eye |
+
+## Wave 15 — a bigger world, and something in it (in progress)
+
+*"Make all of the existing world creation more immersive and fun. Each area bigger and better
+thought out ... more enemies patrolling, things to look at, buildings."* Read against the world as
+Wave 14 left it, that is four findings. Buildings are boxes: one `BoxGeometry` per run of solid
+tiles, a parapet, sometimes a chimney, every area's heights drawn off the same seed. Sixteen of the
+nineteen outdoor places have nothing roaming them, the eight crews there are all drawn as the same
+hooded figure, and they wander a circle, see through walls and cannot path round a corner. There is
+no verb for looking at anything, and the furniture was placed by a search at one prop per eighteen
+tiles — the note above says it: nothing is *composed*. And the play space is small for its camera,
+which frames five tiles by four.
+
+The wave is nine pieces, each its own pull request, in this order: the foundations; the patrols
+(sight that walls block, paths round buildings, beats and sentries and prowlers, a suspicion meter
+and a search); themed crews for every region, through the balance ledger; a building kit (roofs,
+windows lit after dark, doors, signs, smoke) and ground clutter; things to look at (a sights
+registry, a landmark per area, vignettes that are composed rather than searched); three area passes
+— the city, the Ring, the Wildlands — that grow every outdoor place by half again to double and
+recompose it; and townsfolk who keep hours. Growth is even on every side, so nothing already placed
+moves. Open-source work is used for its ideas where its licence is GPL (watabou's town generator for
+lot subdivision, Brogue CE for waypoint wandering, OpenMW for NPC packages, Cataclysm-DDA for nested
+chunks, Veloren for buildings as primitives) and ported with credit where it is MIT (Bridson
+sampling after kchapelier, simplex after jwagner).
+
+### 15.1 Foundations (built)
+
+Nothing in it is new content; it is what makes bigger, denser places affordable and readable.
+
+| Piece | What it does |
+|---|---|
+| The collider index | `ColliderSet` buckets boxes by tile, so `blocked` reads the one to four buckets a body touches instead of scanning every box. A test asks the index and a plain scan the same question across every area |
+| The reachability flood | once per area rather than once per exit, with an index-walked queue — the slowest thing in `district.test.ts` on a grown map |
+| `noise.ts`, `poisson.ts` | seeded 2-D simplex and Poisson-disk sampling in `core/util`, for the ground and scatter passes to come |
+| `scripts/grow-area.ts` | pads a grid evenly, rewrites `xOfCol`/`zOfRow`, widens a north canal, moves edge exits with the edge and the neighbour's arrival with them; run in memory on every area file by a test |
+| An arrival net | `district.test.ts` refuses an arrival more than six tiles from the way back, which is what a stale one looks like after its destination grows |
+| The light pool | ten real point lights per area, handed each frame to the nearest lamps, braziers and vents and faded across the hand-over so nothing flashes. Ashfall drew seventeen |
+| The arena clears | a street fight hides every tree, plant, fence, decal, crate and lamp post under the board, and puts back exactly those |
+| Freezing | a critter or an off-shift crew more than forty-five units from the camera's subject skips its update — skipped, never slowed, for the no-tunnelling bound |
+| The Perf folder | frames, draw calls, triangles, lights burning, geometries, textures and updatables in the dev tuning panel and on `WARD.PERF`. The Chalk Verge reads ninety-one draw calls |
+| Noon | half the fog, half the lift toward grey. It was a beige sheet with the Commander in it; a test holds the fog over the player under a sixth at noon, and ash and drizzle took day colours to stay visible against it |
+| Zoom | the wheel, or + and -, from 0.85 to 1.6 of the walk distance, kept across crossings, rooms capped at 1.25, fog thinned by the same factor |
+
+Deferred to the first area pass: letting `place-dressing`, `place-wildlife` and `enrich-ground`
+re-run on the new outer ring. They are driven by hand-written plans per area, and there is nothing
+to plan until an area has grown.

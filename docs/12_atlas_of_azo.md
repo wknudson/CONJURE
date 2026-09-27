@@ -22,7 +22,7 @@ Every entry below carries one of these. The distinction is the entire point of t
 | 🟡 **Arena only** | Fights happen *there* — a registered `EncounterDef` names it — but it is a combat grid, not a place. You never walk to it; you accept a contract and the board loads. |
 | ⚪ **Named only** | Appears in flavour text or dialogue. Nothing in code references it as a location. |
 
-**Nineteen named places. All nineteen are walkable, and thirty-nine rooms open off them.**
+**Nineteen named places. All nineteen are walkable, and thirty-seven rooms open off them.**
 
 A room is an `AreaDef` like any other, with `indoor` set: you walk through a door drawn on a
 building's face and the room mounts as its own area, lit at the night anchor whatever the clock
