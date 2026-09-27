@@ -1593,7 +1593,7 @@ export class DistrictScreen implements Screen {
     // The clock, and everything that reads it. See `hour` above for why this ticks on the
     // street rather than only on a crossing.
     this.tickClock(dt);
-    world.updateLamps(this.elapsed);
+    world.updateLamps(this.elapsed, anchor.x, anchor.z);
     world.updateImpactLights(dt);
     world.scrollWater(dt);
     world.updateRises(dt, Math.random);
