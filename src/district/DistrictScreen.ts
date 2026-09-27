@@ -162,6 +162,32 @@ const SHINY_TINT = 0xffe9a8;
 const WARDEN_ENCOUNTER = 'warden_writ';
 
 /**
+ * How far from whoever the camera follows a critter or an off-shift crew stops being updated.
+ *
+ * The walk camera frames about twenty units by fifteen, and the fog has closed well before
+ * forty-five. Past that a hare nobody can see does not need to decide where to wander next,
+ * and a crew that is not on the road does not need to stroll invisibly round its patch -- and
+ * on the grown maps there are a great many of both.
+ */
+const FREEZE_RANGE = 45;
+
+/**
+ * Whether this one can skip its update this frame.
+ *
+ * Skipped, never slowed. An update with the time it missed added up would step a body further
+ * than `collision.ts`'s no-tunnelling bound allows, so a frozen thing simply resumes from where it
+ * stood. Only the two kinds that are pure scenery at a distance: an on-shift pack is on the map
+ * panel, moving, and a Warden walks a timetable the clock decides, so both always run.
+ */
+function farAndIdle(u: Updatable, at: THREE.Vector3): boolean {
+  if (u instanceof Critter) return Math.hypot(u.position.x - at.x, u.position.z - at.z) > FREEZE_RANGE;
+  if (u instanceof Pack && !u.onShift) {
+    return Math.hypot(u.position.x - at.x, u.position.z - at.z) > FREEZE_RANGE;
+  }
+  return false;
+}
+
+/**
  * Everything a fight needs that only the profile can answer.
  *
  * The district knows a pack was walked into and where it happened. It does not know which
@@ -1585,7 +1611,10 @@ export class DistrictScreen implements Screen {
     // or the Warden walking through it -- would be the loudest possible reminder that the
     // board is pasted onto a world still going about its business.
     if (!this.combat) {
-      for (const u of this.updatables) u.update(dt, this.elapsed, this.cameraYaw);
+      for (const u of this.updatables) {
+        if (farAndIdle(u, anchor)) continue;
+        u.update(dt, this.elapsed, this.cameraYaw);
+      }
     } else {
       this.ring?.update(dt);
     }
