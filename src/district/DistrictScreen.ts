@@ -399,7 +399,12 @@ export class DistrictScreen implements Screen {
 
   private player: Walker | null = null;
   private follower: CompanionFollower | null = null;
-  private warden: Warden | null = null;
+  /**
+   * Every Warden walking a beat here -- one per ring of waypoints in `patrols`. Only the first
+   * ring was ever built, so an area could not have a Warden on the plaza and another in the
+   * alleys; a grown ward wants both.
+   */
+  private readonly wardens: Warden[] = [];
   /**
    * Everyone standing in this ward, the Dispatcher included.
    *
@@ -672,7 +677,8 @@ export class DistrictScreen implements Screen {
         player: () => this.player,
         follower: () => this.follower,
         packs: () => this.packs,
-        warden: () => this.warden,
+        warden: () => this.wardens[0] ?? null,
+        wardens: () => this.wardens,
         combat: () => this.combat,
         cameraYaw: () => this.cameraYaw,
         setCameraYaw: (v: number) => void (this.cameraYaw = v),
@@ -718,7 +724,7 @@ export class DistrictScreen implements Screen {
         LOOK,
         PERF,
         player: () => this.player?.position,
-        warden: () => this.warden,
+        warden: () => this.wardens[0] ?? null,
         flags: () => this.flags,
         safe: () => this.playerSafe,
         nearest: () => this.nearest?.interactLabel ?? null,
@@ -1138,17 +1144,19 @@ export class DistrictScreen implements Screen {
     // first half-second -- and he would have nowhere to be.
     this.walkTheRow();
 
-    const beat = this.area.props.patrols?.[0];
-    if (beat && wardenArt) {
-      this.warden = new Warden(wardenArt, 2.5, beat, colliders);
-      this.world.scene.add(this.warden.walker.sprite);
-      this.world.scene.add(this.warden.cone);
-      this.world.billboards.push(this.warden.walker.sprite);
-      this.updatables.push(this.warden);
-      this.warden.onCatch = () => this.arrest();
-      this.warden.setSight(wardenSightAt(this.hour));
-      this.warden.grace = wardenGraceAt(this.hour);
-      this.warden.onAlertChange = (on) => this.hud?.setAlert(on);
+    for (const beat of wardenArt ? (this.area.props.patrols ?? []) : []) {
+      const warden = new Warden(wardenArt!, 2.5, beat, colliders);
+      this.world.scene.add(warden.walker.sprite);
+      this.world.scene.add(warden.cone);
+      this.world.billboards.push(warden.walker.sprite);
+      this.updatables.push(warden);
+      warden.onCatch = () => this.arrest(warden);
+      warden.setSight(wardenSightAt(this.hour));
+      warden.grace = wardenGraceAt(this.hour);
+      // One alarm for the ward, raised while any of them is after you.
+      warden.onAlertChange = (on) =>
+        this.hud?.setAlert(on || this.wardens.some((w) => w !== warden && (w.state === 'ALERT' || w.state === 'CHASE')));
+      this.wardens.push(warden);
     }
 
     // The roaming packs.
@@ -1686,12 +1694,12 @@ export class DistrictScreen implements Screen {
     const camera = this.camera!;
     const anchor = this.player?.position ?? new THREE.Vector3(this.area.spawn.x, 0, this.area.spawn.z);
 
-    if (this.warden) {
-      this.warden.playerAt.copy(anchor);
-      this.warden.playerSafe = this.playerSafe;
+    for (const warden of this.wardens) {
+      warden.playerAt.copy(anchor);
+      warden.playerSafe = this.playerSafe;
       // Per frame rather than on the clock tick: the post is a function of the hour, and the
       // hour moves continuously. Assigning a number is cheaper than deciding whether to.
-      this.warden.hour = this.hour;
+      warden.hour = this.hour;
     }
     for (const npc of this.npcs) npc.playerAt = anchor;
     // Copied rather than aliased, unlike the NPCs above: a critter reads this every frame to
@@ -1784,15 +1792,11 @@ export class DistrictScreen implements Screen {
         sites: sitesInArea(this.area.id)
           .filter((site) => this.opts.bounties.some((b) => b.id === `story_${site.encounterId}`))
           .map((site) => ({ x: site.at.x, z: site.at.z, label: site.label })),
-        ...(this.warden
-          ? {
-              warden: {
-                x: this.warden.position.x,
-                z: this.warden.position.z,
-                alerted: this.warden.state === 'CHASE' || this.warden.state === 'ALERT',
-              },
-            }
-          : {}),
+        wardens: this.wardens.map((w) => ({
+          x: w.position.x,
+          z: w.position.z,
+          alerted: w.state === 'CHASE' || w.state === 'ALERT',
+        })),
       });
     }
 
@@ -1952,8 +1956,10 @@ export class DistrictScreen implements Screen {
     // the world, so the text and the light now move together, which is the point.
     this.hud?.renderLedger();
     this.walkTheRow();
-    this.warden?.setSight(wardenSightAt(this.hour));
-    if (this.warden) this.warden.grace = wardenGraceAt(this.hour);
+    for (const warden of this.wardens) {
+      warden.setSight(wardenSightAt(this.hour));
+      warden.grace = wardenGraceAt(this.hour);
+    }
     for (const pack of this.packs) {
       pack.setSight(packSightAt(this.hour));
       // Coming on and going off while the player watches, which is the whole of what a shift is.
@@ -2444,7 +2450,7 @@ export class DistrictScreen implements Screen {
     // screen instance: a Warden who cannot serve a second contract falls through to `seize`.
     for (const pack of this.packs) pack.setVisible(false);
     for (const critter of this.critters) critter.setVisible(false);
-    this.warden?.setVisible(false);
+    for (const warden of this.wardens) warden.setVisible(false);
     // The errand's cairn too. `setArena` fades *structures*, so a marker seated inside the
     // footprint would otherwise stand in the middle of the grid with a prompt over it.
     if (this.marker?.sprite) this.marker.sprite.visible = false;
@@ -2515,7 +2521,7 @@ export class DistrictScreen implements Screen {
     if (this.follower) this.follower.walker.sprite.visible = true;
     for (const pack of this.packs) pack.setVisible(true);
     for (const critter of this.critters) critter.setVisible(true);
-    this.warden?.setVisible(true);
+    for (const warden of this.wardens) warden.setVisible(true);
     if (this.marker?.sprite) this.marker.sprite.visible = true;
     this.descent = null;
     this.combatCam = null;
@@ -2541,9 +2547,8 @@ export class DistrictScreen implements Screen {
    * free, out of machinery that already exists, and is the best thing that can happen in this
    * ward.
    */
-  private arrest(): void {
-    const warden = this.warden;
-    if (this.inputLocked || !this.player || !warden || this.ring) return;
+  private arrest(warden: Warden): void {
+    if (this.inputLocked || !this.player || this.ring) return;
     this.inputLocked = true;
     this.writePosition({ x: this.lastRefuge.x, z: this.lastRefuge.z });
 
@@ -2577,7 +2582,7 @@ export class DistrictScreen implements Screen {
     this.player.position.set(this.lastSafePos.x, 0, this.lastSafePos.z);
     this.follower?.snapTo(this.lastSafePos.x - 1.2, this.lastSafePos.z + 1.0);
     this.playerSafe = true;
-    this.warden?.reset();
+    for (const warden of this.wardens) warden.reset();
   }
 
   private colliders(): ColliderSet {
@@ -2613,7 +2618,9 @@ export class DistrictScreen implements Screen {
       onTilt: () => this.post?.syncTilt(this.width(), this.height()),
       onLamps: () => this.world?.applyLamps(),
       onSigns: () => this.world?.applySigns(),
-      onVision: () => this.warden?.rebuildCone(),
+      onVision: () => {
+        for (const warden of this.wardens) warden.rebuildCone();
+      },
       onPackVision: () => {
         for (const pack of this.packs) pack.rebuildCone();
       },
