@@ -42,13 +42,13 @@ const LEVELS_LEGEND: Record<string, TileDef> = {
     tex: 'marsh',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.0, maxHeight: 5.0, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'stone' },
+    solid: { style: 'hall', minHeight: 5.0, maxHeight: 5.0, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'stone' },
   },
   T: {
     tex: 'grass',
     safe: false,
     walk: false,
-    solid: { minHeight: 3.2, maxHeight: 4.8, inset: 0.75, depthInset: 0.75, chimneyChance: 0, split: true },
+    solid: { style: 'foliage', minHeight: 3.2, maxHeight: 4.8, inset: 0.75, depthInset: 0.75, chimneyChance: 0, split: true },
   },
 };
 

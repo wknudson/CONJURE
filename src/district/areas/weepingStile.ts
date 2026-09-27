@@ -36,7 +36,7 @@ const STILE_LEGEND: Record<string, TileDef> = {
     tex: 'marsh',
     safe: false,
     walk: false,
-    solid: { minHeight: 3.8, maxHeight: 3.8, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone', bare: true },
+    solid: { style: 'wall', minHeight: 3.8, maxHeight: 3.8, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone', bare: true },
   },
   T: {
     tex: 'forest',
@@ -44,7 +44,7 @@ const STILE_LEGEND: Record<string, TileDef> = {
     walk: false,
     // Low and dense rather than tall: this is scrub you cannot get through, not timber you
     // walk under. Split, so a run of it breaks up instead of reading as one hedge.
-    solid: { minHeight: 2.8, maxHeight: 4.2, inset: 0.5, depthInset: 0.5, chimneyChance: 0, split: true },
+    solid: { style: 'foliage', minHeight: 2.8, maxHeight: 4.2, inset: 0.5, depthInset: 0.5, chimneyChance: 0, split: true },
   },
 };
 

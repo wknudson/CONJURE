@@ -40,25 +40,25 @@ const FEN_LEGEND: Record<string, TileDef> = {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 3.8, maxHeight: 5.6, inset: 0.35, depthInset: 0.35, chimneyChance: 0.55, split: true },
+    solid: { style: 'terrace', minHeight: 3.8, maxHeight: 5.6, inset: 0.35, depthInset: 0.35, chimneyChance: 0.55, split: true },
   },
   I: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 6.2, maxHeight: 6.2, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
+    solid: { style: 'shopfront', minHeight: 6.2, maxHeight: 6.2, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
   },
   X: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
+    solid: { style: 'hall', minHeight: 5.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
   },
   T: {
     tex: 'grass',
     safe: false,
     walk: false,
-    solid: { minHeight: 3.2, maxHeight: 4.6, inset: 0.75, depthInset: 0.75, chimneyChance: 0, split: true },
+    solid: { style: 'foliage', minHeight: 3.2, maxHeight: 4.6, inset: 0.75, depthInset: 0.75, chimneyChance: 0, split: true },
   },
 };
 

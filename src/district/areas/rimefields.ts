@@ -37,20 +37,20 @@ const RIME_LEGEND: Record<string, TileDef> = {
     tex: 'ice',
     safe: false,
     walk: false,
-    solid: { minHeight: 1.8, maxHeight: 2.8, inset: 0.05, depthInset: 0.6, chimneyChance: 0, split: false },
+    solid: { style: 'ice', minHeight: 1.8, maxHeight: 2.8, inset: 0.05, depthInset: 0.6, chimneyChance: 0, split: false },
   },
   R: {
     tex: 'snow',
     safe: false,
     walk: false,
-    solid: { minHeight: 7.0, maxHeight: 11.0, inset: 0.1, depthInset: 0.1, chimneyChance: 0, split: false },
+    solid: { style: 'rock', minHeight: 7.0, maxHeight: 11.0, inset: 0.1, depthInset: 0.1, chimneyChance: 0, split: false },
   },
   /** The cave mouth: rock, taken whole, with a door in the south face of it. */
   K: {
     tex: 'snow',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
+    solid: { style: 'rock', minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
   },
 };
 

@@ -40,13 +40,13 @@ const HOLLOW_LEGEND: Record<string, TileDef> = {
     tex: 'grass',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.2, maxHeight: 5.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'timber' },
+    solid: { style: 'cottage', minHeight: 5.2, maxHeight: 5.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'timber' },
   },
   T: {
     tex: 'grass',
     safe: false,
     walk: false,
-    solid: { minHeight: 3.0, maxHeight: 4.4, inset: 0.8, depthInset: 0.8, chimneyChance: 0, split: true },
+    solid: { style: 'foliage', minHeight: 3.0, maxHeight: 4.4, inset: 0.8, depthInset: 0.8, chimneyChance: 0, split: true },
   },
 };
 

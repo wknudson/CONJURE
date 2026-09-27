@@ -44,31 +44,31 @@ const COURT_LEGEND: Record<string, TileDef> = {
     tex: 'flagstone',
     safe: false,
     walk: false,
-    solid: { minHeight: 16, maxHeight: 16, inset: 0.1, depthInset: 0.1, chimneyChance: 0, split: false, wall: 'stone' },
+    solid: { style: 'tower', minHeight: 16, maxHeight: 16, inset: 0.1, depthInset: 0.1, chimneyChance: 0, split: false, wall: 'stone' },
   },
   V: {
     tex: 'flagstone',
     safe: false,
     walk: false,
-    solid: { minHeight: 1.6, maxHeight: 1.6, inset: 0.35, depthInset: 1.5, chimneyChance: 0, split: false },
+    solid: { style: 'wall', minHeight: 1.6, maxHeight: 1.6, inset: 0.35, depthInset: 1.5, chimneyChance: 0, split: false },
   },
   R: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.6, maxHeight: 5.6, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
+    solid: { style: 'shopfront', minHeight: 5.6, maxHeight: 5.6, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
   },
   U: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 4.2, maxHeight: 4.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
+    solid: { style: 'hall', minHeight: 4.2, maxHeight: 4.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
   },
   B: {
     tex: 'flagstone',
     safe: false,
     walk: false,
-    solid: { minHeight: 7.0, maxHeight: 9.5, inset: 0.4, depthInset: 0.4, chimneyChance: 0, split: false },
+    solid: { style: 'hall', minHeight: 7.0, maxHeight: 9.5, inset: 0.4, depthInset: 0.4, chimneyChance: 0, split: false },
   },
 };
 

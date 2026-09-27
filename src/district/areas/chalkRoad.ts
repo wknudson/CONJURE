@@ -49,19 +49,19 @@ const ROAD_LEGEND: Record<string, TileDef> = {
     tex: 'grass',
     safe: false,
     walk: false,
-    solid: { minHeight: 4.0, maxHeight: 5.4, inset: 0.7, depthInset: 0.7, chimneyChance: 0, split: true },
+    solid: { style: 'foliage', minHeight: 4.0, maxHeight: 5.4, inset: 0.7, depthInset: 0.7, chimneyChance: 0, split: true },
   },
   R: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 2.2, maxHeight: 3.6, inset: 0.5, depthInset: 0.5, chimneyChance: 0, split: false },
+    solid: { style: 'rock', minHeight: 2.2, maxHeight: 3.6, inset: 0.5, depthInset: 0.5, chimneyChance: 0, split: false },
   },
   W: {
     tex: 'weeds',
     safe: false,
     walk: false,
-    solid: { minHeight: 4.6, maxHeight: 4.6, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
+    solid: { style: 'cottage', minHeight: 4.6, maxHeight: 4.6, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
   },
 };
 

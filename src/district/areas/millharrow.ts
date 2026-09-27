@@ -46,25 +46,25 @@ const MILL_LEGEND: Record<string, TileDef> = {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 3.6, maxHeight: 5.2, inset: 0.35, depthInset: 0.35, chimneyChance: 0.5, split: true },
+    solid: { style: 'terrace', minHeight: 3.6, maxHeight: 5.2, inset: 0.35, depthInset: 0.35, chimneyChance: 0.5, split: true },
   },
   M: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 6.4, maxHeight: 6.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
+    solid: { style: 'hall', minHeight: 6.4, maxHeight: 6.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
   },
   G: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 3.2, maxHeight: 3.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
+    solid: { style: 'warehouse', minHeight: 3.2, maxHeight: 3.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
   },
   T: {
     tex: 'grass',
     safe: false,
     walk: false,
-    solid: { minHeight: 3.4, maxHeight: 4.6, inset: 0.7, depthInset: 0.7, chimneyChance: 0, split: true },
+    solid: { style: 'foliage', minHeight: 3.4, maxHeight: 4.6, inset: 0.7, depthInset: 0.7, chimneyChance: 0, split: true },
   },
 };
 

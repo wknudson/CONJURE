@@ -37,20 +37,20 @@ const SHELF_LEGEND: Record<string, TileDef> = {
     tex: 'blasted',
     safe: false,
     walk: false,
-    solid: { minHeight: 10.0, maxHeight: 12.5, inset: 1.55, depthInset: 1.55, chimneyChance: 0, split: false },
+    solid: { style: 'pylon', minHeight: 10.0, maxHeight: 12.5, inset: 1.55, depthInset: 1.55, chimneyChance: 0, split: false },
   },
   R: {
     tex: 'blasted',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.0, maxHeight: 8.0, inset: 0.15, depthInset: 0.15, chimneyChance: 0, split: false },
+    solid: { style: 'rock', minHeight: 5.0, maxHeight: 8.0, inset: 0.15, depthInset: 0.15, chimneyChance: 0, split: false },
   },
   /** The cave mouth: rock, taken whole, with a door in the south face of it. */
   K: {
     tex: 'blasted',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
+    solid: { style: 'rock', minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
   },
 };
 

@@ -37,14 +37,14 @@ const WOOD_LEGEND: Record<string, TileDef> = {
     tex: 'forest',
     safe: false,
     walk: false,
-    solid: { minHeight: 6.0, maxHeight: 9.5, inset: 1.0, depthInset: 1.0, chimneyChance: 0, split: true },
+    solid: { style: 'forest', minHeight: 6.0, maxHeight: 9.5, inset: 1.0, depthInset: 1.0, chimneyChance: 0, split: true },
   },
   /** The cave mouth: rock, taken whole, with a door in the south face of it. */
   K: {
     tex: 'litter',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
+    solid: { style: 'rock', minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
   },
 };
 

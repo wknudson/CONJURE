@@ -47,25 +47,25 @@ const SEVEN_LEGEND: Record<string, TileDef> = {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 2.2, maxHeight: 2.2, inset: 0.2, depthInset: 1.4, chimneyChance: 0, split: false },
+    solid: { style: 'wall', minHeight: 2.2, maxHeight: 2.2, inset: 0.2, depthInset: 1.4, chimneyChance: 0, split: false },
   },
   M: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'stone' },
+    solid: { style: 'hall', minHeight: 5.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'stone' },
   },
   L: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 4.4, maxHeight: 4.4, inset: 0.3, depthInset: 0.3, chimneyChance: 0.5, split: false, wall: 'plaster' },
+    solid: { style: 'cottage', minHeight: 4.4, maxHeight: 4.4, inset: 0.3, depthInset: 0.3, chimneyChance: 0.5, split: false, wall: 'plaster' },
   },
   B: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 4.2, maxHeight: 6.0, inset: 0.3, depthInset: 0.3, chimneyChance: 0.45, split: true },
+    solid: { style: 'terrace', minHeight: 4.2, maxHeight: 6.0, inset: 0.3, depthInset: 0.3, chimneyChance: 0.45, split: true },
   },
 };
 
