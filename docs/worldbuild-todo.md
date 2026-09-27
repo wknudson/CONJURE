@@ -1070,3 +1070,33 @@ Nothing in it is new content; it is what makes bigger, denser places affordable 
 Deferred to the first area pass: letting `place-dressing`, `place-wildlife` and `enrich-ground`
 re-run on the new outer ring. They are driven by hand-written plans per area, and there is nothing
 to plan until an area has grown.
+
+### 15.2 Patrols (built)
+
+Packs were a roadside hazard: a circle wandered, a cone that saw through walls, a third of a
+second's grace, a run straight at you that ground into the first building in the way, and three
+copies of one hooded figure whatever the pack was made of. Now they are something to read.
+
+| Piece | What it does |
+|---|---|
+| Sight | `sightClear` walks the tiles between watcher and watched; anything solid at eye height hides you, water and a kerb-high wall do not. Packs and Wardens both ask it, and their cones are fans of rays cut at the first wall, so the shadow behind a terrace is drawn as shadow |
+| The nav grid | `nav.ts`: one-unit cells from the real colliders, A* with no corner cutting, pulled tight; which ground connects to which; a waypoint lattice. Built once per area where anything patrols |
+| Behaviours | `roam` as before; `beat` a route of posts walked round; `sentry` one post and a swept gaze; `prowl` Brogue's wanderer over the whole area. `PackSpec` gains `behaviour`, `route`, `sweep` |
+| Noticing | suspicious at the edge of sight (a meter, faster the nearer you are, draining when you step out), certain up close, then the grace and the run; a `?` or `!` over the leader's head says which |
+| Losing you | out of sight it runs to where it last saw you, not to where you are; five seconds on that before a chase from afar gives up, and then it searches the spot and goes back to its business |
+| Its own crew | `packClockKey` keys the cooldown by crew and map (`encounter@area#id`), so clearing one waywatch no longer clears them all; the ring catches packs rather than kinds and the host is the pack that touched you |
+| Its members | `memberArt.ts`: the road draws a pack as its members, in six shapes by card (person, beast, flyer, wisp, crawler, construct) and its school's wash -- the same drawings the board uses, so what walked into you is what you fight |
+| Wardens | one per beat in `patrols`, not only the first |
+| The rules | `packReach` (a circle, a post, a closed route, or everything for a prowler) replaces `roam` in every placement rule; packs sharing a `band` overlap, bands keep a ring's reach apart; every `encounterId` is a pack, crews are distinct, beats are walkable and reachable, prowlers only where nobody lives, and nothing works within two units of a spawn, an exit or an arrival |
+
+No area uses a beat, a sentry, a prowler, a band or a second Warden yet. They arrive with the
+themed crews and the area passes; until then every pack roams as it did, and sees, notices, chases
+and searches the new way.
+
+### What is still standing in (15.1–15.2)
+
+| Where | Placeholder | Standing in for |
+|---|---|---|
+| Wardens | steer straight | the nav grid. A Warden's beat is on lanes it can walk and its chase is short, so it has not needed going round things yet; the grown wards will |
+| Creature shapes | six silhouettes on a 14 by 22 canvas | painted bodies. Enough to read a hound from a golem at the walk camera's range; not a bestiary |
+| The mark | over the leader only | a mark that follows whichever body is nearest you |
