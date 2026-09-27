@@ -33,7 +33,7 @@ import {
   type HeroFacing,
 } from '../render/sprites.js';
 
-import { LOOK, buildLookGui } from './look.js';
+import { LOOK, PERF, buildLookGui } from './look.js';
 import type { CoachMarks } from '../hud/Tutorial.js';
 import { renderUnsupported } from '../app/unsupported.js';
 import { ColliderSet } from './collision.js';
@@ -568,6 +568,9 @@ export class DistrictScreen implements Screen {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = LOOK.exposure;
+    // In development the frame's counts are read off `info` after the whole post chain has run,
+    // which means they must not reset between its passes. See `samplePerf`.
+    if (import.meta.env.DEV) renderer.info.autoReset = false;
     this.renderer = renderer;
 
     const colliders = new ColliderSet(this.area);
@@ -676,6 +679,7 @@ export class DistrictScreen implements Screen {
       (globalThis as Record<string, unknown>).WARD = {
         screen: this,
         LOOK,
+        PERF,
         player: () => this.player?.position,
         warden: () => this.warden,
         flags: () => this.flags,
@@ -1737,9 +1741,41 @@ export class DistrictScreen implements Screen {
       }
     }
 
+    if (import.meta.env.DEV) this.renderer!.info.reset();
     this.post!.composer.render();
+    if (import.meta.env.DEV) this.samplePerf(dt);
     this.raf = requestAnimationFrame(this.loop);
   };
+
+  /** Frames and seconds since `PERF` was last written. Development only. */
+  private perfFrames = 0;
+  private perfTime = 0;
+
+  /**
+   * Writes what this frame cost into `PERF`, twice a second, for the tuning panel's Perf folder.
+   *
+   * Counted over the whole post chain, because that is what the GPU is asked to do; the point
+   * lights are the ones actually burning, which is what the pool is meant to cap.
+   */
+  private samplePerf(dt: number): void {
+    this.perfFrames++;
+    this.perfTime += dt;
+    if (this.perfTime < 0.5) return;
+    const info = this.renderer!.info;
+    PERF.fps = Math.round(this.perfFrames / this.perfTime);
+    PERF.drawCalls = info.render.calls;
+    PERF.triangles = info.render.triangles;
+    PERF.geometries = info.memory.geometries;
+    PERF.textures = info.memory.textures;
+    PERF.updatables = this.updatables.length;
+    let lights = 0;
+    this.world?.scene.traverse((o) => {
+      if ((o as THREE.PointLight).isPointLight && (o as THREE.PointLight).intensity > 0) lights++;
+    });
+    PERF.pointLights = lights;
+    this.perfFrames = 0;
+    this.perfTime = 0;
+  }
 
   /**
    * Moves the hour, and the world with it.
