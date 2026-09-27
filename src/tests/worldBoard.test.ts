@@ -67,15 +67,19 @@ describe('the fight a road can actually start, fits on that road', () => {
     // that starts there is the Warden's — covered separately below. Demanding a clean 8x8
     // somewhere in a ward that is four terraces and a cross-street would be a test dictating
     // level design to satisfy a case that never occurs.
+    // Asked at home, and at every post of a beat: a crew on a beat is met along its route as
+    // often as at its start, and the fight is laid where the ring closed.
     for (const area of AREAS) {
       if (!area.props.packs?.length) continue;
       for (const spec of area.props.packs) {
-        const board = placeBoard(area, { x: spec.x, z: spec.z }, PACK_ARENA.w, PACK_ARENA.h);
-        expect(
-          board.clean,
-          `${area.id}: ${spec.encounterId} cannot seat a clean ${PACK_ARENA.w}x${PACK_ARENA.h} board`,
-        ).toBe(true);
-        expect(board.blockers).toHaveLength(0);
+        for (const at of [{ x: spec.x, z: spec.z }, ...(spec.route ?? [])]) {
+          const board = placeBoard(area, at, PACK_ARENA.w, PACK_ARENA.h);
+          expect(
+            board.clean,
+            `${area.id}: ${spec.encounterId} cannot seat a clean ${PACK_ARENA.w}x${PACK_ARENA.h} board near ${at.x},${at.z}`,
+          ).toBe(true);
+          expect(board.blockers).toHaveLength(0);
+        }
       }
     }
   });

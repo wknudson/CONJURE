@@ -22,6 +22,7 @@ import { BEAT_HOURS, beatPostAt } from '../district/daylight.js';
 import { ColliderSet } from '../district/collision.js';
 import { AREAS, CHALK_VERGE, LAMPROW } from '../district/areas/index.js';
 import { isSafeAt } from '../district/map.js';
+import { packReach, reachGap } from '../district/packReach.js';
 import { LOOK } from '../district/look.js';
 import { buildActorArt, type ActorArt } from '../district/sprites3d.js';
 
@@ -259,19 +260,27 @@ describe('every stretch of road packs share', () => {
   });
 
   for (const area of shared) {
-    it(`${area.id}: overlaps every pair of roam circles, so a pull can actually happen`, () => {
-      // If these drift apart the ring still works and never fires, which is the worst kind
-      // of broken: a feature that silently does nothing. Asked of every area rather than of
-      // the Verge alone, because the next map to field two packs will not think to ask.
-      const specs = area.props.packs ?? [];
+    it(`${area.id}: overlaps every pair in a band, and keeps bands out of each other's ring`, () => {
+      // Packs that share a stretch of road -- one `band`, or no band at all -- overlap, so a pull
+      // can actually happen: if they drift apart the ring still works and never fires, which is
+      // the worst kind of broken, a feature that silently does nothing. Packs in different bands
+      // are the other promise: far enough apart that no ring opened on one can reach the other,
+      // so a grown map can field six crews without every fight on it being three.
+      // Asked of every area rather than of the Verge alone, because the next map to field two
+      // packs will not think to ask. A prowler goes everywhere and is asked neither.
+      const specs = (area.props.packs ?? []).filter((s) => packReach(s));
       for (let i = 0; i < specs.length; i++) {
         for (let j = i + 1; j < specs.length; j++) {
           const a = specs[i]!;
           const b = specs[j]!;
-          const d = Math.hypot(a.x - b.x, a.z - b.z);
-          expect(d, `${a.encounterId} and ${b.encounterId} can never meet`).toBeLessThan(
-            a.roam + b.roam,
-          );
+          const gap = reachGap(packReach(a)!, packReach(b)!);
+          if ((a.band ?? '') === (b.band ?? '')) {
+            expect(gap, `${a.encounterId} and ${b.encounterId} share a band and can never meet`).toBeLessThan(0);
+          } else {
+            expect(gap, `${a.encounterId} and ${b.encounterId} are in different bands and one ring can reach both`).toBeGreaterThan(
+              CombatRing.RADIUS + 2,
+            );
+          }
         }
       }
     });

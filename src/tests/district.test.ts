@@ -35,6 +35,7 @@ import { CRITTERS, CRITTER_IDS, isCritterId } from '../district/wildlife.js';
 import { isSkyId, SKIES } from '../district/skies.js';
 import { FOLK_IDS, isFolkId } from '../render/folk.js';
 import { CONTRACT_SITES } from '../district/sites.js';
+import { outsideReach, packReach } from '../district/packReach.js';
 
 const SPAWN = ASHFALL.spawn;
 const BOARD_POS = ASHFALL.props.board!;
@@ -480,13 +481,17 @@ describe('every area', () => {
         // A hare living inside a pack's patch is a hare that spends the area being walked
         // through by three things trying to kill you. Compared patch to patch rather than
         // point to point, because neither of them stays where it was put.
+        // Asked of the ground the pack actually works -- its circle, a sentry's post, a beat's
+        // route -- through `packReach`. A prowler has the whole area and nothing can be kept out
+        // of it; animals scatter from one, which is what they are for.
         for (const w of area.props.wildlife ?? []) {
           for (const pk of area.props.packs ?? []) {
-            const gap = Math.hypot(w.x - pk.x, w.z - pk.z);
+            const reach = packReach(pk);
+            if (!reach) continue;
             expect(
-              gap,
+              outsideReach(reach, w),
               `${area.id}: ${w.kind} lives inside ${pk.encounterId}'s patch`,
-            ).toBeGreaterThan(pk.roam);
+            ).toBeGreaterThan(0);
           }
         }
       });
@@ -605,10 +610,10 @@ describe('every area', () => {
         // A townsperson in a roam circle is a person you must walk into a fight to talk to.
         for (const n of area.props.npcs ?? []) {
           for (const pk of area.props.packs ?? []) {
-            expect(
-              Math.hypot(n.x - pk.x, n.z - pk.z),
-              `${area.id}: ${n.id} is inside ${pk.encounterId}`,
-            ).toBeGreaterThan(pk.roam);
+            const reach = packReach(pk);
+            // A prowler goes everywhere, so it may not share a map with anybody at all.
+            expect(reach, `${area.id}: a prowler in a place with people in it`).not.toBeNull();
+            expect(outsideReach(reach!, n), `${area.id}: ${n.id} is inside ${pk.encounterId}`).toBeGreaterThan(0);
           }
         }
       });
