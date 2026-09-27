@@ -388,34 +388,34 @@ describe('every area', () => {
         // this walk cannot have is the pictures, so it walks against square furniture.
         for (const f of staticFootprints(area)) set.add(f.x, f.z, f.w, f.d, f.tag);
 
-        for (const exit of area.exits) {
-          // A coarse flood from the spawn: if the hotspot is reachable at all, some route
-          // of one-unit steps finds it.
-          const key = (x: number, z: number): string => `${Math.round(x)},${Math.round(z)}`;
-          const seen = new Set<string>([key(area.spawn.x, area.spawn.z)]);
-          const queue = [{ x: area.spawn.x, z: area.spawn.z }];
-          let found = false;
-          while (queue.length > 0 && !found) {
-            const at = queue.shift()!;
-            if (Math.hypot(at.x - exit.x, at.z - exit.z) < 2.6) {
-              found = true;
-              break;
-            }
-            for (const [dx, dz] of [
-              [1, 0],
-              [-1, 0],
-              [0, 1],
-              [0, -1],
-            ] as const) {
-              const nx = at.x + dx;
-              const nz = at.z + dz;
-              const k = key(nx, nz);
-              if (seen.has(k)) continue;
-              seen.add(k);
-              if (set.blocked(nx, nz, 0.4)) continue;
-              queue.push({ x: nx, z: nz });
-            }
+        // A coarse flood from the spawn: if a hotspot is reachable at all, some route of
+        // one-unit steps finds it. Flooded once and asked once per exit, rather than flooded
+        // afresh per exit: the answer is the same set, and on grown maps the per-exit version
+        // was the slowest thing in the file. The queue is walked by index because `shift` on
+        // a queue this long copies the whole of it every step.
+        const key = (x: number, z: number): string => `${Math.round(x)},${Math.round(z)}`;
+        const seen = new Set<string>([key(area.spawn.x, area.spawn.z)]);
+        const reached = [{ x: area.spawn.x, z: area.spawn.z }];
+        for (let head = 0; head < reached.length; head++) {
+          const at = reached[head]!;
+          for (const [dx, dz] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ] as const) {
+            const nx = at.x + dx;
+            const nz = at.z + dz;
+            const k = key(nx, nz);
+            if (seen.has(k)) continue;
+            seen.add(k);
+            if (set.blocked(nx, nz, 0.4)) continue;
+            reached.push({ x: nx, z: nz });
           }
+        }
+
+        for (const exit of area.exits) {
+          const found = reached.some((at) => Math.hypot(at.x - exit.x, at.z - exit.z) < 2.6);
           expect(found, `${area.id}: cannot walk from the spawn to the ${exit.to} exit`).toBe(true);
         }
       });
