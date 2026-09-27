@@ -15,7 +15,9 @@ import {
   huntByEncounter,
   huntCooldownLabel,
   huntCooldownRemaining,
+  huntOpen,
   isHunt,
+  type Hunt,
   stampClock,
 } from '../core/data/hunts.js';
 import { PACKS } from '../core/data/packs.js';
@@ -27,6 +29,10 @@ import { traitsFor } from '../core/data/companionTraits.js';
 import { huntBoard, tierOfEncounter } from '../core/data/bounties.js';
 import { tameCompanion } from '../core/overworld/vivarium.js';
 import { makeRng } from '../core/util/rng.js';
+import { SCHOOLS, schoolsKept } from '../core/data/pools.js';
+
+/** A kennel speaking every school, so every hunt is posted. */
+const EVERY_SCHOOL = new Set(SCHOOLS);
 
 describe('the clock after a fight', () => {
   const NOW = 1_700_000_000_000;
@@ -191,7 +197,7 @@ describe('the cooldown', () => {
 
 describe('the board past the gate', () => {
   it('offers every hunt, priced at its tier', () => {
-    const board = huntBoard(12345);
+    const board = huntBoard(12345, EVERY_SCHOOL);
     expect(board).toHaveLength(HUNTS.length);
     for (const bounty of board) {
       const hunt = huntByEncounter(bounty.enemySeed)!;
@@ -204,9 +210,57 @@ describe('the board past the gate', () => {
   });
 
   it('prices a hunt the same way twice for one seed, and differently across seeds', () => {
-    expect(huntBoard(99)[0]!.spoils.ducats).toBe(huntBoard(99)[0]!.spoils.ducats);
-    const spread = new Set([1, 2, 3, 4, 5, 6].map((s) => huntBoard(s)[0]!.spoils.ducats));
+    expect(huntBoard(99, EVERY_SCHOOL)[0]!.spoils.ducats).toBe(huntBoard(99, EVERY_SCHOOL)[0]!.spoils.ducats);
+    const spread = new Set([1, 2, 3, 4, 5, 6].map((s) => huntBoard(s, EVERY_SCHOOL)[0]!.spoils.ducats));
     expect(spread.size, 'the fee should move with the board').toBeGreaterThan(1);
+  });
+});
+
+describe('a rare hunt', () => {
+  const RARE: Hunt = {
+    encounterId: 'test_rare_hunt',
+    species: 'tortoise',
+    tier: 'adept',
+    region: 'The Caldera',
+    requires: { schools: ['pyre', 'bulwark'] },
+  };
+
+  it('is posted only once the kennel speaks every school it asks for', () => {
+    expect(huntOpen(RARE, new Set())).toBe(false);
+    expect(huntOpen(RARE, new Set(['pyre'])), 'half the scent is no scent').toBe(false);
+    expect(huntOpen(RARE, new Set(['pyre', 'bulwark']))).toBe(true);
+  });
+
+  it('leaves a wild bloodline posted for anybody', () => {
+    for (const hunt of HUNTS.filter((h) => !h.requires)) {
+      expect(huntOpen(hunt, new Set()), hunt.encounterId).toBe(true);
+    }
+  });
+
+  it('counts a hybrid in the kennel as both of its parents', () => {
+    // A Chimera speaks fire and ice. Keeping one is keeping both scents.
+    expect([...schoolsKept(['chimera'])].sort()).toEqual(['frost', 'pyre']);
+    expect([...schoolsKept(['ignis', 'ferrum'])].sort()).toEqual(['bulwark', 'pyre']);
+    expect(schoolsKept([]).size).toBe(0);
+  });
+
+  it('gates a hybrid on exactly its own two schools, and a wild bloodline on nothing', () => {
+    // The ledger that keeps the two halves of the rule honest: a hybrid hunt with no gate
+    // would be a story beast on a ten-minute timer, and a mono hunt with one would be a
+    // founder a new character could never reach.
+    for (const hunt of HUNTS) {
+      const schools = [...companionById(hunt.species)!.grimoire.schools].sort();
+      if (schools.length > 1) {
+        expect([...(hunt.requires?.schools ?? [])].sort(), hunt.encounterId).toEqual(schools);
+      } else {
+        expect(hunt.requires, hunt.encounterId).toBeUndefined();
+      }
+    }
+  });
+
+  it('keeps the board to what the kennel has earned', () => {
+    const board = huntBoard(12345, new Set());
+    expect(board).toHaveLength(HUNTS.filter((h) => !h.requires).length);
   });
 });
 

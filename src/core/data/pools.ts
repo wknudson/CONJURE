@@ -341,6 +341,22 @@ export function schoolsOf(baseId: string): readonly School[] {
 }
 
 /**
+ * Every school the beasts in a Vivarium speak between them. What a rare hunt is gated on.
+ *
+ * Read off the beasts **kept** rather than off `Profile.rosterUnlocks`, although the ledger
+ * is the permanent one. The ledger answers a different question — what may this warband
+ * field — and its migration floor hands a pre-enrolment save a Dusk archer and a Pyre
+ * lobber nobody tamed, so reading schools back out of it would open a fire-and-death hunt
+ * to a character who had never held either. The kennel is the honest answer: a hybrid
+ * comes to the scent of both its parents, and a beast released is a scent gone.
+ */
+export function schoolsKept(baseIds: readonly string[]): Set<School> {
+  const out = new Set<School>();
+  for (const baseId of baseIds) for (const school of schoolsOf(baseId)) out.add(school);
+  return out;
+}
+
+/**
  * Every body a warband may field, given the bloodlines it has actually tamed.
  *
  * The seam `validateRoster` was built with and nothing had yet filled. Three rules, in
