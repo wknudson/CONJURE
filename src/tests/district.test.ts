@@ -366,6 +366,15 @@ describe('every area', () => {
           if (back) {
             const d = Math.hypot(back.x - exit.arrive.x, back.z - exit.arrive.z);
             expect(d, 'arrival from ' + area.id + ' sits on the way back').toBeGreaterThan(2.6);
+            // ...and not far from it either. An `arrive` is a literal typed into the *other*
+            // area's file, so when its destination grows and the edge exit moves out with the
+            // new edge, the arrival stays where it was -- still walkable, still clear of the
+            // way back, and now half a map from where you came in. Six tiles is the widest
+            // an authored arrival sits today (the Ring's roads come in a few strides past
+            // the old treeline). It is a net rather than a proof -- a stale arrival that was
+            // already close can drift and stay inside it -- which is why `grow-area` rewrites
+            // arrivals itself instead of leaving them to be caught here.
+            expect(d, 'arrival from ' + area.id + ' is nowhere near the way back').toBeLessThanOrEqual(6 * TILE);
           }
         }
       });
