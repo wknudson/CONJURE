@@ -377,4 +377,27 @@ export const DUSK_SHELF: Record<string, CardDef> = {
     range: 3,
     needsLoS: true,
   },
+
+  /** The Wight: the cold of the barrow, breathed out. */
+  barrow_chill: {
+    id: 'barrow_chill',
+    name: 'Barrow Chill',
+    cost: { bones: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 decay damage to a unit and Chills it and everything in a cross around it.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'decay', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'plus', radius: 1 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['wight'],
+    range: 4,
+    needsLoS: true,
+  },
 };

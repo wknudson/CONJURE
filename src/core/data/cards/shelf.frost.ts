@@ -493,4 +493,28 @@ export const FROST_SHELF: Record<string, CardDef> = {
     range: 3,
     needsLoS: true,
   },
+
+  /** The Otter: water too hot to hold and too cold to drink. */
+  scalding_splash: {
+    id: 'scalding_splash',
+    name: 'Scalding Splash',
+    cost: { bones: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 fire damage to a unit, Chills it, and wreathes its tile in steam for 1 turn.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'fire', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'target' } },
+        { op: 'spawnHazard', kind: 'steam_fog', turns: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['otter'],
+    range: 3,
+    needsLoS: true,
+  },
 };

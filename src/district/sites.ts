@@ -453,6 +453,56 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
       'The sheet is darker than the snow it interrupts, and nothing has crossed it since the last fall. The shapes under it are not stones.',
     gate: { after: ['fouled_cistern', 'rimefield_break'] },
   },
+  {
+    id: 'caldera:otter',
+    areaId: 'caldera',
+    at: { x: -42, z: -50 },
+    encounterId: 'caldera_otter',
+    label: 'The Scalding Pools',
+    interactDetail:
+      'Steam off the pools, and something moving under it that is too long to be a fish.',
+    gate: { after: ['caldera_chimera'] },
+  },
+  {
+    id: 'storm_shelf:eyrie',
+    areaId: 'storm_shelf',
+    at: { x: -38, z: -50 },
+    encounterId: 'shelf_eyrie',
+    label: 'The Storm Eyrie',
+    interactDetail:
+      'Nests on every mast, blackened and whole. The air here tastes of the next strike.',
+    gate: { after: ['storm_shelf_binding'] },
+  },
+  {
+    id: 'rimefields:barrow',
+    areaId: 'rimefields',
+    at: { x: -22, z: -46 },
+    encounterId: 'rimefield_barrow',
+    label: 'The Frost Barrow',
+    interactDetail:
+      'Frost on the inside of the barrow door, and the door ajar.',
+    gate: { after: ['rimefield_break'] },
+  },
+  {
+    id: 'bone_bastion:den',
+    areaId: 'bone_bastion',
+    at: { x: -26, z: -54 },
+    encounterId: 'bastion_den',
+    label: 'The Ossuary Den',
+    interactDetail:
+      'Bones stacked round the walls like a nest, and a smell of warm fur under the cold.',
+    gate: { after: ['bone_bastion'] },
+  },
+  {
+    id: 'ashwood:ring',
+    areaId: 'ashwood',
+    at: { x: -38, z: -54 },
+    encounterId: 'ashwood_ring',
+    label: 'The Rotcap Ring',
+    interactDetail:
+      'A perfect circle of caps, knee-high, and inside it the ground is soft and moving.',
+    gate: { after: ['hollow_census'] },
+  },
 ];
 
 export function sitesInArea(areaId: string): readonly ContractSite[] {

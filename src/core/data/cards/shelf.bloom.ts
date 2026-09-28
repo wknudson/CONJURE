@@ -490,4 +490,27 @@ export const BLOOM_SHELF: Record<string, CardDef> = {
     bloodline: ['crab'],
     range: 1,
   },
+
+  /** The Myconid: a ring of caps that opens all at once. */
+  rotcap_bloom: {
+    id: 'rotcap_bloom',
+    name: 'Rotcap Bloom',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 10 decay damage to everything in a cross around the target tile and poisons it (Toxin 2).',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'decay', area: { shape: 'plus', radius: 1 } },
+        { op: 'applyStatus', status: 'toxin', stacks: 2, area: { shape: 'plus', radius: 1 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['myconid'],
+    range: 4,
+    needsLoS: true,
+  },
 };

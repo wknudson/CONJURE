@@ -477,4 +477,26 @@ export const BULWARK_SHELF: Record<string, CardDef> = {
     bloodline: ['sovereign'],
     range: 4,
   },
+
+  /** The Bear: a paw that has been digging in the ossuary. */
+  ossuary_maul: {
+    id: 'ossuary_maul',
+    name: 'Ossuary Maul',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 30 impact damage to an adjacent enemy and poisons it (Toxin 1).',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'impact', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['bear'],
+    range: 1,
+  },
 };

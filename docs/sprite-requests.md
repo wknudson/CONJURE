@@ -98,3 +98,38 @@ silhouette until its own art arrives.
 - **Body:** caster, moves 3, reaches 3
 - **Brief:** Drifts over the fallow strips at dusk and dusts everything below it. The field it passes over wakes up poisoned.
 - **Files:** `pollen_moth-front.png`, `pollen_moth-back.png`, `pollen_moth-side.png`
+
+### Steamvent Otter, Vent Swimmer
+
+- **Schools:** pyre + frost
+- **Body:** skirmisher, moves 3, reaches 1
+- **Brief:** Swims the hot pools under the caldera vents where the meltwater meets the fire. Scalds, chills, and hides in its own steam.
+- **Files:** `steamvent_otter-front.png`, `steamvent_otter-back.png`, `steamvent_otter-side.png`
+
+### Thunderhawk, Storm Raptor
+
+- **Schools:** pyre + surge
+- **Body:** caster, moves 3, reaches 3
+- **Brief:** Rides the storm front down off the Shelf and strikes like the lightning it flies in. What it hits burns.
+- **Files:** `thunderhawk-front.png`, `thunderhawk-back.png`, `thunderhawk-side.png`
+
+### Frostbarrow Wight, Cold Revenant
+
+- **Schools:** frost + dusk
+- **Body:** caster, moves 2, reaches 2
+- **Brief:** Something the barrow kept cold for a long time and has only lately let go of. Rots what it touches and freezes what it rots.
+- **Files:** `frostbarrow_wight-front.png`, `frostbarrow_wight-back.png`, `frostbarrow_wight-side.png`
+
+### Barrow Bear, Ossuary Sleeper
+
+- **Schools:** bulwark + dusk
+- **Body:** bruiser, moves 2, reaches 1
+- **Brief:** Sleeps the winter out in the ossuary and wakes up hungry. Stands in front of the dead as if they were its cubs.
+- **Files:** `barrow_bear-front.png`, `barrow_bear-back.png`, `barrow_bear-side.png`
+
+### Rotcap Myconid, Spore Elder
+
+- **Schools:** dusk + bloom
+- **Body:** caster, moves 2, reaches 3
+- **Brief:** The fairy ring in the Ashwood is one creature, and it is very old. Its caps rot the ground they stand on and everything that falls there.
+- **Files:** `rotcap_myconid-front.png`, `rotcap_myconid-back.png`, `rotcap_myconid-side.png`

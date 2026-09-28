@@ -48,6 +48,7 @@ import { BULWARK_SHELF } from '../src/core/data/cards/shelf.bulwark.js';
 import { DUSK_SHELF } from '../src/core/data/cards/shelf.dusk.js';
 import { BLOOM_SHELF } from '../src/core/data/cards/shelf.bloom.js';
 import { VANGUARD_CARDS } from '../src/core/data/cards/vanguard.js';
+import { DEN_THREAT_CARDS } from '../src/core/data/cards/threats.dens.js';
 
 /**
  * The shelves, in the order `cards/index.ts` merges them.
@@ -111,6 +112,7 @@ const SOURCES: Source[] = [
   { file: 'shelf.dusk.ts', cards: DUSK_SHELF, blurb: 'Dusk third shelf — commons, and the Stag and Jackal signatures.' },
   { file: 'shelf.bloom.ts', cards: BLOOM_SHELF, blurb: 'Bloom third shelf — commons, and the Warden and Aurochs signatures.' },
   { file: 'vanguard.ts', cards: VANGUARD_CARDS, blurb: 'The third muster — thirty-six bodies a warband can field, four per school and twelve colourless.' },
+  { file: 'threats.dens.ts', cards: DEN_THREAT_CARDS, blurb: 'Den threats: the enemy-only bodies that guard the newer hybrids.' },
 ];
 
 const KIND_ORDER = ['minion', 'spell', 'ability', 'mark', 'obstacle'] as const;

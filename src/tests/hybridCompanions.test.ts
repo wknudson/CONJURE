@@ -56,15 +56,25 @@ const withKnack = (baseId: string, traitId: string) => {
 };
 
 describe('the hybrid roster', () => {
-  it('registers all fifteen — one per school pairing', () => {
+  it('registers every hybrid bloodline the roster promises', () => {
     // Six schools make fifteen pairings, and every one of them is now somebody's. The
     // number is asserted rather than derived on purpose: it is the whole claim of the
     // roster, and deriving it from `TRAIT_LINEAGE` would make this test agree with any
     // mistake made there.
-    expect(BLOODLINES).toHaveLength(15);
+    expect(BLOODLINES).toHaveLength(20);
     for (const id of BLOODLINES) {
       expect(companionById(id), id).toBeDefined();
     }
+  });
+
+  it('covers every school pairing at least once', () => {
+    // The fifteen founding hybrids closed the set; the later ones are second beasts of a
+    // pairing, never a pairing nobody had. Asked directly, so a later bloodline can never
+    // quietly stand in for a pairing that lost its first.
+    const pairs = new Set(
+      BLOODLINES.map((id) => [...companionById(id)!.grimoire.schools].sort().join('+')),
+    );
+    expect(pairs.size).toBe(15);
   });
 
   it('gives each of them a body of its own', () => {
