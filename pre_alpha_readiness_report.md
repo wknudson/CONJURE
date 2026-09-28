@@ -18,7 +18,8 @@ side-walk was fixed as PR #37 and the world itself rebuilt as PR #39 — every a
 thirty-nine rooms behind real doors, four registries of things to do on the ground — recorded in
 §7.9 and §7.10; that note was PR #40. The bestiary and grimoire expansion then began with its
 machinery as PR #41 — signature cards, rare hunts, and a pipeline for creature art — recorded in
-§7.11; this note is PR #42.*
+§7.11; that note was PR #42. Its second wave, the Hero kit and a duelist at every tier, merged
+as PR #43 and is recorded in §7.12; this note is PR #44.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -937,13 +938,43 @@ reworking `Pack`; `CATALOG_TARGET` rises with the second school-shelf wave, beca
 now fails the catalog test before the cards exist; and `CREATURE_ART` ships empty, so the first
 drawings arrive with the art wave.
 
-### 7.12 What remains
+### 7.12 The bestiary expansion, Wave 1 — **built, PR #43**
+
+The Hero half's shelf. Every Companion hands over the same Hero Deck by design, and §5 had
+already called the colourless pool thin: eighteen hero-legal cards in the whole game, three of
+them neutral, for a deck of four to twelve. `cards/hero.ts` adds twenty-two — sixteen neutral,
+six arcane — every one an Ability or Construct cast from the Hero's side of the board and built
+from ops the interpreter already runs. The neutral half hurts with weight and rope and brings the
+Hero's first heal, draw and ramp; the arcane half is spell damage and the holds nobody's element
+owns. No elemental statuses, no Marks, no bodies.
+
+**Taught by two new duels.** The Journeyman Duelist (Adept) plays the neutral shelf and the Master
+Duelist (Master) the arcane half, both on their tier's rolled poster and wagered like the first
+duel — which also widens the post-campaign board §4 recorded as collapsing to four fights.
+`duelist.test.ts` now asks the Novice's Hero Deck questions of every duel, and that every kit card
+is played by one.
+
+**What was found on the way.** Holds lift at the end of the *owner's* turn, so a one-stack
+Entangle or Stun cast on an enemy holds it through the whole of its next turn; the faces say so,
+and it is what prices them (Entangle on a one-Bone Bola, Stun on a three-Bone Glyph). The first
+Journeyman was softer than the Novice: in AI playouts the default character beat it eight times
+in eight, against none in eight for every existing duel, because a deck made only of lessons
+spends its turns on utility with nothing to do. Staples and a heavier warband took it to three in
+eight, several decided by twenty health. `heal` restores the Pact, not a unit, and the heal cards
+say so.
+
+**Verified.** The full non-balance suite on the exact tip: 146 files, 3,571 tests, green. The
+balance ledger: 7 files, 580 tests, green, including eight playouts of each new duel. The browser
+was not reachable — the folder was at its dev-server limit, held by other sessions — so the AI
+playouts, which played nineteen of the twenty-two new cards, stand in for it.
+
+### 7.13 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 to §7.11 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.12 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
-found outside it belongs here on the same terms PRs #37, #39 and #41 did. What comes next is a
-playtest, and the eleven remaining waves of the bestiary expansion, each recorded here as it
+found outside it belongs here on the same terms PRs #37, #39, #41 and #43 did. What comes next is
+a playtest, and the ten remaining waves of the bestiary expansion, each recorded here as it
 merges.
 
 ### Appendix — documentation drift found along the way
