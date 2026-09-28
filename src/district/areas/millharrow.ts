@@ -252,6 +252,27 @@ export const MILLHARROW: AreaDef = defineArea({
     },
   ],
   props: {
+    /**
+     * Who passes through by day: the town at market, the roads in from the four ends, the mill
+     * carts.
+     */
+    passersby: {
+      peak: 7,
+      folk: ['farmer_daughter', 'grocer', 'elder', 'carpenter', 'herald', 'cobbler_b'],
+      lanes: [
+        [{ x: 12, z: 12 }, { x: 67, z: 12 }],
+        [{ x: -64, z: 12 }, { x: -13, z: 12 }],
+        [{ x: 8, z: -20 }, { x: 59, z: -20 }],
+        [{ x: 64, z: 4 }, { x: 64, z: 55 }],
+        [{ x: -64, z: -36 }, { x: -13, z: -36 }],
+      ],
+      barks: [
+        "Wind's in the sails. Good grinding weather.",
+        "Fair's coming. You can smell the cider already.",
+        "Keep off the field edges come dark. Nobody says why.",
+        "Mill's turning. Means we eat.",
+      ],
+    },
     /** A crossroads town in worked country. Stock in the fields, rats at the mill. */
     sky: 'pollen',
     wildlife: [
@@ -350,9 +371,33 @@ export const MILLHARROW: AreaDef = defineArea({
      */
     npcs: [
       { id: 'millharrow_miller', x: 6, z: -10, art: 'miller', label: 'Talk to the miller' },
-      { id: 'millharrow_farmer_wife', x: -10, z: 2, art: 'farmer_wife', label: 'Talk to the farmer' },
-      { id: 'millharrow_baker', x: 14, z: 14, art: 'baker', label: 'Talk to the baker' },
-      { id: 'millharrow_brewer', x: 2, z: -14, art: 'brewer_b', label: 'Talk to the brewer' },
+      {
+        id: 'millharrow_farmer_wife', x: -10, z: 2, art: 'farmer_wife', label: 'Talk to the farmer',
+        // Up at the granary yard for the morning weighing, and back down the street by afternoon.
+        hours: [
+          { from: 6, x: -90, z: -26 },
+          { from: 15, x: -10, z: 2 },
+        ],
+      },
+      {
+        id: 'millharrow_baker', x: 14, z: 14, art: 'baker', label: 'Talk to the baker',
+        // At the ovens before light, out on the fair green with the bread by mid-morning, and home
+        // again when it is sold.
+        hours: [
+          { from: 4, x: 14, z: 14 },
+          { from: 10, x: 62, z: 70 },
+          { from: 16, x: 14, z: 14 },
+        ],
+      },
+      {
+        id: 'millharrow_brewer', x: 2, z: -14, art: 'brewer_b', label: 'Talk to the brewer',
+        // At the brewhouse all day, and at the Crossroads Arms by evening, drinking the
+        // competition.
+        hours: [
+          { from: 6, x: 2, z: -14 },
+          { from: 18, x: 44, z: 66 },
+        ],
+      },
       { id: 'millharrow_tollman', x: 10, z: -14, art: 'town_guard_b', label: 'Talk to the tollman' },
     ],
     /**

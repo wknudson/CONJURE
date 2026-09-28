@@ -11,7 +11,8 @@ import type { ColliderSet } from './collision.js';
 import { CRITTERS, type CritterId, type CritterKind } from './wildlife.js';
 import { beatPostAt, type PackHours } from './daylight.js';
 import { Walker, pickFacing, type ActorArt } from './sprites3d.js';
-import { sightClear, sightReach, type AreaDef, type PackBehaviour } from './map.js';
+import { sightClear, sightReach, type AreaDef, type PackBehaviour, type Vec2 } from './map.js';
+import { alongLane, laneLength } from './folkday.js';
 import { NavAgent, type NavGrid } from './nav.js';
 import { Lean, Momentum, restBreath } from './gait.js';
 
@@ -166,6 +167,14 @@ export class NPC implements Interactable, Updatable {
    * `position`, so a moving person is a person you catch up with.
    */
   goTo: { x: number; z: number } | null = null;
+  /**
+   * The ground to walk on, where the street has one. With it, `goTo` goes round the buildings --
+   * the next corner of a route when the straight line is blocked, the post itself when it is not
+   * -- which it has to now that people keep hours and walk across a ward to keep them. Without
+   * it, a straight line, as the lamplighter always walked his row.
+   */
+  nav: NavGrid | null = null;
+  private readonly route = new NavAgent();
   /** Unhurried. A man on his rounds is not late for anything. */
   private static readonly WALK = 1.7;
 
@@ -175,13 +184,22 @@ export class NPC implements Interactable, Updatable {
       const dz = this.goTo.z - this.position.z;
       const dist = Math.hypot(dx, dz);
       if (dist > 0.35) {
-        const step = Math.min(dist, NPC.WALK * dt);
-        this.position.x += (dx / dist) * step;
-        this.position.z += (dz / dist) * step;
+        const aim = this.nav ? this.route.next(this.nav, this.position.x, this.position.z, this.goTo.x, this.goTo.z, dt) : this.goTo;
+        let ax = aim.x - this.position.x;
+        let az = aim.z - this.position.z;
+        let ad = Math.hypot(ax, az);
+        if (ad < 1e-6) {
+          ax = dx;
+          az = dz;
+          ad = dist;
+        }
+        const step = Math.min(ad, NPC.WALK * dt);
+        this.position.x += (ax / ad) * step;
+        this.position.z += (az / ad) * step;
         // The gait, and the facing that comes with it. Walking wins over looking at you: a man
         // on his rounds glances and keeps going.
-        this.walker.step((dx / dist) * step, (dz / dist) * step, cameraYaw);
-        this.lean.update(this.walker.sprite, (dx / dist) * step, (dz / dist) * step, dt, cameraYaw);
+        this.walker.step((ax / ad) * step, (az / ad) * step, cameraYaw);
+        this.lean.update(this.walker.sprite, (ax / ad) * step, (az / ad) * step, dt, cameraYaw);
         return;
       }
     }
@@ -206,6 +224,98 @@ export class NPC implements Interactable, Updatable {
 
   onInteract(): void {
     this.action();
+  }
+}
+
+/**
+ * Somebody only passing through.
+ *
+ * Walks a lane end to end and back at their own pace, and now and then, if you are close as they
+ * go by, says something -- a line the screen may or may not let through, so that a busy street is
+ * not a chorus. Not an interactable: there is nothing to ask them, and a prompt on every body in a
+ * market would bury the ones that matter.
+ *
+ * Whether they are out is the screen's to say, by the hour, but they only go when nobody is
+ * looking: a passer-by told to go home keeps walking until they are well away from you, and one
+ * told to come out appears the same way. Nobody pops.
+ */
+export class Passerby implements Updatable {
+  readonly walker: Walker;
+  /** Whether the hour wants them on the street. */
+  wanted = false;
+  /** Set by the screen each frame, for the barks and for when it is safe to come and go. */
+  playerAt: THREE.Vector3 | null = null;
+  /** Hears a line when they say one. The screen decides whether anybody else does. */
+  onBark: ((line: string) => void) | null = null;
+  private out = false;
+  private readonly lean = new Lean();
+  private s: number;
+  private readonly speed: number;
+  private barkWait: number;
+  private barkNext: number;
+  /** How far from you a body must be to come or go, in world units: past the edge of the frame. */
+  private static readonly UNSEEN = 22;
+  /** How close you must be to be spoken to in passing. */
+  private static readonly EARSHOT = 3.2;
+
+  constructor(
+    art: ActorArt,
+    height: number,
+    private readonly lane: readonly Vec2[],
+    private readonly barks: readonly string[],
+    /** Which of the street's passers-by this is, for where they start and how fast they go. */
+    n: number,
+    castsShadow = true,
+  ) {
+    this.walker = new Walker(art, height, castsShadow);
+    const len = laneLength(lane);
+    // Spread out along the lane rather than bunched at its start, and none walking in step.
+    this.s = ((n * 0.618034) % 1) * 2 * len;
+    this.speed = 1.3 + ((n * 0.377) % 1) * 0.6;
+    this.barkWait = 6 + (n % 5) * 3;
+    this.barkNext = n;
+    const p = alongLane(lane, this.s);
+    this.walker.position.set(p.x, 0, p.z);
+    this.walker.sprite.visible = false;
+  }
+
+  /** Whether they are on the street this frame. */
+  get isOut(): boolean {
+    return this.out;
+  }
+
+  /** Straight onto the street, or off it, without waiting to be unseen -- for when the area first opens. */
+  settle(): void {
+    this.out = this.wanted;
+    this.walker.sprite.visible = this.out;
+  }
+
+  update(dt: number, _t: number, cameraYaw: number): void {
+    if (this.out !== this.wanted) {
+      const p = this.walker.position;
+      const far = !this.playerAt || Math.hypot(this.playerAt.x - p.x, this.playerAt.z - p.z) > Passerby.UNSEEN;
+      if (far) this.settle();
+    }
+    if (!this.out) return;
+    const bx = this.walker.position.x;
+    const bz = this.walker.position.z;
+    this.s += this.speed * dt;
+    const p = alongLane(this.lane, this.s);
+    this.walker.position.x = p.x;
+    this.walker.position.z = p.z;
+    this.walker.step(p.x - bx, p.z - bz, cameraYaw);
+    // The motion pass's lean into the walk, as everybody else on the street has it.
+    this.lean.update(this.walker.sprite, p.x - bx, p.z - bz, dt, cameraYaw);
+
+    if (this.barks.length === 0 || !this.playerAt) return;
+    this.barkWait -= dt;
+    if (this.barkWait > 0) return;
+    if (Math.hypot(this.playerAt.x - p.x, this.playerAt.z - p.z) < Passerby.EARSHOT) {
+      this.onBark?.(this.barks[this.barkNext++ % this.barks.length]!);
+      this.barkWait = 30;
+    } else {
+      this.barkWait = 1;
+    }
   }
 }
 

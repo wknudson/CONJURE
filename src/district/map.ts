@@ -207,6 +207,42 @@ export interface NpcSpec {
    * the screen when it is left out.
    */
   readonly says?: string;
+  /**
+   * Their day, if they keep one: where they are from which hour, walked between on the nav grid.
+   *
+   * After OpenMW's AI packages, cut down to the one that matters on a street -- *be here from
+   * then*. Each post holds from its hour until the next post's, round the clock, so somebody who
+   * keeps hours is somewhere at every hour by construction: before the first post of the day
+   * they are still at the last one of yesterday. Absent means they stand at `x`, `z` at every
+   * hour, which is what every townsperson did before this and what most still do.
+   */
+  readonly hours?: readonly NpcPost[];
+}
+
+/** One stop in a townsperson's day. See `NpcSpec.hours`. */
+export interface NpcPost {
+  /** The hour of the day, 0 to 24, they set out for it. */
+  readonly from: number;
+  readonly x: number;
+  readonly z: number;
+}
+
+/**
+ * The people who are only passing through: nobody to talk to, somebody to walk round.
+ *
+ * Towns only -- a test says so, the same one that keeps the wilds empty of townsfolk. They walk
+ * their lanes end to end and back, as many at once as the hour allows (`passersAt`), which is
+ * most of them at noon and none by the time the night crews come out.
+ */
+export interface PassersbySpec {
+  /** The ways they walk: each a line of points on open ground, walked end to end and back. */
+  readonly lanes: readonly (readonly Vec2[])[];
+  /** Who walks them, off the folk sheets. Drawn in turn, so the first is the commonest. */
+  readonly folk: readonly FolkId[];
+  /** How many at the busiest hour. */
+  readonly peak: number;
+  /** What one says now and then, passing close to you. Absent: they keep it to themselves. */
+  readonly barks?: readonly string[];
 }
 
 /**
@@ -346,6 +382,8 @@ export interface DressingSpec {
 export interface AreaProps {
   readonly board?: Vec2;
   readonly npcs?: readonly NpcSpec[];
+  /** The street's passers-by. See `PassersbySpec`. */
+  readonly passersby?: PassersbySpec;
   /** Warden beats. One patrol per waypoint ring. */
   readonly patrols?: readonly (readonly Vec2[])[];
   readonly packs?: readonly PackSpec[];

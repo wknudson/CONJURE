@@ -1025,7 +1025,7 @@ scripts, eight new errands, two new signs, eighteen new pieces of furniture with
 | Room ceilings | none | a roof. Deliberate — see above — but a room with weather over it is still a courtyard |
 | The Browser pane | spot-checks of every ward and the first Ring rooms | a walk through all thirty-seven. The rest were verified by the placement suite and by prompts read off the screen object, not by eye |
 
-## Wave 15 — a bigger world, and something in it (in progress)
+## Wave 15 — a bigger world, and something in it (built)
 
 *"Make all of the existing world creation more immersive and fun. Each area bigger and better
 thought out ... more enemies patrolling, things to look at, buildings."* Read against the world as
@@ -1266,3 +1266,40 @@ the biggest map in the world, about a hundred and ten.
 | The ossuary gatehouse | two towers either side of the gap | a gate with an arch over the causeway. A landmark stands on one footprint, and an arch is two with a way between |
 | The tarn's holes, the sawpit | painted water | open water. The same limit as the drowned terraces: the band carries one canal |
 | The Ashwood's wolves | the old wood's ambient wolves, still there beside the Ashwood Pack | one or the other. They scatter from a prowler like any animal, which is some of the point |
+
+### 15.9 Townsfolk who keep hours (built)
+
+The last piece, and the one the plan said to cut first if it had to go: the people. Until now
+every townsperson stood where the file put them at every hour of every day, and the only person
+who walked was the lamplighter, in a straight line.
+
+| Piece | What it does |
+|---|---|
+| A day | `NpcSpec.hours`, after OpenMW's AI packages cut down to the one a street needs -- *be here from then*. Posts by hour, each holding until the next one's, round the clock, so somebody who keeps hours is somewhere at every hour by construction. They open an area at the post the hour gives them and walk to the next when its hour comes |
+| Walking round things | `NPC.goTo` steers by the nav grid where the street has one, the lamplighter's included, so a townsperson crossing a ward goes round the buildings rather than through them |
+| Passers-by | `AreaProps.passersby`: non-interactive walkers on a town's lanes, drawn from the folk sheets the street already loads where it can. All of them out by day, thinning as the light goes, none before the night crews are out; they come and go only out of your sight. Now and then one says something as they pass you, one voice at a time, as a line of italic over the street |
+
+| Town | Passers-by at the busiest hour | Who keeps hours |
+|---|---|---|
+| Ashfall | 8 | the crier (the south gate, the customs square at noon, his corner by evening); the cobbler (his stall, the Rookeries after) |
+| Lamprow | 6 | the tithe clerk (the High Street, the works office in the afternoon) |
+| Bonemarket | 6 | -- |
+| Cinderworks | 6 | -- |
+| Ward Seven | 5 | -- |
+| Highcourt | 6 | the scribe (the Archive door while it is open); the musician (the beacon court in the evening) |
+| Millharrow | 7 | the baker (the ovens before light, the fair green by mid-morning); the brewer (the Crossroads Arms by evening); the farmer (the granary yard for the morning weighing) |
+| Fenwick's Crossing | 5 | the bard (the inn by night); the cartographer (the south ferry in the mornings) |
+
+Every post is held to what a standing townsperson is held to -- open ground clear of the furniture,
+a stride from every prompt and every other person, off every crew's ground whatever its hours, and
+a walk from home -- and every lane to straight open ground off the patch of any crew out by day.
+The wilds are pinned free of passers-by as well as of townsfolk.
+
+### What is still standing in (15.9)
+
+| Where | Placeholder | Standing in for |
+|---|---|---|
+| Rooms | nobody comes or goes | the tavern by night as a room with its evening in it. Hours are kept within one area; somebody who goes "to the inn" goes to its door |
+| Passers-by | straight lanes, walked there and back | somewhere to go. They have no errands and no doors; a lane is a street, not a life |
+| Dusk | the street empties inside an hour | a slower evening. The street follows the light, and the light goes quickly |
+| The atlas | its §2 still draws the first build | a redraw of every grown map, as 15.6 said |

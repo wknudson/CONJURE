@@ -78,11 +78,13 @@ import {
   Hotspot,
   NPC,
   Pack,
+  Passerby,
   Warden,
   type Interactable,
   type Updatable,
 } from './entities.js';
-import { isSafeAt, type AreaDef, type ExitSpec } from './map.js';
+import { isSafeAt, type AreaDef, type ExitSpec, type NpcSpec } from './map.js';
+import { npcPostAt, passersAt } from './folkday.js';
 import { NavGrid } from './nav.js';
 import { memberArt, memberTint, packBodies } from './memberArt.js';
 import {
@@ -425,6 +427,12 @@ export class DistrictScreen implements Screen {
    * teardown — is done for the list.
    */
   private readonly npcs: NPC[] = [];
+  /** The townsfolk who keep hours, and the hours they keep. */
+  private readonly keepers: { npc: NPC; spec: NpcSpec }[] = [];
+  /** The street's passers-by, out or waiting. */
+  private readonly passersby: Passerby[] = [];
+  /** When a passer-by was last let speak, so a busy street takes turns. */
+  private lastOverheard = -Infinity;
 
   /**
    * The wager duelists whose ground is live on this street.
@@ -1051,8 +1059,11 @@ export class DistrictScreen implements Screen {
     // into the `Promise.all`, one missing file would open the ward with no Commander, no Vex
     // and no unlock. A sheet that fails to load costs exactly the people on it.
     const specs = this.area.props.npcs ?? [];
+    const passing = this.area.props.passersby;
+    // Everybody drawn on this street: the people who live here, and the ones passing through.
+    const drawn = new Set<FolkId>([...specs.map((n) => n.art).filter((a): a is FolkId => !!a), ...(passing?.folk ?? [])]);
     const sheets = new Map<FolkSheetId, HTMLImageElement | null>();
-    for (const id of new Set(specs.map((n) => n.art).filter((a): a is FolkId => !!a))) {
+    for (const id of drawn) {
       const sheet = folkSheetOf(id);
       if (!sheets.has(sheet)) sheets.set(sheet, await loadFolkSheet(sheet).catch(() => null));
     }
@@ -1061,11 +1072,10 @@ export class DistrictScreen implements Screen {
     // One cut per distinct person on this street, not one per body — a market with two
     // stalls of the same trade uploads one texture and hangs both bodies off it.
     const folkArt = new Map<FolkId, ActorArt>();
-    for (const spec of specs) {
-      if (!spec.art || folkArt.has(spec.art)) continue;
-      const sheet = sheets.get(folkSheetOf(spec.art));
+    for (const who of drawn) {
+      const sheet = sheets.get(folkSheetOf(who));
       if (!sheet) continue;
-      const box = folkBox(spec.art);
+      const box = folkBox(who);
       const art = actorArtFromOne(
         sheetFrameTexture(
           sheet,
@@ -1074,10 +1084,10 @@ export class DistrictScreen implements Screen {
           box.w,
           box.h,
           anis,
-          FOLK_SHEETS[folkSheetOf(spec.art)].pixelArt,
+          FOLK_SHEETS[folkSheetOf(who)].pixelArt,
         ),
       );
-      folkArt.set(spec.art, art);
+      folkArt.set(who, art);
       this.heroArt.push(art);
     }
 
@@ -1114,7 +1124,44 @@ export class DistrictScreen implements Screen {
       this.interactables.push(npc);
       this.npcs.push(npc);
       if (spec.id === this.area.props.lamplighter) this.lamplighter = npc;
+      // Somebody who keeps hours opens the area where the hour puts them, not where the file
+      // does, and walks from there.
+      if (spec.hours?.length) {
+        const at = npcPostAt(spec, this.hour);
+        npc.position.set(at.x, 0, at.z);
+        this.keepers.push({ npc, spec });
+      }
     });
+
+    // The passers-by, as many bodies as the busiest hour wants, handed out over the lanes and
+    // the faces in turn. The hour decides how many are out; the rest wait off the street.
+    if (passing && passing.lanes.length > 0) {
+      for (let i = 0; i < passing.peak; i++) {
+        const who = passing.folk[i % passing.folk.length]!;
+        const art = folkArt.get(who);
+        if (!art) continue;
+        const body = new Passerby(
+          art,
+          folkHeight(who),
+          passing.lanes[i % passing.lanes.length]!,
+          passing.barks ?? [],
+          i,
+          !FOLK_SHEETS[folkSheetOf(who)].pixelArt,
+        );
+        // One voice at a time, and not often: a street, not a chorus.
+        body.onBark = (line) => {
+          const now = performance.now();
+          if (now - this.lastOverheard < 14000) return;
+          this.lastOverheard = now;
+          this.hud?.overhear(line);
+        };
+        this.world!.scene.add(body.walker.sprite);
+        this.world!.billboards.push(body.walker.sprite);
+        this.updatables.push(body);
+        this.passersby.push(body);
+      }
+      this.fillStreet(true);
+    }
 
     // The wager duelists whose contracts are live, standing on their own ground. Their sheet
     // is fetched apart from the townsfolk's and only on a street where a duel is actually up,
@@ -1187,9 +1234,11 @@ export class DistrictScreen implements Screen {
     const packSpecs = this.area.props.packs ?? [];
     // The ground they go round things on. Built here because the collider set is complete by
     // now -- every building, every prop -- and built only where there is somebody to use it.
-    if (!this.nav && (packSpecs.length > 0 || (this.area.props.patrols?.length ?? 0) > 0)) {
+    if (!this.nav && (packSpecs.length > 0 || (this.area.props.patrols?.length ?? 0) > 0 || this.keepers.length > 0)) {
       this.nav = new NavGrid(colliders);
     }
+    // Anybody with somewhere to be walks round the buildings to get there, the lamplighter too.
+    for (const npc of this.npcs) npc.nav = this.nav;
     if (packSpecs.length > 0) {
       const now = Date.now();
       // One drawing per kind of body in this area, shared by every pack fielding it.
@@ -1746,6 +1795,7 @@ export class DistrictScreen implements Screen {
       warden.hour = this.hour;
     }
     for (const npc of this.npcs) npc.playerAt = anchor;
+    for (const p of this.passersby) p.playerAt = anchor;
     // Copied rather than aliased, unlike the NPCs above: a critter reads this every frame to
     // decide whether to bolt, and `anchor` is the player's live position vector -- handing it
     // over by reference would be fine today and a very confusing bug the day somebody moves
@@ -2003,6 +2053,8 @@ export class DistrictScreen implements Screen {
     // the world, so the text and the light now move together, which is the point.
     this.hud?.renderLedger();
     this.walkTheRow();
+    this.keepHours();
+    this.fillStreet(false);
     for (const warden of this.wardens) {
       warden.setSight(wardenSightAt(this.hour));
       warden.grace = wardenGraceAt(this.hour);
@@ -2027,6 +2079,25 @@ export class DistrictScreen implements Screen {
    * Called on the clock tick rather than per frame: the count changes about once a game-minute,
    * and the walking between posts is `NPC.goTo`'s business.
    */
+  /** Everybody who keeps hours, sent to where the hour wants them. They walk; nobody is moved. */
+  private keepHours(): void {
+    for (const { npc, spec } of this.keepers) npc.goTo = npcPostAt(spec, this.hour);
+  }
+
+  /**
+   * As many passers-by out as the hour wants: the first so many of the street's bodies, so the
+   * same faces are the last to go home. On the first call they are simply there or not; after
+   * that each comes and goes out of your sight -- see `Passerby`.
+   */
+  private fillStreet(first: boolean): void {
+    const peak = this.area.props.passersby?.peak ?? 0;
+    const n = passersAt(peak, this.hour);
+    this.passersby.forEach((p, i) => {
+      p.wanted = i < n;
+      if (first) p.settle();
+    });
+  }
+
   private walkTheRow(): void {
     const world = this.world;
     const man = this.lamplighter;

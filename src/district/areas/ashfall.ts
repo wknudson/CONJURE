@@ -408,6 +408,27 @@ export const ASHFALL: AreaDef = defineArea({
     },
   ],
   props: {
+    /**
+     * Who passes through by day: pit hands, carters, the ward going about its business on the
+     * pavements and over the bridge.
+     */
+    passersby: {
+      peak: 8,
+      folk: ['miner_a', 'seamstress', 'scribe', 'farmer_wife', 'carpenter', 'elder'],
+      lanes: [
+        [{ x: 2, z: -19 }, { x: 2, z: 95 }],
+        [{ x: -56, z: 6 }, { x: 55, z: 6 }],
+        [{ x: -36, z: 26 }, { x: 18, z: 26 }],
+        [{ x: 60, z: 6 }, { x: 107, z: 6 }],
+      ],
+      barks: [
+        "Mind the pit carts. They don't stop for anybody.",
+        "Warden's out early. Somebody's for it.",
+        "Two ducats for coal. Two. I remember when it was one.",
+        "They're taking on hands at the Ropewalk.",
+        "Don't stand under the bell when it goes.",
+      ],
+    },
     /** The ward is named for what falls on it. Rats in the yards, rooks over the terraces, gulls on the canal. */
     sky: 'ash',
     wildlife: [
@@ -550,8 +571,24 @@ export const ASHFALL: AreaDef = defineArea({
       // At the gate, which went south with the edge; still on the road's pavement.
       { id: 'ashfall_gate_guard', x: 6, z: 92, art: 'town_guard', label: 'Talk to the gate sentry' },
       { id: 'ashfall_lamplighter', x: -2, z: 8, art: 'night_watchman', label: 'Talk to the lamplighter' },
-      { id: 'ashfall_cobbler', x: -18, z: 30, art: 'cobbler', label: 'Talk to the cobbler' },
-      { id: 'ashfall_crier', x: 18, z: 30, art: 'town_crier', label: 'Hear the crier' },
+      {
+        id: 'ashfall_cobbler', x: -18, z: 30, art: 'cobbler', label: 'Talk to the cobbler',
+        // Mends at his stall by day and drinks in the Rookeries after it.
+        hours: [
+          { from: 8, x: -18, z: 30 },
+          { from: 19, x: 70, z: 28 },
+        ],
+      },
+      {
+        id: 'ashfall_crier', x: 18, z: 30, art: 'town_crier', label: 'Hear the crier',
+        // Cries the day in at the south gate, the dues on the customs square across the canal at
+        // noon, and the evening from his own corner.
+        hours: [
+          { from: 7, x: 12, z: 80 },
+          { from: 12, x: -33, z: -82 },
+          { from: 17, x: 18, z: 30 },
+        ],
+      },
     ],
     /**
      * The Wardens' beats: clockwise around the warehouse yard and the Counting House in it, and

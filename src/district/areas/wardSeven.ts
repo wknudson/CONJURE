@@ -194,6 +194,26 @@ export const WARD_SEVEN: AreaDef = defineArea({
     },
   ],
   props: {
+    /**
+     * Who passes through by day: the boardwalks and the dry streets, washing going down to the
+     * washhouse.
+     */
+    passersby: {
+      peak: 5,
+      folk: ['fisherman', 'cobbler', 'child_beggar', 'grocer', 'baker', 'carpenter'],
+      lanes: [
+        [{ x: -56, z: -20 }, { x: 55, z: -20 }],
+        [{ x: -56, z: 12 }, { x: 55, z: 12 }],
+        [{ x: 8, z: -4 }, { x: 91, z: -4 }],
+        [{ x: -56, z: 36 }, { x: 55, z: 36 }],
+      ],
+      barks: [
+        "Water's up to the second step again.",
+        "Don't drink from the cistern. I mean it.",
+        "Boards are rotten past the washhouse. Watch your feet.",
+        "Something took the ducks. All of them.",
+      ],
+    },
     /** Built over a cistern that stopped draining, so: reeds, a heron, and rats. */
     sky: 'drizzle',
     wildlife: [

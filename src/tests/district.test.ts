@@ -174,6 +174,8 @@ describe('the world is populated', () => {
     ];
     for (const id of uninhabited) {
       expect(areaById(id)?.props.npcs ?? [], id).toEqual([]);
+      // Nor anybody passing through, which would be the same claim made by somebody walking.
+      expect(areaById(id)?.props.passersby, id).toBeUndefined();
     }
   });
 
