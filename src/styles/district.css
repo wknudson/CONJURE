@@ -794,3 +794,26 @@ body.is-talking .district-help {
   font-size: 13px;
   line-height: 1.45;
 }
+
+/* --- something a passer-by said, going past -------------------------------- */
+
+.district-overheard {
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  bottom: 270px;
+  transform: translateX(-50%);
+  max-width: min(420px, calc(100vw - 32px));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  color: #e8dcc2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85), 0 0 8px rgba(0, 0, 0, 0.6);
+}
+.district-overheard.is-shown {
+  opacity: 1;
+}

@@ -77,6 +77,8 @@ export class DistrictHud {
   /** The caption a sight shows, and its timer. See `showCaption`. */
   private readonly caption: HTMLElement;
   private captionTimer = 0;
+  private readonly overheard: HTMLElement;
+  private overheardTimer = 0;
   private readonly zoneChip: HTMLDivElement;
   private readonly alert: HTMLDivElement;
   private readonly prompt: HTMLDivElement;
@@ -171,6 +173,8 @@ export class DistrictHud {
 
     this.caption = el('div', 'district-panel district-caption');
     root.appendChild(this.caption);
+    this.overheard = el('div', 'district-overheard');
+    root.appendChild(this.overheard);
 
     const help = el('div', 'district-panel district-help');
     this.help = help;
@@ -251,6 +255,17 @@ export class DistrictHud {
     this.caption.classList.add('is-shown');
     window.clearTimeout(this.captionTimer);
     this.captionTimer = window.setTimeout(() => this.caption.classList.remove('is-shown'), 6000);
+  }
+
+  /**
+   * Something a passer-by said going past: heard rather than read, so a line of italic over the
+   * street with no panel round it, and gone again before they are.
+   */
+  overhear(text: string): void {
+    this.overheard.textContent = `“${text}”`;
+    this.overheard.classList.add('is-shown');
+    window.clearTimeout(this.overheardTimer);
+    this.overheardTimer = window.setTimeout(() => this.overheard.classList.remove('is-shown'), 3400);
   }
 
   flashNotice(text: string): void {
@@ -1103,6 +1118,7 @@ export class DistrictHud {
 
   destroy(): void {
     window.clearTimeout(this.flashTimer);
+    window.clearTimeout(this.overheardTimer);
     for (const node of [
       this.objective,
       this.zoneChip,
