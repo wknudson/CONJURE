@@ -51,6 +51,8 @@ export const TALLOW_BLIGHT: EncounterDef = registerEncounter({
     // Bloom's third shelf, taught here: the volley and the vine.
     'thorn_volley',
     'leech_vine',
+    // The signature of the beast this fight awards: the treant’s own.
+    'ember_bark',
   ],
   enemyOpeningBoard: [
     ['creeping_briar', 1, 1],
@@ -315,7 +317,16 @@ export const HOLLOW_CENSUS: EncounterDef = registerEncounter({
   // they cannot also be the enemy's army: a first cut fielded ridge wolves on this line
   // and the balance harness caught the result, a side with no soldiers stalling every
   // playout at the turn cap. The bodies that fight back are what the fog kept.
-  enemyDeck: ['wither', 'creeping_decay', 'shadow_siphon', 'dark_tithe', 'shield_bash', 'aegis_ward'],
+  enemyDeck: [
+    'wither',
+    'creeping_decay',
+    'shadow_siphon',
+    'dark_tithe',
+    'shield_bash',
+    'aegis_ward',
+    // The signature of the beast this fight awards: the heron’s own.
+    'fen_strike',
+  ],
   enemyOpeningBoard: [
     ['hollow_wraith', 1, 1],
     ['ash_ghoul', 5, 1],
@@ -363,6 +374,8 @@ export const DROWNED_GRANARY: EncounterDef = registerEncounter({
     'stone_barricade',
     'aegis_ward',
     'tremor_mark',
+    // The signature of the beast this fight awards: the tortoise’s own.
+    'magma_shell',
   ],
   enemyOpeningBoard: [
     ['rime_fox', 1, 1],

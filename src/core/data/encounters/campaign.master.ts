@@ -100,6 +100,8 @@ export const CALDERA_CHIMERA: EncounterDef = registerEncounter({
     // Pyre's third shelf, taught here: the two Burn payoffs.
     'immolate',
     'flashover',
+    // The signature of the beast this fight awards: the chimera’s own.
+    'twin_breath',
   ],
   enemyOpeningBoard: [
     ['ember_hound', 1, 1],
@@ -183,6 +185,8 @@ export const RIMEFIELD_BREAK: EncounterDef = registerEncounter({
     // Frost's third shelf, taught here: weather in two sizes.
     'sleet',
     'icicle_rain',
+    // The signature of the beast this fight awards: the juggernaut’s own.
+    'glacier_ram',
   ],
   enemyOpeningBoard: [
     ['glacial_stalker', 1, 1],
@@ -250,6 +254,8 @@ export const STORM_SHELF_BINDING: EncounterDef = registerEncounter({
     // Surge's third shelf, taught here: the clap and the ball.
     'thunderclap',
     'ball_lightning',
+    // The signature of the beast this fight awards: the mantis’s own.
+    'static_frost',
   ],
   enemyOpeningBoard: [
     ['storm_wisp', 1, 1],
@@ -333,6 +339,8 @@ export const PYLON_NINE: EncounterDef = registerEncounter({
     // Surge's third shelf, taught here: charge, then cash it in.
     'static_insight',
     'short_circuit',
+    // The signature of the beast this fight awards: the geist’s own.
+    'haunting_charge',
   ],
   enemyOpeningBoard: [
     ['storm_wisp', 1, 1],
@@ -466,6 +474,8 @@ export const DYNAMO_FLATS: EncounterDef = registerEncounter({
     // Surge's third shelf, taught here: the spark and the bank.
     'spark',
     'capacitor_bank',
+    // The signature of the beast this fight awards: the dynamo’s own.
+    'magnet_pull',
   ],
   enemyOpeningBoard: [
     ['voltaic_hound', 1, 1],
@@ -610,6 +620,8 @@ export const BONE_BASTION: EncounterDef = registerEncounter({
     // Dusk's third shelf, taught here: the wall and the gaze.
     'ossuary_wall',
     'dread_gaze',
+    // The signature of the beast this fight awards: the sovereign’s own.
+    'bone_bulwark',
   ],
   enemyOpeningBoard: [
     ['grave_sentinel', 1, 1],
