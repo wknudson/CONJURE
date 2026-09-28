@@ -61,6 +61,9 @@ export const GLACIAL_FIELD: EncounterDef = registerEncounter({
     'grave_sentinel',
     'shield_bash',
     'aegis_ward',
+    // Frost's third shelf, taught here: the ward and the front.
+    'hoar_glaze',
+    'cold_front',
   ],
   enemyOpeningBoard: [
     ['scout_imp', 2, 1],

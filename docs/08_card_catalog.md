@@ -8,28 +8,28 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**244 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**282 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
 | minion | 88 | Hero | Vanguard Roster, never a deck |
-| spell | 98 | Companion | drafted into a Grimoire |
+| spell | 131 | Companion | drafted into a Grimoire |
 | ability | 27 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
-| obstacle | 25 | Hero | Hero Deck, shown as a Construct |
-| **total** | **244** | | |
+| obstacle | 30 | Hero | Hero Deck, shown as a Construct |
+| **total** | **282** | | |
 
 ### By school
 
 | School | Cards |
 |---|---:|
+| frost | 45 |
+| pyre | 42 |
+| surge | 41 |
 | dusk | 36 |
-| frost | 33 |
 | bulwark | 32 |
 | bloom | 30 |
 | arcane | 29 |
-| surge | 29 |
-| pyre | 28 |
 | neutral | 27 |
 
 ### By file
@@ -53,7 +53,10 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`hybrid.ts`](#hybridts) | 24 | 23 spell, 1 obstacle |
 | [`auras.ts`](#aurasts) | 13 | 11 spell, 2 ability |
 | [`hero.ts`](#herots) | 22 | 17 ability, 5 obstacle |
-| **total** | **244** | |
+| [`shelf.pyre.ts`](#shelfpyrets) | 14 | 13 spell, 1 obstacle |
+| [`shelf.frost.ts`](#shelffrostts) | 12 | 10 spell, 2 obstacle |
+| [`shelf.surge.ts`](#shelfsurgets) | 12 | 10 spell, 2 obstacle |
+| **total** | **282** | |
 
 ---
 
@@ -424,13 +427,72 @@ The Hero's kit: colourless and arcane abilities and constructs, taught by the Du
 | **Timber Palisade** | `timber_palisade` | obstacle | 3P | 2 | hero | 120 hp | leaves rubble | empty tile (any) | — | R2 | Raises a 120 HP palisade on an empty tile. Blocks line of sight, and leaves rubble when it breaks. |
 | **Warding Obelisk** | `warding_obelisk` | obstacle | 3P | 2 | hero | 60 hp | turn start entangle 1; leaves rubble | empty tile (any) | — | R2 | Raises a 60 HP obelisk on an empty tile. Enemies in its row start each turn Entangled while it stands. |
 
+### `shelf.pyre.ts`
+
+Pyre third shelf — commons, and the Drake and Salamander signatures. — **14 cards** (13 spell, 1 obstacle).
+
+| Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
+|---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Kindling** | `kindling` | spell | 0 | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Sets a unit alight (Burn 1). |
+| **Drake's Brand** | `drakes_brand` | spell | 1P | 1 | companion | — | — | entity (any, +obstacles) — range 4, LoS | — | R2 | Deals 10 fire damage to a unit or obstacle and brands it with a Cinder Mark. |
+| **Scorch** | `scorch` | spell | 1P | 1 | companion | — | — | entity (any, +obstacles) — range 4, LoS | — | R2 | Deals 20 fire damage to a unit or obstacle. |
+| **Smoulder** | `smoulder` | spell | 1P | 1 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Sets the ground burning in a cross around the target tile for 2 turns. Anything starting its turn there catches fire. |
+| **Backburn** | `backburn` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 10 fire damage down a 3-tile line and leaves it burning for 2 turns. |
+| **Drake's Roar** | `drakes_roar` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Sets every unit in a wide cross around the target tile alight (Burn 1), two tiles out each way. |
+| **Ductwork Drag** | `ductwork_drag` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Drags everything on a 3-tile line 1 tile toward its near end and sets it alight (Burn 1). |
+| **Fire Breath** | `fire_breath` | spell | 2P | 2 | companion | — | — | line 2 — range 2, LoS | — | R2 | Deals 20 fire damage in a 2-deep cone and sets everything caught alight (Burn 1). |
+| **Flashover** | `flashover` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Against a Burning unit, deals 30 fire damage to it and everything in a cross around it. Otherwise only 10. |
+| **Molten Shot** | `molten_shot` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 5, LoS | — | R2 | Deals 30 fire damage to a unit. |
+| **Wildfire** | `wildfire` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Sets every unit in a 3x3 around the target tile alight (Burn 1), yours included. No damage. |
+| **Ember Cascade** | `ember_cascade` | spell | 3P | 2 | companion | — | — | global | — | — | Sets off every Mark on the board at once. |
+| **Immolate** | `immolate` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Deals 40 fire damage to a unit, or 60 if it is already Burning. |
+| **Brazier** | `brazier` | obstacle | 1P | 1 | companion | 30 hp, cover | on break 20 dmg + burn 1 | empty tile (any) — range 3, LoS | — | R2 | Raises 30 HP of cover on an empty tile. When it breaks it spills its coals: 20 damage and Burn 1 to every unit on or beside it. |
+
+### `shelf.frost.ts`
+
+Frost third shelf — commons, and the Bear and Seal signatures. — **12 cards** (10 spell, 2 obstacle).
+
+| Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
+|---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Frostbite** | `frostbite` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 10 frost damage to a unit and applies Brittle 1. A Brittle target takes +20 damage from every hit. |
+| **Hoar Glaze** | `hoar_glaze` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Grants an ally 20 Armor and Chills everything orthogonally beside it, yours included. |
+| **Sea Fog** | `sea_fog` | spell | 1P | 1 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | — | Fogs a 2x2 block of tiles for 2 turns, blocking ranged line of sight through them. |
+| **Cold Front** | `cold_front` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Shoves everything on a 3-tile line 1 tile away from its near end and Chills it. Triggers standard Collision Damage (30 / 20). |
+| **Icebreaker Dive** | `icebreaker_dive` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | — | Against a Frozen unit, deals 40 impact damage and shoves it 1 tile away. Otherwise, 20 frost damage. |
+| **Numbing Roar** | `numbing_roar` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 10 frost damage to an enemy and everything in a cross around it, and Chills them all. |
+| **Sleet** | `sleet` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | R2 | Deals 10 frost damage to a 2x2 block of tiles and Chills everything there. |
+| **Tidal Floe** | `tidal_floe` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | — | Turns a 2x2 block of tiles into a drifting current for 2 turns and Chills everything there. The current carries what stands on it 1 tile each round. |
+| **Glacial Maul** | `glacial_maul` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 2, LoS | — | R2 | Deals 40 frost damage to a unit and applies Chill 2. The third stack freezes it solid. |
+| **Icicle Rain** | `icicle_rain` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 20 frost damage in a cross around the target tile and Chills everything there. |
+| **Snowdrift** | `snowdrift` | obstacle | 1P | 1 | companion | 30 hp, cover | on break chill 1 | empty tile (any) — range 3, LoS | — | R2 | Raises 30 HP of cover on an empty tile. When it breaks, every unit on or beside it is Chilled. |
+| **Den of Ice** | `den_of_ice` | obstacle | 3P | 2 | companion | 80 hp | on break freeze 1; leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises an 80 HP wall of ice on an empty tile. When it breaks, every unit on or beside it is Frozen. |
+
+### `shelf.surge.ts`
+
+Surge third shelf — commons, and the Lynx and Kudu signatures. — **12 cards** (10 spell, 2 obstacle).
+
+| Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
+|---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Spark** | `spark` | spell | 0 | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 10 shock damage to a unit, leaving it Charged. |
+| **Static Bristle** | `static_bristle` | spell | 0 | 1 | companion | — | — | none — range 1 | — | — | Leaves everything adjacent to the caster Charged. No damage. |
+| **Crackle Chase** | `crackle_chase` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | — | An ally moves 1 further this turn, and it and everything adjacent to it are left Charged. |
+| **Short Circuit** | `short_circuit` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Against a Charged unit, deals 30 damage through any armor. Otherwise, 10 shock damage. |
+| **Static Insight** | `static_insight` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 10 shock damage to a unit, leaving it Charged. Draw 1 card. |
+| **Lightning Draw** | `lightning_draw` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Drags everything within 2 tiles of an enemy 1 tile toward it, then deals 10 shock damage to it and everything adjacent. |
+| **Static Field** | `static_field` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Leaves every unit in a 3x3 around the target tile Charged, yours included. No damage. |
+| **Storm Pounce** | `storm_pounce` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | — | Deals 40 shock damage to a Charged unit, or 20 to anything else. |
+| **Thunderclap** | `thunderclap` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | R2 | Deals 10 shock damage to everything adjacent to the target tile and shoves it 1 tile away. Triggers standard Collision Damage (30 / 20). |
+| **Ball Lightning** | `ball_lightning` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 30 shock damage in a cross around the target tile, leaving every survivor Charged. |
+| **Capacitor Bank** | `capacitor_bank` | obstacle | 1P | 1 | companion | 30 hp | on break 20 dmg + stun 1 | empty tile (any) — range 3, LoS | — | R2 | Raises a 30 HP capacitor bank on an empty tile. When it breaks it discharges: 20 damage and Stun to every unit on or beside it. |
+| **Storm Spire** | `storm_spire` | obstacle | 3P | 2 | companion | 60 hp | on break 40 dmg + charged 1; leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 60 HP spire on an empty tile. When it breaks it earths out: 40 damage to every unit on or beside it, leaving them Charged. |
+
 ---
 
 ## Notes
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 87 of the 244 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 108 of the 282 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 

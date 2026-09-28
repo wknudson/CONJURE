@@ -133,6 +133,10 @@ export const HUNT_CALDERA_DRAKE = hunt({
     'aegis_ward',
     'grave_sentinel',
     'scout_imp',
+    // The Drake's own three: a hunt is where a species teaches its signatures.
+    'drakes_brand',
+    'ember_cascade',
+    'drakes_roar',
   ],
   opening: [
     ['scout_imp', 2, 1],
@@ -169,6 +173,10 @@ export const HUNT_RIMEFIELD_BEAR = hunt({
     'shield_bash',
     'aegis_ward',
     'grave_sentinel',
+    // The Bear's own three: a hunt is where a species teaches its signatures.
+    'glacial_maul',
+    'numbing_roar',
+    'den_of_ice',
   ],
   opening: [
     ['rimeguard', 2, 1],
@@ -204,6 +212,10 @@ export const HUNT_SHELF_LYNX = hunt({
     'aegis_ward',
     'scout_imp',
     'grave_sentinel',
+    // The Lynx's own three: a hunt is where a species teaches its signatures.
+    'storm_pounce',
+    'static_bristle',
+    'crackle_chase',
   ],
   opening: [
     ['voltaic_hound', 2, 1],
@@ -344,6 +356,10 @@ export const HUNT_CINDERWORKS_SALAMANDER = hunt({
     'shield_bash',
     'aegis_ward',
     'scout_imp',
+    // The Salamander's own three: a hunt is where a species teaches its signatures.
+    'smoulder',
+    'ductwork_drag',
+    'backburn',
   ],
   opening: [
     ['soot_sprite', 2, 1],
@@ -416,6 +432,10 @@ export const HUNT_SALTGLASS_SEAL = hunt({
     'shield_bash',
     'aegis_ward',
     'grave_sentinel',
+    // The Seal's own three: a hunt is where a species teaches its signatures.
+    'sea_fog',
+    'tidal_floe',
+    'icebreaker_dive',
   ],
   opening: [
     ['hoarhound', 2, 1],
@@ -485,6 +505,10 @@ export const HUNT_PYLON_KUDU = hunt({
     'shield_bash',
     'aegis_ward',
     'grave_sentinel',
+    // The Kudu's own three: a hunt is where a species teaches its signatures.
+    'lightning_draw',
+    'static_field',
+    'storm_spire',
   ],
   opening: [
     ['voltaic_hound', 2, 1],

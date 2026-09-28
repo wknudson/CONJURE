@@ -132,6 +132,9 @@ export const FOULED_CISTERN: EncounterDef = registerEncounter({
     'flash_freeze',
     'rime_mark',
     'aegis_ward',
+    // Frost's third shelf, taught here: the cheap Brittle and the drift.
+    'frostbite',
+    'snowdrift',
   ],
   enemyOpeningBoard: [
     ['rime_fox', 1, 1],

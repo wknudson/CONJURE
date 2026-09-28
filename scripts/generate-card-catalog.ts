@@ -41,6 +41,9 @@ import { THREAT_CARDS } from '../src/core/data/cards/threats.js';
 import { HYBRID_CARDS } from '../src/core/data/cards/hybrid.js';
 import { AURA_CARDS } from '../src/core/data/cards/auras.js';
 import { HERO_KIT_CARDS } from '../src/core/data/cards/hero.js';
+import { PYRE_SHELF } from '../src/core/data/cards/shelf.pyre.js';
+import { FROST_SHELF } from '../src/core/data/cards/shelf.frost.js';
+import { SURGE_SHELF } from '../src/core/data/cards/shelf.surge.js';
 
 /**
  * The shelves, in the order `cards/index.ts` merges them.
@@ -97,6 +100,9 @@ const SOURCES: Source[] = [
     cards: HERO_KIT_CARDS,
     blurb: "The Hero's kit: colourless and arcane abilities and constructs, taught by the Duelists.",
   },
+  { file: 'shelf.pyre.ts', cards: PYRE_SHELF, blurb: 'Pyre third shelf — commons, and the Drake and Salamander signatures.' },
+  { file: 'shelf.frost.ts', cards: FROST_SHELF, blurb: 'Frost third shelf — commons, and the Bear and Seal signatures.' },
+  { file: 'shelf.surge.ts', cards: SURGE_SHELF, blurb: 'Surge third shelf — commons, and the Lynx and Kudu signatures.' },
 ];
 
 const KIND_ORDER = ['minion', 'spell', 'ability', 'mark', 'obstacle'] as const;

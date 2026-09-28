@@ -97,6 +97,9 @@ export const CALDERA_CHIMERA: EncounterDef = registerEncounter({
     'aegis_ward',
     'shield_bash',
     'flame_surge',
+    // Pyre's third shelf, taught here: the two Burn payoffs.
+    'immolate',
+    'flashover',
   ],
   enemyOpeningBoard: [
     ['ember_hound', 1, 1],
@@ -177,6 +180,9 @@ export const RIMEFIELD_BREAK: EncounterDef = registerEncounter({
     'rime_mark',
     'aegis_ward',
     'creeping_rime',
+    // Frost's third shelf, taught here: weather in two sizes.
+    'sleet',
+    'icicle_rain',
   ],
   enemyOpeningBoard: [
     ['glacial_stalker', 1, 1],
@@ -241,6 +247,9 @@ export const STORM_SHELF_BINDING: EncounterDef = registerEncounter({
     'arc_mark',
     'aegis_ward',
     'paralytic_arc',
+    // Surge's third shelf, taught here: the clap and the ball.
+    'thunderclap',
+    'ball_lightning',
   ],
   enemyOpeningBoard: [
     ['storm_wisp', 1, 1],
@@ -321,6 +330,9 @@ export const PYLON_NINE: EncounterDef = registerEncounter({
     'arc_mark',
     'shadow_siphon',
     'aegis_ward',
+    // Surge's third shelf, taught here: charge, then cash it in.
+    'static_insight',
+    'short_circuit',
   ],
   enemyOpeningBoard: [
     ['storm_wisp', 1, 1],
@@ -448,6 +460,9 @@ export const DYNAMO_FLATS: EncounterDef = registerEncounter({
     'arc_mark',
     'aegis_ward',
     'tempest_break',
+    // Surge's third shelf, taught here: the spark and the bank.
+    'spark',
+    'capacitor_bank',
   ],
   enemyOpeningBoard: [
     ['voltaic_hound', 1, 1],

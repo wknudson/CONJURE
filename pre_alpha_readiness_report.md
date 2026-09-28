@@ -19,7 +19,7 @@ thirty-nine rooms behind real doors, four registries of things to do on the grou
 §7.9 and §7.10; that note was PR #40. The bestiary and grimoire expansion then began with its
 machinery as PR #41 — signature cards, rare hunts, and a pipeline for creature art — recorded in
 §7.11; that note was PR #42. Its second wave, the Hero kit and a duelist at every tier, merged
-as PR #43 and is recorded in §7.12; this note is PR #44.*
+as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; this note is PR #46.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -968,13 +968,37 @@ balance ledger: 7 files, 580 tests, green, including eight playouts of each new 
 was not reachable — the folder was at its dev-server limit, held by other sessions — so the AI
 playouts, which played nineteen of the twenty-two new cards, stand in for it.
 
-### 7.13 What remains
+### 7.13 The bestiary expansion, Wave 2 — **built, PR #45**
+
+The first three schools' shelves, and the fix for why their beasts dealt the same books. Two
+single-school species per school drafted eight cards out of one shelf of nine to eleven, with
+four struck off each; an Ignis and a Flue Salamander were two draws of mostly the same dozen.
+Twenty commons fill the shapes each shelf lacked (Pyre, the thinnest, gets eight), and eighteen
+signatures — three per species, tagged `bloodline` — give every one of the six a card its cousin
+can never learn and a book that opens on it. The omits drop from four cards to two. Every new card
+is taught in the same PR: each hunt plays its species' three, and the commons ride in the
+school's story fights, because the `UNREACHABLE` ledger fails in both directions.
+
+**What was found on the way.** A latent engine bug older than the expansion: a Companion card
+with no target of its own resolved every area against nothing, because `originOf` had no
+coordinate for a `none` target. Elmo's Fire's burst and Hoarfrost Veil's chill had never landed,
+silently, since each shipped. The engine already records where the caster stands, and now reads
+it; `casterBursts.test.ts` pins both cards and the new Static Bristle. Along the way, an entity
+area of the eight tiles around a unit excludes the unit (the ground version counts it), and two
+faces were corrected to say exactly who they touch.
+
+**Verified.** The full non-balance suite on the exact tip: 147 files, 3,577 tests, green — one
+earlier run on it timed out twice under CPU contention from probes in another worktree, and the
+clean rerun is the result. The balance ledger: 7 files, 580 tests, green. The catalog grows from
+244 base cards to 282.
+
+### 7.14 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 to §7.12 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.13 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
-found outside it belongs here on the same terms PRs #37, #39, #41 and #43 did. What comes next is
-a playtest, and the ten remaining waves of the bestiary expansion, each recorded here as it
+found outside it belongs here on the same terms PRs #37, #39, #41, #43 and #45 did. What comes next is
+a playtest, and the remaining waves of the bestiary expansion, each recorded here as it
 merges.
 
 ### Appendix — documentation drift found along the way
