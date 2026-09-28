@@ -205,7 +205,7 @@ export const CINDERWORKS: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: 0,
       label: 'West, out to the Caldera',
-      arrive: { x: 46, z: -2 },
+      arrive: { x: 102, z: -2 },
     },
     {
       // The Hall. The flats the contract names are the floor inside.

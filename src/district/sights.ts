@@ -1547,6 +1547,103 @@ export const SIGHTS: readonly SightDef[] = [
       'A cairn on the lane just past the gate, for whoever comes back. Sixty-one stones in it. ' +
       'Somebody counts them every week, and every week there are sixty-one.',
   },
+
+  /* ---- The Caldera ---- */
+  {
+    id: 'caldera:the_lava_fall',
+    areaId: 'caldera',
+    at: { x: 100, z: 30 },
+    label: 'Look at the lava fall',
+    caption:
+      'Running down a spur of the east wall into a pool that never crusts over, since before ' +
+      'the Cinderworks was built. The works always said it would tap it. The tap field is what ' +
+      'happened when it tried.',
+  },
+  {
+    id: 'caldera:the_obsidian_field',
+    areaId: 'caldera',
+    at: { x: -40, z: -70 },
+    label: 'Look across the glass',
+    caption:
+      'The floor set to glass, black and sharp enough to cut a boot through. Footprints are ' +
+      'pressed into it where it was still soft. They go out towards the middle, and they do not ' +
+      'come back.',
+  },
+  {
+    id: 'caldera:the_obsidian_spire',
+    areaId: 'caldera',
+    at: { x: -56, z: -68 },
+    label: 'Look into the spire',
+    caption:
+      'Black glass taller than a man, grown where a bubble in the flow burst and froze. Look ' +
+      'into it and there is something in the glass, a long way down, that looks back.',
+  },
+  {
+    id: 'caldera:the_fumaroles',
+    areaId: 'caldera',
+    at: { x: -90, z: -18 },
+    label: 'Look at the fumaroles',
+    caption:
+      'The ground breathes here, a vent every few strides with its own colour of bloom round ' +
+      'its mouth. The survey numbered each one. The numbers go up to forty. There are ' +
+      'fifty-one.',
+  },
+  {
+    id: 'caldera:the_sulphur_bloom',
+    areaId: 'caldera',
+    at: { x: -106, z: 30 },
+    label: 'Look at the sulphur',
+    caption:
+      'Crusted yellow on the ash where the vents breathe on it, bright enough to see by at ' +
+      'night. It stinks of the Cinderworks, or the Cinderworks stinks of it.',
+  },
+  {
+    id: 'caldera:the_survey_camp',
+    areaId: 'caldera',
+    at: { x: 6, z: 70 },
+    label: 'Look at the camp',
+    caption:
+      'Somebody surveyed the Caldera once: tents gone to rags, a fire gone to scorch, a sack of ' +
+      'stakes. The report is in the Archive at Highcourt, under a title that is only a number.',
+  },
+  {
+    id: 'caldera:the_survey_line',
+    areaId: 'caldera',
+    at: { x: 40, z: 90 },
+    label: 'Look along the cairns',
+    caption:
+      'A line of cairns straight across the south floor, one every thirty paces, marking where ' +
+      'the Magistracy decided the crater ends. The crater did not agree. The last cairn is on ' +
+      'its side in the ash.',
+  },
+  {
+    id: 'caldera:the_fallen_hut',
+    areaId: 'caldera',
+    at: { x: -18, z: 72 },
+    label: 'Look into the hut',
+    caption:
+      'Fallen in, the table inside still set up with its instruments. The last reading was ' +
+      'written down and then crossed out so hard the pen went through the paper.',
+  },
+  {
+    id: 'caldera:the_tap_field',
+    areaId: 'caldera',
+    at: { x: -30, z: -42 },
+    label: 'Look at the tap field',
+    caption:
+      'THE TAP FIELD — KEEP OUT, and past the stone the ground cracked and scorched where the ' +
+      'works tried to draw the heat off. It took nine. The wall says so, in the same paint as ' +
+      'the warning.',
+  },
+  {
+    id: 'caldera:the_inner_rim',
+    areaId: 'caldera',
+    at: { x: -36, z: -54 },
+    label: 'Look through the gap',
+    caption:
+      'A gap in the old crater wall where the rock came down, and past it the inner basin, the ' +
+      "Caldera's first floor. Everything out here is the Caldera still growing.",
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {
