@@ -739,11 +739,13 @@ describe('the Chalk Road grid', () => {
 });
 
 describe('the ward grid', () => {
-  it('is thirty by twenty-eight, and complete', () => {
-    // Grown from twenty square: a wharf, a sealed yard with a building in it, a chapel and a
-    // tavern below the plaza. Pinned so the next growth is a decision and not a drift.
-    expect(ASHFALL.grid).toHaveLength(28);
-    for (const row of ASHFALL.grid) expect(row).toHaveLength(30);
+  it('is fifty-four by fifty, and complete', () => {
+    // Grown from twenty square to thirty by twenty-eight -- a wharf, a sealed yard with a
+    // building in it, a chapel and a tavern below the plaza -- and then evenly on every side:
+    // the far bank, the Ropewalk, Tannery Row, Chapel Hill and Ash Gardens. Pinned so the next
+    // growth is a decision and not a drift.
+    expect(ASHFALL.grid).toHaveLength(50);
+    for (const row of ASHFALL.grid) expect(row).toHaveLength(54);
   });
 
   it('starts the player, the Dispatcher and every door on warded pavement', () => {
@@ -800,7 +802,8 @@ describe('the ward grid', () => {
   });
 
   it('bounds itself: the canal and everything off the edge are impassable', () => {
-    expect(isWalkable(ASHFALL, 0, -54)).toBe(false); // the canal
+    expect(isWalkable(ASHFALL, -40, -54)).toBe(false); // the canal
+    expect(isWalkable(ASHFALL, 0, -54)).toBe(true); // ...but for the Ash Bridge over it
     expect(isWalkable(ASHFALL, 0, 999)).toBe(false); // off the south edge
     expect(isWalkable(ASHFALL, -999, 0)).toBe(false); // off the west edge
     expect(tileAt(ASHFALL, 999, 999).walk).toBe(false);
@@ -872,7 +875,7 @@ describe('collision', () => {
 
   it('will not let a body stand in the canal', () => {
     const set = new ColliderSet(ASHFALL);
-    expect(set.blocked(0, -54)).toBe(true);
+    expect(set.blocked(-40, -54)).toBe(true);
   });
 
   it('respects a disabled collider', () => {

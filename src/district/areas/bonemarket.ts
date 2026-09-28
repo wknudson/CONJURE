@@ -132,7 +132,7 @@ export const BONEMARKET: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: -8,
       label: 'Back onto the cross-street',
-      arrive: { x: 54, z: 8 },
+      arrive: { x: 102, z: 8 },
     },
     {
       // The Hall. Its door is on the south face, onto the floor, because the floor is where

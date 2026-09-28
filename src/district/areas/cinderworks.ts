@@ -140,7 +140,7 @@ export const CINDERWORKS: AreaDef = defineArea({
       x: HALF_X - 2,
       z: 0,
       label: 'Up the cart lane to Ashfall Ward',
-      arrive: { x: -54, z: -26 },
+      arrive: { x: -102, z: -26 },
     },
     {
       // West, out of the works and up into the crater it is downwind of. The ward and the

@@ -633,6 +633,16 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#0e0f12',
     fogDensity: 0.02,
   },
+  /** The Tannery: a brazier, wet stone, and the lime giving back a light of its own. */
+  ashfall_tannery: {
+    sunIntensity: 1.5,
+    sunColor: '#c8c0a0',
+    ambientIntensity: 2.2,
+    skyColor: '#565a50',
+    groundBounce: '#3c3a2c',
+    fogColor: '#121310',
+    fogDensity: 0.026,
+  },
   /** The Cinder Cup: hearthlight. The warmest room in the ward, by a distance. */
   ashfall_cinder_cup: {
     sunIntensity: 1.8,

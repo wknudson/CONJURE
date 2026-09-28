@@ -32,6 +32,7 @@ import { ASHFALL_APOTHECARY } from './interiors/ashfallApothecary.js';
 import { ASHFALL_VIVARIUM } from './interiors/ashfallVivarium.js';
 import { ASHFALL_RECORDS } from './interiors/ashfallRecords.js';
 import { ASHFALL_TOLL_HOUSE } from './interiors/ashfallTollHouse.js';
+import { ASHFALL_TANNERY } from './interiors/ashfallTannery.js';
 import { ASHFALL_COUNTING_HOUSE } from './interiors/ashfallCountingHouse.js';
 import { ASHFALL_CHAPEL } from './interiors/ashfallChapel.js';
 import { ASHFALL_CINDER_CUP } from './interiors/ashfallCinderCup.js';
@@ -99,6 +100,7 @@ export const AREAS: readonly AreaDef[] = [
   ASHFALL_COUNTING_HOUSE,
   ASHFALL_CHAPEL,
   ASHFALL_CINDER_CUP,
+  ASHFALL_TANNERY,
   LAMPROW_OIL_HOUSE,
   LAMPROW_TITHE_OFFICE,
   LAMPROW_SINK_CELLARS,
@@ -165,6 +167,7 @@ export {
   ASHFALL_COUNTING_HOUSE,
   ASHFALL_CHAPEL,
   ASHFALL_CINDER_CUP,
+  ASHFALL_TANNERY,
   LAMPROW_OIL_HOUSE,
   LAMPROW_TITHE_OFFICE,
   LAMPROW_SINK_CELLARS,

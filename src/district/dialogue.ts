@@ -415,6 +415,26 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'The Counting House is supposed to send for the takings. If you see the Counting House, tell it.',
     },
   ],
+  ashfall_tanner: [
+    {
+      who: 'TANNER',
+      text: 'Bark from the Ashwood, lime from the Verge, hides from the Bonemarket, and the smell goes back up the cross-street to the ward that wrote the rule about it. That is the arrangement.',
+    },
+    {
+      who: 'TANNER',
+      text: "They walled us off the end of the street in my father's time and called it a row. The Magistracy still buys the leather. It just buys it with its nose held.",
+    },
+  ],
+  ashfall_tanners_boy: [
+    {
+      who: 'BOY AT THE PITS',
+      text: 'I stir. That is the job. You stir till your arms come off, and then you stir with what is left.',
+    },
+    {
+      who: 'BOY AT THE PITS',
+      text: 'Not that one. That one is the lime. It does not look like anything, which is how it gets you.',
+    },
+  ],
   ashfall_barge_hand: [
     {
       who: 'BARGEE',

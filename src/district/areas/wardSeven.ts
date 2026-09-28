@@ -130,7 +130,7 @@ export const WARD_SEVEN: AreaDef = defineArea({
       x: HALF_X - 2,
       z: -2,
       label: 'East, up to Ashfall Ward',
-      arrive: { x: -54, z: 30 },
+      arrive: { x: -102, z: 30 },
     },
     {
       // Down through the pump house into the cistern under the ward.
