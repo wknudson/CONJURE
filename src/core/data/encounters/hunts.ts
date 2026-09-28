@@ -584,3 +584,217 @@ export const HUNT_BARROW_JACKAL = hunt({
   turfwar: { count: 2, unitCardId: 'marrow_hound' },
   geodes: { min: 2, max: 3 },
 });
+
+// ============================================================== the third bloodlines
+//
+// Each hunt fields its handlers out of the school's newest bodies where it can, so the third
+// muster meets the balance harness the day it has a fight to be in, and each deck carries the
+// species' three signatures, which is how a player first owns one.
+
+export const HUNT_CALDERA_PHOENIX = hunt({
+  encounterId: 'hunt_caldera_phoenix',
+  name: 'Caldera Rim: Ashwing Phoenix',
+  blurb:
+    'It nests on the lip of the caldera and burns its own nest down every spring. The tap ' +
+    'crews have learned to stop counting how many times they have killed it.',
+  boundForm: 'phoenix_bound',
+  enemyDeck: [
+    'flame_surge',
+    'flame_surge',
+    'immolate',
+    'kindling',
+    'wildfire',
+    'flame_archer',
+    'shield_bash',
+    'aegis_ward',
+    // The Phoenix's own three.
+    'ash_rebirth',
+    'phoenix_dive',
+    'wingbeat_embers',
+  ],
+  opening: [
+    ['flame_archer', 2, 1],
+    ['kiln_guard', 5, 1],
+    ['cinder_lobber', 6, 0],
+  ],
+  terrain: [
+    { at: { x: 2, y: 3 }, kind: 'wall' },
+    { at: { x: 5, y: 4 }, kind: 'wall' },
+    { at: { x: 3, y: 5 }, kind: 'cover' },
+    { at: { x: 4, y: 2 }, kind: 'cover' },
+  ],
+  geodes: { min: 2, max: 3 },
+});
+
+export const HUNT_CINDERWORKS_BADGER = hunt({
+  encounterId: 'hunt_cinderworks_badger',
+  name: 'Slag Heaps: Cinderback Badger',
+  blurb:
+    'Something has dug a sett into the slag and is keeping the heap warm. The stokers want it ' +
+    'gone before it undermines the tip.',
+  boundForm: 'badger_bound',
+  enemyDeck: [
+    'fire_breath',
+    'fire_breath',
+    'scorch',
+    'stoke',
+    'brazier',
+    'kiln_guard',
+    'shield_bash',
+    'aegis_ward',
+    // The Badger's own three.
+    'burrow_strike',
+    'smoke_sett',
+    'cinderback_bristle',
+  ],
+  opening: [
+    ['salamander_whelp', 1, 1],
+    ['kiln_guard', 5, 1],
+    ['cinder_adder', 3, 0],
+  ],
+  terrain: [
+    { at: { x: 1, y: 3 }, kind: 'wall' },
+    { at: { x: 6, y: 3 }, kind: 'wall' },
+    { at: { x: 3, y: 4 }, kind: 'cover' },
+    { at: { x: 4, y: 4 }, kind: 'cover' },
+  ],
+});
+
+export const HUNT_RIMEFIELD_MAMMOTH = hunt({
+  encounterId: 'hunt_rimefield_mammoth',
+  name: 'Glacier Foot: Hoarfrost Mammoth',
+  blurb:
+    'It came down off the ice and is walking the pass road one step a day. The road will not ' +
+    'survive the walk, and neither will the toll-house at the bottom.',
+  boundForm: 'mammoth_bound',
+  enemyDeck: [
+    'glacial_spike',
+    'glacial_spike',
+    'frost_nova',
+    'icicle_rain',
+    'ice_barricade',
+    'permafrost_troll',
+    'shield_bash',
+    'aegis_ward',
+    // The Mammoth's own three.
+    'mammoth_trample',
+    'permafrost_stomp',
+    'woolly_hide',
+  ],
+  opening: [
+    ['permafrost_troll', 3, 1],
+    ['rimeguard', 1, 1],
+    ['frost_ballista', 5, 0],
+  ],
+  weather: { kind: 'fog' },
+  terrain: [
+    { at: { x: 2, y: 4 }, kind: 'wall' },
+    { at: { x: 5, y: 4 }, kind: 'wall' },
+    { at: { x: 3, y: 3 }, kind: 'cover' },
+  ],
+  turfwar: { count: 1, unitCardId: 'ridge_wolf' },
+});
+
+export const HUNT_RIMEFIELD_ERMINE = hunt({
+  encounterId: 'hunt_rimefield_ermine',
+  name: 'Snowline: Rime Ermine',
+  blurb:
+    'The trappers keep finding their snares sprung and nothing in them. It is white, it is ' +
+    'small, and it has been laughing at them all winter.',
+  boundForm: 'ermine_bound',
+  enemyDeck: [
+    'cold_snap',
+    'cold_snap',
+    'frostbite',
+    'creeping_rime',
+    'sleet',
+    'rime_fox',
+    'shield_bash',
+    'aegis_ward',
+    // The Ermine's own three.
+    'ermine_bite',
+    'white_dash',
+    'frozen_ambush',
+  ],
+  opening: [
+    ['frost_wisp', 2, 1],
+    ['rime_fox', 5, 1],
+    ['rime_archer', 3, 0],
+  ],
+  weather: { kind: 'fog' },
+  terrain: [
+    { at: { x: 1, y: 4 }, kind: 'cover' },
+    { at: { x: 6, y: 3 }, kind: 'cover' },
+    { at: { x: 3, y: 4 }, kind: 'wall' },
+  ],
+});
+
+export const HUNT_SALTGLASS_EEL = hunt({
+  encounterId: 'hunt_saltglass_eel',
+  name: 'Saltglass Canals: Galvanic Eel',
+  blurb:
+    'The lock-keepers stopped putting their hands in the water the week the grid first leaked ' +
+    'into it. Something down there has been eating well ever since.',
+  boundForm: 'eel_bound',
+  enemyDeck: [
+    'static_arc',
+    'static_arc',
+    'discharge',
+    'spark',
+    'chain_bolt',
+    'spark_imp',
+    'shield_bash',
+    'aegis_ward',
+    // The Eel's own three.
+    'eel_coil',
+    'canal_current',
+    'eel_jolt',
+  ],
+  opening: [
+    ['static_hare', 2, 1],
+    ['voltaic_coil', 5, 1],
+    ['coil_lancer', 3, 0],
+  ],
+  // No rain. Rain adds ten to every shock hit, and an eel in the rain ended playouts in four
+  // turns at an Adept tier whose other hunts run to twenty.
+  weather: { kind: 'fog' },
+  terrain: [
+    { at: { x: 2, y: 3 }, kind: 'cover' },
+    { at: { x: 5, y: 4 }, kind: 'cover' },
+    { at: { x: 3, y: 5 }, kind: 'wall' },
+  ],
+});
+
+export const HUNT_SHELF_PANGOLIN = hunt({
+  encounterId: 'hunt_shelf_pangolin',
+  name: 'Storm Shelf: Sparkback Pangolin',
+  blurb:
+    'It rolls down the conduit gullies in a ball of sparks and uncurls wherever it stops. The ' +
+    'shepherds have started calling it the Works inspector.',
+  boundForm: 'pangolin_bound',
+  enemyDeck: [
+    'thunderclap',
+    'spark',
+    'spark',
+    'induction',
+    'static_insight',
+    'voltaic_hound',
+    'shield_bash',
+    'aegis_ward',
+    // The Pangolin's own three.
+    'ball_roll',
+    'scale_shed',
+    'static_curl',
+  ],
+  opening: [
+    ['voltaic_hound', 2, 1],
+    ['static_hare', 5, 1],
+    ['clockwork_bombardier', 3, 0],
+  ],
+  weather: { kind: 'gale', wind: { x: 1, y: 0 } },
+  terrain: [
+    { at: { x: 2, y: 4 }, kind: 'wall' },
+    { at: { x: 5, y: 3 }, kind: 'wall' },
+    { at: { x: 4, y: 5 }, kind: 'cover' },
+  ],
+});

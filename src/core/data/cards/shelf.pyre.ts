@@ -348,4 +348,124 @@ export const PYRE_SHELF: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  // ======================================================== the Ashwing Phoenix
+
+  /** A fallen body stood back up where it fell, at forty per cent. The Phoenix's own trick, lent. */
+  ash_rebirth: {
+    id: 'ash_rebirth',
+    name: 'Ash Rebirth',
+    cost: { bones: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Raises a fallen Vanguard on the exact tile it fell, at 40% of its health. Nothing may be standing there.',
+    target: { kind: 'fallen', site: 'pyre' },
+    effect: { op: 'revive', site: 'pyre', hp: { mode: 'percent', percent: 40 } },
+    keywords: [],
+    bloodline: ['phoenix'],
+  },
+
+  /** Thirty fire on a unit, and everything beside it caught alight as the bird pulls up. */
+  phoenix_dive: {
+    id: 'phoenix_dive',
+    name: 'Phoenix Dive',
+    cost: { bones: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 30 fire damage to a unit and sets everything adjacent to it alight (Burn 1).',
+    target: ENEMY_UNIT,
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'fire', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['phoenix'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** A line of Burn from one beat of the wings. No damage. */
+  wingbeat_embers: {
+    id: 'wingbeat_embers',
+    name: 'Wingbeat Embers',
+    cost: { bones: 1, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Fans embers down a 3-tile line, setting everything on it alight (Burn 1). No damage.',
+    target: { kind: 'line', length: 3 },
+    effect: { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'line', length: 3 } },
+    keywords: [],
+    bloodline: ['phoenix'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  // ====================================================== the Cinderback Badger
+
+  /** Twenty fire and a Burn on an adjacent enemy. The Badger bites. */
+  burrow_strike: {
+    id: 'burrow_strike',
+    name: 'Burrow Strike',
+    cost: { bones: 1, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 fire damage to an adjacent enemy and sets it alight (Burn 1).',
+    target: ENEMY_UNIT,
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'fire', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['badger'],
+    range: 1,
+  },
+
+  /** A sett full of smoke: fog on a 2x2 for two turns, and a Burn on whoever is in it. */
+  smoke_sett: {
+    id: 'smoke_sett',
+    name: 'Smoke Sett',
+    cost: { bones: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Fills a 2x2 block with smoke for 2 turns, blocking ranged line of sight, and sets everything there alight (Burn 1).',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 2 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'spawnHazard', kind: 'steam_fog', turns: 2, area: { shape: 'square', size: 2 } },
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'square', size: 2 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['badger'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** Twenty fire to everything around the Badger, friend and foe: the cinders on its back. */
+  cinderback_bristle: {
+    id: 'cinderback_bristle',
+    name: 'Cinderback Bristle',
+    cost: { bones: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 fire damage to everything adjacent to the caster, yours included.',
+    target: { kind: 'none' },
+    effect: { op: 'damage', amount: 20, dtype: 'fire', area: { shape: 'adjacent8' } },
+    keywords: [],
+    bloodline: ['badger'],
+    range: 1,
+  },
 };

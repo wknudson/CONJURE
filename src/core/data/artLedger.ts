@@ -34,7 +34,15 @@ export const PLACEHOLDER_MARK = 'conjure-placeholder';
  * when its front sprite is missing, so a stand-in is the difference between a new beast
  * walking beside the player as a shape and not walking beside them at all.
  */
-export const COMPANION_ART_PENDING: readonly string[] = [];
+export const COMPANION_ART_PENDING: readonly string[] = [
+  // The third bloodlines of Pyre, Frost and Surge.
+  'phoenix',
+  'badger',
+  'mammoth',
+  'ermine',
+  'eel',
+  'pangolin',
+];
 
 /** The file stem a species' sprites are saved under. */
 export function spriteStemOf(species: CompanionDef): string {

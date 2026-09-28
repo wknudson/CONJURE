@@ -270,4 +270,138 @@ export const SURGE_SHELF: Record<string, CardDef> = {
     range: 3,
     needsLoS: true,
   },
+
+  // ============================================================ the Galvanic Eel
+
+  /** Ten shock and an Entangle: the Eel wraps what it bites. */
+  eel_coil: {
+    id: 'eel_coil',
+    name: 'Eel Coil',
+    cost: { bones: 2, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 10 shock damage to a unit and Entangles it: it cannot move through its next turn.',
+    target: ENEMY_UNIT,
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'shock', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'entangle', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['eel'],
+    range: 2,
+    needsLoS: true,
+  },
+
+  /** A live current on a 2x2, and ten shock to whatever is standing in it. */
+  canal_current: {
+    id: 'canal_current',
+    name: 'Canal Current',
+    cost: { bones: 2, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Turns a 2x2 block into a live current for 2 turns and deals 10 shock damage there. The current carries what stands on it 1 tile each round.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 2 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'spawnHazard', kind: 'current', turns: 2, area: { shape: 'square', size: 2 } },
+        { op: 'damage', amount: 10, dtype: 'shock', area: { shape: 'square', size: 2 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['eel'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** Twenty shock at two tiles, for one Bone. */
+  eel_jolt: {
+    id: 'eel_jolt',
+    name: 'Eel Jolt',
+    cost: { bones: 1, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 shock damage to a unit, leaving it Charged.',
+    target: ENEMY_UNIT,
+    effect: { op: 'damage', amount: 20, dtype: 'shock', area: { shape: 'target' } },
+    keywords: [],
+    bloodline: ['eel'],
+    range: 2,
+    needsLoS: true,
+  },
+
+  // ====================================================== the Sparkback Pangolin
+
+  /** Twenty shock down a line, and everything on it shoved a tile along. */
+  ball_roll: {
+    id: 'ball_roll',
+    name: 'Ball Roll',
+    cost: { bones: 2, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 shock damage down a 3-tile line and shoves everything on it 1 tile away from its near end. Triggers standard Collision Damage (30 / 20).',
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'shock', area: { shape: 'line', length: 3 } },
+        { op: 'shoveArea', distance: 1, area: { shape: 'line', length: 3 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['pangolin'],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /** Twenty armour on an ally, and everything beside it left Charged by the scales it sheds. */
+  scale_shed: {
+    id: 'scale_shed',
+    name: 'Scale Shed',
+    cost: { bones: 1, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Gives an ally 20 Armor, and leaves everything adjacent to it Charged.',
+    target: ALLY_UNIT,
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'grantArmor', amount: 20 },
+        { op: 'applyStatus', status: 'charged', stacks: 1, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['pangolin'],
+    range: 4,
+  },
+
+  /** Your Hero plated for twenty, and everything beside the Pangolin left Charged. */
+  static_curl: {
+    id: 'static_curl',
+    name: 'Static Curl',
+    cost: { bones: 1, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Your Hero gains 20 Armor, and everything adjacent to the caster is left Charged.',
+    target: { kind: 'none' },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'grantArmor', amount: 20 },
+        { op: 'applyStatus', status: 'charged', stacks: 1, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['pangolin'],
+    range: 1,
+  },
 };

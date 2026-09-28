@@ -179,6 +179,44 @@ export const HUNTS: readonly Hunt[] = [
     tier: 'master',
     region: 'The Bone Bastion',
   },
+
+  // -------------------------------------------------------- the third bloodlines
+  {
+    encounterId: 'hunt_caldera_phoenix',
+    species: 'phoenix',
+    tier: 'master',
+    region: 'The Caldera',
+  },
+  {
+    encounterId: 'hunt_cinderworks_badger',
+    species: 'badger',
+    tier: 'adept',
+    region: 'The Cinderworks',
+  },
+  {
+    encounterId: 'hunt_rimefield_mammoth',
+    species: 'mammoth',
+    tier: 'master',
+    region: 'The Rimefields',
+  },
+  {
+    encounterId: 'hunt_rimefield_ermine',
+    species: 'ermine',
+    tier: 'novice',
+    region: 'The Rimefields',
+  },
+  {
+    encounterId: 'hunt_saltglass_eel',
+    species: 'eel',
+    tier: 'adept',
+    region: 'Saltglass',
+  },
+  {
+    encounterId: 'hunt_shelf_pangolin',
+    species: 'pangolin',
+    tier: 'novice',
+    region: 'The Storm Shelf',
+  },
 ];
 
 export function huntByEncounter(encounterId: string): Hunt | undefined {

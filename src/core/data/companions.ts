@@ -815,6 +815,182 @@ const SPECIES: CompanionDef[] = [
     ],
     unitCardId: 'crab_bound',
   },
+
+  // -------------------------------------------------------- the third bloodlines
+  //
+  // Two more mono species for Pyre, Frost and Surge, so each of those schools speaks through
+  // four beasts. What separates four beasts of one school is no longer mostly `omit`: each
+  // has three signature cards of its own and opens its book on one of them, and the omit is
+  // down to the two cards that most belong to a cousin. Every one is huntable; none reaches
+  // the creation screen, because `foundersOf` takes the first mono species of each school.
+  //
+  // Their art is still to be painted, so each ships on a school-coloured stand-in listed in
+  // `COMPANION_ART_PENDING`.
+
+  {
+    id: 'phoenix',
+    artId: 'ashwing_phoenix',
+    name: 'Ashwing Phoenix',
+    title: 'Pyre Bird',
+    school: 'pyre',
+    blurb:
+      'Burns down to ash every winter and comes back angrier. Throws fire from above the fight, and puts your fallen back on their feet.',
+    deck: [...STARTER_DECK],
+    // The Phoenix is the caster of the school: it keeps the long shapes and gives up the
+    // two that pull the fight to it.
+    grimoire: {
+      schools: ['pyre'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['chimney_draw', 'pressure_valve_release'],
+    },
+    legacyGrimoire: [
+      'phoenix_dive',
+      'phoenix_dive',
+      'wingbeat_embers',
+      'flame_surge',
+      'flame_surge',
+      'molten_shot',
+      'kindling',
+      'ash_rebirth',
+    ],
+    unitCardId: 'phoenix_bound',
+  },
+  {
+    id: 'badger',
+    artId: 'cinderback_badger',
+    name: 'Cinderback Badger',
+    title: 'Sett Burner',
+    school: 'pyre',
+    blurb:
+      'Digs its sett under the slag heaps and fills it with smoke. Bites hard, burns what it bites, and will not be moved off its ground.',
+    deck: [...STARTER_DECK],
+    // The brawler of the school: close fire and smoke. It never learns the long shapes.
+    grimoire: {
+      schools: ['pyre'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['cinder_gale', 'cataclysmic_core'],
+    },
+    legacyGrimoire: [
+      'burrow_strike',
+      'burrow_strike',
+      'smoke_sett',
+      'cinderback_bristle',
+      'fire_breath',
+      'fire_breath',
+      'scorch',
+      'stoke',
+    ],
+    unitCardId: 'badger_bound',
+  },
+  {
+    id: 'mammoth',
+    artId: 'hoarfrost_mammoth',
+    name: 'Hoarfrost Mammoth',
+    title: 'Glacier Walker',
+    school: 'frost',
+    blurb:
+      'Walks down off the glacier once a generation and does not step round anything. Stands in front, tramples a line, and freezes what it stops.',
+    deck: [...STARTER_DECK],
+    // The wall of the school: armour and stomps. It leaves the fog to the Seal and the Ermine.
+    grimoire: {
+      schools: ['frost'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['whiteout', 'cold_snap'],
+    },
+    legacyGrimoire: [
+      'mammoth_trample',
+      'permafrost_stomp',
+      'permafrost_stomp',
+      'woolly_hide',
+      'woolly_hide',
+      'glacial_spike',
+      'ice_barricade',
+      'frost_nova',
+    ],
+    unitCardId: 'mammoth_bound',
+  },
+  {
+    id: 'ermine',
+    artId: 'rime_ermine',
+    name: 'Rime Ermine',
+    title: 'Snow Thief',
+    school: 'frost',
+    blurb:
+      'White on white, and gone before you see it. Bites what the cold has already slowed, and hides in its own weather.',
+    deck: [...STARTER_DECK],
+    // The skirmisher of the school: cheap cold and the payoff for it. It never learns the
+    // slow walls.
+    grimoire: {
+      schools: ['frost'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['ice_barricade', 'hail_spire'],
+    },
+    legacyGrimoire: [
+      'ermine_bite',
+      'ermine_bite',
+      'frozen_ambush',
+      'white_dash',
+      'cold_snap',
+      'cold_snap',
+      'creeping_rime',
+      'frostbite',
+    ],
+    unitCardId: 'ermine_bound',
+  },
+  {
+    id: 'eel',
+    artId: 'galvanic_eel',
+    name: 'Galvanic Eel',
+    title: 'Canal Current',
+    school: 'surge',
+    blurb:
+      'Lives in the canals under the Works, where the grid bleeds into the water. Coils round what it catches and turns the water against it.',
+    deck: [...STARTER_DECK],
+    // The water half of Surge: currents and coils. It leaves the pylons to the Kudu.
+    grimoire: {
+      schools: ['surge'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['tesla_pylon', 'tempest_break'],
+    },
+    legacyGrimoire: [
+      'eel_coil',
+      'eel_jolt',
+      'eel_jolt',
+      'canal_current',
+      'static_arc',
+      'static_arc',
+      'discharge',
+      'spark',
+    ],
+    unitCardId: 'eel_bound',
+  },
+  {
+    id: 'pangolin',
+    artId: 'sparkback_pangolin',
+    name: 'Sparkback Pangolin',
+    title: 'Rolling Grid',
+    school: 'surge',
+    blurb:
+      'Plated in scales that hum. Curls up, takes the blow, and gives the charge back to whoever struck it.',
+    deck: [...STARTER_DECK],
+    // The shield of the school: scales and rolls. It never learns the Lynx's footwork.
+    grimoire: {
+      schools: ['surge'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['arcing_step', 'galvanic_rally'],
+    },
+    legacyGrimoire: [
+      'ball_roll',
+      'ball_roll',
+      'scale_shed',
+      'static_curl',
+      'thunderclap',
+      'chain_bolt',
+      'induction',
+      'spark',
+    ],
+    unitCardId: 'pangolin_bound',
+  },
 ];
 
 /**
