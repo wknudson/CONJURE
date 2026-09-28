@@ -38,7 +38,8 @@ export type LandmarkId =
   | 'beam_engine'
   | 'lava_fall'
   | 'frozen_falls'
-  | 'mammoth';
+  | 'mammoth'
+  | 'great_pylon';
 
 export interface LandmarkKind {
   /** The footprint the colliders learn, centred on the landmark, in world units. */
@@ -70,6 +71,7 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   beam_engine: { w: 3.6, d: 3.6, height: 11, note: 'A pumping engine: the house, its stack, and the great beam rocking on the wall-top.' },
   lava_fall: { w: 3.2, d: 2.8, height: 9, note: 'A spur of the crater wall with lava running down its face into a pool that never cools.' },
   frozen_falls: { w: 3.6, d: 3.0, height: 10, note: 'A fall off the ridge that froze where it fell: a sheet of ice down the rock, and the icicles it grew.' },
+  great_pylon: { w: 3.6, d: 3.6, height: 20, overhang: 1.7, note: "The survey's first pylon and its tallest, a lattice mast with its arms out, and the sky still coming down to it." },
   mammoth: { w: 6.4, d: 3.2, height: 3.2, overhang: 0.6, note: 'A mammoth where it lay down in the snow: the ribs still standing, the tusks curled over the skull, all of it rimed.' },
 };
 
@@ -106,8 +108,13 @@ export interface LandmarkMover {
 export interface BuiltLandmark {
   readonly parts: LandmarkPart[];
   readonly movers: LandmarkMover[];
-  /** A light it casts, relative to its centre, if it lights anything. */
-  readonly light?: { readonly at: THREE.Vector3; readonly color: string };
+  /**
+   * A light it casts, relative to its centre, if it lights anything. A fire's, unless `arc` says
+   * it is the sky coming down: blue-white, dark most of the time, and then not.
+   */
+  readonly light?: { readonly at: THREE.Vector3; readonly color: string; readonly arc?: boolean };
+  /** The colour of its glowing parts, where it is not firelight. */
+  readonly glow?: string;
 }
 
 /* ------------------------------------------------------------------------------------------ */
@@ -132,6 +139,14 @@ const cyl = (r0: number, r1: number, h: number, seg: number, x = 0, y = h / 2, z
 const cone = (r: number, h: number, seg: number, x = 0, y = h / 2, z = 0): THREE.BufferGeometry =>
   uvify(new THREE.ConeGeometry(r, h, seg).translate(x, y, z));
 const join = (gs: THREE.BufferGeometry[]): THREE.BufferGeometry => (gs.length === 1 ? gs[0]! : mergeGeometries(gs)!);
+/** A round bar from one point to another: a leg, a brace, a stroke of lightning. */
+const strut = (a: THREE.Vector3, b: THREE.Vector3, r: number, seg = 4): THREE.BufferGeometry => {
+  const dir = b.clone().sub(a);
+  const g = new THREE.CylinderGeometry(r, r, dir.length(), seg);
+  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize()));
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  return uvify(g.translate(mid.x, mid.y, mid.z));
+};
 
 /** What a landmark is made of. `seed` varies the details that should not repeat between two. */
 export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
@@ -314,6 +329,54 @@ export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
         { surface: 'ice', geometry: join(icicles) },
       ],
       movers: [],
+    };
+  }
+  if (id === 'great_pylon') {
+    // A lattice mast: four legs leaning in from the footing's corners, a ring of bars and a brace
+    // across every face at each stage, the arms out at the top with their insulators hung off them,
+    // and a spike over it all. The crown is three strokes of light from the spike down to a ring
+    // round the arms, turning, and the light in it strikes.
+    const V = (x: number, y: number, z: number): THREE.Vector3 => new THREE.Vector3(x, y, z);
+    const at = (s: number, y: number): number => s * (1.55 - (y / 16) * 1.0);
+    const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const;
+    const iron: THREE.BufferGeometry[] = [];
+    // Each leg stands on a footing block, so its end is off the ground rather than through it.
+    for (const [sx, sz] of corners) {
+      iron.push(box(0.6, 0.3, 0.6, at(sx, 0), 0.15, at(sz, 0)));
+      iron.push(strut(V(at(sx, 0.3), 0.3, at(sz, 0.3)), V(at(sx, 16), 16, at(sz, 16)), 0.12));
+    }
+    for (const y0 of [0, 4, 8, 12]) {
+      const y1 = y0 + 4;
+      for (let i = 0; i < 4; i++) {
+        const [ax, az] = corners[i]!;
+        const [bx, bz] = corners[(i + 1) % 4]!;
+        iron.push(strut(V(at(ax, y1), y1, at(az, y1)), V(at(bx, y1), y1, at(bz, y1)), 0.07));
+        const yb = Math.max(y0, 0.3);
+        iron.push(strut(V(at(ax, yb), yb, at(az, yb)), V(at(bx, y1), y1, at(bz, y1)), 0.05));
+      }
+    }
+    iron.push(box(6.6, 0.3, 0.3, 0, 16.2, 0), box(0.3, 0.3, 4.4, 0, 14.4, 0));
+    for (const x of [-3.1, 3.1]) iron.push(cyl(0.12, 0.12, 1.1, 5, x, 15.5, 0));
+    for (const z of [-2.0, 2.0]) iron.push(cyl(0.12, 0.12, 1.1, 5, 0, 13.7, z));
+    iron.push(cone(0.25, 3.2, 5, 0, 17.8, 0));
+    // The crown: jagged strokes, each a chain of bars kinked where the seed says.
+    const bolts: THREE.BufferGeometry[] = [];
+    for (let b = 0; b < 3; b++) {
+      const ang = (b / 3) * Math.PI * 2;
+      let p = V(0, 19.2, 0);
+      for (let s = 1; s <= 4; s++) {
+        const t = s / 4;
+        const r = 3.0 * t;
+        const q = V(Math.cos(ang) * r + (nextFloat(rng) - 0.5) * 0.5, 19.2 - 3.0 * t + (nextFloat(rng) - 0.5) * 0.4, Math.sin(ang) * r + (nextFloat(rng) - 0.5) * 0.5);
+        bolts.push(strut(p, q, 0.06, 3));
+        p = q;
+      }
+    }
+    return {
+      parts: [{ surface: 'iron', geometry: join(iron) }],
+      movers: [{ surface: 'glow', geometry: join(bolts), pivot: V(0, 0, 0), axis: V(0, 1, 0), motion: 'spin', amount: 5, reach: 1.7 }],
+      light: { at: V(0, 17, 0), color: '#9fd8ff', arc: true },
+      glow: '#cfeaff',
     };
   }
   if (id === 'mammoth') {
