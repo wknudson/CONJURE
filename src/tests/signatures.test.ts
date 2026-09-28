@@ -112,12 +112,14 @@ describe('a signature card', () => {
 
 describe('the draft with signatures', () => {
   it('opens every book on one of the bloodline’s own', () => {
+    // A species nobody ships, so the signature pool is exactly the two cards registered here.
+    const TEST_SPECIES: GrimoireSource = { schools: ['pyre'], hybridChance: 5, bloodline: 'test_species' };
     const ids = ['test_sig_a', 'test_sig_b'];
-    for (const id of ids) defineCard(spell(id, 'pyre', ['salamander']));
+    for (const id of ids) defineCard(spell(id, 'pyre', ['test_species']));
     try {
-      expect(signaturePool(SALAMANDER).map((c) => c.id).sort()).toEqual(ids);
+      expect(signaturePool(TEST_SPECIES).map((c) => c.id).sort()).toEqual(ids);
       for (let seed = 1; seed <= 40; seed++) {
-        const book = draftGrimoire(makeRng(seed), SALAMANDER, GRIMOIRE_SIZE);
+        const book = draftGrimoire(makeRng(seed), TEST_SPECIES, GRIMOIRE_SIZE);
         expect(book, `seed ${seed}`).toHaveLength(GRIMOIRE_SIZE);
         expect(ids, `seed ${seed}`).toContain(book[0]);
       }
@@ -139,10 +141,9 @@ describe('the draft with signatures', () => {
   });
 
   it('leaves a bloodline with no signatures drawing exactly as it did', () => {
-    // No shipped card carries a bloodline yet, so every species is in this case today —
-    // and the draft rule must have moved none of them.
-    for (const c of COMPANIONS) {
-      expect(signaturePool(c.grimoire), c.id).toEqual([]);
+    // A species with no signature of its own takes the ordinary chain, so the rule moves
+    // nothing for it. Asked of whichever species are still in that case.
+    for (const c of COMPANIONS.filter((s) => signaturePool(s.grimoire).length === 0)) {
       const stripped: GrimoireSource = { ...c.grimoire, bloodline: undefined };
       expect(draftGrimoire(makeRng(11), c.grimoire, GRIMOIRE_SIZE), c.id).toEqual(
         draftGrimoire(makeRng(11), stripped, GRIMOIRE_SIZE),
@@ -170,6 +171,39 @@ describe('socketing a signature', () => {
       expect(socketRefusal(IGNIS, [id], 0, id)).toBe('off-school');
     } finally {
       delete CARDS[id];
+    }
+  });
+});
+
+describe('the shipped signatures', () => {
+  const shipped = Object.values(CARDS).filter((c) => c.bloodline && !c.id.endsWith('_r2'));
+
+  it('name only real species, each of which speaks the card’s school', () => {
+    // A signature naming a beast that cannot reach its school is a card nobody can draft.
+    for (const card of shipped) {
+      for (const id of card.bloodline!) {
+        const species = companionById(id);
+        expect(species, `${card.id} names ${id}`).toBeDefined();
+        expect(species!.grimoire.schools, `${card.id} for ${id}`).toContain(card.school);
+      }
+    }
+  });
+
+  it('open the book of every species that has them', () => {
+    for (const c of COMPANIONS.filter((s) => signaturePool(s.grimoire).length > 0)) {
+      const own = new Set(signaturePool(c.grimoire).map((d) => d.id));
+      for (let seed = 1; seed <= 20; seed++) {
+        const book = draftGrimoire(makeRng(seed), c.grimoire, GRIMOIRE_SIZE);
+        expect(own.has(book[0]!), `${c.id} seed ${seed} opened on ${book[0]}`).toBe(true);
+      }
+    }
+  });
+
+  it('are never Marks, bodies or Hero cards', () => {
+    // A signature lives in the Grimoire, which deals Spells and Constructs only.
+    for (const card of shipped) {
+      expect(['spell', 'obstacle'], card.id).toContain(card.kind);
+      expect(card.source, card.id).toBe('companion');
     }
   });
 });
