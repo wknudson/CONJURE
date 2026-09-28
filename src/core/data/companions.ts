@@ -80,7 +80,7 @@ export interface CompanionDef {
   unitCardId: string;
 }
 
-export const COMPANIONS: CompanionDef[] = [
+const SPECIES: CompanionDef[] = [
   {
     id: 'ignis',
     name: 'Ignis',
@@ -804,6 +804,18 @@ export const COMPANIONS: CompanionDef[] = [
     unitCardId: 'crab_bound',
   },
 ];
+
+/**
+ * Every species, with its Grimoire source stamped with its own id.
+ *
+ * `GrimoireSource.bloodline` is what a signature card is matched against, and it is always
+ * the species' id — so it is written here once rather than twenty-seven times by hand, where
+ * a species added later could leave it off and quietly draft none of its own signatures.
+ */
+export const COMPANIONS: CompanionDef[] = SPECIES.map((c) => ({
+  ...c,
+  grimoire: { ...c.grimoire, bloodline: c.id },
+}));
 
 export function companionById(id: string): CompanionDef | undefined {
   return COMPANIONS.find((c) => c.id === id);

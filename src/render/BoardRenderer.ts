@@ -1097,6 +1097,7 @@ export class BoardRenderer {
       drawUnitBody(ctx, cam, centre, {
         archetype: view.snapshot.archetype,
         school: view.snapshot.school,
+        defId: view.snapshot.defId,
         footprint,
         ally,
         bob: (this.clock / 1400) % 1,
@@ -1423,6 +1424,7 @@ export class BoardRenderer {
     drawUnitBody(ctx, cam, centre, {
       archetype: view.snapshot.archetype,
       school: view.snapshot.school,
+      defId: view.snapshot.defId,
       footprint,
       ally: view.snapshot.side === 'player',
       bob: 0,

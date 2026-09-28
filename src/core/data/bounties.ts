@@ -22,7 +22,8 @@ import {
   storyContractByEncounter,
   type StoryContract,
 } from './campaign.js';
-import { HUNTS, huntByEncounter, type Hunt } from './hunts.js';
+import type { School } from '../../contract/ids.js';
+import { HUNTS, huntByEncounter, huntOpen, type Hunt } from './hunts.js';
 import { LAIRS, lairByEncounter, type Lair } from './lairs.js';
 import { packByEncounter, type PackDef } from './packs.js';
 
@@ -397,9 +398,16 @@ export function packBounty(pack: PackDef, seed: number): Bounty {
   };
 }
 
-/** Every hunt as a Bounty, in registry order. The gate panel's whole data source. */
-export function huntBoard(seed: number): Bounty[] {
-  return HUNTS.map((h) => huntBounty(h, seed));
+/**
+ * Every hunt posted for this character, as a Bounty, in registry order. The gate panel's
+ * whole data source.
+ *
+ * `kept` is the schools the player's beasts speak (`schoolsKept`), and it is required
+ * rather than defaulted: a board that showed every rare hunt whenever a caller forgot to
+ * pass it would be a bug that looks exactly like a feature.
+ */
+export function huntBoard(seed: number, kept: ReadonlySet<School>): Bounty[] {
+  return HUNTS.filter((h) => huntOpen(h, kept)).map((h) => huntBounty(h, seed));
 }
 
 /**
