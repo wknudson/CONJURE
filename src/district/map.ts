@@ -399,8 +399,18 @@ export interface AreaProps {
   readonly lamplighter?: string;
   readonly trees?: readonly Vec2[];
   readonly graffiti?: readonly GraffitiSpec[];
-  /** Rows 0..n-1 are open water along the north edge. Absent means no canal and no quay. */
+  /**
+   * How many rows of open water the canal is, from `waterRow0` down. Absent means no canal and
+   * no quay.
+   */
   readonly waterRows?: number;
+  /**
+   * The canal's first row, when it is not the north edge: the rows above it are a far bank,
+   * baked and walked like any ground, and the canal is a band across the map with a quay on
+   * both sides. A bridge is any walkable tile in the band -- it is baked over the water, and
+   * the quay breaks for it. Absent means 0, the canal along the north edge as it always was.
+   */
+  readonly waterRow0?: number;
   /** The ring of far silhouettes on the horizon. */
   readonly horizon?: 'city' | 'treeline' | 'none';
   /**
@@ -644,6 +654,15 @@ export function splitRun(len: number): [number, number][] {
   return parts;
 }
 
-/** Rows of open water along the north edge, and the rows the ground plane covers. */
+/** The canal: how many rows deep it is, and the row it starts at. */
 export const waterRowsOf = (a: AreaDef): number => a.props.waterRows ?? 0;
-export const groundRowsOf = (a: AreaDef): number => a.rows - waterRowsOf(a);
+export const waterRow0Of = (a: AreaDef): number => (waterRowsOf(a) > 0 ? a.props.waterRow0 ?? 0 : 0);
+/** Whether `row` is one of the canal's. */
+export const inCanal = (a: AreaDef, row: number): boolean =>
+  row >= waterRow0Of(a) && row < waterRow0Of(a) + waterRowsOf(a);
+/**
+ * The rows the ground plane covers: everything below a canal along the north edge, or the
+ * whole map when the canal is a band with a far bank above it (its water baked clear).
+ */
+export const groundRow0Of = (a: AreaDef): number => (waterRow0Of(a) === 0 ? waterRowsOf(a) : 0);
+export const groundRowsOf = (a: AreaDef): number => a.rows - groundRow0Of(a);

@@ -17,7 +17,7 @@
  */
 
 import * as THREE from 'three';
-import { groundRowsOf, waterRowsOf, type AreaDef, type DoorStyle, type WallTex } from './map.js';
+import { groundRow0Of, groundRowsOf, inCanal, type AreaDef, type DoorStyle, type WallTex } from './map.js';
 import type { SignId } from './signs.js';
 import type { DressingId } from './dressing.js';
 import type { CritterId } from './wildlife.js';
@@ -985,7 +985,7 @@ function paintGrass(ctx: CanvasRenderingContext2D, px: number, py: number, rng: 
  * tiles. The rule is "mark where safety ends", and safety is a property in the legend.
  */
 export function bakeGround(area: AreaDef, maxAnisotropy: number): THREE.Texture {
-  const row0 = waterRowsOf(area);
+  const row0 = groundRow0Of(area);
   const { c, ctx } = makeCanvas(area.cols * PX, groundRowsOf(area) * PX);
   const rng = mulberry32(1337);
 
@@ -999,6 +999,9 @@ export function bakeGround(area: AreaDef, maxAnisotropy: number): THREE.Texture 
       const px = col * PX;
       const py = (row - row0) * PX;
       const tex = area.legend[area.grid[row]![col]!]?.tex ?? 'water';
+      // A canal with a far bank runs under the ground plane rather than beside it: its water
+      // is left clear here, for the real water below to show through, and its bridges bake.
+      if (tex === 'water' && inCanal(area, row)) continue;
       // Unknown paint falls back to cobbles rather than throwing, which is the stance the
       // header takes: a legend typo should look wrong, not end the ward.
       (PAINTS[tex as GroundTex] ?? PAINTS.cobble)(ctx, px, py, rng);

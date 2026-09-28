@@ -26,8 +26,10 @@ import { allDressing, registryHotspots, staticFootprints } from './footprints.js
 import {
   TILE,
   extractRects,
+  groundRow0Of,
   groundRowsOf,
   splitRun,
+  waterRow0Of,
   waterRowsOf,
   xOfCol,
   zOfRow,
@@ -187,7 +189,7 @@ interface ImpactLight {
  * and silent, because nothing compares them.
  */
 function groundSpan(area: AreaDef): { w: number; d: number; cz: number } {
-  const row0 = waterRowsOf(area);
+  const row0 = groundRow0Of(area);
   const d = groundRowsOf(area) * TILE;
   return { w: area.cols * TILE, d, cz: zOfRow(area, row0) - TILE / 2 + d / 2 };
 }
@@ -335,9 +337,11 @@ export class DistrictWorld {
     /* --- ground, outskirts, canal --- */
     const span = groundSpan(area);
     const waterRows = waterRowsOf(area);
+    // Cut clear where a banded canal runs under it; solid everywhere else, as it always was.
+    const banded = waterRows > 0 && waterRow0Of(area) > 0;
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(span.w, span.d),
-      new THREE.MeshLambertMaterial({ map: bakeGround(area, maxAnisotropy) }),
+      new THREE.MeshLambertMaterial({ map: bakeGround(area, maxAnisotropy), ...(banded ? { alphaTest: 0.5 } : {}) }),
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.set(0, 0, span.cz);
@@ -376,20 +380,36 @@ export class DistrictWorld {
         new THREE.MeshBasicMaterial({ map: this.waterTexture }),
       );
       water.rotation.x = -Math.PI / 2;
-      const waterZ = zOfRow(area, 0) - TILE / 2 + depth / 2 - 1;
+      const waterZ = zOfRow(area, waterRow0Of(area)) - TILE / 2 + depth / 2 - 1;
       water.position.set(0, -0.5, waterZ);
       this.scene.add(water);
       // Inset from the plane's own edges, so nothing ever rises half-under the quay.
       this.waterRect = { w: span.w - 6, z0: waterZ - depth / 2 + 2, z1: waterZ + depth / 2 - 2 };
 
-      const quay = new THREE.Mesh(
-        new THREE.BoxGeometry(span.w, 0.7, 0.7),
-        new THREE.MeshLambertMaterial({ color: 0x2a2b30 }),
-      );
-      quay.position.set(0, -0.15, zOfRow(area, waterRows) - TILE / 2 - 0.35);
-      quay.castShadow = true;
-      quay.receiveShadow = true;
-      this.scene.add(quay);
+      // The quay: along the south bank, and the north one too where there is a far bank, in
+      // runs that break wherever a bridge leaves the water. An edge canal has no bridges, so
+      // its quay is the one full-width run it always was.
+      const quayMat = new THREE.MeshLambertMaterial({ color: 0x2a2b30 });
+      const w0 = waterRow0Of(area);
+      const banks: { row: number; z: number }[] = [{ row: w0 + waterRows - 1, z: zOfRow(area, w0 + waterRows) - TILE / 2 - 0.35 }];
+      if (w0 > 0) banks.push({ row: w0, z: zOfRow(area, w0) - TILE / 2 + 0.35 });
+      const wet = (row: number, col: number): boolean => area.legend[area.grid[row]![col]!]?.tex === 'water';
+      for (const bank of banks) {
+        for (let col = 0; col < area.cols; ) {
+          if (!wet(bank.row, col)) {
+            col++;
+            continue;
+          }
+          let end = col;
+          while (end + 1 < area.cols && wet(bank.row, end + 1)) end++;
+          const quay = new THREE.Mesh(new THREE.BoxGeometry((end - col + 1) * TILE, 0.7, 0.7), quayMat);
+          quay.position.set((xOfCol(area, col) + xOfCol(area, end)) / 2, -0.15, bank.z);
+          quay.castShadow = true;
+          quay.receiveShadow = true;
+          this.scene.add(quay);
+          col = end + 1;
+        }
+      }
     }
 
     /* --- solid ground, read straight out of the map ---
