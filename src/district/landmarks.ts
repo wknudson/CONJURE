@@ -71,7 +71,7 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   beam_engine: { w: 3.6, d: 3.6, height: 11, note: 'A pumping engine: the house, its stack, and the great beam rocking on the wall-top.' },
   lava_fall: { w: 3.2, d: 2.8, height: 9, note: 'A spur of the crater wall with lava running down its face into a pool that never cools.' },
   frozen_falls: { w: 3.6, d: 3.0, height: 10, note: 'A fall off the ridge that froze where it fell: a sheet of ice down the rock, and the icicles it grew.' },
-  great_pylon: { w: 3.6, d: 3.6, height: 20, overhang: 1.7, note: "The survey's first pylon and its tallest, a lattice mast with its arms out, and the sky still coming down to it." },
+  great_pylon: { w: 3.6, d: 3.6, height: 20, overhang: 1.7, note: "The tallest pylon on the shelf, the one the ranks were set out from: a lattice mast with its arms out, and the sky still coming down to it." },
   mammoth: { w: 6.4, d: 3.2, height: 3.2, overhang: 0.6, note: 'A mammoth where it lay down in the snow: the ribs still standing, the tusks curled over the skull, all of it rimed.' },
 };
 

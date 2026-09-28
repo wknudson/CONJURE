@@ -182,7 +182,7 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
       x: HALF_X - 2,
       z: -6,
       label: 'East, up onto the Storm Shelf',
-      arrive: { x: -42, z: -6 },
+      arrive: { x: -86, z: -6 },
     },
     {
       // The toll house. Fenwick's, and then the Magistracy's, and the book never changed hands.

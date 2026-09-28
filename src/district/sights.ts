@@ -1871,6 +1871,105 @@ export const SIGHTS: readonly SightDef[] = [
       'one mark a day, rows of them, until the marks stop being days and start being something ' +
       'else.',
   },
+
+  /* ---- The Storm Shelf ---- */
+  {
+    id: 'storm_shelf:pylon_nine',
+    areaId: 'storm_shelf',
+    at: { x: 4, z: -64 },
+    label: 'Look up at Pylon Nine',
+    caption:
+      'The tallest iron on the shelf, and the one the others were set out from. The sky comes ' +
+      'down to its crown more than to all the rest together. The survey never said why. The ' +
+      'waystones only say not to shelter.',
+  },
+  {
+    id: 'storm_shelf:the_gap_in_the_rank',
+    areaId: 'storm_shelf',
+    at: { x: -10, z: -74 },
+    label: 'Look along the rank',
+    caption:
+      'The rank runs east to west, footing after footing, and breaks here for one. Nine stands ' +
+      'behind the gap, as if the rank stepped aside for it, or it stepped out.',
+  },
+  {
+    id: 'storm_shelf:the_glass_in_the_ground',
+    areaId: 'storm_shelf',
+    at: { x: 14, z: -78 },
+    label: 'Look at the glass in the ground',
+    caption:
+      'Where a strike went into the shelf it melted the rock into a root of glass, branched ' +
+      'like a tree grown downwards. There are dozens of them round Nine. You can hear the ones ' +
+      'under you ring.',
+  },
+  {
+    id: 'storm_shelf:the_ranks_west',
+    areaId: 'storm_shelf',
+    at: { x: -80, z: -6 },
+    label: 'Look down the ranks',
+    caption:
+      'From the track the footings run away east in their rows as far as the rain lets you see, ' +
+      'and past that, you know, they keep going. Somebody surveyed this, and then left.',
+  },
+  {
+    id: 'storm_shelf:the_survey_hut',
+    areaId: 'storm_shelf',
+    at: { x: 82, z: 66 },
+    label: 'Look into the hut',
+    caption:
+      'Burnt to the sills, the table in the middle still standing because it was iron. The ' +
+      "survey's instruments are fused to it in a lump. Whatever they were measuring, they got a " +
+      'reading.',
+  },
+  {
+    id: 'storm_shelf:the_survey_table',
+    areaId: 'storm_shelf',
+    at: { x: 88, z: 76 },
+    label: 'Look at the survey table',
+    caption:
+      'Iron, and scorched blue. Scratched into the top by somebody who did not have paper left: ' +
+      'a column of dates, and against each date a count of strikes that goes up by one every ' +
+      'day.',
+  },
+  {
+    id: 'storm_shelf:the_strike',
+    areaId: 'storm_shelf',
+    at: { x: 66, z: 60 },
+    label: 'Look at the scorch',
+    caption:
+      'The ground here is black in a star as wide as a cart, and the tent that stood in the ' +
+      'middle of it is a ring of pegs. The strike found the camp on its first night. The camp ' +
+      'stayed nine more.',
+  },
+  {
+    id: 'storm_shelf:the_stakes',
+    areaId: 'storm_shelf',
+    at: { x: 60, z: 80 },
+    label: 'Look at the stakes',
+    caption:
+      "Iron stakes driven in round the camp in a ring, the survey's idea of a lightning rod. " +
+      'Every one of them has been struck. Every one of them is still standing, which is more ' +
+      'than the camp is.',
+  },
+  {
+    id: 'storm_shelf:the_shelter_scorch',
+    areaId: 'storm_shelf',
+    at: { x: -94, z: 26 },
+    label: 'Look under the footing',
+    caption:
+      'Somebody sheltered under this footing once, whatever the waystones said. The scorch on ' +
+      'the ground under it is the shape of a person sitting with their knees up.',
+  },
+  {
+    id: 'storm_shelf:the_track_east',
+    areaId: 'storm_shelf',
+    at: { x: 78, z: 10 },
+    label: 'Look down the track',
+    caption:
+      'The track used to stop where the old survey stopped. Somebody carried it on, on foot, a ' +
+      'stone at a time, down to the camp. It is the straightest thing on the shelf that is not ' +
+      'iron.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {
