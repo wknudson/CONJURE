@@ -36,7 +36,8 @@ export type LandmarkId =
   | 'toll_bar'
   | 'water_wheel'
   | 'beam_engine'
-  | 'lava_fall';
+  | 'lava_fall'
+  | 'frozen_falls';
 
 export interface LandmarkKind {
   /** The footprint the colliders learn, centred on the landmark, in world units. */
@@ -67,6 +68,7 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   water_wheel: { w: 1.2, d: 1.2, height: 4.4, note: 'An undershot wheel standing in the race off its bearing post, turning because the water does.' },
   beam_engine: { w: 3.6, d: 3.6, height: 11, note: 'A pumping engine: the house, its stack, and the great beam rocking on the wall-top.' },
   lava_fall: { w: 3.2, d: 2.8, height: 9, note: 'A spur of the crater wall with lava running down its face into a pool that never cools.' },
+  frozen_falls: { w: 3.6, d: 3.0, height: 10, note: 'A fall off the ridge that froze where it fell: a sheet of ice down the rock, and the icicles it grew.' },
 };
 
 export const LANDMARK_IDS = Object.keys(LANDMARKS) as readonly LandmarkId[];
@@ -291,6 +293,25 @@ export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
       ],
       movers: [],
       light: { at: new THREE.Vector3(0, 1.0, 1.0), color: '#ff7a30' },
+    };
+  }
+  if (id === 'frozen_falls') {
+    // The lava fall's cold twin: a spur of rock, a sheet of ice down its south face where the water
+    // was, icicles hung off the lip at lengths the seed picks, and the pool it froze into.
+    const spur = join([box(3.4, 9.6, 1.6, 0, 4.8, -0.6), box(2.6, 6.0, 0.8, 0, 3.0, 0.4)]);
+    const icicles: THREE.BufferGeometry[] = [box(1.6, 8.6, 0.3, 0, 4.3, 0.95)];
+    for (const [i, x] of [-1.1, -0.6, 0.6, 1.1].entries()) {
+      const h = 3 + ((seed >> (i * 3)) % 7) * 0.5;
+      icicles.push(cyl(0.05, 0.22, h, 6, x, 8.6 - h / 2, 1.0));
+    }
+    icicles.push(cyl(0.9, 0.9, 0.08, 12, 0, 0.04, 0.55));
+    icicles.push(cone(1.0, 1.4, 8, 0, 0.7, 0.4));
+    return {
+      parts: [
+        { surface: 'rock', geometry: spur },
+        { surface: 'ice', geometry: join(icicles) },
+      ],
+      movers: [],
     };
   }
   if (id === 'gibbet') {
