@@ -894,6 +894,9 @@ export class BoardRenderer {
       pulse,
       art: c.art ?? null,
       walk,
+      // The board's clock, offset per figure, so the two Commanders and their beasts do
+      // not breathe in unison.
+      idleMs: this.clock + idleSeed(`${c.side}:${c.kind}`),
     });
   }
 
