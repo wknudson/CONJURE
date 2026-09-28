@@ -991,6 +991,175 @@ const SPECIES: CompanionDef[] = [
     ],
     unitCardId: 'pangolin_bound',
   },
+
+  // ------------------------------------------------------- the fourth bloodlines
+  //
+  // Bulwark, Dusk and Bloom, likewise to four beasts each: a charger and a builder, a watcher
+  // and a trapper, a runner and a duster. Huntable, signature-led, and on stand-in art until
+  // painted.
+
+  {
+    id: 'rhino',
+    artId: 'ironhide_rhino',
+    name: 'Ironhide Rhino',
+    title: 'Wall Breaker',
+    school: 'bulwark',
+    blurb:
+      'Hide like a tannery door and no reverse gear. Charges down a line, gores what is left, and cannot be moved off the spot it chose.',
+    deck: [...STARTER_DECK],
+    // The charger of the school: lines and horns. It leaves the patient walls to the Boar.
+    grimoire: {
+      schools: ['bulwark'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['bastion_stance', 'battlement'],
+    },
+    legacyGrimoire: [
+      'horn_gore',
+      'crushing_charge',
+      'iron_brace',
+      'fault_line',
+      'fault_line',
+      'siege_break',
+      'counterweight',
+      'seismic_slam',
+    ],
+    unitCardId: 'rhino_bound',
+  },
+  {
+    id: 'beetle',
+    artId: 'menhir_beetle',
+    name: 'Menhir Beetle',
+    title: 'Stone Roller',
+    school: 'bulwark',
+    blurb:
+      'Rolls the old standing stones back to where they stood and dares you to move them. Casts from behind its own shell.',
+    deck: [...STARTER_DECK],
+    // The builder of the school: stones and shells. It never learns the ground-breaking.
+    grimoire: {
+      schools: ['bulwark'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['sinkhole', 'avalanche_slam'],
+    },
+    legacyGrimoire: [
+      'standing_stone',
+      'dung_ball',
+      'dung_ball',
+      'hardened_shell',
+      'iron_gate',
+      'rubble_wall',
+      'rubble_wall',
+      'bastion_stance',
+    ],
+    unitCardId: 'beetle_bound',
+  },
+  {
+    id: 'owl',
+    artId: 'gloam_owl',
+    name: 'Gloam Owl',
+    title: 'Barrow Watcher',
+    school: 'dusk',
+    blurb:
+      'Watches the barrows at night and sees everything that walks there. Strikes from the dark and knows what you will do before you do.',
+    deck: [...STARTER_DECK],
+    // The watcher of the school: sight and darkness. It leaves the digging to the Jackal.
+    grimoire: {
+      schools: ['dusk'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['grave_call', 'exhume'],
+    },
+    legacyGrimoire: [
+      'silent_talon',
+      'silent_talon',
+      'owl_omen',
+      'moonless_night',
+      'gloom_bolt',
+      'gloom_bolt',
+      'wither',
+      'pall',
+    ],
+    unitCardId: 'owl_bound',
+  },
+  {
+    id: 'spider',
+    artId: 'crypt_spider',
+    name: 'Crypt Spider',
+    title: 'Ossuary Weaver',
+    school: 'dusk',
+    blurb:
+      'Spins across the ossuary doors and waits for whoever opens them. Webs, poisons, and feeds its brood on what it catches.',
+    deck: [...STARTER_DECK],
+    // The trapper of the school: webs and venom. It never learns the smoke.
+    grimoire: {
+      schools: ['dusk'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['smoke_bomb', 'last_rites'],
+    },
+    legacyGrimoire: [
+      'venom_bite',
+      'venom_bite',
+      'web_snare',
+      'brood_sac',
+      'pall',
+      'plague_wind',
+      'creeping_decay',
+      'shadow_siphon',
+    ],
+    unitCardId: 'spider_bound',
+  },
+  {
+    id: 'fox',
+    artId: 'bramble_fox',
+    name: 'Bramble Fox',
+    title: 'Hedge Runner',
+    school: 'bloom',
+    blurb:
+      'Runs the hedgerows between the tithe strips and knows every gap in them. Pounces on whatever the thorns are holding.',
+    deck: [...STARTER_DECK],
+    // The runner of the school: bites and pounces. It never learns the slow roots.
+    grimoire: {
+      schools: ['bloom'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['taproot', 'verdant_swell'],
+    },
+    legacyGrimoire: [
+      'bramble_pounce',
+      'bramble_pounce',
+      'sly_retreat',
+      'briar_bite',
+      'briar_bite',
+      'thornlash',
+      'root_snare',
+      'nettle',
+    ],
+    unitCardId: 'fox_bound',
+  },
+  {
+    id: 'moth',
+    artId: 'pollen_moth',
+    name: 'Pollen Moth',
+    title: 'Field Duster',
+    school: 'bloom',
+    blurb:
+      'Drifts over the fallow strips at dusk and dusts everything below it. The field it passes over wakes up poisoned.',
+    deck: [...STARTER_DECK],
+    // The duster of the school: clouds and spores. It leaves the thicket walls to the Warden.
+    grimoire: {
+      schools: ['bloom'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['briar_rampart', 'root_snare'],
+    },
+    legacyGrimoire: [
+      'pollen_burst',
+      'pollen_burst',
+      'dusting_wings',
+      'moth_swarm',
+      'spore_cloud',
+      'pollen_drift',
+      'noxious_cloud',
+      'spore_burst',
+    ],
+    unitCardId: 'moth_bound',
+  },
 ];
 
 /**
