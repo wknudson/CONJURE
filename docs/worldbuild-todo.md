@@ -1198,3 +1198,35 @@ the pool at its ten lights.
 | Night crews | beats and sentries, no prowlers | the prowl the plan gave the Knacker's Lads and the Cistern Things. A prowler goes everywhere, so the rules keep it out of anywhere with people in it, and every city ward has people |
 | Wardens | every hour | a Warden with hours. `patrols` has no clock; the second beats are always walked |
 | The atlas | its §2 still draws the first build | a redraw of every grown map. The grids are in the area files and read as maps already; the atlas says so |
+
+### 15.7 The Ring (built)
+
+The eight places between the city and the Wildlands, grown the same way. Wherever a road ran out
+through a gap in the old boundary, the exit went out to the new edge with the road and the arrival
+coming in by it moved with it -- Millharrow's north and south, the Levels' north and south, the
+Crossing's north -- rather than leaving an exit stranded in the middle of the new ground.
+
+| Place | Size | What the growth added | Who works it | Sights |
+|---|---|---|---|---|
+| The Chalk Verge | 30×20 → 46×30 | the downs, two sheepfolds and a chalk horse cut in the turf; the lime kiln; the quarry and its hut; a dew pond on the road west | its three road crews, and scavengers in the quarry by day | 9 |
+| The Chalk Road | 36×14 → 58×20 | an abandoned wagon train where the hedges give out; the waystation's stables; a roadside shrine; milestones; the toll bar as its landmark | its three, a second waywatch walking the middle of the road by day, and freight-pickers on the wagon train at night | 9 |
+| Millharrow | 32×28 → 60×52 | the North End, the millpond and its leat, windmill hill; the granary yards and the tithe barn; the East End and the crossroads chapel; the orchards and the cider press; the fair green and the Crossroads Arms, an inn and a room; the Mill's wheel turning | the Scarecrow Men on the field edges at night, one crew round windmill hill and one along the orchards; the town left quiet | 14 |
+| The Tallow Levels | 34×26 → 52×40 | the reed beds; the main drain with the causeway between its sluice gates; the new drain between its dykes and the beam engine that empties the Levels into it; the half-sunk village | the Dyke Wardens on the dyke top by day, and a crew of them in the reed beds at night | 10 |
+| Saltglass | 30×24 → 46×36 | the salt pans between the quay and the sea, the headland and its lighthouse; the glass kilns and their cullet; the wreck on the salt | the Glass-Pickers along the pans by day, a sentry on the wreck and a crew at the kilns at night | 10 |
+| Bray's Hollow | 26×26 → 40×40 | the north rim and the stone circle; Old Bray's farm and its pond; the orchard and its hives; the south rim. Still two lamps | a few strays on the south rim at night, and nowhere else | 10 |
+| Fenwick's Crossing | 34×22 → 52×34 | a wider river, a band now, with the far bank above it -- ferry, watermill, drovers' fold, moorings -- and the great bridge over it with a chapel on its deck; the south ferry, the tollers' lodge, a grown burying ground | the Bridge Tollers on the bridge by day, and on the far bank at night | 11 |
+| Weeping Stile | 24×26 → 36×40 | not opened up: the stile and the willow, the hermit's grave field and his cell beyond it, a path to the drowned well, the lych-gate on the lane, the south wood. Still no lamps | the Stile Mourners, a sentry at the stile and a crew in the south wood, at night | 10 |
+
+| Piece | What it does |
+|---|---|
+| Three landmarks | a toll bar, raised over the road it tolls; a water wheel, turning in its race (Millharrow's, and the Crossing's far bank's); a beam engine, rocking on the wall-top. The ambient motion 15.5 left for these passes |
+| The Crossroads Arms | a room, with an innkeeper, a drover and a fiddler |
+| The skies pin | Millharrow and Bray's Hollow joined the open road when their crews did; the drizzle places fight in the rain and stand where they were |
+
+### What is still standing in (15.7)
+
+| Where | Placeholder | Standing in for |
+|---|---|---|
+| The stone circle | a nine-by-nine collider | a ring you can walk into. The kit gives a landmark one footprint, and the circle's is its whole ring |
+| Ferries | landings and a bell, no boat | a ferry that crosses. A boat on the band would be a mover on a path, which the kit does not have |
+| Beehives | honeycomb props on a bench | hives. The honeycomb is the forage node's picture, drawn for a hedge |
