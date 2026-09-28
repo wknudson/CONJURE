@@ -1346,9 +1346,13 @@ export class DistrictWorld {
         light.distance = LOOK.lampDistance;
         light.intensity = LOOK.lampIntensity * (1 - LOOK.lampFlicker + LOOK.lampFlicker * n * 2) * l.lit * share;
       } else if (fire.kind === 'brazier') {
+        // A wood fire gutters harder and faster than gas: three sines, one of them quick, on a
+        // phase from where it stands so two braziers in one yard never breathe together.
+        const ph = fire.x * 0.37 + fire.z * 0.61;
+        const n = 0.5 + 0.5 * (Math.sin(t * 7.1 + ph) * 0.45 + Math.sin(t * 13.3 + ph * 1.7) * 0.35 + Math.sin(t * 23 + ph * 2.9) * 0.2);
         light.color.copy(BRAZIER_LIGHT);
         light.distance = LOOK.lampDistance * 0.6;
-        light.intensity = LOOK.lampIntensity * 0.8 * share;
+        light.intensity = LOOK.lampIntensity * 0.8 * (0.62 + 0.76 * n) * share;
       } else {
         light.color.copy(VENT_LIGHT);
         light.distance = LOOK.lampDistance * 0.4;
