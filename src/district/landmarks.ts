@@ -33,7 +33,8 @@ export type LandmarkId =
   | 'furnace_stack'
   | 'crane'
   | 'gasholder'
-  | 'toll_bar';
+  | 'toll_bar'
+  | 'water_wheel';
 
 export interface LandmarkKind {
   /** The footprint the colliders learn, centred on the landmark, in world units. */
@@ -61,6 +62,7 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   crane: { w: 2.4, d: 2.4, height: 8.5, note: 'A quay crane on a timber mast, its jib slewing out over the water and back.' },
   gasholder: { w: 8.4, d: 8.4, height: 9, note: 'A gas bell in its iron frame, a lamp on the valve, the valve wheel turning.' },
   toll_bar: { w: 1.2, d: 1.2, height: 9, note: 'A striped boom on a post, raised on its counterweight over the road, rocking for carts that do not come.' },
+  water_wheel: { w: 1.2, d: 1.2, height: 4.4, note: 'An undershot wheel standing in the race off its bearing post, turning because the water does.' },
 };
 
 export const LANDMARK_IDS = Object.keys(LANDMARKS) as readonly LandmarkId[];
@@ -230,6 +232,30 @@ export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
     return {
       parts: [{ surface: 'bark', geometry: post }],
       movers: [{ surface: 'trim', geometry: boom, pivot: new THREE.Vector3(0, 3.2, 0), axis: new THREE.Vector3(1, 0, 0), motion: 'swing', amount: 0.14, period: 6, reach: 2.6 }],
+    };
+  }
+  if (id === 'water_wheel') {
+    // The bearing post on the bank, and the wheel hung off it to the west, into the race: a rim
+    // of eight staves, a paddle at each, spokes to the hub. It turns in the plane of the flow.
+    const post = join([box(0.5, 2.4, 0.7, 0.1, 1.2, 0), box(0.9, 0.2, 0.9, 0.1, 2.5)]);
+    const parts: THREE.BufferGeometry[] = [];
+    const R = 1.7;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const stave = box(1.4, 0.18, 0.7, 0, 0, 0);
+      stave.rotateZ(a + Math.PI / 2).translate(Math.cos(a) * R, Math.sin(a) * R, 0);
+      parts.push(stave);
+      const paddle = box(0.12, 0.55, 0.9, 0, 0, 0);
+      paddle.rotateZ(a).translate(Math.cos(a) * (R + 0.2), Math.sin(a) * (R + 0.2), 0);
+      parts.push(paddle);
+      const spoke = box(R, 0.1, 0.1, R / 2, 0, 0);
+      spoke.rotateZ(a);
+      parts.push(spoke);
+    }
+    parts.push(uvify(new THREE.CylinderGeometry(0.22, 0.22, 0.9, 8).rotateX(Math.PI / 2)));
+    return {
+      parts: [{ surface: 'bark', geometry: post }],
+      movers: [{ surface: 'bark', geometry: join(parts), pivot: new THREE.Vector3(-1.1, 2.1, 0), axis: new THREE.Vector3(0, 0, 1), motion: 'spin', amount: -0.9, reach: 2.6 }],
     };
   }
   if (id === 'gibbet') {
