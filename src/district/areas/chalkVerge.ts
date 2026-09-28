@@ -168,7 +168,7 @@ export const CHALK_VERGE: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: -6,
       label: 'Follow the road west',
-      arrive: { x: 64, z: 2 },
+      arrive: { x: 108, z: 2 },
     },
     {
       // The shepherd's bothy. Unbarred, because there is nobody left to bar it.

@@ -727,7 +727,8 @@ describe('the Chalk Road grid', () => {
   it('never blocks the road itself', () => {
     // Waystones sit in the rows either side. The middle lane has to stay open end to end or
     // the artery is a dead end with scenery in it.
-    for (let x = -58; x <= 62; x += 2) {
+    // Edge to edge, since the road grew by eleven columns at each end.
+    for (let x = -114; x <= 114; x += 2) {
       expect(isWalkable(CHALK_ROAD, x, 2), `the road is blocked at x=${x}`).toBe(true);
     }
   });
@@ -736,8 +737,8 @@ describe('the Chalk Road grid', () => {
     // This asserted the *opposite* until the Wildlands landed: the west end was hedge, and the
     // test said so while naming the work that would open it. A road with a wall across one end
     // is a cul-de-sac, and the Ring's whole shape depends on this one being a through route.
-    expect(isWalkable(CHALK_ROAD, -62, 2), 'the west end').toBe(true);
-    expect(isWalkable(CHALK_ROAD, 62, 2), 'the east end').toBe(true);
+    expect(isWalkable(CHALK_ROAD, -114, 2), 'the west end').toBe(true);
+    expect(isWalkable(CHALK_ROAD, 114, 2), 'the east end').toBe(true);
   });
 });
 

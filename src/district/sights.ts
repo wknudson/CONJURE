@@ -867,6 +867,64 @@ export const SIGHTS: readonly SightDef[] = [
       'the top, in the white, somebody has cut a name, and under it a date that has not come ' +
       'yet.',
   },
+
+  /* ---- The Chalk Road, since it grew ---- */
+  {
+    id: 'chalk_road:the_toll_bar',
+    areaId: 'chalk_road',
+    at: { x: -22, z: -6 },
+    label: 'Look at the toll bar',
+    caption:
+      'Raised on its counterweight at the foot of the Millharrow lane, and rocking there for ' +
+      'carts that do not come. The rates on the board beside it have been painted over so often ' +
+      'they stand out in relief.',
+  },
+  {
+    id: 'chalk_road:the_wagon_train',
+    areaId: 'chalk_road',
+    at: { x: -96, z: -2 },
+    label: 'Look along the wagons',
+    caption:
+      'Five wagons drawn up on the verges nose to tail, harness still on the shafts and no sign ' +
+      'of the teams. The loads are picked over by night and put back by day, which tells you ' +
+      'who is doing each.',
+  },
+  {
+    id: 'chalk_road:the_stables',
+    areaId: 'chalk_road',
+    at: { x: 84, z: -14 },
+    label: 'Look into the stables',
+    caption:
+      "The waystation's stables, the stalls swept, a horse's name chalked over each. The horses " +
+      'are gone. The names are fresh.',
+  },
+  {
+    id: 'chalk_road:the_shrine',
+    areaId: 'chalk_road',
+    at: { x: 106, z: 14 },
+    label: 'Look at the shrine',
+    caption:
+      'A cairn with an urn in it, for whoever does not come back up the road. There are flowers ' +
+      'in the urn, and they are the kind that only grow in the Rimefields.',
+  },
+  {
+    id: 'chalk_road:the_far_milestone',
+    areaId: 'chalk_road',
+    at: { x: 80, z: -2.4 },
+    label: 'Look at the milestone',
+    caption:
+      'THE VERGE — I, and under it in a later hand, THE WARD — II. Somebody has scratched out ' +
+      'WARD and cut WRIT instead, which is the same distance and a different place.',
+  },
+  {
+    id: 'chalk_road:the_last_hedge',
+    areaId: 'chalk_road',
+    at: { x: -108, z: 14 },
+    label: 'Look past the last hedge',
+    caption:
+      'The last hedge before the Rime. Past it the furrows are frozen white; this side of it ' +
+      'somebody is still ploughing, and has left the plough in the furrow to go and look.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {

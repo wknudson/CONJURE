@@ -5,8 +5,8 @@
  * road further out: the white cut that runs from the wildlands down to Jolrek, with ploughed
  * strips either side and nothing sanctioned anywhere on it.
  *
- * It is the longest map in the game — 36 columns against 14 rows — and the shape is the
- * point. A road is a corridor with sightlines down it, so the fighting happens where those
+ * It is the longest map in the game — 58 columns against 20 rows, grown evenly from 36 by 14 —
+ * and the shape is the point. A road is a corridor with sightlines down it, so the fighting happens where those
  * sightlines break: the waystones are set in pairs at rows 6 and 8 and never on row 7, which
  * keeps the artery itself open while giving three roam circles something to hide behind.
  *
@@ -19,6 +19,14 @@
  * for them. It does carry a waystation now, on the north verge east of the stones, with the
  * toll-keeper's ledger still on the counter and two graves in the yard behind it. Nobody
  * keeps it. That is the notice.
+ *
+ * What the growth added is more road. West, where the hedges give out towards the Rime, a
+ * wagon train stands abandoned on both verges with its harness still on the shafts, and a
+ * night crew picks it over, a band of its own. East, the waystation's stables and their yard,
+ * and a roadside shrine on the south verge. On the road itself, the toll bar at the foot of the
+ * Millharrow lane is a landmark now, raised over the road it tolls, and the waywatch has a
+ * second crew that walks the middle of the road by day, end to end of the stretch the others
+ * work, never as far as the trailhead.
  */
 
 import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
@@ -33,6 +41,8 @@ import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
  *   H  hedgerow        — impassable, tall and split into a broken line
  *   R  waystone        — impassable, low and taken whole
  *   W  the waystation  — impassable; timber, the stack cold
+ *   S  the stables      — impassable; the waystation's, timber
+ *   w  a wagon          — impassable; the train, drawn up on the verges
  *
  * No `S`. Nothing out here is sanctioned, the same way nothing on the Verge is — the Ring
  * ends at Jolrek's wards, and the road between them is nobody's to make safe.
@@ -63,30 +73,48 @@ const ROAD_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { style: 'cottage', minHeight: 4.6, maxHeight: 4.6, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
   },
+  S: {
+    tex: 'weeds',
+    safe: false,
+    walk: false,
+    solid: { style: 'cottage', minHeight: 3.8, maxHeight: 4.0, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'timber' },
+  },
+  w: {
+    tex: 'grass',
+    safe: false,
+    walk: false,
+    solid: { style: 'plain', minHeight: 2.4, maxHeight: 2.8, inset: 0.5, depthInset: 0.8, chimneyChance: 0, split: false, wall: 'timber' },
+  },
 };
 
 /**
- * 36 wide by 14 deep.
+ * 58 wide by 20 deep.
  *
  * Column 0 was hedgerow the whole way down while the Rimefields were not walkable. They are
  * now, so the road runs out of the west end as well as the east — which is what a road is, and
  * makes this the only map in the world you can cross without stopping.
  */
 const GRID: readonly string[] = [
-  `${'H'.repeat(9)},,${'H'.repeat(25)}`, //  0  the north hedge, and the lane up to Millharrow
-  'HffffffffH,,HHfffffffffWWWWffffHHffff'.slice(0, 0) + 'Hffffffff,,HHfffffffffWWWWffffHHffff', //  1  ploughed strips; THE WAYSTATION
-  'Hfff.ffff,,HHffff.ffffWWWWffffHHffff', //  2
-  'Hffffffff,,HHfffffffffWWWWf.ffHHffff', //  3
-  'Hffff..ff,,HHff.ffffff....ffffHHfff.', //  4  the waystation's yard, and its graves
-  `H##.#####,,${'#'.repeat(25)}`, //  5  the north verge
-  `${','.repeat(12)}RR${','.repeat(10)}RR${','.repeat(10)}`, //  6  waystones, set in pairs
-  ','.repeat(36), //  7  THE ROAD — never blocked, end to end
-  `${','.repeat(12)}RR${','.repeat(10)}RR${','.repeat(10)}`, //  8
-  `H${'#'.repeat(25)},,${'#'.repeat(8)}`, //  9  the south verge, and the lane down to the Crossing
-  'HfffffffffffffHHffffffffff,,ffffffff', // 10
-  'Hffff.ffffffffHHfffff.ffff,,fffffff.', // 11
-  'HfffffffffffffHHffffffffff,,ffffffff', // 12
-  `${'H'.repeat(26)},,${'H'.repeat(8)}`, // 13  the south hedge
+  'HHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH', //  0
+  'HHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH', //  1
+  'HHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH', //  2
+  'HHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH', //  3  the north hedge, and the lane up to Millharrow; fields where the hedges give out (west)
+  'fffffffffffHffffffff,,HHfffffffffWWWWffffHHfffffSSSSSfffff', //  4  ploughed strips; THE WAYSTATION; its stables (east)
+  'fffffffffffHfff.ffff,,HHffff.ffffWWWWffffHHfffffSSSSSfffff', //  5
+  'fffffffffffHffffffff,,HHfffffffffWWWWf.ffHHffff........fff', //  6
+  'fffffffffffHffff..ff,,HHff.ffffff....ffffHHfff............', //  7  the waystation's yard, and its graves
+  '#ww#ww#ww##H##.#####,,####################################', //  8  the north verge; THE WAGON TRAIN drawn up on it (west)
+  ',,,,,,,,,,,,,,,,,,,,,,,RR,,,,,,,,,,RR,,,,,,,,,,,,,,,,,,,,,', //  9  waystones, set in pairs
+  ',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,', // 10  THE ROAD — never blocked, end to end
+  ',,,,,,,,,,,,,,,,,,,,,,,RR,,,,,,,,,,RR,,,,,,,,,,,,,,,,,,,,,', // 11
+  '##ww##ww###H#########################,,###################', // 12  the south verge, and the lane down to the Crossing; two more wagons (west)
+  'fffffffffffHfffffffffffffHHffffffffff,,fffffffffffffffffff', // 13
+  'fffffffffffHffff.ffffffffHHfffff.ffff,,fffffff............', // 14
+  'fffffffffffHfffffffffffffHHffffffffff,,fffffffffffffffffff', // 15
+  'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHH', // 16  the south hedge
+  'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHH', // 17
+  'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHH', // 18
+  'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHH', // 19
 ];
 
 const HALF_X = (GRID[0]!.length * TILE) / 2;
@@ -119,7 +147,7 @@ export const CHALK_ROAD: AreaDef = defineArea({
       // everything the road exists to reach is on the other side of these two gaps.
       to: 'millharrow',
       x: -34,
-      z: zOfRow(1),
+      z: zOfRow(4),
       label: 'North, up the lane to Millharrow',
       arrive: { x: -2, z: 38 },
     },
@@ -128,7 +156,7 @@ export const CHALK_ROAD: AreaDef = defineArea({
       // never in prompt range of each other.
       to: 'fenwicks_crossing',
       x: 38,
-      z: zOfRow(12),
+      z: zOfRow(15),
       label: "South, down to Fenwick's Crossing",
       arrive: { x: -2, z: -22 },
     },
@@ -144,10 +172,10 @@ export const CHALK_ROAD: AreaDef = defineArea({
     {
       // The waystation. The toll was taken here once; the door has not been barred since.
       to: 'chalk_road_waystation',
-      x: xOfCol(23.5),
-      z: zOfRow(3) + TILE / 2 + 1.4,
+      x: xOfCol(34.5),
+      z: zOfRow(6) + TILE / 2 + 1.4,
       label: 'Into the waystation',
-      door: { x: xOfCol(23.5), z: zOfRow(3) + TILE / 2 + 0.05, facesSouth: true, sign: 'toll', style: 'plank' },
+      door: { x: xOfCol(34.5), z: zOfRow(6) + TILE / 2 + 0.05, facesSouth: true, sign: 'toll', style: 'plank' },
       arrive: { x: 0, z: 14 },
     },
   ],
@@ -195,9 +223,18 @@ export const CHALK_ROAD: AreaDef = defineArea({
       { kind: 'bramble', x: 34, z: -14 },
       { kind: 'bramble', x: 42, z: -2 },
       { kind: 'bramble', x: 30, z: 14 },
-      // The toll bar itself, at the stretch the contract names: two posts and nothing between.
-      { kind: 'fence', x: -30, z: -6, yaw: 0 },
+      // The toll bar itself is a landmark now, below; its south post stays.
       { kind: 'fence', x: -22, z: 10, yaw: 0 },
+      // Milestones on the new road, either end.
+      { kind: 'waystone', x: 80, z: -6, text: 'THE VERGE — I' },
+      { kind: 'waystone', x: -76, z: 10, text: 'JOLREK — IX' },
+      // What the wagon train carried, set down beside it by somebody.
+      { kind: 'sacks', x: -100, z: -10 },
+      { kind: 'barrel', x: -88, z: -10 },
+      // The stables' yard.
+      { kind: 'haybale', x: 76, z: -14 },
+      { kind: 'trough', x: 100, z: -14 },
+      { kind: 'pens', x: 104, z: -10 },
     ],
     /**
      * Three crews working one stretch.
@@ -217,6 +254,24 @@ export const CHALK_ROAD: AreaDef = defineArea({
       // Freight moves after dark -- there is a whole contract about it (`night_freight`) -- so
       // the people picking it over move after dark too.
       { encounterId: 'pack_freight_pickers', x: -26, z: -4, roam: 10, hours: 'night' },
+      // The waywatch's second crew, walking the middle of the road by day: the same stretch as
+      // the three, so a pull can bring it, and never as far as the trailhead or either end.
+      {
+        encounterId: 'pack_road_waywatch',
+        id: 'road_beat',
+        x: -10,
+        z: 2,
+        roam: 8,
+        hours: 'day',
+        behaviour: 'beat',
+        route: [
+          { x: -60, z: 2 },
+          { x: 40, z: 2 },
+        ],
+      },
+      // West, where the hedges give out, the pickers who work the abandoned wagon train by night:
+      // a band of their own, too far down the road for any ring opened on the three to reach.
+      { encounterId: 'pack_freight_pickers', id: 'wagon_train', x: -96, z: -22, roam: 6, hours: 'night', band: 'west' },
     ],
     /** Freight off the back of something, and nobody left to claim it. */
     crates: [
@@ -238,6 +293,12 @@ export const CHALK_ROAD: AreaDef = defineArea({
     // No board and no signpost: the notices are posted where somebody is accountable for them.
     horizon: 'treeline',
     /** A drovers' camp on the south verge of the road, the fire long out and the beasts gone on. */
-    vignettes: [{ id: 'drovers_camp', x: 24, z: 9.4 }],
+    vignettes: [
+      { id: 'drovers_camp', x: 24, z: 9.6 },
+      // A shrine on the south verge, for whoever does not come back up the road.
+      { id: 'wayside_shrine', x: 100, z: 10.5 },
+    ],
+    /** The toll bar, at the foot of the Millharrow lane, raised over the road it tolls. */
+    landmarks: [{ kind: 'toll_bar', x: -26, z: -6 }],
   },
 });
