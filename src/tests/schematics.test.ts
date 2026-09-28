@@ -245,7 +245,8 @@ describe('what the loop can actually reach', () => {
     'deep_winter',
     'hail_spire',
     'hammer_fall',
-    'siege_break',
+    // `siege_break` came off this list when the Ironhide Rhino's hunt started teaching it:
+    // a Bulwark charger's handlers are exactly the crew that carries a siege charge.
     // `iron_gate` came off this list when the epilogue's Standing Orders started
     // fielding it -- Dead Letters is a fight against Bulwark paperwork, and its deck
     // is where the plan finally drops.

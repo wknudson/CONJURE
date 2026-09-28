@@ -865,6 +865,151 @@ const THIRD_BLOODLINE_TRAITS: Record<string, CompanionTrait> = {
   },
 };
 
+/**
+ * The third bloodlines of Bulwark, Dusk and Bloom: the Rhino and the Beetle, the Owl and
+ * the Spider, the Fox and the Moth. Three knacks apiece, all wired, all built from boons the
+ * engine already reads — the same terms the Pyre, Frost and Surge bloodlines were held to.
+ */
+const FOURTH_BLOODLINE_TRAITS: Record<string, CompanionTrait> = {
+  // ---------------------------------------------------------------- rhino (bulwark)
+  plated_hide: {
+    id: 'plated_hide',
+    name: 'Plated Hide',
+    text: 'Skin like a tannery door. Your Hero opens every fight behind 40 Persistent Armor.',
+    baseId: 'rhino',
+    boons: { armor: 40 },
+  },
+  unstoppable: {
+    id: 'unstoppable',
+    name: 'Unstoppable',
+    text: 'Once it is going, it is going. Nothing can shove, pull or carry it.',
+    baseId: 'rhino',
+    boons: { boundFormGrounded: true },
+  },
+  crash_through: {
+    id: 'crash_through',
+    name: 'Crash Through',
+    text: 'Goes through walls rather than round them. Your units shrug off 20 of every collision.',
+    baseId: 'rhino',
+    boons: { collisionResist: 20 },
+  },
+
+  // --------------------------------------------------------------- beetle (bulwark)
+  stone_carapace: {
+    id: 'stone_carapace',
+    name: 'Stone Carapace',
+    text: 'Builds the way it grows. Every obstacle your cards raise has 20 more health.',
+    baseId: 'beetle',
+    boons: { bonusObstacleHp: 20 },
+  },
+  shell_lock: {
+    id: 'shell_lock',
+    name: 'Shell Lock',
+    text: 'What it wears, it keeps. Shatter and Superconduct cannot strip Armor from your units.',
+    baseId: 'beetle',
+    boons: { armorUnstrippable: true },
+  },
+  deep_burrow: {
+    id: 'deep_burrow',
+    name: 'Deep Burrow',
+    text: 'Under the rubble, not over it. Crosses broken ground as if it were not there, and no current carries it.',
+    baseId: 'beetle',
+    boons: { boundFormIgnoresHazards: true },
+  },
+
+  // ------------------------------------------------------------------- owl (dusk)
+  night_sight: {
+    id: 'night_sight',
+    name: 'Night Sight',
+    text: 'Hunts in the dark on purpose. Fog and steam do not break its line of sight.',
+    baseId: 'owl',
+    boons: { ignoreFog: true },
+  },
+  silent_wing: {
+    id: 'silent_wing',
+    name: 'Silent Wing',
+    text: 'Nobody hears it land. A unit of yours standing in steam or fog cannot be targeted by ranged attacks.',
+    baseId: 'owl',
+    boons: { fogConceals: true },
+  },
+  omen: {
+    id: 'omen',
+    name: 'Omen',
+    text: 'It knows what is coming before it comes. The enemy declares its card plays as well as its blows.',
+    baseId: 'owl',
+    boons: { revealIntents: true },
+  },
+
+  // ---------------------------------------------------------------- spider (dusk)
+  venom_sac: {
+    id: 'venom_sac',
+    name: 'Venom Sac',
+    text: 'A little goes a long way. Every Toxin you apply lands with an extra stack.',
+    baseId: 'spider',
+    boons: { bonusToxinStacks: 1 },
+  },
+  deaths_web: {
+    id: 'deaths_web',
+    name: "Death's Web",
+    text: 'Whatever kills one of its own is caught in the strands. A unit of yours killed by an attack leaves its killer Brittle.',
+    baseId: 'spider',
+    boons: { deathRattle: true },
+  },
+  brood_tithe: {
+    id: 'brood_tithe',
+    name: 'Brood Tithe',
+    text: 'Feeds the young on what it takes. Every tithe you make pays 1 more Marrow.',
+    baseId: 'spider',
+    boons: { bonusTitheMarrow: 1 },
+  },
+
+  // ------------------------------------------------------------------- fox (bloom)
+  briar_run: {
+    id: 'briar_run',
+    name: 'Briar Run',
+    text: 'Knows every gap in the hedge. Crosses broken ground as if it were not there, and no current carries it.',
+    baseId: 'fox',
+    boons: { boundFormIgnoresHazards: true },
+  },
+  thorn_coat: {
+    id: 'thorn_coat',
+    name: 'Thorn Coat',
+    text: 'Grew up in the nettles. Toxin stops ticking on your side entirely.',
+    baseId: 'fox',
+    boons: { immuneToToxin: true },
+  },
+  den_hoard: {
+    id: 'den_hoard',
+    name: 'Den Hoard',
+    text: 'Always has something put by. You start every fight with 1 more Bone.',
+    baseId: 'fox',
+    boons: { bones: 1 },
+  },
+
+  // ------------------------------------------------------------------ moth (bloom)
+  kindling_spores: {
+    id: 'kindling_spores',
+    name: 'Kindling Spores',
+    text: 'Its dust catches. Every Toxin tick you own also sets the victim alight (Burn 1).',
+    baseId: 'moth',
+    boons: { toxinKindles: 1 },
+  },
+  moth_to_flame: {
+    id: 'moth_to_flame',
+    name: 'Moth to Flame',
+    text: 'Flies into the fire and out again. Burn stops ticking on your side entirely.',
+    baseId: 'moth',
+    boons: { immuneToBurn: true },
+  },
+  soft_wings: {
+    id: 'soft_wings',
+    name: 'Soft Wings',
+    text: 'Lands like dust. Your units shrug off 10 of every collision.',
+    baseId: 'moth',
+    boons: { collisionResist: 10 },
+  },
+};
+
 for (const [id, trait] of Object.entries(VOLTARA_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(MORTIS_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(SYLVA_TRAITS)) COMPANION_TRAITS[id] = trait;
@@ -873,6 +1018,7 @@ for (const [id, trait] of Object.entries(HYBRID_TRAITS)) COMPANION_TRAITS[id] = 
 for (const [id, trait] of Object.entries(SECOND_BLOODLINE_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(CLOSING_HYBRID_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(THIRD_BLOODLINE_TRAITS)) COMPANION_TRAITS[id] = trait;
+for (const [id, trait] of Object.entries(FOURTH_BLOODLINE_TRAITS)) COMPANION_TRAITS[id] = trait;
 
 export function traitById(id: string): CompanionTrait | undefined {
   return COMPANION_TRAITS[id];
