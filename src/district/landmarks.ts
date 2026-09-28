@@ -34,7 +34,8 @@ export type LandmarkId =
   | 'crane'
   | 'gasholder'
   | 'toll_bar'
-  | 'water_wheel';
+  | 'water_wheel'
+  | 'beam_engine';
 
 export interface LandmarkKind {
   /** The footprint the colliders learn, centred on the landmark, in world units. */
@@ -63,6 +64,7 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   gasholder: { w: 8.4, d: 8.4, height: 9, note: 'A gas bell in its iron frame, a lamp on the valve, the valve wheel turning.' },
   toll_bar: { w: 1.2, d: 1.2, height: 9, note: 'A striped boom on a post, raised on its counterweight over the road, rocking for carts that do not come.' },
   water_wheel: { w: 1.2, d: 1.2, height: 4.4, note: 'An undershot wheel standing in the race off its bearing post, turning because the water does.' },
+  beam_engine: { w: 3.6, d: 3.6, height: 11, note: 'A pumping engine: the house, its stack, and the great beam rocking on the wall-top.' },
 };
 
 export const LANDMARK_IDS = Object.keys(LANDMARKS) as readonly LandmarkId[];
@@ -256,6 +258,23 @@ export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
     return {
       parts: [{ surface: 'bark', geometry: post }],
       movers: [{ surface: 'bark', geometry: join(parts), pivot: new THREE.Vector3(-1.1, 2.1, 0), axis: new THREE.Vector3(0, 0, 1), motion: 'spin', amount: -0.9, reach: 2.6 }],
+    };
+  }
+  if (id === 'beam_engine') {
+    // The engine house, its stack at the back corner, and the beam pivoted on the front wall's
+    // top: one end over the house, where the cylinder is, the other out over the pump shaft.
+    const house = box(3.4, 6.2, 3.0, 0, 3.1, 0.2);
+    const stack = cyl(0.55, 0.4, 10.6, 8, 1.2, 5.3, 1.2);
+    const gable = cone(2.3, 1.2, 4, 0, 6.8, 0.2);
+    gable.rotateY(Math.PI / 4);
+    const beam = join([box(0.4, 0.5, 6.0, 0, 0, 0), box(0.12, 1.6, 0.12, 0, -0.8, 2.8), box(0.12, 1.6, 0.12, 0, -0.8, -2.8)]);
+    return {
+      parts: [
+        { surface: 'wall', geometry: house },
+        { surface: 'wall', geometry: stack },
+        { surface: 'roof', geometry: gable },
+      ],
+      movers: [{ surface: 'iron', geometry: beam, pivot: new THREE.Vector3(0, 7.6, -1.3), axis: new THREE.Vector3(1, 0, 0), motion: 'swing', amount: 0.22, period: 4.5, reach: 2.7 }],
     };
   }
   if (id === 'gibbet') {
