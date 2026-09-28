@@ -77,8 +77,12 @@ describe('the third muster, drilled', () => {
   });
 
   it.each(ids)('%s fights when the AI fields it', (id) => {
-    // Two seeds, so one unlucky opening draw does not decide it.
-    const results = [drill(id, 1), drill(id, 2)];
+    // Two seeds, so one unlucky opening draw does not decide it -- but the second is only
+    // played when the first did not swing. Each drill is a real AI game, and the file shares
+    // the machine with the rest of the suite; playing a seed whose answer is already known
+    // was the heaviest thing it did.
+    const first = drill(id, 1);
+    const results = first.swung ? [first] : [first, drill(id, 2)];
     expect(
       results.some((r) => r.swung),
       `${id} never swung in ${DRILL_HALF_TURNS} half-turns (moved: ${results.map((r) => r.moved)}, died at: ${results.map((r) => r.died)})`,
