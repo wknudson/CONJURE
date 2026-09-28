@@ -13,7 +13,10 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
     "cards:catalog": "tsx scripts/generate-card-catalog.ts",
-    "folk:measure": "tsx scripts/measure-folk-sheets.ts"
+    "folk:measure": "tsx scripts/measure-folk-sheets.ts",
+    "art:credits": "tsx scripts/art-ledger.ts credits",
+    "art:requests": "tsx scripts/art-ledger.ts requests",
+    "art:placeholders": "tsx scripts/art-ledger.ts placeholders"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

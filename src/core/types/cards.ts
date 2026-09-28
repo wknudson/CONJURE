@@ -538,6 +538,27 @@ export interface CardDef {
    */
   xCost?: { max: number };
   spliceOnly?: true;
+  /**
+   * The species that may learn this card, by Companion id. Absent means any bloodline
+   * whose schools reach it.
+   *
+   * A signature card. `GrimoireSource.omit` made two beasts of one school disagree at the
+   * edges, but only by subtraction from one shared shelf — and a shelf of a dozen minus four
+   * is still most of the same dozen, so a Flue Salamander and an Ignis kept dealing books a
+   * player could not tell apart. A signature is the addition that subtraction could not
+   * make: a card only one bloodline ever drafts, so catching the second species of a school
+   * hands you a spell the first one could not have known.
+   *
+   * Filed on the card rather than on the species because `companions.ts` already imports
+   * the draft, and because the card is where a reader looks to ask "who can cast this". A
+   * list, not one id, so a signature can be shared by the handful of beasts a story ties
+   * together without inventing a second mechanism for it.
+   *
+   * Only the draft and the sockets read it. The Schematic shelf still teaches a signature
+   * to anybody who beats the fight that casts it — the Forge will print it — and the socket
+   * gate is what keeps it in the right beast's book.
+   */
+  bloodline?: readonly string[];
   /** Paid to whoever breaks this obstacle. Present only on obstacle cards. */
   onDestroyReward?: { marrow: number };
   /** Paid to whoever kills this creature. What makes a scavenger worth chasing. */
