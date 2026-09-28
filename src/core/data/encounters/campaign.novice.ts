@@ -141,6 +141,8 @@ export const FOULED_CISTERN: EncounterDef = registerEncounter({
     // Frost's third shelf, taught here: the cheap Brittle and the drift.
     'frostbite',
     'snowdrift',
+    // The signature of the beast this fight awards: the gargoyle’s own.
+    'frostgrave_gaze',
   ],
   enemyOpeningBoard: [
     ['rime_fox', 1, 1],
