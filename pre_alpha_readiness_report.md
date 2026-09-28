@@ -19,7 +19,7 @@ thirty-nine rooms behind real doors, four registries of things to do on the grou
 §7.9 and §7.10; that note was PR #40. The bestiary and grimoire expansion then began with its
 machinery as PR #41 — signature cards, rare hunts, and a pipeline for creature art — recorded in
 §7.11; that note was PR #42. Its second wave, the Hero kit and a duelist at every tier, merged
-as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; this note is PR #46.*
+as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; this note is PR #49.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -992,12 +992,27 @@ earlier run on it timed out twice under CPU contention from probes in another wo
 clean rerun is the result. The balance ledger: 7 files, 580 tests, green. The catalog grows from
 244 base cards to 282.
 
-### 7.14 What remains
+### 7.14 The bestiary expansion, Wave 3 — **built, PR #48**
+
+The second half of the shelf work. Eighteen commons fill what Bulwark, Dusk and Bloom lacked
+— Bulwark a line, a cone and a draw; Dusk anything plain (a bolt, a wall, a way to move a body);
+Bloom a free nettle, a line of thorns and a pod — and eighteen signatures give the Boar, the Ram,
+the Stag, the Jackal, the Warden and the Aurochs cards of their own. Each hunt teaches its
+species' three and the commons ride in the schools' story fights. The six omits halve as Wave 2's
+did, and `CATALOG_TARGET` rises from ten-to-fifteen to twenty-to-thirty-four now every elemental
+school carries forty-odd cards. No new Dusk card leaves Brittle, so the list `expansion2.test.ts`
+pins still holds.
+
+**Verified.** The balance ledger on the exact tip: 7 files, 580 tests, green. The full
+non-balance suite on the same commit: green on a clean rerun, after the first run lost the
+`intents` Adept case to the known load timeout. The catalog grows to 318 base cards.
+
+### 7.15 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 to §7.13 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.14 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
-found outside it belongs here on the same terms PRs #37, #39, #41, #43 and #45 did. What comes next is
+found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45 and #48 did. What comes next is
 a playtest, and the remaining waves of the bestiary expansion, each recorded here as it
 merges.
 
