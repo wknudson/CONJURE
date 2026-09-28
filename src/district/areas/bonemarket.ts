@@ -202,6 +202,25 @@ export const BONEMARKET: AreaDef = defineArea({
     },
   ],
   props: {
+    /**
+     * Who passes through by day: buyers, carters, the Shambles emptying out onto the lanes.
+     */
+    passersby: {
+      peak: 6,
+      folk: ['butcher_b', 'grocer', 'cobbler', 'herald', 'street_urchin', 'carpenter'],
+      lanes: [
+        [{ x: -60, z: 0 }, { x: 59, z: 0 }],
+        [{ x: -60, z: 24 }, { x: 59, z: 24 }],
+        [{ x: -49, z: -41 }, { x: 59, z: -41 }],
+        [{ x: -92, z: 60 }, { x: 91, z: 60 }],
+      ],
+      barks: [
+        "Fresh off the cart this morning. Don't ask off what.",
+        "Glue works is boiling. Breathe through your mouth.",
+        "Knacker’s Lane? Not for a purse of Ducats.",
+        "Mind the gutters. They run red on a Tuesday.",
+      ],
+    },
     /** Everything here is about food that is out in the open. Gulls follow a market inland. */
     sky: 'ash',
     wildlife: [

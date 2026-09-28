@@ -221,6 +221,26 @@ export const HIGHCOURT: AreaDef = defineArea({
     },
   ],
   props: {
+    /**
+     * Who passes through by day: clerks and petitioners, the court at its business, never in a
+     * hurry.
+     */
+    passersby: {
+      peak: 6,
+      folk: ['scribe', 'tax_collector', 'elder', 'healer', 'jeweler', 'cobbler_b'],
+      lanes: [
+        [{ x: -83, z: -4 }, { x: 51, z: -4 }],
+        [{ x: -80, z: 60 }, { x: 79, z: 60 }],
+        [{ x: -68, z: -72 }, { x: -68, z: 87 }],
+        [{ x: 64, z: -72 }, { x: 64, z: 87 }],
+      ],
+      barks: [
+        "Mind the robes, if you please.",
+        "The Archive closes at five. It closed at four today.",
+        "They've moved a statue again. Nobody saw who.",
+        "Petitions to the left. Complaints to the river.",
+      ],
+    },
     /** Rooks over the Spire and nothing at ground level. Nothing lives on dressed stone. */
     sky: 'drizzle',
     wildlife: [
@@ -290,12 +310,26 @@ export const HIGHCOURT: AreaDef = defineArea({
      */
     npcs: [
       { id: 'highcourt_lamplighter', x: -34, z: -42, art: 'night_watchman', label: 'Talk to the lamplighter' },
-      { id: 'highcourt_scribe', x: -14, z: -14, art: 'scribe_scholar', label: 'Talk to the court scribe' },
+      {
+        id: 'highcourt_scribe', x: -14, z: -14, art: 'scribe_scholar', label: 'Talk to the court scribe',
+        // Copies at the Archive door while it is open, and in the square when it is not.
+        hours: [
+          { from: 8, x: -48, z: -62 },
+          { from: 18, x: -14, z: -14 },
+        ],
+      },
       { id: 'highcourt_noblewoman', x: 14, z: -22, art: 'noblewoman', label: 'Talk to the lady of the court' },
       { id: 'highcourt_crier', x: -14, z: -2, art: 'town_crier', label: 'Talk to the crier' },
       { id: 'highcourt_herald', x: 6, z: -30, art: 'herald', label: 'Talk to the herald' },
       { id: 'highcourt_tailor', x: 22, z: -30, art: 'taylor', label: 'Talk to the court tailor' },
-      { id: 'highcourt_musician', x: 22, z: -6, art: 'bard', label: 'Talk to the court musician' },
+      {
+        id: 'highcourt_musician', x: 22, z: -6, art: 'bard', label: 'Talk to the court musician',
+        // Plays the square by day and the beacon court in the evening, for the statues.
+        hours: [
+          { from: 10, x: 22, z: -6 },
+          { from: 19, x: 0, z: -63 },
+        ],
+      },
       { id: 'highcourt_clerk_of_works', x: -14, z: 22, art: 'cartographer_b', label: 'Talk to the clerk of works' },
     ],
     /**

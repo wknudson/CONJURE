@@ -227,6 +227,26 @@ export const CINDERWORKS: AreaDef = defineArea({
     },
   ],
   props: {
+    /**
+     * Who passes through by day: shifts changing, carters, the barracks going to the works and
+     * back.
+     */
+    passersby: {
+      peak: 6,
+      folk: ['miner_b', 'scribe', 'baker', 'cobbler', 'seamstress', 'elder'],
+      lanes: [
+        [{ x: -64, z: 20 }, { x: 63, z: 20 }],
+        [{ x: -64, z: -32 }, { x: 39, z: -32 }],
+        [{ x: -36, z: -48 }, { x: 63, z: -48 }],
+        [{ x: -84, z: -52 }, { x: -84, z: -5 }],
+      ],
+      barks: [
+        "Shift's done. My hands aren't.",
+        "Furnace is drawing well today. Hear it?",
+        "Don't cut through the rail yard. They've lost three this month.",
+        "Quench water's hot enough to shave in.",
+      ],
+    },
     /** Moths at the furnace mouths, which is the one thing that comes *to* a foundry. */
     sky: 'ash',
     wildlife: [

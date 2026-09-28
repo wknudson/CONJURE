@@ -232,6 +232,26 @@ export const LAMPROW: AreaDef = defineArea({
     },
   ],
   props: {
+    /**
+     * Who passes through by day: the High Street and the lanes off it, gasworks shifts, the Sink
+     * going up to market.
+     */
+    passersby: {
+      peak: 6,
+      folk: ['miner_a', 'tanner', 'seamstress', 'farmer_wife', 'cobbler_b', 'baker'],
+      lanes: [
+        [{ x: -95, z: -4 }, { x: 95, z: -4 }],
+        [{ x: -60, z: 40 }, { x: 59, z: 40 }],
+        [{ x: -46, z: 20 }, { x: 45, z: 20 }],
+        [{ x: -40, z: -72 }, { x: 55, z: -72 }],
+      ],
+      barks: [
+        "Gas is up again. It's always up.",
+        "Keep off the Sink after dark, love.",
+        "The tithe man's been round. Hide the good lamp.",
+        "Somebody's been at the main again. Smell it?",
+      ],
+    },
     /** A canal ward. Gulls off the water, rats in the Sink and the gardens, rooks over both. */
     sky: 'ash',
     wildlife: [
@@ -332,7 +352,16 @@ export const LAMPROW: AreaDef = defineArea({
      */
     npcs: [
       { id: 'lamprow_pit_miner', x: -20, z: -6, art: 'miner_b', label: 'Talk to the pit hand' },
-      { id: 'lamprow_tithe_clerk', x: 6, z: -6, art: 'tax_collector', label: 'Talk to the tithe clerk' },
+      {
+        id: 'lamprow_tithe_clerk', x: 6, z: -6, art: 'tax_collector', label: 'Talk to the tithe clerk',
+        // Collects on the High Street in the morning, at the works office in the afternoon, and
+        // counts it on the High Street after.
+        hours: [
+          { from: 9, x: 6, z: -6 },
+          { from: 14, x: -28, z: -62 },
+          { from: 19, x: 6, z: -6 },
+        ],
+      },
       { id: 'lamprow_lamplighter', x: 26, z: -6, art: 'night_watchman', label: 'Talk to the lamplighter' },
       { id: 'lamprow_urchin', x: -30, z: -6, art: 'street_urchin', label: 'Talk to the urchin' },
       { id: 'lamprow_butcher', x: -8, z: -2, art: 'butcher_b', label: 'Talk to the butcher' },
