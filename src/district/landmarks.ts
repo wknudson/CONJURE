@@ -35,7 +35,8 @@ export type LandmarkId =
   | 'gasholder'
   | 'toll_bar'
   | 'water_wheel'
-  | 'beam_engine';
+  | 'beam_engine'
+  | 'lava_fall';
 
 export interface LandmarkKind {
   /** The footprint the colliders learn, centred on the landmark, in world units. */
@@ -65,6 +66,7 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   toll_bar: { w: 1.2, d: 1.2, height: 9, note: 'A striped boom on a post, raised on its counterweight over the road, rocking for carts that do not come.' },
   water_wheel: { w: 1.2, d: 1.2, height: 4.4, note: 'An undershot wheel standing in the race off its bearing post, turning because the water does.' },
   beam_engine: { w: 3.6, d: 3.6, height: 11, note: 'A pumping engine: the house, its stack, and the great beam rocking on the wall-top.' },
+  lava_fall: { w: 3.2, d: 2.8, height: 9, note: 'A spur of the crater wall with lava running down its face into a pool that never cools.' },
 };
 
 export const LANDMARK_IDS = Object.keys(LANDMARKS) as readonly LandmarkId[];
@@ -275,6 +277,20 @@ export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
         { surface: 'roof', geometry: gable },
       ],
       movers: [{ surface: 'iron', geometry: beam, pivot: new THREE.Vector3(0, 7.6, -1.3), axis: new THREE.Vector3(1, 0, 0), motion: 'swing', amount: 0.22, period: 4.5, reach: 2.7 }],
+    };
+  }
+  if (id === 'lava_fall') {
+    // A spur of rock stepped out from the wall, a glowing sheet down its south face, and the pool
+    // it runs into -- the light the Caldera has always had and nobody lit.
+    const spur = join([box(3.0, 8.6, 1.6, 0, 4.3, -0.4), box(2.2, 5.0, 0.8, 0, 2.5, 0.5)]);
+    return {
+      parts: [
+        { surface: 'rock', geometry: spur },
+        { surface: 'glow', geometry: box(1.0, 8.0, 0.2, 0, 4.2, 0.95) },
+        { surface: 'glow', geometry: cyl(0.8, 0.8, 0.1, 10, 0, 0.05, 0.8) },
+      ],
+      movers: [],
+      light: { at: new THREE.Vector3(0, 1.0, 1.0), color: '#ff7a30' },
     };
   }
   if (id === 'gibbet') {
