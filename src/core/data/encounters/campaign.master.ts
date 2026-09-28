@@ -381,6 +381,9 @@ export const WILDFIRE_WRIT: EncounterDef = registerEncounter({
     'briar_rampart',
     'root_snare',
     'rot_root_snare',
+    // Bloom's third shelf, taught here: the spores and the bark.
+    'rot_spores',
+    'bark_skin',
   ],
   enemyOpeningBoard: [
     ['bramble_sentinel', 1, 1],
@@ -604,6 +607,9 @@ export const BONE_BASTION: EncounterDef = registerEncounter({
     'dark_tithe',
     'soul_splinter_mark',
     'aegis_ward',
+    // Dusk's third shelf, taught here: the wall and the gaze.
+    'ossuary_wall',
+    'dread_gaze',
   ],
   enemyOpeningBoard: [
     ['grave_sentinel', 1, 1],

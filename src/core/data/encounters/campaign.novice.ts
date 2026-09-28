@@ -45,6 +45,9 @@ export const LAMPLIGHTER_ESCORT: EncounterDef = registerEncounter({
     'grapple_line',
     'aegis_ward',
     'soul_splinter_mark',
+    // Dusk's third shelf, taught here: the rend and the wind.
+    'soul_rend',
+    'plague_wind',
   ],
   enemyOpeningBoard: [
     ['scout_imp', 1, 1],
@@ -91,6 +94,9 @@ export const DEBT_COLLECTED_MINOR: EncounterDef = registerEncounter({
     'stone_barricade',
     'aegis_ward',
     'soul_splinter_mark',
+    // Dusk's third shelf, taught here: the bolt and the step.
+    'gloom_bolt',
+    'shadowstep',
   ],
   enemyOpeningBoard: [
     ['scout_imp', 1, 1],
@@ -220,6 +226,9 @@ export const GUTTER_DISPUTE: EncounterDef = registerEncounter({
     'stone_barricade',
     'aegis_ward',
     'tremor_mark',
+    // Bulwark's third shelf, taught here: the cheap wall and the draw.
+    'rubble_wall',
+    'steady_footing',
   ],
   enemyOpeningBoard: [
     ['shieldbearer', 1, 1],
@@ -264,6 +273,9 @@ export const CLINIC_QUOTA: EncounterDef = registerEncounter({
     'aegis_ward',
     'rot_root_snare',
     'shield_bash',
+    // Bloom's third shelf, taught here: the nettle and the pod.
+    'nettle',
+    'seed_pod',
   ],
   // Small and loyal: a fox, a wolf, a wisp — patients' beasts, minding the doors.
   enemyOpeningBoard: [

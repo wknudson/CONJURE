@@ -84,8 +84,14 @@ export function minionPool(school: School): CardDef[] {
  *
  * A range rather than a number because it is a design target and not a rule: nothing
  * refuses to work below it, and `catalogGaps` reports against the floor.
+ *
+ * Raised from ten-to-fifteen by the bestiary expansion's third shelves, which took every
+ * elemental school past twenty-five. Twenty is the floor now because a species drafts eight
+ * out of its own shelf and a school's two to four species should be drawing from a pool
+ * deep enough that two books of one school rarely match; thirty-four leaves room for the
+ * signatures the later bloodlines still bring.
  */
-export const CATALOG_TARGET = { min: 10, max: 15 } as const;
+export const CATALOG_TARGET = { min: 20, max: 34 } as const;
 
 export interface CatalogGap {
   school: School;
