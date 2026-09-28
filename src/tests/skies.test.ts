@@ -369,7 +369,9 @@ describe('the ground you fight on', () => {
 
     const fogged = fightable.filter((a) => fightWeatherFor(a.props.sky)?.kind === 'fog');
     const clear = fightable.filter((a) => !fightWeatherFor(a.props.sky));
-    expect(fogged.map((a) => a.id).sort(), 'the smogged wards').toEqual(['ashfall_ward', 'lamprow']);
+    // The city wards joined as their night crews did: a fight on the Shambles or in the rail yard
+    // is fought in the ash.
+    expect(fogged.map((a) => a.id).sort(), 'the smogged wards').toEqual(['ashfall_ward', 'bonemarket', 'cinderworks', 'lamprow']);
     expect(clear.map((a) => a.id).sort(), 'the open road').toEqual(['chalk_road', 'chalk_verge']);
   });
 });

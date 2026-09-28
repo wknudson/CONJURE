@@ -96,6 +96,12 @@ other connection above is fiction the player travels by accepting a contract.
 
 ## 2. The walkable world
 
+> **The maps below are the first build's.** Every outdoor place has grown since -- by PR #39, and
+> again in Wave 15, where the city wards doubled and gained quarters of their own. The grids in
+> `src/district/areas/*.ts` read as maps, row by row with notes, and `worldbuild-todo.md` Wave 15
+> records what each area grew into. What this section says about *why* each place is shaped the
+> way it is still holds.
+
 The four places with ground under them. All four are `defineArea` calls; `TILE = 4` world units,
 and every coordinate below is in world units as the code writes them.
 

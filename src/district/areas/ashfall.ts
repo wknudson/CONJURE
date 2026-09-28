@@ -4,14 +4,28 @@
  * Everything here was `map.ts` until the wildlands needed a grid of their own. The content
  * moved and the machinery stayed; see `../map.ts` for what an area *is*.
  *
- * Thirty by twenty-eight now, up from twenty square, and the growth is quarters rather than
- * more of the same street. North to south: the canal and its wharf, with the Toll House at
- * the west end; the Magistracy's sealed yard and the Counting House inside it; the two yards
- * -- the warehouse yard the Warden walks and the back alley -- either side of the north
- * walkway; the cross-street with its four trades, each a room now; the plaza with the board,
- * a market corner and the well; and below it the Chapel of the Quiet Flame with its graves
- * on one side and the Cinder Cup with its yard on the other, the south road between them
- * running down to the Lamprow gate.
+ * Fifty-four by fifty, grown evenly on every side from thirty by twenty-eight so that nothing
+ * already standing moved, and the growth is four quarters round the old ward rather than more
+ * of the same street:
+ *
+ * - **Across the canal, the far bank.** The bonded warehouses with their backs to the edge and
+ *   dead-end lanes between them, a customs square, a barge slip and the coal staithes, reached
+ *   by the Ash Bridge in the middle and the tanners' footbridge at the east end.
+ * - **West, the timber wharf and the Ropewalk.** The crane on the quay, the boat shed, and the
+ *   long sheds the ward's rope is walked out in, with the ropemaker and the tar shed beside them.
+ * - **East, off the cross-street, Tannery Row.** The tanneries round their pit yard, the Tannery
+ *   itself (a room), and the Rookeries behind -- tenements, a court, lanes one tile wide. A
+ *   second Warden walks the pits.
+ * - **South, through the old wall, Chapel Hill and Ash Gardens.** The bell tower over the
+ *   churchyard, the ossuary, the sexton; the allotments and their well; and the south road on
+ *   down between them to the ward wall and the gate to Lamprow, which moved out with the edge.
+ *
+ * The old ward in the middle is as it was. North to south: the canal and its wharf, with the
+ * Toll House at the west end; the Magistracy's sealed yard and the Counting House inside it;
+ * the two yards -- the warehouse yard the Warden walks and the back alley -- either side of the
+ * north walkway; the cross-street with its four trades, each a room; the plaza with the board,
+ * a market corner and the well; and below it the Chapel of the Quiet Flame with its graves on
+ * one side and the Cinder Cup with its yard on the other, the south road between them.
  *
  * The four trades still sit on the cross-street, two facing north and two facing south, so a
  * new Commander can walk the entire guided lap without once stepping off the pavement --
@@ -35,6 +49,23 @@ import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
  *   C  the Counting House  — impassable; dressed stone, taller than its neighbours
  *   K  the chapel          — impassable; stone, one unbroken mass
  *   U  the Cinder Cup      — impassable; timber over plaster, a chimney always going
+ *
+ * And the new quarters':
+ *
+ *   f  flagstone           — the customs square, the hide steps, the Ash Bridge
+ *   e  planking            — the tanners' footbridge
+ *   l  the Row's mud       — Tannery Row's lanes, and what is in them
+ *   z  coal dust           — the staithes on the far bank
+ *   h  churchyard turf     — Chapel Hill
+ *   g  allotment beds      — Ash Gardens
+ *   p  tanning pits        — impassable; sunk in the pit yard
+ *   D  bonded warehouse    — impassable; brick, the Magistracy's seal on every door
+ *   H  tannery             — impassable; timber, a chimney more often than not
+ *   A  the Tannery         — impassable; the one with a door you can use
+ *   R  tenement            — impassable; the Rookeries, timber and tall
+ *   Q  the Ropewalk        — impassable; long, low sheds
+ *   k  cottage             — impassable; the ropemaker, the sexton, the sheds
+ *   O  the ossuary         — impassable; stone, windowless, full
  *
  * `B` and `V` carry their own heights, and so do the four named buildings: a chapel that was
  * split into two-tile pieces would read as a row of sheds, and a tavern with the terrace's
@@ -85,42 +116,116 @@ const WARD_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { style: 'shopfront', minHeight: 5.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
   },
+  f: { tex: 'flagstone', safe: false, walk: true },
+  e: { tex: 'planks', safe: false, walk: true },
+  l: { tex: 'litter', safe: false, walk: true },
+  z: { tex: 'slag', safe: false, walk: true },
+  h: { tex: 'heath', safe: false, walk: true },
+  g: { tex: 'field', safe: false, walk: true },
+  p: { tex: 'water', safe: false, walk: false },
+  D: {
+    tex: 'cobble',
+    safe: false,
+    walk: false,
+    solid: { style: 'warehouse', minHeight: 5.2, maxHeight: 6.6, inset: 0.3, depthInset: 0.3, chimneyChance: 0.1, split: true },
+  },
+  H: {
+    tex: 'litter',
+    safe: false,
+    walk: false,
+    solid: { style: 'warehouse', minHeight: 4.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 0.7, split: true, wall: 'timber' },
+  },
+  A: {
+    tex: 'litter',
+    safe: false,
+    walk: false,
+    solid: { style: 'warehouse', minHeight: 5.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
+  },
+  R: {
+    tex: 'litter',
+    safe: false,
+    walk: false,
+    solid: { style: 'terrace', minHeight: 5.4, maxHeight: 6.8, inset: 0.3, depthInset: 0.3, chimneyChance: 0.5, split: true, wall: 'timber' },
+  },
+  Q: {
+    tex: 'weeds',
+    safe: false,
+    walk: false,
+    solid: { style: 'warehouse', minHeight: 3.2, maxHeight: 3.6, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: true, wall: 'timber' },
+  },
+  k: {
+    tex: 'grass',
+    safe: false,
+    walk: false,
+    solid: { style: 'cottage', minHeight: 3.8, maxHeight: 4.4, inset: 0.3, depthInset: 0.3, chimneyChance: 0.9, split: true, wall: 'plaster' },
+  },
+  O: {
+    tex: 'heath',
+    safe: false,
+    walk: false,
+    solid: { style: 'hall', minHeight: 4.2, maxHeight: 4.2, inset: 0.2, depthInset: 0.2, chimneyChance: 0, split: false, wall: 'stone' },
+  },
 };
 
-/** Two tiles of canal along the north edge. */
+/**
+ * Two tiles of canal, with the far bank above them now rather than the edge of the world: the
+ * canal is a band from row eleven, and the Ash Bridge and the tanners' footbridge cross it.
+ */
 const WATER_ROWS = 2;
+const WATER_ROW0 = 11;
 
-const C13 = 'c'.repeat(13);
 
 const GRID: readonly string[] = [
-  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW', //  0  the canal
-  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW', //  1
-  '#cccccccccccccccccccccccccccc#', //  2  the wharf
-  '#cTTTTcc..............ccBBBcc#', //  3  TOLL HOUSE (west)   the sealed yard   the boathouse (east)
-  '#cTTTTcc..............ccBBBcc#', //  4
-  '#ccccccc..............ccccccc#', //  5  the quay road, and the Toll House door
-  '#VVVVVVVVVVVVVVVVVVVVVVVVVVVV#', //  6  the yard wall — a gate in it, and the road to the Verge
-  `#${C13}SS${C13}#`, //  7  the cart lane, west to the Cinderworks
-  '#cBBBBBBBBccccSSccccBBBBBBBBc#', //  8  the north blocks
-  '#c........ccccSScccc........c#', //  9  west: the warehouse yard (the Warden)   east: the back alley
-  '#c.CCCC...ccccSScccc........c#', // 10  COUNTING HOUSE, inside the yard
-  '#c.CCCC...ccccSScccc........c#', // 11
-  '#c........ccccSScccc........c#', // 12
-  '#cBBBBBBBBccccSSccccBBBBBBBBc#', // 13  IRONWORKS (west)          RECORDS OFFICE (east)
-  '#cBBBBBBBBccccSSccccBBBBBBBBc#', // 14
-  '#SSSSSSSSSSSSSSSSSSSSSSSSSSSS#', // 15  the cross-street
-  '#SSSSSSSSSSSSSSSSSSSSSSSSSSSS#', // 16
-  '#cBBBBBBBBccSSSSSSccBBBBBBBBc#', // 17  APOTHECARY (west)         VIVARIUM (east)
-  '#cBBBBBBBBccSSSSSSccBBBBBBBBc#', // 18
-  '#cccccSSSSSSSSSSSSSSSSSSccccc#', // 19  the plaza
-  '#cccccSSSSSSSSSSSSSSSSSSccccc#', // 20
-  '#cccccSSSSSSSSSSSSSSSSSSccccc#', // 21  west lane to Ward Seven
-  '#cccccSSSSSSSSSSSSSSSSSSccccc#', // 22
-  '#cccccKKKKKcSSSSSScUUUUUccccc#', // 23  THE CHAPEL      the south road      THE CINDER CUP
-  '#cccccKKKKKcSSSSSScUUUUUccccc#', // 24
-  '#c.........cSSSSSSc.........c#', // 25  the graves                           the tavern yard
-  '#c.........cSSSSSSc.........c#', // 26
-  '#VVVVVVVVVVVVVVVVVVVVVVVVVVVV#', // 27  the south wall, and the gate to Lamprow
+  '#DDDDDDDccDDDDDDDcDDDDDDDDDDDDDDDDDDcDDDDDDDccDDDDDDD#', //  0  THE FAR BANK: the bonded warehouses, backs to the edge, dead-end lanes between
+  '#DDDDDDDccDDDDDDDcDDDDDDDDDDDDDDDDDDcDDDDDDDccDDDDDDD#', //  1
+  '#DDDDDDDccDDDDDDDcDDDDDDDDDDDDDDDDDDcDDDDDDDccDDDDDDD#', //  2
+  '#DDDDDDDccDDDDDDDcDDDDDDDffffDDDDDDDcDDDDDDDccDDDDDDD#', //  3  the customs square, where the Ash Bridge comes over
+  'cccccccccccccccccccccccccffffccccccccccccccccccccccccc', //  4  the back lane
+  '........ccDDDDDDDcDDDDDDcffffcDDDDDDczzzzzzzcccDDDDDDc', //  5  the barge slip (west)          the bond          the coal staithes (east)
+  '........ccDDDDDDDcDDDDDDcffffcDDDDDDczzzzzzzcccDDDDDDc', //  6
+  '........ccDDDDDDDcDDDDDDcffffcDDDDDDczzzzzzzcccDDDDDDc', //  7
+  '........cccccccccccccccccffffccccccccccccccccccccccccc', //  8  the far quay
+  '........cccccccccccccccccffffccccccccccccccccccccccccc', //  9
+  '........cccccccccccccccccccccccccccccccccccccccccccccc', // 10
+  'WWWWWWWWWWWWWWWWWWWWWWWWWWffWWWWWWWWWWWWWWWWWWeeWWWWWW', // 11  the canal -- the Ash Bridge (middle), the tanners' footbridge (east)
+  'WWWWWWWWWWWWWWWWWWWWWWWWWWffWWWWWWWWWWWWWWWWWWeeWWWWWW', // 12
+  'cccccccccccc#cccccccccccccccccccccccccccc#cccccccccccc', // 13  the wharf
+  '............#cTTTTcc..............ccBBBcc#ffffffffffff', // 14  the timber wharf    TOLL HOUSE   the sealed yard   the boathouse    the hide steps
+  '.kkk........#cTTTTcc..............ccBBBcc#ffffffffffff', // 15  the boat shed
+  '.kkk........#ccccccc..............ccccccc#llllllllllll', // 16  the quay road, and the Toll House door                  behind the tanneries
+  '#############VVVVVVVVVVVVVVVVVVVVVVVVVVVV#HHHlHHHHlHHH', // 17  the yard wall -- a gate in it, and the road to the Verge
+  'cccccccccccc#cccccccccccccSSccccccccccccc#HHHlHHHHlHHH', // 18  the cart lane, west to the Cinderworks
+  '............#cBBBBBBBBccccSSccccBBBBBBBBc#llllllllllll', // 19  the north blocks                                        TANNERY ROW
+  '.QQ.........#c........ccccSScccc........c#HHlppppplAAA', // 20  THE ROPEWALK   the warehouse yard (the Warden)   the back alley   the pits, THE TANNERY
+  '.QQ.....kkk.#c.CCCC...ccccSScccc........c#HHlppppplAAA', // 21  the ropemaker   COUNTING HOUSE, inside the yard
+  '.QQ.....kkk.#c.CCCC...ccccSScccc........c#HHllllllllll', // 22
+  '.QQ.........#c........ccccSScccc........c#RRRlRRRRlRRR', // 23                                                          the tenements
+  '.QQ.........#cBBBBBBBBccccSSccccBBBBBBBBc#RRRlRRRRlRRR', // 24  IRONWORKS (west)          RECORDS OFFICE (east)
+  '.QQ.........#cBBBBBBBBccccSSccccBBBBBBBBc#llllllllllll', // 25
+  '.QQ.........#SSSSSSSSSSSSSSSSSSSSSSSSSSSS#SSSSSSSSSSSS', // 26  the cross-street, on east to the Bonemarket
+  '.QQ.........#SSSSSSSSSSSSSSSSSSSSSSSSSSSS#SSSSSSSSSSSS', // 27
+  '.QQ.....kkk.#cBBBBBBBBccSSSSSSccBBBBBBBBc#RRRlRRRRlRRR', // 28  the tar shed    APOTHECARY (west)         VIVARIUM (east)    THE ROOKERIES
+  '.QQ.....kkk.#cBBBBBBBBccSSSSSSccBBBBBBBBc#RRRlRRRRlRRR', // 29
+  '.QQ.........#cccccSSSSSSSSSSSSSSSSSSccccc#lllllllllRRR', // 30  the plaza
+  '............#cccccSSSSSSSSSSSSSSSSSSccccc#RRl.....lRRR', // 31                                                          the Rookery court
+  'cccccccccccc#cccccSSSSSSSSSSSSSSSSSSccccc#RRl.....llll', // 32  the lane out to Ward Seven
+  '#############cccccSSSSSSSSSSSSSSSSSSccccc#RRl.....lRRR', // 33
+  '#...........#cccccKKKKKcSSSSSScUUUUUccccc#RRRRlRRRlRRR', // 34  the paupers' ground   THE CHAPEL   the south road   THE CINDER CUP
+  '#...........#cccccKKKKKcSSSSSScUUUUUccccc#RRRRlRRRlRRR', // 35
+  '#...........#c.........cSSSSSSc.........c#llllllllllll', // 36  the graves                           the tavern yard
+  '#...........#c.........cSSSSSSc.........c#RRRRRRlRRRRR', // 37
+  '#############VV..VVVVVVVSSSSSSVVVVVV..VVV#######l#####', // 38  the old south wall: the lych gap, the arch the road goes through, the garden gap
+  '###############..#######SSSSSS########################', // 39  CHAPEL HILL (west)        the south road        ASH GARDENS (east)
+  '#hhOOOOhhhhhhhh..hhhhhh#SSSSSS#ggg#ggg#ggg#ggg#ggg#kk#', // 40  the ossuary                                      the gardeners' shed
+  '#hhOOOOhhhhhhhh..hhhhhh#SSSSSS#ggg#ggg#ggg#ggg#ggg#kk#', // 41
+  '#hhhhhhhhhhhhhh..hhhhhh#SSSSSS########################', // 42
+  '#hhhhhhhhhhhhhh..hhhhhh#SSSSSS#ggg#ggg#...#ggg#ggg#gg#', // 43
+  '#.......................SSSSSS#ggg#ggg#...#ggg#ggg#gg#', // 44  the path across the hill
+  '#hhhhhhhhhhhhhh..hhhhhh#SSSSSS########################', // 45
+  '#hhhhhhhhhhhhhh..hkkkhh#SSSSSS#...#ggg#ggg#ggg#ggg#gg#', // 46  the sexton's cottage
+  '#hhhhhhhhhhhhhh..hkkkhh#SSSSSS#...#ggg#ggg#ggg#ggg#gg#', // 47
+  '########################SSSSSS########################', // 48
+  'VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV', // 49  the ward wall, and the gate to Lamprow in it
 ];
 
 /** Half the ward's span, for writing positions in world units below. */
@@ -129,21 +234,27 @@ const HALF_Z = (GRID.length * TILE) / 2;
 const xOfCol = (col: number): number => col * TILE - HALF_X + TILE / 2;
 const zOfRow = (row: number): number => row * TILE - HALF_Z + TILE / 2;
 
-const WEST_X = xOfCol(5.5); // -36, the middle of both west blocks
-const EAST_X = xOfCol(23.5); // 36, the middle of both east blocks
+const WEST_X = xOfCol(17.5); // -36, the middle of both west blocks
+const EAST_X = xOfCol(35.5); // 36, the middle of both east blocks
 
 /**
- * North-side doors sit at the south face of the row-14 buildings (z = 4); south-side doors
- * at the north face of the row-17 buildings (z = 12). The player stands a stride into the
+ * North-side doors sit at the south face of the row-25 buildings (z = 4); south-side doors
+ * at the north face of the row-28 buildings (z = 12). The player stands a stride into the
  * street from each. They are exits into rooms -- see the `door` entries below.
  */
-const NORTH_FACE = zOfRow(14) + TILE / 2 + 0.05; // 4.05
-const SOUTH_FACE = zOfRow(17) - TILE / 2 - 0.05; // 11.95
+const NORTH_FACE = zOfRow(25) + TILE / 2 + 0.05; // 4.05
+const SOUTH_FACE = zOfRow(28) - TILE / 2 - 0.05; // 11.95
 
 /** The gate in the yard wall. The player stands south of it to read the prompt. */
-export const GATE_POS = { x: 0, z: zOfRow(6) } as const;
-/** The gate in the south wall, to Lamprow. */
-const SOUTH_GATE = { x: 0, z: zOfRow(27) } as const;
+export const GATE_POS = { x: 0, z: zOfRow(17) } as const;
+/**
+ * The gate to Lamprow, in the ward wall along the south edge. It was in the old south wall at
+ * row thirty-eight; the ward grew past it, and the gate went out with the edge, so the road now
+ * runs through an arch in the old wall and on past Chapel Hill before it leaves.
+ */
+const SOUTH_GATE = { x: 0, z: zOfRow(49) } as const;
+/** The Tannery's door, on the south face of the one tannery with a door to use. */
+const TANNERY_DOOR = { x: xOfCol(52), z: zOfRow(21) + TILE / 2 } as const;
 
 export const ASHFALL_ID = 'ashfall_ward';
 
@@ -168,43 +279,44 @@ export const ASHFALL: AreaDef = defineArea({
       arrive: { x: 40, z: 30 },
     },
     {
-      // South out of the plaza and down the road, into Lamprow. A second sealed crossing rather
-      // than an open one: this is still the Magistracy's ground on both sides, and the wall it
-      // is cut through is the same argument the yard wall makes.
+      // South out of the plaza, through the arch in the old wall, down the road past Chapel Hill
+      // and into Lamprow. A second sealed crossing rather than an open one: this is still the
+      // Magistracy's ground on both sides, and the wall it is cut through is the same argument
+      // the yard wall makes.
       to: 'lamprow',
       x: SOUTH_GATE.x,
       z: SOUTH_GATE.z - 2.4,
       label: 'Through the south gate to Lamprow',
       gate: { x: SOUTH_GATE.x, z: SOUTH_GATE.z },
       // Onto Lamprow's High Street, a stride clear of its own way back.
-      arrive: { x: -56, z: -4 },
+      arrive: { x: -88, z: -4 },
     },
     {
       // East, off the cross-street into the Bonemarket. Gateless, like every crossing inside
       // the city: a gate is the Magistracy sealing something, and it does not seal a market.
       to: 'bonemarket',
       x: HALF_X - 2,
-      z: zOfRow(15),
+      z: zOfRow(26),
       label: 'East into the Bonemarket',
-      arrive: { x: -56, z: -8 },
+      arrive: { x: -88, z: -8 },
     },
     {
       // West, down the cart lane along the yard wall to the works. The ward is named for what
       // blows back up it.
       to: 'cinderworks',
       x: -HALF_X + 2,
-      z: zOfRow(7),
+      z: zOfRow(18),
       label: 'West, down the cart lane to the Cinderworks',
-      arrive: { x: 62, z: 0 },
+      arrive: { x: 98, z: 0 },
     },
     {
       // West again, off the plaza's lane. Two ways off the same edge, because Ward Seven is not
       // somewhere the ward would put on the same road as its foundry.
       to: 'ward_seven',
       x: -HALF_X + 2,
-      z: zOfRow(21),
+      z: zOfRow(32),
       label: 'West into Ward Seven',
-      arrive: { x: 54, z: -2 },
+      arrive: { x: 86, z: -2 },
     },
 
     /* --- the four doors on the cross-street ---
@@ -250,10 +362,10 @@ export const ASHFALL: AreaDef = defineArea({
       // The wharf's toll house, at the west end of the quay road. Not on the pavement: the
       // Magistracy collects its dues on ground it does not warrant.
       to: 'ashfall_toll_house',
-      x: xOfCol(3.5),
-      z: zOfRow(4) + TILE / 2 + 1.4,
+      x: xOfCol(15.5),
+      z: zOfRow(15) + TILE / 2 + 1.4,
       label: 'Into the Toll House',
-      door: { x: xOfCol(3.5), z: zOfRow(4) + TILE / 2 + 0.05, facesSouth: true, sign: 'toll' },
+      door: { x: xOfCol(15.5), z: zOfRow(15) + TILE / 2 + 0.05, facesSouth: true, sign: 'toll' },
       arrive: { x: 0, z: 16 },
     },
     {
@@ -261,29 +373,38 @@ export const ASHFALL: AreaDef = defineArea({
       // serve a writ. Shown boarded from the first visit: a door you cannot see is a door you
       // cannot learn to come back to.
       to: 'ashfall_counting_house',
-      x: xOfCol(4.5),
-      z: zOfRow(11) + TILE / 2 + 1.4,
+      x: xOfCol(16.5),
+      z: zOfRow(22) + TILE / 2 + 1.4,
       label: 'Into the Counting House',
-      door: { x: xOfCol(4.5), z: zOfRow(11) + TILE / 2 + 0.05, facesSouth: true, sign: 'counting', style: 'iron' },
+      door: { x: xOfCol(16.5), z: zOfRow(22) + TILE / 2 + 0.05, facesSouth: true, sign: 'counting', style: 'iron' },
       when: { after: ['curfew_breakers'] },
       lockedReason: 'Sealed by the Magistracy until a writ has been served in this ward.',
       arrive: { x: 0, z: 16 },
     },
     {
       to: 'ashfall_chapel',
-      x: xOfCol(8),
-      z: zOfRow(23) - TILE / 2 - 1.4,
+      x: xOfCol(20),
+      z: zOfRow(34) - TILE / 2 - 1.4,
       label: 'Into the Chapel of the Quiet Flame',
-      door: { x: xOfCol(8), z: zOfRow(23) - TILE / 2 - 0.05, facesSouth: false, sign: 'chapel', style: 'arch' },
+      door: { x: xOfCol(20), z: zOfRow(34) - TILE / 2 - 0.05, facesSouth: false, sign: 'chapel', style: 'arch' },
       arrive: { x: 0, z: -20 },
     },
     {
       to: 'ashfall_cinder_cup',
-      x: xOfCol(21),
-      z: zOfRow(23) - TILE / 2 - 1.4,
+      x: xOfCol(33),
+      z: zOfRow(34) - TILE / 2 - 1.4,
       label: 'Into the Cinder Cup',
-      door: { x: xOfCol(21), z: zOfRow(23) - TILE / 2 - 0.05, facesSouth: false, sign: 'tavern' },
+      door: { x: xOfCol(33), z: zOfRow(34) - TILE / 2 - 0.05, facesSouth: false, sign: 'tavern' },
       arrive: { x: 0, z: -20 },
+    },
+    {
+      // Off the Row, through the pit yard's stink, into the one tannery that will have you.
+      to: 'ashfall_tannery',
+      x: TANNERY_DOOR.x,
+      z: TANNERY_DOOR.z + 1.4,
+      label: 'Into the Tannery',
+      door: { x: TANNERY_DOOR.x, z: TANNERY_DOOR.z + 0.05, facesSouth: true, style: 'plank' },
+      arrive: { x: 0, z: 14 },
     },
   ],
   props: {
@@ -296,6 +417,12 @@ export const ASHFALL: AreaDef = defineArea({
       { kind: 'rook', x: -20, z: -36, roam: 24, count: 4 },
       { kind: 'rook', x: 30, z: -30, roam: 22, count: 3 },
       { kind: 'gull', x: 10, z: -50, roam: 20, count: 3 },
+      // The new quarters: rats in the bond and the Rookeries, rooks on the churchyard, and the
+      // gulls that follow the barges up the canal to the far bank.
+      { kind: 'rat', x: -30, z: -82, roam: 6, count: 2 },
+      { kind: 'rat', x: 74, z: 46, roam: 4, count: 2 },
+      { kind: 'rook', x: -60, z: 76, roam: 20, count: 4 },
+      { kind: 'gull', x: 40, z: -58, roam: 24, count: 3 },
     ],
     /**
      * The hub, kept working, and composed rather than scattered: the wharf has its bollards
@@ -351,6 +478,62 @@ export const ASHFALL: AreaDef = defineArea({
       { kind: 'trough', x: 26, z: 48 },
       { kind: 'barrel', x: 46, z: 51 },
       { kind: 'barrel', x: 42, z: 51 },
+
+      // The far bank: bollards along the quay, freight outside the bond, the staithes' heaps,
+      // and a keel laid down on the slip that nobody has come back to plank.
+      { kind: 'bollard', x: -62, z: -57 },
+      { kind: 'bollard', x: -42, z: -57 },
+      { kind: 'bollard', x: -22, z: -57 },
+      { kind: 'bollard', x: 18, z: -57 },
+      { kind: 'bollard', x: 38, z: -57 },
+      { kind: 'bollard', x: 62, z: -57 },
+      { kind: 'bollard', x: 96, z: -57 },
+      { kind: 'sacks', x: -30, z: -66 },
+      { kind: 'barrel', x: -26, z: -66.5 },
+      { kind: 'barrel', x: 14, z: -66 },
+      { kind: 'sacks', x: 66, z: -66 },
+      { kind: 'spoilheap', x: 46, z: -74 },
+      { kind: 'spoilheap', x: 58, z: -72 },
+      { kind: 'logpile', x: -96, z: -70 },
+      { kind: 'deadfall', x: -86, z: -66 },
+      { kind: 'workbench', x: -90, z: -74 },
+      // The timber wharf and the Ropewalk.
+      { kind: 'logpile', x: -94, z: -42 },
+      { kind: 'logpile', x: -72, z: -38 },
+      { kind: 'workbench', x: -78, z: -14 },
+      { kind: 'barrel', x: -74, z: 10 },
+      // The paupers' ground, west of the old graves.
+      { kind: 'gravestone', x: -94, z: 40 },
+      { kind: 'gravestone', x: -86, z: 44 },
+      { kind: 'gravestone', x: -76, z: 40 },
+      { kind: 'wildflowers', x: -80, z: 46 },
+      { kind: 'bramble', x: -100, z: 46 },
+      // Tannery Row: hides on the racks down the steps, and nothing left in the lanes the
+      // Warden walks round the pits.
+      { kind: 'rack', x: 70, z: -40 },
+      { kind: 'rack', x: 78, z: -40 },
+      { kind: 'rack', x: 90, z: -38 },
+      { kind: 'barrel', x: 98, z: -38 },
+      { kind: 'brazier', x: 100, z: -22.2 },
+      // The Rookeries.
+      { kind: 'washing', x: 74, z: 20, yaw: 0 },
+      { kind: 'washing', x: 90, z: 46, yaw: 0 },
+      { kind: 'barrel', x: 62, z: 46 },
+      { kind: 'brazier', x: 66, z: 22 },
+      // Chapel Hill.
+      { kind: 'gravestone', x: -98, z: 64 },
+      { kind: 'gravestone', x: -94, z: 82 },
+      { kind: 'gravestone', x: -78, z: 82 },
+      { kind: 'gravestone', x: -50, z: 66 },
+      { kind: 'gravestone', x: -38, z: 86 },
+      { kind: 'urn', x: -54, z: 68 },
+      { kind: 'wildflowers', x: -66, z: 62 },
+      { kind: 'bramble', x: -100, z: 88 },
+      // Ash Gardens, and the gate.
+      { kind: 'trough', x: 52, z: 58 },
+      { kind: 'barrel', x: 94, z: 66 },
+      { kind: 'wildflowers', x: 74, z: 58 },
+      { kind: 'noticepost', x: 12, z: 94 },
     ],
     /** The bounty board, on the plaza's walkway between the spawn and the cross-street. */
     board: { x: 10, z: 21 },
@@ -364,18 +547,28 @@ export const ASHFALL: AreaDef = defineArea({
      */
     npcs: [
       { id: 'vex', x: -6, z: 24 },
-      { id: 'ashfall_gate_guard', x: 6, z: 48, art: 'town_guard', label: 'Talk to the gate sentry' },
+      // At the gate, which went south with the edge; still on the road's pavement.
+      { id: 'ashfall_gate_guard', x: 6, z: 92, art: 'town_guard', label: 'Talk to the gate sentry' },
       { id: 'ashfall_lamplighter', x: -2, z: 8, art: 'night_watchman', label: 'Talk to the lamplighter' },
       { id: 'ashfall_cobbler', x: -18, z: 30, art: 'cobbler', label: 'Talk to the cobbler' },
       { id: 'ashfall_crier', x: 18, z: 30, art: 'town_crier', label: 'Hear the crier' },
     ],
-    /** The Warden's beat, clockwise around the warehouse yard and the Counting House in it. */
+    /**
+     * The Wardens' beats: clockwise around the warehouse yard and the Counting House in it, and
+     * clockwise round Tannery Row's pit yard, down the lanes either side of it.
+     */
     patrols: [
       [
         { x: -48, z: -17 },
         { x: -22, z: -17 },
         { x: -22, z: -5 },
         { x: -48, z: -5 },
+      ],
+      [
+        { x: 70, z: -22 },
+        { x: 94, z: -22 },
+        { x: 94, z: -10 },
+        { x: 70, z: -10 },
       ],
     ],
     /** Crates and clutter in the alley, clear of the Warden's rectangle so it never snags. */
@@ -386,13 +579,18 @@ export const ASHFALL: AreaDef = defineArea({
     /**
      * Who walks the row, and the row he walks.
      *
-     * Fourteen lamps, in the order he lights them: from the south gate up the road, across the
-     * plaza, up the walkway, along the cross-street west to east, and up the north walkway to
-     * the canal. Magistracy property, lit by a Magistracy man, on the ward that wrote the rule
-     * about them — and every one on walkway tiles, because the light *is* the safe zone.
+     * Twenty lamps, in the order he lights them: from the south gate up the road past Chapel
+     * Hill, across the plaza, up the walkway, along the cross-street west to east and on to the
+     * Bonemarket, and up the north walkway to the canal. Magistracy property, lit by a
+     * Magistracy man, on the ward that wrote the rule about them — and every one on walkway
+     * tiles, because the light *is* the safe zone.
      */
     lamplighter: 'ashfall_lamplighter',
     lamps: [
+      { x: -4, z: 92 },
+      { x: 4, z: 82 },
+      { x: -4, z: 72 },
+      { x: 4, z: 60 },
       { x: -4, z: 50 },
       { x: 4, z: 42 },
       { x: -10, z: 36 },
@@ -405,14 +603,25 @@ export const ASHFALL: AreaDef = defineArea({
       { x: -20, z: 8 },
       { x: 20, z: 8 },
       { x: 44, z: 8 },
+      { x: 68, z: 8 },
+      { x: 92, z: 8 },
       { x: -1, z: -4 },
       { x: 3, z: -20 },
     ],
-    /** Darkened trees: one over the graves, one in the tavern yard, one on the east quay. */
+    /**
+     * Darkened trees: one over the graves, one in the tavern yard, one on the east quay; yews on
+     * Chapel Hill, and what was left standing when the gardens were dug.
+     */
     trees: [
       { x: -34, z: 51 },
       { x: 22, z: 51 },
       { x: 53, z: -42 },
+      { x: -98, z: 72 },
+      { x: -62, z: 86 },
+      { x: -26, z: 70 },
+      { x: -66, z: 36 },
+      { x: 58, z: 58 },
+      { x: 94, z: 70 },
     ],
     /*
      * What the ward writes on its own walls.
@@ -428,11 +637,33 @@ export const ASHFALL: AreaDef = defineArea({
       { text: "VANE'S LIGHT IS OUR DARK", wallX: WEST_X, wallZ: SOUTH_FACE, dx: 7.5, facesSouth: false, tint: '#b7ae9d' },
       { text: 'THE QUOTA IS A NUMBER', wallX: EAST_X, wallZ: SOUTH_FACE, dx: 6.8, facesSouth: false, tint: '#a4543a' },
       // The alley's own opinion, on the back of the Records Office.
-      { text: 'THE BAKER PAYS TWICE', wallX: EAST_X, wallZ: zOfRow(13) - TILE / 2, dx: 0, facesSouth: false, tint: '#8a7a6a' },
-      // On the south wall, facing the plaza, for anyone about to leave.
-      { text: 'THE GATE OPENS BOTH WAYS', wallX: 22, wallZ: zOfRow(27) - TILE / 2, dx: 0, facesSouth: false, tint: '#9a8a7a' },
+      { text: 'THE BAKER PAYS TWICE', wallX: EAST_X, wallZ: zOfRow(24) - TILE / 2, dx: 0, facesSouth: false, tint: '#8a7a6a' },
+      // On the ward wall, facing the gardens and the road, for anyone about to leave.
+      { text: 'THE GATE OPENS BOTH WAYS', wallX: 22, wallZ: zOfRow(49) - TILE / 2, dx: 0, facesSouth: false, tint: '#9a8a7a' },
+      // The old south wall's back, seen from Chapel Hill.
+      { text: 'THE WALL WAS HERE FIRST', wallX: -20, wallZ: zOfRow(38) + TILE / 2, dx: 0, facesSouth: true, tint: '#8a7a6a' },
+      // On the bond, facing the customs square: the Magistracy's word for what is in it.
+      { text: 'IN BOND', wallX: 2, wallZ: zOfRow(2) + TILE / 2, dx: 0, facesSouth: true, tint: '#a09080' },
     ],
     waterRows: WATER_ROWS,
+    waterRow0: WATER_ROW0,
     horizon: 'city',
+    /** The bell over Chapel Hill, which the whole south of the ward sets its clock by; the crane on the timber wharf. */
+    landmarks: [
+      { kind: 'bell_tower', x: -56, z: 74 },
+      { kind: 'crane', x: -82, z: -45 },
+    ],
+    vignettes: [
+      { id: 'grave_plot', x: -70, z: 82 },
+      { id: 'grave_plot', x: -30, z: 66 },
+      { id: 'grave_plot', x: -70, z: 60.5 },
+      { id: 'grave_plot', x: -40, z: 60.5 },
+      { id: 'grave_plot', x: -86, z: 88.4 },
+      { id: 'washing_court', x: 82, z: 30 },
+      { id: 'well_yard', x: 62, z: 70 },
+      { id: 'broken_cart', x: 54, z: -62 },
+      { id: 'market_corner', x: 84, z: 9.6 },
+      { id: 'hay_yard', x: -86, z: 0 },
+    ],
   },
 });

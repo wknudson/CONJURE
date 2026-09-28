@@ -30,7 +30,9 @@ export type LandmarkId =
   | 'stone_circle'
   | 'great_tree'
   | 'water_tower'
-  | 'furnace_stack';
+  | 'furnace_stack'
+  | 'crane'
+  | 'gasholder';
 
 export interface LandmarkKind {
   /** The footprint the colliders learn, centred on the landmark, in world units. */
@@ -55,6 +57,8 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   great_tree: { w: 3.2, d: 3.2, height: 17, overhang: 3.6, note: 'A dead ash older than the wood around it, bare-armed over the canopy.' },
   water_tower: { w: 4, d: 4, height: 11, note: 'A tank on iron legs, dripping.' },
   furnace_stack: { w: 3, d: 3, height: 18, note: 'A brick stack over the works, a flare breathing at its lip.' },
+  crane: { w: 2.4, d: 2.4, height: 8.5, note: 'A quay crane on a timber mast, its jib slewing out over the water and back.' },
+  gasholder: { w: 8.4, d: 8.4, height: 9, note: 'A gas bell in its iron frame, a lamp on the valve, the valve wheel turning.' },
 };
 
 export const LANDMARK_IDS = Object.keys(LANDMARKS) as readonly LandmarkId[];
@@ -173,6 +177,46 @@ export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
       ],
       movers: [{ surface: 'glow', geometry: beam, pivot: new THREE.Vector3(0, 13.6, 0), axis: new THREE.Vector3(0, 1, 0), motion: 'spin', amount: 0.6, reach: 16 }],
       light: { at: new THREE.Vector3(0, 13.6, 0), color: '#ffe0a0' },
+    };
+  }
+  if (id === 'crane') {
+    // A mast on a braced foot with its winch; the jib points north, over the water a canal quay
+    // has on that side, and slews on the mast head with a rope and a hook hung off its end.
+    const mast = join([box(2.2, 0.5, 2.2), box(0.5, 7, 0.5, 0, 4), box(0.9, 0.7, 0.6, 0, 1.4, 0.55), box(0.7, 0.3, 0.7, 0, 7.65)]);
+    const jib = join([
+      box(0.3, 0.3, 4.4, 0, 0, -2.0),
+      box(0.7, 0.6, 0.7, 0, 0, 0.6),
+      box(0.05, 2.4, 0.05, 0, -1.35, -4.0),
+      box(0.28, 0.32, 0.28, 0, -2.7, -4.0),
+    ]);
+    return {
+      parts: [{ surface: 'bark', geometry: mast }],
+      movers: [{ surface: 'bark', geometry: jib, pivot: new THREE.Vector3(0, 6.6, 0), axis: new THREE.Vector3(0, 1, 0), motion: 'swing', amount: 0.6, period: 11, reach: 3.2 }],
+    };
+  }
+  if (id === 'gasholder') {
+    // The bell sits low in its frame: eight columns round it, a girder ring on top, and on the
+    // valve stand at the east side a wheel that turns and the lamp the works is known by.
+    const bell = join([cyl(3.6, 3.6, 5.4, 16), cyl(3.6, 3.0, 0.9, 16, 0, 5.85)]);
+    const frame: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      frame.push(box(0.3, 8.4, 0.3, Math.cos(a) * 3.95, 4.2, Math.sin(a) * 3.95));
+      const b = ((i + 0.5) / 8) * Math.PI * 2;
+      const girder = box(3.1, 0.25, 0.25, Math.cos(b) * 3.65, 8.3, Math.sin(b) * 3.65);
+      girder.translate(-Math.cos(b) * 3.65, -8.3, -Math.sin(b) * 3.65).rotateY(-b + Math.PI / 2).translate(Math.cos(b) * 3.65, 8.3, Math.sin(b) * 3.65);
+      frame.push(girder);
+    }
+    frame.push(box(0.5, 1.6, 0.5, 4.0, 0.8, 0));
+    const wheel = uvify(new THREE.CylinderGeometry(0.55, 0.55, 0.1, 10).rotateZ(Math.PI / 2));
+    return {
+      parts: [
+        { surface: 'iron', geometry: bell },
+        { surface: 'iron', geometry: join(frame) },
+        { surface: 'glow', geometry: box(0.35, 0.35, 0.35, 4.0, 1.85, 0) },
+      ],
+      movers: [{ surface: 'iron', geometry: wheel, pivot: new THREE.Vector3(4.3, 1.2, 0), axis: new THREE.Vector3(1, 0, 0), motion: 'spin', amount: 0.4, reach: 0.4 }],
+      light: { at: new THREE.Vector3(4.0, 2.2, 0), color: '#ffd89a' },
     };
   }
   if (id === 'gibbet') {

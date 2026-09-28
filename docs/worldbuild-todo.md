@@ -1156,7 +1156,45 @@ The Verge draws seventy calls standing by its gibbet, the road a hundred and one
 
 | Where | Placeholder | Standing in for |
 |---|---|---|
-| Sights | seven, in two areas | eight or more in every outdoor place. The area passes write them, and the registry test's minimum goes up as they do |
-| Landmarks and vignettes | one of each, as proofs | a landmark per area and two to four scenes, placed as each area is recomposed |
+| Sights | ~~seven, in two areas~~ | **Begun — see 15.6.** Eight or more in every outdoor place: the six city wards have 74 between them; the Ring and the Wildlands follow, and the registry test's minimum goes up when they have |
+| Landmarks and vignettes | ~~one of each, as proofs~~ | **Begun — see 15.6.** Every city ward has its landmark and its scenes; the Ring and the Wildlands follow |
 | The water wheel and the pump engine | still | turning, as landmark movers. They belong to Millharrow's and the Levels' passes, where the wheel and the beam engine are built |
 | A landmark seen from afar | fog-bound like everything else | a far silhouette over the horizon ring. At the walk camera's range a landmark is only seen when you are nearly there |
+
+### 15.6 The city (built)
+
+Every city ward grown evenly on every side -- nothing already standing moved, and every arrival
+into a grown ward moved out with its edge -- and the new ground composed into quarters by hand,
+each with a purpose. Night crews in every ward but Ashfall, which stays the safe hub.
+
+| Ward | Size | What the growth added | After dark | Sights |
+|---|---|---|---|---|
+| Ashfall | 30×28 → 54×50 | the far bank across the canal (bonded warehouses, customs square, barge slip, coal staithes); the timber wharf and its crane; the Ropewalk; Tannery Row, the Rookeries and the Tannery (a room); Chapel Hill with the bell tower, and Ash Gardens; the Lamprow gate moved out to the new south edge | none -- a second Warden walks the pit yard | 14 |
+| Lamprow | 32×26 → 48×40 | the gasworks across the cut, with its gasholder; the chandlers' yard; cottages and allotments; the ditches where the Sink drains. The High Street runs edge to edge | the Wick-Thieves at the gasworks; a second Warden in the chandlers' yard | 12 |
+| Bonemarket | 32×24 → 48×36 | the Shambles; Knacker's Lane and its dead ends; the rag lanes; the glue works; the market clock | two Knacker's Lads crews, one on the Shambles and one on the lane across the way in | 12 |
+| Cinderworks | 34×26 → 52×40 | the barracks; the quench channel and its bridge; the scrapyard under the blast furnace's stack; the rail yard and the engine shed | the Slag Rats in the rail yard and at the bridge (a sentry); scavengers in the scrapyard | 12 |
+| Ward Seven | 30×26 → 46×40 | the drowned terraces across the cistern, boardwalks the only way through, the water tower on its island; the punt moorings and the soak; the washhouse; the new cut and its empty engine house | What Lives in the Cistern, on the boardwalks and in the soak | 12 |
+| Highcourt | 28×30 → 42×46 | all of it mirrored: the beacon court and its statue garden, the Archive and the Annexe; the colonnades; the bailiffs' yard and the stables | the Night Bailiffs, one crew down each colonnade | 12 |
+
+What the pass needed underneath it:
+
+| Piece | What it does |
+|---|---|
+| A canal with a far bank | `waterRow0` puts a canal band across the middle of a map; the ground plane covers it, the band's water bakes clear for the real water beneath, and a bridge is any walkable tile in it. Ashfall, Lamprow and Ward Seven grew a far bank this way; their growth would otherwise have been more canal |
+| Landmarks | a quay crane and a gasholder joined the kit |
+| The statue | a new kind of furniture, for Highcourt's garden; each of the six is a sight |
+| The composer | a script per ward paints the padded grid quarter by quarter, keeps every row's note, and refuses a walkable pocket nothing can reach |
+
+The walking-time checkpoint after Ashfall: edge to edge is about thirty-six seconds, spawn to the
+Bonemarket road about eighteen, twice what it was. That was judged right for the hub, and the
+other wards kept their targets. The busiest corner measured, Tannery Row, draws 173 calls with
+the pool at its ten lights.
+
+### What is still standing in (15.6)
+
+| Where | Placeholder | Standing in for |
+|---|---|---|
+| The drowned terraces | painted water, beside the cistern's moving water | the flood as one sheet of real water. The band carries one canal; a second plane for a flood that is not a band would need the bake to learn it |
+| Night crews | beats and sentries, no prowlers | the prowl the plan gave the Knacker's Lads and the Cistern Things. A prowler goes everywhere, so the rules keep it out of anywhere with people in it, and every city ward has people |
+| Wardens | every hour | a Warden with hours. `patrols` has no clock; the second beats are always walked |
+| The atlas | its §2 still draws the first build | a redraw of every grown map. The grids are in the area files and read as maps already; the atlas says so |

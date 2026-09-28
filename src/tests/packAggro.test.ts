@@ -297,7 +297,9 @@ describe('every stretch of road packs share', () => {
     // with pavement AND packs is the only place a player can watch a cone die at a kerbstone.
     // Both circles have to actually cross the boundary or the lesson never comes up.
     expect(LAMPROW.safety).toBe('sidewalk');
-    const specs = LAMPROW.props.packs ?? [];
+    // The Sink's crews: the ones in no band of their own. The gasworks crew across the cut is
+    // the other half of a grown ward, and has no kerb to reach.
+    const specs = (LAMPROW.props.packs ?? []).filter((s) => !s.band);
     expect(specs.length).toBeGreaterThanOrEqual(2);
 
     // The High Street's south kerb: rows 10-11 are the flags, so z = 8 is where they end.

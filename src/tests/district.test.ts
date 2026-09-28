@@ -679,8 +679,9 @@ describe('the Lamprow grid', () => {
   it('runs one unbroken safe lane from one end of the ward to the other', () => {
     // The whole reason the ward is on the map: a walkway long enough to matter, so that
     // stepping off it is a decision rather than an accident of where the paving stopped.
+    // Edge to edge since the ward grew: the street runs on to both new ends.
     for (const z of HIGH_STREET_Z) {
-      for (let x = -60; x <= 58; x += 2) {
+      for (let x = -94; x <= 94; x += 2) {
         expect(isSafeAt(LAMPROW, x, z), `the High Street breaks at (${x}, ${z})`).toBe(true);
       }
     }
@@ -700,7 +701,9 @@ describe('the Lamprow grid', () => {
   });
 
   it('keeps the Sink below the kerb, and its crews on it', () => {
-    for (const spec of LAMPROW.props.packs ?? []) {
+    // The Sink's crews are the ones with no band of their own; the Wick-Thieves work the
+    // gasworks across the cut, which is nobody's kerb.
+    for (const spec of (LAMPROW.props.packs ?? []).filter((s) => !s.band)) {
       expect(spec.z, `${spec.encounterId} should live below the flags`).toBeGreaterThan(KERB_Z);
       expect(isWalkable(LAMPROW, spec.x, spec.z)).toBe(true);
       expect(isSafeAt(LAMPROW, spec.x, spec.z)).toBe(false);
@@ -739,11 +742,13 @@ describe('the Chalk Road grid', () => {
 });
 
 describe('the ward grid', () => {
-  it('is thirty by twenty-eight, and complete', () => {
-    // Grown from twenty square: a wharf, a sealed yard with a building in it, a chapel and a
-    // tavern below the plaza. Pinned so the next growth is a decision and not a drift.
-    expect(ASHFALL.grid).toHaveLength(28);
-    for (const row of ASHFALL.grid) expect(row).toHaveLength(30);
+  it('is fifty-four by fifty, and complete', () => {
+    // Grown from twenty square to thirty by twenty-eight -- a wharf, a sealed yard with a
+    // building in it, a chapel and a tavern below the plaza -- and then evenly on every side:
+    // the far bank, the Ropewalk, Tannery Row, Chapel Hill and Ash Gardens. Pinned so the next
+    // growth is a decision and not a drift.
+    expect(ASHFALL.grid).toHaveLength(50);
+    for (const row of ASHFALL.grid) expect(row).toHaveLength(54);
   });
 
   it('starts the player, the Dispatcher and every door on warded pavement', () => {
@@ -800,7 +805,8 @@ describe('the ward grid', () => {
   });
 
   it('bounds itself: the canal and everything off the edge are impassable', () => {
-    expect(isWalkable(ASHFALL, 0, -54)).toBe(false); // the canal
+    expect(isWalkable(ASHFALL, -40, -54)).toBe(false); // the canal
+    expect(isWalkable(ASHFALL, 0, -54)).toBe(true); // ...but for the Ash Bridge over it
     expect(isWalkable(ASHFALL, 0, 999)).toBe(false); // off the south edge
     expect(isWalkable(ASHFALL, -999, 0)).toBe(false); // off the west edge
     expect(tileAt(ASHFALL, 999, 999).walk).toBe(false);
@@ -872,7 +878,7 @@ describe('collision', () => {
 
   it('will not let a body stand in the canal', () => {
     const set = new ColliderSet(ASHFALL);
-    expect(set.blocked(0, -54)).toBe(true);
+    expect(set.blocked(-40, -54)).toBe(true);
   });
 
   it('respects a disabled collider', () => {

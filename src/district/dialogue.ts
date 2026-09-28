@@ -415,6 +415,46 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'The Counting House is supposed to send for the takings. If you see the Counting House, tell it.',
     },
   ],
+  bonemarket_knacker: [
+    {
+      who: 'KNACKER',
+      text: 'Everything that works dies of it, and I get it after. The Magistracy gets a line in my book, the tanners get the hide, the glue works get the rest, and I get to be the man nobody shakes hands with.',
+    },
+    {
+      who: 'KNACKER',
+      text: 'The lads on the Shambles at night are not mine. They take what comes to the pens before it is counted, and the counting is the only thing here worth stealing.',
+    },
+  ],
+  bonemarket_rag_sorter: [
+    {
+      who: 'RAG-SORTER',
+      text: 'Rags, bones, bottles, iron. Everything has a price in here, even the price. Especially the price.',
+    },
+    {
+      who: 'RAG-SORTER',
+      text: 'Keep out of the last lane after dark. Not for anything in it. For what you will look like, coming out, to whoever is waiting.',
+    },
+  ],
+  ashfall_tanner: [
+    {
+      who: 'TANNER',
+      text: 'Bark from the Ashwood, lime from the Verge, hides from the Bonemarket, and the smell goes back up the cross-street to the ward that wrote the rule about it. That is the arrangement.',
+    },
+    {
+      who: 'TANNER',
+      text: "They walled us off the end of the street in my father's time and called it a row. The Magistracy still buys the leather. It just buys it with its nose held.",
+    },
+  ],
+  ashfall_tanners_boy: [
+    {
+      who: 'BOY AT THE PITS',
+      text: 'I stir. That is the job. You stir till your arms come off, and then you stir with what is left.',
+    },
+    {
+      who: 'BOY AT THE PITS',
+      text: 'Not that one. That one is the lime. It does not look like anything, which is how it gets you.',
+    },
+  ],
   ashfall_barge_hand: [
     {
       who: 'BARGEE',
