@@ -9,6 +9,18 @@
  * It is the only place where the ground you would call the *background* is brighter than the
  * ground you would call the *feature*: the snow is pale and the ice sheets are dark, because ice
  * is transparent and what you see through it is not white.
+ *
+ * Sixty-four by forty-six now, grown from thirty-six by twenty-six, and the rock ring the old field
+ * sat in is gone: the field runs out to a bigger one. North, **the escarpment**, its face coming
+ * down to a different row in every column, the ice cave still cut into it, and **the frozen falls**
+ * coming off it into a pool and a stream that froze where they lay. West, the road runs on past
+ * where it used to stop, a hundred paces more under the snow, and ends at **the frozen caravan**:
+ * two wagons slewed off it and the lead wagon broadside across it. South-west, **the tarn**, and
+ * the huts dragged out onto it to fish through the ice. South, **the ridges** the Rime-Archers were
+ * posted on a long winter ago. East, by the road in, **the mammoth**, where it lay down.
+ *
+ * The Hoarhound Pack keeps to the mammoth's hollow, and one of its stalkers prowls the whole
+ * field. The Rime-Archers hold two of the ridges' ends, looking north over the snow.
  */
 
 import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
@@ -23,6 +35,9 @@ import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
  *   I  pressure ridge — impassable, low and broad
  *   R  rock         — impassable, the boundary
  *   d  drift       — where the wind put the snow down rather than scouring it
+ *   W  a wagon       — impassable; the caravan, frozen where it stopped
+ *   h  a fishing hut — timber on runners, a stovepipe through the roof
+ *   o  a fishing hole — through the tarn's ice; open water, impassable
  *
  * `I` is the widest low solid in the game: almost no inset, so a ridge is a continuous barrier
  * you walk the end of rather than a row of blocks you walk between.
@@ -45,6 +60,19 @@ const RIME_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { style: 'rock', minHeight: 7.0, maxHeight: 11.0, inset: 0.1, depthInset: 0.1, chimneyChance: 0, split: false },
   },
+  W: {
+    tex: 'snow',
+    safe: false,
+    walk: false,
+    solid: { style: 'wall', minHeight: 1.8, maxHeight: 2.2, inset: 0.4, depthInset: 0.7, chimneyChance: 0, split: false, wall: 'timber' },
+  },
+  h: {
+    tex: 'ice',
+    safe: false,
+    walk: false,
+    solid: { style: 'cottage', minHeight: 2.8, maxHeight: 3.0, inset: 0.6, depthInset: 0.6, chimneyChance: 1, split: false, wall: 'timber' },
+  },
+  o: { tex: 'water', safe: false, walk: false },
   /** The cave mouth: rock, taken whole, with a door in the south face of it. */
   K: {
     tex: 'snow',
@@ -55,39 +83,59 @@ const RIME_LEGEND: Record<string, TileDef> = {
 };
 
 /**
- * 32 wide by 22 deep — the same width as the Chalk Road it continues.
+ * 64 wide by 46 deep.
  *
- * Column 31 opens at rows 10 and 11, which is the road itself arriving. The ridges above and
- * below it are offset from each other so that leaving the road in either direction means going
- * round something.
+ * The road comes in at the east edge on rows 22 and 23 and runs west to the lead wagon. In the old
+ * field, columns 15 to 48, the ridges above and below it are offset from each other so that
+ * leaving the road in either direction means going round something.
  */
 const GRID: readonly string[] = [
-  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  0
-  'RddddddddKKKdddddddddddddddddddddddR', //  1
-  'RddddddddKKKdddddddddddddddddddddddR', //  2
-  'RddddddddddddddddddddddddddddddddddR', //  3
-  'RddddddIIIIddddddddddIIIIddddddddddR', //  4
-  'RddddddIIIIddnndddnddIIIIdddnnnddddR', //  5
-  'RddddddddddddnnnnnnddddddddnnnnddddR', //  6
-  'RddddiiiiiiddnnnnnnddddiiiiiinnddddR', //  7
-  'RddddiiiiiiddddddddnnddiiiiiiddddddR', //  8
-  'RddddnnnnddddddddddnnddddddddddddddR', //  9
-  'RddddnnnnddIIIIIIddnnddIIIIIIddddddR', // 10
-  'RddddnnnnddddddddddnnddddddddddddddR', // 11
-  'Rdd,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,dd,', // 12
-  'Rdd,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,dd,', // 13
-  'RddddnnnnddddddddddnnddddddddddddddR', // 14
-  'RddddnnnnddIIIIIIddnnddIIIIIIddddddR', // 15
-  'RddddnnnnddddddddddnnddddddddddddddR', // 16
-  'RddddiiiiiiddddddddnnddiiiiiiddddddR', // 17
-  'RddddiiiiiinnnnnnnnnnnniiiiiinnddddR', // 18
-  'RddddddddddddnnnnnnddddddddnnnnddddR', // 19
-  'Rdddddd##ddddnnndnndddd##ddnnddddddR', // 20
-  'RddddddIIIIddddddddddIIIIddddddddddR', // 21
-  'RddddddddddddddddddddddddddddddddddR', // 22
-  'RddddddddddddddddddddddddddddddddddR', // 23
-  'RddddddddddddddddddddddddddddddddddR', // 24
-  'RddRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRddR', // 25
+  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  0  the rock
+  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  1
+  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  2  the north escarpment: THE FROZEN FALLS come off it here, cols 30-35
+  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRiiiiiiRRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  3
+  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRiiiiiiRRRRRRRRRRRRRRRRRRRRRRRRRRRR', //  4
+  'RRRRRRRRRRRRdddddddRRRRRRRRRRRiiiiiiRRRdddRRRdRdddRddddddddddddR', //  5
+  'RRddRdRRRRRddddddddRRRRRRRRRRRddiidddddddddddddddddddddddddddddR', //  6
+  'RdddddddRdddddnnnddRRRRRRRRRRRddiidddddddddddddddddddnnnddnnnddR', //  7
+  'RddddddddddddnnnnddRRRRRRRRRRRddiindnnnnnnnnnnnnnnnnnnnnddnnnddR', //  8
+  'RddnnndddddnnnnnnddRRRRRRRRRRRddiidnnnnnnnnnnnndnnnddnnddnnnnddR', //  9
+  'RddnnndnnnnnnndddddRRRRRRRRRRRddiidnnnnnnnnnnnndnnnddnndnnnnnddR', // 10
+  'RddnnndnnnnnnnnddddddddKKKddddddddddddddddddddddddnnnndddnnnnddR', // 11  the ice cave, in the escarpment face
+  'RddnnnnnnnnnnnnddddddddKKKdddddddddddddddddddddddnnnnnnniiiiiidR', // 12
+  'RddnnnnndddnnnnddddddddddddddddddddddddddddddddddnddddddiiiiiidR', // 13
+  'RddiiiiiiiiinnnddddddIIIIddddddddddIIIIddddddddddndddddddddddddR', // 14
+  'RddiiiiiiiiinnnddddddIIIIddnndddnddIIIIdddnnnddddnddIIIIIIIddddR', // 15
+  'RddddddddnnnnnnddddddddddddnnnnnnddddddddnnnnddddndddddddddddddR', // 16
+  'RddddddddnnnnnnddddiiiiiiddnnnnnnddddiiiiiinnddddddddddddddddddR', // 17
+  'RdIIIIIddnndnnnddddiiiiiiddddddddnnddiiiiiiddddddddddddddnnnnddR', // 18
+  'RdddddddddddnnnddddnnnnddddddddddnndddddddddddddddIIIIIddnnnnddR', // 19
+  'RddddddddnnnnnnddddnnnnddIIIIIIddnnddIIIIIIddddddddddddddnnnnddR', // 20
+  'RddnnnWWWndnnnnddddnnnnddddddddddnnddddddddddddddddddddddnnnnddR', // 21  THE FROZEN CARAVAN (west), where the road runs out
+  'RddWn,,dd,,,,,,dd,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,dd,,,,,,,,,,,,,,,', // 22  the Chalk Road, from the east edge to the lead wagon
+  'RddWn,,dd,,,,,,dd,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,dd,,,,,,,,,,,,,,,', // 23
+  'RddnnnnndnWWWnnddddnnnnddddddddddnnddddddddddddddnnnnndnnnnnnddR', // 24
+  'RddnnndddddddddddddnnnnddIIIIIIddnnddIIIIIIddddddnnnnnnnnnnnnddR', // 25
+  'RddnnndddddddddddddnnnnddddddddddnnddddddddddddddnnnnnnnnnnnnddR', // 26
+  'RddnnnddIIIIIIdddddiiiiiiddddddddnnddiiiiiidddddddnddddddddddddR', // 27  THE MAMMOTH's hollow (east)
+  'RddnnndddddddddddddiiiiiinnnnnnnnnnnniiiiiinnddddndddddddddddddR', // 28
+  'RdddnndddddddddddddddddddddnnnnnnddddddddnnnnddddnnddiiiiiiidddR', // 29
+  'Rdiiiiiiiiinnnndddddd##ddddnnndnndddd##ddnnddddddnnddiiiiiiidddR', // 30
+  'RdiiiiiiiiinnnnddddddIIIIddddddddddIIIIddddddddddndddiiiiiiidddR', // 31
+  'RddnnnnnnndnnnnddddddddddddddddddddddddddddddddddndddddddddddddR', // 32
+  'RddnnnnnnndnnnnddddddddddddddddddddddddddddddddddnnddddddddddddR', // 33
+  'RddnnnnnnnnnnnnddddddddddddddddddddddddddddddddddnnnnnnnnnnnnddR', // 34
+  'RdddndnniiiiiiiiiiinnnnnnnnnnnnnnnnnnnnnnddnnnnnnnnnnnnnnnnnnddR', // 35  THE TARN (south-west), its huts and holes; the ridges the archers were posted on
+  'RdddiiiiiiiiiiiiiiiiiiinnnnnnnnnnnnndnnnnddnnndnnndddddddddddddR', // 36
+  'RddiiiihioiiiiiiihiiiiiinndddddddddddddnnddnnnnnnndddddddddddddR', // 37
+  'RdiiiiiiiiiiiiioiiiiiiiiindddddddddddddnnnnnnnnnnnddRRRRRRRRRddR', // 38
+  'RdiiiiiiiiiiiiiiiiiiiiiiiiddRRRRRRRRRdddddddddddddddddRRRRRddddR', // 39
+  'RdiiiiiiiiihioiiiiiiiiiiinddddRRRRRddddddddddddddddddddddddddddR', // 40
+  'RddiiiiiiiiiiiiiiioihiiinnddddddddddddddRRRRRRRRRddndddddddddddR', // 41
+  'RdddiiiiiiiiiiiiiiiiiiidddddddddddddddddddRRRRRddddddddddddddddR', // 42
+  'RdddddddiiiiiiiiiiiddddddddddddddddddddddddddddddddddddddddddddR', // 43
+  'RRRdRdRRRRdRddddRRRRdRdddRdRRddRdRdRRdRddRdRRdRdddRddRRRddRddRdR', // 44
+  'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR', // 45  the rock
 ];
 
 const HALF_X = (GRID[0]!.length * TILE) / 2;
@@ -109,10 +157,10 @@ export const RIMEFIELDS: AreaDef = defineArea({
     {
       // The ice cave, cut into the north face. The only shelter past the stones that say there is none.
       to: 'rimefields_ice_cave',
-      x: xOfCol(10),
-      z: zOfRow(2) + TILE / 2 + 1.4,
+      x: xOfCol(24),
+      z: zOfRow(12) + TILE / 2 + 1.4,
       label: 'Into the ice cave',
-      door: { x: xOfCol(10), z: zOfRow(2) + TILE / 2 + 0.05, facesSouth: true, style: 'cave' },
+      door: { x: xOfCol(24), z: zOfRow(12) + TILE / 2 + 0.05, facesSouth: true, style: 'cave' },
       arrive: { x: 0, z: 16 },
     },
     {
@@ -135,6 +183,11 @@ export const RIMEFIELDS: AreaDef = defineArea({
       { kind: 'wolf', x: 22, z: -14, roam: 14, count: 2 },
       { kind: 'wolf', x: 38, z: 14, roam: 14, count: 2 },
       { kind: 'rook', x: -62, z: -42, roam: 26, count: 3 },
+      // The new field: hares in the west, a fox picking at the caravan, rooks under the falls.
+      { kind: 'hare', x: -100, z: -40, roam: 10 },
+      { kind: 'hare', x: -112, z: 34, roam: 8 },
+      { kind: 'fox', x: -96, z: 12, roam: 8 },
+      { kind: 'rook', x: 6, z: -60, roam: 14, count: 3 },
     ],
     /** Two crates on a snowfield was the whole area. Cairns are what people leave on ice. */
     dressing: [
@@ -193,6 +246,37 @@ export const RIMEFIELDS: AreaDef = defineArea({
       { kind: 'bracken', x: -26, z: 22 },
       { kind: 'bramble', x: -42, z: -38 },
       { kind: 'bramble', x: 54, z: 2 },
+
+      // The frozen caravan: its oxen still in the traces, its load, the last waystone.
+      { kind: 'bonepile', x: -100, z: -12 },
+      { kind: 'bonepile', x: -104, z: -10 },
+      { kind: 'barrel', x: -90, z: -8 },
+      { kind: 'sacks', x: -88, z: 12 },
+      { kind: 'cart', x: -110, z: 10 },
+      { kind: 'waystone', x: -80, z: -8, text: 'THE ROAD ENDS' },
+      // The tarn's shore.
+      { kind: 'barrel', x: -84, z: 50 },
+      { kind: 'sacks', x: -60, z: 50 },
+      { kind: 'cairn', x: -110, z: 62 },
+      // The falls: a cairn where the stream comes out onto the field.
+      { kind: 'cairn', x: -6, z: -50 },
+      // The archers' posts: a fire at each ridge's end, the only light out here.
+      { kind: 'brazier', x: -22, z: 60 },
+      { kind: 'brazier', x: 74, z: 56 },
+      { kind: 'cairn', x: -2, z: 58 },
+      { kind: 'spoilheap', x: 50, z: 66 },
+      // The mammoth's hollow: what the hounds have had off it.
+      { kind: 'bonepile', x: 104, z: 36 },
+      { kind: 'bonepile', x: 82, z: 22 },
+      // The ring, round the old field: cairns along the road, and out across the snow.
+      { kind: 'cairn', x: 70, z: -10 },
+      { kind: 'cairn', x: 116, z: -10 },
+      { kind: 'spoilheap', x: 90, z: 8 },
+      { kind: 'cairn', x: -100, z: -60 },
+      { kind: 'cairn', x: 60, z: -60 },
+      { kind: 'spoilheap', x: 90, z: -56 },
+      { kind: 'bramble', x: -116, z: -24 },
+      { kind: 'bramble', x: 112, z: -40 },
     ],
     // No lamps and no trees. There is nothing out here to hang one on or for one to be.
     crates: [
@@ -207,5 +291,44 @@ export const RIMEFIELDS: AreaDef = defineArea({
      * snowfield. Better to draw nothing than to draw the wrong distance.
      */
     horizon: 'none',
+    /**
+     * The Hoarhound Pack keeps to the mammoth's hollow, south of the bones, and one of its
+     * stalkers prowls the whole field -- nobody lives here to keep it from. The Rime-Archers hold
+     * the ends of two of the south ridges, their fires lit, looking north over the snow.
+     */
+    packs: [
+      { encounterId: 'pack_hoarhounds', id: 'hollow', x: 90, z: 44, roam: 8, band: 'hollow' },
+      { encounterId: 'pack_hoarhounds', id: 'stalker', x: -60, z: -60, roam: 8, behaviour: 'prowl' },
+      {
+        encounterId: 'pack_rime_archers',
+        id: 'west_ridge',
+        x: -18,
+        z: 62,
+        roam: 4,
+        band: 'west_ridge',
+        behaviour: 'sentry',
+        // North, over the field.
+        sweep: [2.5, 3.8],
+      },
+      {
+        encounterId: 'pack_rime_archers',
+        id: 'east_ridge',
+        x: 78,
+        z: 58,
+        roam: 4,
+        band: 'east_ridge',
+        behaviour: 'sentry',
+        sweep: [2.5, 3.8],
+      },
+    ],
+    /** The frozen falls off the escarpment, and the mammoth by the road in. */
+    landmarks: [
+      { kind: 'frozen_falls', x: 6, z: -78 },
+      { kind: 'mammoth', x: 96, z: 30 },
+    ],
+    vignettes: [
+      { id: 'broken_cart', x: -84, z: -14 },
+      { id: 'fish_racks', x: -74, z: 50 },
+    ],
   },
 });

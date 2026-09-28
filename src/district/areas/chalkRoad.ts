@@ -169,7 +169,7 @@ export const CHALK_ROAD: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: 2,
       label: 'West, on into the Rimefields',
-      arrive: { x: 54, z: -2 },
+      arrive: { x: 110, z: -2 },
     },
     {
       // The waystation. The toll was taken here once; the door has not been barred since.

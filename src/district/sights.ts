@@ -1764,6 +1764,113 @@ export const SIGHTS: readonly SightDef[] = [
       'was a ranger to plant it. Somebody has cut a way through since. Not recently, and not ' +
       'the ranger.',
   },
+
+  /* ---- The Rimefields ---- */
+  {
+    id: 'rimefields:the_frozen_falls',
+    areaId: 'rimefields',
+    at: { x: 6, z: -70 },
+    label: 'Look up at the frozen falls',
+    caption:
+      'The fall came off the escarpment and froze where it fell, a sheet of ice as tall as a ' +
+      'house. Put an ear to it and the water is still moving somewhere behind it, a long way ' +
+      'in.',
+  },
+  {
+    id: 'rimefields:the_icicles',
+    areaId: 'rimefields',
+    at: { x: -2, z: -74 },
+    label: 'Look at the icicles',
+    caption:
+      'Icicles off the lip of the fall, some longer than a man is tall. Every so often one lets ' +
+      'go, and the sound it makes going into the pool carries across the whole field.',
+  },
+  {
+    id: 'rimefields:the_frozen_stream',
+    areaId: 'rimefields',
+    at: { x: 6, z: -52 },
+    label: 'Look along the stream',
+    caption:
+      'What the fall fed, frozen from bank to bank and all the way down. There are fish in it, ' +
+      "stopped in the middle of turning, an arm's length under your boots.",
+  },
+  {
+    id: 'rimefields:the_lead_wagon',
+    areaId: 'rimefields',
+    at: { x: -108, z: 2 },
+    label: 'Look at the lead wagon',
+    caption:
+      'Broadside across the road where the road stops, as if the driver turned it to make a ' +
+      'wall. There is frost on the inside of the canvas. Whatever they were keeping out, they ' +
+      'kept it out from in here.',
+  },
+  {
+    id: 'rimefields:the_oxen',
+    areaId: 'rimefields',
+    at: { x: -96, z: -12 },
+    label: 'Look at the oxen',
+    caption:
+      'Still in the traces, or what the hounds have left of them. The yoke is iced to the pole. ' +
+      'Nobody unhitched them, which means nobody meant to stop here.',
+  },
+  {
+    id: 'rimefields:the_road_end',
+    areaId: 'rimefields',
+    at: { x: -92, z: 2 },
+    label: 'Look along the road',
+    caption:
+      'The Chalk Road runs on past the last waystone for a hundred paces more under the snow, ' +
+      'the same as it has for sixty miles. Then it stops at a wagon.',
+  },
+  {
+    id: 'rimefields:the_fishing_huts',
+    areaId: 'rimefields',
+    at: { x: -92, z: 54 },
+    label: 'Look at the fishing huts',
+    caption:
+      'Timber huts dragged out onto the tarn on runners, a stovepipe through each roof and a ' +
+      'hole through the ice by each door. The stoves are cold. The holes are freezing over from ' +
+      'the edges in.',
+  },
+  {
+    id: 'rimefields:the_fishing_hole',
+    areaId: 'rimefields',
+    at: { x: -74, z: 76 },
+    label: 'Look into the hole',
+    caption:
+      'Cut through ice as thick as an arm is long. The water under it is black and very still, ' +
+      'and something down there has been taking the lines. All of them, hooks and all.',
+  },
+  {
+    id: 'rimefields:the_mammoth',
+    areaId: 'rimefields',
+    at: { x: 86, z: 28 },
+    label: 'Look at the mammoth',
+    caption:
+      'A beast the size of a house lay down in the snow here, long before there were houses, ' +
+      'and the snow took the rest of it away. The ribs still stand. The hounds sleep inside ' +
+      'them.',
+  },
+  {
+    id: 'rimefields:the_tusks',
+    areaId: 'rimefields',
+    at: { x: 104, z: 26 },
+    label: 'Look at the tusks',
+    caption:
+      'Curled up and back over the skull, longer than a cart and yellow under the rime. ' +
+      "Somebody tried to saw one off. The saw is still in it, a hand's width in, and its teeth " +
+      'are gone.',
+  },
+  {
+    id: 'rimefields:the_archers_post',
+    areaId: 'rimefields',
+    at: { x: -22, z: 54 },
+    label: "Look at the archers' post",
+    caption:
+      "A fire in a ring of stones at the ridge's end, and a tally cut into the rock beside it: " +
+      'one mark a day, rows of them, until the marks stop being days and start being something ' +
+      'else.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {
