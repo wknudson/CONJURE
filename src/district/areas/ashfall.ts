@@ -316,7 +316,7 @@ export const ASHFALL: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: zOfRow(32),
       label: 'West into Ward Seven',
-      arrive: { x: 54, z: -2 },
+      arrive: { x: 86, z: -2 },
     },
 
     /* --- the four doors on the cross-street ---

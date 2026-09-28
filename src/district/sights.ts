@@ -590,6 +590,121 @@ export const SIGHTS: readonly SightDef[] = [
       "The scrap-sorters' shed. On the door, in slag-chalk: WE KNOW WHAT IT WAS. The works has " +
       'painted over it twice, and the second coat is the thinner.',
   },
+
+  /* ---- Ward Seven ---- */
+  {
+    id: 'ward_seven:the_water_tower',
+    areaId: 'ward_seven',
+    at: { x: 16, z: -65 },
+    label: 'Look up at the water tower',
+    caption:
+      "The Magistracy's answer to a ward with too much water: a tank of clean water on iron " +
+      'legs, on the one dry island, locked. The key is in Highcourt. The legs are rusting from ' +
+      'the feet up.',
+  },
+  {
+    id: 'ward_seven:the_drowned_door',
+    areaId: 'ward_seven',
+    at: { x: -78, z: -70 },
+    label: 'Look at the door',
+    caption:
+      'A front door standing in the water, the step under it and the house gone. The knocker is ' +
+      'polished bright. Somebody still knocks.',
+  },
+  {
+    id: 'ward_seven:the_old_pump',
+    areaId: 'ward_seven',
+    at: { x: 78, z: -70 },
+    label: 'Look at the pump',
+    caption:
+      'The old parish pump, its handle just clear of the flood. Work it and water comes out of ' +
+      "the spout into the water it stands in, which is the ward's whole situation in one " +
+      'gesture.',
+  },
+  {
+    id: 'ward_seven:the_mooring_post',
+    areaId: 'ward_seven',
+    at: { x: -18, z: -74 },
+    label: 'Look at the post',
+    caption:
+      'The boardwalk ends at a post with a rope-groove worn into it, and no punt. Cut into the ' +
+      'post with a knife: BACK BY DARK.',
+  },
+  {
+    id: 'ward_seven:the_cistern_bridge',
+    areaId: 'ward_seven',
+    at: { x: -40, z: -46 },
+    label: 'Look down through the boards',
+    caption:
+      'Planks over the cistern where it is deepest, tarred and re-tarred. Under the boards the ' +
+      "old ward's lamp posts are still standing in the dark water, and at night one of them is " +
+      'lit.',
+  },
+  {
+    id: 'ward_seven:the_moorings',
+    areaId: 'ward_seven',
+    at: { x: -72, z: -36.6 },
+    label: 'Look along the moorings',
+    caption:
+      'Punts nose to tail along the quay, their poles stacked beside them. A copper to cross ' +
+      'the drowned terraces, two after dark, and the punters will not say what the second ' +
+      'copper is for.',
+  },
+  {
+    id: 'ward_seven:the_punters_shed',
+    areaId: 'ward_seven',
+    at: { x: -80, z: -26 },
+    label: "Look into the punters' shed",
+    caption:
+      'Poles, nets, a pot of tar, and a slate of names: who went out, and when. Some names have ' +
+      'a line through them. Some have a second line through the first.',
+  },
+  {
+    id: 'ward_seven:the_soak_graves',
+    areaId: 'ward_seven',
+    at: { x: -66, z: 46 },
+    label: 'Look at the graves',
+    caption:
+      'Graves in the soak, their stones leaning where the ground gave. The water once lifted a ' +
+      'coffin clean out and set it down a yard to the left. Nobody has moved it back.',
+  },
+  {
+    id: 'ward_seven:the_washhouse',
+    areaId: 'ward_seven',
+    at: { x: 70, z: -18.6 },
+    label: 'Look at the washhouse',
+    caption:
+      'The ward washes here for a copper a tub, in the only clean water in Ward Seven, carried ' +
+      'from the tank on the island. The copper is for the carrying. The Magistracy says so.',
+  },
+  {
+    id: 'ward_seven:the_drying_yard',
+    areaId: 'ward_seven',
+    at: { x: 80, z: 20 },
+    label: 'Look at the lines',
+    caption:
+      'Sheets on every line, none of them dry, because nothing in Ward Seven ever is. In at ' +
+      'dark, out again at dawn, which counts here as having done the washing.',
+  },
+  {
+    id: 'ward_seven:the_new_cut',
+    areaId: 'ward_seven',
+    at: { x: -10, z: 53.6 },
+    label: 'Look into the new cut',
+    caption:
+      "The drain the Magistracy began, to empty the ward into the Cinderworks' channel: dug to " +
+      'the first bend and flooded to the brim. The men who dug it were paid in the water they ' +
+      'were meant to take away.',
+  },
+  {
+    id: 'ward_seven:the_engine_house',
+    areaId: 'ward_seven',
+    at: { x: 16, z: 72 },
+    label: 'Look at the engine house',
+    caption:
+      'Built for the engine that would pump the cut dry. The engine never came. The family paid ' +
+      'to guard it lives in the house now, and is still waiting.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {
