@@ -3763,3 +3763,69 @@ export function makeSmokeTexture(): THREE.Texture {
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
+
+/**
+ * One small picture per kind of ground clutter (see `clutter.ts`). The standing kinds are drawn
+ * facing you, as a prop is; the flat ones from above, as a decal is.
+ */
+export function makeClutterTexture(kind: import('./clutter.js').ClutterKind): THREE.Texture {
+  const { c, ctx } = makeCanvas(12, 12);
+  const rng = mulberry32(kind.length * 977 + kind.charCodeAt(0));
+  const px = (x: number, y: number, col: string): void => {
+    ctx.fillStyle = col;
+    ctx.fillRect(x, y, 1, 1);
+  };
+  if (kind === 'tuft' || kind === 'flower') {
+    const g = ramp('#4a6a34');
+    for (let b = 0; b < 7; b++) {
+      const x = 2 + ((rng() * 8) | 0);
+      const h = 5 + ((rng() * 6) | 0);
+      const lean = rng() < 0.5 ? -1 : 1;
+      for (let y = 0; y < h; y++) px(x + (y > h * 0.6 ? lean : 0), 11 - y, y > h - 2 ? g[0] : b % 2 ? g[1] : g[2]);
+    }
+    if (kind === 'flower') {
+      const petals = ['#d8c050', '#c86a8a', '#e8e0d0', '#8a7ac8'];
+      for (let f = 0; f < 3; f++) {
+        const col = petals[(rng() * petals.length) | 0]!;
+        const x = 2 + ((rng() * 8) | 0);
+        const y = 1 + ((rng() * 4) | 0);
+        px(x, y, col);
+        px(x + 1, y, col);
+        px(x, y + 1, col);
+      }
+    }
+  } else {
+    const blob = (cx: number, cy: number, rx: number, ry: number, col: string, hi?: string): void => {
+      for (let y = 0; y < 12; y++) {
+        for (let x = 0; x < 12; x++) {
+          const d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+          if (d < 1) px(x, y, hi && x < cx && y < cy ? hi : col);
+        }
+      }
+    };
+    if (kind === 'pebble') {
+      for (let i = 0; i < 3; i++) blob(2 + rng() * 8, 2 + rng() * 8, 1.2 + rng(), 1 + rng() * 0.8, '#6a665e', '#8a8680');
+    } else if (kind === 'litter') {
+      blob(6, 6, 3, 2, '#b8ae98', '#d0c8b4');
+      px(4, 6, '#5a5448');
+      px(7, 5, '#5a5448');
+    } else if (kind === 'leaves') {
+      const tones = ['#7a4a24', '#9a6a2a', '#5a3a1e', '#8a5a2a'];
+      for (let i = 0; i < 6; i++) blob(1.5 + rng() * 9, 1.5 + rng() * 9, 1.4, 0.8, tones[i % tones.length]!);
+    } else if (kind === 'cinder') {
+      for (let i = 0; i < 5; i++) blob(1.5 + rng() * 9, 1.5 + rng() * 9, 0.9, 0.9, '#231c1a');
+      px(5, 6, '#a0402a');
+      px(8, 3, '#a0402a');
+    } else if (kind === 'puddle') {
+      blob(6, 6, 5.5, 3.5, '#1c2a34', '#3a5060');
+    } else if (kind === 'drift') {
+      blob(6, 7, 5, 3, '#d4dce4', '#eef2f6');
+    } else {
+      // Bones: a long one and a knuckle.
+      for (let x = 2; x < 10; x++) px(x, 6 + (x > 6 ? 1 : 0), '#d8d0bc');
+      blob(2, 6, 1.2, 1.2, '#d8d0bc');
+      blob(10, 7, 1.2, 1.2, '#c8c0aa');
+    }
+  }
+  return canvasTexture(c);
+}

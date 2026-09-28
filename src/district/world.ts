@@ -9,17 +9,19 @@
  */
 
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { LOOK, ambientFor, type AmbientDef } from './look.js';
 import { SWAYS } from './dressing.js';
 import { SKIES, SkyField, skyStrengthAt, type SkyId } from './skies.js';
 import { hashText, makeRng, nextFloat } from '../core/util/rng.js';
 import { BUILT, buildPiece, lotsOf, type Facing, type SolidStyle, type SurfaceKey } from './buildings.js';
+import { CLUTTER_KINDS, CLUTTER_SIZE, STANDING, scatterClutter, type ClutterPoint } from './clutter.js';
 import { gateOpen, NOTHING_HAPPENED, type Chronicle } from './chronicle.js';
 import { ambientAt, lampsAt, lightingHour, NIGHT_ANCHOR, type Lit } from './daylight.js';
 import { poolShares } from './lightPool.js';
 import type { ColliderSet } from './collision.js';
 import { DRESSING } from './dressing.js';
-import { allDressing, staticFootprints } from './footprints.js';
+import { allDressing, registryHotspots, staticFootprints } from './footprints.js';
 import {
   TILE,
   extractRects,
@@ -57,6 +59,7 @@ import {
   makeIceTexture,
   makeIronTexture,
   makeSmokeTexture,
+  makeClutterTexture,
   type RoofKind,
   type WindowKind,
 } from './textures.js';
@@ -211,6 +214,8 @@ export class DistrictWorld {
    * turns them up after dark -- the ward's own light, when the lamps are the other half of it.
    */
   private readonly windows: { mat: THREE.MeshLambertMaterial; home: boolean }[] = [];
+  /** The ground clutter: one instanced mesh per kind, and the points it was placed at. */
+  private readonly clutter: { mesh: THREE.InstancedMesh; points: ClutterPoint[] }[] = [];
   /** Where the chimneys smoke from, and the smoke. See `updateSmoke`. */
   private smoke: { points: THREE.Points; from: THREE.Vector3[]; age: Float32Array } | null = null;
   /**
@@ -696,6 +701,10 @@ export class DistrictWorld {
       this.colliders.add(f.x, f.z, f.w, f.d, f.tag);
     }
 
+    /* --- what lies about on the ground ---
+       After the furniture and its footprints, because it is kept off them. See `clutter.ts`. */
+    if (!indoor) this.buildClutter(area);
+
     /* --- collider wireframes, off by default --- */
     this.colliderHelpers.visible = false;
     this.scene.add(this.colliderHelpers);
@@ -973,6 +982,77 @@ export class DistrictWorld {
     }
     if (key === 'iron') return new THREE.MeshLambertMaterial({ map: tex('iron', makeIronTexture) });
     return new THREE.MeshLambertMaterial({ map: tex(`wall:${wall}`, WALL_ART[wall]) });
+  }
+
+  /**
+   * The ground clutter, one instanced mesh per kind: a single draw call for every tuft in the
+   * area, and no shadows -- at this size a shadow is a smudge and costs a second pass.
+   */
+  private buildClutter(area: AreaDef): void {
+    const avoid = [
+      ...area.exits.map((e) => ({ x: e.x, z: e.z, r: 1.6 })),
+      ...area.exits.flatMap((e) => (e.door ? [{ x: e.door.x, z: e.door.z, r: 1.6 }] : [])),
+      ...registryHotspots(area.id).map((h) => ({ x: h.x, z: h.z, r: 1.2 })),
+      ...(area.props.npcs ?? []).map((n) => ({ x: n.x, z: n.z, r: 1.0 })),
+      ...staticFootprints(area).map((f) => ({ x: f.x, z: f.z, r: Math.max(f.w, f.d) / 2 + 0.35 })),
+      ...(area.props.lamps ?? []).map((l) => ({ x: l.x, z: l.z, r: 0.7 })),
+    ];
+    const points = scatterClutter(area, avoid);
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    for (const kind of CLUTTER_KINDS) {
+      const mine = points.filter((p) => p.kind === kind);
+      if (mine.length === 0) continue;
+      const size = CLUTTER_SIZE[kind];
+      let geo: THREE.BufferGeometry;
+      if (STANDING.has(kind)) {
+        // Two cards crossed, so it has a front from every side the camera orbits to.
+        const a = new THREE.PlaneGeometry(size, size);
+        a.translate(0, size / 2, 0);
+        const b = a.clone();
+        b.rotateY(Math.PI / 2);
+        geo = mergeGeometries([a, b])!;
+      } else {
+        geo = new THREE.PlaneGeometry(size, size);
+        geo.rotateX(-Math.PI / 2);
+        geo.translate(0, 0.025, 0);
+      }
+      const mat = new THREE.MeshLambertMaterial({
+        map: makeClutterTexture(kind),
+        alphaTest: 0.5,
+        side: THREE.DoubleSide,
+        ...(STANDING.has(kind) ? {} : { polygonOffset: true, polygonOffsetFactor: -1 }),
+      });
+      const mesh = new THREE.InstancedMesh(geo, mat, mine.length);
+      mine.forEach((p, i) => {
+        q.setFromAxisAngle(up, p.yaw);
+        m.compose(new THREE.Vector3(p.x, 0, p.z), q, new THREE.Vector3(p.scale, p.scale, p.scale));
+        mesh.setMatrixAt(i, m);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.castShadow = false;
+      mesh.receiveShadow = !STANDING.has(kind);
+      this.scene.add(mesh);
+      this.clutter.push({ mesh, points: mine });
+    }
+  }
+
+  /** Takes the clutter off the board's footprint, or puts it all back. */
+  private clutterForArena(rect: { x0: number; z0: number; x1: number; z1: number } | null): void {
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    for (const { mesh, points } of this.clutter) {
+      points.forEach((p, i) => {
+        const hide = !!rect && p.x > rect.x0 && p.x < rect.x1 && p.z > rect.z0 && p.z < rect.z1;
+        const s = hide ? 0 : p.scale;
+        q.setFromAxisAngle(up, p.yaw);
+        m.compose(new THREE.Vector3(p.x, 0, p.z), q, new THREE.Vector3(s, s, s));
+        mesh.setMatrixAt(i, m);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   /** The chimney smoke: one cloud of points for the area, a dozen puffs a chimney. */
@@ -1382,6 +1462,7 @@ export class DistrictWorld {
     // in the middle of the grid is the same complaint as a wall, and nothing fades a billboard.
     for (const o of this.hiddenForArena) o.visible = true;
     this.hiddenForArena.length = 0;
+    this.clutterForArena(rect);
     if (!rect) return;
     for (const l of this.loose) {
       if (!l.obj.visible) continue;
@@ -1641,5 +1722,6 @@ export class DistrictWorld {
     this.kitTex.clear();
     this.windows.length = 0;
     this.smoke = null;
+    this.clutter.length = 0;
   }
 }
