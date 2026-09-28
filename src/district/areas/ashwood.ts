@@ -117,7 +117,8 @@ export const ASHWOOD: AreaDef = defineArea({
       x: -6,
       z: HALF_Z - 2,
       label: 'South, down the ride to the Tallow Levels',
-      arrive: { x: -26, z: -34 },
+      // Onto the ride, a stride inside the Levels' north exit at their new edge.
+      arrive: { x: -26, z: -62 },
     },
   ],
   props: {

@@ -206,7 +206,8 @@ export const MILLHARROW: AreaDef = defineArea({
       x: -2,
       z: zOfRow(1),
       label: 'North, out onto the Tallow Levels',
-      arrive: { x: -2, z: 30 },
+      // Onto the road through the half-sunk village, a stride inside the Levels' new south exit.
+      arrive: { x: -2, z: 58 },
     },
     {
       to: 'saltglass',

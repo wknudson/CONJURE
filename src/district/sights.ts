@@ -1062,6 +1062,101 @@ export const SIGHTS: readonly SightDef[] = [
       'Four roads, four quarters, and in the middle a stone worn flat by everybody who stopped ' +
       'here to decide. Somebody has cut an arrow into it pointing straight down.',
   },
+
+  /* ---- The Tallow Levels ---- */
+  {
+    id: 'tallow_levels:the_beam_engine',
+    areaId: 'tallow_levels',
+    at: { x: 88, z: -10.6 },
+    label: 'Look up at the engine',
+    caption:
+      'The engine that was meant to win the argument: a beam as long as a cart rocking on the ' +
+      'wall-top, lifting the Levels out a bucket at a stroke. The water comes back in ' +
+      'overnight. The engine does not mind.',
+  },
+  {
+    id: 'tallow_levels:the_sluice_gates',
+    areaId: 'tallow_levels',
+    at: { x: -86, z: -6 },
+    label: 'Look at the sluice gates',
+    caption:
+      'Timber gates on iron screws, set in the drain so the Levels can be let out and the river ' +
+      'kept out. The screws have rusted where they were when the keeper stopped coming, which ' +
+      'is half open.',
+  },
+  {
+    id: 'tallow_levels:the_main_drain',
+    areaId: 'tallow_levels',
+    at: { x: -82, z: 30 },
+    label: 'Look along the drain',
+    caption:
+      'The main drain, straight as a rule and older than anything else on the Levels. On a high ' +
+      'tide it runs the wrong way, which the Levels have learned to call a tide.',
+  },
+  {
+    id: 'tallow_levels:the_sluice_keeper',
+    areaId: 'tallow_levels',
+    at: { x: -82, z: -30 },
+    label: "Look into the keeper's hut",
+    caption:
+      'A stove, a bench, and a ledger of every gate opened and closed. The last entry is a gate ' +
+      'closed. The gate beside the hut is open.',
+  },
+  {
+    id: 'tallow_levels:the_reed_beds',
+    areaId: 'tallow_levels',
+    at: { x: -70, z: -62 },
+    label: 'Look into the reeds',
+    caption:
+      'Grown up where the cuts silted, taller than a man and loud with birds. The thatchers cut ' +
+      'them in winter. Something else walks in them at night and cuts nothing.',
+  },
+  {
+    id: 'tallow_levels:the_dyke_top',
+    areaId: 'tallow_levels',
+    at: { x: 82, z: 24 },
+    label: 'Look along the dyke',
+    caption:
+      'The one dry path on the east of the Levels, grassed and walked flat. The Dyke Wardens ' +
+      'walk it by day and fine anybody else who does, for wearing it down.',
+  },
+  {
+    id: 'tallow_levels:the_new_drain',
+    areaId: 'tallow_levels',
+    at: { x: 74, z: -40 },
+    label: 'Look into the new drain',
+    caption:
+      'Cut last year for the engine to empty into, and already weeded to the brim. The spoil ' +
+      'from it made the dykes either side, which is the one part of the plan that worked.',
+  },
+  {
+    id: 'tallow_levels:the_sunk_chapel',
+    areaId: 'tallow_levels',
+    at: { x: -26, z: 72 },
+    label: 'Look at the chapel',
+    caption:
+      'Its west end has gone into the water to the sills, and the font with it. Christenings ' +
+      'are held at the east end now, on the altar step, which the priest says is nearer anyway.',
+  },
+  {
+    id: 'tallow_levels:the_half_sunk_cottage',
+    areaId: 'tallow_levels',
+    at: { x: -70, z: 62 },
+    label: 'Look at the cottage',
+    caption:
+      'Lived in upstairs, the ground floor given to the water. A ladder at the window, a boat ' +
+      'tied to the ladder, washing hung from the boat.',
+  },
+  {
+    id: 'tallow_levels:the_condemned_field',
+    areaId: 'tallow_levels',
+    at: { x: -26, z: -22 },
+    label: 'Look at the north field',
+    caption:
+      'NORTH FIELD — CONDEMNED, on the stone, and the field past it grey where the blight took ' +
+      'it. It did not spread like blight. It spread like something that knew where the cuts ' +
+      'ran.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {
