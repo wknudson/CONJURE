@@ -39,7 +39,8 @@ export type LandmarkId =
   | 'lava_fall'
   | 'frozen_falls'
   | 'mammoth'
-  | 'great_pylon';
+  | 'great_pylon'
+  | 'ossuary';
 
 export interface LandmarkKind {
   /** The footprint the colliders learn, centred on the landmark, in world units. */
@@ -72,6 +73,7 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   lava_fall: { w: 3.2, d: 2.8, height: 9, note: 'A spur of the crater wall with lava running down its face into a pool that never cools.' },
   frozen_falls: { w: 3.6, d: 3.0, height: 10, note: 'A fall off the ridge that froze where it fell: a sheet of ice down the rock, and the icicles it grew.' },
   great_pylon: { w: 3.6, d: 3.6, height: 20, overhang: 1.7, note: "The tallest pylon on the shelf, the one the ranks were set out from: a lattice mast with its arms out, and the sky still coming down to it." },
+  ossuary: { w: 3.6, d: 3.6, height: 13, overhang: 0.9, note: 'A gate tower, and a charnel house: the field’s bones stacked in its open top, a lantern swinging off its face.' },
   mammoth: { w: 6.4, d: 3.2, height: 3.2, overhang: 0.6, note: 'A mammoth where it lay down in the snow: the ribs still standing, the tusks curled over the skull, all of it rimed.' },
 };
 
@@ -377,6 +379,27 @@ export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
       movers: [{ surface: 'glow', geometry: join(bolts), pivot: V(0, 0, 0), axis: V(0, 1, 0), motion: 'spin', amount: 5, reach: 1.7 }],
       light: { at: V(0, 17, 0), color: '#9fd8ff', arc: true },
       glow: '#cfeaff',
+    };
+  }
+  if (id === 'ossuary') {
+    // A square gate tower in the bastion's stone: the shaft, an open stage at the top with the
+    // bones stacked in it between the corner posts, a slab and merlons over that, and an iron
+    // bracket off the east face with a lantern swinging from it.
+    const stone = join([
+      box(3.4, 9.0, 3.4),
+      ...[[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => box(0.5, 2.6, 0.5, sx! * 1.45, 10.3, sz! * 1.45)),
+      box(3.8, 0.4, 3.8, 0, 11.8, 0),
+      ...[[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => box(0.6, 0.8, 0.6, sx! * 1.6, 12.4, sz! * 1.6)),
+    ]);
+    const lantern = join([box(0.4, 0.6, 0.4, 0, -0.55, 0), cyl(0.03, 0.03, 0.25, 4, 0, -0.12, 0)]);
+    return {
+      parts: [
+        { surface: 'wall', geometry: stone },
+        { surface: 'ice', geometry: box(2.4, 2.2, 2.4, 0, 10.1, 0) },
+        { surface: 'iron', geometry: box(1.2, 0.15, 0.15, 2.3, 7.2, 0) },
+      ],
+      movers: [{ surface: 'glow', geometry: lantern, pivot: new THREE.Vector3(2.8, 7.1, 0), axis: new THREE.Vector3(0, 0, 1), motion: 'swing', amount: 0.25, period: 2.8, reach: 1.6 }],
+      light: { at: new THREE.Vector3(2.8, 6.5, 0), color: '#ffb45e' },
     };
   }
   if (id === 'mammoth') {
