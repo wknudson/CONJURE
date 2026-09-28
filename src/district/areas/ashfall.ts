@@ -298,7 +298,7 @@ export const ASHFALL: AreaDef = defineArea({
       x: HALF_X - 2,
       z: zOfRow(26),
       label: 'East into the Bonemarket',
-      arrive: { x: -56, z: -8 },
+      arrive: { x: -88, z: -8 },
     },
     {
       // West, down the cart lane along the yard wall to the works. The ward is named for what

@@ -415,6 +415,26 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'The Counting House is supposed to send for the takings. If you see the Counting House, tell it.',
     },
   ],
+  bonemarket_knacker: [
+    {
+      who: 'KNACKER',
+      text: 'Everything that works dies of it, and I get it after. The Magistracy gets a line in my book, the tanners get the hide, the glue works get the rest, and I get to be the man nobody shakes hands with.',
+    },
+    {
+      who: 'KNACKER',
+      text: 'The lads on the Shambles at night are not mine. They take what comes to the pens before it is counted, and the counting is the only thing here worth stealing.',
+    },
+  ],
+  bonemarket_rag_sorter: [
+    {
+      who: 'RAG-SORTER',
+      text: 'Rags, bones, bottles, iron. Everything has a price in here, even the price. Especially the price.',
+    },
+    {
+      who: 'RAG-SORTER',
+      text: 'Keep out of the last lane after dark. Not for anything in it. For what you will look like, coming out, to whoever is waiting.',
+    },
+  ],
   ashfall_tanner: [
     {
       who: 'TANNER',

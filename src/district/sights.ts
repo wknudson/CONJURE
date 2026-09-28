@@ -361,6 +361,121 @@ export const SIGHTS: readonly SightDef[] = [
       'LIGHTERS WILL BE RETAINED DURING THE TRANSITION. Somebody has underlined DURING, twice, ' +
       'in lamp black.',
   },
+
+  /* ---- The Bonemarket ---- */
+  {
+    id: 'bonemarket:the_clock',
+    areaId: 'bonemarket',
+    at: { x: 44, z: -3.2 },
+    label: 'Look up at the market clock',
+    caption:
+      'Seven minutes fast, and it has been since the Hall was a chapel. The traders set their ' +
+      'prices by it; the Magistracy sets its tithe by the real time. Those seven minutes are ' +
+      'the only thing in the market sold free of tax.',
+  },
+  {
+    id: 'bonemarket:the_gutter',
+    areaId: 'bonemarket',
+    at: { x: 2, z: -50 },
+    label: 'Look along the gutter',
+    caption:
+      'A stone channel the length of the Shambles, boarded in three places, running to the ' +
+      'canal. Downstream on Tannery Row they say they can tell what the market is selling by ' +
+      'the colour of the water.',
+  },
+  {
+    id: 'bonemarket:the_pens',
+    areaId: 'bonemarket',
+    at: { x: -54, z: -60.6 },
+    label: 'Look into the pens',
+    caption:
+      'Hurdles lashed into pens, the mud in them trodden to soup. Every post carries a chalk ' +
+      'number and a Magistracy tick beside it, which means the beast has been counted and may ' +
+      'now be killed.',
+  },
+  {
+    id: 'bonemarket:the_killing_shed',
+    areaId: 'bonemarket',
+    at: { x: -24, z: -57 },
+    label: 'Look at the shed doors',
+    caption:
+      "The killing shed's doors are shut. Over them somebody has nailed a horseshoe, points up, " +
+      'to keep the luck in. Inside, it is the only thing that is.',
+  },
+  {
+    id: 'bonemarket:the_knackers_yard',
+    areaId: 'bonemarket',
+    at: { x: -88, z: -14 },
+    label: "Look round the knacker's yard",
+    caption:
+      'What comes to the knacker is what was worked until it could not be: a cart horse, a ' +
+      'mule, two dogs. He writes each one in a book with where it came from. The book is ' +
+      'thicker than the ledger in the Hall.',
+  },
+  {
+    id: 'bonemarket:the_dead_end',
+    areaId: 'bonemarket',
+    at: { x: -90, z: 22 },
+    label: 'Look down the dead end',
+    caption:
+      'Stacked to the eaves with what the rag-and-bone men could not sell and would not throw ' +
+      'away: bedsteads, a pram, a birdcage with its door wired shut.',
+  },
+  {
+    id: 'bonemarket:the_rag_heap',
+    areaId: 'bonemarket',
+    at: { x: 70, z: -22 },
+    label: 'Look at the rag heaps',
+    caption:
+      'Rags sorted by colour into heaps, the heaps sorted by weight into sacks. The whites go ' +
+      'to the papermakers. The reds go to whoever asks for them and does not say why.',
+  },
+  {
+    id: 'bonemarket:the_vats',
+    areaId: 'bonemarket',
+    at: { x: -8, z: 50.5 },
+    label: 'Look at the vats',
+    caption:
+      'The glue vats, lidded and steaming. The works buys bone by the hundredweight and sells ' +
+      'glue by the pot, and in between is a smell the Bonemarket stopped noticing a generation ' +
+      'ago.',
+  },
+  {
+    id: 'bonemarket:the_tallow',
+    areaId: 'bonemarket',
+    at: { x: 88, z: 62 },
+    label: 'Look at the tallow trays',
+    caption:
+      'Tallow set in trays to cool, grey-white and ridged. Lamprow buys it for the candles it ' +
+      'is not taxed on. Lamprow says it does not.',
+  },
+  {
+    id: 'bonemarket:the_scales',
+    areaId: 'bonemarket',
+    at: { x: -2, z: -30 },
+    label: 'Look at the public scales',
+    caption:
+      'Chained to the floor. A brass plate says the Magistracy tested them; a second, screwed ' +
+      'on under it, says by whom; a third, under that, says what he was paid.',
+  },
+  {
+    id: 'bonemarket:the_hall_face',
+    areaId: 'bonemarket',
+    at: { x: -10, z: 2.6 },
+    label: "Look up at the Hall's face",
+    caption:
+      "THIS WAS A CHAPEL, beside the door. Above the door is the stone where a saint's name was " +
+      'cut out, and a price list painted into the hollow it left.',
+  },
+  {
+    id: 'bonemarket:the_boilers_pot',
+    areaId: 'bonemarket',
+    at: { x: -57, z: 30 },
+    label: "Look at the boiler's pot",
+    caption:
+      "The bone-boiler's great pot, cold for once, a ladder against it. Written on the ladder " +
+      'is a rule: nobody climbs it alone.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {
