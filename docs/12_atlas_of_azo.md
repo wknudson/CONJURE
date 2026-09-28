@@ -96,124 +96,52 @@ other connection above is fiction the player travels by accepting a contract.
 
 ## 2. The walkable world
 
-> **The maps below are the first build's.** Every outdoor place has grown since -- by PR #39, and
-> again in Wave 15, where the city wards doubled and gained quarters of their own. The grids in
-> `src/district/areas/*.ts` read as maps, row by row with notes, and `worldbuild-todo.md` Wave 15
-> records what each area grew into. What this section says about *why* each place is shaped the
-> way it is still holds.
+Nineteen places under the sky and thirty-nine rooms off them, every one a `defineArea` call; `TILE =
+4` world units, and every coordinate here is in world units as the code writes them. **The maps
+are in §2.9**, drawn from the area files by a script and held to them by a test, so they are the
+maps in the game rather than a copy of them. Every outdoor place has grown twice -- by PR #39, and
+again in Wave 15, where the city wards doubled, the Ring towns gained a quarter at every road-head,
+and the Wildlands ran out past their old rock rings -- growing evenly on every side, so nothing
+already placed moved.
 
-The four places with ground under them. All four are `defineArea` calls; `TILE = 4` world units,
-and every coordinate below is in world units as the code writes them.
-
-They are deliberately not four versions of the same thing. Ashfall has pavement and a Warden and
-nothing roaming it; the Verge has roaming packs and no pavement at all; **Lamprow has both**, which
-makes it the only ward where you can watch a pack's cone go dark as you step up onto the flags; and
-the **Chalk Road** is a corridor rather than a room, built long so that three roam circles can
-overlap on one stretch and a Combat Ring has something to pull.
+This section keeps the argument for the four places the world was first built from, because it
+still holds. They are deliberately not four versions of the same thing. Ashfall has pavement and
+Wardens and nothing roaming it; the Verge has roaming packs and no pavement at all; **Lamprow has
+both**, which makes it the ward where you can watch a pack's cone go dark as you step up onto the
+flags; and the **Chalk Road** is a corridor rather than a room, built long so that roam circles
+can overlap on one stretch and a Combat Ring has something to pull.
 
 ### 2.1 Ashfall Ward 🟢
 
-`src/district/areas/ashfall.ts` — 20 × 20, `safety: 'sidewalk'`, `horizon: 'city'`
+`src/district/areas/ashfall.ts` — **54 × 50**, `safety: 'sidewalk'`, `horizon: 'city'`. Its map and
+everything standing in it: §2.9.
 
-```
-     col 0         1         2
-         0123456789012345678901
-row  0   WWWWWWWWWWWWWWWWWWWW     the canal
-     1   WWWWWWWWWWWWWWWWWWWW
-     2   ##cccccccccccccccc##     quay
-     3   ##cccc......cccccc##     the sealed yard
-     4   ##cccccccccccccccc##
-     5   ##VVVVVVVVVVVVVVVV##     yard wall — the GATE is here, col 11
-     6   #cccccccccSSccccccc#
-     7   #ccBBBBBBcSScBBBBBB#
-     8   #cc......cSSc......#     west: warehouse yard (the Warden)  east: back alley
-     9   #cc......cSSc......#
-    10   #cc......cSSc......#
-    11   #ccBBBBBBcSScBBBBBB#     ARTIFICER (west)      FIELD JOURNAL (east)
-    12   #SSSSSSSSSSSSSSSSSS#     the cross-street
-    13   #SSSSSSSSSSSSSSSSSS#
-    14   #ccBBBBBBcSScBBBBBB#     APOTHECARY (west)     VIVARIUM (east)
-    15   #ccBBBBBBcSScBBBBBB#
-    16   #ccccccccSSSScccccc#     Vex, the Dispatcher
-    17   ##cccccSSSSSSSScccc#     the plaza — SPAWN, and the bounty board
-    18   ###ccccSSSSSSSScc###
-    19   ####################
-```
+`safety: 'sidewalk'` makes this the place where the law protects you most: the sanctioned walkway
+is safe ground, and the gas lamps are laid along it, so **the light *is* the safe zone** and the
+two must line up. Nothing roams it at any hour -- Ashfall is the safe hub, and stayed so when every
+other ward was given a night crew. Its danger is the Magistracy's: two Wardens walk beats, one
+round the warehouse yard and one round the pit yard (§2.7 for what happens when a cone catches
+you).
 
-| Char | Tile | Walk | Safe |
-|---|---|---|---|
-| `S` | sanctioned walkway | ✅ | ✅ **no Warden may see you here** |
-| `c` | cobbles | ✅ | ❌ |
-| `.` | broken cobbles | ✅ | ❌ |
-| `#` | scrub verge | ✅ | ❌ |
-| `W` | canal | ❌ | — |
-| `B` | building | ❌ | — (4.8–7.0 tall, split silhouette, chimneys) |
-| `V` | yard wall | ❌ | — (3.2 tall, unbroken) |
+The four trades are rooms now -- the Ironworks Artificer, the Records Office, the Apothecary and
+the Vivarium -- with their doors facing the cross-street two to a side, so a new Commander can walk
+the entire guided lap without once stepping off the pavement. Leaving it is a choice. Five more
+rooms open off the ward: the Toll House, the Counting House, the Chapel of the Quiet Flame, the
+Cinder Cup and the Tannery.
 
-**What stands in it**
-
-| Thing | Where | Note |
-|---|---|---|
-| Spawn | `(4, 30)` | the plaza, in sight of Vex |
-| Vex, the Dispatcher | `(-2, 27)` | Dispatch — the board's owner |
-| Bounty board | `(12, 29)` | all three tier posters |
-| The Ironworks Artificer | door `(-18, 9.4)` | forge: schematics, ascension, splicing |
-| The Field Journal | door `(22, 9.4)` | bestiary / threat ledger |
-| The Apothecary | door `(-18, 14.6)` | |
-| The Vivarium | door `(22, 14.6)` | companions; the Ignis Trial is taken from here |
-| The Warden's beat | `(-24,-6) → (-8,-6) → (-8,2) → (-24,2)` | clockwise round the warehouse yard — see §2.7 for what happens when it catches you |
-| Gas lamps | ×10, all on `S` tiles | **the light *is* the safe zone** — they must line up |
-| Crates | ×4 | kept clear of the patrol rectangle so it never snags |
-
-**Its four graffiti lines**, anchored to explicit walls rather than to a door's array index:
-
-| Text | Wall | Faces |
-|---|---|---|
-| `THE ENGINES EAT OUR MARROW` | `(-18, 8.05)` | south |
-| `THE CENSUS COUNTS DOWN` | `(22, 8.05)` | south |
-| `VANE'S LIGHT IS OUR DARK` | `(-18, 15.95)` | north |
-| `DON'T CARRY IT IN` | `(22, 15.95)` | north — *should* be Highcourt's last wall, late-campaign only |
-
-`safety: 'sidewalk'` makes this the only place in the game where the law protects you. The four
-trades sit on the cross-street, two facing north and two facing south, so a new Commander can
-walk the entire guided lap without once stepping off the pavement. Leaving it is a choice.
+What Wave 15 grew it into: a far bank across the canal (bonded warehouses, the customs square, a
+barge slip, the coal staithes), the timber wharf and its crane, the Ropewalk, Tannery Row and the
+Rookeries, Chapel Hill and its bell tower, and Ash Gardens. The ward's ways out run to the Chalk
+Verge, Lamprow, the Bonemarket, the Cinderworks and Ward Seven.
 
 ### 2.2 The Chalk Verge 🟢
 
-`src/district/areas/chalkVerge.ts` — 24 × 16, `safety: 'none'`, `horizon: 'treeline'`
+`src/district/areas/chalkVerge.ts` — **46 × 30**, `safety: 'none'`, `horizon: 'treeline'`. Its map and
+everything standing in it: §2.9.
 
 Deliberately **oblong**. Ashfall is square and every grid routine assumed that silently until
 `extractRects` was taught otherwise; an oblong second area is what keeps the assumption from
 creeping back.
-
-```
-     col 0         1         2
-         012345678901234567890123
-row  0   TTTTTTTTTTTTTTTTTTTTTTTT   the treeline, north
-     1   TT####..####..####..##TT
-     2   T#,,,,,,,,,,,,,,,,,,,,#T   the north track
-     3   T#,,,,RR,,,,,,,,RR,,,,#T
-     4   T#,,,,RR,,,,,,,,RR,,,,#T
-     5   T#,,,,,,,,,,,,,,,,,,,,#T
-     6   T#..,,,,,,TT,,,,,,,,..#T   the middle thicket
-     7   T#..,,,,,,TT,,,,,,,,..#T
-     8   T#,,,,,,,,,,,,,,,,,,,,#T
-     9   T#,,,,RR,,,,,,,,RR,,,,#T
-    10   T#,,,,RR,,,,,,,,RR,,,,#T
-    11   T#,,,,,,,,,,,,,,,,,,,,#T   the south track
-    12   T#....,,,,,,,,,,,,....#T
-    13   TT####..####..####..,,TT   the gate approach — SPAWN at col 20
-    14   TTTTTTTTTTTTTTTTTTTT,,TT   the cut back to the ward
-    15   TTTTTTTTTTTTTTTTTTTTTTTT
-```
-
-| Char | Tile | Walk |
-|---|---|---|
-| `,` | chalk track | ✅ |
-| `#` | scrub | ✅ |
-| `.` | spoil | ✅ |
-| `R` | rock outcrop | ❌ (2.2–3.6, lumpy, unsplit) |
-| `T` | thicket | ❌ (4.0–5.4, tall enough to break a sightline) |
 
 **There is no `S`.** Nothing here is safe ground, and the absence is the design rather than an
 oversight — `safety: 'none'` hides the zone chip and the danger vignette entirely instead of
@@ -222,19 +150,14 @@ nothing needs to be; the things on this road do not require a warrant. It gets n
 the same reason: lamps *are* the safe zone in Ashfall, so lighting this place with them would
 be a lie. Its light comes from the packs and the banked fire at the trailhead.
 
-**What stands in it**
+The trailhead is also where a **lost** fight puts you back, and the hunt signpost beside it is the
+only place the twelve Wild Hunts' cooldowns are legible. Wave 15 grew the downs round it -- two
+sheepfolds and a chalk horse cut in the turf, the lime kiln, the quarry and its hut, a dew pond on
+the road west -- and put a gibbet on the hill.
 
-| Thing | Where | Note |
-|---|---|---|
-| Spawn / trailhead | `(34, 22)` | also where a **lost** fight puts you back |
-| Hunt signpost | `(26, 14)` | the twelve Wild Hunts, and the only place the cooldowns are legible |
-| Chalk-Road Scavengers | `(-10, 0)`, roam 9 | novice pack |
-| The Verge Strays | `(0, 8)`, roam 9 | novice pack |
-| Spoil-Heap Hollows | `(6, -4)`, roam 9 | adept pack |
-| Crates | ×3 | spoil and abandoned kit |
-
-The three roam circles **overlap deliberately**, and they used to be spread precisely so they
-could not — two packs converging on one player was a fight nothing modelled, and the contact
+The road crews' roam circles **overlap deliberately** -- the Chalk-Road Scavengers at any hour, the
+Verge Strays and the Spoil-Heap Hollows by night -- and they used to be spread precisely so they
+could not: two packs converging on one player was a fight nothing modelled, and the contact
 handler was first-come. The **Combat Ring** models it now:
 
 - Walk into a pack off the pavement and your input locks while a ring of light expands from
@@ -260,78 +183,48 @@ makes the verge the place the mechanic is taught.
 
 ### 2.3 Lamprow 🟢
 
-`src/district/areas/lamprow.ts` — **22 x 20**, `safety: 'sidewalk'`, `horizon: 'city'`,
-two rows of the lighters' cut along the north edge.
+`src/district/areas/lamprow.ts` — **48 × 40**, `safety: 'sidewalk'`, `horizon: 'city'`, with the
+lighters' cut across it and the gasworks on the far bank. Its map and everything standing in it:
+§2.9.
 
-The ward that pays for its own light. It keeps Ashfall's legend unchanged — the same flags,
-cobbles, weeds, canal, terraces and yard wall — because two Jolrek wards should be built out of
-the same materials and differ in their plan, not their stone.
+The ward that pays for its own light. It keeps Ashfall's legend — the same flags, cobbles, weeds,
+canal, terraces and yard wall — because two Jolrek wards should be built out of the same materials
+and differ in their plan, not their stone.
 
-**Why it is walkable ground.** It is the only place in the world with **pavement and packs at
-once**. Ashfall has a Warden and nothing roaming; the Verge has crews and no pavement; neither
-shows what the walkway is actually worth. Here the High Street runs the full width of the map
-with the Sink below it, and *both* roam circles reach up over the kerb — so a cone goes out the
-moment you step up onto the flags and comes back on the moment you step down.
+**Why it is walkable ground.** It is the place with **pavement and packs at once**. Ashfall has
+Wardens and nothing roaming; the Verge has crews and no pavement; neither shows what the walkway
+is actually worth. Here the High Street runs the full width of the map, edge to edge, lit and
+sanctioned, with the Sink below it — and after dark the Sink's crews work right up to the kerb, so
+a cone goes out the moment you step up onto the flags and comes back on the moment you
+step down.
 
-| Band | Rows | What is there |
-|---|---|---|
-| The cut | 0–1 | Water, impassable. Trees along the bank at row 2 |
-| The quay and wharf lane | 2–3 | Open cobbles the width of the ward |
-| The bonded warehouse / lighters' yard | 4–7 | A `B` terrace west, open yard east, a `V` wall on the east corner — **the Warden's beat** |
-| The back lane | 8–9 | Cobbles and a second terrace |
-| **The High Street** | 10–11 | `S` flags, cols 0–20, **open at the west end** — the mouth back to Ashfall |
-| The step down | 12 | Cobbles |
-| **The Sink** | 13–16 | Two small blocks, otherwise broken ground — **both packs live here** |
-| South lane | 17–19 | Cobbles, then grass |
-
-| | Position |
-|---|---|
-| Spawn | `(-26, 2)` — on the flags, and it must be: a seizure returns you to the spawn-seeded safe spot |
-| Warden beat | `(2,-22) → (30,-22) → (30,-14) → (2,-14)`, clockwise round the yard |
-| **The Lampwick Gutter Crew** | `(0, 12)`, roam 7 — novice |
-| **The Tithe-Takers** | `(10, 14)`, roam 7 — adept |
-| Lamps | 7, every one on High Street flags at `z = 6` |
-| Exit | `(-42, 4)` → Ashfall `(26, 32)`. No gate: the frame `world.ts` builds is an east–west wall, wrong for a street leaving the west edge |
-
-The two circles sit 10.2 apart against 14 of combined reach, so the Ring can pull one crew into
-the other's fight; and both reach `z = 5` and `z = 7` against a kerb at `z = 8`.
+Wave 15 put the gasworks across the cut, its gasholder the ward's landmark and the Wick-Thieves
+working it by night; the chandlers' yard, with a second Warden; cottages and allotments; and the
+ditches the Sink drains through. The High Street runs out to Ashfall at its west end and to
+Highcourt at its east, and three rooms open off the ward: the Lamp-oil House, the Tithe Office and
+the Sink Cellars.
 
 ### 2.4 The Chalk Road 🟢
 
-`src/district/areas/chalkRoad.ts` — **32 x 12**, `safety: 'none'`, `horizon: 'treeline'`,
-no water. The longest map in the game, and the first tile of the Middle Ring you can stand on.
+`src/district/areas/chalkRoad.ts` — **58 × 20**, `safety: 'none'`, `horizon: 'treeline'`, no water.
+The longest map for its depth in the game, and the first tile of the Middle Ring you can stand on.
+Its map and everything standing in it: §2.9.
 
 The atlas already called the Verge "the first wild stretch of the Chalk Road"; this is the same
 road further out. Ploughed strips either side, hedgerows north and south, and nothing sanctioned
 anywhere on it.
 
 **Why the shape.** A road is a corridor with sightlines down it, so the fighting happens where
-those sightlines break. Waystones are set in pairs at rows 5 and 7 and **never on row 6**, which
-keeps the artery open end to end while giving three roam circles something to hide behind.
+those sightlines break. Waystones are set in pairs on rows 9 and 11 and **never on row 10**, which
+keeps the artery open end to end while giving the roam circles something to hide behind. The
+Waywatch and the Hedgerow Vermin sit close enough that a two-pull is something you can walk into
+on purpose; a second Waywatch walks the middle of the road by day, and the Freight-Pickers come
+out at night.
 
-| Band | Rows | What is there |
-|---|---|---|
-| Hedgerow | 0 | Impassable, the whole width |
-| Ploughed strips | 1–3 | `field` paint, broken by two north–south hedge stubs |
-| North verge | 4 | Grass with weeds spilling into it |
-| **The road** | 5–7 | `chalk` track, cols 1–31. Waystone pairs at rows 5 and 7; **row 6 always clear** |
-| South verge | 8 | Grass |
-| Ploughed strips | 9–10 | One more hedge stub |
-| Hedgerow | 11 | Impassable |
-
-| | Position |
-|---|---|
-| Spawn | `(54, 2)` — the east trailhead, where a lost fight puts you back |
-| **The Waywatch** | `(-30, 2)`, roam 10 — novice |
-| **Hedgerow Vermin** | `(-16, 4)`, roam 10 — novice |
-| **The Freight-Pickers** | `(-26, -4)`, roam 10 — adept, and the only three-body all-ranged pack in the game |
-| Exit | `(62, 2)` → Verge `(-42, -8)`. No gate — it is the same road, and the join is only where the fields start |
-| West end | Open. The road runs out of the cut into the Rimefields, which makes it the only map you can cross without stopping |
-
-Pair distances are **14.1 / 7.2 / 12.8** against 20 of combined reach — far tighter than the
-Verge. The seven-unit pair is what makes a two-pull something you can walk into on purpose, and
-the third crew is close enough to be reached by a ring with room and refused by one without,
-which is the `MAX_PULLS` cap where it can actually be seen.
+Wave 15 drew up an abandoned wagon train where the hedges give out, gave the waystation its
+stables, put a roadside shrine and milestones along it, and a toll bar as its landmark.
+The road is the Ring's artery: east to the Verge, west into the Rimefields, and lanes up to
+Millharrow and down to Fenwick's Crossing.
 
 ### 2.5 The crossings
 
