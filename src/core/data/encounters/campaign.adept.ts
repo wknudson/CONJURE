@@ -48,6 +48,9 @@ export const TALLOW_BLIGHT: EncounterDef = registerEncounter({
     'root_snare',
     'briar_rampart',
     'rot_root_snare',
+    // Bloom's third shelf, taught here: the volley and the vine.
+    'thorn_volley',
+    'leech_vine',
   ],
   enemyOpeningBoard: [
     ['creeping_briar', 1, 1],
@@ -100,6 +103,9 @@ export const SALTGLASS_RIOT: EncounterDef = registerEncounter({
     'stone_barricade',
     'aegis_ward',
     'tremor_mark',
+    // Bulwark's third shelf, taught here: the cone and the lance.
+    'landslide',
+    'stone_lance',
   ],
   enemyOpeningBoard: [
     ['shieldbearer', 1, 1],
@@ -258,7 +264,16 @@ export const CELLAR_CLEARANCE: EncounterDef = registerEncounter({
   companionSchool: 'pyre',
   enemyName: 'The Pit Stock',
   enemySchool: 'pyre',
-  enemyDeck: ['stoke', 'cinder_gale', 'cinder_mark', 'shield_bash', 'aegis_ward'],
+  enemyDeck: [
+    'stoke',
+    'cinder_gale',
+    'cinder_mark',
+    'shield_bash',
+    'aegis_ward',
+    // Pyre's third shelf, taught here: the match and the brazier.
+    'kindling',
+    'brazier',
+  ],
   enemyOpeningBoard: [
     ['ember_hound', 1, 1],
     ['ember_hound', 4, 1],

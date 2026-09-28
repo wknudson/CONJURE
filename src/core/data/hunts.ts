@@ -33,6 +33,7 @@
  * something else in the ward.
  */
 
+import type { School } from '../../contract/ids.js';
 import type { BountyDifficulty } from './bounties.js';
 import { isPack } from './packs.js';
 import { isLair } from './lairs.js';
@@ -56,6 +57,26 @@ export interface Hunt {
   tier: BountyDifficulty;
   /** Where in Azo it is, for the panel's grouping. */
   region: string;
+  /**
+   * Schools the player's kept beasts must speak between them before this hunt is posted.
+   * Absent for every wild bloodline, which is always out there.
+   *
+   * What makes a hybrid huntable without flattening it into a shopping list. A rare hunt is
+   * a hybrid that only comes to the scent of both its parents: it does not appear on the
+   * board until the Vivarium holds something of each school it is made of, so the first
+   * sight of one is a thing the player did rather than a thing the timer offered.
+   */
+  requires?: { schools: readonly School[] };
+}
+
+/**
+ * Whether a hunt is posted for a character whose beasts speak these schools.
+ *
+ * Every school it asks for, not any one: a fire-and-stone beast smells of neither half on
+ * its own.
+ */
+export function huntOpen(hunt: Hunt, kept: ReadonlySet<School>): boolean {
+  return (hunt.requires?.schools ?? []).every((s) => kept.has(s));
 }
 
 /**
@@ -72,10 +93,15 @@ export interface Hunt {
  * knack, a different constitution, and a one-in-a-hundred chance of being lustrous. Hiding
  * it would be the game deciding the player cannot want another one.
  *
- * The hybrids are deliberately **not** here. Every one of them is bound off a named enemy in
- * the campaign — a duelist's beast, a contract's apex — and a hybrid available on a
- * ten-minute timer would flatten that into a shopping list. What is repeatable is the wild;
- * what is one-shot is the story.
+ * The first fifteen hybrids are deliberately **not** here. Every one of them is bound off a
+ * named enemy in the campaign — a duelist's beast, a contract's apex — and a hybrid available
+ * on a ten-minute timer would flatten that into a shopping list. What is repeatable is the
+ * wild; what is one-shot is the story.
+ *
+ * A hybrid that *is* here is a **rare hunt**, and it carries `requires`: it is not posted
+ * until the player's kept beasts speak both of its schools. That keeps the argument above
+ * intact — the beast is earned by what the player has already caught, not by the timer —
+ * while giving the second hybrid of a pair somewhere to live that is not one more contract.
  */
 export const HUNTS: readonly Hunt[] = [
   // ------------------------------------------------------------------ the founders
@@ -152,6 +178,44 @@ export const HUNTS: readonly Hunt[] = [
     species: 'jackal',
     tier: 'master',
     region: 'The Bone Bastion',
+  },
+
+  // -------------------------------------------------------- the third bloodlines
+  {
+    encounterId: 'hunt_caldera_phoenix',
+    species: 'phoenix',
+    tier: 'master',
+    region: 'The Caldera',
+  },
+  {
+    encounterId: 'hunt_cinderworks_badger',
+    species: 'badger',
+    tier: 'adept',
+    region: 'The Cinderworks',
+  },
+  {
+    encounterId: 'hunt_rimefield_mammoth',
+    species: 'mammoth',
+    tier: 'master',
+    region: 'The Rimefields',
+  },
+  {
+    encounterId: 'hunt_rimefield_ermine',
+    species: 'ermine',
+    tier: 'novice',
+    region: 'The Rimefields',
+  },
+  {
+    encounterId: 'hunt_saltglass_eel',
+    species: 'eel',
+    tier: 'adept',
+    region: 'Saltglass',
+  },
+  {
+    encounterId: 'hunt_shelf_pangolin',
+    species: 'pangolin',
+    tier: 'novice',
+    region: 'The Storm Shelf',
   },
 ];
 

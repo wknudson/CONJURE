@@ -715,6 +715,156 @@ const CLOSING_HYBRID_TRAITS: Record<string, CompanionTrait> = {
   },
 };
 
+/**
+ * The six third bloodlines' knacks: Pyre's Phoenix and Badger, Frost's Mammoth and Ermine,
+ * Surge's Eel and Pangolin.
+ *
+ * Three apiece, all wired, the standard a mono species is held to (`buildRelics.test.ts`).
+ * And like the second bloodlines', every one is written against a boon the engine already
+ * reads — nothing here needed a line of the resolver. What changes is who holds them: the
+ * Mammoth is the first frost beast that cannot be moved, the Pangolin the first surge beast
+ * whose plate an arc cannot strip, and the Ermine the first to vanish into its own weather.
+ */
+const THIRD_BLOODLINE_TRAITS: Record<string, CompanionTrait> = {
+  // ---------------------------------------------------------------- phoenix (pyre)
+  rising_ash: {
+    id: 'rising_ash',
+    name: 'Rising Ash',
+    text: 'Nothing it fights beside stays dead for free. Every body of yours that falls pays a Bone back.',
+    baseId: 'phoenix',
+    boons: { bonesOnDeath: 1 },
+  },
+  clinging_cinders: {
+    id: 'clinging_cinders',
+    name: 'Clinging Cinders',
+    text: 'Its fire sticks. A Burning enemy moves 1 tile less.',
+    baseId: 'phoenix',
+    boons: { burnSlows: 1 },
+  },
+  early_riser: {
+    id: 'early_riser',
+    name: 'Early Riser',
+    text: 'Up before the dawn it burns in. Draws 1 more card in the opening hand.',
+    baseId: 'phoenix',
+    boons: { extraOpeningCards: 1 },
+  },
+
+  // ---------------------------------------------------------------- badger (pyre)
+  burrower: {
+    id: 'burrower',
+    name: 'Burrower',
+    text: 'Goes under what it cannot go over. Crosses broken ground as if it were not there, and no current carries it.',
+    baseId: 'badger',
+    boons: { boundFormIgnoresHazards: true },
+  },
+  thick_pelt: {
+    id: 'thick_pelt',
+    name: 'Thick Pelt',
+    text: 'Singed, never burnt. Your Hero opens every fight behind 30 Persistent Armor.',
+    baseId: 'badger',
+    boons: { armor: 30 },
+  },
+  stubborn_set: {
+    id: 'stubborn_set',
+    name: 'Stubborn Set',
+    text: 'Will not leave its sett. Nothing can shove, pull or carry it.',
+    baseId: 'badger',
+    boons: { boundFormGrounded: true },
+  },
+
+  // --------------------------------------------------------------- mammoth (frost)
+  glacial_bulk: {
+    id: 'glacial_bulk',
+    name: 'Glacial Bulk',
+    text: 'The herd moves when it moves. Nothing you own can be shoved, pulled or carried.',
+    baseId: 'mammoth',
+    boons: { alliesGrounded: true },
+  },
+  deep_frost: {
+    id: 'deep_frost',
+    name: 'Deep Frost',
+    text: 'The cold goes all the way in. Every Freeze you cause lasts one turn longer.',
+    baseId: 'mammoth',
+    boons: { bonusFreezeStacks: 1 },
+  },
+  tusk_shove: {
+    id: 'tusk_shove',
+    name: 'Tusk Shove',
+    text: 'Moves what it touches further than it meant to. Every shove your cards deal goes 1 tile further.',
+    baseId: 'mammoth',
+    boons: { bonusShoveDistance: 1 },
+  },
+
+  // ---------------------------------------------------------------- ermine (frost)
+  winter_coat: {
+    id: 'winter_coat',
+    name: 'Winter Coat',
+    text: 'White on white. A unit of yours standing in steam or fog cannot be targeted by ranged attacks.',
+    baseId: 'ermine',
+    boons: { fogConceals: true },
+  },
+  snow_sight: {
+    id: 'snow_sight',
+    name: 'Snow Sight',
+    text: 'Hunts in whiteout. Fog and steam do not break its line of sight.',
+    baseId: 'ermine',
+    boons: { ignoreFog: true },
+  },
+  cache_keeper: {
+    id: 'cache_keeper',
+    name: 'Cache Keeper',
+    text: 'Hides what it will need later. You may hold 1 more card through the end of your turn.',
+    baseId: 'ermine',
+    boons: { bonusHandLimit: 1 },
+  },
+
+  // ------------------------------------------------------------------- eel (surge)
+  current_rider: {
+    id: 'current_rider',
+    name: 'Current Rider',
+    text: 'Swims with whatever the water is doing. Crosses broken ground freely, and no current carries it off.',
+    baseId: 'eel',
+    boons: { boundFormIgnoresHazards: true },
+  },
+  conductive_slime: {
+    id: 'conductive_slime',
+    name: 'Conductive Slime',
+    text: 'The charge runs off it and into its friends. Every arc that splashes onto one of your units plates it for 10.',
+    baseId: 'eel',
+    boons: { armorOnArcCollateral: 10 },
+  },
+  deep_charge: {
+    id: 'deep_charge',
+    name: 'Deep Charge',
+    text: 'The shock goes past the skin. Arc collateral ignores Armor entirely.',
+    baseId: 'eel',
+    boons: { arcPierces: true },
+  },
+
+  // --------------------------------------------------------------- pangolin (surge)
+  iron_scales: {
+    id: 'iron_scales',
+    name: 'Iron Scales',
+    text: 'Its plate is part of it. Shatter and Superconduct cannot strip Armor from your units.',
+    baseId: 'pangolin',
+    boons: { armorUnstrippable: true },
+  },
+  rolled_tight: {
+    id: 'rolled_tight',
+    name: 'Rolled Tight',
+    text: 'Curls up before it lands. Your units shrug off 20 of every collision.',
+    baseId: 'pangolin',
+    boons: { collisionResist: 20 },
+  },
+  grounding_scales: {
+    id: 'grounding_scales',
+    name: 'Grounding Scales',
+    text: 'Whoever shoots at its wall gets the charge back. A Guardian of yours struck from range leaves its attacker Charged.',
+    baseId: 'pangolin',
+    boons: { guardiansCharge: true },
+  },
+};
+
 for (const [id, trait] of Object.entries(VOLTARA_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(MORTIS_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(SYLVA_TRAITS)) COMPANION_TRAITS[id] = trait;
@@ -722,6 +872,7 @@ for (const [id, trait] of Object.entries(FERRUM_TRAITS)) COMPANION_TRAITS[id] = 
 for (const [id, trait] of Object.entries(HYBRID_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(SECOND_BLOODLINE_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(CLOSING_HYBRID_TRAITS)) COMPANION_TRAITS[id] = trait;
+for (const [id, trait] of Object.entries(THIRD_BLOODLINE_TRAITS)) COMPANION_TRAITS[id] = trait;
 
 export function traitById(id: string): CompanionTrait | undefined {
   return COMPANION_TRAITS[id];
