@@ -32,7 +32,8 @@ export type LandmarkId =
   | 'water_tower'
   | 'furnace_stack'
   | 'crane'
-  | 'gasholder';
+  | 'gasholder'
+  | 'toll_bar';
 
 export interface LandmarkKind {
   /** The footprint the colliders learn, centred on the landmark, in world units. */
@@ -59,6 +60,7 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   furnace_stack: { w: 3, d: 3, height: 18, note: 'A brick stack over the works, a flare breathing at its lip.' },
   crane: { w: 2.4, d: 2.4, height: 8.5, note: 'A quay crane on a timber mast, its jib slewing out over the water and back.' },
   gasholder: { w: 8.4, d: 8.4, height: 9, note: 'A gas bell in its iron frame, a lamp on the valve, the valve wheel turning.' },
+  toll_bar: { w: 1.2, d: 1.2, height: 9, note: 'A striped boom on a post, raised on its counterweight over the road, rocking for carts that do not come.' },
 };
 
 export const LANDMARK_IDS = Object.keys(LANDMARKS) as readonly LandmarkId[];
@@ -217,6 +219,17 @@ export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
       ],
       movers: [{ surface: 'iron', geometry: wheel, pivot: new THREE.Vector3(4.3, 1.2, 0), axis: new THREE.Vector3(1, 0, 0), motion: 'spin', amount: 0.4, reach: 0.4 }],
       light: { at: new THREE.Vector3(4.0, 2.2, 0), color: '#ffd89a' },
+    };
+  }
+  if (id === 'toll_bar') {
+    // A post with its counterweight, and the boom pivoted on the post head: laid south across
+    // the road and then raised, so it stands over the road it tolls and never across it.
+    const post = join([box(0.4, 3.2, 0.4), box(0.7, 0.3, 0.7, 0, 3.05)]);
+    const boom = join([box(0.18, 0.18, 6.4, 0, 0, 2.4), box(0.5, 0.5, 0.6, 0, 0, -1.0)]);
+    boom.rotateX(-1.26);
+    return {
+      parts: [{ surface: 'bark', geometry: post }],
+      movers: [{ surface: 'trim', geometry: boom, pivot: new THREE.Vector3(0, 3.2, 0), axis: new THREE.Vector3(1, 0, 0), motion: 'swing', amount: 0.14, period: 6, reach: 2.6 }],
     };
   }
   if (id === 'gibbet') {
