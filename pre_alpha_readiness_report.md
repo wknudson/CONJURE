@@ -16,7 +16,10 @@ Stand as PR #33, the three generic reactions as PR #35, and the opening hour as 
 recorded in §7. Nothing either audit raised remains open. Outside the audits' scope, the female
 side-walk was fixed as PR #37 and the world itself rebuilt as PR #39 — every area larger,
 thirty-nine rooms behind real doors, four registries of things to do on the ground — recorded in
-§7.9 and §7.10; this note is PR #40.*
+§7.9 and §7.10; that note was PR #40. The bestiary and grimoire expansion then began with its
+machinery as PR #41 — signature cards, rare hunts, and a pipeline for creature art — recorded in
+§7.11; that note was PR #42. Its second wave, the Hero kit and a duelist at every tier, merged
+as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; that note was PR #49. A motion pass over both boards and the streets, including two fixes for flinches that were computed and never drawn, merged as PR #47 and is recorded in §7.15; that note was PR #50. The expansion's Wave 4, thirty-six new bodies for the Vanguard, merged as PR #51 and is recorded in §7.16; that note was PR #52. Its Wave 5, the third and fourth bloodlines of Pyre, Frost and Surge, merged as PR #53 and is recorded in §7.17; this note is PR #54.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -884,13 +887,202 @@ Wildlands floors are still one texture per region with a ring added; a room's ca
 liveness is read once at mount; and the bench screens are still screens — the room is the shop
 now, but the shop still swaps the view.
 
-### 7.11 What remains
+### 7.11 The bestiary expansion, Wave 0 — **built, PR #41**
+
+Not an audit finding: an ask. More companions, many more minions, and more cards in every school,
+the colourless one included, "so not every companion has the same pool of cards". The complaint
+was accurate. Every species hands over the identical Hero Deck by design, built from the colourless
+shelf §5 already calls thin; the two mono species of a school drafted from one
+pure pool of nine to eleven cards and differed only by a four-card `omit`; and a fusion reached
+any beast sharing one of its two schools, so the hybrid pools overlapped heavily too. Minions
+had no art at all — every body on both boards was a procedural silhouette or an archetype prism.
+
+The expansion was planned as twelve waves and ruled in one sitting: two new mono species per
+elemental school and one new hybrid per school pair (twenty-seven in all, none neutral or
+arcane); signature cards per species plus larger school shelves, with the Hero Deck left shared;
+thirty-six new fieldable minions and twelve threats; the new hybrids split across lairs, story
+contracts and rare hunts; bundled art restricted to CC0 and attribution-only licences; and the
+owner painting the new companions, with stand-ins until then. Wave 0 builds only the machinery
+those need, and changes nothing a player sees.
+
+**What was built.** `CardDef.bloodline` names the species that may learn a card, and
+`GrimoireSource.bloodline` is stamped from the species id where `COMPANIONS` is built, so a new
+species cannot forget it. One predicate guards all four doors a card comes through — the pure
+shelf, the fusions, the colourless fallback and the socket, which refuses a forged signature in
+the wrong beast as `off-bloodline` — and a draft's first slot deals from the species' own
+signatures when it has any. A hunt may now carry `requires`, and the board posts it only once
+the kept beasts speak every school it names: a rare hunt is a hybrid that comes to the scent of
+both its parents. `CREATURE_ART` lists a card's drawing, its facings, its filtering and whose it
+is; the loader remembers failures, BodyLayer changes a body into its drawing on the frame the
+file lands, the 2D board draws a standee, and the silhouette stays the fallback everywhere.
+`CREDITS.md` and `docs/sprite-requests.md` are generated from the data and checked against it,
+and `COMPANION_ART_PENDING` is a two-way ledger over placeholder PNGs that mark themselves.
+
+**What was found on the way.** `rosterUnlocks` is the wrong thing to gate a hunt on, although
+it is the permanent ledger: its migration floor hands a pre-enrolment save a Dusk archer and a
+Pyre lobber nobody tamed, so the gate reads the Vivarium instead. A missing front sprite drops
+the district follower entirely rather than drawing a shape, which is why stand-ins are files on
+disk rather than a code path. And the hunt spec lists each enemy deck by hand, so signatures will
+not be taught by their hunts automatically — every content wave adds its own to the fight that
+teaches it, because `schematics.test.ts`'s UNREACHABLE list fails in both directions.
+
+**Verified.** The full non-balance suite on the exact tip: 146 files, 3,565 tests, green. The
+balance ledger was not run: no card, encounter or pack changed, and a test pins that the draft
+rule moved no shipped species' draw. In the browser, a throwaway registry entry pointed the
+footman at a probe PNG; both enemy footmen wore it on the diamond and in a Chalk Road fight while
+everything else kept its silhouette, and the probe was removed before commit. The Pages deploy
+of the squash commit carries its build stamp.
+
+**Open by choice:** the road's roaming packs stay procedural until the world waves finish
+reworking `Pack`; `CATALOG_TARGET` rises with the second school-shelf wave, because raising it
+now fails the catalog test before the cards exist; and `CREATURE_ART` ships empty, so the first
+drawings arrive with the art wave.
+
+### 7.12 The bestiary expansion, Wave 1 — **built, PR #43**
+
+The Hero half's shelf. Every Companion hands over the same Hero Deck by design, and §5 had
+already called the colourless pool thin: eighteen hero-legal cards in the whole game, three of
+them neutral, for a deck of four to twelve. `cards/hero.ts` adds twenty-two — sixteen neutral,
+six arcane — every one an Ability or Construct cast from the Hero's side of the board and built
+from ops the interpreter already runs. The neutral half hurts with weight and rope and brings the
+Hero's first heal, draw and ramp; the arcane half is spell damage and the holds nobody's element
+owns. No elemental statuses, no Marks, no bodies.
+
+**Taught by two new duels.** The Journeyman Duelist (Adept) plays the neutral shelf and the Master
+Duelist (Master) the arcane half, both on their tier's rolled poster and wagered like the first
+duel — which also widens the post-campaign board §4 recorded as collapsing to four fights.
+`duelist.test.ts` now asks the Novice's Hero Deck questions of every duel, and that every kit card
+is played by one.
+
+**What was found on the way.** Holds lift at the end of the *owner's* turn, so a one-stack
+Entangle or Stun cast on an enemy holds it through the whole of its next turn; the faces say so,
+and it is what prices them (Entangle on a one-Bone Bola, Stun on a three-Bone Glyph). The first
+Journeyman was softer than the Novice: in AI playouts the default character beat it eight times
+in eight, against none in eight for every existing duel, because a deck made only of lessons
+spends its turns on utility with nothing to do. Staples and a heavier warband took it to three in
+eight, several decided by twenty health. `heal` restores the Pact, not a unit, and the heal cards
+say so.
+
+**Verified.** The full non-balance suite on the exact tip: 146 files, 3,571 tests, green. The
+balance ledger: 7 files, 580 tests, green, including eight playouts of each new duel. The browser
+was not reachable — the folder was at its dev-server limit, held by other sessions — so the AI
+playouts, which played nineteen of the twenty-two new cards, stand in for it.
+
+### 7.13 The bestiary expansion, Wave 2 — **built, PR #45**
+
+The first three schools' shelves, and the fix for why their beasts dealt the same books. Two
+single-school species per school drafted eight cards out of one shelf of nine to eleven, with
+four struck off each; an Ignis and a Flue Salamander were two draws of mostly the same dozen.
+Twenty commons fill the shapes each shelf lacked (Pyre, the thinnest, gets eight), and eighteen
+signatures — three per species, tagged `bloodline` — give every one of the six a card its cousin
+can never learn and a book that opens on it. The omits drop from four cards to two. Every new card
+is taught in the same PR: each hunt plays its species' three, and the commons ride in the
+school's story fights, because the `UNREACHABLE` ledger fails in both directions.
+
+**What was found on the way.** A latent engine bug older than the expansion: a Companion card
+with no target of its own resolved every area against nothing, because `originOf` had no
+coordinate for a `none` target. Elmo's Fire's burst and Hoarfrost Veil's chill had never landed,
+silently, since each shipped. The engine already records where the caster stands, and now reads
+it; `casterBursts.test.ts` pins both cards and the new Static Bristle. Along the way, an entity
+area of the eight tiles around a unit excludes the unit (the ground version counts it), and two
+faces were corrected to say exactly who they touch.
+
+**Verified.** The full non-balance suite on the exact tip: 147 files, 3,577 tests, green — one
+earlier run on it timed out twice under CPU contention from probes in another worktree, and the
+clean rerun is the result. The balance ledger: 7 files, 580 tests, green. The catalog grows from
+244 base cards to 282.
+
+### 7.14 The bestiary expansion, Wave 3 — **built, PR #48**
+
+The second half of the shelf work. Eighteen commons fill what Bulwark, Dusk and Bloom lacked
+— Bulwark a line, a cone and a draw; Dusk anything plain (a bolt, a wall, a way to move a body);
+Bloom a free nettle, a line of thorns and a pod — and eighteen signatures give the Boar, the Ram,
+the Stag, the Jackal, the Warden and the Aurochs cards of their own. Each hunt teaches its
+species' three and the commons ride in the schools' story fights. The six omits halve as Wave 2's
+did, and `CATALOG_TARGET` rises from ten-to-fifteen to twenty-to-thirty-four now every elemental
+school carries forty-odd cards. No new Dusk card leaves Brittle, so the list `expansion2.test.ts`
+pins still holds.
+
+**Verified.** The balance ledger on the exact tip: 7 files, 580 tests, green. The full
+non-balance suite on the same commit: green on a clean rerun, after the first run lost the
+`intents` Adept case to the known load timeout. The catalog grows to 318 base cards.
+
+### 7.15 Smoother motion — **FIXED and built, PR #47**
+
+Asked for on the grounds that the game should "look much smoother". A survey of open-source
+animated sprites came first. Under the CC0/CC-BY ruling, nothing 2D comes near the painted
+cast's 250px Octopath look. The CC0 3D route (KayKit, Quaternius) was downloaded, pre-rendered
+and put beside the cast, and it animates well but reads as low-poly chibi. That route stays on a
+local `sprite-bake` branch, unmerged. What merged is the motion the existing art could already
+have had.
+
+**What was wrong.** Two flinches were computed every fight and drawn on neither board. The
+canvas board's `drawEntity` never read `view.squash`, so no hit or collision squash had ever
+shown there. On the district board, `BodyLayer` wrote `view.elev` into the walker's `y` before
+`Walker.step()` wrote the walk bob into the same vector, so lunge hops, summon drops and death
+sinks were overwritten every frame. Both are fixed. Squash scales about the feet through one
+`squashScale()` shared by the two boards, and the lift is added after the step.
+
+**What was built.** The curves live in `src/anim/motion.ts` as pure functions of progress, and
+every one of them ends at rest at k = 1, so skip still leaves nothing behind.
+
+- A walk is one eased tween along the whole path, where it used to brake on every tile.
+- Melee has a wind-up, a strike and an overshooting recovery. It keeps its 240 ms and stays
+  under half a tile.
+- Ranged shots recoil, summons, deploys and revives land with a squash, and deaths stretch and
+  collapse.
+- The painted Commander and companion breathe beside the board.
+- On the streets, `src/district/gait.ts` adds momentum to the companion, Wardens and packs, a
+  lean into sideways travel for every walker, and a `(1 − cos)/2` breath at rest in place of
+  `abs(sin)`, which tapped the ground. `Walker` itself is untouched.
+
+**Verified.** `motionPolish.test.ts` pins the curves, the momentum and the lean. The nearby
+walk, pack, wildlife, hero-walk and pacing suites are green. The full non-balance suite on the
+exact tip is green: 148 files, 3,593 tests. An earlier tip hit the two known load timeouts,
+`intents` and `determinism`, which were green when rerun alone. That tip was superseded when
+Wave 3 merged, and the rerun on the final tip was clean. In the browser, the canvas board
+now issues the squash scale it never drew. The melee swing winds up, peaks under half a tile
+and lands back on its tile, a three-tile walk runs without stopping per tile, and on the
+street the Commander and companion lean into travel and settle upright when they stop.
+
+### 7.16 The bestiary expansion, Wave 4 — **built, PR #51**
+
+Thirty-six bodies a warband can field (`cards/vanguard.ts`): four per elemental school — a
+two-pointer with a rider the school lacked, a ranged body, an elite, and a first 2x2 Behemoth
+for the four schools that had none — plus six neutral and six arcane anybody may field.
+`MAX_BEHEMOTHS` is reachable for every school now. The enemy-only threats this wave was planned
+to carry moved to the lair, hunt and contract waves, because a `PackDef`'s members must be bodies
+a warband could field, and the world waves are authoring the road's themed crews.
+
+**What was found on the way.** Nothing in the balance ledger plays a body no encounter fields,
+so `vanguardDrill.test.ts` fields each of the thirty-six against a passive opponent and requires
+it to swing — the first version let the player's side fight back, and six thin two-pointers died
+on the approach, which said nothing about the planner. Four schools' opening warbands change,
+because `startingRosterFor` derives them from the shelf by design.
+
+**Verified.** The full non-balance suite and the balance ledger on the exact tip, green.
+
+### 7.17 The bestiary expansion, Wave 5 — **built, PR #53**
+
+Six species — the Ashwing Phoenix and Cinderback Badger, the Hoarfrost Mammoth and Rime Ermine,
+the Galvanic Eel and Sparkback Pangolin — each whole: a Bound Form with a shape its school
+lacked, three wired knacks built from existing boons, three signatures its own hunt teaches, and
+a hunt at the gate. Stand-in art (`COMPANION_ART_PENDING`) until they are painted.
+
+**What was found on the way.** The Eel's hunt in rain ended AI playouts in four to six turns at
+an Adept tier whose other hunts run to twenty, because rain lifts every shock hit the Eel's deck
+is made of; fog and a slower handler brought it to six to nine.
+
+**Verified.** The full non-balance suite and the balance ledger on the exact tip, green.
+
+### 7.18 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 and §7.10 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.17 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
-found outside it belongs here on the same terms PRs #37 and #39 did. What comes next is a
-playtest, and after #39 there is a great deal more world to hold one in.
+found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47, #48, #51 and #53 did. What comes next is
+a playtest, and the remaining waves of the bestiary expansion, each recorded here as it
+merges.
 
 ### Appendix — documentation drift found along the way
 
