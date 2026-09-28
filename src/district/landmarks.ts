@@ -37,7 +37,8 @@ export type LandmarkId =
   | 'water_wheel'
   | 'beam_engine'
   | 'lava_fall'
-  | 'frozen_falls';
+  | 'frozen_falls'
+  | 'mammoth';
 
 export interface LandmarkKind {
   /** The footprint the colliders learn, centred on the landmark, in world units. */
@@ -69,6 +70,7 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   beam_engine: { w: 3.6, d: 3.6, height: 11, note: 'A pumping engine: the house, its stack, and the great beam rocking on the wall-top.' },
   lava_fall: { w: 3.2, d: 2.8, height: 9, note: 'A spur of the crater wall with lava running down its face into a pool that never cools.' },
   frozen_falls: { w: 3.6, d: 3.0, height: 10, note: 'A fall off the ridge that froze where it fell: a sheet of ice down the rock, and the icicles it grew.' },
+  mammoth: { w: 6.4, d: 3.2, height: 3.2, overhang: 0.6, note: 'A mammoth where it lay down in the snow: the ribs still standing, the tusks curled over the skull, all of it rimed.' },
 };
 
 export const LANDMARK_IDS = Object.keys(LANDMARKS) as readonly LandmarkId[];
@@ -313,6 +315,28 @@ export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
       ],
       movers: [],
     };
+  }
+  if (id === 'mammoth') {
+    // Lying east to west, head to the east: a spine, the ribs standing up off it in arches that
+    // shrink towards the tail, the pelvis, the skull, and the tusks curling up over it. Rimed, so
+    // the kit's ice, which is also the nearest thing it has to bone.
+    const bones: THREE.BufferGeometry[] = [
+      box(4.6, 0.28, 0.28, -0.2, 2.5, 0),
+      box(0.8, 0.5, 1.4, -2.4, 1.9, 0),
+      box(1.1, 1.0, 1.1, 2.5, 1.6, 0),
+    ];
+    for (const [i, x] of [-1.9, -1.2, -0.5, 0.2, 0.9, 1.6].entries()) {
+      const r = 1.0 + i * 0.06;
+      const rib = new THREE.TorusGeometry(r, 0.09, 5, 10, Math.PI).rotateY(Math.PI / 2).scale(1, 2.5 / r, 1).translate(x, 0, 0);
+      bones.push(uvify(rib));
+    }
+    for (const z of [-0.55, 0.55]) {
+      const tusk = new THREE.TorusGeometry(0.9, 0.1, 5, 10, Math.PI * 1.1).rotateZ(-Math.PI / 2).translate(3.0, 2.0, z);
+      bones.push(uvify(tusk));
+    }
+    // A thigh bone and a shin, dragged off and left.
+    bones.push(box(1.4, 0.22, 0.22, -1.0, 0.11, 1.4), box(1.0, 0.18, 0.18, 0.8, 0.09, -1.4));
+    return { parts: [{ surface: 'ice', geometry: join(bones) }], movers: [] };
   }
   if (id === 'gibbet') {
     const post = join([box(0.3, 6, 0.3), box(1.6, 0.25, 0.25, 0.65, 5.8, 0), box(0.12, 0.9, 0.12, 0.35, 5.35, 0)]);
