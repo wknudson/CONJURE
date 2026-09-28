@@ -416,7 +416,8 @@ describe('the wired knacks', () => {
     // Counts boon *entries*, not traits — a knack granting two boons contributes two. Rose
     // from 11 when the five closing hybrids arrived with ten wired knacks between them, and
     // to 33 when the nine pending knacks were built (2026-09-03): every hybrid's two, wired.
-    expect(checked, 'wired hybrid knacks').toBe(33);
+    // And to 43 with the five lair hybrids (2026-09-28), two wired knacks each.
+    expect(checked, 'wired hybrid knacks').toBe(43);
   });
 
   it('opens a fight with the knack already switched on', () => {
