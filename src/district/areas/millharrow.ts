@@ -10,10 +10,22 @@
  * spot. That is what a hub has to be — the four roads out of it are the point, and a town that
  * hid them would be a town you got stuck in.
  *
- * Thirty-two by twenty-eight now, and two of its roofs open. The Mill stands north of the
- * cross with the race running past it, and the low granary the race drowned is south of the
- * race with its door onto the cross: the `drowned_granary` contract is fought in the flooded
- * end of it, which used to be a label on the cobbles outside.
+ * Sixty by fifty-two now, grown evenly from thirty-two by twenty-eight, and still readable from
+ * the middle: the cross runs on to the east and west edges and the two roads to the north and
+ * south ones, and the town has a quarter at the head of each. The Mill stands north of the cross
+ * with the race running past it and, now, its wheel turning in it; the low granary the race
+ * drowned is south of the race with its door onto the cross, where the `drowned_granary`
+ * contract is fought.
+ *
+ * What the growth added, round the old hedge: north, **the North End** at the head of the
+ * Levels road, **the millpond** that feeds the race by a leat, and **windmill hill** out in the
+ * strips; west, **the granary yards**, the threshing floor and the tithe barn; east, **the East
+ * End**, cottages, a smithy yard and the crossroads chapel with its graves; south, **the
+ * orchards** and their cider press, and **the fair green** with its stalls and, at its head, the
+ * Crossroads Arms -- an inn, and a room.
+ *
+ * The town itself is left quiet at night. The fields are not: the Scarecrow Men stand the field
+ * edges after dark, one crew round windmill hill and one along the foot of the orchards.
  */
 
 import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
@@ -31,6 +43,12 @@ import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
  *   M  the Mill      — impassable; timber, the stack going
  *   G  the granary   — impassable; low stone, the water line on it
  *   T  hedgerow      — impassable, the town's edge
+ *   h  cottage       — impassable; the road-heads, the East End, the cider press
+ *   g  garden        — the East End's
+ *   b  the leat bridge — planks over the leat
+ *   K  the chapel    — impassable; stone
+ *   I  the Crossroads Arms — impassable; timber, the stack going
+ *   Y  a fair stall  — impassable, low
  *
  * The streets are chalk rather than cobble on purpose: they are the Chalk Road, still, running
  * through a place that happens to be built on it.
@@ -66,11 +84,34 @@ const MILL_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { style: 'foliage', minHeight: 3.4, maxHeight: 4.6, inset: 0.7, depthInset: 0.7, chimneyChance: 0, split: true },
   },
+  h: {
+    tex: 'grass',
+    safe: false,
+    walk: false,
+    solid: { style: 'cottage', minHeight: 3.6, maxHeight: 4.4, inset: 0.3, depthInset: 0.3, chimneyChance: 0.8, split: true, wall: 'plaster' },
+  },
+  g: { tex: 'field', safe: false, walk: true },
+  b: { tex: 'planks', safe: false, walk: true },
+  K: {
+    tex: 'grass',
+    safe: false,
+    walk: false,
+    solid: { style: 'hall', minHeight: 5.6, maxHeight: 5.6, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
+  },
+  I: {
+    tex: 'grass',
+    safe: false,
+    walk: false,
+    solid: { style: 'shopfront', minHeight: 5.2, maxHeight: 5.2, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
+  },
+  Y: {
+    tex: 'grass',
+    safe: false,
+    walk: false,
+    solid: { style: 'stall', minHeight: 1.9, maxHeight: 2.3, inset: 0.9, depthInset: 1.1, chimneyChance: 0, split: false },
+  },
 };
 
-const FIELDS = 'T##fffffffffff,,,,fffffffffff##T';
-const VERGE = 'T#....#######,,,,,,#######....#T';
-const YARDS = `T${'c'.repeat(12)}${','.repeat(6)}${'c'.repeat(12)}T`;
 
 /**
  * 32 wide by 28 deep.
@@ -81,34 +122,58 @@ const YARDS = `T${'c'.repeat(12)}${','.repeat(6)}${'c'.repeat(12)}T`;
  * doors.
  */
 const GRID: readonly string[] = [
-  `${'T'.repeat(14)},,${'T'.repeat(16)}`, //  0  north, to the Levels
-  FIELDS, //  1
-  FIELDS, //  2
-  FIELDS, //  3
-  VERGE, //  4
-  YARDS, //  5
-  'TcBBBBBBccMMMM,,,,,,cBBBBBBBBccT', //  6  the north frontages, and THE MILL
-  'TcBBBBBBccMMMM,,,,,,cBBBBBBBBccT', //  7
-  'TccWWWWWWcMMMM,,,,,,cccccccccccT', //  8  the mill race
-  'TccWWWWWWccccc,,,,cccccccccccccT', //  9  the mill door
-  'TcGGGGGGccBBBBc,,,,cBBBBBBcccccT', // 10  THE LOW GRANARY, drowned
-  'TcGGGGGGccBBBBc,,,,cBBBBBBcccccT', // 11
-  ','.repeat(32), // 12  THE CROSS — west to Saltglass, east to Bray's Hollow
-  ','.repeat(32), // 13
-  YARDS, // 14
-  'TcBBBBBccBBBBc,,,,cBBBBBBccBBBcT', // 15  the south frontages
-  'TcBBBBBccBBBBc,,,,cBBBBBBccBBBcT', // 16
-  YARDS, // 17
-  'TcBBBBBBccBBBB,,,,,,cBBBBBBBBccT', // 18
-  'TcBBBBBBccBBBB,,,,,,cBBBBBBBBccT', // 19
-  YARDS, // 20
-  VERGE, // 21
-  FIELDS, // 22
-  FIELDS, // 23
-  FIELDS, // 24
-  FIELDS, // 25
-  FIELDS, // 26
-  `${'T'.repeat(14)},,${'T'.repeat(16)}`, // 27  south, to the Chalk Road
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', //  0  the far hedge; the north road
+  'T#####################cccccc,,ccccccTffffffffffffffffffffffT', //  1  THE MILLPOND (west)   THE NORTH END, cottages either side of the road   WINDMILL HILL (east)
+  'T#####WWWWWWWWWWWW####chhhcc,,chhhccTffffffffffffffffffffffT', //  2
+  'T###WWWWWWWWWWWWWW####chhhcc,,chhhccTfffffff########fffffffT', //  3
+  'T###WWWWWWWWWWWWWW####cccccc,,ccccccTfffffff########fffffffT', //  4
+  'T###WWWWWWWWWWWWWW####cccccc,,ccccccffffffff########fffffffT', //  5
+  'T###WWWWWWWWWWWWWW####chhhcc,,chhhccTfffffff########fffffffT', //  6
+  'T###WWWWWWWWWWWWWW####chhhcc,,chhhccTfffffff########fffffffT', //  7
+  'T###WWWWWWWWWWW#######cccccc,,ccccccTfffffff########fffffffT', //  8
+  'T##############W######cccccc,,ccccccTffffffffffffffffffffffT', //  9  the leat, down from the pond to the race
+  'T##############W######cccccc,,ccccccTffffffffffffffffffffffT', // 10
+  'TffffffffffffffWffffffffffff,,fffffffffffffffffffffffffffffT', // 11
+  'TTTTTTTTTTTTT#TWTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', // 12  north hedge; north, to the Levels
+  'Tcccccccccccc#TW#fffffffffff,,,,fffffffffff##Tc############T', // 13  THE GRANARY YARDS (west)                                            THE EAST END
+  'TcGGGGGcGGGGG#TW#fffffffffff,,,,fffffffffff##Tc#hhhhh#hhhh#T', // 14
+  'TcGGGGGcGGGGG#TW#fffffffffff,,,,fffffffffff##Tc#hhhhh#hhhh#T', // 15
+  'TcGGGGGcGGGGG#TW....#######,,,,,,#######....#Tc#gggggggggg#T', // 16
+  'Tcccccccccccc#cbccccccccccc,,,,,,cccccccccccccc#gggggggggg#T', // 17  the leat bridge, and a way through each old hedge
+  'Tcccccccccccc#TWBBBBBBccMMMM,,,,,,cBBBBBBBBccTc############T', // 18  the north frontages, and THE MILL
+  'TcGGGGGcGGGGG#TWBBBBBBccMMMM,,,,,,cBBBBBBBBccTc##hhhh######T', // 19
+  'TcGGGGGcGGGGG#TWcWWWWWWcMMMM,,,,,,cccccccccccTc##hhhh######T', // 20  the mill race
+  'TcGGGGGcGGGGG#TWcWWWWWWccccc,,,,cccccccccccccTc##hhhh######T', // 21  the mill door
+  'TcGGGGGcGGGGG#TcGGGGGGccBBBBc,,,,cBBBBBBcccccTc############T', // 22  THE LOW GRANARY, drowned
+  'Tcccccccccccc#TcGGGGGGccBBBBc,,,,cBBBBBBcccccT#############T', // 23
+  ',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,', // 24  THE CROSS — west to Saltglass, east to Bray's Hollow
+  ',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,', // 25
+  'T............#Tcccccccccccc,,,,,,ccccccccccccT#############T', // 26  the threshing floor, and the tithe barn                            the crossroads chapel
+  'T............#TcBBBBBccBBBBc,,,,cBBBBBBccBBBcTc############T', // 27  the south frontages
+  'T.GGGGGG.....#TcBBBBBccBBBBc,,,,cBBBBBBccBBBcTc############T', // 28
+  'T.GGGGGG.....#ccccccccccccc,,,,,,cccccccccccccc###KKKKKK###T', // 29
+  'T.GGGGGG.....#TcBBBBBBccBBBB,,,,,,cBBBBBBBBccTc###KKKKKK###T', // 30
+  'T.GGGGGG.....#TcBBBBBBccBBBB,,,,,,cBBBBBBBBccTc###KKKKKK###T', // 31
+  'T............#Tcccccccccccc,,,,,,ccccccccccccTc###KKKKKK###T', // 32
+  'T............#T#....#######,,,,,,#######....#Tc############T', // 33
+  'T........GGGG#T##fffffffffff,,,,fffffffffff##Tc#..........#T', // 34
+  'T........GGGG#T##fffffffffff,,,,fffffffffff##Tc#..........#T', // 35
+  'T........GGGG#T##fffffffffff,,,,fffffffffff##Tc#..........#T', // 36
+  'T........GGGG#T##fffffffffff,,,,fffffffffff##Tc#..........#T', // 37
+  'T............#T##fffffffffff,,,,fffffffffff##Tc############T', // 38
+  'TTTTTTTTTTTTT#TTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTcTTTTTTTTTTTTT', // 39  south, to the Chalk Road
+  'TTTTTTTTTTTTT#TTTTTTTTTTTTT#,,#TTTTTTTTTTTTTTT#TTTTTTTTTTTTT', // 40  THE ORCHARDS (west), the cider press      the south road      THE FAIR GREEN, and THE INN
+  'T#########################T#,,####IIIIII###################T', // 41
+  'T###################hhhh##T#,,####IIIIII###################T', // 42
+  'T###################hhhh##T#,,#############################T', // 43
+  'T#########################T#,,##hh#########################T', // 44
+  'T#########################T#,,##hh#########################T', // 45
+  'T#########################T#,,########YYYYYY###YYYYYY######T', // 46  the fair stalls
+  'T#########################T#,,#############################T', // 47
+  'T###########################,,#############################T', // 48
+  'T#########################T#,,########YYYYYY###YYYYYY######T', // 49
+  'T#########################T#,,#############################T', // 50
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', // 51  the far hedge; south, to the Chalk Road
 ];
 
 const HALF_X = (GRID[0]!.length * TILE) / 2;
@@ -128,50 +193,62 @@ export const MILLHARROW: AreaDef = defineArea({
   safety: 'none',
   exits: [
     {
+      // Down the south road through the new ground to the edge, past the fair green.
       to: 'chalk_road',
       x: -2,
-      z: zOfRow(26),
+      z: zOfRow(50),
       label: 'South, down onto the Chalk Road',
       arrive: { x: -34, z: -14 },
     },
     {
+      // Up the north road through the North End to the edge.
       to: 'tallow_levels',
       x: -2,
       z: zOfRow(1),
       label: 'North, out onto the Tallow Levels',
-      arrive: { x: -2, z: 30 },
+      // Onto the road through the half-sunk village, a stride inside the Levels' new south exit.
+      arrive: { x: -2, z: 58 },
     },
     {
       to: 'saltglass',
       x: -HALF_X + 2,
       z: -2,
       label: 'West, to Saltglass',
-      arrive: { x: 50, z: 8 },
+      arrive: { x: 82, z: 8 },
     },
     {
       to: 'brays_hollow',
       x: HALF_X - 2,
       z: -2,
       label: "East, into Bray's Hollow",
-      arrive: { x: -42, z: 0 },
+      arrive: { x: -70, z: 0 },
     },
     {
       // The Mill, with its door on the lane between the race and the cross.
       to: 'millharrow_mill',
-      x: xOfCol(11.5),
-      z: zOfRow(8) + TILE / 2 + 1.4,
+      x: xOfCol(25.5),
+      z: zOfRow(20) + TILE / 2 + 1.4,
       label: 'Into the Mill',
-      door: { x: xOfCol(11.5), z: zOfRow(8) + TILE / 2 + 0.05, facesSouth: true, style: 'plank' },
+      door: { x: xOfCol(25.5), z: zOfRow(20) + TILE / 2 + 0.05, facesSouth: true, style: 'plank' },
       arrive: { x: 0, z: 14 },
     },
     {
       // The low granary. The water is in it, and so is what dammed the race.
       to: 'millharrow_granary',
-      x: xOfCol(4.5),
-      z: zOfRow(11) + TILE / 2 + 1.4,
+      x: xOfCol(18.5),
+      z: zOfRow(23) + TILE / 2 + 1.4,
       label: 'Into the drowned granary',
-      door: { x: xOfCol(4.5), z: zOfRow(11) + TILE / 2 + 0.05, facesSouth: true, style: 'plank' },
+      door: { x: xOfCol(18.5), z: zOfRow(23) + TILE / 2 + 0.05, facesSouth: true, style: 'plank' },
       arrive: { x: 0, z: 20 },
+    },
+    {
+      // The Crossroads Arms, at the head of the fair green, its door onto the green.
+      to: 'millharrow_inn',
+      x: xOfCol(36.5),
+      z: zOfRow(42) + TILE / 2 + 1.4,
+      label: 'Into the Crossroads Arms',
+      door: { x: xOfCol(36.5), z: zOfRow(42) + TILE / 2 + 0.05, facesSouth: true, sign: 'tavern' },
+      arrive: { x: 0, z: 14 },
     },
   ],
   props: {
@@ -186,6 +263,10 @@ export const MILLHARROW: AreaDef = defineArea({
       { kind: 'rat', x: -26, z: -14, roam: 5, count: 2 },
       { kind: 'rat', x: -6, z: 2, roam: 5, count: 2 },
       { kind: 'rook', x: -54, z: -50, roam: 22, count: 4 },
+      // A heron on the millpond, sheep on windmill hill, rooks over the orchards.
+      { kind: 'heron', x: -90, z: -62, roam: 6 },
+      { kind: 'sheep', x: 72, z: -70, roam: 5, count: 3 },
+      { kind: 'rook', x: -70, z: 76, roam: 20, count: 4 },
     ],
     /**
      * The crossroads has opinions about the toll.
@@ -194,8 +275,8 @@ export const MILLHARROW: AreaDef = defineArea({
      * this game is always on the wall of whatever the line is complaining about.
      */
     graffiti: [
-      { text: 'THE TOLL IS NOT THE KINGS', wallX: -36, wallZ: zOfRow(11) + TILE / 2 + 0.05, dx: 0, facesSouth: true, tint: '#a46a4a' },
-      { text: 'WEIGH IT AT THE MILL', wallX: -10, wallZ: zOfRow(8) + TILE / 2 + 0.05, dx: 0, facesSouth: true, tint: '#b7ae9d' },
+      { text: 'THE TOLL IS NOT THE KINGS', wallX: -36, wallZ: zOfRow(23) + TILE / 2 + 0.05, dx: 0, facesSouth: true, tint: '#a46a4a' },
+      { text: 'WEIGH IT AT THE MILL', wallX: -10, wallZ: zOfRow(20) + TILE / 2 + 0.05, dx: 0, facesSouth: true, tint: '#b7ae9d' },
     ],
     /** Mill town at the crossroads: grain in, beer out, and a toll on the best road. */
     dressing: [
@@ -243,6 +324,23 @@ export const MILLHARROW: AreaDef = defineArea({
       { kind: 'bramble', x: -14, z: -46 },
       { kind: 'bramble', x: 38, z: -34 },
       { kind: 'bramble', x: -2, z: 30 },
+
+      // The millpond's reeds; the North End's washing and well.
+      { kind: 'reeds', x: -90, z: -66 },
+      { kind: 'reeds', x: -50, z: -62 },
+      { kind: 'well', x: -14, z: -86 },
+      { kind: 'washing', x: -14, z: -78, yaw: 0 },
+      // Flour off the windmill.
+      { kind: 'sacks', x: 62, z: -70 },
+      { kind: 'haybale', x: 84, z: -90 },
+      // The granary yards and the threshing floor.
+      { kind: 'sacks', x: -90, z: -30 },
+      { kind: 'cart', x: -78, z: -34 },
+      { kind: 'haybale', x: -78, z: 6 },
+      { kind: 'haybale', x: -74, z: 14 },
+      // The fair green.
+      { kind: 'barrel', x: 58, z: 76 },
+      { kind: 'noticepost', x: 40, z: 72 },
     ],
     /**
      * The hub, populated as a hub.
@@ -271,6 +369,12 @@ export const MILLHARROW: AreaDef = defineArea({
       { x: -2, z: 34 },
       { x: -26, z: -2 },
       { x: 22, z: -2 },
+      // At each new road-head, so the way out shows after dark.
+      { x: -10, z: -88 },
+      { x: 6, z: -66 },
+      { x: 6, z: 78 },
+      { x: -100, z: -10 },
+      { x: 100, z: -10 },
     ],
     crates: [
       { x: -26, z: -22 },
@@ -283,7 +387,65 @@ export const MILLHARROW: AreaDef = defineArea({
       { x: 46, z: -46 },
       { x: -50, z: 46 },
       { x: 46, z: 46 },
+      // The orchards, in their rows.
+      { x: -110, z: 70 },
+      { x: -94, z: 70 },
+      { x: -78, z: 70 },
+      { x: -62, z: 70 },
+      { x: -46, z: 70 },
+      { x: -110, z: 82 },
+      { x: -94, z: 82 },
+      { x: -78, z: 82 },
+      { x: -62, z: 82 },
+      { x: -46, z: 82 },
     ],
     horizon: 'treeline',
+    /**
+     * The Scarecrow Men, out on the field edges after dark and never in the town: one crew walks
+     * the hedge round windmill hill, the other the foot of the orchards.
+     */
+    packs: [
+      {
+        encounterId: 'pack_scarecrow_men',
+        id: 'windmill_fields',
+        x: 78,
+        z: -62,
+        roam: 6,
+        hours: 'night',
+        band: 'fields',
+        behaviour: 'beat',
+        route: [
+          { x: 46, z: -98 },
+          { x: 110, z: -98 },
+          { x: 110, z: -62 },
+          { x: 46, z: -62 },
+        ],
+      },
+      {
+        encounterId: 'pack_scarecrow_men',
+        id: 'orchard_edge',
+        x: -66,
+        z: 94,
+        roam: 6,
+        hours: 'night',
+        band: 'orchard',
+        behaviour: 'beat',
+        route: [
+          { x: -110, z: 94 },
+          { x: -22, z: 94 },
+        ],
+      },
+    ],
+    /** The windmill on its hill out in the strips, and the wheel turning in the race by the Mill. */
+    landmarks: [
+      { kind: 'windmill', x: 72, z: -80 },
+      { kind: 'water_wheel', x: -26, z: -22 },
+    ],
+    vignettes: [
+      { id: 'hay_yard', x: -80, z: 26 },
+      { id: 'smithy_yard', x: 94, z: -14 },
+      { id: 'grave_plot', x: 90, z: 36 },
+      { id: 'market_corner', x: 70, z: 70 },
+    ],
   },
 });

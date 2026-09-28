@@ -123,7 +123,7 @@ export const BONE_BASTION: AreaDef = defineArea({
       x: HALF_X - 2,
       z: -2,
       label: 'East, along the causeway to the Tallow Levels',
-      arrive: { x: -50, z: -6 },
+      arrive: { x: -86, z: -6 },
     },
   ],
   props: {

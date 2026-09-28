@@ -32,7 +32,10 @@ export type LandmarkId =
   | 'water_tower'
   | 'furnace_stack'
   | 'crane'
-  | 'gasholder';
+  | 'gasholder'
+  | 'toll_bar'
+  | 'water_wheel'
+  | 'beam_engine';
 
 export interface LandmarkKind {
   /** The footprint the colliders learn, centred on the landmark, in world units. */
@@ -59,6 +62,9 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   furnace_stack: { w: 3, d: 3, height: 18, note: 'A brick stack over the works, a flare breathing at its lip.' },
   crane: { w: 2.4, d: 2.4, height: 8.5, note: 'A quay crane on a timber mast, its jib slewing out over the water and back.' },
   gasholder: { w: 8.4, d: 8.4, height: 9, note: 'A gas bell in its iron frame, a lamp on the valve, the valve wheel turning.' },
+  toll_bar: { w: 1.2, d: 1.2, height: 9, note: 'A striped boom on a post, raised on its counterweight over the road, rocking for carts that do not come.' },
+  water_wheel: { w: 1.2, d: 1.2, height: 4.4, note: 'An undershot wheel standing in the race off its bearing post, turning because the water does.' },
+  beam_engine: { w: 3.6, d: 3.6, height: 11, note: 'A pumping engine: the house, its stack, and the great beam rocking on the wall-top.' },
 };
 
 export const LANDMARK_IDS = Object.keys(LANDMARKS) as readonly LandmarkId[];
@@ -217,6 +223,58 @@ export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
       ],
       movers: [{ surface: 'iron', geometry: wheel, pivot: new THREE.Vector3(4.3, 1.2, 0), axis: new THREE.Vector3(1, 0, 0), motion: 'spin', amount: 0.4, reach: 0.4 }],
       light: { at: new THREE.Vector3(4.0, 2.2, 0), color: '#ffd89a' },
+    };
+  }
+  if (id === 'toll_bar') {
+    // A post with its counterweight, and the boom pivoted on the post head: laid south across
+    // the road and then raised, so it stands over the road it tolls and never across it.
+    const post = join([box(0.4, 3.2, 0.4), box(0.7, 0.3, 0.7, 0, 3.05)]);
+    const boom = join([box(0.18, 0.18, 6.4, 0, 0, 2.4), box(0.5, 0.5, 0.6, 0, 0, -1.0)]);
+    boom.rotateX(-1.26);
+    return {
+      parts: [{ surface: 'bark', geometry: post }],
+      movers: [{ surface: 'trim', geometry: boom, pivot: new THREE.Vector3(0, 3.2, 0), axis: new THREE.Vector3(1, 0, 0), motion: 'swing', amount: 0.14, period: 6, reach: 2.6 }],
+    };
+  }
+  if (id === 'water_wheel') {
+    // The bearing post on the bank, and the wheel hung off it to the west, into the race: a rim
+    // of eight staves, a paddle at each, spokes to the hub. It turns in the plane of the flow.
+    const post = join([box(0.5, 2.4, 0.7, 0.1, 1.2, 0), box(0.9, 0.2, 0.9, 0.1, 2.5)]);
+    const parts: THREE.BufferGeometry[] = [];
+    const R = 1.7;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const stave = box(1.4, 0.18, 0.7, 0, 0, 0);
+      stave.rotateZ(a + Math.PI / 2).translate(Math.cos(a) * R, Math.sin(a) * R, 0);
+      parts.push(stave);
+      const paddle = box(0.12, 0.55, 0.9, 0, 0, 0);
+      paddle.rotateZ(a).translate(Math.cos(a) * (R + 0.2), Math.sin(a) * (R + 0.2), 0);
+      parts.push(paddle);
+      const spoke = box(R, 0.1, 0.1, R / 2, 0, 0);
+      spoke.rotateZ(a);
+      parts.push(spoke);
+    }
+    parts.push(uvify(new THREE.CylinderGeometry(0.22, 0.22, 0.9, 8).rotateX(Math.PI / 2)));
+    return {
+      parts: [{ surface: 'bark', geometry: post }],
+      movers: [{ surface: 'bark', geometry: join(parts), pivot: new THREE.Vector3(-1.1, 2.1, 0), axis: new THREE.Vector3(0, 0, 1), motion: 'spin', amount: -0.9, reach: 2.6 }],
+    };
+  }
+  if (id === 'beam_engine') {
+    // The engine house, its stack at the back corner, and the beam pivoted on the front wall's
+    // top: one end over the house, where the cylinder is, the other out over the pump shaft.
+    const house = box(3.4, 6.2, 3.0, 0, 3.1, 0.2);
+    const stack = cyl(0.55, 0.4, 10.6, 8, 1.2, 5.3, 1.2);
+    const gable = cone(2.3, 1.2, 4, 0, 6.8, 0.2);
+    gable.rotateY(Math.PI / 4);
+    const beam = join([box(0.4, 0.5, 6.0, 0, 0, 0), box(0.12, 1.6, 0.12, 0, -0.8, 2.8), box(0.12, 1.6, 0.12, 0, -0.8, -2.8)]);
+    return {
+      parts: [
+        { surface: 'wall', geometry: house },
+        { surface: 'wall', geometry: stack },
+        { surface: 'roof', geometry: gable },
+      ],
+      movers: [{ surface: 'iron', geometry: beam, pivot: new THREE.Vector3(0, 7.6, -1.3), axis: new THREE.Vector3(1, 0, 0), motion: 'swing', amount: 0.22, period: 4.5, reach: 2.7 }],
     };
   }
   if (id === 'gibbet') {

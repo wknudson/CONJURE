@@ -52,6 +52,7 @@ import { CHALK_VERGE_BOTHY } from './interiors/chalkVergeBothy.js';
 import { CHALK_ROAD_WAYSTATION } from './interiors/chalkRoadWaystation.js';
 import { MILLHARROW_MILL } from './interiors/millharrowMill.js';
 import { MILLHARROW_GRANARY } from './interiors/millharrowGranary.js';
+import { MILLHARROW_INN } from './interiors/millharrowInn.js';
 import { TALLOW_PUMP_HOUSE } from './interiors/tallowPumpHouse.js';
 import { SALTGLASS_GLASSHOUSE } from './interiors/saltglassGlasshouse.js';
 import { SALTGLASS_CUSTOMS_HOUSE } from './interiors/saltglassCustomsHouse.js';
@@ -117,6 +118,7 @@ export const AREAS: readonly AreaDef[] = [
   CHALK_ROAD_WAYSTATION,
   MILLHARROW_MILL,
   MILLHARROW_GRANARY,
+  MILLHARROW_INN,
   TALLOW_PUMP_HOUSE,
   SALTGLASS_GLASSHOUSE,
   SALTGLASS_CUSTOMS_HOUSE,
@@ -184,6 +186,7 @@ export {
   CHALK_ROAD_WAYSTATION,
   MILLHARROW_MILL,
   MILLHARROW_GRANARY,
+  MILLHARROW_INN,
   TALLOW_PUMP_HOUSE,
   SALTGLASS_GLASSHOUSE,
   SALTGLASS_CUSTOMS_HOUSE,

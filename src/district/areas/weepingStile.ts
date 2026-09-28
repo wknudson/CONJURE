@@ -1,9 +1,10 @@
 /**
  * Weeping Stile — the smallest, closest place in the world.
  *
- * A wet hollow that the wood took back. Twenty-four columns by twenty-six rows, one ruin, no
- * roads, and thicket standing in the middle of it rather than politely around the edge — so
- * unlike everywhere else in the Ring, you cannot see across it.
+ * A wet hollow that the wood took back. Thirty-six columns by forty rows now, grown evenly from
+ * twenty-four by twenty-six, one ruin in the hollow, no roads, and thicket standing in the middle
+ * of it rather than politely around the edge — so unlike everywhere else in the Ring, you cannot
+ * see across it.
  *
  * That is the whole reason it exists. After Bray's Hollow, which asks nothing, and Saltglass,
  * which is glare and open floor, the Ring needed one place that closes in. It is the only map
@@ -13,6 +14,16 @@
  *
  * The one roof is the chapel, and the roof is gone. What is left of it is where the sixty-one
  * are named, on a wall, in the same hand that wrote RELOCATED beside them on the roll.
+ *
+ * The growth did not open it up. It added more wood, and three things in it, each reached one way:
+ * north, over **the stile** -- the one gap in the thicket, with a willow gone to bone beside it --
+ * **the hermit's grave field**, where the hollow buried its own before the roll decided otherwise,
+ * and the roofless cell of the man who kept it; west, down a path that winds off the hollow and
+ * goes nowhere else, **the drowned well**; and east, where the lane leaves the hollow, **the
+ * lych-gate**. South, the wood itself, the only dry ground here, thicket standing in it.
+ *
+ * The Stile Mourners stand at the stile after dark, watching the hollow through it; another crew
+ * of them keeps the south wood.
  */
 
 import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
@@ -26,6 +37,8 @@ import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
  *   ,  chalk         — the lane east, and the only made ground here
  *   C  the chapel    — impassable; stone, and the roof off it
  *   T  thicket       — impassable, and both the boundary and the obstacles
+ *   D  the drowned well — impassable; full to the lip
+ *   L  the lych-gate's posts — impassable
  */
 const STILE_LEGEND: Record<string, TileDef> = {
   g: { tex: 'marsh', safe: false, walk: true },
@@ -46,43 +59,63 @@ const STILE_LEGEND: Record<string, TileDef> = {
     // walk under. Split, so a run of it breaks up instead of reading as one hedge.
     solid: { style: 'foliage', minHeight: 2.8, maxHeight: 4.2, inset: 0.5, depthInset: 0.5, chimneyChance: 0, split: true },
   },
+  D: { tex: 'water', safe: false, walk: false },
+  L: {
+    tex: 'chalk',
+    safe: false,
+    walk: false,
+    solid: { style: 'wall', minHeight: 3.2, maxHeight: 3.2, inset: 1.1, depthInset: 1.1, chimneyChance: 0, split: false, wall: 'stone' },
+  },
 };
 
-const OPEN = `T${'g'.repeat(22)}T`;
 
 /**
- * 24 wide by 26 deep.
+ * 36 wide by 40 deep.
  *
  * Column 23 opens at rows 13 and 14 — the lane east to Fenwick's Crossing, and the only way in
  * or out of the hollow.
  */
 const GRID: readonly string[] = [
-  'T'.repeat(24), //  0
-  'TggggggwwggggggwwggggggT', //  1
-  'TggwwgggggggwwgggggggggT', //  2
-  OPEN, //  3
-  'TgwwgggggwwggggggggggggT', //  4
-  'TgggCCCCgggggggggggggggT', //  5  THE CHAPEL, the roof off it
-  'TgggCCCCgggggggggggggggT', //  6
-  'TgggCCCCgggggggggggggggT', //  7
-  OPEN, //  8  the chapel door
-  `T${'g'.repeat(14)}TT${'g'.repeat(6)}T`, //  9  thicket standing in the open
-  OPEN, // 10
-  'TggwwggggwwggggggggggggT', // 11
-  OPEN, // 12
-  `T${'g'.repeat(22)},`, // 13  the lane east, to the Crossing
-  `T${'g'.repeat(22)},`, // 14
-  OPEN, // 15
-  'TggwwgggggggwwgggggggggT', // 16
-  OPEN, // 17
-  'TgwwgggggwwgggggwggggggT', // 18
-  'TgggTTgggggggggggTTggggT', // 19
-  'Tggg..gggggg..gggggggggT', // 20
-  OPEN, // 21
-  'TggwwggggwwggggggggggggT', // 22
-  OPEN, // 23
-  OPEN, // 24
-  'T'.repeat(24), // 25
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', //  0  the wood
+  'TTTTTTTgggCCCggggggggggggggggTTTTTTT', //  1  THE HERMIT'S GRAVE FIELD, closed round by the wood; the hermit's cell (west)
+  'TTTTTTTgggCCCgggggggwwgggggggTTTTTTT', //  2
+  'TTTTTTTggggggggggggggggggggggTTTTTTT', //  3
+  'TTTTTTTggwwggggggggggggggwwggTTTTTTT', //  4
+  'TTTTTTTggggggggggggggggggggggTTTTTTT', //  5
+  'TTTTTTTTTTTTTTgggggggggTTTTTTTTTTTTT', //  6  the ground before the stile
+  'TTTTTTTTTTTTTTTTTTgTTTTTTTTTTTTTTTTT', //  7  THE STILE, the one way through the old north thicket; the willow beside it
+  'TTTTTTTggggggwwggggggwwggggggTTTTTTT', //  8
+  'TTTTTTTggwwgggggggwwgggggggggTTTTTTT', //  9
+  'TTTTTTTggggggggggggggggggggggTTTTTTT', // 10
+  'TTTTTTTgwwgggggwwggggggggggggTTTTTTT', // 11
+  'TwwwwwwgggCCCCgggggggggggggggTTTTTTT', // 12  a path west off the hollow, winding to the drowned well
+  'TwTTTTTgggCCCCgggggggggggggggTTTTTTT', // 13
+  'TwTTTTTgggCCCCgggggggggggggggTTTTTTT', // 14
+  'TwTTTTTggggggggggggggggggggggTTTTTTT', // 15  the chapel door
+  'TwTTTTTggggggggggggggTTggggggTTTTTTT', // 16  thicket standing in the open
+  'TwwwTTTggggggggggggggggggggggTTTTTTT', // 17
+  'TTTwTTTggwwggggwwggggggggggggTTwwwwT', // 18
+  'TTTwTTTggggggggggggggggggggggLTwwwwT', // 19  THE LYCH-GATE, where the lane leaves the hollow
+  'TTTwTTTgggggggggggggggggggggg,,wwww,', // 20  the lane east, to the Crossing
+  'TTTwTTTgggggggggggggggggggggg,,wwww,', // 21
+  'TTTwTTTggggggggggggggggggggggLTwwwwT', // 22
+  'TTTwTTTggwwgggggggwwgggggggggTTwwwwT', // 23
+  'TDDwTTTggggggggggggggggggggggTTTTTTT', // 24  the drowned well
+  'TDDTTTTgwwgggggwwgggggwggggggTTTTTTT', // 25
+  'TTTTTTTgggTTgggggggggggTTggggTTTTTTT', // 26
+  'TTTTTTTggg..gggggg..gggggggggTTTTTTT', // 27
+  'TTTTTTTggggggggggggggggggggggTTTTTTT', // 28
+  'TTTTTTTggwwggggwwggggggggggggTTTTTTT', // 29
+  'TTTTTTTggggggggggggggggggggggTTTTTTT', // 30
+  'TTTTTTTggggggggggggggggggggggTTTTTTT', // 31
+  'TTTTTTTTTTTTTTgTTTTTTTTgTTTTTTTTTTTT', // 32
+  'TTTTTTTTwwwwwwwwwwwwTTTwwwwwTTTTTTTT', // 33  THE SOUTH WOOD, dry at last, thicket standing in it
+  'TTTTTTTTwwwTTTwwwwwwTTTwwwggTTTTTTTT', // 34
+  'TTTTTTTTwwwTTTwwwwwwwwwwTTggTTTTTTTT', // 35
+  'TTTTTTTTwwwwwwwwTTTwwwwwTTwwTTTTTTTT', // 36
+  'TTTTTTTTwwwwwwwwTTTwwwwwwwwwTTTTTTTT', // 37
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', // 38
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', // 39
 ];
 
 const HALF_X = (GRID[0]!.length * TILE) / 2;
@@ -106,15 +139,15 @@ export const WEEPING_STILE: AreaDef = defineArea({
       x: HALF_X - 2,
       z: 2,
       label: "East, down the lane to Fenwick's Crossing",
-      arrive: { x: -46, z: -2 },
+      arrive: { x: -82, z: -2 },
     },
     {
       // The chapel. The door is the only part of it that still shuts.
       to: 'weeping_stile_chapel',
-      x: xOfCol(5.5),
-      z: zOfRow(7) + TILE / 2 + 1.4,
+      x: xOfCol(11.5),
+      z: zOfRow(14) + TILE / 2 + 1.4,
       label: 'Into the chapel',
-      door: { x: xOfCol(5.5), z: zOfRow(7) + TILE / 2 + 0.05, facesSouth: true, sign: 'chapel', style: 'arch' },
+      door: { x: xOfCol(11.5), z: zOfRow(14) + TILE / 2 + 0.05, facesSouth: true, sign: 'chapel', style: 'arch' },
       arrive: { x: 0, z: 14 },
     },
   ],
@@ -128,6 +161,9 @@ export const WEEPING_STILE: AreaDef = defineArea({
       { kind: 'hare', x: 26, z: 2, roam: 6 },
       { kind: 'moth', x: -34, z: -42, roam: 6, count: 3 },
       { kind: 'moth', x: -30, z: 6, roam: 6, count: 3 },
+      // Moths in the grave field, a fox in the south wood.
+      { kind: 'moth', x: 10, z: -70, roam: 6, count: 3 },
+      { kind: 'fox', x: -30, z: 62, roam: 6 },
     ],
     /** A village that stopped answering. Everything here is something somebody left. */
     dressing: [
@@ -175,6 +211,30 @@ export const WEEPING_STILE: AreaDef = defineArea({
       { kind: 'deadfall', x: 14, z: -38 },
       { kind: 'deadfall', x: 30, z: -14 },
       { kind: 'deadfall', x: 30, z: 14 },
+
+      // The hermit's grave field, in rows; his own grave at its head.
+      { kind: 'gravestone', x: -14, z: -74 },
+      { kind: 'gravestone', x: -6, z: -74 },
+      { kind: 'gravestone', x: 2, z: -74 },
+      { kind: 'gravestone', x: 18, z: -74 },
+      { kind: 'gravestone', x: 26, z: -74 },
+      { kind: 'gravestone', x: -38, z: -66 },
+      { kind: 'gravestone', x: -6, z: -66 },
+      { kind: 'gravestone', x: 10, z: -66 },
+      { kind: 'gravestone', x: 26, z: -66 },
+      { kind: 'gravestone', x: 34, z: -66 },
+      { kind: 'cairn', x: -22, z: -66 },
+      { kind: 'urn', x: -22, z: -62 },
+      // The path to the well.
+      { kind: 'reeds', x: -58, z: 14 },
+      { kind: 'mushrooms', x: -58, z: -2 },
+      // The lych-gate: its roof is a sheet of canvas now; a cairn in the wood by it.
+      { kind: 'awning', x: 46, z: 4, yaw: Math.PI / 2 },
+      { kind: 'cairn', x: 54, z: -6 },
+      // The south wood.
+      { kind: 'deadfall', x: -30, z: 58 },
+      { kind: 'mushrooms', x: -18, z: 66 },
+      { kind: 'logpile', x: 6, z: 58 },
     ],
     /**
      * The only two people in a village of sixty-one.
@@ -205,5 +265,30 @@ export const WEEPING_STILE: AreaDef = defineArea({
       { x: 34, z: 30 },
     ],
     horizon: 'treeline',
+    /**
+     * The Stile Mourners, after dark: one stands at the stile on the grave field's side, looking
+     * back through it at the hollow; the rest keep the south wood.
+     */
+    packs: [
+      {
+        encounterId: 'pack_stile_mourners',
+        id: 'stile',
+        x: 2,
+        z: -58,
+        roam: 4,
+        hours: 'night',
+        band: 'stile',
+        behaviour: 'sentry',
+        // Facing south, through the stile, at the hollow.
+        sweep: [-0.7, 0.7],
+      },
+      { encounterId: 'pack_stile_mourners', id: 'south_wood', x: -10, z: 66, roam: 5, hours: 'night', band: 'wood' },
+    ],
+    /** The willow gone to bone beside the stile, its limbs over the way through. */
+    landmarks: [{ kind: 'great_tree', x: -6, z: -56 }],
+    vignettes: [
+      { id: 'wayside_shrine', x: 60, z: 12 },
+      { id: 'grave_plot', x: -14, z: -60 },
+    ],
   },
 });

@@ -10,10 +10,15 @@
  * the Tallow cuts, the Ring needed one map whose layout asks nothing of you at all — somewhere
  * the only thing to do is walk across it and see how far it is.
  *
- * Twenty-six by twenty-six now, and one roof: the barn on the north slope, which is not a town
- * either. It is where the herd is wintered, and where the warrant came for it -- the
- * `warrant_of_distraint` contract is fought over the straw inside, which used to be a label
- * on the grass.
+ * Forty by forty now, grown evenly from twenty-six square, and the bowl in the middle is as it
+ * was: one roof, the barn on the north slope, where the herd is wintered and where the warrant
+ * came for it -- the `warrant_of_distraint` contract is fought over the straw inside.
+ *
+ * What the growth added is still not a town. North, over the hedge, **the rim** and the stone
+ * circle on its crown. West, on the lane out, **Old Bray's farm**: the farmhouse, the dairy, the
+ * byre, the pond. East, **the orchard** and its hives. South, **the south rim**, ploughed, with a
+ * hedge between the strips -- and, after dark, a few strays who keep to the rim and nowhere else,
+ * which is as close as the Hollow comes to anything hunting it.
  */
 
 import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
@@ -27,9 +32,11 @@ import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
  *   .  weeds
  *   B  the barn     — impassable; timber, no stack
  *   T  hedge        — impassable
+ *   h  the farm     — impassable; Old Bray's farmhouse, dairy and byre
+ *   P  the pond     — impassable
  *
- * Six characters and one of them is the boundary. This is the simplest legend in the game and
- * it is meant to be.
+ * Eight characters now, and one of them is the boundary. Still the simplest legend in the Ring,
+ * and it is meant to be.
  */
 const HOLLOW_LEGEND: Record<string, TileDef> = {
   '#': { tex: 'grass', safe: false, walk: true },
@@ -48,11 +55,15 @@ const HOLLOW_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { style: 'foliage', minHeight: 3.0, maxHeight: 4.4, inset: 0.8, depthInset: 0.8, chimneyChance: 0, split: true },
   },
+  h: {
+    tex: 'weeds',
+    safe: false,
+    walk: false,
+    solid: { style: 'cottage', minHeight: 3.8, maxHeight: 4.4, inset: 0.3, depthInset: 0.3, chimneyChance: 0.7, split: true, wall: 'stone' },
+  },
+  P: { tex: 'water', safe: false, walk: false },
 };
 
-const BOWL = `T${'#'.repeat(24)}T`;
-const WEEDS = `T###..${'#'.repeat(14)}..###T`;
-const LANE_EDGE = `T${'#'.repeat(11)},,${'#'.repeat(11)}T`;
 
 /**
  * 26 wide by 26 deep.
@@ -62,32 +73,46 @@ const LANE_EDGE = `T${'#'.repeat(11)},,${'#'.repeat(11)}T`;
  * not quite a straight line.
  */
 const GRID: readonly string[] = [
-  'T'.repeat(26), //  0
-  `T${'f'.repeat(24)}T`, //  1  the ploughed rim
-  `Tff${'#'.repeat(20)}ffT`, //  2
-  `Tf${'#'.repeat(22)}fT`, //  3
-  BOWL, //  4
-  WEEDS, //  5
-  `T#####BBBB${'#'.repeat(15)}T`, //  6  THE BARN
-  `T#####BBBB${'#'.repeat(15)}T`, //  7
-  BOWL, //  8  the barn door
-  `T###TT${'#'.repeat(12)}TT#####T`, //  9  a stub of hedge, left standing
-  BOWL, // 10
-  LANE_EDGE, // 11
-  `${','.repeat(25)}T`, // 12  the lane, west to Millharrow
-  `${','.repeat(25)}T`, // 13
-  LANE_EDGE, // 14
-  BOWL, // 15
-  `T#####TT${'#'.repeat(10)}TT#####T`, // 16
-  BOWL, // 17
-  WEEDS, // 18
-  BOWL, // 19
-  BOWL, // 20
-  `Tf${'#'.repeat(22)}fT`, // 21
-  `Tff${'#'.repeat(20)}ffT`, // 22
-  `T${'f'.repeat(24)}T`, // 23
-  `T${'f'.repeat(24)}T`, // 24
-  'T'.repeat(26), // 25
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', //  0  the far hedge
+  'T#fffffffffff###############ffffffffff#T', //  1  THE NORTH RIM: strips either side, and the stone circle on the crown
+  'T#fffffffffff###############ffffffffff#T', //  2
+  'T######################################T', //  3
+  'T######################################T', //  4
+  'T######################################T', //  5
+  'T######################################T', //  6
+  'T######TTTTT##TTTTTTTTTTTT##TTTTT######T', //  7  the old north hedge, two gaps in it
+  'T######TffffffffffffffffffffffffT######T', //  8  the ploughed rim
+  'T######Tff####################ffT######T', //  9
+  'T......Tf######################fT######T', // 10  OLD BRAY'S FARM (west): the yard, the farmhouse, the dairy        THE ORCHARD (east)
+  'Thhhh..T########################T######T', // 11
+  'Thhhh..####..##############..##########T', // 12
+  'Thhhh..T#####BBBB###############T######T', // 13  THE BARN
+  'T......T#####BBBB###############T######T', // 14
+  'T....hhT########################T######T', // 15  the barn door
+  'T....hhT###TT############TT#####T######T', // 16  a stub of hedge, left standing
+  'T......T########################T######T', // 17
+  'T######T###########,,###########T######T', // 18
+  ',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,T######T', // 19  the lane, west to Millharrow, through the farm
+  ',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,T######T', // 20
+  'T######T###########,,###########T######T', // 21
+  'T######T########################T######T', // 22
+  'Thhh###T#####TT##########TT#####T######T', // 23  the byre
+  'Thhh###T########################T######T', // 24
+  'T######T###..##############..###T######T', // 25
+  'T#PPPP#################################T', // 26  the pond
+  'T#PPPP#T########################T######T', // 27
+  'T#PPPP#Tf######################fT######T', // 28
+  'T#PPPP#Tff####################ffT######T', // 29
+  'T######TffffffffffffffffffffffffT######T', // 30
+  'T######TffffffffffffffffffffffffT######T', // 31
+  'T######TTT##TTTTTTTTTTTTTTTT##TTT######T', // 32  the old south hedge, two gaps in it
+  'TffffffffffffffffffffffffffffffffffffffT', // 33  THE SOUTH RIM: ploughed strips, a hedge between them
+  'TffffffffffffffffffffffffffffffffffffffT', // 34
+  'TffffffffffffffffffffffffffffffffffffffT', // 35
+  'TTTTTTTTffTTTTTTTTTTTTTTTTTTTTffTTTTTTTT', // 36
+  'TffffffffffffffffffffffffffffffffffffffT', // 37
+  'TffffffffffffffffffffffffffffffffffffffT', // 38
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', // 39  the far hedge
 ];
 
 const HALF_X = (GRID[0]!.length * TILE) / 2;
@@ -111,15 +136,15 @@ export const BRAYS_HOLLOW: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: 0,
       label: 'West, back to Millharrow',
-      arrive: { x: 42, z: -2 },
+      arrive: { x: 98, z: -2 },
     },
     {
       // The barn. Where the herd is, and where the warrant came for it.
       to: 'brays_barn',
-      x: xOfCol(7.5),
-      z: zOfRow(7) + TILE / 2 + 1.4,
+      x: xOfCol(14.5),
+      z: zOfRow(14) + TILE / 2 + 1.4,
       label: 'Into the barn',
-      door: { x: xOfCol(7.5), z: zOfRow(7) + TILE / 2 + 0.05, facesSouth: true, style: 'plank' },
+      door: { x: xOfCol(14.5), z: zOfRow(14) + TILE / 2 + 0.05, facesSouth: true, style: 'plank' },
       arrive: { x: 0, z: 14 },
     },
   ],
@@ -135,6 +160,10 @@ export const BRAYS_HOLLOW: AreaDef = defineArea({
       { kind: 'hare', x: 2, z: -38, roam: 8 },
       { kind: 'hare', x: 30, z: 2, roam: 8 },
       { kind: 'fox', x: 10, z: -38, roam: 10 },
+      // Sheep on the north rim, a hare by the circle, a heron at the pond.
+      { kind: 'sheep', x: -40, z: -70, roam: 6, count: 3 },
+      { kind: 'hare', x: 40, z: -62, roam: 8 },
+      { kind: 'heron', x: -54, z: 30, roam: 4 },
     ],
     /** Livestock, and the licences that cost more than the herd. Fences, a well, and fodder. */
     dressing: [
@@ -181,6 +210,21 @@ export const BRAYS_HOLLOW: AreaDef = defineArea({
       { kind: 'bracken', x: 30, z: -22 },
       { kind: 'bracken', x: 22, z: 6 },
       { kind: 'bracken', x: 2, z: 22 },
+
+      // Old Bray's farm.
+      { kind: 'haybale', x: -58, z: -26 },
+      { kind: 'cart', x: -70, z: -10 },
+      { kind: 'well', x: -62, z: -14 },
+      { kind: 'trough', x: -58, z: 14 },
+      { kind: 'washing', x: -66, z: -38, yaw: 0 },
+      { kind: 'reeds', x: -54, z: 26 },
+      { kind: 'reeds', x: -74, z: 40 },
+      // The orchard's hives.
+      { kind: 'honeycomb', x: 60, z: -6 },
+      { kind: 'honeycomb', x: 60, z: 2 },
+      { kind: 'honeycomb', x: 60, z: 10 },
+      // Fodder on the south rim.
+      { kind: 'haybale', x: -30, z: 56 },
     ],
     /**
      * Three people out in the bowl, which is the right number for a place that is not a town.
@@ -208,7 +252,25 @@ export const BRAYS_HOLLOW: AreaDef = defineArea({
       { x: 14, z: 26 },
       { x: 30, z: -18 },
       { x: -30, z: 18 },
+      // The orchard, in its rows either side of the lane's end.
+      { x: 56, z: -40 },
+      { x: 64, z: -40 },
+      { x: 72, z: -40 },
+      { x: 56, z: -28 },
+      { x: 64, z: -28 },
+      { x: 72, z: -28 },
+      { x: 56, z: 28 },
+      { x: 64, z: 28 },
+      { x: 72, z: 28 },
+      { x: 56, z: 40 },
+      { x: 64, z: 40 },
+      { x: 72, z: 40 },
     ],
     horizon: 'treeline',
+    /** A few strays after dark, on the south rim and nowhere else. The Hollow's whole menace. */
+    packs: [{ encounterId: 'pack_verge_stray_dogs', id: 'rim', x: 0, z: 58, roam: 6, hours: 'night', band: 'rim' }],
+    /** The stone circle on the crown of the north rim, older than the hedges and the name. */
+    landmarks: [{ kind: 'stone_circle', x: 0, z: -64 }],
+    vignettes: [{ id: 'wayside_shrine', x: 20, z: -62 }],
   },
 });

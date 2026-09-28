@@ -817,6 +817,736 @@ export const SIGHTS: readonly SightDef[] = [
       'Better kept than the Sink. The horses are fed a ration the Magistracy calls generous. ' +
       "Lamprow's tithe clerk has been heard to use the same word.",
   },
+
+  /* ---- The Chalk Verge, since it grew ---- */
+  {
+    id: 'chalk_verge:the_chalk_horse',
+    areaId: 'chalk_verge',
+    at: { x: -4, z: -42 },
+    label: 'Look at the chalk horse',
+    caption:
+      'Cut through the turf to the chalk, long-backed and reaching, legs that do not meet the ' +
+      'body. Older than the ward and older than the writ. The Magistracy scours it every ' +
+      'spring, and has never said why.',
+  },
+  {
+    id: 'chalk_verge:the_sheepfold',
+    areaId: 'chalk_verge',
+    at: { x: -68, z: -41 },
+    label: 'Look into the fold',
+    caption:
+      'A drystone fold, knee high, with a gap to drive the sheep through. The sheep are the ' +
+      "shepherd's. The shepherd is not in the bothy, and has not been since the census.",
+  },
+  {
+    id: 'chalk_verge:the_dew_pond',
+    areaId: 'chalk_verge',
+    at: { x: -76, z: 18 },
+    label: 'Look at the dew pond',
+    caption:
+      'Clay-lined and round, filled by the mist and nothing else, which is why the drovers ' +
+      'trust it. Somebody has dropped a writ into it. It has not sunk.',
+  },
+  {
+    id: 'chalk_verge:the_lime_kiln',
+    areaId: 'chalk_verge',
+    at: { x: 74, z: -8.6 },
+    label: 'Look at the kiln',
+    caption:
+      'Chalk in at the top, lime out at the bottom, three days to burn. The lime goes to ' +
+      'Tannery Row for the pits and to the Magistracy for the graves. The kiln does not ask ' +
+      'which.',
+  },
+  {
+    id: 'chalk_verge:the_quarry_face',
+    areaId: 'chalk_verge',
+    at: { x: -10, z: 50 },
+    label: 'Look at the quarry face',
+    caption:
+      'The chalk is white where it was cut last week and grey where it was cut last year. Near ' +
+      'the top, in the white, somebody has cut a name, and under it a date that has not come ' +
+      'yet.',
+  },
+
+  /* ---- The Chalk Road, since it grew ---- */
+  {
+    id: 'chalk_road:the_toll_bar',
+    areaId: 'chalk_road',
+    at: { x: -22, z: -6 },
+    label: 'Look at the toll bar',
+    caption:
+      'Raised on its counterweight at the foot of the Millharrow lane, and rocking there for ' +
+      'carts that do not come. The rates on the board beside it have been painted over so often ' +
+      'they stand out in relief.',
+  },
+  {
+    id: 'chalk_road:the_wagon_train',
+    areaId: 'chalk_road',
+    at: { x: -96, z: -2 },
+    label: 'Look along the wagons',
+    caption:
+      'Five wagons drawn up on the verges nose to tail, harness still on the shafts and no sign ' +
+      'of the teams. The loads are picked over by night and put back by day, which tells you ' +
+      'who is doing each.',
+  },
+  {
+    id: 'chalk_road:the_stables',
+    areaId: 'chalk_road',
+    at: { x: 84, z: -14 },
+    label: 'Look into the stables',
+    caption:
+      "The waystation's stables, the stalls swept, a horse's name chalked over each. The horses " +
+      'are gone. The names are fresh.',
+  },
+  {
+    id: 'chalk_road:the_shrine',
+    areaId: 'chalk_road',
+    at: { x: 106, z: 14 },
+    label: 'Look at the shrine',
+    caption:
+      'A cairn with an urn in it, for whoever does not come back up the road. There are flowers ' +
+      'in the urn, and they are the kind that only grow in the Rimefields.',
+  },
+  {
+    id: 'chalk_road:the_far_milestone',
+    areaId: 'chalk_road',
+    at: { x: 80, z: -2.4 },
+    label: 'Look at the milestone',
+    caption:
+      'THE VERGE — I, and under it in a later hand, THE WARD — II. Somebody has scratched out ' +
+      'WARD and cut WRIT instead, which is the same distance and a different place.',
+  },
+  {
+    id: 'chalk_road:the_last_hedge',
+    areaId: 'chalk_road',
+    at: { x: -108, z: 14 },
+    label: 'Look past the last hedge',
+    caption:
+      'The last hedge before the Rime. Past it the furrows are frozen white; this side of it ' +
+      'somebody is still ploughing, and has left the plough in the furrow to go and look.',
+  },
+
+  /* ---- Millharrow ---- */
+  {
+    id: 'millharrow:the_windmill',
+    areaId: 'millharrow',
+    at: { x: 72, z: -74.6 },
+    label: 'Look up at the windmill',
+    caption:
+      'A post mill on its hill out in the strips, turned to the wind by the tail-pole. The ' +
+      'miller grinds what the Mill in the town will not, which is anything brought in after the ' +
+      'tollman has gone to bed.',
+  },
+  {
+    id: 'millharrow:the_water_wheel',
+    areaId: 'millharrow',
+    at: { x: -26, z: -17.4 },
+    label: 'Look at the wheel',
+    caption:
+      'The wheel at the head of the race, turning as long as the leat runs. Somebody has ' +
+      'painted the paddles in turn, red and white, so the children can count the turns. The ' +
+      'miller counts them too, for other reasons.',
+  },
+  {
+    id: 'millharrow:the_millpond',
+    areaId: 'millharrow',
+    at: { x: -70, z: -62 },
+    label: 'Look over the millpond',
+    caption:
+      'Dammed a lifetime ago to feed the race, and full of what fell in since: a cartwheel, a ' +
+      'millstone that cracked, a boat with its bottom out. The heron stands on the boat, which ' +
+      'is what the boat is for now.',
+  },
+  {
+    id: 'millharrow:the_leat_bridge',
+    areaId: 'millharrow',
+    at: { x: -58, z: -34 },
+    label: 'Look down at the leat',
+    caption:
+      'Planks over the leat, and the water under them running fast and brown to the race. A ' +
+      "notice on the rail, the Magistracy's: the water is the mill's, the mill is the Crown's. " +
+      "Under it, in chalk: THE RAIN IS NOBODY'S.",
+  },
+  {
+    id: 'millharrow:the_north_end',
+    areaId: 'millharrow',
+    at: { x: -10, z: -92.6 },
+    label: 'Look along the North End',
+    caption:
+      'Two rows of cottages at the head of the Levels road, doors open onto the yards. Every ' +
+      'door has a sprig of something green over it. It is either for luck or for the tithe-men, ' +
+      'and the North End will not say which.',
+  },
+  {
+    id: 'millharrow:the_granary_yard',
+    areaId: 'millharrow',
+    at: { x: -104, z: -34.6 },
+    label: 'Look at the granaries',
+    caption:
+      'Stone granaries on staddle stones, so the rats cannot climb in. The rats have been told. ' +
+      'A second set of marks on each door counts what went in; a third counts what the ' +
+      'Magistracy says went in.',
+  },
+  {
+    id: 'millharrow:the_tithe_barn',
+    areaId: 'millharrow',
+    at: { x: -98, z: 6 },
+    label: 'Look at the tithe barn',
+    caption:
+      'The tithe barn, a tenth of everything, and built big enough to hold a fifth. The doors ' +
+      'are chained. The chain is new. The barn is empty, and has been since before the chain.',
+  },
+  {
+    id: 'millharrow:the_orchard',
+    areaId: 'millharrow',
+    at: { x: -70, z: 76 },
+    label: 'Look down the rows',
+    caption:
+      'Old trees, pruned by somebody who knew how and has not been back. The fruit is the ' +
+      "Crown's by law. The wasps have not been told, and neither have the children.",
+  },
+  {
+    id: 'millharrow:the_cider_press',
+    areaId: 'millharrow',
+    at: { x: -30, z: 74 },
+    label: 'Look at the cider press',
+    caption:
+      'The press stands in its shed with the last pressing still in the bed, gone to vinegar. A ' +
+      'barrel beside it is marked FOR THE FAIR, and is the only barrel in Millharrow nobody has ' +
+      'touched.',
+  },
+  {
+    id: 'millharrow:the_fair_green',
+    areaId: 'millharrow',
+    at: { x: 70, z: 78 },
+    label: 'Look across the green',
+    caption:
+      'The green where the fair is held every quarter-day: the stalls standing empty between, ' +
+      'the grass worn in two rings where the dancing goes round. The writ does not mention ' +
+      'fairs. That is the point of a fair.',
+  },
+  {
+    id: 'millharrow:the_inn',
+    areaId: 'millharrow',
+    at: { x: 34, z: 74 },
+    label: 'Look up at the inn sign',
+    caption:
+      'The Crossroads Arms: four roads painted on the board, one of them repainted since. The ' +
+      'one repainted goes to the Chalk Road, and somebody has painted a toll bar across it, ' +
+      'very small.',
+  },
+  {
+    id: 'millharrow:the_chapel',
+    areaId: 'millharrow',
+    at: { x: 90, z: 30 },
+    label: 'Look at the chapel',
+    caption:
+      'The crossroads chapel, one bell and no bell-ringer. The door is never locked, because ' +
+      'the door is the only thing in the chapel worth taking and it is hung on.',
+  },
+  {
+    id: 'millharrow:the_forge',
+    areaId: 'millharrow',
+    at: { x: 104, z: -6 },
+    label: 'Look at the forge',
+    caption:
+      "The East End's smith shoes the drovers' horses and mends the tollman's chain, and " +
+      'charges both the same, which is the only fair price in Millharrow.',
+  },
+  {
+    id: 'millharrow:the_crossroads',
+    areaId: 'millharrow',
+    at: { x: -4, z: -2 },
+    label: 'Look round the crossroads',
+    caption:
+      'Four roads, four quarters, and in the middle a stone worn flat by everybody who stopped ' +
+      'here to decide. Somebody has cut an arrow into it pointing straight down.',
+  },
+
+  /* ---- The Tallow Levels ---- */
+  {
+    id: 'tallow_levels:the_beam_engine',
+    areaId: 'tallow_levels',
+    at: { x: 88, z: -10.6 },
+    label: 'Look up at the engine',
+    caption:
+      'The engine that was meant to win the argument: a beam as long as a cart rocking on the ' +
+      'wall-top, lifting the Levels out a bucket at a stroke. The water comes back in ' +
+      'overnight. The engine does not mind.',
+  },
+  {
+    id: 'tallow_levels:the_sluice_gates',
+    areaId: 'tallow_levels',
+    at: { x: -86, z: -6 },
+    label: 'Look at the sluice gates',
+    caption:
+      'Timber gates on iron screws, set in the drain so the Levels can be let out and the river ' +
+      'kept out. The screws have rusted where they were when the keeper stopped coming, which ' +
+      'is half open.',
+  },
+  {
+    id: 'tallow_levels:the_main_drain',
+    areaId: 'tallow_levels',
+    at: { x: -82, z: 30 },
+    label: 'Look along the drain',
+    caption:
+      'The main drain, straight as a rule and older than anything else on the Levels. On a high ' +
+      'tide it runs the wrong way, which the Levels have learned to call a tide.',
+  },
+  {
+    id: 'tallow_levels:the_sluice_keeper',
+    areaId: 'tallow_levels',
+    at: { x: -82, z: -30 },
+    label: "Look into the keeper's hut",
+    caption:
+      'A stove, a bench, and a ledger of every gate opened and closed. The last entry is a gate ' +
+      'closed. The gate beside the hut is open.',
+  },
+  {
+    id: 'tallow_levels:the_reed_beds',
+    areaId: 'tallow_levels',
+    at: { x: -70, z: -62 },
+    label: 'Look into the reeds',
+    caption:
+      'Grown up where the cuts silted, taller than a man and loud with birds. The thatchers cut ' +
+      'them in winter. Something else walks in them at night and cuts nothing.',
+  },
+  {
+    id: 'tallow_levels:the_dyke_top',
+    areaId: 'tallow_levels',
+    at: { x: 82, z: 24 },
+    label: 'Look along the dyke',
+    caption:
+      'The one dry path on the east of the Levels, grassed and walked flat. The Dyke Wardens ' +
+      'walk it by day and fine anybody else who does, for wearing it down.',
+  },
+  {
+    id: 'tallow_levels:the_new_drain',
+    areaId: 'tallow_levels',
+    at: { x: 74, z: -40 },
+    label: 'Look into the new drain',
+    caption:
+      'Cut last year for the engine to empty into, and already weeded to the brim. The spoil ' +
+      'from it made the dykes either side, which is the one part of the plan that worked.',
+  },
+  {
+    id: 'tallow_levels:the_sunk_chapel',
+    areaId: 'tallow_levels',
+    at: { x: -26, z: 72 },
+    label: 'Look at the chapel',
+    caption:
+      'Its west end has gone into the water to the sills, and the font with it. Christenings ' +
+      'are held at the east end now, on the altar step, which the priest says is nearer anyway.',
+  },
+  {
+    id: 'tallow_levels:the_half_sunk_cottage',
+    areaId: 'tallow_levels',
+    at: { x: -70, z: 62 },
+    label: 'Look at the cottage',
+    caption:
+      'Lived in upstairs, the ground floor given to the water. A ladder at the window, a boat ' +
+      'tied to the ladder, washing hung from the boat.',
+  },
+  {
+    id: 'tallow_levels:the_condemned_field',
+    areaId: 'tallow_levels',
+    at: { x: -26, z: -22 },
+    label: 'Look at the north field',
+    caption:
+      'NORTH FIELD — CONDEMNED, on the stone, and the field past it grey where the blight took ' +
+      'it. It did not spread like blight. It spread like something that knew where the cuts ' +
+      'ran.',
+  },
+
+  /* ---- Saltglass ---- */
+  {
+    id: 'saltglass:the_lighthouse',
+    areaId: 'saltglass',
+    at: { x: 76, z: -50.6 },
+    label: 'Look up at the lighthouse',
+    caption:
+      'Still lit, though the harbour is shut. The keeper was never told to stop, and the writ ' +
+      'that closed the harbour says nothing about the sea, which goes on having rocks in it.',
+  },
+  {
+    id: 'saltglass:the_salt_pans',
+    areaId: 'saltglass',
+    at: { x: -30, z: -50 },
+    label: 'Look over the pans',
+    caption:
+      'Pans in their ranks, flooded on the spring tide and left for the sun. The salt is raked ' +
+      'by hand and taxed by the Customs House, which is chained, so for now it is only raked.',
+  },
+  {
+    id: 'saltglass:the_salt_heap',
+    areaId: 'saltglass',
+    at: { x: -58, z: -62 },
+    label: 'Look at the salt heap',
+    caption:
+      'Raked salt heaped on the sea bank, with a sack of it stood on top sealed with the ' +
+      'Customs mark. The heap under the sack is not sealed. The heap is not going anywhere.',
+  },
+  {
+    id: 'saltglass:the_rakers_shed',
+    areaId: 'saltglass',
+    at: { x: 66, z: -37.4 },
+    label: "Look at the rakers' shed",
+    caption:
+      'Rakes on pegs, boots by the door, a slate of whose pan is whose. One pan has three names ' +
+      'against it, crossed out one under the other.',
+  },
+  {
+    id: 'saltglass:the_kilns',
+    areaId: 'saltglass',
+    at: { x: -74, z: -26 },
+    label: 'Look at the kilns',
+    caption:
+      'Fired on driftwood and salt-grass. What comes out is green and full of bubbles and the ' +
+      'Glasshouse will not buy it, so it goes to Highcourt, where it is sold as antique.',
+  },
+  {
+    id: 'saltglass:the_cullet_heap',
+    areaId: 'saltglass',
+    at: { x: -80, z: 30 },
+    label: 'Look at the cullet',
+    caption:
+      'Broken glass heaped to be melted again: bottle ends, a cracked pane, a lens. The ' +
+      'Glass-Pickers come for the lenses at night. Nobody knows what they want lenses for.',
+  },
+  {
+    id: 'saltglass:the_shipwreck',
+    areaId: 'saltglass',
+    at: { x: 0, z: 50 },
+    label: 'Look at the wreck',
+    caption:
+      'A ship on the salt, a mile from any water that could have put it there. The flats were ' +
+      'sea once. The ship is older than the flats, which is the part Saltglass does not talk ' +
+      'about.',
+  },
+  {
+    id: 'saltglass:the_figurehead',
+    areaId: 'saltglass',
+    at: { x: 28, z: 54 },
+    label: 'Look at the figurehead',
+    caption:
+      'A woman holding up a lamp, worn to a stump by the wind and the salt. The Glass-Pickers ' +
+      'leave her alone. They leave her a light.',
+  },
+  {
+    id: 'saltglass:the_stern',
+    areaId: 'saltglass',
+    at: { x: -54, z: 56 },
+    label: 'Look at the stern',
+    caption:
+      'Broken open, its ribs standing up out of the salt like a hand. Half a name on the ' +
+      'transom: ...IGHT OF THE KING. The rest of it is under the salt.',
+  },
+  {
+    id: 'saltglass:the_harbour_writ',
+    areaId: 'saltglass',
+    at: { x: -14, z: -22 },
+    label: 'Read the stone',
+    caption:
+      'HARBOUR CLOSED BY WRIT, and a sheet of paper nailed under it saying the same in smaller ' +
+      'letters. The paper is newer than the stone. The stone was cut to match it.',
+  },
+
+  /* ---- Bray's Hollow ---- */
+  {
+    id: 'brays_hollow:the_stone_circle',
+    areaId: 'brays_hollow',
+    at: { x: 0, z: -57 },
+    label: 'Look at the stone circle',
+    caption:
+      'Nine stones on the crown of the rim, older than the hedges and older than the name. The ' +
+      'Magistracy has never surveyed them, which is the only thing in the Ring it has never ' +
+      'surveyed.',
+  },
+  {
+    id: 'brays_hollow:the_fallen_stone',
+    areaId: 'brays_hollow',
+    at: { x: -8, z: -64 },
+    label: 'Look at the fallen stone',
+    caption:
+      'The one that fell, lying where it went down. There are coins pushed into the turf under ' +
+      'its edge, so far in the grass has grown over them. Nobody will say who puts them there, ' +
+      'because everybody does.',
+  },
+  {
+    id: 'brays_hollow:the_farmhouse',
+    areaId: 'brays_hollow',
+    at: { x: -58, z: -34 },
+    label: "Look at Old Bray's door",
+    caption:
+      'The farmhouse door stands open with a dog asleep across the step. The warrant for the ' +
+      'herd is nailed to the frame. The dog has chewed the bottom of it off.',
+  },
+  {
+    id: 'brays_hollow:the_dairy',
+    areaId: 'brays_hollow',
+    at: { x: -58, z: -10 },
+    label: 'Look into the dairy',
+    caption:
+      'Cool stone and a slate floor, cheeses on the shelves in rows, each marked with a date ' +
+      "and a cow's name. The cows are in the barn under a warrant. The cheeses are not " +
+      'mentioned in it.',
+  },
+  {
+    id: 'brays_hollow:the_byre',
+    areaId: 'brays_hollow',
+    at: { x: -62, z: 22 },
+    label: 'Look into the byre',
+    caption:
+      'The old byre, too small now for a herd that is not here. The mangers are full of hay ' +
+      'anyway. Somebody fills them every morning.',
+  },
+  {
+    id: 'brays_hollow:the_pond',
+    areaId: 'brays_hollow',
+    at: { x: -54, z: 36 },
+    label: 'Look at the pond',
+    caption:
+      'Green and still, a willow over it and a duck on it. A notice on a post says the water is ' +
+      'licensed. The duck has not seen it.',
+  },
+  {
+    id: 'brays_hollow:the_hives',
+    areaId: 'brays_hollow',
+    at: { x: 64, z: 2 },
+    label: 'Look at the hives',
+    caption:
+      "Straw hives on a bench at the orchard's edge, loud and warm. The honey is the one thing " +
+      'in the Hollow nobody has thought to tax. The bees would take it badly.',
+  },
+  {
+    id: 'brays_hollow:the_orchard_row',
+    areaId: 'brays_hollow',
+    at: { x: 64, z: -34 },
+    label: 'Look along the trees',
+    caption:
+      'Old trees in rows, their bark cut with initials a hundred years deep. The newest pair ' +
+      'are carved together inside a ring, and the ring has been carved again since, deeper.',
+  },
+  {
+    id: 'brays_hollow:the_south_rim',
+    areaId: 'brays_hollow',
+    at: { x: 0, z: 62 },
+    label: 'Look back across the Hollow',
+    caption:
+      'From the rim the whole bowl is in sight: the lane, the barn, the stubs of hedge, the ' +
+      'farm. The one place in the Ring where you can see everywhere you could go, and nowhere ' +
+      'you have to.',
+  },
+  {
+    id: 'brays_hollow:the_waystone',
+    areaId: 'brays_hollow',
+    at: { x: 14, z: -18 },
+    label: 'Read the waystone',
+    caption:
+      'BRAY — NO MARKET, NO INN. Under it somebody has scratched NO TOLL, and under that, in ' +
+      'another hand, a very small sheep.',
+  },
+
+  /* ---- Fenwick's Crossing ---- */
+  {
+    id: 'fenwicks_crossing:the_great_bridge',
+    areaId: 'fenwicks_crossing',
+    at: { x: 10, z: -46 },
+    label: 'Look over the bridge',
+    caption:
+      'Six carts wide and eleven arches long, older than Fenwick and older than the toll. The ' +
+      "downstream stones are worn smooth to a gunwale's height. The river used to be busier " +
+      'than the road.',
+  },
+  {
+    id: 'fenwicks_crossing:the_bridge_chapel',
+    areaId: 'fenwicks_crossing',
+    at: { x: -8, z: -37.4 },
+    label: 'Look at the bridge chapel',
+    caption:
+      'A chapel on the bridge for travellers to pray in before the crossing. There is a slot in ' +
+      'the door for offerings, and a newer slot beside it with TOLL cut over it. Both slots go ' +
+      'into the same box.',
+  },
+  {
+    id: 'fenwicks_crossing:the_watermill',
+    areaId: 'fenwicks_crossing',
+    at: { x: 38, z: -50 },
+    label: 'Look at the watermill',
+    caption:
+      "The far bank's mill, its wheel turning in a race cut off the river. It grinds for the " +
+      'far bank and not for the town, which has its own mill and its own opinions.',
+  },
+  {
+    id: 'fenwicks_crossing:the_north_ferry',
+    areaId: 'fenwicks_crossing',
+    at: { x: -82, z: -52 },
+    label: 'Look at the ferry landing',
+    caption:
+      "The far bank's landing, for when the bridge is shut. The bridge has never been shut. The " +
+      'ferryman is paid by the tollers to wait, which is the only job on the river that pays.',
+  },
+  {
+    id: 'fenwicks_crossing:the_south_ferry',
+    areaId: 'fenwicks_crossing',
+    at: { x: -86, z: -32 },
+    label: 'Look at the ferry bell',
+    caption:
+      'Nets on the racks, the ferry rope through its post, and a bell to ring for the boat. The ' +
+      'bell has no clapper. People ring it anyway, out of habit, and the ferryman comes, out of ' +
+      'habit.',
+  },
+  {
+    id: 'fenwicks_crossing:the_drovers_fold',
+    areaId: 'fenwicks_crossing',
+    at: { x: 80, z: -54 },
+    label: "Look at the drovers' fold",
+    caption:
+      'Hurdle pens where the drovers hold the herds overnight rather than pay the bridge by the ' +
+      'head. In the morning the herds cross at the ford upstream, and the tollers pretend not ' +
+      'to see.',
+  },
+  {
+    id: 'fenwicks_crossing:the_moorings',
+    areaId: 'fenwicks_crossing',
+    at: { x: 56, z: -52 },
+    label: 'Look at the moorings',
+    caption:
+      'Mooring posts along the far bank, their ropes rotted through. A ring on one post is ' +
+      'polished bright. Something ties up here at night that does not use a rope.',
+  },
+  {
+    id: 'fenwicks_crossing:the_burying_ground',
+    areaId: 'fenwicks_crossing',
+    at: { x: -14, z: 48 },
+    label: 'Look at the burying ground',
+    caption:
+      'The older stones along the river side, the newer going up the slope away from it. Nobody ' +
+      'wants to be buried near the water. The water keeps coming for them anyway.',
+  },
+  {
+    id: 'fenwicks_crossing:the_toll_board',
+    areaId: 'fenwicks_crossing',
+    at: { x: 28, z: -20 },
+    label: 'Read the toll board',
+    caption:
+      "FENWICK'S RATES, and under it in Magistracy paint, THE RATES: a cart, a horse, a head of " +
+      'cattle, a soul on foot. The last line has been rubbed out and written in again, several ' +
+      'times, at the same price.',
+  },
+  {
+    id: 'fenwicks_crossing:the_tollers_lodge',
+    areaId: 'fenwicks_crossing',
+    at: { x: 86, z: -16 },
+    label: "Look at the tollers' lodge",
+    caption:
+      'A bench outside worn to the shape of sitting, and the rates pinned to the door. So is a ' +
+      'list of names headed EXEMPT, and it is shorter than you would think.',
+  },
+  {
+    id: 'fenwicks_crossing:the_mill_race',
+    areaId: 'fenwicks_crossing',
+    at: { x: 26, z: -60 },
+    label: 'Look at the mill race',
+    caption:
+      "Cut off the river to turn the far bank's wheel, with a sluice at its head chained open. " +
+      'Somebody has hung a key on the chain, which is either a joke or a very long patience.',
+  },
+
+  /* ---- Weeping Stile ---- */
+  {
+    id: 'weeping_stile:the_stile',
+    areaId: 'weeping_stile',
+    at: { x: 2, z: -50 },
+    label: 'Look at the stile',
+    caption:
+      'Two steps up, a plank over, two steps down, through the thicket to the field beyond. The ' +
+      'steps are worn in the middle. The field is where the hollow buried its own, before the ' +
+      'roll decided where they went instead.',
+  },
+  {
+    id: 'weeping_stile:the_willow',
+    areaId: 'weeping_stile',
+    at: { x: -6, z: -60.6 },
+    label: 'Look up at the willow',
+    caption:
+      'A willow gone to bone, older than the chapel, its limbs over the stile. Sixty-one ' +
+      'ribbons are tied to the lowest branch, grey now. One of them is new.',
+  },
+  {
+    id: 'weeping_stile:the_hermits_cell',
+    areaId: 'weeping_stile',
+    at: { x: -26, z: -62 },
+    label: "Look into the hermit's cell",
+    caption:
+      'Four walls, no roof, a stone bench and a stone cup on it. The hermit kept the grave ' +
+      'field when there was nobody else to. The cup has rainwater in it and a leaf, and ' +
+      'somebody has left a crust beside it.',
+  },
+  {
+    id: 'weeping_stile:the_hermits_grave',
+    areaId: 'weeping_stile',
+    at: { x: -18, z: -66 },
+    label: "Look at the hermit's grave",
+    caption:
+      'At the head of the field he kept: a cairn, and an urn with nothing in it. Nobody knows ' +
+      'who buried him. The roll has him down as RELOCATED with the rest.',
+  },
+  {
+    id: 'weeping_stile:the_grave_field',
+    areaId: 'weeping_stile',
+    at: { x: 18, z: -70 },
+    label: 'Look along the graves',
+    caption:
+      'Stones in rows, the old names cut deep and the newer ones scratched. The newest row has ' +
+      'no names, only a mark, the same mark over and over, as if whoever cut them could not ' +
+      'bring themselves to write the word.',
+  },
+  {
+    id: 'weeping_stile:the_lych_gate',
+    areaId: 'weeping_stile',
+    at: { x: 40, z: -2 },
+    label: 'Look at the lych-gate',
+    caption:
+      'Where the coffins waited for the priest. The roof is a sheet of canvas now. Under it on ' +
+      'the bench somebody has left a pair of boots, laced, side by side, facing out.',
+  },
+  {
+    id: 'weeping_stile:the_drowned_well',
+    areaId: 'weeping_stile',
+    at: { x: -58, z: 18 },
+    label: 'Look into the well',
+    caption:
+      'Drowned to the lip at the end of the path. The rope still goes down into it and does not ' +
+      'come up. Pull on it and it pulls back, a little, and then lets go.',
+  },
+  {
+    id: 'weeping_stile:the_south_wood',
+    areaId: 'weeping_stile',
+    at: { x: -2, z: 62 },
+    label: 'Look into the wood',
+    caption:
+      'The only dry ground in the hollow is the wood, which is why nobody lived in it. It is ' +
+      'quiet here in a way the rest of the Stile is not. That is not the same as empty.',
+  },
+  {
+    id: 'weeping_stile:the_roll',
+    areaId: 'weeping_stile',
+    at: { x: -14, z: -38 },
+    label: 'Read the stone',
+    caption:
+      'RELOCATED — LABOUR — 61, cut clean by a Magistracy mason. Beside it, scratched in with a ' +
+      'nail: WE WERE NOT ASKED. Beside that, in another hand: WE WERE COUNTED.',
+  },
+  {
+    id: 'weeping_stile:the_lane_shrine',
+    areaId: 'weeping_stile',
+    at: { x: 64, z: 8 },
+    label: 'Look at the cairn',
+    caption:
+      'A cairn on the lane just past the gate, for whoever comes back. Sixty-one stones in it. ' +
+      'Somebody counts them every week, and every week there are sixty-one.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {

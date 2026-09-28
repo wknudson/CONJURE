@@ -435,6 +435,36 @@ export const FOLK_LINES: Record<string, DialogueLine[]> = {
       text: 'Keep out of the last lane after dark. Not for anything in it. For what you will look like, coming out, to whoever is waiting.',
     },
   ],
+  millharrow_innkeeper: [
+    {
+      who: 'INNKEEPER',
+      text: 'The Crossroads Arms. Four roads in and a bed for each of them, and the tollman drinks free because he counts the other three.',
+    },
+    {
+      who: 'INNKEEPER',
+      text: 'We hold the fair on the green every quarter-day, whatever the writ says. The writ says nothing about fairs. That is the point of a fair.',
+    },
+  ],
+  millharrow_drover: [
+    {
+      who: 'DROVER',
+      text: 'I bring the sheep down off the downs to the Bonemarket, and I bring the money back up to a man who does not own them. Somewhere in there I am meant to eat.',
+    },
+    {
+      who: 'DROVER',
+      text: 'Mind the fields after dark. There are men standing out there very still, and they are not scarecrows, whatever the miller tells you.',
+    },
+  ],
+  millharrow_fiddler: [
+    {
+      who: 'FIDDLER',
+      text: 'A tune is a copper. Silence is two. You would be surprised which one I earn more from.',
+    },
+    {
+      who: 'FIDDLER',
+      text: 'The Scarecrow Men come in off the fields at the end of the night and stand at the back to listen. They never pay. I never stop.',
+    },
+  ],
   ashfall_tanner: [
     {
       who: 'TANNER',

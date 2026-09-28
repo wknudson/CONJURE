@@ -122,7 +122,7 @@ export const STORM_SHELF: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: -6,
       label: "West, down off the shelf to Fenwick's Crossing",
-      arrive: { x: 46, z: -6 },
+      arrive: { x: 82, z: -6 },
     },
   ],
   props: {
