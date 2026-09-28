@@ -33,7 +33,7 @@ import {
   type HeroFacing,
 } from '../render/sprites.js';
 
-import { LOOK, buildLookGui } from './look.js';
+import { LOOK, PERF, buildLookGui } from './look.js';
 import type { CoachMarks } from '../hud/Tutorial.js';
 import { renderUnsupported } from '../app/unsupported.js';
 import { ColliderSet } from './collision.js';
@@ -161,6 +161,50 @@ const SHINY_TINT = 0xffe9a8;
  * decided to stop asking.
  */
 const WARDEN_ENCOUNTER = 'warden_writ';
+
+/**
+ * How far from whoever the camera follows a critter or an off-shift crew stops being updated.
+ *
+ * The walk camera frames about twenty units by fifteen, and the fog has closed well before
+ * forty-five. Past that a hare nobody can see does not need to decide where to wander next,
+ * and a crew that is not on the road does not need to stroll invisibly round its patch -- and
+ * on the grown maps there are a great many of both.
+ */
+const FREEZE_RANGE = 45;
+
+/**
+ * How far out the walk camera stands, as a share of `LOOK.cameraDistance`, by the player's choice.
+ *
+ * Module state, like `LOOK`, so it survives the screen being rebuilt on every door and crossing:
+ * somebody who has pulled the camera back to see a grown ward does not want it pushed in again
+ * each time they step out of a shop.
+ */
+let walkZoom = 1;
+/** The range the wheel moves it through. In to a little closer than authored; out to about half as much again. */
+const ZOOM_MIN = 0.85;
+const ZOOM_MAX = 1.6;
+/** A room's own framing is tight on purpose, and past this its walls stop hiding the void. */
+const ROOM_ZOOM_MAX = 1.25;
+/** One notch of the wheel, or one press of + or -. */
+const ZOOM_STEP = 1.1;
+
+const clampZoom = (z: number): number => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+
+/**
+ * Whether this one can skip its update this frame.
+ *
+ * Skipped, never slowed. An update with the time it missed added up would step a body further
+ * than `collision.ts`'s no-tunnelling bound allows, so a frozen thing simply resumes from where it
+ * stood. Only the two kinds that are pure scenery at a distance: an on-shift pack is on the map
+ * panel, moving, and a Warden walks a timetable the clock decides, so both always run.
+ */
+function farAndIdle(u: Updatable, at: THREE.Vector3): boolean {
+  if (u instanceof Critter) return Math.hypot(u.position.x - at.x, u.position.z - at.z) > FREEZE_RANGE;
+  if (u instanceof Pack && !u.onShift) {
+    return Math.hypot(u.position.x - at.x, u.position.z - at.z) > FREEZE_RANGE;
+  }
+  return false;
+}
 
 /**
  * Everything a fight needs that only the profile can answer.
@@ -498,6 +542,9 @@ export class DistrictScreen implements Screen {
 
   private onKeyDown = (_e: KeyboardEvent): void => {};
   private onKeyUp = (_e: KeyboardEvent): void => {};
+  private onWheel = (_e: WheelEvent): void => {};
+  /** The walk camera's zoom as drawn, easing toward `walkZoom`. See `updatePlayer`. */
+  private zoom = walkZoom;
   private onResize = (): void => {};
 
   constructor(opts: DistrictOpts) {
@@ -546,6 +593,9 @@ export class DistrictScreen implements Screen {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = LOOK.exposure;
+    // In development the frame's counts are read off `info` after the whole post chain has run,
+    // which means they must not reset between its passes. See `samplePerf`.
+    if (import.meta.env.DEV) renderer.info.autoReset = false;
     this.renderer = renderer;
 
     const colliders = new ColliderSet(this.area);
@@ -654,6 +704,7 @@ export class DistrictScreen implements Screen {
       (globalThis as Record<string, unknown>).WARD = {
         screen: this,
         LOOK,
+        PERF,
         player: () => this.player?.position,
         warden: () => this.warden,
         flags: () => this.flags,
@@ -685,6 +736,7 @@ export class DistrictScreen implements Screen {
     removeEventListener('keydown', this.onKeyDown);
     removeEventListener('keyup', this.onKeyUp);
     removeEventListener('resize', this.onResize);
+    this.canvas?.removeEventListener('wheel', this.onWheel);
 
     this.gui?.destroy();
     this.hud?.destroy();
@@ -1488,6 +1540,10 @@ export class DistrictScreen implements Screen {
         if (!this.hud?.menuIsOpen) this.openJournal();
         return;
       }
+      if (e.code === 'Equal' || e.code === 'NumpadAdd' || e.code === 'Minus' || e.code === 'NumpadSubtract') {
+        this.zoomBy(e.code === 'Equal' || e.code === 'NumpadAdd' ? 1 / ZOOM_STEP : ZOOM_STEP);
+        return;
+      }
       if (e.code === 'KeyM') {
         // Deliberately not gated on `inputLocked`: the map is the one thing worth being
         // able to look at while something else has the screen, and it takes no action.
@@ -1526,9 +1582,27 @@ export class DistrictScreen implements Screen {
       this.combat?.resize();
     };
 
+    // On the canvas rather than the window, so scrolling a panel in the HUD never moves the
+    // camera behind it.
+    this.onWheel = (e: WheelEvent): void => {
+      if (e.deltaY !== 0) this.zoomBy(e.deltaY > 0 ? ZOOM_STEP : 1 / ZOOM_STEP);
+    };
+
     addEventListener('keydown', this.onKeyDown);
     addEventListener('keyup', this.onKeyUp);
     addEventListener('resize', this.onResize);
+    this.canvas?.addEventListener('wheel', this.onWheel, { passive: true });
+  }
+
+  /**
+   * Pulls the walk camera back (factor above one) or in, within its range.
+   *
+   * Not during a fight -- the board owns the camera, and its framing is computed to fit the
+   * arena -- and not with a panel open over the street, where a wheel is scrolling the panel.
+   */
+  private zoomBy(factor: number): void {
+    if (this.combat || this.hud?.menuIsOpen || this.hud?.mapIsOpen || this.hud?.boardIsOpen) return;
+    walkZoom = clampZoom(walkZoom * factor);
   }
 
   private width(): number {
@@ -1589,7 +1663,10 @@ export class DistrictScreen implements Screen {
     // or the Warden walking through it -- would be the loudest possible reminder that the
     // board is pasted onto a world still going about its business.
     if (!this.combat) {
-      for (const u of this.updatables) u.update(dt, this.elapsed, this.cameraYaw);
+      for (const u of this.updatables) {
+        if (farAndIdle(u, anchor)) continue;
+        u.update(dt, this.elapsed, this.cameraYaw);
+      }
     } else {
       this.ring?.update(dt);
     }
@@ -1597,7 +1674,11 @@ export class DistrictScreen implements Screen {
     // The clock, and everything that reads it. See `hour` above for why this ticks on the
     // street rather than only on a crossing.
     this.tickClock(dt);
-    world.updateLamps(this.elapsed);
+    // The fog thins as the camera pulls back, by the same factor, so what stands between the lens
+    // and the player stays what the area was tuned for. Every frame, after the clock, because an
+    // hour moving re-applies the fog unscaled. A fight's descent owns the fog while it runs.
+    if (!this.combat) world.setFogScale(1 / this.zoom);
+    world.updateLamps(this.elapsed, anchor.x, anchor.z);
     world.updateImpactLights(dt);
     world.scrollWater(dt);
     world.updateRises(dt, Math.random);
@@ -1712,9 +1793,41 @@ export class DistrictScreen implements Screen {
       }
     }
 
+    if (import.meta.env.DEV) this.renderer!.info.reset();
     this.post!.composer.render();
+    if (import.meta.env.DEV) this.samplePerf(dt);
     this.raf = requestAnimationFrame(this.loop);
   };
+
+  /** Frames and seconds since `PERF` was last written. Development only. */
+  private perfFrames = 0;
+  private perfTime = 0;
+
+  /**
+   * Writes what this frame cost into `PERF`, twice a second, for the tuning panel's Perf folder.
+   *
+   * Counted over the whole post chain, because that is what the GPU is asked to do; the point
+   * lights are the ones actually burning, which is what the pool is meant to cap.
+   */
+  private samplePerf(dt: number): void {
+    this.perfFrames++;
+    this.perfTime += dt;
+    if (this.perfTime < 0.5) return;
+    const info = this.renderer!.info;
+    PERF.fps = Math.round(this.perfFrames / this.perfTime);
+    PERF.drawCalls = info.render.calls;
+    PERF.triangles = info.render.triangles;
+    PERF.geometries = info.memory.geometries;
+    PERF.textures = info.memory.textures;
+    PERF.updatables = this.updatables.length;
+    let lights = 0;
+    this.world?.scene.traverse((o) => {
+      if ((o as THREE.PointLight).isPointLight && (o as THREE.PointLight).intensity > 0) lights++;
+    });
+    PERF.pointLights = lights;
+    this.perfFrames = 0;
+    this.perfTime = 0;
+  }
 
   /**
    * Moves the hour, and the world with it.
@@ -1804,6 +1917,10 @@ export class DistrictScreen implements Screen {
     // Orbit stays live even mid-conversation: it cannot change any state, and locking it
     // makes the world feel frozen rather than the player feel busy. It stays live during a
     // fight for the same reason and one more -- see `updateCamera`.
+    // Eased toward what was asked for, so a notch of the wheel is a short dolly rather than a cut.
+    const wantZoom = this.area.indoor ? Math.min(walkZoom, ROOM_ZOOM_MAX) : walkZoom;
+    this.zoom += (wantZoom - this.zoom) * Math.min(1, dt * 8);
+
     const held = this.keys.has('KeyQ') || this.keys.has('KeyE');
     if (this.keys.has('KeyQ')) this.cameraYaw -= ORBIT_SPEED * dt;
     if (this.keys.has('KeyE')) this.cameraYaw += ORBIT_SPEED * dt;
@@ -1937,7 +2054,7 @@ export class DistrictScreen implements Screen {
     // A room frames itself closer and steeper than the street -- see `IndoorSpec.camera`.
     // The street's numbers are the game's, in `LOOK`; a room's are its own.
     const room = this.area.indoor?.camera;
-    const distance = room?.distance ?? LOOK.cameraDistance;
+    const distance = (room?.distance ?? LOOK.cameraDistance) * this.zoom;
     const pitch = THREE.MathUtils.degToRad(room?.pitch ?? LOOK.cameraPitch);
     const horizontal = Math.cos(pitch) * distance;
     const height = Math.sin(pitch) * distance;
@@ -2263,6 +2380,8 @@ export class DistrictScreen implements Screen {
     player.position.set(stand.x, 0, stand.z);
     this.follower?.snapTo(stand.x - 1.6, stand.z + 0.8);
 
+    // The board is framed against the area's own fog, not the walk camera's zoomed share of it.
+    world.setFogScale(1);
     const framing = frameBoard(
       combat.board,
       this.width() / Math.max(1, this.height()),

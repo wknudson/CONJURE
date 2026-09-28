@@ -169,7 +169,7 @@ export class DistrictHud {
     const help = el('div', 'district-panel district-help');
     this.help = help;
     help.textContent =
-      'WASD / arrows - move\nQ / E - orbit camera\nSpace - interact / advance\nM - map\nI - satchel\nJ - field journal\nEsc - menu / leave';
+      'WASD / arrows - move\nQ / E - orbit camera\nWheel or + / - - zoom\nSpace - interact / advance\nM - map\nI - satchel\nJ - field journal\nEsc - menu / leave';
     root.appendChild(help);
 
     this.setZone(true);

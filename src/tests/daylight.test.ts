@@ -32,7 +32,7 @@ import {
   wardenGraceAt,
   wardenSightAt,
 } from '../district/daylight.js';
-import { AMBIENT } from '../district/look.js';
+import { AMBIENT, LOOK } from '../district/look.js';
 import { AREAS, areaById } from '../district/areas/index.js';
 
 // The places that have a day. A room is lit at the anchor whatever the clock says -- see
@@ -268,6 +268,18 @@ describe('day, and the six places the general answer is wrong about', () => {
     // once shipped wearing a ward's lighting. The clock doubles what a missing entry costs.
     for (const area of AREAS) {
       expect(AMBIENT[area.id], `${area.id} has no ambience of its own`).toBeDefined();
+    }
+  });
+
+  it('keeps the noon fog off the player', () => {
+    // How much of the fog's own colour is laid over whoever the camera is following, at the walk
+    // camera's distance: three.js's `FogExp2` is 1 - exp(-(density * distance)^2). At nine tenths
+    // of the night's density that was a third over the player in Ashfall and more everywhere past
+    // them -- noon read as a beige sheet with somebody standing in it. A sixth is the ceiling: the
+    // air is still there past the frame, and the street in it has its contrast.
+    for (const id of areas) {
+      const d = ambientAt(AMBIENT[id]!, 12).fogDensity * LOOK.cameraDistance;
+      expect(1 - Math.exp(-d * d), `${id} at noon`).toBeLessThan(1 / 6);
     }
   });
 });

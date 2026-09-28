@@ -366,6 +366,15 @@ describe('every area', () => {
           if (back) {
             const d = Math.hypot(back.x - exit.arrive.x, back.z - exit.arrive.z);
             expect(d, 'arrival from ' + area.id + ' sits on the way back').toBeGreaterThan(2.6);
+            // ...and not far from it either. An `arrive` is a literal typed into the *other*
+            // area's file, so when its destination grows and the edge exit moves out with the
+            // new edge, the arrival stays where it was -- still walkable, still clear of the
+            // way back, and now half a map from where you came in. Six tiles is the widest
+            // an authored arrival sits today (the Ring's roads come in a few strides past
+            // the old treeline). It is a net rather than a proof -- a stale arrival that was
+            // already close can drift and stay inside it -- which is why `grow-area` rewrites
+            // arrivals itself instead of leaving them to be caught here.
+            expect(d, 'arrival from ' + area.id + ' is nowhere near the way back').toBeLessThanOrEqual(6 * TILE);
           }
         }
       });
@@ -388,34 +397,34 @@ describe('every area', () => {
         // this walk cannot have is the pictures, so it walks against square furniture.
         for (const f of staticFootprints(area)) set.add(f.x, f.z, f.w, f.d, f.tag);
 
-        for (const exit of area.exits) {
-          // A coarse flood from the spawn: if the hotspot is reachable at all, some route
-          // of one-unit steps finds it.
-          const key = (x: number, z: number): string => `${Math.round(x)},${Math.round(z)}`;
-          const seen = new Set<string>([key(area.spawn.x, area.spawn.z)]);
-          const queue = [{ x: area.spawn.x, z: area.spawn.z }];
-          let found = false;
-          while (queue.length > 0 && !found) {
-            const at = queue.shift()!;
-            if (Math.hypot(at.x - exit.x, at.z - exit.z) < 2.6) {
-              found = true;
-              break;
-            }
-            for (const [dx, dz] of [
-              [1, 0],
-              [-1, 0],
-              [0, 1],
-              [0, -1],
-            ] as const) {
-              const nx = at.x + dx;
-              const nz = at.z + dz;
-              const k = key(nx, nz);
-              if (seen.has(k)) continue;
-              seen.add(k);
-              if (set.blocked(nx, nz, 0.4)) continue;
-              queue.push({ x: nx, z: nz });
-            }
+        // A coarse flood from the spawn: if a hotspot is reachable at all, some route of
+        // one-unit steps finds it. Flooded once and asked once per exit, rather than flooded
+        // afresh per exit: the answer is the same set, and on grown maps the per-exit version
+        // was the slowest thing in the file. The queue is walked by index because `shift` on
+        // a queue this long copies the whole of it every step.
+        const key = (x: number, z: number): string => `${Math.round(x)},${Math.round(z)}`;
+        const seen = new Set<string>([key(area.spawn.x, area.spawn.z)]);
+        const reached = [{ x: area.spawn.x, z: area.spawn.z }];
+        for (let head = 0; head < reached.length; head++) {
+          const at = reached[head]!;
+          for (const [dx, dz] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ] as const) {
+            const nx = at.x + dx;
+            const nz = at.z + dz;
+            const k = key(nx, nz);
+            if (seen.has(k)) continue;
+            seen.add(k);
+            if (set.blocked(nx, nz, 0.4)) continue;
+            reached.push({ x: nx, z: nz });
           }
+        }
+
+        for (const exit of area.exits) {
+          const found = reached.some((at) => Math.hypot(at.x - exit.x, at.z - exit.z) < 2.6);
           expect(found, `${area.id}: cannot walk from the spawn to the ${exit.to} exit`).toBe(true);
         }
       });
@@ -865,5 +874,30 @@ describe('collision', () => {
     expect(set.blocked(SPAWN.x, SPAWN.z)).toBe(true);
     box.enabled = false;
     expect(set.blocked(SPAWN.x, SPAWN.z)).toBe(false);
+  });
+
+  it('answers from its index exactly as a scan of every box would', () => {
+    // The index is a lookup over `boxes`, not a second opinion. Probed on every area's real
+    // furniture at a lattice finer than a tile and offset from it, so probes fall on bucket
+    // edges, box edges and between -- at every radius a caller actually passes.
+    const scan = (set: ColliderSet, x: number, z: number, r: number): boolean =>
+      set.boxes.some((c) => c.enabled && x > c.minX - r && x < c.maxX + r && z > c.minZ - r && z < c.maxZ + r);
+    for (const area of AREAS) {
+      const set = new ColliderSet(area);
+      for (const f of staticFootprints(area)) set.add(f.x, f.z, f.w, f.d, f.tag);
+      // One disabled box, so the index is seen to read `enabled` off the box itself.
+      if (set.boxes[0]) set.boxes[0].enabled = false;
+      const bare = new ColliderSet(area);
+      let disagreements = 0;
+      for (let x = -area.halfX; x <= area.halfX; x += 0.7) {
+        for (let z = -area.halfZ; z <= area.halfZ; z += 0.7) {
+          for (const r of [0.3, 0.4, 0.6]) {
+            const want = bare.blocked(x, z, r) || scan(set, x, z, r);
+            if (set.blocked(x, z, r) !== want) disagreements++;
+          }
+        }
+      }
+      expect(disagreements, area.id).toBe(0);
+    }
   });
 });

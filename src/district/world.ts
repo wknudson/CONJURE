@@ -15,6 +15,7 @@ import { SKIES, SkyField, skyStrengthAt, type SkyId } from './skies.js';
 import { hashText } from '../core/util/rng.js';
 import { gateOpen, NOTHING_HAPPENED, type Chronicle } from './chronicle.js';
 import { ambientAt, lampsAt, lightingHour, NIGHT_ANCHOR, type Lit } from './daylight.js';
+import { poolShares } from './lightPool.js';
 import type { ColliderSet } from './collision.js';
 import { DRESSING } from './dressing.js';
 import { allDressing, staticFootprints } from './footprints.js';
@@ -70,10 +71,45 @@ interface Lamp {
    * picture drawn by the wrong cause -- nothing dims a gas lamp.
    */
   lit: number;
-  light: THREE.PointLight;
+  /** Where it stands. The light it casts is borrowed from the pool -- see `Fire`. */
+  x: number;
+  z: number;
   head: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   phase: number;
 }
+
+/**
+ * Anything burning that lights the ground around it: a gas lamp, a brazier, an ember vent.
+ *
+ * None of them owns a light. They are ranked each frame by distance from whoever the camera
+ * follows, and the nearest borrow one of the area's fixed pool -- see `lightPool.ts` for why,
+ * and for how they hand one over without it flashing.
+ */
+interface Fire {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly kind: 'lamp' | 'brazier' | 'vent';
+  /** The lamp this is, for its flicker and whether it is lit. Absent for the other two. */
+  readonly lamp?: Lamp;
+}
+
+/**
+ * How many real point lights an area gets, whatever it burns.
+ *
+ * Ten: the nearest ten fires cover everything the walk camera frames with margin to spare --
+ * it sees about five tiles by four -- and ten is well inside what every GPU's forward shader
+ * takes. Fewer fires than this and the area simply gets one light each.
+ */
+export const LIGHT_POOL = 10;
+
+/** How far inside the pool's cut a fire burns at full strength. See `poolShares`. */
+const POOL_BAND = 6;
+
+/** A brazier's light: the gas lamps' warmth, redder, because it is wood and not gas. */
+const BRAZIER_LIGHT = new THREE.Color('#e08040');
+/** An ember vent's: low and red, a crack that breathes. */
+const VENT_LIGHT = new THREE.Color('#ff5a20');
 
 /** One expanding ring on the canal. See `updateRises`. */
 interface Rise {
@@ -115,6 +151,21 @@ export class DistrictWorld {
   private readonly structures: Structure[] = [];
   private readonly hitboxes: THREE.Mesh[] = [];
   private readonly lamps: Lamp[] = [];
+  /** Every lamp, brazier and vent, in the order they were built. See `Fire`. */
+  private readonly fires: Fire[] = [];
+  /** The real lights, handed to the nearest fires each frame. Fixed for the life of the area. */
+  private readonly pool: THREE.PointLight[] = [];
+  /** Each fire's share of a pool light this frame. Sized once the fires are all known. */
+  private shares = new Float32Array(0);
+  /**
+   * Everything standing loose on the ground that is not a building: trees, plants, fences,
+   * decals, crates, lamp posts, the board. See `setArena` -- these are hidden, not faded, when a
+   * fight is laid over them, because the arena search looks for ground free of *walls* and
+   * leaves the furniture where it stands.
+   */
+  private readonly loose: { obj: THREE.Object3D; x: number; z: number; r: number }[] = [];
+  /** What `setArena` hid, so clearing it shows exactly those and nothing that was already out. */
+  private readonly hiddenForArena: THREE.Object3D[] = [];
   /** One picture per kind of furniture, for the life of this world. See the build loop. */
   private readonly dressTex = new Map<string, THREE.Texture>();
   /**
@@ -391,7 +442,11 @@ export class DistrictWorld {
       // Trees are not `dressing` -- `props.trees` predates the registry -- so the sway that the
       // plants get from `SWAYS` is applied here directly. A quarter of a plant's amplitude:
       // a tree is a trunk with a canopy on it, and bracken-sized movement makes it rubber.
-      for (const t of trees) this.addBillboard(treeTexture, 3, 4, t.x, t.z).setSway(0.05);
+      for (const t of trees) {
+        const tree = this.addBillboard(treeTexture, 3, 4, t.x, t.z);
+        tree.setSway(0.05);
+        this.loose.push({ obj: tree, x: t.x, z: t.z, r: 1.5 });
+      }
     }
 
     const crates = area.props.crates ?? [];
@@ -511,6 +566,7 @@ export class DistrictWorld {
       this.scene.add(boardPost);
       const board = this.addBillboard(makeBoardTexture(), 2.4, 2.0, boardAt.x, boardAt.z);
       board.position.y = 1.4;
+      this.loose.push({ obj: boardPost, x: boardAt.x, z: boardAt.z, r: 1.2 }, { obj: board, x: boardAt.x, z: boardAt.z, r: 1.2 });
     }
 
     /* --- the gates ---
@@ -556,6 +612,17 @@ export class DistrictWorld {
     this.scene.add(this.sun.target);
 
     for (const l of area.props.lamps ?? []) this.addLamp(l.x, l.z);
+
+    // The pool, now every fire is known. Built dark; the first `updateLamps` hands it out.
+    // Added before `warmupShaders` runs, so the shaders are compiled for this many lights once
+    // and never again for the life of the area.
+    for (let i = 0; i < Math.min(LIGHT_POOL, this.fires.length); i++) {
+      // No shadow map on these. One shadow-casting light is the budget, and the sun has it.
+      const light = new THREE.PointLight(new THREE.Color(LOOK.lampColor), 0, LOOK.lampDistance, 2);
+      this.scene.add(light);
+      this.pool.push(light);
+    }
+    this.shares = new Float32Array(this.fires.length);
 
     /* --- what the furniture stops ---
        One pass over `staticFootprints` -- the same list the reachability test floods through
@@ -615,6 +682,7 @@ export class DistrictWorld {
       // Scaled by the prop's own height, so a tall reed leans further than a mushroom does
       // while both bend by the same angle. A flat amplitude makes the small things wobble.
       if (SWAYS.has(spec.kind)) b.setSway(0.035 * size);
+      this.loose.push({ obj: b, x: spec.x, z: spec.z, r: (size * aspect) / 2 });
     } else if (kind.form === 'panel') {
       // Deliberately not a `BillboardSprite`, and deliberately not pushed into `billboards`:
       // holding the yaw it was given is the entire reason this form exists.
@@ -641,6 +709,7 @@ export class DistrictWorld {
       // awning swing through most of a metre.
       if (SWAYS.has(spec.kind)) applySway(panel.material, 0.03 * size, size);
       this.scene.add(panel);
+      this.loose.push({ obj: panel, x: spec.x, z: spec.z, r: (size * aspect) / 2 });
     } else if (kind.form === 'ground') {
       // Lambert, not Basic: the ground plane it lies on is Lambert, and an unlit decal would
       // glow on a dark street instead of taking the ward's light with everything else.
@@ -659,6 +728,7 @@ export class DistrictWorld {
       decal.position.set(spec.x, 0.03, spec.z);
       decal.renderOrder = 1;
       this.scene.add(decal);
+      this.loose.push({ obj: decal, x: spec.x, z: spec.z, r: size / 2 });
     } else {
       const box = new THREE.Mesh(
         new THREE.BoxGeometry(size * aspect, size, size),
@@ -683,17 +753,13 @@ export class DistrictWorld {
       this.structures.push({ hit: box, mats: [box.material] });
     }
 
-    // A brazier is a fire, so it lights what is around it. Same warm point light the gas lamps
-    // carry, at a shorter reach and with no pole: a fire in a basket is not a street lamp.
+    // A brazier is a fire, so it lights what is around it. Same warm light the gas lamps cast,
+    // at a shorter reach and with no pole: a fire in a basket is not a street lamp. An ember vent
+    // is lit from the floor, low and red: a crack that breathes. Both borrow from the pool.
     if (spec.kind === 'brazier') {
-      const light = new THREE.PointLight(new THREE.Color('#e08040'), LOOK.lampIntensity * 0.8, LOOK.lampDistance * 0.6, 2);
-      light.position.set(spec.x, size * 0.9, spec.z);
-      this.scene.add(light);
+      this.fires.push({ x: spec.x, y: size * 0.9, z: spec.z, kind: 'brazier' });
     } else if (spec.kind === 'embervent') {
-      // Lit from the floor, low and red: a crack that breathes, not a fire in a basket.
-      const light = new THREE.PointLight(new THREE.Color('#ff5a20'), LOOK.lampIntensity * 0.5, LOOK.lampDistance * 0.4, 2);
-      light.position.set(spec.x, 0.4, spec.z);
-      this.scene.add(light);
+      this.fires.push({ x: spec.x, y: 0.4, z: spec.z, kind: 'vent' });
     }
 
     // Whether it stops anybody is `kind.collides`, and the box it stops them with is built by
@@ -709,6 +775,7 @@ export class DistrictWorld {
     crate.castShadow = true;
     crate.receiveShadow = true;
     this.scene.add(crate);
+    this.loose.push({ obj: crate, x, z, r: s / 2 });
   }
 
   private addStructure(
@@ -808,23 +875,20 @@ export class DistrictWorld {
     );
     head.position.set(x, 3.6, z);
     this.scene.add(head);
+    // The post and its head go if a fight is laid over them; the light it casts is the pool's,
+    // and a fire in the arena keeps lighting it -- which is the right picture for a street lamp
+    // whose post is simply out of the shot.
+    this.loose.push({ obj: pole, x, z, r: 0.3 }, { obj: head, x, z, r: 0.3 });
 
-    // No shadow map on these. One shadow-casting light is the budget, and the sun has it.
-    const light = new THREE.PointLight(
-      new THREE.Color(LOOK.lampColor),
-      LOOK.lampIntensity,
-      LOOK.lampDistance,
-      2,
-    );
-    light.position.set(x, 3.6, z);
-    this.scene.add(light);
-
-    this.lamps.push({
-      light,
+    const lamp: Lamp = {
+      x,
+      z,
       head,
       phase: this.lamps.length * 1.7,
       lit: lampsAt(lightingHour(this.indoor, this.hour)),
-    });
+    };
+    this.lamps.push(lamp);
+    this.fires.push({ x, y: 3.6, z, kind: 'lamp', lamp });
   }
 
   /* ============================================================
@@ -848,7 +912,7 @@ export class DistrictWorld {
   /** Where a lamp stands, for whoever is walking the row. */
   lampPosition(i: number): { x: number; z: number } | null {
     const l = this.lamps[i];
-    return l ? { x: l.light.position.x, z: l.light.position.z } : null;
+    return l ? { x: l.x, z: l.z } : null;
   }
 
   get lampCount(): number {
@@ -867,15 +931,42 @@ export class DistrictWorld {
     if (l) l.lit = k;
   }
 
-  updateLamps(t: number): void {
-    for (const l of this.lamps) {
-      // Two summed sines read as a gas flame and allocate nothing.
-      const n =
-        0.5 +
-        0.5 * (Math.sin(t * 6.3 + l.phase) * 0.6 + Math.sin(t * 11.7 + l.phase * 2.1) * 0.4);
-      l.light.intensity =
-        LOOK.lampIntensity * (1 - LOOK.lampFlicker + LOOK.lampFlicker * n * 2) * l.lit;
+  /**
+   * Hands the pool to the fires nearest `(fx, fz)` -- whoever the camera is following -- and
+   * burns each at its own strength times its share. See `poolShares` for why a fire leaving the
+   * pool never flashes.
+   */
+  updateLamps(t: number, fx = 0, fz = 0): void {
+    poolShares(this.fires, fx, fz, this.pool.length, POOL_BAND, this.shares);
+    let slot = 0;
+    for (let i = 0; i < this.fires.length && slot < this.pool.length; i++) {
+      const share = this.shares[i]!;
+      if (share <= 0) continue;
+      const fire = this.fires[i]!;
+      const light = this.pool[slot++]!;
+      light.position.set(fire.x, fire.y, fire.z);
+      if (fire.lamp) {
+        const l = fire.lamp;
+        // Two summed sines read as a gas flame and allocate nothing.
+        const n =
+          0.5 +
+          0.5 * (Math.sin(t * 6.3 + l.phase) * 0.6 + Math.sin(t * 11.7 + l.phase * 2.1) * 0.4);
+        light.color.set(LOOK.lampColor);
+        light.distance = LOOK.lampDistance;
+        light.intensity = LOOK.lampIntensity * (1 - LOOK.lampFlicker + LOOK.lampFlicker * n * 2) * l.lit * share;
+      } else if (fire.kind === 'brazier') {
+        light.color.copy(BRAZIER_LIGHT);
+        light.distance = LOOK.lampDistance * 0.6;
+        light.intensity = LOOK.lampIntensity * 0.8 * share;
+      } else {
+        light.color.copy(VENT_LIGHT);
+        light.distance = LOOK.lampDistance * 0.4;
+        light.intensity = LOOK.lampIntensity * 0.5 * share;
+      }
     }
+    // Whatever the pool has left over this frame stands dark rather than being removed: taking
+    // a light out of the scene is what recompiles it.
+    for (; slot < this.pool.length; slot++) this.pool[slot]!.intensity = 0;
   }
 
   /** Keeps the key light's shadow frustum centred on whoever the camera is following. */
@@ -1035,6 +1126,19 @@ export class DistrictWorld {
 
   setArena(rect: { x0: number; z0: number; x1: number; z1: number } | null): void {
     this.arena = rect;
+    // Buildings and box props fade through `updateOccluders`. Everything else loose on the ground
+    // inside the footprint is simply taken away while the board is up: a tree or a fence standing
+    // in the middle of the grid is the same complaint as a wall, and nothing fades a billboard.
+    for (const o of this.hiddenForArena) o.visible = true;
+    this.hiddenForArena.length = 0;
+    if (!rect) return;
+    for (const l of this.loose) {
+      if (!l.obj.visible) continue;
+      if (l.x + l.r > rect.x0 && l.x - l.r < rect.x1 && l.z + l.r > rect.z0 && l.z - l.r < rect.z1) {
+        l.obj.visible = false;
+        this.hiddenForArena.push(l.obj);
+      }
+    }
   }
 
   /**
@@ -1221,12 +1325,9 @@ export class DistrictWorld {
     this.hemi.groundColor.set(this.lit.groundBounce);
   }
 
+  /** The heads, after the panel moves the colour. The pool reads `LOOK` itself every frame. */
   applyLamps(): void {
-    for (const l of this.lamps) {
-      l.light.color.set(LOOK.lampColor);
-      l.light.distance = LOOK.lampDistance;
-      l.head.material.color.set(LOOK.lampColor);
-    }
+    for (const l of this.lamps) l.head.material.color.set(LOOK.lampColor);
   }
 
   applySigns(): void {
@@ -1281,5 +1382,7 @@ export class DistrictWorld {
     this.hitboxes.length = 0;
     this.lamps.length = 0;
     this.signs.length = 0;
+    this.loose.length = 0;
+    this.hiddenForArena.length = 0;
   }
 }

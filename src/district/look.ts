@@ -130,6 +130,24 @@ export const LOOK: LookConfig = {
 };
 
 /**
+ * What the frame is costing, sampled twice a second by the screen in a development build.
+ *
+ * The budget the grown areas are held to -- at most three hundred draw calls and ten point
+ * lights burning, at sixty frames -- is only a budget if somebody can read it while standing in
+ * the place. Draw calls count every pass the post chain makes, so an empty scene still reads a
+ * dozen; the rest is the street.
+ */
+export const PERF = {
+  fps: 0,
+  drawCalls: 0,
+  triangles: 0,
+  pointLights: 0,
+  geometries: 0,
+  textures: 0,
+  updatables: 0,
+};
+
+/**
  * The ambient half of the look, per area.
  *
  * `LOOK` is module-level and deliberately survives a teardown, which is what makes the tuning
@@ -950,6 +968,10 @@ export interface LookHandles {
 
 export function buildLookGui(handles: LookHandles, areaId = 'ashfall_ward', areaName = 'Ashfall Ward'): GUI {
   const gui = new GUI({ title: `${areaName} — Look` });
+
+  // First, because it is the one folder read rather than dragged.
+  const perf = gui.addFolder('Perf');
+  for (const key of Object.keys(PERF) as (keyof typeof PERF)[]) perf.add(PERF, key).listen().disable();
   // Bound to the area's own ambience, so tuning the road does not retune the ward. The
   // camera and film folders below stay on `LOOK`, because those describe how the game is
   // shot rather than where you are standing.

@@ -209,6 +209,11 @@ export const SKIES: Record<Exclude<SkyId, 'none'>, SkyKind> = {
     // is off somewhere else. A clear night over Ashfall is a thing worth noticing.
     constancy: 0.6,
     count: 340,
+    // Darker by day than the general shadow blend makes it. Noon's fog is thinner and nearer the
+    // night's than it was, and against it the blended flake sat at a contrast of thirty-one --
+    // where what is actually behind a flake at noon, seen from the walk camera, is pale flagstone
+    // in full sun. Soot-dark specks read against both.
+    day: { color: '#3c3a35' },
     color: '#b9b2a6',
     size: 0.09,
     fall: 1.1,
@@ -269,6 +274,10 @@ export const SKIES: Record<Exclude<SkyId, 'none'>, SkyKind> = {
     // The most changeable thing in the world, which is what rain is.
     constancy: 0.55,
     count: 620,
+    // Silver by day rather than shadowed. The general blend darkens a mote to stand out against a
+    // bright day fog, and noon's fog is no longer bright: a darkened streak sat within thirty-two
+    // of it. Rain in daylight catches the light it falls through, which is what this is.
+    day: { color: '#c4d0d8' },
     color: '#9fb4c4',
     size: 0.05,
     fall: 7.5,
