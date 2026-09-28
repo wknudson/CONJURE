@@ -39,6 +39,9 @@ export const CURFEW_BREAKERS: EncounterDef = registerEncounter({
     'shield_bash',
     'aegis_ward',
     'tremor_mark',
+    // Bulwark's third shelf, taught here: the line and the fall.
+    'fault_line',
+    'rockfall',
   ],
   enemyOpeningBoard: [
     ['shieldbearer', 1, 1],

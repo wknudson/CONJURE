@@ -84,8 +84,14 @@ export function minionPool(school: School): CardDef[] {
  *
  * A range rather than a number because it is a design target and not a rule: nothing
  * refuses to work below it, and `catalogGaps` reports against the floor.
+ *
+ * Raised from ten-to-fifteen by the bestiary expansion's third shelves, which took every
+ * elemental school past twenty-five. Twenty is the floor now because a species drafts eight
+ * out of its own shelf and a school's two to four species should be drawing from a pool
+ * deep enough that two books of one school rarely match; thirty-four leaves room for the
+ * signatures the later bloodlines still bring.
  */
-export const CATALOG_TARGET = { min: 10, max: 15 } as const;
+export const CATALOG_TARGET = { min: 20, max: 34 } as const;
 
 export interface CatalogGap {
   school: School;
@@ -338,6 +344,22 @@ export function startingRosterFor(
  */
 export function schoolsOf(baseId: string): readonly School[] {
   return companionById(baseId)?.grimoire.schools ?? [];
+}
+
+/**
+ * Every school the beasts in a Vivarium speak between them. What a rare hunt is gated on.
+ *
+ * Read off the beasts **kept** rather than off `Profile.rosterUnlocks`, although the ledger
+ * is the permanent one. The ledger answers a different question — what may this warband
+ * field — and its migration floor hands a pre-enrolment save a Dusk archer and a Pyre
+ * lobber nobody tamed, so reading schools back out of it would open a fire-and-death hunt
+ * to a character who had never held either. The kennel is the honest answer: a hybrid
+ * comes to the scent of both its parents, and a beast released is a scent gone.
+ */
+export function schoolsKept(baseIds: readonly string[]): Set<School> {
+  const out = new Set<School>();
+  for (const baseId of baseIds) for (const school of schoolsOf(baseId)) out.add(school);
+  return out;
 }
 
 /**

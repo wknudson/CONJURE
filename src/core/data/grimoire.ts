@@ -77,6 +77,15 @@ export interface GrimoireSource {
    * both can tell them apart.
    */
   omit?: readonly string[];
+  /**
+   * The species this source belongs to, matched against `CardDef.bloodline`.
+   *
+   * Stamped from the Companion's own id when `COMPANIONS` is built, never written by hand,
+   * so a new species cannot forget it and silently lose its signatures. Absent on a source
+   * nobody owns — a test's ad-hoc pool, a hunt reading a school — which then sees no
+   * signature cards at all, the safe direction to fail in.
+   */
+  bloodline?: string;
 }
 
 /** The rarity a mono-element bloodline rolls a Hybrid at. Roughly one beast in three. */
@@ -144,7 +153,31 @@ export function isHybrid(def: CardDef): boolean {
 export function inPurePool(source: GrimoireSource, def: CardDef): boolean {
   if (!isDraftable(def) || !isBloodlineCard(def) || isHybrid(def)) return false;
   if (!source.schools.includes(def.school)) return false;
+  if (!learnsBloodline(source, def)) return false;
   return !source.omit?.includes(def.id);
+}
+
+/**
+ * Whether a card's signature, if it has one, names this bloodline.
+ *
+ * One predicate for every door a card can come through — the pure shelf, the fusions, the
+ * colourless fallback, and the socket — because a signature enforced at three of four is a
+ * signature a player finds the fourth way round. A card with no `bloodline` belongs to
+ * whoever its schools reach, exactly as before the field existed.
+ */
+export function learnsBloodline(source: GrimoireSource, def: CardDef): boolean {
+  if (!def.bloodline) return true;
+  return source.bloodline !== undefined && def.bloodline.includes(source.bloodline);
+}
+
+/**
+ * A bloodline's own signature cards: the part of its pure shelf no other species shares.
+ *
+ * What the first slot of a draft is dealt from, so every beast opens its book on something
+ * only its kind knows.
+ */
+export function signaturePool(source: GrimoireSource): CardDef[] {
+  return purePool(source).filter((c) => c.bloodline !== undefined);
 }
 
 /**
@@ -172,6 +205,7 @@ export function hybridPool(source: GrimoireSource): CardDef[] {
   return Object.values(CARDS)
     .filter((c) => isDraftable(c) && isBloodlineCard(c) && isHybrid(c))
     .filter((c) => hybridSchools(c.id).some((s) => source.schools.includes(s)))
+    .filter((c) => learnsBloodline(source, c))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -198,9 +232,10 @@ export function hybridPool(source: GrimoireSource): CardDef[] {
  * The code does the third, because it is the only one of the three that is not a content
  * decision to make on somebody else's behalf.
  */
-function neutralPool(): CardDef[] {
+function neutralPool(source: GrimoireSource): CardDef[] {
   return Object.values(CARDS)
     .filter((c) => isDraftable(c) && !isHybrid(c) && FALLBACK_SCHOOLS.includes(c.school))
+    .filter((c) => learnsBloodline(source, c))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -239,7 +274,8 @@ const FALLBACK_SCHOOLS: readonly School[] = ['neutral', 'arcane'];
 export function draftGrimoire(rng: RngState, source: GrimoireSource, size: number): string[] {
   const pure = purePool(source);
   const hybrids = hybridPool(source);
-  const neutral = neutralPool();
+  const neutral = neutralPool(source);
+  const signatures = signaturePool(source);
   const drawn: string[] = [];
   const copies = new Map<string, number>();
 
@@ -254,7 +290,18 @@ export function draftGrimoire(rng: RngState, source: GrimoireSource, size: numbe
     // What this slot wants, then what is left. The chain is ordered by how much of the
     // bloodline's identity each option carries: its own school first, its fusions next,
     // colourless utility only when the shelf is genuinely bare.
-    const order = wantsHybrid && hybrids.length > 0 ? [hybrids, pure, neutral] : [pure, hybrids, neutral];
+    //
+    // The first slot is the exception: a bloodline with signatures opens on one, so a beast
+    // is recognisably its own species from the top of its book rather than by the luck of
+    // eight draws against a shelf that is mostly shared. The hybrid roll above is still
+    // spent, which keeps every later slot where it was — and a species with no signatures
+    // takes the ordinary chain, so writing this rule moved no existing beast's draw.
+    const order =
+      slot === 0 && signatures.length > 0
+        ? [signatures, pure, hybrids, neutral]
+        : wantsHybrid && hybrids.length > 0
+          ? [hybrids, pure, neutral]
+          : [pure, hybrids, neutral];
     const legal = order.map(under).find((p) => p.length > 0);
     if (!legal) break;
 
@@ -286,6 +333,7 @@ export type SocketRefusal =
   | 'not-unlocked'
   | 'not-castable'
   | 'off-school'
+  | 'off-bloodline'
   | null;
 
 /**
@@ -331,6 +379,10 @@ export function socketRefusal(
   // a socket is where a spliced card goes, and you have to have spliced it.
   if (!unlocked.includes(cardId)) return 'not-unlocked';
   if (!acceptsSchool(source, def)) return 'off-school';
+  // After the school check, so a card that is wrong on both counts is refused for the
+  // broader reason. A forged signature is a card the player owns and may keep; it simply
+  // seats in its own species' book and nobody else's.
+  if (!learnsBloodline(source, def)) return 'off-bloodline';
   return null;
 }
 
