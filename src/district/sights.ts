@@ -1157,6 +1157,99 @@ export const SIGHTS: readonly SightDef[] = [
       'it. It did not spread like blight. It spread like something that knew where the cuts ' +
       'ran.',
   },
+
+  /* ---- Saltglass ---- */
+  {
+    id: 'saltglass:the_lighthouse',
+    areaId: 'saltglass',
+    at: { x: 76, z: -50.6 },
+    label: 'Look up at the lighthouse',
+    caption:
+      'Still lit, though the harbour is shut. The keeper was never told to stop, and the writ ' +
+      'that closed the harbour says nothing about the sea, which goes on having rocks in it.',
+  },
+  {
+    id: 'saltglass:the_salt_pans',
+    areaId: 'saltglass',
+    at: { x: -30, z: -50 },
+    label: 'Look over the pans',
+    caption:
+      'Pans in their ranks, flooded on the spring tide and left for the sun. The salt is raked ' +
+      'by hand and taxed by the Customs House, which is chained, so for now it is only raked.',
+  },
+  {
+    id: 'saltglass:the_salt_heap',
+    areaId: 'saltglass',
+    at: { x: -58, z: -62 },
+    label: 'Look at the salt heap',
+    caption:
+      'Raked salt heaped on the sea bank, with a sack of it stood on top sealed with the ' +
+      'Customs mark. The heap under the sack is not sealed. The heap is not going anywhere.',
+  },
+  {
+    id: 'saltglass:the_rakers_shed',
+    areaId: 'saltglass',
+    at: { x: 66, z: -37.4 },
+    label: "Look at the rakers' shed",
+    caption:
+      'Rakes on pegs, boots by the door, a slate of whose pan is whose. One pan has three names ' +
+      'against it, crossed out one under the other.',
+  },
+  {
+    id: 'saltglass:the_kilns',
+    areaId: 'saltglass',
+    at: { x: -74, z: -26 },
+    label: 'Look at the kilns',
+    caption:
+      'Fired on driftwood and salt-grass. What comes out is green and full of bubbles and the ' +
+      'Glasshouse will not buy it, so it goes to Highcourt, where it is sold as antique.',
+  },
+  {
+    id: 'saltglass:the_cullet_heap',
+    areaId: 'saltglass',
+    at: { x: -80, z: 30 },
+    label: 'Look at the cullet',
+    caption:
+      'Broken glass heaped to be melted again: bottle ends, a cracked pane, a lens. The ' +
+      'Glass-Pickers come for the lenses at night. Nobody knows what they want lenses for.',
+  },
+  {
+    id: 'saltglass:the_shipwreck',
+    areaId: 'saltglass',
+    at: { x: 0, z: 50 },
+    label: 'Look at the wreck',
+    caption:
+      'A ship on the salt, a mile from any water that could have put it there. The flats were ' +
+      'sea once. The ship is older than the flats, which is the part Saltglass does not talk ' +
+      'about.',
+  },
+  {
+    id: 'saltglass:the_figurehead',
+    areaId: 'saltglass',
+    at: { x: 28, z: 54 },
+    label: 'Look at the figurehead',
+    caption:
+      'A woman holding up a lamp, worn to a stump by the wind and the salt. The Glass-Pickers ' +
+      'leave her alone. They leave her a light.',
+  },
+  {
+    id: 'saltglass:the_stern',
+    areaId: 'saltglass',
+    at: { x: -54, z: 56 },
+    label: 'Look at the stern',
+    caption:
+      'Broken open, its ribs standing up out of the salt like a hand. Half a name on the ' +
+      'transom: ...IGHT OF THE KING. The rest of it is under the salt.',
+  },
+  {
+    id: 'saltglass:the_harbour_writ',
+    areaId: 'saltglass',
+    at: { x: -14, z: -22 },
+    label: 'Read the stone',
+    caption:
+      'HARBOUR CLOSED BY WRIT, and a sheet of paper nailed under it saying the same in smaller ' +
+      'letters. The paper is newer than the stone. The stone was cut to match it.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {

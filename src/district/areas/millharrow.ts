@@ -214,7 +214,7 @@ export const MILLHARROW: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: -2,
       label: 'West, to Saltglass',
-      arrive: { x: 50, z: 8 },
+      arrive: { x: 82, z: 8 },
     },
     {
       to: 'brays_hollow',
