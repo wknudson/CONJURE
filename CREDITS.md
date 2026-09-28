@@ -14,4 +14,23 @@ Bundled drawings keep their authors' licences, listed below with the cards that 
 Only CC0 and attribution-only licences are accepted into this game: no share-alike, GPL,
 NonCommercial or NoDerivatives work is bundled.
 
-None yet. Every creature on the board is drawn procedurally.
+### JS Monster Set - Elementals
+
+- **Author:** JosephSeraph
+- **Source:** https://opengameart.org/content/js-monster-set-elementals
+- **Licence:** [Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/)
+- **Used for:** Cinder Lobber, Frost Wisp, Sap Wisp, Storm Rod
+
+### 10 Basic RPG Enemies
+
+- **Author:** Stephen 'Redshrike' Challener, hosted by OpenGameArt.org
+- **Source:** https://opengameart.org/content/10-basic-rpg-enemies
+- **Licence:** [Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/)
+- **Used for:** Bone Rattler, Spellblade
+
+### Dungeon Crawl 32x32 Tiles
+
+- **Author:** The Dungeon Crawl Stone Soup developers and the RLTiles artists
+- **Source:** https://opengameart.org/content/dungeon-crawl-32x32-tiles
+- **Licence:** [CC0 1.0 Universal (public domain dedication)](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Used for:** Aether Archer, Anvil Lord, Arc Dynamo, Arc Turret, Arcane Familiar, Ash-Ghoul, Barrow Wight, Bastion Golem, Battering Ram, Bear Cub, Bone Colossus, Boulder Slinger, Bramble Sentinel, Briar Wolf, Brood Drake, Carrion Crow, Cinder Adder, Clockwork Bombardier, Coil Lancer, Concussive Blow, Creeping Briar, Crossbowman, Den Bear, Drake Hatchling, Ember Hound, Ember Moth, Flame Archer, Frost Ballista, Frost Colossus, Furnace Titan, Galvanic Brute, Galvanic Revenant, Gilded Scavenger, Glacial Stalker, Glacier Warden, Glass Arbalest, Glyph Turret, Grave Knight, Grave Sentinel, Hawk Fledgling, Hedge Slinger, Hoarhound, Hollow Wraith, Hollowed Husk, Iron Juggernaut, Kiln Guard, Longshot Stalker, Magma Brute, Marrow-Hound, Marrow Wisp, Militia Pikeman, Mire Toad, Mossback Colossus, Oakheart Guardian, Permafrost Troll, Plague-Bearer, Quarry Hand, Ramming Goat, Rampart Mason, Restless Geist, Ridge Wolf, Rime Archer, Rime Fox, Rimeguard, Ring Elder, Road Scout, Rune Golem, Salamander Whelp, Scout Imp, Scrap-Metal Mortar, Scrap Phalanx, Scrap-Titan, Sergeant-at-Arms, Shieldbearer, Siege Ox, Slag-Iron Golem, Soot Sprite, Spark Imp, Spore Archer, Spore Thrall, Sporeback Boar, Static Hare, Stone-Heart Golem, Storm Roc, Storm Wisp, Tempest Engine, Thorn Lobber, Thorn Sprout, Vanguard Footman, Verdant Colossus, Voltaic Coil, Voltaic Hound, Wailing Geist, War Dog, Warden Construct, Wight Archer, Wight Lord

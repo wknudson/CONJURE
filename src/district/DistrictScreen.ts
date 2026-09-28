@@ -87,6 +87,7 @@ import { isSafeAt, type AreaDef, type ExitSpec, type NpcSpec } from './map.js';
 import { npcPostAt, passersAt } from './folkday.js';
 import { NavGrid } from './nav.js';
 import { memberArt, memberTint, packBodies } from './memberArt.js';
+import { loadCreatureImages } from '../render/minionArt.js';
 import {
   cullSatisfiedBy,
   errandFor,
@@ -1241,6 +1242,13 @@ export class DistrictScreen implements Screen {
     for (const npc of this.npcs) npc.nav = this.nav;
     if (packSpecs.length > 0) {
       const now = Date.now();
+      // The members' own drawings first, so a crew on the road wears the art its squad will
+      // wear on the board. Allowed to fail: a body whose file is missing keeps its silhouette.
+      await Promise.all(
+        [...new Set(packSpecs.flatMap((s) => packBodies(s.encounterId)))].map((id) =>
+          loadCreatureImages(id).catch(() => null),
+        ),
+      );
       // One drawing per kind of body in this area, shared by every pack fielding it.
       const memberArts = new Map<string, ActorArt>();
       for (const spec of packSpecs) {
