@@ -57,6 +57,8 @@ export const SMOKE_EATERS_REST: EncounterDef = registerEncounter({
     'stone_barricade',
     'tremor_mark',
     'cinder_mark',
+    // The signature of the beast this fight awards: the crab’s own.
+    'mossback_pinch',
   ],
   // What is left of his old squad, drilled and square.
   enemyOpeningBoard: [
@@ -109,6 +111,8 @@ export const ASHWOOD_POACHER: EncounterDef = registerEncounter({
     'rot_root_snare',
     'rime_mark',
     'soul_splinter_mark',
+    // The signature of the beast this fight awards: the elk’s own.
+    'hoarthorn',
   ],
   enemyOpeningBoard: [
     ['longshot_stalker', 1, 1],
@@ -166,6 +170,8 @@ export const COLDWATER_DUEL: EncounterDef = registerEncounter({
     'aether_beam',
     'soul_splinter_mark',
     'arc_mark',
+    // The signature of the beast this fight awards: the shade’s own.
+    'lampblack',
   ],
   enemyOpeningBoard: [
     ['galvanic_revenant', 2, 1],
@@ -215,6 +221,8 @@ export const WAYSTONE_DUEL: EncounterDef = registerEncounter({
     'stone_barricade',
     'tremor_mark',
     'arc_mark',
+    // The signature of the beast this fight awards: the serpent’s own.
+    'live_briar',
   ],
   enemyOpeningBoard: [
     ['shieldbearer', 2, 1],
