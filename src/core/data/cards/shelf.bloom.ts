@@ -559,4 +559,50 @@ export const BLOOM_SHELF: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  /** The Chameleon: a lit vine flung down a line. */
+  vine_flare: {
+    id: 'vine_flare',
+    name: 'Vine Flare',
+    cost: { bones: 3, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Sets everything on a 3-tile line alight (Burn 1) and roots it through its next turn (Entangle 1).',
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'line', length: 3 } },
+        { op: 'applyStatus', status: 'entangle', stacks: 1, area: { shape: 'line', length: 3 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['chameleon'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** The Hedgehog: every spine at once. */
+  spine_volley: {
+    id: 'spine_volley',
+    name: 'Spine Volley',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 physical damage to everything adjacent to the target tile and poisons it (Toxin 1).',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'physical', area: { shape: 'adjacent8' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['hedgehog'],
+    range: 3,
+    needsLoS: true,
+  },
 };

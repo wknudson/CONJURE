@@ -417,6 +417,52 @@ export const CONTRACT_SITES: readonly ContractSite[] = [
     gate: { after: ['underhill_duel'] },
   },
 
+  // ---- the contract hybrids: side contracts
+  {
+    id: 'lamprow:snuffed_lamps',
+    areaId: 'lamprow',
+    at: { x: 30, z: -2 },
+    encounterId: 'the_snuffed_lamps',
+    label: 'The Snuffed Lamps',
+    interactDetail:
+      'A lamp post with its glass cold and its wick black, and the next one along guttering.',
+  },
+  {
+    id: 'tallow_levels:burnt_orchard',
+    areaId: 'tallow_levels',
+    at: { x: 14, z: 14 },
+    encounterId: 'the_burnt_orchard',
+    label: 'The Burnt Orchard',
+    interactDetail:
+      'Black trunks in rows, and between them a green that was not planted.',
+  },
+  {
+    id: 'storm_shelf:scrap_field',
+    areaId: 'storm_shelf',
+    at: { x: 6, z: -50 },
+    encounterId: 'the_scrap_field',
+    label: 'The Scrap Field',
+    interactDetail:
+      'Scrap iron to the knee, and every piece of it pointing the same way up the slope.',
+  },
+  {
+    id: 'rimefields:frozen_toll',
+    areaId: 'rimefields',
+    at: { x: 2, z: -46 },
+    encounterId: 'the_frozen_toll',
+    label: 'The Frozen Toll',
+    interactDetail:
+      'The toll-house shutters iced over, and hoofprints the size of cart wheels.',
+  },
+  {
+    id: 'chalk_road:hedge_fort',
+    areaId: 'chalk_road',
+    at: { x: -2, z: -22 },
+    encounterId: 'the_hedge_fort',
+    label: 'The Hedge Fort',
+    interactDetail:
+      'A dry-stone wall at the bend, with thorns through every gap and a warmth coming off it.',
+  },
   // ---- The regional apex lairs: second routes, gated on the fight that named the
   // species -----------------------------------------------------------------------------
   {

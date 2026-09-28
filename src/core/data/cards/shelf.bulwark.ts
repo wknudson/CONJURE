@@ -522,4 +522,50 @@ export const BULWARK_SHELF: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  /** The Yak: a cart of ice coming down the pass. */
+  avalanche_haul: {
+    id: 'avalanche_haul',
+    name: 'Avalanche Haul',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 30 impact damage to a unit and Chills it. Shatters anything Frozen.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'impact', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['yak'],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /** The Scarab: iron drawn in along a line. */
+  lodestone_pull: {
+    id: 'lodestone_pull',
+    name: 'Lodestone Pull',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Drags everything on a 3-tile line 1 tile toward its near end and leaves it Charged.',
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'pullArea', distance: 1, area: { shape: 'line', length: 3 } },
+        { op: 'applyStatus', status: 'charged', stacks: 1, area: { shape: 'line', length: 3 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['scarab'],
+    range: 4,
+    needsLoS: true,
+  },
 };

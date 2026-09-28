@@ -650,6 +650,68 @@ export const STORY_CONTRACTS: readonly StoryContract[] = [
         'JUST A FLOOR.',
     },
   },
+
+  // ---- the contract hybrids: side contracts, each awarding a hybrid ---------------------
+  {
+    id: 'the_snuffed_lamps',
+    tier: 'novice',
+    title: 'The Snuffed Lamps',
+    flavour:
+      'Lamprow’s lamps are going out one a night, and the lamp-tax does not stop for it. Find what is snuffing them and make it stop, before the ward is dark enough for the Wardens to notice.',
+    crack: {
+      title: 'Nobody Paid For The Oil',
+      body:
+        'The Wraith binds, and the lamps along the street relight on their own. In the morning the lamp-tax office posts a notice thanking the ward for its patience during the maintenance. Nobody in Lamprow was told there was maintenance. The oil receipts on the lamplighter’s board are dated a month before the first lamp went out.',
+    },
+  },
+  {
+    id: 'the_burnt_orchard',
+    tier: 'adept',
+    title: 'The Burnt Orchard',
+    flavour:
+      'The Tallow Levels’ old orchard burnt three summers ago and has started growing back wrong. The Crown’s factor wants it cleared for the new strips. Clear it.',
+    crack: {
+      title: 'The Fire Was Set',
+      body:
+        'The Chameleon binds, and the vines fall slack along the charred rows. Under the ash at the orchard’s edge, somebody has buried three oil casks with the Crown’s factor’s seal on the lids. The new strips were surveyed a month before the fire.',
+    },
+  },
+  {
+    id: 'the_scrap_field',
+    tier: 'adept',
+    title: 'The Scrap Field',
+    flavour:
+      'The Works’ scrap field on the Shelf is walking. The scrap is, anyway: a ton of it a week, rolling uphill toward the conduit masts. Stop whatever is rolling it.',
+    crack: {
+      title: 'The Masts Were Pulling',
+      body:
+        'The Scarab binds, and the scrap settles where it lies. The conduit masts are still humming: the Works had been running them hot to magnetise the field and sell the scrap on as ore. The beast was only rolling downhill, toward the pull.',
+    },
+  },
+  {
+    id: 'the_frozen_toll',
+    tier: 'master',
+    title: 'The Frozen Toll',
+    flavour:
+      'The pass toll-house has been closed by a salt yak that will not leave the road, and the Crown has lost a winter of tolls to it. Move it, by any means.',
+    crack: {
+      title: 'The Toll Was Never Collected',
+      body:
+        'The Yak binds, and the road is open. In the toll-house ledger the collector has been signing for tolls all winter, off a road nothing has crossed since the first snow. The Crown’s share was paid in full, every week, out of somebody’s pocket.',
+    },
+  },
+  {
+    id: 'the_hedge_fort',
+    tier: 'novice',
+    title: 'The Hedge Fort',
+    flavour:
+      'Something has grown into the dry-stone wall at the Chalk Road bend and the wall has grown thorns. The road crew want the wall back. Take it.',
+    crack: {
+      title: 'The Wall Was Theirs',
+      body:
+        'The Hedgehog binds, and the thorns wither out of the stone. Under the wall-stones somebody has scratched the boundary marks of a smallholding the Crown enclosed forty years ago. The road crew’s foreman asks you not to mention them.',
+    },
+  },
 ];
 
 /** The next uncompleted story contract of a tier, in shipped order. */

@@ -168,3 +168,38 @@ silhouette until its own art arrives.
 - **Body:** bruiser, moves 2, reaches 1
 - **Brief:** Squats in the salt marsh where the grid runs to earth and swells up on it. Its warts spark, and the spores it puffs are live.
 - **Files:** `sparkspore_toad-front.png`, `sparkspore_toad-back.png`, `sparkspore_toad-side.png`
+
+### Wick Wraith, Candle Revenant
+
+- **Schools:** pyre + dusk
+- **Body:** caster, moves 3, reaches 2
+- **Brief:** Lives in the lamps of Lamprow and eats the light out of them one wick at a time. What it burns, it keeps.
+- **Files:** `wick_wraith-front.png`, `wick_wraith-back.png`, `wick_wraith-side.png`
+
+### Ashvine Chameleon, Cinder Creeper
+
+- **Schools:** pyre + bloom
+- **Body:** skirmisher, moves 3, reaches 1
+- **Brief:** Clings to the burnt orchards of the Tallow Levels, the colour of char one moment and new leaf the next. Its tongue is a lit vine.
+- **Files:** `ashvine_chameleon-front.png`, `ashvine_chameleon-back.png`, `ashvine_chameleon-side.png`
+
+### Rimestone Yak, Pass Hauler
+
+- **Schools:** frost + bulwark
+- **Body:** bruiser, moves 2, reaches 1
+- **Brief:** Hauls the salt carts over the Rimefield passes and has never once been talked out of the middle of the road. Its hide is half ice.
+- **Files:** `rimestone_yak-front.png`, `rimestone_yak-back.png`, `rimestone_yak-side.png`
+
+### Lodestone Scarab, Magnet Roller
+
+- **Schools:** surge + bulwark
+- **Body:** bruiser, moves 2, reaches 1
+- **Brief:** Rolls balls of scrap iron across the Storm Shelf and charges them off the conduits. Everything metal in the field drifts toward it.
+- **Files:** `lodestone_scarab-front.png`, `lodestone_scarab-back.png`, `lodestone_scarab-side.png`
+
+### Thornstone Hedgehog, Hedge Fort
+
+- **Schools:** bulwark + bloom
+- **Body:** bruiser, moves 2, reaches 1
+- **Brief:** Curls up in the dry-stone walls of the Chalk Road and grows thorns through the gaps. Nothing moves it, and nothing touches it twice.
+- **Files:** `thornstone_hedgehog-front.png`, `thornstone_hedgehog-back.png`, `thornstone_hedgehog-side.png`

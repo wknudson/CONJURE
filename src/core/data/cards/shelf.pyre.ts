@@ -519,4 +519,27 @@ export const PYRE_SHELF: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  /** The Wraith: the flame drawn out of a body and into the Pact. */
+  wick_drain: {
+    id: 'wick_drain',
+    name: 'Wick Drain',
+    cost: { bones: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 fire damage to a unit and restores 20 health to your Pact.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'fire', area: { shape: 'target' } },
+        { op: 'heal', amount: 20 },
+      ],
+    },
+    keywords: [],
+    bloodline: ['wraith'],
+    range: 4,
+    needsLoS: true,
+  },
 };
