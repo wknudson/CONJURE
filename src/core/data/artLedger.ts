@@ -42,6 +42,13 @@ export const COMPANION_ART_PENDING: readonly string[] = [
   'ermine',
   'eel',
   'pangolin',
+  // The fourth bloodlines of Bulwark, Dusk and Bloom.
+  'rhino',
+  'beetle',
+  'owl',
+  'spider',
+  'fox',
+  'moth',
 ];
 
 /** The file stem a species' sprites are saved under. */

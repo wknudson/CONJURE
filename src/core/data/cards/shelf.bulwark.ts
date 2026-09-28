@@ -266,4 +266,120 @@ export const BULWARK_SHELF: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  // ========================================================= the Ironhide Rhino
+
+  /** Forty impact on an adjacent enemy. The horn. */
+  horn_gore: {
+    id: 'horn_gore',
+    name: 'Horn Gore',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 40 impact damage to an adjacent enemy. Shatters anything Frozen.',
+    target: ENEMY_UNIT,
+    effect: { op: 'damage', amount: 40, dtype: 'impact', area: { shape: 'target' } },
+    keywords: [],
+    bloodline: ['rhino'],
+    range: 1,
+  },
+
+  /** Thirty impact down a line and everything on it shoved a tile along. The charge. */
+  crushing_charge: {
+    id: 'crushing_charge',
+    name: 'Crushing Charge',
+    cost: { bones: 3, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: `Deals 30 impact damage down a 3-tile line and shoves everything on it 1 tile away from its near end. ${COLLISION}`,
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'impact', area: { shape: 'line', length: 3 } },
+        { op: 'shoveArea', distance: 1, area: { shape: 'line', length: 3 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['rhino'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** Thirty armour on your Hero. The hide, lent. */
+  iron_brace: {
+    id: 'iron_brace',
+    name: 'Iron Brace',
+    cost: { bones: 1, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Your Hero gains 30 Armor.',
+    target: { kind: 'none' },
+    effect: { op: 'grantArmor', amount: 30 },
+    keywords: [],
+    bloodline: ['rhino'],
+  },
+
+  // ========================================================== the Menhir Beetle
+
+  /** A hundred health of standing stone that stuns what is beside it when it falls. */
+  standing_stone: {
+    id: 'standing_stone',
+    name: 'Standing Stone',
+    cost: { bones: 3, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'obstacle',
+    text: 'Raises a 100 HP standing stone on an empty tile. When it falls, every unit on or beside it takes 20 damage and is Stunned.',
+    target: ANY_TILE,
+    effect: { op: 'spawnObstacle', obstacleDef: 'standing_stone' },
+    keywords: [],
+    obstacleHp: 100,
+    obstacleDeath: { status: 'stun', stacks: 1, damage: 20 },
+    leavesRubble: true,
+    bloodline: ['beetle'],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /** Thirty impact on a unit or obstacle, at four tiles: the ball the Beetle rolls. */
+  dung_ball: {
+    id: 'dung_ball',
+    name: 'Dung Ball',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 30 impact damage to a unit or obstacle.',
+    target: { kind: 'entity', side: 'any', includeObstacles: true },
+    effect: { op: 'damage', amount: 30, dtype: 'impact', area: { shape: 'target' } },
+    keywords: [],
+    bloodline: ['beetle'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** Twenty armour on your Hero, and a card. The shell closes. */
+  hardened_shell: {
+    id: 'hardened_shell',
+    name: 'Hardened Shell',
+    cost: { bones: 1, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Your Hero gains 20 Armor. Draw 1 card.',
+    target: { kind: 'none' },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'grantArmor', amount: 20 },
+        { op: 'drawCards', amount: 1 },
+      ],
+    },
+    keywords: [],
+    bloodline: ['beetle'],
+  },
 };
