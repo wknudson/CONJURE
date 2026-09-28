@@ -114,7 +114,8 @@ export const TALLOW_LEVELS: AreaDef = defineArea({
       x: -2,
       z: zOfRow(24),
       label: 'South, down to Millharrow',
-      arrive: { x: -2, z: -38 },
+      // Onto Millharrow's north road, a stride inside its exit at the new north edge.
+      arrive: { x: -2, z: -86 },
     },
     {
       to: 'ashwood',

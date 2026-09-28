@@ -925,6 +925,143 @@ export const SIGHTS: readonly SightDef[] = [
       'The last hedge before the Rime. Past it the furrows are frozen white; this side of it ' +
       'somebody is still ploughing, and has left the plough in the furrow to go and look.',
   },
+
+  /* ---- Millharrow ---- */
+  {
+    id: 'millharrow:the_windmill',
+    areaId: 'millharrow',
+    at: { x: 72, z: -74.6 },
+    label: 'Look up at the windmill',
+    caption:
+      'A post mill on its hill out in the strips, turned to the wind by the tail-pole. The ' +
+      'miller grinds what the Mill in the town will not, which is anything brought in after the ' +
+      'tollman has gone to bed.',
+  },
+  {
+    id: 'millharrow:the_water_wheel',
+    areaId: 'millharrow',
+    at: { x: -26, z: -17.4 },
+    label: 'Look at the wheel',
+    caption:
+      'The wheel at the head of the race, turning as long as the leat runs. Somebody has ' +
+      'painted the paddles in turn, red and white, so the children can count the turns. The ' +
+      'miller counts them too, for other reasons.',
+  },
+  {
+    id: 'millharrow:the_millpond',
+    areaId: 'millharrow',
+    at: { x: -70, z: -62 },
+    label: 'Look over the millpond',
+    caption:
+      'Dammed a lifetime ago to feed the race, and full of what fell in since: a cartwheel, a ' +
+      'millstone that cracked, a boat with its bottom out. The heron stands on the boat, which ' +
+      'is what the boat is for now.',
+  },
+  {
+    id: 'millharrow:the_leat_bridge',
+    areaId: 'millharrow',
+    at: { x: -58, z: -34 },
+    label: 'Look down at the leat',
+    caption:
+      'Planks over the leat, and the water under them running fast and brown to the race. A ' +
+      "notice on the rail, the Magistracy's: the water is the mill's, the mill is the Crown's. " +
+      "Under it, in chalk: THE RAIN IS NOBODY'S.",
+  },
+  {
+    id: 'millharrow:the_north_end',
+    areaId: 'millharrow',
+    at: { x: -10, z: -92.6 },
+    label: 'Look along the North End',
+    caption:
+      'Two rows of cottages at the head of the Levels road, doors open onto the yards. Every ' +
+      'door has a sprig of something green over it. It is either for luck or for the tithe-men, ' +
+      'and the North End will not say which.',
+  },
+  {
+    id: 'millharrow:the_granary_yard',
+    areaId: 'millharrow',
+    at: { x: -104, z: -34.6 },
+    label: 'Look at the granaries',
+    caption:
+      'Stone granaries on staddle stones, so the rats cannot climb in. The rats have been told. ' +
+      'A second set of marks on each door counts what went in; a third counts what the ' +
+      'Magistracy says went in.',
+  },
+  {
+    id: 'millharrow:the_tithe_barn',
+    areaId: 'millharrow',
+    at: { x: -98, z: 6 },
+    label: 'Look at the tithe barn',
+    caption:
+      'The tithe barn, a tenth of everything, and built big enough to hold a fifth. The doors ' +
+      'are chained. The chain is new. The barn is empty, and has been since before the chain.',
+  },
+  {
+    id: 'millharrow:the_orchard',
+    areaId: 'millharrow',
+    at: { x: -70, z: 76 },
+    label: 'Look down the rows',
+    caption:
+      'Old trees, pruned by somebody who knew how and has not been back. The fruit is the ' +
+      "Crown's by law. The wasps have not been told, and neither have the children.",
+  },
+  {
+    id: 'millharrow:the_cider_press',
+    areaId: 'millharrow',
+    at: { x: -30, z: 74 },
+    label: 'Look at the cider press',
+    caption:
+      'The press stands in its shed with the last pressing still in the bed, gone to vinegar. A ' +
+      'barrel beside it is marked FOR THE FAIR, and is the only barrel in Millharrow nobody has ' +
+      'touched.',
+  },
+  {
+    id: 'millharrow:the_fair_green',
+    areaId: 'millharrow',
+    at: { x: 70, z: 78 },
+    label: 'Look across the green',
+    caption:
+      'The green where the fair is held every quarter-day: the stalls standing empty between, ' +
+      'the grass worn in two rings where the dancing goes round. The writ does not mention ' +
+      'fairs. That is the point of a fair.',
+  },
+  {
+    id: 'millharrow:the_inn',
+    areaId: 'millharrow',
+    at: { x: 34, z: 74 },
+    label: 'Look up at the inn sign',
+    caption:
+      'The Crossroads Arms: four roads painted on the board, one of them repainted since. The ' +
+      'one repainted goes to the Chalk Road, and somebody has painted a toll bar across it, ' +
+      'very small.',
+  },
+  {
+    id: 'millharrow:the_chapel',
+    areaId: 'millharrow',
+    at: { x: 90, z: 30 },
+    label: 'Look at the chapel',
+    caption:
+      'The crossroads chapel, one bell and no bell-ringer. The door is never locked, because ' +
+      'the door is the only thing in the chapel worth taking and it is hung on.',
+  },
+  {
+    id: 'millharrow:the_forge',
+    areaId: 'millharrow',
+    at: { x: 104, z: -6 },
+    label: 'Look at the forge',
+    caption:
+      "The East End's smith shoes the drovers' horses and mends the tollman's chain, and " +
+      'charges both the same, which is the only fair price in Millharrow.',
+  },
+  {
+    id: 'millharrow:the_crossroads',
+    areaId: 'millharrow',
+    at: { x: -4, z: -2 },
+    label: 'Look round the crossroads',
+    caption:
+      'Four roads, four quarters, and in the middle a stone worn flat by everybody who stopped ' +
+      'here to decide. Somebody has cut an arrow into it pointing straight down.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {

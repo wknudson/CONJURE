@@ -643,6 +643,16 @@ export const AMBIENT: Record<string, AmbientDef> = {
     fogColor: '#121310',
     fogDensity: 0.026,
   },
+  /** The Crossroads Arms: the hearth, and a lamp over the bar, and the fair's noise through the door. */
+  millharrow_inn: {
+    sunIntensity: 1.8,
+    sunColor: '#e0a860',
+    ambientIntensity: 2.3,
+    skyColor: '#5e5448',
+    groundBounce: '#4a3420',
+    fogColor: '#141110',
+    fogDensity: 0.022,
+  },
   /** The Cinder Cup: hearthlight. The warmest room in the ward, by a distance. */
   ashfall_cinder_cup: {
     sunIntensity: 1.8,

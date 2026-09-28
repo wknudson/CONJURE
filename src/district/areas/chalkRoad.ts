@@ -149,7 +149,8 @@ export const CHALK_ROAD: AreaDef = defineArea({
       x: -34,
       z: zOfRow(4),
       label: 'North, up the lane to Millharrow',
-      arrive: { x: -2, z: 38 },
+      // Onto Millharrow's south road, a stride inside its exit at the new south edge.
+      arrive: { x: -2, z: 86 },
     },
     {
       // And south, to the river town. Set well along from the Millharrow lane so the two are

@@ -111,7 +111,7 @@ export const BRAYS_HOLLOW: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: 0,
       label: 'West, back to Millharrow',
-      arrive: { x: 42, z: -2 },
+      arrive: { x: 98, z: -2 },
     },
     {
       // The barn. Where the herd is, and where the warrant came for it.

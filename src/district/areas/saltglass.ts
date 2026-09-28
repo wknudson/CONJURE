@@ -127,7 +127,7 @@ export const SALTGLASS: AreaDef = defineArea({
       x: HALF_X - 2,
       z: 8,
       label: 'East, along the cart way to Millharrow',
-      arrive: { x: -42, z: -2 },
+      arrive: { x: -98, z: -2 },
     },
     {
       // The Glasshouse. The one warm room on the flats.
