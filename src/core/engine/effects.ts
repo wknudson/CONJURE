@@ -790,6 +790,16 @@ function originOf(ctx: Ctx, play: CardPlayContext): Coord | undefined {
   if (play.chosen.kind === 'entity' && play.chosen.ref.kind !== 'portrait') {
     return getEntity(ctx.state, play.chosen.ref.id)?.anchor;
   }
+  // A Companion card with no target of its own is centred on the beast that casts it.
+  //
+  // Elmo's Fire and Hoarfrost Veil were written that way — "everything adjacent to the
+  // caster" — and resolved against nothing, because a `none` target carries no coordinate
+  // and this function returned undefined for it. Every area under one of them was empty: the
+  // burst never landed and the chill never formed, silently, since each card shipped. The
+  // engine already knows where the caster stands (`casterAnchorFor` sets it for every
+  // Companion card), so this reads it. A Hero card with no target has no anchor and keeps
+  // resolving against nothing, which is right: the Hero is not on the board.
+  if (play.chosen.kind === 'none' && play.casterAnchor) return play.casterAnchor;
   return undefined;
 }
 
