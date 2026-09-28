@@ -250,6 +250,10 @@ export const HUNT_ASHWOOD_STAG = hunt({
     'shield_bash',
     'aegis_ward',
     'dark_tithe',
+    // The Stag's own three: a hunt is where a species teaches its signatures.
+    'carrion_feast',
+    'soul_toll',
+    'offering',
   ],
   opening: [
     ['grave_sentinel', 2, 1],
@@ -286,6 +290,10 @@ export const HUNT_ASHWOOD_WARDEN = hunt({
     'shield_bash',
     'aegis_ward',
     'scout_imp',
+    // The Warden's own three: a hunt is where a species teaches its signatures.
+    'rootbind',
+    'warden_tree',
+    'bramble_lash',
   ],
   opening: [
     ['creeping_briar', 2, 1],
@@ -321,6 +329,10 @@ export const HUNT_CHALK_BOAR = hunt({
     'shield_bash',
     'aegis_ward',
     'stone_barricade',
+    // The Boar's own three: a hunt is where a species teaches its signatures.
+    'vault_door',
+    'boar_charge',
+    'tusk_toss',
   ],
   opening: [
     ['shieldbearer', 2, 1],
@@ -399,6 +411,10 @@ export const HUNT_CHALK_CUT_RAM = hunt({
     'shieldbearer',
     'shield_bash',
     'aegis_ward',
+    // The Ram's own three: a hunt is where a species teaches its signatures.
+    'ground_breaker',
+    'headbutt',
+    'rockslide_run',
   ],
   opening: [
     ['quarry_hand', 2, 1],
@@ -470,6 +486,10 @@ export const HUNT_TALLOW_AUROCHS = hunt({
     'shield_bash',
     'aegis_ward',
     'grave_sentinel',
+    // The Aurochs' own three: a hunt is where a species teaches its signatures.
+    'fallow_cloud',
+    'moss_stampede',
+    'ruminate',
   ],
   opening: [
     ['sporeback_boar', 2, 1],
@@ -544,6 +564,10 @@ export const HUNT_BARROW_JACKAL = hunt({
     'grave_sentinel',
     'shield_bash',
     'aegis_ward',
+    // The Jackal's own three: a hunt is where a species teaches its signatures.
+    'shallow_grave',
+    'rot_bite',
+    'barrow_howl',
   ],
   opening: [
     ['grave_sentinel', 2, 1],

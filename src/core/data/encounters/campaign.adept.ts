@@ -48,6 +48,9 @@ export const TALLOW_BLIGHT: EncounterDef = registerEncounter({
     'root_snare',
     'briar_rampart',
     'rot_root_snare',
+    // Bloom's third shelf, taught here: the volley and the vine.
+    'thorn_volley',
+    'leech_vine',
   ],
   enemyOpeningBoard: [
     ['creeping_briar', 1, 1],
@@ -100,6 +103,9 @@ export const SALTGLASS_RIOT: EncounterDef = registerEncounter({
     'stone_barricade',
     'aegis_ward',
     'tremor_mark',
+    // Bulwark's third shelf, taught here: the cone and the lance.
+    'landslide',
+    'stone_lance',
   ],
   enemyOpeningBoard: [
     ['shieldbearer', 1, 1],

@@ -8,27 +8,27 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**282 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**318 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
 | minion | 88 | Hero | Vanguard Roster, never a deck |
-| spell | 131 | Companion | drafted into a Grimoire |
+| spell | 162 | Companion | drafted into a Grimoire |
 | ability | 27 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
-| obstacle | 30 | Hero | Hero Deck, shown as a Construct |
-| **total** | **282** | | |
+| obstacle | 35 | Hero | Hero Deck, shown as a Construct |
+| **total** | **318** | | |
 
 ### By school
 
 | School | Cards |
 |---|---:|
+| dusk | 48 |
 | frost | 45 |
+| bulwark | 44 |
+| bloom | 42 |
 | pyre | 42 |
 | surge | 41 |
-| dusk | 36 |
-| bulwark | 32 |
-| bloom | 30 |
 | arcane | 29 |
 | neutral | 27 |
 
@@ -56,7 +56,10 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`shelf.pyre.ts`](#shelfpyrets) | 14 | 13 spell, 1 obstacle |
 | [`shelf.frost.ts`](#shelffrostts) | 12 | 10 spell, 2 obstacle |
 | [`shelf.surge.ts`](#shelfsurgets) | 12 | 10 spell, 2 obstacle |
-| **total** | **282** | |
+| [`shelf.bulwark.ts`](#shelfbulwarkts) | 12 | 10 spell, 2 obstacle |
+| [`shelf.dusk.ts`](#shelfduskts) | 12 | 11 spell, 1 obstacle |
+| [`shelf.bloom.ts`](#shelfbloomts) | 12 | 10 spell, 2 obstacle |
+| **total** | **318** | |
 
 ---
 
@@ -486,13 +489,70 @@ Surge third shelf — commons, and the Lynx and Kudu signatures. — **12 cards*
 | **Capacitor Bank** | `capacitor_bank` | obstacle | 1P | 1 | companion | 30 hp | on break 20 dmg + stun 1 | empty tile (any) — range 3, LoS | — | R2 | Raises a 30 HP capacitor bank on an empty tile. When it breaks it discharges: 20 damage and Stun to every unit on or beside it. |
 | **Storm Spire** | `storm_spire` | obstacle | 3P | 2 | companion | 60 hp | on break 40 dmg + charged 1; leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 60 HP spire on an empty tile. When it breaks it earths out: 40 damage to every unit on or beside it, leaving them Charged. |
 
+### `shelf.bulwark.ts`
+
+Bulwark third shelf — commons, and the Boar and Ram signatures. — **12 cards** (10 spell, 2 obstacle).
+
+| Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
+|---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Headbutt** | `headbutt` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 1 | — | R2 | Deals 20 impact damage to an adjacent enemy and shoves it 1 tile away. Triggers standard Collision Damage (30 / 20). |
+| **Steady Footing** | `steady_footing` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 20 Armor. Draw 1 card. |
+| **Tusk Toss** | `tusk_toss` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 1 | — | — | Throws an adjacent enemy 2 tiles away. Triggers standard Collision Damage (30 / 20). |
+| **Boar Charge** | `boar_charge` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 30 impact damage to a unit and shoves it 2 tiles away. Triggers standard Collision Damage (30 / 20). |
+| **Fault Line** | `fault_line` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 20 impact damage down a 3-tile line and shoves everything on it 1 tile away from its near end. Triggers standard Collision Damage (30 / 20). |
+| **Ground Breaker** | `ground_breaker` | spell | 2P | 2 | companion | — | — | entity (any, +obstacles) — range 3, LoS | — | R2 | Deals 30 impact damage to a unit or obstacle and leaves rough ground in a cross around it for 3 turns. |
+| **Rockslide Run** | `rockslide_run` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Shoves everything on a 3-tile line 2 tiles away from its near end. Triggers standard Collision Damage (30 / 20). |
+| **Stone Lance** | `stone_lance` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 5, LoS | — | — | Deals 30 impact damage to a unit, or 50 if it is Brittle. |
+| **Landslide** | `landslide` | spell | 3P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 20 impact damage in a widening 3-deep cone and shoves everything caught 1 tile away. Triggers standard Collision Damage (30 / 20). |
+| **Rockfall** | `rockfall` | spell | 3P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | R2 | Drops 30 impact damage on a 2x2 block of tiles. Shatters anything Frozen. |
+| **Rubble Wall** | `rubble_wall` | obstacle | 1P | 1 | companion | 50 hp | leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 50 HP wall of rubble on an empty tile. Blocks movement and line of sight, and leaves rough ground when it breaks. |
+| **Vault Door** | `vault_door` | obstacle | 3P | 2 | companion | 120 hp | leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 120 HP vault door on an empty tile. Blocks movement and line of sight, and leaves rough ground when it breaks. |
+
+### `shelf.dusk.ts`
+
+Dusk third shelf — commons, and the Stag and Jackal signatures. — **12 cards** (11 spell, 1 obstacle).
+
+| Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
+|---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Carrion Feast** | `carrion_feast` | spell | 1P | 1 | companion | — | — | entity (ally, unexhausted) — range 4 | — | R2 | Bleed an un-exhausted friendly minion for 20: extracts 2 Marrow and restores 20 health to your Pact. |
+| **Gloom Bolt** | `gloom_bolt` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 5, LoS | — | R2 | Deals 20 decay damage to a unit. |
+| **Offering** | `offering` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | — | Spends an allied unit whole. Gain 3 Bones. |
+| **Rot Bite** | `rot_bite` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 1 | — | R2 | Deals 20 decay damage to an adjacent enemy and poisons it (Toxin 1). |
+| **Shadowstep** | `shadowstep` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | — | An ally moves 2 further this turn. |
+| **Barrow Howl** | `barrow_howl` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 10 decay damage to every unit in a 3x3 around the target tile and poisons them (Toxin 1), yours included. |
+| **Plague Wind** | `plague_wind` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 10 decay damage in a widening 3-deep cone and poisons everything caught (Toxin 1). |
+| **Shallow Grave** | `shallow_grave` | spell | 2P | 2 | companion | — | — | fallen (anchor) | — | — | Raises a fallen Vanguard on an Anchor Tile at 30% of its health. |
+| **Soul Toll** | `soul_toll` | spell | 2P | 2 | companion | — | — | global | — | R2 | Deals 30 damage through any armor to the weakest enemy standing. |
+| **Dread Gaze** | `dread_gaze` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Exhausts an enemy: it cannot move, strike or channel through its next turn. |
+| **Soul Rend** | `soul_rend` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 40 decay damage to a unit and restores 20 health to your Pact. |
+| **Ossuary Wall** | `ossuary_wall` | obstacle | 2P | 2 | companion | 60 hp | leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 60 HP wall of bone on an empty tile. Blocks movement and line of sight, and leaves rough ground when it breaks. |
+
+### `shelf.bloom.ts`
+
+Bloom third shelf — commons, and the Warden and Aurochs signatures. — **12 cards** (10 spell, 2 obstacle).
+
+| Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
+|---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Nettle** | `nettle` | spell | 0 | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Poisons a unit (Toxin 1). |
+| **Bark Skin** | `bark_skin` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 30 Armor. It takes root: Entangled until the end of your turn. |
+| **Ruminate** | `ruminate` | spell | 1P | 1 | companion | — | — | none | — | R2 | Restores 20 health to your Pact. Draw 1 card. |
+| **Bramble Lash** | `bramble_lash` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 20 physical damage to a unit and poisons it and everything in a cross around it (Toxin 1). |
+| **Fallow Cloud** | `fallow_cloud` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Poisons every unit in a 3x3 around the target tile (Toxin 1), yours included. No damage. |
+| **Leech Vine** | `leech_vine` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 20 toxic damage to a unit and restores 20 health to your Pact. |
+| **Moss Stampede** | `moss_stampede` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Shoves everything on a 3-tile line 1 tile away from its near end and poisons it (Toxin 1). Triggers standard Collision Damage (30 / 20). |
+| **Rootbind** | `rootbind` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Roots a unit for its next two turns (Entangle 2) and poisons it (Toxin 1). A rooted unit can still attack. |
+| **Thorn Volley** | `thorn_volley` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 20 physical damage down a 3-tile line and poisons everything on it (Toxin 1). |
+| **Rot Spores** | `rot_spores` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Poisons every unit in a wide cross around the target tile, two tiles out each way (Toxin 2), yours included. |
+| **Seed Pod** | `seed_pod` | obstacle | 1P | 1 | companion | 30 hp | on break toxin 2 | empty tile (any) — range 3, LoS | — | R2 | Raises a 30 HP seed pod on an empty tile. When it breaks, every unit on or beside it is poisoned (Toxin 2). |
+| **Warden Tree** | `warden_tree` | obstacle | 3P | 2 | companion | 90 hp | on break 20 dmg + toxin 2; leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 90 HP tree on an empty tile. When it falls it bursts: 20 damage and Toxin 2 to every unit on or beside it. |
+
 ---
 
 ## Notes
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 108 of the 282 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 132 of the 318 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 
