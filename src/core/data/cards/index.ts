@@ -31,6 +31,7 @@ import { SURGE_SHELF } from './shelf.surge.js';
 import { BULWARK_SHELF } from './shelf.bulwark.js';
 import { DUSK_SHELF } from './shelf.dusk.js';
 import { BLOOM_SHELF } from './shelf.bloom.js';
+import { VANGUARD_CARDS } from './vanguard.js';
 
 const RANK1: Record<string, CardDef> = {
   ...STARTER_CARDS,
@@ -56,6 +57,7 @@ const RANK1: Record<string, CardDef> = {
   ...BULWARK_SHELF,
   ...DUSK_SHELF,
   ...BLOOM_SHELF,
+  ...VANGUARD_CARDS,
 };
 
 /**
@@ -151,6 +153,7 @@ for (const source of [
   BULWARK_SHELF,
   DUSK_SHELF,
   BLOOM_SHELF,
+  VANGUARD_CARDS,
 ]) {
   for (const id of Object.keys(source)) {
     if (seen.has(id)) throw new Error(`duplicate card id across school files: ${id}`);
