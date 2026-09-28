@@ -1905,6 +1905,7 @@ export const DRESSING_ART: Record<Exclude<DressingId, 'waystone'>, () => THREE.T
   bonepile: makeBonepileTexture,
   embervent: makeEmberventTexture,
   bed: makeBedTexture,
+  statue: makeStatueTexture,
 };
 
 /* --- what grows back --- the forage nodes, and a bed. */
@@ -2127,6 +2128,50 @@ export function makePlaqueTexture(): THREE.Texture {
     ctx.fillRect(x, y, 1, 1);
   }
   outline(ctx, 16, 12, '#2a2418');
+  return canvasTexture(c);
+}
+
+/**
+ * A statue: a robed figure on a plinth, one arm raised, lit from the left like everything else,
+ * a plaque on the plinth's face and a white fleck on the head where the birds have been.
+ */
+export function makeStatueTexture(): THREE.Texture {
+  const { c, ctx } = makeCanvas(14, 26);
+  const stone = ramp('#8a867c');
+  // The plinth, with a cornice and a plaque.
+  ctx.fillStyle = stone[2]!;
+  ctx.fillRect(2, 19, 10, 6);
+  ctx.fillStyle = stone[1]!;
+  ctx.fillRect(1, 18, 12, 1);
+  ctx.fillRect(2, 19, 2, 6);
+  ctx.fillStyle = stone[3]!;
+  ctx.fillRect(10, 19, 2, 6);
+  ctx.fillStyle = '#9a8a5a';
+  ctx.fillRect(5, 21, 4, 2);
+  // The figure: a head, a robe widening to its hem, the raised arm and what it holds.
+  ctx.fillStyle = stone[2]!;
+  ctx.fillRect(6, 2, 2, 3);
+  ctx.fillRect(5, 5, 4, 4);
+  ctx.fillRect(4, 9, 6, 8);
+  ctx.fillRect(3, 16, 8, 2);
+  ctx.fillStyle = stone[1]!;
+  ctx.fillRect(6, 2, 1, 3);
+  ctx.fillRect(4, 9, 2, 8);
+  ctx.fillRect(3, 16, 2, 2);
+  ctx.fillStyle = stone[3]!;
+  ctx.fillRect(8, 5, 1, 4);
+  ctx.fillRect(9, 9, 1, 8);
+  ctx.fillRect(10, 16, 1, 2);
+  ctx.fillStyle = stone[2]!;
+  ctx.fillRect(9, 3, 1, 3);
+  ctx.fillRect(10, 1, 1, 3);
+  ctx.fillStyle = stone[4]!;
+  ctx.fillRect(5, 12, 4, 1);
+  ctx.fillRect(3, 10, 1, 3);
+  ctx.fillStyle = '#dcdcd2';
+  ctx.fillRect(7, 2, 1, 1);
+  contact(ctx, 7, 25, 12);
+  outline(ctx, 14, 26, stone[4]!);
   return canvasTexture(c);
 }
 

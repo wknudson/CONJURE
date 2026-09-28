@@ -197,7 +197,7 @@ export const LAMPROW: AreaDef = defineArea({
       x: HALF_X - 4,
       z: -4,
       label: 'Up to Highcourt',
-      arrive: { x: -50, z: 0 },
+      arrive: { x: -78, z: 0 },
     },
     {
       // The oil store the row is lit from, off the lane behind the quay.

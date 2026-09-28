@@ -16,6 +16,18 @@
  * the tavern on the service end where the wager duel is fought over the tables. And under the
  * service end is the Undercroft, where the relocation train forms up, the census is taken on
  * the stair, and the floor below is found to be a floor.
+ *
+ * Forty-two by forty-six now, grown evenly from twenty-eight by thirty, and still deeper than it
+ * is wide. Everything the growth added is mirrored about the processional, because nothing here
+ * was ever allowed not to be. North, up through the old range, **the beacon court**: the
+ * Spire's beacon on the axis, a garden of statues either side of it, the Archive to the west and
+ * its Annexe to the east. Either side of the court, **the colonnades**, a pillar every other row
+ * and an aisle each side of the pillars; the way down to Lamprow crosses the west one. South,
+ * down through the old range, **the bailiffs' yard**: the Night Bailiffs' barracks, one each
+ * side, and the court's stables on the axis.
+ *
+ * The Night Bailiffs walk the colonnades after dark, one crew down each, the one beat the mirror
+ * of the other.
  */
 
 import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
@@ -31,6 +43,10 @@ import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
  *   R  the Smoke-Eater's Rest — impassable; timber, on the service end
  *   U  the Undercroft — impassable; the stone stair-head over what is under the court
  *   B  the court     — impassable, the ranges either side
+ *   A  the Archive and the Annexe — impassable; stone, windowless where it matters
+ *   I  a colonnade pillar — impassable, tall and narrow
+ *   N  the bailiffs' barracks — impassable; brick
+ *   S  the stables   — impassable; timber
  *
  * `P` is 16 units and taken whole. Nothing else in the game goes past nine, which is the point:
  * from the south end of the processional the footing should fill the sky and you should still
@@ -70,48 +86,86 @@ const COURT_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { style: 'hall', minHeight: 7.0, maxHeight: 9.5, inset: 0.4, depthInset: 0.4, chimneyChance: 0, split: false },
   },
+  A: {
+    tex: 'flagstone',
+    safe: false,
+    walk: false,
+    solid: { style: 'hall', minHeight: 6.4, maxHeight: 6.4, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
+  },
+  I: {
+    tex: 'flagstone',
+    safe: false,
+    walk: false,
+    solid: { style: 'wall', minHeight: 5.8, maxHeight: 5.8, inset: 1.3, depthInset: 1.3, chimneyChance: 0, split: false },
+  },
+  N: {
+    tex: 'cobble',
+    safe: false,
+    walk: false,
+    solid: { style: 'hall', minHeight: 5.2, maxHeight: 5.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0.6, split: false },
+  },
+  S: {
+    tex: 'cobble',
+    safe: false,
+    walk: false,
+    solid: { style: 'cottage', minHeight: 3.8, maxHeight: 4.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0.2, split: false, wall: 'timber' },
+  },
 };
 
-const P26 = 'p'.repeat(26);
-const C26 = 'c'.repeat(26);
 
 /**
- * 28 wide by 30 deep.
+ * 42 wide by 46 deep.
  *
- * Column 0 opens at rows 14 and 15 — west, down onto Lamprow's High Street. The two wards
- * share a lamp string and nothing else.
+ * The west edge opens at rows 22 and 23 — west, across the colonnade and down onto Lamprow's
+ * High Street. The two wards share a lamp string and nothing else.
  */
 const GRID: readonly string[] = [
-  'BBBBBBBBBBBBBBBBBBBBBBBBBBBB', //  0
-  `B${P26}B`, //  1  the head of the processional
-  'BppppppPPPPPPPPPPPPPPppppppB', //  2  the Spire's footing, and THE LOBBY under it
-  'BppppppPPPPPPPPPPPPPPppppppB', //  3
-  'BppppppPPPPPPPPPPPPPPppppppB', //  4
-  'BppppppPPPPPPPPPPPPPPppppppB', //  5
-  `B${P26}B`, //  6  the lobby doors, onto the processional
-  'BppVVppppppppppppppppppVVppB', //  7
-  `B${P26}B`, //  8
-  'BppppppppppppppppppppppppccB', //  9
-  'BccppppppppppppppppppppppppB', // 10
-  `B${P26}B`, // 11
-  'BppVVVVppppppppppppppVVVVppB', // 12
-  `B${P26}B`, // 13
-  `c${P26}B`, // 14  the way down to Lamprow
-  `c${P26}B`, // 15
-  `B${P26}B`, // 16
-  'BppVVVVppppppppppppppVVVVppB', // 17
-  `B${P26}B`, // 18
-  'BccppppppppppppppppppppppppB', // 19
-  `B${C26}B`, // 20  the service end; the Rest's door
-  'BccRRRRRRcccccccBBBBBBBccccB', // 21  THE SMOKE-EATER'S REST, west; the service terrace, east
-  'BccRRRRRRcccccccBBBBBBBccccB', // 22
-  `B${C26}B`, // 23
-  'Bcc.ccccccccccccccccccc.cccB', // 24  the Undercroft's door
-  'BccUUUUUUcccccccccccccccc.cB', // 25  THE UNDERCROFT's stair-head
-  'BccUUUUUUcccccccccccccccc.cB', // 26
-  `B${C26}B`, // 27
-  'Bcc.ccccccccccccccccccc.cccB', // 28
-  'BBBBBBBBBBBBBBBBBBBBBBBBBBBB', // 29
+  'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', //  0  the outer range
+  'BpAAAAAAAAAAppppppppppppppppppAAAAAAAAAApB', //  1  THE ARCHIVE (west)        THE BEACON COURT and its statues        THE ANNEXE (east)
+  'BpAAAAAAAAAAppppppppppppppppppAAAAAAAAAApB', //  2
+  'BpAAAAAAAAAAppppppppppppppppppAAAAAAAAAApB', //  3
+  'BpAAAAAAAAAAppppppppppppppppppAAAAAAAAAApB', //  4
+  'BppppppppppppppppppppppppppppppppppppppppB', //  5
+  'BppppVVVVVVppppppppppppppppppppVVVVVVppppB', //  6  balustrades, mirrored
+  'BppppppppppppppppppppppppppppppppppppppppB', //  7
+  'BppppppBBppBBBBBBBBBBBBBBBBBBBBppBBppppppB', //  8  the old north range, two ways up through it
+  'BppIpppBppppppppppppppppppppppppppBpppIppB', //  9  THE COLONNADES, either side of the court: a pillar every other row
+  'BppppppBppppppPPPPPPPPPPPPPPppppppBppppppB', // 10  the Spire's footing, and THE LOBBY under it
+  'BppIpppBppppppPPPPPPPPPPPPPPppppppBpppIppB', // 11
+  'BppppppBppppppPPPPPPPPPPPPPPppppppBppppppB', // 12
+  'BppIpppBppppppPPPPPPPPPPPPPPppppppBpppIppB', // 13
+  'BppppppBppppppppppppppppppppppppppBppppppB', // 14  the lobby doors, onto the processional
+  'BppIpppBppVVppppppppppppppppppVVppBpppIppB', // 15
+  'BppppppBppppppppppppppppppppppppppBppppppB', // 16
+  'BppIpppBppppppppppppppppppppppppccBpppIppB', // 17
+  'BppppppBccppppppppppppppppppppppppBppppppB', // 18
+  'BppIpppBppppppppppppppppppppppppppBpppIppB', // 19
+  'BppppppBppVVVVppppppppppppppVVVVppBppppppB', // 20
+  'BppppppBppppppppppppppppppppppppppBppppppB', // 21
+  'ccccccccppppppppppppppppppppppppppBppppppB', // 22  the way down to Lamprow, across the west colonnade
+  'ccccccccppppppppppppppppppppppppppBppppppB', // 23
+  'BppppppBppppppppppppppppppppppppppBppppppB', // 24
+  'BppIpppBppVVVVppppppppppppppVVVVppBpppIppB', // 25
+  'BppppppBppppppppppppppppppppppppppBppppppB', // 26
+  'BppIpppBccppppppppppppppppppppppppBpppIppB', // 27
+  'BppppppBccccccccccccccccccccccccccBppppppB', // 28  the service end; the Rest's door
+  'BppIpppBccRRRRRRcccccccBBBBBBBccccBpppIppB', // 29  THE SMOKE-EATER'S REST, west; the service terrace, east
+  'BppppppBccRRRRRRcccccccBBBBBBBccccBppppppB', // 30
+  'BppIpppBccccccccccccccccccccccccccBpppIppB', // 31
+  'BppppppBcc.ccccccccccccccccccc.cccBppppppB', // 32  the Undercroft's door
+  'BppIpppBccUUUUUUcccccccccccccccc.cBpppIppB', // 33  THE UNDERCROFT's stair-head
+  'BppppppBccUUUUUUcccccccccccccccc.cBppppppB', // 34
+  'BppIpppBccccccccccccccccccccccccccBpppIppB', // 35
+  'BppppppBcc.ccccccccccccccccccc.cccBppppppB', // 36
+  'BppppppBBBBBccBBBBBBBBBBBBBBccBBBBBppppppB', // 37  the old south range, two ways down through it
+  'BccccccccccccccccccccccccccccccccccccccccB', // 38  THE BAILIFFS' YARD
+  'BccccccccccccccccccccccccccccccccccccccccB', // 39
+  'BccccNNNNNNNNNNccccccccccccNNNNNNNNNNccccB', // 40  the Night Bailiffs' barracks, one each side
+  'BccccNNNNNNNNNNccccccccccccNNNNNNNNNNccccB', // 41
+  'BccccNNNNNNNNNNccccccccccccNNNNNNNNNNccccB', // 42
+  'BccccccccccccccccSSSSSSSSccccccccccccccccB', // 43  the court's stables
+  'BccccccccccccccccSSSSSSSSccccccccccccccccB', // 44
+  'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', // 45  the outer range
 ];
 
 const HALF_X = (GRID[0]!.length * TILE) / 2;
@@ -141,28 +195,28 @@ export const HIGHCOURT: AreaDef = defineArea({
       // The lobby under the footing. The doors the Summons opens are at the far end of it.
       to: 'highcourt_spire_lobby',
       x: 0,
-      z: zOfRow(5) + TILE / 2 + 1.4,
+      z: zOfRow(13) + TILE / 2 + 1.4,
       label: 'Into the Spire',
-      door: { x: 0, z: zOfRow(5) + TILE / 2 + 0.05, facesSouth: true, sign: 'spire', style: 'arch' },
+      door: { x: 0, z: zOfRow(13) + TILE / 2 + 0.05, facesSouth: true, sign: 'spire', style: 'arch' },
       arrive: { x: 0, z: 20 },
     },
     {
       // The Rest, on the service end, with its door onto the service lane.
       to: 'highcourt_smoke_eaters',
-      x: xOfCol(5.5),
-      z: zOfRow(21) - TILE / 2 - 1.4,
+      x: xOfCol(12.5),
+      z: zOfRow(29) - TILE / 2 - 1.4,
       label: "Into the Smoke-Eater's Rest",
-      door: { x: xOfCol(5.5), z: zOfRow(21) - TILE / 2 - 0.05, facesSouth: false, sign: 'tavern' },
+      door: { x: xOfCol(12.5), z: zOfRow(29) - TILE / 2 - 0.05, facesSouth: false, sign: 'tavern' },
       arrive: { x: 0, z: -20 },
     },
     {
       // The stair-head over the Undercroft. Where the convoy forms up, and where the census is
       // taken, and where the floor below is.
       to: 'highcourt_undercroft',
-      x: xOfCol(5.5),
-      z: zOfRow(25) - TILE / 2 - 1.4,
+      x: xOfCol(12.5),
+      z: zOfRow(33) - TILE / 2 - 1.4,
       label: 'Down into the Undercroft',
-      door: { x: xOfCol(5.5), z: zOfRow(25) - TILE / 2 - 0.05, facesSouth: false, sign: 'undercroft', style: 'iron' },
+      door: { x: xOfCol(12.5), z: zOfRow(33) - TILE / 2 - 0.05, facesSouth: false, sign: 'undercroft', style: 'iron' },
       arrive: { x: 0, z: -24 },
     },
   ],
@@ -173,6 +227,9 @@ export const HIGHCOURT: AreaDef = defineArea({
       { kind: 'rook', x: -34, z: -54, roam: 26, count: 5 },
       { kind: 'rook', x: 34, z: 2, roam: 26, count: 5 },
       { kind: 'rat', x: 42, z: 46, roam: 4, count: 2 },
+      // Rooks over the statues, which is what statues are for, and rats in the stable straw.
+      { kind: 'rook', x: 0, z: -80, roam: 20, count: 4 },
+      { kind: 'rat', x: 20, z: 80, roam: 4, count: 2 },
     ],
     /** Dressed stone and rank. Bollards and braziers on the processional; clutter on the service end. */
     dressing: [
@@ -205,6 +262,24 @@ export const HIGHCOURT: AreaDef = defineArea({
       { kind: 'washing', x: 30, z: 50, yaw: 0 },
       { kind: 'bramble', x: -46, z: 50 },
       { kind: 'wildflowers', x: 42, z: 50 },
+
+      // The beacon court: its garden of statues, a pair on each rank, and bollards on the axis.
+      { kind: 'statue', x: -18, z: -84 },
+      { kind: 'statue', x: 18, z: -84 },
+      { kind: 'statue', x: -18, z: -74 },
+      { kind: 'statue', x: 18, z: -74 },
+      { kind: 'statue', x: -18, z: -64 },
+      { kind: 'statue', x: 18, z: -64 },
+      { kind: 'bollard', x: -8, z: -86 },
+      { kind: 'bollard', x: 8, z: -86 },
+      { kind: 'bollard', x: -8, z: -66 },
+      { kind: 'bollard', x: 8, z: -66 },
+      // The bailiffs' yard: their carts, their fodder, the stables' trough.
+      { kind: 'cart', x: -10, z: 70 },
+      { kind: 'barrel', x: -36, z: 86 },
+      { kind: 'barrel', x: 36, z: 86 },
+      { kind: 'haybale', x: -22, z: 82 },
+      { kind: 'trough', x: 22, z: 82 },
     ],
     /**
      * The court, on the processional, and the two who keep the service end.
@@ -238,6 +313,11 @@ export const HIGHCOURT: AreaDef = defineArea({
       { x: -26, z: 10 },
       { x: 22, z: 10 },
       { x: -22, z: 38 },
+      // Down both colonnades, mirrored, and the way the bailiffs come and go.
+      { x: -78, z: -40 },
+      { x: 78, z: -40 },
+      { x: -78, z: 40 },
+      { x: 78, z: 40 },
     ],
     crates: [
       { x: -18, z: 46 },
@@ -248,7 +328,7 @@ export const HIGHCOURT: AreaDef = defineArea({
         // On the service end, where the court does not look: the terrace's face.
         text: 'HE COUNTS THE FLOORS',
         wallX: 24,
-        wallZ: zOfRow(21) - TILE / 2 - 0.05,
+        wallZ: zOfRow(29) - TILE / 2 - 0.05,
         dx: 0,
         facesSouth: false,
         tint: '#9e8f5e',
@@ -262,8 +342,8 @@ export const HIGHCOURT: AreaDef = defineArea({
         // Undercroft door, in fresh paint, and it appears only once the Bone Bastion is
         // walked -- which is to say, the week the Summons goes up.
         text: "DON'T CARRY IT IN",
-        wallX: xOfCol(5.5),
-        wallZ: zOfRow(25) - TILE / 2 - 0.05,
+        wallX: xOfCol(12.5),
+        wallZ: zOfRow(33) - TILE / 2 - 0.05,
         dx: 5.8,
         facesSouth: false,
         tint: '#a4543a',
@@ -279,7 +359,7 @@ export const HIGHCOURT: AreaDef = defineArea({
         // before it means anything.
         text: 'THE FLOOR IS JUST A FLOOR',
         wallX: 0,
-        wallZ: zOfRow(29) - TILE / 2 - 0.05,
+        wallZ: zOfRow(37) - TILE / 2 - 0.05,
         dx: 0,
         facesSouth: false,
         tint: '#8c93a6',
@@ -287,5 +367,43 @@ export const HIGHCOURT: AreaDef = defineArea({
       },
     ],
     horizon: 'city',
+    /**
+     * The Night Bailiffs, after dark, one crew down each colonnade: mirrored beats, because in
+     * Highcourt even the bailiffs are symmetrical. The west one crosses the way down to Lamprow,
+     * so coming up from the High Street at night is a matter of timing.
+     */
+    packs: [
+      {
+        encounterId: 'pack_night_bailiffs',
+        id: 'west_colonnade',
+        x: -64,
+        z: -10,
+        roam: 6,
+        hours: 'night',
+        band: 'west',
+        behaviour: 'beat',
+        route: [
+          { x: -64, z: -56 },
+          { x: -64, z: 52 },
+        ],
+      },
+      {
+        encounterId: 'pack_night_bailiffs',
+        id: 'east_colonnade',
+        x: 64,
+        z: -10,
+        roam: 6,
+        hours: 'night',
+        band: 'east',
+        behaviour: 'beat',
+        route: [
+          { x: 64, z: -56 },
+          { x: 64, z: 52 },
+        ],
+      },
+    ],
+    /** The Spire's beacon, on the axis behind the footing, sweeping the whole of Azo at night. */
+    landmarks: [{ kind: 'lighthouse', x: 0, z: -76 }],
+    vignettes: [{ id: 'well_yard', x: 0, z: 64 }],
   },
 });

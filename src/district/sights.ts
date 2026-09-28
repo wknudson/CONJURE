@@ -705,6 +705,118 @@ export const SIGHTS: readonly SightDef[] = [
       'Built for the engine that would pump the cut dry. The engine never came. The family paid ' +
       'to guard it lives in the house now, and is still waiting.',
   },
+
+  /* ---- Highcourt ---- */
+  {
+    id: 'highcourt:the_surveyor',
+    areaId: 'highcourt',
+    at: { x: -18, z: -80.8 },
+    label: 'Look at the statue',
+    caption:
+      'The man who drew Highcourt before it was built, holding the plan. The plan in his hand ' +
+      'is of a different city. Nobody has said so, which in Highcourt is the same as nobody ' +
+      'having noticed.',
+  },
+  {
+    id: 'highcourt:the_first_magistrate',
+    areaId: 'highcourt',
+    at: { x: 18, z: -80.8 },
+    label: 'Look at the statue',
+    caption:
+      'The first Magistrate, one hand on a ledger. The ledger is the only part of the statue ' +
+      'kept clean. Somebody polishes it every morning, and will not say on whose orders.',
+  },
+  {
+    id: 'highcourt:the_census_taker',
+    areaId: 'highcourt',
+    at: { x: -18, z: -70.8 },
+    label: 'Look at the statue',
+    caption:
+      'A census-taker with his tally-stick, notched in the stone. The notches go all the way ' +
+      'round the stick and start again.',
+  },
+  {
+    id: 'highcourt:the_nameless',
+    areaId: 'highcourt',
+    at: { x: 18, z: -70.8 },
+    label: 'Look at the statue',
+    caption:
+      'A robed figure with its face chiselled off and its plaque left blank. The rooks treat it ' +
+      'with more respect than the court does.',
+  },
+  {
+    id: 'highcourt:the_lamplighter_general',
+    areaId: 'highcourt',
+    at: { x: -18, z: -60.8 },
+    label: 'Look at the statue',
+    caption:
+      'The Lamplighter-General, pole raised to a lamp that was never fitted. Lamprow sends a ' +
+      'man once a year to light a candle at its feet. The court sends a man to blow it out.',
+  },
+  {
+    id: 'highcourt:the_child',
+    areaId: 'highcourt',
+    at: { x: 18, z: -60.8 },
+    label: 'Look at the statue',
+    caption:
+      'The one figure in the garden who was not paid to be one: a child with a hoop. The plaque ' +
+      'says WARD SEVEN and a year, and the court will not say what happened in it.',
+  },
+  {
+    id: 'highcourt:the_beacon',
+    areaId: 'highcourt',
+    at: { x: 0, z: -71 },
+    label: 'Look up at the beacon',
+    caption:
+      'Lit every night, sweeping the city from the Rimefields to the Caldera. It shows nothing ' +
+      'and lights nothing. It is there so that everywhere in Azo is somewhere it has been seen ' +
+      'from.',
+  },
+  {
+    id: 'highcourt:the_archive_door',
+    areaId: 'highcourt',
+    at: { x: -56, z: -69 },
+    label: 'Look at the Archive door',
+    caption:
+      'Three locks and a slot. Documents go in through the slot. There is no slot going the ' +
+      'other way.',
+  },
+  {
+    id: 'highcourt:the_annexe',
+    areaId: 'highcourt',
+    at: { x: 56, z: -69 },
+    label: 'Look at the Annexe',
+    caption:
+      'Built when the Archive filled, and it filled in a year. A third building has been drawn ' +
+      'and priced, and the price is on file in the Annexe, which is full.',
+  },
+  {
+    id: 'highcourt:the_colonnade',
+    areaId: 'highcourt',
+    at: { x: -76, z: -30 },
+    label: 'Look along the colonnade',
+    caption:
+      'Columns in pairs, each pair a different stone: one from every ward, the plaque says, ' +
+      'freely given. The stone from Ward Seven is the one that is always wet.',
+  },
+  {
+    id: 'highcourt:the_bailiffs_yard',
+    areaId: 'highcourt',
+    at: { x: 0, z: 72 },
+    label: "Look round the bailiffs' yard",
+    caption:
+      'Their lanterns hang on numbered hooks by the gate. At dusk the Night Bailiffs take them ' +
+      'down; at dawn they hang them up again, and two are always missing.',
+  },
+  {
+    id: 'highcourt:the_stables',
+    areaId: 'highcourt',
+    at: { x: 0, z: 78 },
+    label: 'Look at the stables',
+    caption:
+      'Better kept than the Sink. The horses are fed a ration the Magistracy calls generous. ' +
+      "Lamprow's tithe clerk has been heard to use the same word.",
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {

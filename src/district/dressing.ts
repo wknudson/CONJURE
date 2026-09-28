@@ -104,7 +104,8 @@ export type DressingId =
   | 'honeycomb'
   | 'bonepile'
   | 'embervent'
-  | 'bed';
+  | 'bed'
+  | 'statue';
 
 /**
  * The vocabulary.
@@ -178,6 +179,9 @@ export const DRESSING: Record<DressingId, DressingKind> = {
   bonepile: { form: 'billboard', size: 1.2, collides: true, note: 'Old bones, heaped. Something keeps them.' },
   embervent: { form: 'ground', size: 3.0, collides: false, note: 'A crack in a foundry floor that breathes. Rake it for what it coughs up.' },
   bed: { form: 'box', size: 1.0, collides: true, note: 'A mattress on a frame. Buys the morning, and nothing else.' },
+
+  /* --- what a court puts up to itself --- */
+  statue: { form: 'billboard', size: 3.0, collides: true, note: 'A robed figure on a plinth. Highcourt keeps a garden of them, and a plaque under each.' },
 };
 
 /**
