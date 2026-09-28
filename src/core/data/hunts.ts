@@ -217,6 +217,44 @@ export const HUNTS: readonly Hunt[] = [
     tier: 'novice',
     region: 'The Storm Shelf',
   },
+
+  // ------------------------------------------------------- the fourth bloodlines
+  {
+    encounterId: 'hunt_chalk_rhino',
+    species: 'rhino',
+    tier: 'master',
+    region: 'The Chalk Road',
+  },
+  {
+    encounterId: 'hunt_bastion_beetle',
+    species: 'beetle',
+    tier: 'adept',
+    region: 'The Bone Bastion',
+  },
+  {
+    encounterId: 'hunt_ashwood_owl',
+    species: 'owl',
+    tier: 'adept',
+    region: 'The Ashwood',
+  },
+  {
+    encounterId: 'hunt_bastion_spider',
+    species: 'spider',
+    tier: 'master',
+    region: 'The Bone Bastion',
+  },
+  {
+    encounterId: 'hunt_ashwood_fox',
+    species: 'fox',
+    tier: 'novice',
+    region: 'The Ashwood',
+  },
+  {
+    encounterId: 'hunt_tallow_moth',
+    species: 'moth',
+    tier: 'novice',
+    region: 'The Tallow Levels',
+  },
 ];
 
 export function huntByEncounter(encounterId: string): Hunt | undefined {
