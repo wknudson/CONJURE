@@ -476,6 +476,120 @@ export const SIGHTS: readonly SightDef[] = [
       "The bone-boiler's great pot, cold for once, a ladder against it. Written on the ladder " +
       'is a rule: nobody climbs it alone.',
   },
+
+  /* ---- The Cinderworks ---- */
+  {
+    id: 'cinderworks:the_stack',
+    areaId: 'cinderworks',
+    at: { x: 86, z: -24.6 },
+    label: 'Look up at the stack',
+    caption:
+      'Taller than anything the Magistracy owns, and the flare at its lip never goes out. The ' +
+      'works keeps a man whose whole job is to watch it and ring a bell if it does. He has rung ' +
+      'it once.',
+  },
+  {
+    id: 'cinderworks:the_quench_channel',
+    areaId: 'cinderworks',
+    at: { x: -82, z: 40 },
+    label: 'Look into the channel',
+    caption:
+      'The slag is run in to break it, and the water hisses and throws it back up as grey sand. ' +
+      'The sand is swept up and sold to Highcourt for its paths. Highcourt walks on the ' +
+      'Cinderworks.',
+  },
+  {
+    id: 'cinderworks:the_channel_bridge',
+    areaId: 'cinderworks',
+    at: { x: -88, z: 2 },
+    label: 'Look along the rail',
+    caption:
+      'An iron bridge, warm underfoot even in winter. The rail is polished bright in two ' +
+      'places, left and right, the height of a hand, where the night crews lean to wait.',
+  },
+  {
+    id: 'cinderworks:the_slag_bank',
+    areaId: 'cinderworks',
+    at: { x: -100, z: -30 },
+    label: 'Look at the slag bank',
+    caption:
+      'Tipped over the far side of the channel and left to cool, which it never quite has. ' +
+      'Where it cracks it breathes, and the cracks are the only warm places anybody sleeps who ' +
+      'is not on the barracks roll.',
+  },
+  {
+    id: 'cinderworks:the_pump',
+    areaId: 'cinderworks',
+    at: { x: -16, z: -54 },
+    label: 'Look at the pump',
+    caption:
+      "The barracks' one pump, its handle chained, and a board giving the hours it may be " +
+      'worked. The hours are the ones when everybody is at the furnaces.',
+  },
+  {
+    id: 'cinderworks:the_roll_call',
+    areaId: 'cinderworks',
+    at: { x: -2, z: -54 },
+    label: 'Read the roll',
+    caption:
+      'A number for a name, a bunk for a number. Some numbers have a second number chalked ' +
+      'beside them: the shift they did not come back from.',
+  },
+  {
+    id: 'cinderworks:the_barracks_door',
+    areaId: 'cinderworks',
+    at: { x: 10, z: -66 },
+    label: 'Look at the barracks door',
+    caption:
+      'One door to a family, four families to a stair. Each door carries a tin plate with the ' +
+      "works' mark. The plates are the works' property. So, the plates say, is the door.",
+  },
+  {
+    id: 'cinderworks:the_scrap_heap',
+    areaId: 'cinderworks',
+    at: { x: 70, z: -26 },
+    label: 'Look at the scrap',
+    caption:
+      'Broken moulds, split ladles, a bedframe, rails, sorted by what they were before the ' +
+      "melt. Somebody has set a child's iron horse on top of the heap, where it will go in " +
+      'last.',
+  },
+  {
+    id: 'cinderworks:the_wagons',
+    areaId: 'cinderworks',
+    at: { x: -50, z: 62 },
+    label: 'Look at the wagons',
+    caption:
+      'Wagons on the siding, loaded with pig iron for Highcourt and chocked since the week the ' +
+      'tithe went up. The iron is rusting. The tithe is not.',
+  },
+  {
+    id: 'cinderworks:the_engine_shed',
+    areaId: 'cinderworks',
+    at: { x: 90, z: 70 },
+    label: 'Look into the engine shed',
+    caption:
+      'The engine is in its shed with its fire drawn, and a shunter asleep in the cab, because ' +
+      'a shunter who sleeps in the barracks gets called to the furnaces.',
+  },
+  {
+    id: 'cinderworks:the_buffer_stop',
+    areaId: 'cinderworks',
+    at: { x: -96, z: 70 },
+    label: 'Look at the buffer stop',
+    caption:
+      'The rails stop at a timber baulk and a bollard; past them the channel, and past that the ' +
+      'Caldera. The baulk has been hit so often it is shaped like the wagon that hit it.',
+  },
+  {
+    id: 'cinderworks:the_sorting_shed',
+    areaId: 'cinderworks',
+    at: { x: 98, z: -34 },
+    label: 'Look at the shed door',
+    caption:
+      "The scrap-sorters' shed. On the door, in slag-chalk: WE KNOW WHAT IT WAS. The works has " +
+      'painted over it twice, and the second coat is the thinner.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {

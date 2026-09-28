@@ -307,7 +307,7 @@ export const ASHFALL: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: zOfRow(18),
       label: 'West, down the cart lane to the Cinderworks',
-      arrive: { x: 62, z: 0 },
+      arrive: { x: 98, z: 0 },
     },
     {
       // West again, off the plaza's lane. Two ways off the same edge, because Ward Seven is not

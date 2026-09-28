@@ -7,11 +7,22 @@
  * only thing here you have to go *around*, and walking the ward is a matter of picking which
  * side of them to take.
  *
- * Thirty-four by twenty-six now. The Hall is the building the works were always implied to
- * have -- the flats the contract names are its casting floor -- and the bill fence the poster
- * pastes has a shed behind it with a press in it. South of the furnace houses a rail spur runs
- * the width of the ward, and past it the slag terraces, where the ground is still warm enough
- * to vent and there is ore in the seam if you work it.
+ * Fifty-two by forty, grown evenly from thirty-four by twenty-six. The Hall is the building the
+ * works were always implied to have -- the flats the contract names are its casting floor --
+ * and the bill fence the poster pastes has a shed behind it with a press in it. South of the
+ * furnace houses a rail spur runs the width of the ward, and past it the slag terraces, where
+ * the ground is still warm enough to vent and there is ore in the seam if you work it.
+ *
+ * What the growth added is the rest of the works. North, through the range, **the barracks**:
+ * back-to-backs for the hands, a lane, a drying green with the one pump. West, **the quench
+ * channel** the slag is run into, the height of the map, crossed by the barracks lane, an iron
+ * bridge on the road to the Caldera, and the rails; past it the slag bank, still breathing.
+ * East, **the scrapyard**, heaps and sorting sheds under the blast furnace's stack. South,
+ * through the range, **the rail yard**: three tracks on the ballast, wagons standing on them
+ * since the tithe went up, and the engine shed the top track runs into.
+ *
+ * Night crews since the growth, none of them in the old works: the Slag Rats walk the rail yard
+ * and keep a man at the channel bridge, and a scavenging crew works the scrapyard.
  *
  * The ground tells the story in bands. Clinker on the casting floor, where it cooled hard;
  * ash in the yards, where it fell, with two cooling ponds cut into it; cobbles only in the
@@ -34,6 +45,13 @@ import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
  *   P  the poster's shed — impassable; timber, one storey
  *   H  slag heap     — impassable, low and broad, taken whole
  *   B  the ranges    — impassable, the ward wall
+ *   b  the barracks  — impassable; plaster back-to-backs
+ *   q  the quench channel — impassable
+ *   f  an iron bridge — over the channel
+ *   r  track         — the rails, on their ties
+ *   w  a wagon       — impassable; standing on a track
+ *   E  the engine shed — impassable; brick
+ *   k  a sorting shed — impassable; timber
  *
  * `F` carries `chimneyChance: 0.9` rather than the ward's 0.4. A furnace without a stack is
  * a shed, and the skyline is most of what says this place burns.
@@ -75,46 +93,84 @@ const WORKS_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { style: 'terrace', minHeight: 4.6, maxHeight: 6.8, inset: 0.3, depthInset: 0.3, chimneyChance: 0.3, split: true },
   },
+  b: {
+    tex: 'ash',
+    safe: false,
+    walk: false,
+    solid: { style: 'terrace', minHeight: 4.0, maxHeight: 4.8, inset: 0.3, depthInset: 0.3, chimneyChance: 0.6, split: true, wall: 'plaster' },
+  },
+  q: { tex: 'water', safe: false, walk: false },
+  f: { tex: 'ironplate', safe: false, walk: true },
+  r: { tex: 'ironplate', safe: false, walk: true },
+  w: {
+    tex: 'ironplate',
+    safe: false,
+    walk: false,
+    solid: { style: 'plain', minHeight: 2.4, maxHeight: 2.8, inset: 0.4, depthInset: 0.6, chimneyChance: 0, split: true, wall: 'timber' },
+  },
+  E: {
+    tex: 'ironplate',
+    safe: false,
+    walk: false,
+    solid: { style: 'hall', minHeight: 6.4, maxHeight: 6.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false },
+  },
+  k: {
+    tex: 'ash',
+    safe: false,
+    walk: false,
+    solid: { style: 'cottage', minHeight: 3.4, maxHeight: 3.8, inset: 0.3, depthInset: 0.3, chimneyChance: 0.2, split: true, wall: 'timber' },
+  },
 };
 
-const C32 = 'c'.repeat(32);
-const S32 = 's'.repeat(32);
-const A32 = 'a'.repeat(32);
 
 /**
- * 34 wide by 26 deep.
+ * 52 wide by 40 deep.
  *
- * Column 33 opens at rows 12 and 13 — the cart lane east, up to Ashfall — and the same two
- * rows run clean through to column 0, which is the way west into the Caldera. The works sit
- * on the line between the two, which is the point of them.
+ * The east edge opens at rows 19 and 20 — the cart lane, up to Ashfall — and the same two rows
+ * run clean through to the west edge over the channel bridge, which is the way into the
+ * Caldera. The works sit on the line between the two, which is the point of them.
  */
 const GRID: readonly string[] = [
-  'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', //  0  the north range
-  `B${C32}B`, //  1  the north cart lane
-  'BcFFFFcFFFFcYYYYYYYYYYcFFFFcFFFFcB', //  2  furnace houses, and THE FOUNDRY HALL between them
-  'BcFFFFcFFFFcYYYYYYYYYYcFFFFcFFFFcB', //  3
-  'BcccccccccccYYYYYYYYYYcccccccccccB', //  4
-  `B${C32}B`, //  5  the Hall's door, onto the lane
-  `B${S32}B`, //  6  the casting floor
-  'BsssssaaasssssssssssssssaaassssssB', //  7
-  `B${S32}B`, //  8
-  `B${S32}B`, //  9
-  'BsssHHHHHHssssssssssssHHHHHHsssssB', // 10  the heaps
-  'BsssHHHHHHssssssssssssHHHHHHsssssB', // 11
-  'sssssssssssssssssssssssssssssssssc', // 12  west, out to the Caldera; east, up to the ward
-  'sssssssssssssssssssssssssssssssssc', // 13
-  `B${A32}B`, // 14  the ash yards
-  'BaaaaaWWWWaaaaHHHHHHaaaaWWWWaaaaaB', // 15  the cooling ponds, and the middle heap
-  'BaaaaaWWWWaaaaHHHHHHaaaaWWWWaaaaaB', // 16
-  `B${A32}B`, // 17
-  `B${C32}B`, // 18  the south cart lane
-  'BcPPPPcccFFFFccccFFFFccccFFFFccccB', // 19  THE POSTER'S SHED, west, and the south furnaces
-  'BcPPPPcccFFFFccccFFFFccccFFFFccccB', // 20
-  `B${C32}B`, // 21  the rail spur
-  'B................................B', // 22  the slag terraces
-  'Ba...aaaa...aaaaaaaa...aaaa...aaaB', // 23
-  `B${A32}B`, // 24
-  'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', // 25  the south range
+  'BBBqqBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', //  0  the barracks wall
+  'aaaqqabbbbbbbbbbaabbbbbbbbbbbaabbbbbbbbbbaabbbbbbbba', //  1  THE BARRACKS: back-to-backs for the works' hands
+  'aaaqqabbbbbbbbbbaabbbbbbbbbbbaabbbbbbbbbbaabbbbbbbba', //  2
+  'cccffccccccccccccccccccccccccccccccccccccccccccccccc', //  3  the barracks lane, over the channel
+  'aaaqqabbbbbbbaabbbbbbbbbbbaabbbbbbbbbaabbbbbbbbbbbaa', //  4
+  'aaaqqabbbbbbbaabbbbbbbbbbbaabbbbbbbbbaabbbbbbbbbbbaa', //  5
+  'aaaqqaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', //  6  the drying green, and the pump
+  '...qqcc..BBBBBBBBccBBBBBBBBBBBBBBBccBBBBBBBaaaaaaaaa', //  7  the north range, with two ways down through it
+  '...qqcc..BccccccccccccccccccccccccccccccccBaaHHHaaaa', //  8  THE QUENCH CHANNEL (west), the slag bank beyond it        THE SCRAPYARD (east)
+  '...qqcc..BcFFFFcFFFFcYYYYYYYYYYcFFFFcFFFFcBaaHHHaakk', //  9  furnace houses, and THE FOUNDRY HALL between them
+  '...qqcc..BcFFFFcFFFFcYYYYYYYYYYcFFFFcFFFFcBaaHHHaakk', // 10
+  '...qqcc..BcccccccccccYYYYYYYYYYcccccccccccBaaaaaaaaa', // 11
+  '...qqcc..BccccccccccccccccccccccccccccccccBaaaaaaaaa', // 12  the Hall's door, onto the lane
+  '...qqcc..BssssssssssssssssssssssssssssssssBaaaaaHHHa', // 13  the casting floor
+  '...qqcc..BsssssaaasssssssssssssssaaassssssBaaaaaHHHa', // 14
+  '...qqcc..BssssssssssssssssssssssssssssssssBaaaaaHHHa', // 15
+  '...qqcc..BssssssssssssssssssssssssssssssssBaaaaaaaaa', // 16
+  '...qqcc..BsssHHHHHHssssssssssssHHHHHHsssssBaaaaaaaaa', // 17  the heaps
+  '...qqcc..BsssHHHHHHssssssssssssHHHHHHsssssBaaaaaaaaa', // 18
+  'sssffssssssssssssssssssssssssssssssssssssscccccccccc', // 19  west over the channel bridge, out to the Caldera; east, up to the ward
+  'sssffssssssssssssssssssssssssssssssssssssscccccccccc', // 20
+  '...qqcc..BaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaBaaaaaaaaa', // 21  the ash yards
+  '...qqcc..BaaaaaWWWWaaaaHHHHHHaaaaWWWWaaaaaBaHHHaaaaa', // 22  the cooling ponds, and the middle heap
+  '...qqcc..BaaaaaWWWWaaaaHHHHHHaaaaWWWWaaaaaBaHHHaaaaa', // 23
+  '...qqcc..BaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaBaHHHaaaaa', // 24
+  '...qqcc..BccccccccccccccccccccccccccccccccBakkaaaaaa', // 25  the south cart lane
+  '...qqcc..BcPPPPcccFFFFccccFFFFccccFFFFccccBakkaaaaaa', // 26  THE POSTER'S SHED, west, and the south furnaces
+  '...qqcc..BcPPPPcccFFFFccccFFFFccccFFFFccccBaaaaaHHHa', // 27
+  '...qqcc..BccccccccccccccccccccccccccccccccBaaaaaHHHa', // 28  the rail spur
+  '...qqcc..B................................BaaaaaHHHa', // 29  the slag terraces
+  '...qqcc..Ba...aaaa...aaaaaaaa...aaaa...aaaBaHHaaaaaa', // 30
+  '...qqcc..BaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaBaHHaaaaaa', // 31
+  '...qqcc..BBBBBBBBBBBaaBBBBBBBBBBBBBBaaBBBBBaaaaaaaaa', // 32  the south range, with two ways down through it
+  'aaaqqaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaEEEEEEa', // 33  THE RAIL YARD: ballast, three tracks, the wagons standing, the engine shed (east)
+  'rrrrrrrrwwwwwwrrrrrrrrrrrrrrrrwwwwwwrrrrrrrrrEEEEEEr', // 34
+  'aaaqqaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaEEEEEEa', // 35
+  'rrrrrrrrrrrrrrwwwwwwwwrrrrrrrrrrrrrrrrwwwwwwrrrrrrrr', // 36
+  'aaaqqaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', // 37
+  'rrrrrrwwwwwwrrrrrrrrrrrrwwwwwwwwrrrrrrrrrrrrrrrrrrrr', // 38
+  'aaaqqaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', // 39
 ];
 
 const HALF_X = (GRID[0]!.length * TILE) / 2;
@@ -155,18 +211,18 @@ export const CINDERWORKS: AreaDef = defineArea({
       // The Hall. The flats the contract names are the floor inside.
       to: 'cinderworks_foundry',
       x: 0,
-      z: zOfRow(4) + TILE / 2 + 1.4,
+      z: zOfRow(11) + TILE / 2 + 1.4,
       label: 'Into the Foundry Hall',
-      door: { x: 0, z: zOfRow(4) + TILE / 2 + 0.05, facesSouth: true, sign: 'foundry', style: 'iron' },
+      door: { x: 0, z: zOfRow(11) + TILE / 2 + 0.05, facesSouth: true, sign: 'foundry', style: 'iron' },
       arrive: { x: 0, z: 20 },
     },
     {
       // The shed behind the bill fence, with the press in it.
       to: 'cinderworks_posters',
-      x: xOfCol(3.5),
-      z: zOfRow(19) - TILE / 2 - 1.4,
+      x: xOfCol(12.5),
+      z: zOfRow(26) - TILE / 2 - 1.4,
       label: "Into the poster's shed",
-      door: { x: xOfCol(3.5), z: zOfRow(19) - TILE / 2 - 0.05, facesSouth: false, sign: 'press' },
+      door: { x: xOfCol(12.5), z: zOfRow(26) - TILE / 2 - 0.05, facesSouth: false, sign: 'press' },
       arrive: { x: 0, z: -16 },
     },
   ],
@@ -222,6 +278,35 @@ export const CINDERWORKS: AreaDef = defineArea({
       { kind: 'bollard', x: 6, z: 34 },
       { kind: 'bollard', x: 26, z: 34 },
       { kind: 'bollard', x: 38, z: 34 },
+
+      // The barracks: the pump on the drying green, the roll board, the washing.
+      { kind: 'well', x: -20, z: -54 },
+      { kind: 'noticepost', x: -6, z: -54 },
+      { kind: 'washing', x: -46, z: -54, yaw: 0 },
+      { kind: 'washing', x: 30, z: -54, yaw: 0 },
+      { kind: 'barrel', x: 50, z: -54 },
+      // The slag bank past the channel, breathing where it cracks; a ladle on the road.
+      { kind: 'embervent', x: -100, z: -40 },
+      { kind: 'embervent', x: -100, z: -16 },
+      { kind: 'embervent', x: -100, z: 20 },
+      { kind: 'embervent', x: -98, z: 44 },
+      { kind: 'scorch', x: -98, z: -30, size: 1.4 },
+      { kind: 'scorch', x: -100, z: 30, size: 1.2 },
+      { kind: 'cart', x: -82, z: 30 },
+      // The scrapyard.
+      { kind: 'cart', x: 70, z: -40 },
+      { kind: 'barrel', x: 74, z: -20 },
+      { kind: 'barrel', x: 98, z: 16 },
+      { kind: 'deadfall', x: 82, z: 30 },
+      // The rail yard: buffer stops at the track ends, sleepers stacked, freight on the ballast.
+      { kind: 'bollard', x: -102, z: 58 },
+      { kind: 'bollard', x: -102, z: 66 },
+      { kind: 'bollard', x: -102, z: 74 },
+      { kind: 'bollard', x: 102, z: 66 },
+      { kind: 'bollard', x: 102, z: 74 },
+      { kind: 'logpile', x: -60, z: 54 },
+      { kind: 'sacks', x: 40, z: 54 },
+      { kind: 'barrel', x: -40, z: 70 },
     ],
     /**
      * The foundry's own.
@@ -264,10 +349,48 @@ export const CINDERWORKS: AreaDef = defineArea({
       { x: -2, z: 0 },
     ],
     graffiti: [
-      { text: 'THE LID IS OURS TOO', wallX: -30, wallZ: zOfRow(0) + TILE / 2 + 0.05, dx: 4, facesSouth: true, tint: '#c2661f' },
-      { text: 'FED THE FLATS TWICE', wallX: 0, wallZ: zOfRow(4) + TILE / 2 + 0.05, dx: 7, facesSouth: true, tint: '#c2661f' },
-      { text: 'PRINTED, NOT POSTED', wallX: -22, wallZ: zOfRow(19) - TILE / 2 - 0.05, dx: 0, facesSouth: false, tint: '#a09a82' },
+      { text: 'THE LID IS OURS TOO', wallX: -30, wallZ: zOfRow(7) + TILE / 2 + 0.05, dx: 4, facesSouth: true, tint: '#c2661f' },
+      { text: 'FED THE FLATS TWICE', wallX: 0, wallZ: zOfRow(11) + TILE / 2 + 0.05, dx: 7, facesSouth: true, tint: '#c2661f' },
+      { text: 'PRINTED, NOT POSTED', wallX: -22, wallZ: zOfRow(26) - TILE / 2 - 0.05, dx: 0, facesSouth: false, tint: '#a09a82' },
     ],
     horizon: 'city',
+    /**
+     * The works' night: none of it on the old casting floor, all of it on the new ground round
+     * it. The Slag Rats walk the rail yard between the tracks and keep a man at the channel
+     * bridge on the road west, watching it; a scavenging crew works the scrapyard. Three bands,
+     * well apart, so a fight at the bridge never brings the yard down on you.
+     */
+    packs: [
+      {
+        encounterId: 'pack_slag_rats',
+        id: 'rail_yard',
+        x: 0,
+        z: 62,
+        roam: 6,
+        hours: 'night',
+        band: 'rail',
+        behaviour: 'beat',
+        route: [
+          { x: -70, z: 62 },
+          { x: 70, z: 62 },
+        ],
+      },
+      {
+        encounterId: 'pack_slag_rats',
+        id: 'channel_bridge',
+        x: -82,
+        z: -8,
+        roam: 4,
+        hours: 'night',
+        band: 'bridge',
+        behaviour: 'sentry',
+        // Facing west over the bridge, and round to the road it carries.
+        sweep: [-2.2, -0.9],
+      },
+      { encounterId: 'pack_chalk_scavengers', id: 'scrapyard', x: 86, z: 40, roam: 7, hours: 'night', band: 'scrap' },
+    ],
+    /** The blast furnace's stack over the scrapyard, its flare the one light that never goes out. */
+    landmarks: [{ kind: 'furnace_stack', x: 86, z: -30 }],
+    vignettes: [{ id: 'smithy_yard', x: 90, z: 44 }],
   },
 });
