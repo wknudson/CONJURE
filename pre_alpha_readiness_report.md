@@ -19,7 +19,7 @@ thirty-nine rooms behind real doors, four registries of things to do on the grou
 §7.9 and §7.10; that note was PR #40. The bestiary and grimoire expansion then began with its
 machinery as PR #41 — signature cards, rare hunts, and a pipeline for creature art — recorded in
 §7.11; that note was PR #42. Its second wave, the Hero kit and a duelist at every tier, merged
-as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; that note was PR #49. A motion pass over both boards and the streets, including two fixes for flinches that were computed and never drawn, merged as PR #47 and is recorded in §7.15; this note is PR #50.*
+as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; that note was PR #49. A motion pass over both boards and the streets, including two fixes for flinches that were computed and never drawn, merged as PR #47 and is recorded in §7.15; that note was PR #50. The expansion's Wave 4, thirty-six new bodies for the Vanguard, merged as PR #51 and is recorded in §7.16; this note is PR #52.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -1045,12 +1045,29 @@ now issues the squash scale it never drew. The melee swing winds up, peaks under
 and lands back on its tile, a three-tile walk runs without stopping per tile, and on the
 street the Commander and companion lean into travel and settle upright when they stop.
 
-### 7.16 What remains
+### 7.16 The bestiary expansion, Wave 4 — **built, PR #51**
+
+Thirty-six bodies a warband can field (`cards/vanguard.ts`): four per elemental school — a
+two-pointer with a rider the school lacked, a ranged body, an elite, and a first 2x2 Behemoth
+for the four schools that had none — plus six neutral and six arcane anybody may field.
+`MAX_BEHEMOTHS` is reachable for every school now. The enemy-only threats this wave was planned
+to carry moved to the lair, hunt and contract waves, because a `PackDef`'s members must be bodies
+a warband could field, and the world waves are authoring the road's themed crews.
+
+**What was found on the way.** Nothing in the balance ledger plays a body no encounter fields,
+so `vanguardDrill.test.ts` fields each of the thirty-six against a passive opponent and requires
+it to swing — the first version let the player's side fight back, and six thin two-pointers died
+on the approach, which said nothing about the planner. Four schools' opening warbands change,
+because `startingRosterFor` derives them from the shelf by design.
+
+**Verified.** The full non-balance suite and the balance ledger on the exact tip, green.
+
+### 7.17 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 to §7.15 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.16 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
-found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47 and #48 did. What comes next is
+found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47, #48 and #51 did. What comes next is
 a playtest, and the remaining waves of the bestiary expansion, each recorded here as it
 merges.
 
