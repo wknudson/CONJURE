@@ -52,7 +52,8 @@ export class ColliderSet {
    */
   private readonly cells = new Map<number, Collider[]>();
 
-  constructor(private readonly area: AreaDef) {}
+  /** The place these colliders belong to -- read by whatever needs its grid, sight among them. */
+  constructor(readonly area: AreaDef) {}
 
   add(x: number, z: number, w: number, d: number, tag = ''): Collider {
     const box: Collider = {

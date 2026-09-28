@@ -75,7 +75,7 @@ import { APOTHECARY_STOCK } from '../core/data/apothecary.js';
 import { traitsFor } from '../core/data/companionTraits.js';
 import { makeRng } from '../core/util/rng.js';
 import { draftGrimoire, isDraftable, socketRefusal } from '../core/data/grimoire.js';
-import { isHunt } from '../core/data/hunts.js';
+import { encounterOfKey, isHunt } from '../core/data/hunts.js';
 import { isLair } from '../core/data/lairs.js';
 import { isPack } from '../core/data/packs.js';
 import { errandById } from '../district/errands.js';
@@ -1587,7 +1587,9 @@ function readHunts(raw: unknown, version: number): Record<string, number> {
     // Hunts, packs and lairs all stamp this map (`main.ts` writes all three on a win).
     // The predicate used to admit hunts alone, which silently reset every pack's
     // cooldown on reload — the road repopulated the moment the game was reopened.
-    if (!isHunt(id) && !isPack(id) && !isLair(id)) continue;
+    // A pack is stamped by its clock key, `encounter@area` (see `packClockKey`), so the
+    // encounter before the `@` is what has to be a pack.
+    if (!isHunt(id) && !isPack(encounterOfKey(id)) && !isLair(id)) continue;
     if (typeof at !== 'number' || !Number.isFinite(at)) continue;
     out[id] = Math.max(0, Math.round(at));
   }

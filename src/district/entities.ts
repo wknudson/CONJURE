@@ -11,6 +11,8 @@ import type { ColliderSet } from './collision.js';
 import { CRITTERS, type CritterId, type CritterKind } from './wildlife.js';
 import { beatPostAt, type PackHours } from './daylight.js';
 import { Walker, pickFacing, type ActorArt } from './sprites3d.js';
+import { sightClear, sightReach, type AreaDef, type PackBehaviour } from './map.js';
+import { NavAgent, type NavGrid } from './nav.js';
 import { Lean, Momentum, restBreath } from './gait.js';
 
 /** Anything the player can stand near and press a key at. */
@@ -25,6 +27,66 @@ export interface Interactable {
 
 export interface Updatable {
   update(dt: number, t: number, cameraYaw: number): void;
+}
+
+/**
+ * A vision cone drawn the way the watcher actually sees: each ray stops at the first wall.
+ *
+ * It used to be a `CircleGeometry` sector, which promised sight straight through a terrace --
+ * and was right to, because nothing checked. Now that walls block sight (`sightClear`), a sector
+ * would show the player a danger that is not there, and worse, hide the shadow behind a building
+ * that is the whole reason to stand in it. So it is a fan of rays, one allocation for the life of
+ * the watcher, re-cut in place as it turns and walks.
+ *
+ * Built flat in world orientation around the watcher's feet; the mesh carrying it is positioned
+ * but never rotated.
+ */
+export class SightFan {
+  static readonly RAYS = 28;
+  readonly geometry = new THREE.BufferGeometry();
+  private readonly pos: Float32Array;
+
+  constructor() {
+    this.pos = new Float32Array((SightFan.RAYS + 1) * 3);
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
+    const index: number[] = [];
+    for (let i = 1; i < SightFan.RAYS; i++) index.push(0, i, i + 1);
+    this.geometry.setIndex(index);
+    this.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1);
+  }
+
+  /**
+   * Re-cuts the fan for a watcher at (x, z) facing `heading` radians (atan2 of its heading's z
+   * over x), `half` either side, out to `range`, stopping each ray at the first thing in `area`
+   * tall enough to hide somebody. With no area it is the plain sector.
+   */
+  cut(area: AreaDef | null, x: number, z: number, heading: number, half: number, range: number): void {
+    const n = SightFan.RAYS;
+    for (let i = 0; i < n; i++) {
+      const a = heading - half + (2 * half * i) / (n - 1);
+      const ux = Math.cos(a);
+      const uz = Math.sin(a);
+      const r = area ? sightReach(area, x, z, ux, uz, range) : range;
+      const k = (i + 1) * 3;
+      this.pos[k] = ux * r;
+      this.pos[k + 1] = 0;
+      this.pos[k + 2] = uz * r;
+    }
+    (this.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+    // Fixed rather than recomputed: the fan never reaches past its range, and a sphere that big
+    // is what the frustum test needs.
+    this.geometry.boundingSphere!.radius = range;
+  }
+
+  /** How far one ray of the last cut reached. For tests; the drawing needs nothing else. */
+  reachOf(i: number): number {
+    const k = (i + 1) * 3;
+    return Math.hypot(this.pos[k]!, this.pos[k + 2]!);
+  }
+
+  dispose(): void {
+    this.geometry.dispose();
+  }
 }
 
 /**
@@ -287,6 +349,8 @@ export class Warden implements Updatable {
   private detect = 0;
   private readonly heading = new THREE.Vector2(0, 1);
   private coneAlpha = 0;
+  /** The cone as drawn, clipped by the walls it cannot see through. See `SightFan`. */
+  private readonly fan = new SightFan();
   private readonly momentum = new Momentum();
   private readonly lean = new Lean();
 
@@ -315,7 +379,7 @@ export class Warden implements Updatable {
     this.position = this.walker.position;
 
     this.cone = new THREE.Mesh(
-      new THREE.BufferGeometry(),
+      this.fan.geometry,
       new THREE.MeshBasicMaterial({
         color: new THREE.Color('#d8b13a'),
         transparent: true,
@@ -329,10 +393,16 @@ export class Warden implements Updatable {
     this.rebuildCone();
   }
 
+  /** Re-cuts the cone where it stands -- after the tuning panel or the hour moves the numbers. */
   rebuildCone(): void {
-    const half = THREE.MathUtils.degToRad(LOOK.visionAngle) / 2;
-    this.cone.geometry.dispose();
-    this.cone.geometry = new THREE.CircleGeometry(this.range, 28, -half, half * 2);
+    this.fan.cut(
+      this.colliders.area,
+      this.position.x,
+      this.position.z,
+      Math.atan2(this.heading.y, this.heading.x),
+      THREE.MathUtils.degToRad(LOOK.visionAngle) / 2,
+      this.range,
+    );
   }
 
   /** How far it can actually see, this hour. The cone drawn on the road is this long. */
@@ -341,10 +411,8 @@ export class Warden implements Updatable {
   }
 
   /**
-   * Re-cuts the cone for a new hour, and only when the hour has actually moved it.
-   *
-   * `rebuildCone` disposes and re-allocates geometry, and the street clock ticks every frame --
-   * so this is the guard that keeps a slow dusk from being a geometry churn sixty times a second.
+   * Takes a new hour's sight, and only when the hour has actually moved it -- the street clock
+   * ticks every frame, and nothing needs to change for a dusk that has not got any darker.
    */
   setSight(k: number): void {
     if (Math.abs(k - this.sight) < 0.01) return;
@@ -386,7 +454,9 @@ export class Warden implements Updatable {
     const dist = Math.hypot(dx, dz);
     if (dist > this.range || dist < 0.001) return false;
     const dot = (dx * this.heading.x + dz * this.heading.y) / dist;
-    return dot > Math.cos(THREE.MathUtils.degToRad(LOOK.visionAngle) / 2);
+    if (dot <= Math.cos(THREE.MathUtils.degToRad(LOOK.visionAngle) / 2)) return false;
+    // Last, because it is the one that walks the grid: a Warden cannot see through a terrace.
+    return sightClear(this.colliders.area, this.position.x, this.position.z, this.playerAt.x, this.playerAt.z);
   }
 
   private steer(tx: number, tz: number, speed: number, dt: number, cameraYaw: number): number {
@@ -475,7 +545,8 @@ export class Warden implements Updatable {
     this.cone.material.opacity = this.coneAlpha;
     this.cone.material.color.set(this.state === 'PATROL' ? '#d8b13a' : '#e04422');
     this.cone.position.set(this.position.x, 0.06, this.position.z);
-    this.cone.rotation.set(-Math.PI / 2, 0, Math.atan2(-this.heading.y, this.heading.x));
+    // Only while it can be seen: a fan nobody is looking at does not need its walls found.
+    if (this.cone.visible && this.coneAlpha > 0.005) this.rebuildCone();
   }
 
   /** Back to the beat, after a catch. */
@@ -491,30 +562,66 @@ export class Warden implements Updatable {
   }
 }
 
+/** What a pack is doing about you. `ROAM` covers all four ways of doing nothing about you. */
+export type PackState = 'ROAM' | 'SUSPICIOUS' | 'ALERT' | 'CHASE' | 'SEARCH';
+
+/** Everything past the original eight arguments, so the ones tests already pass stay where they are. */
+export interface PackOptions {
+  /**
+   * Which pack this is, unique within its area. What its cooldown, its seed and the ring's
+   * dedupe are keyed by, so two crews of the same kind on one map are two crews. Defaults to the
+   * encounter id, which is what it always was.
+   */
+  readonly key?: string;
+  readonly behaviour?: PackBehaviour;
+  /** A beat's posts, in walking order. Round again from the last to the first. */
+  readonly route?: readonly { readonly x: number; readonly z: number }[];
+  /**
+   * A sentry's two headings, in radians, zero facing south (+z) the way a prop's `yaw` does. It
+   * turns from one to the other and back.
+   */
+  readonly sweep?: readonly [number, number];
+  /** The area's ground, for going round things. Without it a pack steers straight, as it always did. */
+  readonly nav?: NavGrid;
+  /** How many bodies to draw, one to four. Three if absent. */
+  readonly bodies?: number;
+  /** One picture per body, leader first. Short lists repeat the leader. */
+  readonly bodyArt?: readonly ActorArt[];
+}
+
 /**
- * A minion pack, wandering its patch of road until somebody walks into it.
+ * A minion pack, going about its business on the road until somebody walks into it.
  *
  * Built on the `Warden`'s shape rather than the `Hotspot`'s, and the difference is the whole
  * point: a Hotspot waits for Space, and nothing about meeting a pack should involve pressing
  * a key to agree to it. Like the Warden it is `Updatable` only, it never reaches for global
  * state, and everything it knows about the player is injected by the screen each frame.
  *
- * Three bodies are drawn per pack rather than one, tinted apart, so what you see coming is a
- * group. They are decoration hung off one position — the fight is the fight, and a pack that
- * modelled its members individually out here would be promising a tactical situation the
- * arena does not inherit.
+ * Several bodies are drawn per pack rather than one, so what you see coming is a group -- and
+ * when the screen can say what the pack is made of, they are its members, drawn the way the
+ * board will draw them. They are decoration hung off one position, the leader's, and the rest
+ * walk in its footsteps: the fight is the fight, and a pack that modelled its members
+ * individually out here would be promising a tactical situation the arena does not inherit.
  *
- * It hunts, on the Warden's pattern: a cone it can see you through, a beat of grace, then a
- * run at you. The cone goes dark the moment you are on sanctioned pavement, which is the
- * same rule the Warden keeps and for the same reason — the walkway has to be worth
- * something. On the verge, where nothing is paved, it never goes dark at all.
+ * It notices you by degrees. Close, or in front of it, it knows at once -- a beat of grace and
+ * then a run at you, the Warden's pattern. Near the edge of what it can see, it is only
+ * *suspicious*: it stops, turns toward you and a meter fills; step out of its sight and the meter
+ * drains and it goes back to what it was doing. Lose it after a chase and it goes to where it last
+ * saw you and looks round before giving up. The cone goes dark the moment you are on sanctioned
+ * pavement, which is the same rule the Warden keeps and for the same reason -- the walkway has to
+ * be worth something. On the verge, where nothing is paved, it never goes dark at all.
  */
 export class Pack implements Updatable {
   readonly walkers: Walker[] = [];
   private readonly momentum = new Momentum();
   private readonly lean = new Lean();
+  /** Whether it drove this frame, so it can slow when it did not. */
+  private drove = false;
   /** The fight walking into this one starts. Carried so the screen can re-arm by identity. */
   readonly encounterId: string;
+  /** Which pack this is, in its area. See `PackOptions.key`. */
+  readonly key: string;
+  readonly behaviour: PackBehaviour;
   readonly position: THREE.Vector3;
 
   /** Injected by the screen, exactly as the Warden's are. */
@@ -529,8 +636,11 @@ export class Pack implements Updatable {
   playerSafe = false;
   onContact: (() => void) | null = null;
 
-  /** What it is doing about you, on the Warden's three-state pattern. */
-  state: 'ROAM' | 'ALERT' | 'CHASE' = 'ROAM';
+  state: PackState = 'ROAM';
+  /** How close it is to deciding you are there, 0 to 1, while it is `SUSPICIOUS`. */
+  suspicion = 0;
+  /** Where it last saw you. Where it goes looking. */
+  readonly lastSeen = new THREE.Vector2();
   /**
    * When this crew works, carried so the screen can ask the clock about it each tick.
    *
@@ -556,6 +666,30 @@ export class Pack implements Updatable {
   private spent = false;
   private detect = 0;
   private coneAlpha = 0;
+  /** The cone as drawn, clipped by the walls it cannot see through. See `SightFan`. */
+  private readonly fan = new SightFan();
+  private readonly nav: NavGrid | null;
+  private readonly agent = new NavAgent();
+  private readonly route: readonly { readonly x: number; readonly z: number }[];
+  private post = 0;
+  private readonly sweep: readonly [number, number];
+  private sweepTime = 0;
+  /** A prowler's waypoints, and which it has been to since it last started over. */
+  private waypoints: { x: number; z: number }[] | null = null;
+  private readonly visited = new Set<number>();
+  private goingTo = -1;
+  /** How long it has been trying to get somewhere without getting any nearer. */
+  private stalled = 0;
+  /** How long the current chase has been running, for the `!` over its head. */
+  private chasing = 0;
+  /** How long since it last had you in sight. A chase runs on this for a while -- see `SCENT`. */
+  private sinceSeen = 0;
+  /** Where a search is: walking to the last sighting, then looking round it. */
+  private searchPhase: 'go' | 'look' = 'go';
+  private searchTime = 0;
+  private searchFacing = 0;
+  /** The leader's recent footsteps, which the rest of the pack walks in. */
+  private readonly trail: { x: number; z: number }[] = [];
 
   /**
    * Under the player's six, and under the Warden's chase.
@@ -566,16 +700,45 @@ export class Pack implements Updatable {
    * between two frames, so this is a bound rather than a taste.
    */
   private static readonly SPEED = 2.0;
+  /** A beat walks with somewhere to be; a prowler takes its time. */
+  private static readonly BEAT_SPEED = 2.3;
+  private static readonly PROWL_SPEED = 1.8;
+  /** Going to look: quicker than a wander, slower than a chase. */
+  private static readonly SEARCH_SPEED = 3.2;
   /** A shorter beat than the Warden's: a pack is not deciding whether it is allowed. */
   private static readonly GRACE = 0.3;
   /** How far past its own sight it will keep running before losing interest. */
   private static readonly GIVE_UP = 1.6;
+  /**
+   * How long a chase keeps going on where you went, rather than on seeing you.
+   *
+   * A chase round a building takes the pack out of sight of you and, for the length of the
+   * detour, further away -- and a pack that gave up the moment both were true would give up
+   * halfway round every corner it was taught to go round. Five seconds of knowing where you went --
+   * the length of a detour round a grown ward's block at a run -- and past eight it has lost you
+   * however close you are.
+   */
+  private static readonly SCENT = 5;
+  private static readonly SCENT_MAX = 8;
   /** How close is close enough to have walked into them. */
   private static readonly CONTACT = 1.6;
-  /** Offsets for the two hangers-on, so the group reads as a group. */
+  /**
+   * Inside this share of its sight a pack knows you at once; outside it, it is only suspicious.
+   * The outer ring is the room a player has to back away, or duck behind something, before it
+   * makes up its mind.
+   */
+  private static readonly INNER = 0.7;
+  /** How long suspicion takes to fill at the very edge of sight. Nearer is quicker. */
+  private static readonly SUSPECT_TIME = 0.8;
+  /** How fast it forgets, once it cannot see you. */
+  private static readonly FORGET_RATE = 0.5;
+  /** How long it stands looking round the spot it lost you. */
+  private static readonly LOOK_TIME = 3.2;
+  /** Where the hangers-on stand before the leader has walked anywhere. */
   private static readonly FLANK: readonly [number, number][] = [
     [-0.95, 0.55],
     [0.9, -0.5],
+    [-0.4, -1.0],
   ];
 
   constructor(
@@ -587,22 +750,32 @@ export class Pack implements Updatable {
     private readonly roam: number,
     private readonly colliders: ColliderSet,
     private readonly rng: () => number,
+    opts: PackOptions = {},
   ) {
     this.encounterId = encounterId;
-    for (let i = 0; i < 3; i++) {
-      const w = new Walker(art, height * (i === 0 ? 1 : 0.92));
-      w.position.set(homeX, 0, homeZ);
+    this.key = opts.key ?? encounterId;
+    this.nav = opts.nav ?? null;
+    this.route = opts.route && opts.route.length >= 2 ? opts.route : [];
+    this.behaviour = opts.behaviour === 'beat' && this.route.length < 2 ? 'roam' : (opts.behaviour ?? 'roam');
+    this.sweep = opts.sweep ?? [-Math.PI / 3, Math.PI / 3];
+    const bodies = Math.max(1, Math.min(4, opts.bodies ?? 3));
+    for (let i = 0; i < bodies; i++) {
+      const w = new Walker(opts.bodyArt?.[i] ?? opts.bodyArt?.[0] ?? art, height * (i === 0 ? 1 : 0.92));
+      const [ox, oz] = i === 0 ? [0, 0] : Pack.FLANK[i - 1]!;
+      w.position.set(homeX + ox, 0, homeZ + oz);
       this.walkers.push(w);
     }
     this.position = this.walkers[0]!.position;
     this.home = new THREE.Vector2(homeX, homeZ);
     this.target.set(homeX, homeZ);
-    this.pickTarget();
+    if (this.behaviour === 'beat') this.post = this.nearestPost();
+    else if (this.behaviour === 'sentry') this.faceAngle(this.sweep[0]);
+    else this.pickTarget();
 
     // The Warden's recipe, because it is the established visual language for "this thing
     // can see you": additive and unlit so the bloom pass finds it, no depth write so it
     // lies over the ground rather than fighting it.
-    this.cone = new THREE.Mesh(new THREE.BufferGeometry(), Pack.sightMaterial('#c2603a'));
+    this.cone = new THREE.Mesh(this.fan.geometry, Pack.sightMaterial('#c2603a'));
     this.cone.renderOrder = 2;
     this.aggroRing = new THREE.Mesh(new THREE.BufferGeometry(), Pack.sightMaterial('#c2603a'));
     this.aggroRing.renderOrder = 2;
@@ -621,13 +794,28 @@ export class Pack implements Updatable {
     });
   }
 
-  /** Re-cut the cone and the ring after the tuning panel moves the numbers. */
+  /** Re-cut the cone and the ring after the tuning panel or the hour moves the numbers. */
   rebuildCone(): void {
-    const half = THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2;
-    this.cone.geometry.dispose();
-    this.cone.geometry = new THREE.CircleGeometry(this.range, 28, -half, half * 2);
+    this.recutFan();
     this.aggroRing.geometry.dispose();
     this.aggroRing.geometry = new THREE.RingGeometry(this.range * 0.96, this.range, 40);
+  }
+
+  /** The cone where the pack stands and faces, stopped at the walls. */
+  private recutFan(): void {
+    this.fan.cut(
+      this.colliders.area,
+      this.position.x,
+      this.position.z,
+      Math.atan2(this.heading.y, this.heading.x),
+      THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2,
+      this.range,
+    );
+  }
+
+  /** How far one ray of the drawn cone reaches. See `SightFan.reachOf`. */
+  coneReach(i: number): number {
+    return this.fan.reachOf(i);
   }
 
   /** How far it can actually see, this hour. The cone and the ring are both this long. */
@@ -642,6 +830,17 @@ export class Pack implements Updatable {
     this.rebuildCone();
   }
 
+  /**
+   * What to hang over the leader's head: `?` while it is making up its mind or looking for you,
+   * `!` when it has decided and for the first second of the run. Nothing the rest of the time.
+   */
+  get mark(): '?' | '!' | null {
+    if (!this.onShift || !this.drawn) return null;
+    if (this.state === 'SUSPICIOUS' || this.state === 'SEARCH') return '?';
+    if (this.state === 'ALERT' || (this.state === 'CHASE' && this.chasing < 1)) return '!';
+    return null;
+  }
+
   /** Can it see you from where it is standing, facing the way it is facing? */
   sees(): boolean {
     if (!this.onShift) return false; // Off shift, and not on the road at all.
@@ -651,7 +850,11 @@ export class Pack implements Updatable {
     const dist = Math.hypot(dx, dz);
     if (dist > this.range || dist < 0.001) return false;
     const dot = (dx * this.heading.x + dz * this.heading.y) / dist;
-    return dot > Math.cos(THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2);
+    if (dot <= Math.cos(THREE.MathUtils.degToRad(LOOK.packVisionAngle) / 2)) return false;
+    // Last, because it is the one that walks the grid. A thicket, a spoil heap, a terrace: what
+    // is between you and them now hides you, which is what gives a map with walls in it a
+    // shadow worth standing in.
+    return sightClear(this.colliders.area, this.position.x, this.position.z, this.playerAt.x, this.playerAt.z);
   }
 
   /**
@@ -671,18 +874,22 @@ export class Pack implements Updatable {
   answerTheCall(x: number, z: number): void {
     this.pause = 0;
     this.state = 'CHASE';
+    this.chasing = 0;
+    this.sinceSeen = 0;
     this.target.set(x, z);
+    // It has not seen you, but it has been told where you are. That is where it looks, after.
+    this.lastSeen.set(x, z);
   }
 
   /**
    * Off the street, because they are on the board now.
    *
    * The one that jumped you is *represented twice* the moment a fight starts: once as the
-   * three roaming bodies that walked into you, and once as the squad standing on the grid.
-   * Freezing the roamers — which is what the screen does to everything while a board is up —
-   * left three figures standing in the arena that no card could touch and no turn could move.
-   * They are the same creatures; only one of the two copies should be on screen, and it is
-   * the one the player can play against.
+   * bodies that walked into you, and once as the squad standing on the grid. Freezing the
+   * roamers — which is what the screen does to everything while a board is up — left figures
+   * standing in the arena that no card could touch and no turn could move. They are the same
+   * creatures; only one of the two copies should be on screen, and it is the one the player
+   * can play against.
    *
    * The cone and the aggro ring go too. Their whole subject is "walk in here and a fight
    * starts", which is a thing that has already happened.
@@ -711,9 +918,7 @@ export class Pack implements Updatable {
     if (!on) {
       // Whatever it was doing about you, it has gone home. Clocking back on mid-sprint would be
       // a crew resuming a chase it left an hour ago.
-      this.state = 'ROAM';
-      this.detect = 0;
-      this.pickTarget();
+      this.standDown();
     }
     this.applyVisible();
   }
@@ -740,13 +945,26 @@ export class Pack implements Updatable {
 
   /** Frees the cone and ring geometry. The walkers' art is owned by the screen. */
   dispose(): void {
-    this.cone.geometry.dispose();
+    this.fan.dispose();
     this.cone.material.dispose();
     this.aggroRing.geometry.dispose();
     this.aggroRing.material.dispose();
   }
 
-  /** Somewhere else on its patch that it can actually stand. */
+  /** Back to its business: nothing about you, nowhere in particular to be. */
+  private standDown(): void {
+    this.state = 'ROAM';
+    this.detect = 0;
+    this.suspicion = 0;
+    this.chasing = 0;
+    this.stalled = 0;
+    this.agent.clear();
+    if (this.behaviour === 'roam') this.pickTarget();
+    else if (this.behaviour === 'beat') this.post = this.nearestPost();
+    else if (this.behaviour === 'prowl') this.goingTo = -1;
+  }
+
+  /** Somewhere else on its patch that it can actually stand, and actually get to. */
   private pickTarget(): void {
     for (let tries = 0; tries < 12; tries++) {
       const a = this.rng() * Math.PI * 2;
@@ -755,13 +973,53 @@ export class Pack implements Updatable {
       const r = this.roam * this.vigour * (0.35 + this.rng() * 0.65);
       const x = this.home.x + Math.cos(a) * r;
       const z = this.home.y + Math.sin(a) * r;
-      if (!this.colliders.blocked(x, z, 0.4)) {
-        this.target.set(x, z);
-        return;
-      }
+      if (this.colliders.blocked(x, z, 0.4)) continue;
+      // Walkable is not the same as reachable: a spot across a canal or behind a fence is the
+      // first and not the second, and a crew sent there grinds against the fence for good.
+      if (this.nav && !this.nav.connected(this.home.x, this.home.y, x, z)) continue;
+      this.target.set(x, z);
+      return;
     }
     // Nothing free within reach — go home and try again from there.
     this.target.copy(this.home);
+  }
+
+  /** The beat's post nearest where the pack stands. Where it picks up its round again. */
+  private nearestPost(): number {
+    let best = 0;
+    let bestD = Infinity;
+    this.route.forEach((p, i) => {
+      const d = Math.hypot(p.x - this.position.x, p.z - this.position.z);
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    });
+    return best;
+  }
+
+  /** A prowler's next waypoint: the nearest it has not been to, starting over when it has been to all. */
+  private nextWaypoint(): number {
+    if (!this.waypoints) this.waypoints = this.nav ? this.nav.waypoints() : [];
+    const wps = this.waypoints;
+    if (wps.length === 0) return -1;
+    if (this.visited.size >= wps.length) this.visited.clear();
+    let best = -1;
+    let bestD = Infinity;
+    wps.forEach((p, i) => {
+      if (this.visited.has(i)) return;
+      const d = Math.hypot(p.x - this.position.x, p.z - this.position.z);
+      // Not the one it is standing on, or it would "arrive" without going anywhere.
+      if (d < 1) {
+        this.visited.add(i);
+        return;
+      }
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    });
+    return best;
   }
 
   /**
@@ -787,90 +1045,213 @@ export class Pack implements Updatable {
     if (dist > 0.001) this.heading.set(dx / dist, dz / dist);
   }
 
-  /** One step toward a spot, through the collider layer, heading updated to match. */
-  private driveToward(tx: number, tz: number, speed: number, dt: number): void {
-    const dx = tx - this.position.x;
-    const dz = tz - this.position.z;
+  /** Faces a compass angle: zero is south (+z), as a prop's yaw is. */
+  private faceAngle(a: number): void {
+    this.heading.set(Math.sin(a), Math.cos(a));
+  }
+
+  /**
+   * One step toward a spot, through the collider layer, heading updated to match. Round
+   * whatever is in the way when the area's ground was handed in; straight at it when it was not.
+   * Returns how far there is still to go.
+   */
+  private driveToward(tx: number, tz: number, speed: number, dt: number): number {
+    const goal = this.nav ? this.agent.next(this.nav, this.position.x, this.position.z, tx, tz, dt) : { x: tx, z: tz };
+    const dx = goal.x - this.position.x;
+    const dz = goal.z - this.position.z;
     const dist = Math.hypot(dx, dz);
-    if (dist < 0.001) return;
+    const left = Math.hypot(tx - this.position.x, tz - this.position.z);
+    if (dist < 0.001) return left;
     this.heading.set(dx / dist, dz / dist);
+    const bx = this.position.x;
+    const bz = this.position.z;
     // Eased, so a pack sets off from loitering and breaks into its run rather than
     // switching speed. Never past the spot it is heading for.
     const step = Math.min(dist, this.momentum.approach(speed, dt) * dt);
+    this.drove = true;
     this.colliders.move(
       this.position as unknown as { x: number; z: number },
       (dx / dist) * step,
       (dz / dist) * step,
       0.4,
     );
+    // Moving at a fifth of the step it tried is not getting anywhere. A second and a half of
+    // that and the errand is given up -- the wander picks elsewhere, a beat skips a post. The
+    // step, not the pace asked for: a pack still easing up to speed is setting off, not stuck.
+    const got = Math.hypot(this.position.x - bx, this.position.z - bz);
+    this.stalled = got < step * 0.2 ? this.stalled + dt : 0;
+    return left;
+  }
+
+  /** It has seen you. Close, it knows; at the edge of its sight, it only suspects. */
+  private notice(): void {
+    if (this.rangeToPlayer() <= this.range * Pack.INNER) {
+      this.state = 'ALERT';
+      this.detect = 0;
+    } else {
+      this.state = 'SUSPICIOUS';
+      this.suspicion = Math.max(this.suspicion, 0.05);
+    }
+  }
+
+  /** Lost you. Go and look where you were. */
+  private beginSearch(): void {
+    this.state = 'SEARCH';
+    this.searchPhase = 'go';
+    this.searchTime = 0;
+    this.stalled = 0;
+    this.agent.clear();
+  }
+
+  /** What it does with itself when nothing about you is on its mind. */
+  private goAbout(dt: number): void {
+    if (this.behaviour === 'sentry') {
+      // Back to its post first, if a search took it off it; then the sweep.
+      if (Math.hypot(this.home.x - this.position.x, this.home.y - this.position.z) > 0.8) {
+        this.driveToward(this.home.x, this.home.y, Pack.SPEED, dt);
+        return;
+      }
+      this.sweepTime += dt;
+      // Eased at the ends, so it dwells looking each way and turns in between.
+      const k = 0.5 - 0.5 * Math.cos((this.sweepTime * Math.PI * 2) / 7);
+      this.faceAngle(this.sweep[0] + (this.sweep[1] - this.sweep[0]) * k);
+      return;
+    }
+
+    if (this.behaviour === 'beat') {
+      const p = this.route[this.post]!;
+      const left = this.driveToward(p.x, p.z, Pack.BEAT_SPEED, dt);
+      if (left < 0.6 || this.stalled > 1.5) {
+        this.post = (this.post + 1) % this.route.length;
+        this.pause = 0.8 + this.rng() * 1.4;
+        this.stalled = 0;
+        const next = this.route[this.post]!;
+        this.faceToward(next.x, next.z);
+      }
+      return;
+    }
+
+    if (this.behaviour === 'prowl') {
+      if (this.goingTo < 0) this.goingTo = this.nextWaypoint();
+      const p = this.waypoints?.[this.goingTo];
+      if (!p) {
+        // No lattice to walk: wander like anybody else.
+        this.wander(dt);
+        return;
+      }
+      const left = this.driveToward(p.x, p.z, Pack.PROWL_SPEED, dt);
+      if (left < 1 || this.stalled > 1.5) {
+        this.visited.add(this.goingTo);
+        this.goingTo = -1;
+        this.pause = 1 + this.rng() * 2;
+        this.stalled = 0;
+      }
+      return;
+    }
+
+    this.wander(dt);
+  }
+
+  private wander(dt: number): void {
+    const left = this.driveToward(this.target.x, this.target.y, Pack.SPEED, dt);
+    if (left < 0.5 || this.stalled > 1.5) {
+      // A beat of standing about, then somewhere new. Without the pause a pack reads as a
+      // patrol rather than as something loitering.
+      this.pause = 0.8 + this.rng() * 2.2;
+      this.stalled = 0;
+      this.pickTarget();
+    }
   }
 
   update(dt: number, t: number, cameraYaw: number): void {
     const before = { x: this.position.x, z: this.position.z };
-    const driving = this.state === 'CHASE' || (this.state === 'ROAM' && this.pause <= 0);
-    if (!driving) this.momentum.approach(0, dt);
+    this.drove = false;
+    const seen = this.sees();
+    if (seen) this.lastSeen.set(this.playerAt.x, this.playerAt.z);
 
     if (this.state === 'CHASE') {
-      // Straight at you, through the collider layer so it slides along walls instead of
-      // grinding into them — the Warden's chase does the same, for the same reason.
-      const lost = !this.sees() && this.rangeToPlayer() > this.range * Pack.GIVE_UP;
-      if (this.playerSafe || lost) {
-        this.state = 'ROAM';
-        this.detect = 0;
-        this.pickTarget();
-      } else {
-        this.driveToward(this.playerAt.x, this.playerAt.z, LOOK.packChaseSpeed, dt);
-      }
+      this.chasing += dt;
+      this.sinceSeen = seen ? 0 : this.sinceSeen + dt;
+      // After you, going round what is in the way. It does not lose you for stepping behind a
+      // pillar: it knows where you went, for a while. It loses you for staying out of sight
+      // *and* getting away -- or for staying out of sight long enough.
+      const lost =
+        !seen &&
+        ((this.sinceSeen > Pack.SCENT && this.rangeToPlayer() > this.range * Pack.GIVE_UP) ||
+          this.sinceSeen > Pack.SCENT_MAX);
+      if (this.playerSafe) this.standDown();
+      else if (lost) this.beginSearch();
+      else if (seen) this.driveToward(this.playerAt.x, this.playerAt.z, LOOK.packChaseSpeed, dt);
+      // Out of sight, it runs to where it last saw you -- not to where you are, which it has no
+      // way of knowing. Arrive there with you gone and the chase becomes a search.
+      else if (Math.hypot(this.lastSeen.x - this.position.x, this.lastSeen.y - this.position.z) < 0.8) this.beginSearch();
+      else this.driveToward(this.lastSeen.x, this.lastSeen.y, LOOK.packChaseSpeed, dt);
     } else if (this.state === 'ALERT') {
       // Facing you, deciding. A beat of grace is what makes stepping back onto pavement a
       // real escape rather than a reflex test.
       this.faceToward(this.playerAt.x, this.playerAt.z);
       this.detect += dt;
-      this.walkers[0]!.step(0, 0, cameraYaw);
-      if (!this.sees()) {
-        this.state = 'ROAM';
-        this.detect = 0;
-      } else if (this.detect >= Pack.GRACE) {
+      // Asked again now it is facing you: the sighting at the top of the frame was taken along
+      // last frame's heading, which may have been pointed at wherever it was walking.
+      if (this.playerSafe) this.standDown();
+      else if (!this.sees()) this.beginSearch();
+      else if (this.detect >= Pack.GRACE) {
         this.state = 'CHASE';
+        this.chasing = 0;
+        this.sinceSeen = 0;
+      }
+    } else if (this.state === 'SUSPICIOUS') {
+      // Stopped, turned toward where it thinks you are, making up its mind.
+      this.faceToward(this.lastSeen.x, this.lastSeen.y);
+      if (this.playerSafe) this.standDown();
+      else if (this.sees()) {
+        this.lastSeen.set(this.playerAt.x, this.playerAt.z);
+        const t = Math.min(1, Math.max(0, (this.rangeToPlayer() / this.range - Pack.INNER) / (1 - Pack.INNER)));
+        this.suspicion += dt / (Pack.SUSPECT_TIME * (0.4 + 0.6 * t));
+        if (this.suspicion >= 1 || t === 0) {
+          this.state = 'ALERT';
+          this.detect = 0;
+        }
+      } else {
+        this.suspicion -= dt * Pack.FORGET_RATE;
+        if (this.suspicion <= 0) this.standDown();
+      }
+    } else if (this.state === 'SEARCH') {
+      if (this.playerSafe) this.standDown();
+      else if (seen) {
+        // It was looking for you. No second thoughts this time.
+        this.state = 'ALERT';
+        this.detect = 0;
+      } else if (this.searchPhase === 'go') {
+        const left = this.driveToward(this.lastSeen.x, this.lastSeen.y, Pack.SEARCH_SPEED, dt);
+        this.searchTime += dt;
+        if (left < 0.8 || this.stalled > 1.5 || this.searchTime > 12) {
+          this.searchPhase = 'look';
+          this.searchTime = 0;
+          this.searchFacing = Math.atan2(this.heading.x, this.heading.y);
+        }
+      } else {
+        // Looking round the spot: a slow turn one way and back.
+        this.searchTime += dt;
+        this.faceAngle(this.searchFacing + Math.sin(this.searchTime * 1.7) * 1.2);
+        if (this.searchTime >= Pack.LOOK_TIME) this.standDown();
       }
     } else if (this.pause > 0) {
       this.pause -= dt;
-      this.walkers[0]!.step(0, 0, cameraYaw);
-      if (this.sees()) {
-        this.state = 'ALERT';
-        this.detect = 0;
-      }
+      if (seen) this.notice();
     } else {
-      const dx = this.target.x - this.position.x;
-      const dz = this.target.y - this.position.z;
-      const dist = Math.hypot(dx, dz);
-      if (dist < 0.5) {
-        // A beat of standing about, then somewhere new. Without the pause a pack reads as a
-        // patrol rather than as something loitering.
-        this.pause = 0.8 + this.rng() * 2.2;
-        this.pickTarget();
-      } else {
-        this.driveToward(this.target.x, this.target.y, Pack.SPEED, dt);
-      }
-      if (this.sees()) {
-        this.state = 'ALERT';
-        this.detect = 0;
-      }
+      this.goAbout(dt);
+      if (seen) this.notice();
     }
+
+    // Nothing drove it this frame -- a pause, a sweep, a stare -- so it slows, and the next time
+    // it sets off it sets off from rest rather than at a run.
+    if (!this.drove) this.momentum.approach(0, dt);
 
     const movedX = this.position.x - before.x;
     const movedZ = this.position.z - before.z;
     this.walkers[0]!.step(movedX, movedZ, cameraYaw);
-
-    // The hangers-on trail the leader at a fixed offset. Not collided: they are dressing on
-    // one body, and three colliding bodies in a roam circle spend their lives stuck on each
-    // other rather than wandering.
-    for (let i = 0; i < Pack.FLANK.length; i++) {
-      const [ox, oz] = Pack.FLANK[i]!;
-      const w = this.walkers[i + 1]!;
-      w.position.set(this.position.x + ox, 0, this.position.z + oz);
-      w.step(movedX, movedZ, cameraYaw);
-    }
+    this.walkFollowers(cameraYaw);
 
     // One lean for the group, since they move as one; and standing about, each breathes on
     // its own phase so the three do not rise in unison.
@@ -886,9 +1267,10 @@ export class Pack implements Updatable {
     const want = this.playerSafe ? 0 : LOOK.packConeOpacity;
     this.coneAlpha += (want - this.coneAlpha) * Math.min(1, dt * 6);
     this.cone.material.opacity = this.coneAlpha;
-    this.cone.material.color.set(this.state === 'ROAM' ? '#c2603a' : '#e04422');
+    this.cone.material.color.set(this.state === 'ROAM' ? '#c2603a' : this.state === 'SUSPICIOUS' || this.state === 'SEARCH' ? '#d88a3a' : '#e04422');
     this.cone.position.set(this.position.x, 0.06, this.position.z);
-    this.cone.rotation.set(-Math.PI / 2, 0, Math.atan2(-this.heading.y, this.heading.x));
+    // Only while it can be seen: a fan nobody is looking at does not need its walls found.
+    if (this.cone.visible && this.coneAlpha > 0.005) this.recutFan();
 
     const ringWant = LOOK.packConeOpacity > 0 ? LOOK.packAggroRingOpacity / LOOK.packConeOpacity : 0;
     this.aggroRing.material.opacity = this.coneAlpha * ringWant;
@@ -906,6 +1288,46 @@ export class Pack implements Updatable {
       // same way, one level up, with `inputLocked`.
       this.spent = true;
       this.onContact();
+    }
+  }
+
+  /**
+   * The hangers-on, in the leader's footsteps.
+   *
+   * Not collided -- they are dressing on one body, and colliding bodies in a pack spend their
+   * lives stuck on each other -- but every spot they stand on is a spot the leader stood on, so
+   * they never stand in a wall. Each walks a little over a unit behind the one ahead, a stride to
+   * one side of the line so the group reads as a group and not a queue. Until the leader has
+   * walked that far, they stand where they were put.
+   */
+  private walkFollowers(cameraYaw: number): void {
+    const last = this.trail[this.trail.length - 1];
+    if (!last || Math.hypot(last.x - this.position.x, last.z - this.position.z) >= 0.35) {
+      this.trail.push({ x: this.position.x, z: this.position.z });
+      if (this.trail.length > 16) this.trail.shift();
+    }
+    for (let i = 1; i < this.walkers.length; i++) {
+      const w = this.walkers[i]!;
+      const back = this.trail.length - 1 - i * 3;
+      if (back < 1) {
+        w.step(0, 0, cameraYaw);
+        continue;
+      }
+      const p = this.trail[back]!;
+      const q = this.trail[back - 1]!;
+      const dx = p.x - q.x;
+      const dz = p.z - q.z;
+      const d = Math.hypot(dx, dz) || 1;
+      const side = (i % 2 === 0 ? -1 : 1) * 0.45;
+      const nx = p.x + (-dz / d) * side;
+      const nz = p.z + (dx / d) * side;
+      const mx = nx - w.position.x;
+      const mz = nz - w.position.z;
+      // Eased toward its spot rather than snapped, so a follower catching up after the leader
+      // turns walks there instead of teleporting.
+      w.position.x += mx * 0.25;
+      w.position.z += mz * 0.25;
+      w.step(mx * 0.25, mz * 0.25, cameraYaw);
     }
   }
 }
@@ -1118,6 +1540,10 @@ export class CombatRing implements Updatable {
   readonly mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   /** Encounter ids of the packs caught, in the order the circle reached them. */
   readonly pulled: string[] = [];
+  /** The same packs' clock keys, in the same order. See `Pack.key`. */
+  readonly pulledKeys: string[] = [];
+  /** The packs themselves, so two crews of one kind are two catches rather than one. */
+  private readonly caught = new Set<Pack>();
 
   private elapsed = 0;
   private finished = false;
@@ -1133,7 +1559,7 @@ export class CombatRing implements Updatable {
     readonly originX: number,
     readonly originZ: number,
     private readonly candidates: readonly Pack[],
-    private readonly onDone: (pulled: string[]) => void,
+    private readonly onDone: (pulled: string[], keys: string[]) => void,
   ) {
     this.mesh = new THREE.Mesh(
       new THREE.BufferGeometry(),
@@ -1178,10 +1604,12 @@ export class CombatRing implements Updatable {
       // thing that *catches what is nearby*, and something off shift is not nearby -- it is not
       // there at all, and dragging it in would put a body on the grid that nobody had seen.
       if (!pack.onShift) continue;
-      if (this.pulled.includes(pack.encounterId)) continue;
+      if (this.caught.has(pack)) continue;
       const d = Math.hypot(pack.position.x - this.originX, pack.position.z - this.originZ);
       if (d > radius) continue;
+      this.caught.add(pack);
       this.pulled.push(pack.encounterId);
+      this.pulledKeys.push(pack.key);
       // It turns and comes in. Being caught by the circle has to look like a decision the
       // pack made, not like the ground claiming it.
       pack.answerTheCall(this.originX, this.originZ);
@@ -1189,7 +1617,7 @@ export class CombatRing implements Updatable {
 
     if (this.elapsed >= CombatRing.DURATION) {
       this.finished = true;
-      this.onDone([...this.pulled]);
+      this.onDone([...this.pulled], [...this.pulledKeys]);
     }
   }
 

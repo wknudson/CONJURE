@@ -57,6 +57,7 @@ import {
 } from './sprites3d.js';
 import {
   CRITTER_ART,
+  makeMarkTexture,
   makeMinionTexture,
   makeWardenTexture,
   sheetFrameTexture,
@@ -82,6 +83,8 @@ import {
   type Updatable,
 } from './entities.js';
 import { isSafeAt, type AreaDef, type ExitSpec } from './map.js';
+import { NavGrid } from './nav.js';
+import { memberArt, memberTint, packBodies } from './memberArt.js';
 import {
   cullSatisfiedBy,
   errandFor,
@@ -112,7 +115,7 @@ import type { CombatOutcome } from '../core/overworld/run.js';
 import type { EncounterDef } from '../core/data/encounters/registry.js';
 import type { CombatCarry } from '../core/engine/setup.js';
 import type { AiProfile } from '../core/ai/controller.js';
-import { huntAvailable } from '../core/data/hunts.js';
+import { huntAvailable, packClockKey } from '../core/data/hunts.js';
 import { hashText, makeRng, nextInt } from '../core/util/rng.js';
 import { flagForBench, tutorialActive } from './quest.js';
 import { benchesInArea, type BenchDef, type BenchKind } from './benches.js';
@@ -372,8 +375,10 @@ export interface DistrictOpts {
    *
    * `pulled` is the other packs the ring caught, in the order it caught them, and is empty
    * far more often than not -- one mob is the ordinary case and two is the road being unkind.
+   * `keys` names the same crews by their clocks (`packClockKey`): which pack on which map,
+   * rather than which kind, so clearing one does not clear every crew of its sort.
    */
-  onPack: (encounterId: string, pulled: string[]) => WorldFight | null;
+  onPack: (encounterId: string, pulled: string[], keys?: { host: string; pulled: string[] }) => WorldFight | null;
   onChange?: () => void;
   onLeave: () => void;
 }
@@ -398,7 +403,12 @@ export class DistrictScreen implements Screen {
   private readonly playerLean = new Lean();
   private playerIdleT = 0;
   private follower: CompanionFollower | null = null;
-  private warden: Warden | null = null;
+  /**
+   * Every Warden walking a beat here -- one per ring of waypoints in `patrols`. Only the first
+   * ring was ever built, so an area could not have a Warden on the plaza and another in the
+   * alleys; a grown ward wants both.
+   */
+  private readonly wardens: Warden[] = [];
   /**
    * Everyone standing in this ward, the Dispatcher included.
    *
@@ -437,6 +447,14 @@ export class DistrictScreen implements Screen {
   private nearest: Interactable | null = null;
   private seizedTimer = 0;
   private readonly packs: Pack[] = [];
+  /**
+   * This area's walkable ground, for the things that go round buildings. Built once the colliders
+   * are complete, and only where something walks with a purpose -- see `nav.ts`.
+   */
+  private nav: NavGrid | null = null;
+  /** The `?` or `!` over each pack's head. See `Pack.mark` and `updateMarks`. */
+  private readonly marks = new Map<Pack, THREE.Sprite>();
+  private markTex: { '?': THREE.Texture; '!': THREE.Texture } | null = null;
   /**
    * The animals.
    *
@@ -663,12 +681,16 @@ export class DistrictScreen implements Screen {
         player: () => this.player,
         follower: () => this.follower,
         packs: () => this.packs,
-        warden: () => this.warden,
+        warden: () => this.wardens[0] ?? null,
+        wardens: () => this.wardens,
         combat: () => this.combat,
         cameraYaw: () => this.cameraYaw,
         setCameraYaw: (v: number) => void (this.cameraYaw = v),
         /** Walks into a pack by identity, so a fight can be opened without a collision. */
-        ambush: (encounterId: string) => this.ambush(encounterId),
+        ambush: (encounterId: string) => {
+          const pack = this.packs.find((p) => p.encounterId === encounterId);
+          this.ambush(encounterId, pack?.key ?? encounterId, pack);
+        },
       };
 
       // The look-tuning panel is a development tool and lives inside the guard with the
@@ -706,7 +728,7 @@ export class DistrictScreen implements Screen {
         LOOK,
         PERF,
         player: () => this.player?.position,
-        warden: () => this.warden,
+        warden: () => this.wardens[0] ?? null,
         flags: () => this.flags,
         safe: () => this.playerSafe,
         nearest: () => this.nearest?.interactLabel ?? null,
@@ -1126,17 +1148,19 @@ export class DistrictScreen implements Screen {
     // first half-second -- and he would have nowhere to be.
     this.walkTheRow();
 
-    const beat = this.area.props.patrols?.[0];
-    if (beat && wardenArt) {
-      this.warden = new Warden(wardenArt, 2.5, beat, colliders);
-      this.world.scene.add(this.warden.walker.sprite);
-      this.world.scene.add(this.warden.cone);
-      this.world.billboards.push(this.warden.walker.sprite);
-      this.updatables.push(this.warden);
-      this.warden.onCatch = () => this.arrest();
-      this.warden.setSight(wardenSightAt(this.hour));
-      this.warden.grace = wardenGraceAt(this.hour);
-      this.warden.onAlertChange = (on) => this.hud?.setAlert(on);
+    for (const beat of wardenArt ? (this.area.props.patrols ?? []) : []) {
+      const warden = new Warden(wardenArt!, 2.5, beat, colliders);
+      this.world.scene.add(warden.walker.sprite);
+      this.world.scene.add(warden.cone);
+      this.world.billboards.push(warden.walker.sprite);
+      this.updatables.push(warden);
+      warden.onCatch = () => this.arrest(warden);
+      warden.setSight(wardenSightAt(this.hour));
+      warden.grace = wardenGraceAt(this.hour);
+      // One alarm for the ward, raised while any of them is after you.
+      warden.onAlertChange = (on) =>
+        this.hud?.setAlert(on || this.wardens.some((w) => w !== warden && (w.state === 'ALERT' || w.state === 'CHASE')));
+      this.wardens.push(warden);
     }
 
     // The roaming packs.
@@ -1146,19 +1170,38 @@ export class DistrictScreen implements Screen {
     // reads as cleared. That is also the third of the four things standing between the
     // player and an immediate re-trigger on the way back from a fight.
     const packSpecs = this.area.props.packs ?? [];
+    // The ground they go round things on. Built here because the collider set is complete by
+    // now -- every building, every prop -- and built only where there is somebody to use it.
+    if (!this.nav && (packSpecs.length > 0 || (this.area.props.patrols?.length ?? 0) > 0)) {
+      this.nav = new NavGrid(colliders);
+    }
     if (packSpecs.length > 0) {
       const now = Date.now();
+      // One drawing per kind of body in this area, shared by every pack fielding it.
+      const memberArts = new Map<string, ActorArt>();
       for (const spec of packSpecs) {
-        const last = this.opts.hunts[spec.encounterId];
+        // Which crew this is, on which map -- the key its cooldown is kept under.
+        const key = packClockKey(spec.encounterId, this.area.id, spec.id);
+        const last = this.opts.hunts[key];
         if (!huntAvailable(last, now)) continue;
 
-        const seed = hashText(spec.encounterId);
-        const art = actorArtFromTextures(
-          makeMinionTexture('front', seed),
-          makeMinionTexture('back', seed),
-          makeMinionTexture('side', seed),
-        );
-        this.heroArt.push(art);
+        const seed = hashText(key);
+        // Its members, drawn the way the board will draw them. The hooded figure is for an
+        // encounter that is not a pack, which nothing places today.
+        const bodies = packBodies(spec.encounterId);
+        const bodyArt = bodies.map((defId) => {
+          let a = memberArts.get(defId);
+          if (!a) {
+            a = memberArt(defId);
+            memberArts.set(defId, a);
+            this.heroArt.push(a);
+          }
+          return a;
+        });
+        const art =
+          bodyArt[0] ??
+          actorArtFromTextures(makeMinionTexture('front', seed), makeMinionTexture('back', seed), makeMinionTexture('side', seed));
+        if (!bodyArt[0]) this.heroArt.push(art);
 
         const rng = makeRng(seed >>> 0);
         const pack = new Pack(
@@ -1170,8 +1213,21 @@ export class DistrictScreen implements Screen {
           spec.roam,
           colliders,
           () => nextInt(rng, 10_000) / 10_000,
+          {
+            key,
+            nav: this.nav ?? undefined,
+            ...(bodyArt.length > 0 ? { bodies: bodyArt.length, bodyArt } : {}),
+            ...(spec.behaviour ? { behaviour: spec.behaviour } : {}),
+            ...(spec.route ? { route: spec.route } : {}),
+            ...(spec.sweep ? { sweep: spec.sweep } : {}),
+          },
         );
-        pack.onContact = () => this.ambush(spec.encounterId);
+        pack.onContact = () => this.ambush(spec.encounterId, key, pack);
+        // Each in its school's colour, as the board washes them.
+        pack.walkers.forEach((w, i) => {
+          const tint = bodies[i] ? memberTint(bodies[i]!) : null;
+          if (tint !== null) w.sprite.setTint(tint);
+        });
         pack.setSight(packSightAt(this.hour));
         // Spawned whatever the hour, and put on or off shift by the clock -- see
         // `Pack.setOnShift`. Skipping the build for an off-hours crew was the first version and
@@ -1190,6 +1246,19 @@ export class DistrictScreen implements Screen {
         this.world.scene.add(pack.aggroRing);
         this.packs.push(pack);
         this.updatables.push(pack);
+
+        // Its mark, hidden until it has something to say. Over the depth buffer, so a mark over
+        // a pack standing behind a wall is still read -- it is the one thing that tells you a
+        // hunter you cannot see has noticed you.
+        this.markTex ??= { '?': makeMarkTexture('?'), '!': makeMarkTexture('!') };
+        const bubble = new THREE.Sprite(
+          new THREE.SpriteMaterial({ map: this.markTex['?'], depthTest: false, transparent: true }),
+        );
+        bubble.scale.set(0.75, 0.92, 1);
+        bubble.renderOrder = 30;
+        bubble.visible = false;
+        this.world.scene.add(bubble);
+        this.marks.set(pack, bubble);
       }
     }
 
@@ -1399,7 +1468,7 @@ export class DistrictScreen implements Screen {
     const bite = bit ? forageBite(node) : null;
     const line = [said, bite?.line].filter((s): s is string => !!s).join(' ');
     if (line) this.hud?.flashNotice(line);
-    if (bite) this.ambush(bite.encounterId);
+    if (bite) this.ambush(bite.encounterId, packClockKey(bite.encounterId, this.area.id, 'bite'));
   }
 
   /**
@@ -1629,12 +1698,12 @@ export class DistrictScreen implements Screen {
     const camera = this.camera!;
     const anchor = this.player?.position ?? new THREE.Vector3(this.area.spawn.x, 0, this.area.spawn.z);
 
-    if (this.warden) {
-      this.warden.playerAt.copy(anchor);
-      this.warden.playerSafe = this.playerSafe;
+    for (const warden of this.wardens) {
+      warden.playerAt.copy(anchor);
+      warden.playerSafe = this.playerSafe;
       // Per frame rather than on the clock tick: the post is a function of the hour, and the
       // hour moves continuously. Assigning a number is cheaper than deciding whether to.
-      this.warden.hour = this.hour;
+      warden.hour = this.hour;
     }
     for (const npc of this.npcs) npc.playerAt = anchor;
     // Copied rather than aliased, unlike the NPCs above: a critter reads this every frame to
@@ -1656,7 +1725,7 @@ export class DistrictScreen implements Screen {
       pack.onContact =
         this.packArming > 0 || this.inputLocked || this.hud?.boardIsOpen || this.hud?.menuIsOpen
           ? null
-          : () => this.ambush(pack.encounterId);
+          : () => this.ambush(pack.encounterId, pack.key, pack);
     }
 
     // Nothing on the street moves while a fight is up. A pack wandering past the arena --
@@ -1670,6 +1739,8 @@ export class DistrictScreen implements Screen {
     } else {
       this.ring?.update(dt);
     }
+
+    this.updateMarks();
 
     // The clock, and everything that reads it. See `hour` above for why this ticks on the
     // street rather than only on a crossing.
@@ -1725,15 +1796,11 @@ export class DistrictScreen implements Screen {
         sites: sitesInArea(this.area.id)
           .filter((site) => this.opts.bounties.some((b) => b.id === `story_${site.encounterId}`))
           .map((site) => ({ x: site.at.x, z: site.at.z, label: site.label })),
-        ...(this.warden
-          ? {
-              warden: {
-                x: this.warden.position.x,
-                z: this.warden.position.z,
-                alerted: this.warden.state === 'CHASE' || this.warden.state === 'ALERT',
-              },
-            }
-          : {}),
+        wardens: this.wardens.map((w) => ({
+          x: w.position.x,
+          z: w.position.z,
+          alerted: w.state === 'CHASE' || w.state === 'ALERT',
+        })),
       });
     }
 
@@ -1798,6 +1865,23 @@ export class DistrictScreen implements Screen {
     if (import.meta.env.DEV) this.samplePerf(dt);
     this.raf = requestAnimationFrame(this.loop);
   };
+
+  /** Each pack's mark, over its leader's head, showing what `Pack.mark` says it is thinking. */
+  private updateMarks(): void {
+    const tex = this.markTex;
+    if (!tex) return;
+    for (const [pack, bubble] of this.marks) {
+      const mark = this.combat ? null : pack.mark;
+      bubble.visible = mark !== null;
+      if (!mark) continue;
+      if (bubble.material.map !== tex[mark]) {
+        bubble.material.map = tex[mark];
+        bubble.material.needsUpdate = true;
+      }
+      // A bob, so it reads as a thought rather than a label nailed over them.
+      bubble.position.set(pack.position.x, 2.75 + Math.sin(this.elapsed * 5) * 0.06, pack.position.z);
+    }
+  }
 
   /** Frames and seconds since `PERF` was last written. Development only. */
   private perfFrames = 0;
@@ -1876,8 +1960,10 @@ export class DistrictScreen implements Screen {
     // the world, so the text and the light now move together, which is the point.
     this.hud?.renderLedger();
     this.walkTheRow();
-    this.warden?.setSight(wardenSightAt(this.hour));
-    if (this.warden) this.warden.grace = wardenGraceAt(this.hour);
+    for (const warden of this.wardens) {
+      warden.setSight(wardenSightAt(this.hour));
+      warden.grace = wardenGraceAt(this.hour);
+    }
     for (const pack of this.packs) {
       pack.setSight(packSightAt(this.hour));
       // Coming on and going off while the player watches, which is the whole of what a shift is.
@@ -2243,21 +2329,25 @@ export class DistrictScreen implements Screen {
    * the fight on the first frame -- and after a loss `rescuePlayer` puts the player there at
    * a tenth of their Pact, so it is a death loop rather than an annoyance.
    */
-  private ambush(encounterId: string): void {
+  /**
+   * Walked into a pack -- `host`, when it is one on the road; a forage bite has none -- whose
+   * fight is `encounterId` and whose clock is `key`.
+   */
+  private ambush(encounterId: string, key: string, host?: Pack): void {
     if (this.inputLocked || !this.player || this.ring) return;
     this.inputLocked = true;
     this.writePosition({ x: this.lastRefuge.x, z: this.lastRefuge.z });
 
     // The one that jumped you stands its ground. A pack that wandered off its own ambush
-    // while the circle drew would leave the ring centred on nothing.
-    const host = this.packs.find((p) => p.encounterId === encounterId);
+    // while the circle drew would leave the ring centred on nothing. The pack itself, not the
+    // first of its kind: with two crews of wolves on one map, the other one is somewhere else.
     host?.holdStill(CombatRing.DURATION + 1);
 
     const ring = new CombatRing(
       this.player.position.x,
       this.player.position.z,
       this.packs.filter((p) => p !== host),
-      (pulled) => this.beginFight(encounterId, pulled),
+      (pulled, keys) => this.beginFight(encounterId, pulled, { host: key, pulled: keys }),
     );
     this.ring = ring;
     this.world?.scene.add(ring.mesh);
@@ -2273,7 +2363,7 @@ export class DistrictScreen implements Screen {
    * contract is already open against this character — and returns `false` when it does, so a
    * caller with a sensible non-combat outcome can take it. The Warden has one.
    */
-  private beginFight(encounterId: string, pulled: string[]): boolean {
+  private beginFight(encounterId: string, pulled: string[], keys?: { host: string; pulled: string[] }): boolean {
     const player = this.player;
     const world = this.world;
     if (!player || !world || !this.camera || this.combat) {
@@ -2281,7 +2371,7 @@ export class DistrictScreen implements Screen {
       return false;
     }
 
-    const fight = this.opts.onPack(encounterId, pulled);
+    const fight = this.opts.onPack(encounterId, pulled, keys);
     if (!fight) {
       this.declineFight();
       return false;
@@ -2368,7 +2458,7 @@ export class DistrictScreen implements Screen {
     // screen instance: a Warden who cannot serve a second contract falls through to `seize`.
     for (const pack of this.packs) pack.setVisible(false);
     for (const critter of this.critters) critter.setVisible(false);
-    this.warden?.setVisible(false);
+    for (const warden of this.wardens) warden.setVisible(false);
     // The errand's cairn too. `setArena` fades *structures*, so a marker seated inside the
     // footprint would otherwise stand in the middle of the grid with a prompt over it.
     if (this.marker?.sprite) this.marker.sprite.visible = false;
@@ -2439,7 +2529,7 @@ export class DistrictScreen implements Screen {
     if (this.follower) this.follower.walker.sprite.visible = true;
     for (const pack of this.packs) pack.setVisible(true);
     for (const critter of this.critters) critter.setVisible(true);
-    this.warden?.setVisible(true);
+    for (const warden of this.wardens) warden.setVisible(true);
     if (this.marker?.sprite) this.marker.sprite.visible = true;
     this.descent = null;
     this.combatCam = null;
@@ -2465,9 +2555,8 @@ export class DistrictScreen implements Screen {
    * free, out of machinery that already exists, and is the best thing that can happen in this
    * ward.
    */
-  private arrest(): void {
-    const warden = this.warden;
-    if (this.inputLocked || !this.player || !warden || this.ring) return;
+  private arrest(warden: Warden): void {
+    if (this.inputLocked || !this.player || this.ring) return;
     this.inputLocked = true;
     this.writePosition({ x: this.lastRefuge.x, z: this.lastRefuge.z });
 
@@ -2479,11 +2568,11 @@ export class DistrictScreen implements Screen {
       warden.position.x,
       warden.position.z,
       this.packs,
-      (pulled) => {
+      (pulled, keys) => {
         // A Warden who catches you while a contract is already open cannot serve a second
         // one, and the old escort is exactly the right thing to do instead: back onto the
         // flags, nothing owed. The lesson was never the fight.
-        if (!this.beginFight(WARDEN_ENCOUNTER, pulled)) this.seize();
+        if (!this.beginFight(WARDEN_ENCOUNTER, pulled, { host: WARDEN_ENCOUNTER, pulled: keys })) this.seize();
       },
     );
     this.ring = ring;
@@ -2501,7 +2590,7 @@ export class DistrictScreen implements Screen {
     this.player.position.set(this.lastSafePos.x, 0, this.lastSafePos.z);
     this.follower?.snapTo(this.lastSafePos.x - 1.2, this.lastSafePos.z + 1.0);
     this.playerSafe = true;
-    this.warden?.reset();
+    for (const warden of this.wardens) warden.reset();
   }
 
   private colliders(): ColliderSet {
@@ -2537,7 +2626,9 @@ export class DistrictScreen implements Screen {
       onTilt: () => this.post?.syncTilt(this.width(), this.height()),
       onLamps: () => this.world?.applyLamps(),
       onSigns: () => this.world?.applySigns(),
-      onVision: () => this.warden?.rebuildCone(),
+      onVision: () => {
+        for (const warden of this.wardens) warden.rebuildCone();
+      },
       onPackVision: () => {
         for (const pack of this.packs) pack.rebuildCone();
       },

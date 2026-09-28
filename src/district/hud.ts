@@ -876,8 +876,8 @@ export class DistrictHud {
       dot(pack.x, pack.z, 3, pack.hunting ? '#ff6a45' : '#c2603a', '#1b1720');
     }
 
-    if (view.warden) {
-      dot(view.warden.x, view.warden.z, 3.2, view.warden.alerted ? '#ff6a45' : '#d8b13a', '#1b1720');
+    for (const w of view.wardens ?? []) {
+      dot(w.x, w.z, 3.2, w.alerted ? '#ff6a45' : '#d8b13a', '#1b1720');
     }
 
     // The errand, drawn as a ring rather than a dot: everything else on this map is a body
@@ -1098,7 +1098,7 @@ export interface MapView {
   /** Camera yaw, because the map is oriented to the screen rather than to the body. */
   yaw: number;
   packs: readonly { encounterId: string; x: number; z: number; hunting: boolean }[];
-  warden?: { x: number; z: number; alerted: boolean };
+  wardens?: readonly { x: number; z: number; alerted: boolean }[];
   /**
    * Where the open errand wants you, when it wants you in *this* area.
    *

@@ -15,8 +15,10 @@ import {
   huntByEncounter,
   huntCooldownLabel,
   huntCooldownRemaining,
+  encounterOfKey,
   huntOpen,
   isHunt,
+  packClockKey,
   type Hunt,
   stampClock,
 } from '../core/data/hunts.js';
@@ -78,6 +80,33 @@ describe('the clock after a fight', () => {
     const odd: Record<string, number> = {};
     stampClock(odd, host, [hunt], false, NOW);
     expect(odd[hunt]).toBeUndefined();
+  });
+
+  it("keeps one crew's clock apart from every other crew of its kind", () => {
+    // Stamped by encounter id, clearing the waywatch on the Chalk Road cleared every waywatch
+    // anywhere, and an area with two packs of one kind could never have one of them still out.
+    const road = packClockKey(host, 'chalk_road');
+    const den = packClockKey(host, 'storm_shelf_pylon_base');
+    const second = packClockKey(host, 'chalk_road', 'north');
+    expect(new Set([road, den, second]).size).toBe(3);
+    for (const k of [road, den, second]) expect(encounterOfKey(k)).toBe(host);
+    // A key with no area is its own encounter: hunts, lairs, and an old save's pack stamps.
+    expect(encounterOfKey(hunt)).toBe(hunt);
+
+    const clock: Record<string, number> = {};
+    stampClock(clock, host, [packClockKey(other, 'chalk_road')], false, NOW, road);
+    expect(clock[road], 'the crew that was fought').toBe(NOW);
+    expect(clock[packClockKey(other, 'chalk_road')], 'the crew the ring pulled').toBe(NOW);
+    expect(clock[den], 'the same kind of crew, somewhere else').toBeUndefined();
+    expect(clock[second], 'the same kind of crew, on the same road').toBeUndefined();
+    expect(clock[host], 'nothing stamped by kind').toBeUndefined();
+  });
+
+  it('will not stamp a host key that names a different fight', () => {
+    const clock: Record<string, number> = {};
+    stampClock(clock, host, [], false, NOW, packClockKey(other, 'chalk_road'));
+    expect(clock[host]).toBe(NOW);
+    expect(Object.keys(clock)).toEqual([host]);
   });
 });
 

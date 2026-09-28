@@ -671,7 +671,7 @@ function showArea(areaId: string, companionId: string): void {
       // `onBounty`: that path records `bounty_taken` and would tick a step of the guided lap
       // the player never walked. Everything after the hand-off is the ordinary road, because
       // that road is what pays the spoils and closes the abandon failsafe.
-      onPack: (encounterId, pulled) => {
+      onPack: (encounterId, pulled, keys) => {
         const pack = packByEncounter(encounterId);
         if (!pack) return null;
         const encounter = encounterById(encounterId);
@@ -718,7 +718,10 @@ function showArea(areaId: string, companionId: string): void {
           bounty,
           {
             wave2: extras.map(reinforceSquad),
-            pulled: extras.map((p) => p.encounterId),
+            // By clock key where the street named the crews, so the ones that died here go off
+            // this map's road and not off every road with a crew of their kind on it.
+            pulled: keys?.pulled ?? extras.map((p) => p.encounterId),
+            ...(keys ? { host: keys.host } : {}),
           },
           'defer',
         );
@@ -882,10 +885,11 @@ function startCombat(
   /**
    * What the Combat Ring dragged in, when the road picked this fight rather than the board.
    *
-   * `wave2` is the squads, in the engine's own terms. `pulled` is the pack ids, kept only
-   * so the win can put them on the same cooldown as the pack that started it.
+   * `wave2` is the squads, in the engine's own terms. `pulled` is the packs' clock keys, kept
+   * only so the fight can put them on the same cooldown as the pack that started it, and `host`
+   * is that pack's own key.
    */
-  ring?: { wave2: string[][]; pulled: string[] },
+  ring?: { wave2: string[][]; pulled: string[]; host?: string },
   /**
    * Whether to open the 2D board, or hand the fight back to be played where it started.
    *
@@ -966,7 +970,7 @@ function startCombat(
       onSeen: () => recordTutorial('coach'),
     },
     onFinish: (result: CombatResult, played: EncounterDef, outcome: CombatOutcome) =>
-      finishCombat(result, played, outcome, companionId, ring?.pulled ?? []),
+      finishCombat(result, played, outcome, companionId, ring?.pulled ?? [], ring?.host),
   };
   if (present === 'defer') return opened;
 
@@ -997,8 +1001,10 @@ function finishCombat(
   played: EncounterDef,
   outcome: CombatOutcome,
   companionId: string,
-  /** Packs the Combat Ring dragged into this fight. Empty for anything off the board. */
+  /** Packs the Combat Ring dragged into this fight, by clock key. Empty for anything off the board. */
   pulled: string[] = [],
+  /** The clock key of the pack that started it, when the street knew which crew that was. */
+  hostKey?: string,
 ): void {
   // Read the contract before `resolveCombat` closes it — the receipt is itemised from
   // what was actually accepted, not from whatever the board offers next.
@@ -1084,7 +1090,7 @@ function finishCombat(
   // that had just beaten a character standing on the road the rescue put them back on.
   // `Date.now()` is read here rather than in `core`, which stays clock-free: the registry
   // does the arithmetic and is handed the time.
-  stampClock(p.hunts, played.id, pulled, won, Date.now());
+  stampClock(p.hunts, played.id, pulled, won, Date.now(), hostKey);
 
   const offer = won
     ? rollSchematicOffer(

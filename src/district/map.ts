@@ -222,23 +222,62 @@ export interface WildlifeSpec {
   readonly count?: number;
 }
 
-/** A wandering minion pack. See `data/packs.ts` for what it fights as. */
+/**
+ * How a pack spends the time it is not hunting you.
+ *
+ * - **roam** -- wanders a circle round its home, a beat of standing about at each spot. What
+ *   every pack did until these existed, and still the default.
+ * - **beat** -- walks a fixed route of posts in order and round again, pausing at each. A crew
+ *   on a beat is a crew you can time: stand in the lee of the warehouse, watch it pass, go.
+ * - **sentry** -- holds one post and sweeps its gaze between two headings. The thing guarding a
+ *   gate or a bridge-end: it never comes to you, and the dark wedge behind its sweep is the way
+ *   past.
+ * - **prowl** -- wanders the whole area over a lattice of waypoints, always to the nearest one it
+ *   has not been to yet, and when it has been everywhere, starting again. Brian Walker's wandering
+ *   monster from Brogue; the thing you meet on the far side of the wood because it was going
+ *   there too.
+ */
+export type PackBehaviour = 'roam' | 'beat' | 'sentry' | 'prowl';
+
+/** A minion pack on the road. See `data/packs.ts` for what it fights as. */
 export interface PackSpec {
   /** The encounter walking into it starts. */
   readonly encounterId: string;
   /**
+   * Which crew this is, when an area fields two of one kind. Absent for the first.
+   *
+   * Part of the key its cooldown is kept under (`packClockKey`) -- so two packs of wolves on one
+   * map are two packs, one of which can still be out when the other has been cleared -- and of
+   * the seed its wander is rolled from.
+   */
+  readonly id?: string;
+  /**
    * When this crew is out. Absent means always.
    *
-   * A reading of what they are doing rather than a difficulty setting — see `PackHours`. A pack
-   * that is not out is not spawned at all, so the road is genuinely empty rather than holding
-   * something asleep.
+   * A reading of what they are doing rather than a difficulty setting — see `PackHours`. Off its
+   * hours a crew is off the road: invisible, blind, untouchable. See `Pack.setOnShift`.
    */
   readonly hours?: PackHours;
-  /** The middle of its beat. */
+  /** Home: the middle of a roam, a sentry's post, where a beat or a prowl starts. */
   readonly x: number;
   readonly z: number;
-  /** How far from home it will wander. */
+  /** How far from home a roaming pack wanders. What the others ignore, or use for the ring rules. */
   readonly roam: number;
+  /** How it passes the time. See `PackBehaviour`. Absent means `roam`. */
+  readonly behaviour?: PackBehaviour;
+  /** A beat's posts, walked in order and round again. Needs at least two. */
+  readonly route?: readonly Vec2[];
+  /** A sentry's two headings, radians, zero facing south (+z) as a prop's yaw does. */
+  readonly sweep?: readonly [number, number];
+  /**
+   * The stretch of road this crew shares with others, when it does.
+   *
+   * Packs in one band overlap on purpose -- walk into one and the Combat Ring can catch another,
+   * which is the lesson the Chalk Verge exists to teach -- and a test holds them to it. Packs in
+   * different bands, or in none, are kept far enough apart that one ring can never reach from
+   * one to the other.
+   */
+  readonly band?: string;
 }
 
 /**
@@ -440,6 +479,86 @@ export function tileAt(a: AreaDef, x: number, z: number): TileDef {
 /** The Sidewalk Immunity test, asked every frame the player moves. */
 export const isSafeAt = (a: AreaDef, x: number, z: number): boolean => tileAt(a, x, z).safe;
 export const isWalkable = (a: AreaDef, x: number, z: number): boolean => tileAt(a, x, z).walk;
+
+/* ============================================================
+   Sight
+   ============================================================ */
+
+/**
+ * How tall a solid tile must stand to hide somebody behind it.
+ *
+ * Eye height, near enough. A rock outcrop at two metres and a terrace at seven both hide you; a
+ * canal does not, because it is not solid, and neither does anything that is furniture rather
+ * than map -- a fence or a cart is a prop, and props are not in the grid.
+ */
+export const SIGHT_HEIGHT = 1.6;
+
+/** Whether the tile at (col, row) stands between two people. Off the map counts as a wall. */
+function blocksSight(a: AreaDef, col: number, row: number): boolean {
+  if (row < 0 || row >= a.rows || col < 0 || col >= a.cols) return true;
+  const solid = a.legend[a.grid[row]![col]!]?.solid;
+  return !!solid && solid.minHeight >= SIGHT_HEIGHT;
+}
+
+/**
+ * How far along a ray somebody standing at (x, z) can see, up to `max`.
+ *
+ * Walked tile by tile through the grid (Amanatides and Woo's traversal), so it visits exactly the
+ * tiles the line crosses and costs one step per tile, not per unit. The tile the ray starts in
+ * never blocks: a watcher is standing on walkable ground by construction, and a body pressed
+ * against a wall still sees along it.
+ */
+export function sightReach(a: AreaDef, x: number, z: number, dx: number, dz: number, max: number): number {
+  const len = Math.hypot(dx, dz);
+  if (len < 1e-9 || max <= 0) return max;
+  const ux = dx / len;
+  const uz = dz / len;
+  const gx = x + a.halfX;
+  const gz = z + a.halfZ;
+  let col = Math.floor(gx / TILE);
+  let row = Math.floor(gz / TILE);
+  const stepC = ux > 0 ? 1 : -1;
+  const stepR = uz > 0 ? 1 : -1;
+  const tDeltaC = ux !== 0 ? Math.abs(TILE / ux) : Infinity;
+  const tDeltaR = uz !== 0 ? Math.abs(TILE / uz) : Infinity;
+  let tMaxC = ux !== 0 ? ((ux > 0 ? (col + 1) * TILE : col * TILE) - gx) / ux : Infinity;
+  let tMaxR = uz !== 0 ? ((uz > 0 ? (row + 1) * TILE : row * TILE) - gz) / uz : Infinity;
+  for (;;) {
+    // The distance at which the ray leaves the current tile and enters the next.
+    const t = Math.min(tMaxC, tMaxR);
+    if (t >= max) return max;
+    if (Math.abs(tMaxC - tMaxR) < 1e-9) {
+      // Exactly through a corner. The ray touches both tiles beside it only at a point, so it is
+      // stopped only if *both* would stop it -- a gap between two walls meeting at a corner is no
+      // gap, and grazing the corner of one wall is not being behind it. Picking one side, which
+      // the plain traversal does, makes sight depend on which way you are looking.
+      if (blocksSight(a, col + stepC, row) && blocksSight(a, col, row + stepR)) return t;
+      col += stepC;
+      row += stepR;
+      tMaxC += tDeltaC;
+      tMaxR += tDeltaR;
+    } else if (tMaxC < tMaxR) {
+      col += stepC;
+      tMaxC += tDeltaC;
+    } else {
+      row += stepR;
+      tMaxR += tDeltaR;
+    }
+    if (blocksSight(a, col, row)) return t;
+  }
+}
+
+/**
+ * Whether somebody at `a` can see somebody at `b` -- nothing solid and tall between them.
+ *
+ * What makes a thicket worth putting on a map: the verge's `T` was drawn "tall enough to break a
+ * sightline, so the packs can come round it", and until this existed nothing looked through it or
+ * round it -- a pack saw through a terrace as easily as across a road.
+ */
+export function sightClear(area: AreaDef, ax: number, az: number, bx: number, bz: number): boolean {
+  const d = Math.hypot(bx - ax, bz - az);
+  return sightReach(area, ax, az, bx - ax, bz - az, d) >= d;
+}
 
 /* ============================================================
    Building extraction
