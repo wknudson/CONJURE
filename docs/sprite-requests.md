@@ -56,3 +56,45 @@ silhouette until its own art arrives.
 - **Body:** bruiser, moves 2, reaches 1
 - **Brief:** Plated in scales that hum. Curls up, takes the blow, and gives the charge back to whoever struck it.
 - **Files:** `sparkback_pangolin-front.png`, `sparkback_pangolin-back.png`, `sparkback_pangolin-side.png`
+
+### Ironhide Rhino, Wall Breaker
+
+- **Schools:** bulwark
+- **Body:** bruiser, moves 2, reaches 1
+- **Brief:** Hide like a tannery door and no reverse gear. Charges down a line, gores what is left, and cannot be moved off the spot it chose.
+- **Files:** `ironhide_rhino-front.png`, `ironhide_rhino-back.png`, `ironhide_rhino-side.png`
+
+### Menhir Beetle, Stone Roller
+
+- **Schools:** bulwark
+- **Body:** caster, moves 1, reaches 3
+- **Brief:** Rolls the old standing stones back to where they stood and dares you to move them. Casts from behind its own shell.
+- **Files:** `menhir_beetle-front.png`, `menhir_beetle-back.png`, `menhir_beetle-side.png`
+
+### Gloam Owl, Barrow Watcher
+
+- **Schools:** dusk
+- **Body:** caster, moves 3, reaches 3
+- **Brief:** Watches the barrows at night and sees everything that walks there. Strikes from the dark and knows what you will do before you do.
+- **Files:** `gloam_owl-front.png`, `gloam_owl-back.png`, `gloam_owl-side.png`
+
+### Crypt Spider, Ossuary Weaver
+
+- **Schools:** dusk
+- **Body:** bruiser, moves 2, reaches 1
+- **Brief:** Spins across the ossuary doors and waits for whoever opens them. Webs, poisons, and feeds its brood on what it catches.
+- **Files:** `crypt_spider-front.png`, `crypt_spider-back.png`, `crypt_spider-side.png`
+
+### Bramble Fox, Hedge Runner
+
+- **Schools:** bloom
+- **Body:** skirmisher, moves 4, reaches 1
+- **Brief:** Runs the hedgerows between the tithe strips and knows every gap in them. Pounces on whatever the thorns are holding.
+- **Files:** `bramble_fox-front.png`, `bramble_fox-back.png`, `bramble_fox-side.png`
+
+### Pollen Moth, Field Duster
+
+- **Schools:** bloom
+- **Body:** caster, moves 3, reaches 3
+- **Brief:** Drifts over the fallow strips at dusk and dusts everything below it. The field it passes over wakes up poisoned.
+- **Files:** `pollen_moth-front.png`, `pollen_moth-back.png`, `pollen_moth-side.png`
