@@ -22,7 +22,9 @@ machinery as PR #41 — signature cards, rare hunts, and a pipeline for creature
 as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; that note was PR #49. A motion pass over both boards and the streets, including two fixes for flinches that were computed and never drawn, merged as PR #47 and is recorded in §7.15; that note was PR #50. The expansion's Wave 4, thirty-six new bodies for the Vanguard, merged as PR #51 and is recorded in §7.16; that note was PR #52. Its Wave 5, the third and fourth bloodlines of Pyre, Frost and Surge, merged as PR #53 and is recorded in §7.17; that note was PR #54. Its Wave 6, the same for Bulwark, Dusk and Bloom, merged as PR #64 and is recorded in §7.18; that note was PR #65. Its Wave 7, a signature for each of the fifteen founding hybrids, merged as PR #66 and is recorded in §7.19; that note was PR #67. The world immersion pass then
 merged as nine stacked parts, PRs #55 to #63 — foundations, patrols that see and path, eighteen
 themed crews, a building kit, things to look at, the three area passes, and townsfolk who keep
-hours — and is recorded in §7.20; that note was PR #68. Its Wave 8, five hybrids bound in lairs, merged as PR #69 and is recorded in §7.21; that note was PR #70. Its Wave 9, five hybrids on rare hunts, merged as PR #72 and is recorded in §7.22; this note is PR #73.*
+hours — and is recorded in §7.20; that note was PR #68. Its Wave 8, five hybrids bound in lairs, merged as PR #69 and is recorded in §7.21; that note was PR #70. Its Wave 9, five hybrids on rare hunts, merged as PR #72 and is recorded in §7.22; that note was PR #73. The atlas's maps, redrawn for
+the grown world and drawn from the area files so they cannot drift, merged as PR #71 and are
+recorded in §7.23; this note is PR #74.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -1159,7 +1161,7 @@ with all six balance shards, 847 playouts; #58 4,256; #59 4,273; #60 4,334; #61 
 #63 4,450; every one green. Browser checks as each PR records them.
 
 **Open by choice, and written down in the worldbuild to-do's Wave 15 rather than here:** the
-atlas still draws the first build's maps; Ward Seven's drowned terraces are painted water; city
+atlas ~~still draws the first build's maps~~ **FIXED in #71**; Ward Seven's drowned terraces are painted water; city
 crews beat and stand, since a prowler may only walk where nobody lives; Wardens keep no hours; the
 stone circle is one collider; ferries have landings and no boat; Pylon Nine's crown cannot flash
 with its light; passers-by have no errands; and a room keeps no evening of its own.
@@ -1183,12 +1185,30 @@ the Stormgrave Raven and the Sparkspore Toad.
 
 **Verified.** The full non-balance suite and the balance ledger on the exact tip, green.
 
-### 7.23 What remains
+### 7.23 The atlas's maps — **built, PR #71**
+
+The atlas still drew the first build's maps — four places, copied out of their grids by hand, all
+of which had grown twice since — and the other fifteen outdoor places had none; §7.20 left it
+standing in. `scripts/atlas-maps.ts` now draws every outdoor place from its own area file into the
+atlas's §2.9 — its grid with the note the file keeps beside each row, its legend in the file's own
+words, and what stands in it: the spawn, the ways out, the people and their hours, the crews and
+how they work, the Wardens, the landmarks — and §2.5's crossings table the same way.
+`atlasMaps.test.ts` draws them again and fails if the atlas has drifted from the grids. §2.1 to
+§2.4 keep their argument for the four places the world was first built from, brought up to what
+each grew into, and §3 to §5 name every region's crews.
+
+**What was found on the way.** An unused import the typecheck refused, and two full runs lost to
+the intents and determinism playouts' timeouts while another suite shared the machine; the gate
+was run again with the machine to itself.
+
+**Verified.** The full non-balance suite on the exact tip, 166 files and 4,463 tests, green.
+
+### 7.24 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 to §7.22 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.23 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
-found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47, #48, #51, #53, #55 to #63, #64 and #66 did. What comes next is
+found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47, #48, #51, #53, #55 to #63, #64, #66 and #71 did. What comes next is
 a playtest, and the remaining waves of the bestiary expansion, each recorded here as it
 merges.
 
