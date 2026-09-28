@@ -766,3 +766,31 @@ body.is-talking .district-help {
 .district-reading--plaque .district-reading__body p {
   color: #e0c98a;
 }
+
+/* --- a sight's caption, over the prompt ------------------------------------ */
+
+.district-caption {
+  left: 50%;
+  bottom: 190px;
+  transform: translateX(-50%);
+  max-width: min(460px, calc(100vw - 32px));
+  padding: 10px 16px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  color: #f0e6d2;
+}
+.district-caption.is-shown {
+  opacity: 1;
+}
+.district-caption__title {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #d8b46a;
+  margin-bottom: 4px;
+}
+.district-caption__body {
+  font-size: 13px;
+  line-height: 1.45;
+}

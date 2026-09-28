@@ -22,6 +22,7 @@ import { NOTICES } from './notices.js';
 import { CACHES } from './caches.js';
 import { FORAGE_KINDS, FORAGE_NODES, foragePropAt } from './forage.js';
 import { RESTS } from './rests.js';
+import { SIGHTS } from './sights.js';
 
 /**
  * The furniture the registries hang in an area, beside what the area file lists itself.
@@ -56,6 +57,7 @@ export function registryHotspots(areaId: string): { what: string; x: number; z: 
     ...CACHES.filter((c) => c.areaId === areaId).map((c) => ({ what: `cache ${c.id}`, x: c.at.x, z: c.at.z })),
     ...FORAGE_NODES.filter((n) => n.areaId === areaId).map((n) => ({ what: `node ${n.id}`, x: n.at.x, z: n.at.z })),
     ...RESTS.filter((r) => r.areaId === areaId).map((r) => ({ what: `bed ${r.id}`, x: r.at.x, z: r.at.z })),
+    ...SIGHTS.filter((s) => s.areaId === areaId).map((s) => ({ what: `sight ${s.id}`, x: s.at.x, z: s.at.z })),
   ];
 }
 
