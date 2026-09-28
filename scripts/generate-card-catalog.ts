@@ -40,6 +40,14 @@ import { WILDLIFE_CARDS } from '../src/core/data/cards/wildlife.js';
 import { THREAT_CARDS } from '../src/core/data/cards/threats.js';
 import { HYBRID_CARDS } from '../src/core/data/cards/hybrid.js';
 import { AURA_CARDS } from '../src/core/data/cards/auras.js';
+import { HERO_KIT_CARDS } from '../src/core/data/cards/hero.js';
+import { PYRE_SHELF } from '../src/core/data/cards/shelf.pyre.js';
+import { FROST_SHELF } from '../src/core/data/cards/shelf.frost.js';
+import { SURGE_SHELF } from '../src/core/data/cards/shelf.surge.js';
+import { BULWARK_SHELF } from '../src/core/data/cards/shelf.bulwark.js';
+import { DUSK_SHELF } from '../src/core/data/cards/shelf.dusk.js';
+import { BLOOM_SHELF } from '../src/core/data/cards/shelf.bloom.js';
+import { VANGUARD_CARDS } from '../src/core/data/cards/vanguard.js';
 
 /**
  * The shelves, in the order `cards/index.ts` merges them.
@@ -91,6 +99,18 @@ const SOURCES: Source[] = [
     blurb: 'Splice products. Obtainable only at the bench.',
   },
   { file: 'auras.ts', cards: AURA_CARDS, blurb: 'The Aura attach cards, their Detonations and Revival.' },
+  {
+    file: 'hero.ts',
+    cards: HERO_KIT_CARDS,
+    blurb: "The Hero's kit: colourless and arcane abilities and constructs, taught by the Duelists.",
+  },
+  { file: 'shelf.pyre.ts', cards: PYRE_SHELF, blurb: 'Pyre third shelf — commons, and the Drake and Salamander signatures.' },
+  { file: 'shelf.frost.ts', cards: FROST_SHELF, blurb: 'Frost third shelf — commons, and the Bear and Seal signatures.' },
+  { file: 'shelf.surge.ts', cards: SURGE_SHELF, blurb: 'Surge third shelf — commons, and the Lynx and Kudu signatures.' },
+  { file: 'shelf.bulwark.ts', cards: BULWARK_SHELF, blurb: 'Bulwark third shelf — commons, and the Boar and Ram signatures.' },
+  { file: 'shelf.dusk.ts', cards: DUSK_SHELF, blurb: 'Dusk third shelf — commons, and the Stag and Jackal signatures.' },
+  { file: 'shelf.bloom.ts', cards: BLOOM_SHELF, blurb: 'Bloom third shelf — commons, and the Warden and Aurochs signatures.' },
+  { file: 'vanguard.ts', cards: VANGUARD_CARDS, blurb: 'The third muster — thirty-six bodies a warband can field, four per school and twelve colourless.' },
 ];
 
 const KIND_ORDER = ['minion', 'spell', 'ability', 'mark', 'obstacle'] as const;

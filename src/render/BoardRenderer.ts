@@ -9,6 +9,7 @@ import type { IsoCamera } from './IsoCamera.js';
 import { TILE_H, TILE_W } from './IsoCamera.js';
 import type { EntityViewMap, EntityView } from './EntityViews.js';
 import type { Fx } from './Fx.js';
+import { squashScale } from '../anim/motion.js';
 import { PALETTE, schoolOf } from './palette.js';
 import type { School } from '../contract/ids.js';
 import {
@@ -893,6 +894,9 @@ export class BoardRenderer {
       pulse,
       art: c.art ?? null,
       walk,
+      // The board's clock, offset per figure, so the two Commanders and their beasts do
+      // not breathe in unison.
+      idleMs: this.clock + idleSeed(`${c.side}:${c.kind}`),
     });
   }
 
@@ -1083,20 +1087,24 @@ export class BoardRenderer {
       this.drawStatusAura(view, pulse);
       drawBasePlate(ctx, cam, centre, footprint, ally);
 
-      // A unit that has grown mechanically should look it. Scaled about its own feet so
-      // it rises off the base plate rather than sinking through it.
+      // A unit that has grown mechanically should look it, and a unit taking or throwing
+      // a blow flinches (`squash`, set by the handlers; negative is a stretch). Both are
+      // scaled about the feet, so the body rises off the base plate or presses into it
+      // rather than sinking through it. The district board applies the same squash.
       const growth = 1 + Math.min(view.escalation, 6) * ESCALATION_SCALE_PER_STACK;
-      const scaled = growth !== 1;
+      const { sx, sy } = squashScale(view.squash);
+      const scaled = growth !== 1 || view.squash !== 0;
       if (scaled) {
         ctx.save();
         ctx.translate(centre.x, centre.y);
-        ctx.scale(growth, growth);
+        ctx.scale(growth * sx, growth * sy);
         ctx.translate(-centre.x, -centre.y);
       }
 
       drawUnitBody(ctx, cam, centre, {
         archetype: view.snapshot.archetype,
         school: view.snapshot.school,
+        defId: view.snapshot.defId,
         footprint,
         ally,
         bob: (this.clock / 1400) % 1,
@@ -1423,6 +1431,7 @@ export class BoardRenderer {
     drawUnitBody(ctx, cam, centre, {
       archetype: view.snapshot.archetype,
       school: view.snapshot.school,
+      defId: view.snapshot.defId,
       footprint,
       ally: view.snapshot.side === 'player',
       bob: 0,

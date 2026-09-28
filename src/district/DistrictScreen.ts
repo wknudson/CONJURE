@@ -132,6 +132,7 @@ import {
   type ForageNode,
 } from './forage.js';
 import { restsInArea, restUntil, type RestDef } from './rests.js';
+import { Lean, restBreath } from './gait.js';
 
 /**
  * How fast the street clock runs: two game-hours a real minute.
@@ -404,6 +405,9 @@ export class DistrictScreen implements Screen {
   private gui: ReturnType<typeof buildLookGui> | null = null;
 
   private player: Walker | null = null;
+  /** The Commander's lean into a turn and breath at rest. See `gait.ts`. */
+  private readonly playerLean = new Lean();
+  private playerIdleT = 0;
   private follower: CompanionFollower | null = null;
   /**
    * Every Warden walking a beat here -- one per ring of waypoints in `patrols`. Only the first
@@ -2095,6 +2099,10 @@ export class DistrictScreen implements Screen {
     }
 
     player.step(dx, dz, this.cameraYaw);
+    this.playerLean.update(player.sprite, dx, dz, dt, this.cameraYaw);
+    // Standing still, the Commander breathes. Walking, the gait's own bob is on `y`.
+    this.playerIdleT += dt;
+    if (dx === 0 && dz === 0) player.position.y = restBreath(this.playerIdleT, 2.4, 0.03);
     this.follower?.notePlayer(player.position.x, player.position.z);
 
     // The Sidewalk Immunity check, every frame -- where the area has the rule at all. An
