@@ -513,4 +513,50 @@ export const BLOOM_SHELF: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  /** The Newt: a bloom that opens in frost. */
+  rimebloom: {
+    id: 'rimebloom',
+    name: 'Rimebloom',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Poisons everything in a cross around the target tile (Toxin 1) and Chills it.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'plus', radius: 1 } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'plus', radius: 1 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['newt'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** The Toad: spores with a charge in them. */
+  spark_spores: {
+    id: 'spark_spores',
+    name: 'Spark Spores',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 10 shock damage to a 2x2 block of tiles, leaving it Charged, and poisons everything there (Toxin 1).',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 2 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'shock', area: { shape: 'square', size: 2 } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'square', size: 2 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['toad'],
+    range: 4,
+    needsLoS: true,
+  },
 };

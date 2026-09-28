@@ -517,4 +517,27 @@ export const FROST_SHELF: Record<string, CardDef> = {
     range: 3,
     needsLoS: true,
   },
+
+  /** The Kestrel: the aurora, falling. */
+  polar_flash: {
+    id: 'polar_flash',
+    name: 'Polar Flash',
+    cost: { bones: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 10 shock damage in a cross around the target tile, leaving it Charged, and Chills everything there.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'shock', area: { shape: 'plus', radius: 1 } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'plus', radius: 1 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['kestrel'],
+    range: 4,
+    needsLoS: true,
+  },
 };

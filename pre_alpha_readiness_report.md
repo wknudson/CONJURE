@@ -22,7 +22,7 @@ machinery as PR #41 — signature cards, rare hunts, and a pipeline for creature
 as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; that note was PR #49. A motion pass over both boards and the streets, including two fixes for flinches that were computed and never drawn, merged as PR #47 and is recorded in §7.15; that note was PR #50. The expansion's Wave 4, thirty-six new bodies for the Vanguard, merged as PR #51 and is recorded in §7.16; that note was PR #52. Its Wave 5, the third and fourth bloodlines of Pyre, Frost and Surge, merged as PR #53 and is recorded in §7.17; that note was PR #54. Its Wave 6, the same for Bulwark, Dusk and Bloom, merged as PR #64 and is recorded in §7.18; that note was PR #65. Its Wave 7, a signature for each of the fifteen founding hybrids, merged as PR #66 and is recorded in §7.19; that note was PR #67. The world immersion pass then
 merged as nine stacked parts, PRs #55 to #63 — foundations, patrols that see and path, eighteen
 themed crews, a building kit, things to look at, the three area passes, and townsfolk who keep
-hours — and is recorded in §7.20; that note was PR #68. Its Wave 8, five hybrids bound in lairs, merged as PR #69 and is recorded in §7.21; this note is PR #70.*
+hours — and is recorded in §7.20; that note was PR #68. Its Wave 8, five hybrids bound in lairs, merged as PR #69 and is recorded in §7.21; that note was PR #70. Its Wave 9, five hybrids on rare hunts, merged as PR #72 and is recorded in §7.22; this note is PR #73.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -1175,10 +1175,18 @@ covered.
 
 **Verified.** The full non-balance suite and the balance ledger on the exact tip, green.
 
-### 7.22 What remains
+### 7.22 The bestiary expansion, Wave 9 — **built, PR #72**
+
+Five hybrids posted on the gate board only once the player's kept beasts speak both parent
+schools — the gate Wave 0 built: the Slagback Armadillo, the Aurora Kestrel, the Rimebloom Newt,
+the Stormgrave Raven and the Sparkspore Toad.
+
+**Verified.** The full non-balance suite and the balance ledger on the exact tip, green.
+
+### 7.23 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 to §7.21 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.22 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
 found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47, #48, #51, #53, #55 to #63, #64 and #66 did. What comes next is
 a playtest, and the remaining waves of the bestiary expansion, each recorded here as it

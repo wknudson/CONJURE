@@ -996,3 +996,152 @@ export const HUNT_TALLOW_MOTH = hunt({
     { at: { x: 5, y: 3 }, kind: 'cover' },
   ],
 });
+
+// ============================================================== the rare-hunt hybrids
+
+export const HUNT_CINDERWORKS_ARMADILLO = hunt({
+  encounterId: 'hunt_cinderworks_armadillo',
+  name: 'Slag Tip: Slagback Armadillo',
+  blurb:
+    'Only the ones who have worked both fire and stone know to look for it: a ball of cooling slag that rolls back up the tip after it has rolled down.',
+  boundForm: 'armadillo_bound',
+  enemyDeck: [
+    'fire_breath',
+    'scorch',
+    'fault_line',
+    'counterweight',
+    'rubble_wall',
+    'shield_bash',
+    'aegis_ward',
+    // The Slagback Armadillo's own.
+    'slag_roll',
+  ],
+  opening: [
+    ['kiln_guard', 2, 1],
+    ['rampart_mason', 5, 1],
+    ['boulder_slinger', 3, 0],
+  ],
+  terrain: [
+    { at: { x: 2, y: 4 }, kind: 'wall' },
+    { at: { x: 5, y: 3 }, kind: 'wall' },
+    { at: { x: 3, y: 5 }, kind: 'cover' },
+  ],
+});
+
+export const HUNT_RIMEFIELD_KESTREL = hunt({
+  encounterId: 'hunt_rimefield_kestrel',
+  name: 'Aurora Night: Aurora Kestrel',
+  blurb:
+    'On the nights the sky burns green, a keeper of frost and storm both can see it hovering. Nobody else ever has.',
+  boundForm: 'kestrel_bound',
+  enemyDeck: [
+    'glacial_spike',
+    'cold_snap',
+    'static_arc',
+    'chain_bolt',
+    'sleet',
+    'shield_bash',
+    'aegis_ward',
+    // The Aurora Kestrel's own.
+    'polar_flash',
+  ],
+  opening: [
+    ['permafrost_troll', 3, 1],
+    ['spark_imp', 1, 1],
+    ['frost_ballista', 5, 0],
+  ],
+  weather: { kind: 'fog' },
+  terrain: [
+    { at: { x: 2, y: 3 }, kind: 'wall' },
+    { at: { x: 5, y: 4 }, kind: 'wall' },
+    { at: { x: 4, y: 5 }, kind: 'cover' },
+  ],
+  geodes: { min: 2, max: 3 },
+});
+
+export const HUNT_TALLOW_NEWT = hunt({
+  encounterId: 'hunt_tallow_newt',
+  name: 'Thaw Ditch: Rimebloom Newt',
+  blurb:
+    'It wakes in the ditches when the frost and the first shoots meet, and only somebody who keeps both can find which ditch.',
+  boundForm: 'newt_bound',
+  enemyDeck: [
+    'frostbite',
+    'cold_snap',
+    'nettle',
+    'thorn_volley',
+    'root_snare',
+    'shield_bash',
+    'aegis_ward',
+    // The Rimebloom Newt's own.
+    'rimebloom',
+  ],
+  opening: [
+    ['frost_wisp', 2, 1],
+    ['thorn_sprout', 5, 1],
+    ['spore_archer', 3, 0],
+  ],
+  terrain: [
+    { at: { x: 1, y: 4 }, kind: 'cover' },
+    { at: { x: 6, y: 3 }, kind: 'cover' },
+    { at: { x: 3, y: 3 }, kind: 'wall' },
+  ],
+});
+
+export const HUNT_BASTION_RAVEN = hunt({
+  encounterId: 'hunt_bastion_raven',
+  name: 'Storm Over the Bastion: Stormgrave Raven',
+  blurb:
+    'It follows the storms over the Bastion and only lands where a keeper of storm and grave is watching. It has been waiting for one.',
+  boundForm: 'raven_bound',
+  enemyDeck: [
+    'gloom_bolt',
+    'pall',
+    'static_arc',
+    'spark',
+    'discharge',
+    'shield_bash',
+    'aegis_ward',
+    // The Stormgrave Raven's own.
+    'raven_call',
+  ],
+  opening: [
+    ['bone_rattler', 2, 1],
+    ['grave_sentinel', 5, 1],
+    ['coil_lancer', 3, 0],
+  ],
+  weather: { kind: 'rain' },
+  terrain: [
+    { at: { x: 2, y: 2 }, kind: 'wall' },
+    { at: { x: 5, y: 5 }, kind: 'wall' },
+    { at: { x: 3, y: 4 }, kind: 'cover' },
+  ],
+});
+
+export const HUNT_SALTGLASS_TOAD = hunt({
+  encounterId: 'hunt_saltglass_toad',
+  name: 'Salt Marsh: Sparkspore Toad',
+  blurb:
+    'It swells up where the grid runs to earth in the marsh, and it only shows itself to somebody who smells of both the storm and the green.',
+  boundForm: 'toad_bound',
+  enemyDeck: [
+    'spark',
+    'static_insight',
+    'nettle',
+    'pollen_drift',
+    'seed_pod',
+    'shield_bash',
+    'aegis_ward',
+    // The Sparkspore Toad's own.
+    'spark_spores',
+  ],
+  opening: [
+    ['spark_imp', 2, 1],
+    ['mire_toad', 5, 1],
+    ['thorn_sprout', 3, 0],
+  ],
+  terrain: [
+    { at: { x: 2, y: 4 }, kind: 'cover' },
+    { at: { x: 5, y: 3 }, kind: 'cover' },
+  ],
+});
