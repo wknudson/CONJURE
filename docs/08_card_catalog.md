@@ -8,27 +8,27 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**354 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**378 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
-| minion | 124 | Hero | Vanguard Roster, never a deck |
-| spell | 162 | Companion | drafted into a Grimoire |
+| minion | 130 | Hero | Vanguard Roster, never a deck |
+| spell | 180 | Companion | drafted into a Grimoire |
 | ability | 27 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
 | obstacle | 35 | Hero | Hero Deck, shown as a Construct |
-| **total** | **354** | | |
+| **total** | **378** | | |
 
 ### By school
 
 | School | Cards |
 |---|---:|
+| frost | 57 |
+| pyre | 54 |
+| surge | 53 |
 | dusk | 52 |
-| frost | 49 |
 | bulwark | 48 |
 | bloom | 46 |
-| pyre | 46 |
-| surge | 45 |
 | arcane | 35 |
 | neutral | 33 |
 
@@ -40,7 +40,7 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`arcane.ts`](#arcanets) | 12 | 1 minion, 3 ability, 6 mark, 2 obstacle |
 | [`pyre.ts`](#pyrets) | 12 | 4 minion, 6 spell, 2 obstacle |
 | [`frost.ts`](#frostts) | 20 | 5 minion, 12 spell, 3 obstacle |
-| [`companionUnits.ts`](#companionunitsts) | 33 | 33 minion |
+| [`companionUnits.ts`](#companionunitsts) | 39 | 39 minion |
 | [`terrain.ts`](#terraints) | 5 | 5 obstacle |
 | [`ranged.ts`](#rangedts) | 7 | 7 minion |
 | [`surge.ts`](#surgets) | 20 | 7 minion, 12 spell, 1 obstacle |
@@ -53,14 +53,14 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`hybrid.ts`](#hybridts) | 24 | 23 spell, 1 obstacle |
 | [`auras.ts`](#aurasts) | 13 | 11 spell, 2 ability |
 | [`hero.ts`](#herots) | 22 | 17 ability, 5 obstacle |
-| [`shelf.pyre.ts`](#shelfpyrets) | 14 | 13 spell, 1 obstacle |
-| [`shelf.frost.ts`](#shelffrostts) | 12 | 10 spell, 2 obstacle |
-| [`shelf.surge.ts`](#shelfsurgets) | 12 | 10 spell, 2 obstacle |
+| [`shelf.pyre.ts`](#shelfpyrets) | 20 | 19 spell, 1 obstacle |
+| [`shelf.frost.ts`](#shelffrostts) | 18 | 16 spell, 2 obstacle |
+| [`shelf.surge.ts`](#shelfsurgets) | 18 | 16 spell, 2 obstacle |
 | [`shelf.bulwark.ts`](#shelfbulwarkts) | 12 | 10 spell, 2 obstacle |
 | [`shelf.dusk.ts`](#shelfduskts) | 12 | 11 spell, 1 obstacle |
 | [`shelf.bloom.ts`](#shelfbloomts) | 12 | 10 spell, 2 obstacle |
 | [`vanguard.ts`](#vanguardts) | 36 | 36 minion |
-| **total** | **354** | |
+| **total** | **378** | |
 
 ---
 
@@ -154,23 +154,27 @@ Frost expansion — slow, freeze, shatter. — **20 cards** (5 minion, 12 spell,
 
 ### `companionUnits.ts`
 
-Bound Forms. Placed by setup, never drawn, never bought. — **33 cards** (33 minion).
+Bound Forms. Placed by setup, never drawn, never bought. — **39 cards** (39 minion).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Ashwing Phoenix** | `phoenix_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Pyre spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Barrow Jackal** | `jackal_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 4 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Bone Bastion Sovereign** | `sovereign_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 1 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Bulwark and Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Boreas** | `boreas_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 2 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Frost spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Chimera of the Caldera** | `chimera_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 2 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Pyre and Frost spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Cinder Shade** | `shade_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Pyre and Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Cinder-Wasp Swarm** | `wasp_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Pyre and Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
+| **Cinderback Badger** | `badger_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 3 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Pyre spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Conduit Kudu** | `kudu_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 3 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Crimson Treant** | `treant_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 1 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Pyre and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Dolmen Crab** | `crab_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 1 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Bulwark and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Ferrum** | `ferrum_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 1 mov, rng 1, bruiser | — | none | BoundForm, Guardian | setup only | Bound Form. Your Bulwark cards are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Flue Salamander** | `salamander_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 4 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Pyre spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
+| **Galvanic Eel** | `eel_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 2 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Glacial Juggernaut** | `juggernaut_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 1 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Frost and Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Grave-Gargoyle** | `gargoyle_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 2 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Frost and Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
+| **Hoarfrost Mammoth** | `mammoth_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 1 mov, rng 1, bruiser | — | none | BoundForm, Guardian | setup only | Bound Form. Your Frost spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Ignis** | `ignis_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 2 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Pyre spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Ignis Enraged** | `ignis_behemoth_bound` | minion | 0 | 3 | companion | 50 atk, 440 hp, 1 mov, rng 1, behemoth, **2x2** | — | none | BoundForm | setup only | Bound Form. The drake grown into its full shape. Blocks sight through itself. |
 | **Ignis, Ember Drake** | `ignis_drake_bound` | minion | 0 | 1 | companion | 40 atk, 440 hp, 2 mov, rng 1-2, bruiser | — | none | BoundForm | setup only | Bound Form. The drake itself. Wounds it takes are dealt to its Pact. |
@@ -181,7 +185,9 @@ Bound Forms. Placed by setup, never drawn, never bought. — **33 cards** (33 mi
 | **Murk Heron** | `heron_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 2 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Dusk and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Obsidian Tortoise** | `tortoise_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 1 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Pyre and Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Quarry Ram** | `ram_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 3 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
+| **Rime Ermine** | `ermine_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 4 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Frost spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Saltglass Seal** | `seal_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 1 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Frost spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
+| **Sparkback Pangolin** | `pangolin_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 2 mov, rng 1, bruiser | — | none | BoundForm, Guardian | setup only | Bound Form. Your Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Storm-Mantis** | `mantis_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 3 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Frost and Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Sylva** | `sylva_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 2 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **The Clockwork Colossus** | `colossus_bound` | minion | 0 | 3 | companion | 60 atk, 440 hp, 1 mov, rng 1, behemoth, **2x2** | dmg shock; onHit charged 1; plates 10/turn | none | BoundForm | setup only | Bound Form. The Great Quieting, given legs. Blocks sight through itself. |
@@ -433,20 +439,26 @@ The Hero's kit: colourless and arcane abilities and constructs, taught by the Du
 
 ### `shelf.pyre.ts`
 
-Pyre third shelf — commons, and the Drake and Salamander signatures. — **14 cards** (13 spell, 1 obstacle).
+Pyre third shelf — commons, and the Drake and Salamander signatures. — **20 cards** (19 spell, 1 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
 | **Kindling** | `kindling` | spell | 0 | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Sets a unit alight (Burn 1). |
+| **Burrow Strike** | `burrow_strike` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 1 | — | R2 | Deals 20 fire damage to an adjacent enemy and sets it alight (Burn 1). |
 | **Drake's Brand** | `drakes_brand` | spell | 1P | 1 | companion | — | — | entity (any, +obstacles) — range 4, LoS | — | R2 | Deals 10 fire damage to a unit or obstacle and brands it with a Cinder Mark. |
 | **Scorch** | `scorch` | spell | 1P | 1 | companion | — | — | entity (any, +obstacles) — range 4, LoS | — | R2 | Deals 20 fire damage to a unit or obstacle. |
 | **Smoulder** | `smoulder` | spell | 1P | 1 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Sets the ground burning in a cross around the target tile for 2 turns. Anything starting its turn there catches fire. |
+| **Wingbeat Embers** | `wingbeat_embers` | spell | 1P | 1 | companion | — | — | line 3 — range 4, LoS | — | — | Fans embers down a 3-tile line, setting everything on it alight (Burn 1). No damage. |
+| **Ash Rebirth** | `ash_rebirth` | spell | 2P | 2 | companion | — | — | fallen (pyre) | — | — | Raises a fallen Vanguard on the exact tile it fell, at 40% of its health. Nothing may be standing there. |
 | **Backburn** | `backburn` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 10 fire damage down a 3-tile line and leaves it burning for 2 turns. |
+| **Cinderback Bristle** | `cinderback_bristle` | spell | 2P | 2 | companion | — | — | none — range 1 | — | R2 | Deals 20 fire damage to everything adjacent to the caster, yours included. |
 | **Drake's Roar** | `drakes_roar` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Sets every unit in a wide cross around the target tile alight (Burn 1), two tiles out each way. |
 | **Ductwork Drag** | `ductwork_drag` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Drags everything on a 3-tile line 1 tile toward its near end and sets it alight (Burn 1). |
 | **Fire Breath** | `fire_breath` | spell | 2P | 2 | companion | — | — | line 2 — range 2, LoS | — | R2 | Deals 20 fire damage in a 2-deep cone and sets everything caught alight (Burn 1). |
 | **Flashover** | `flashover` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Against a Burning unit, deals 30 fire damage to it and everything in a cross around it. Otherwise only 10. |
 | **Molten Shot** | `molten_shot` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 5, LoS | — | R2 | Deals 30 fire damage to a unit. |
+| **Phoenix Dive** | `phoenix_dive` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 30 fire damage to a unit and sets everything adjacent to it alight (Burn 1). |
+| **Smoke Sett** | `smoke_sett` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | — | Fills a 2x2 block with smoke for 2 turns, blocking ranged line of sight, and sets everything there alight (Burn 1). |
 | **Wildfire** | `wildfire` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Sets every unit in a 3x3 around the target tile alight (Burn 1), yours included. No damage. |
 | **Ember Cascade** | `ember_cascade` | spell | 3P | 2 | companion | — | — | global | — | — | Sets off every Mark on the board at once. |
 | **Immolate** | `immolate` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Deals 40 fire damage to a unit, or 60 if it is already Burning. |
@@ -454,35 +466,47 @@ Pyre third shelf — commons, and the Drake and Salamander signatures. — **14 
 
 ### `shelf.frost.ts`
 
-Frost third shelf — commons, and the Bear and Seal signatures. — **12 cards** (10 spell, 2 obstacle).
+Frost third shelf — commons, and the Bear and Seal signatures. — **18 cards** (16 spell, 2 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **White Dash** | `white_dash` | spell | 0 | 1 | companion | — | — | entity (ally) — range 4 | — | — | An ally moves 1 further this turn. |
+| **Ermine Bite** | `ermine_bite` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 1 | — | R2 | Deals 20 frost damage to an adjacent enemy and applies Brittle 1. A Brittle target takes +20 damage from every hit. |
 | **Frostbite** | `frostbite` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 10 frost damage to a unit and applies Brittle 1. A Brittle target takes +20 damage from every hit. |
 | **Hoar Glaze** | `hoar_glaze` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Grants an ally 20 Armor and Chills everything orthogonally beside it, yours included. |
 | **Sea Fog** | `sea_fog` | spell | 1P | 1 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | — | Fogs a 2x2 block of tiles for 2 turns, blocking ranged line of sight through them. |
+| **Woolly Hide** | `woolly_hide` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 30 Armor. |
 | **Cold Front** | `cold_front` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Shoves everything on a 3-tile line 1 tile away from its near end and Chills it. Triggers standard Collision Damage (30 / 20). |
+| **Frozen Ambush** | `frozen_ambush` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | — | Deals 40 frost damage to a Chilled unit, or 20 to anything else. |
 | **Icebreaker Dive** | `icebreaker_dive` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | — | Against a Frozen unit, deals 40 impact damage and shoves it 1 tile away. Otherwise, 20 frost damage. |
 | **Numbing Roar** | `numbing_roar` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 10 frost damage to an enemy and everything in a cross around it, and Chills them all. |
+| **Permafrost Stomp** | `permafrost_stomp` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Applies Chill 2 to everything in a cross around the target tile. The third stack freezes a unit solid. |
 | **Sleet** | `sleet` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | R2 | Deals 10 frost damage to a 2x2 block of tiles and Chills everything there. |
 | **Tidal Floe** | `tidal_floe` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | — | Turns a 2x2 block of tiles into a drifting current for 2 turns and Chills everything there. The current carries what stands on it 1 tile each round. |
 | **Glacial Maul** | `glacial_maul` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 2, LoS | — | R2 | Deals 40 frost damage to a unit and applies Chill 2. The third stack freezes it solid. |
 | **Icicle Rain** | `icicle_rain` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 20 frost damage in a cross around the target tile and Chills everything there. |
+| **Mammoth Trample** | `mammoth_trample` | spell | 3P | 2 | companion | — | — | line 3 — range 3, LoS | — | R2 | Tramples a 3-tile line for 30 impact damage. Shatters anything Frozen. |
 | **Snowdrift** | `snowdrift` | obstacle | 1P | 1 | companion | 30 hp, cover | on break chill 1 | empty tile (any) — range 3, LoS | — | R2 | Raises 30 HP of cover on an empty tile. When it breaks, every unit on or beside it is Chilled. |
 | **Den of Ice** | `den_of_ice` | obstacle | 3P | 2 | companion | 80 hp | on break freeze 1; leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises an 80 HP wall of ice on an empty tile. When it breaks, every unit on or beside it is Frozen. |
 
 ### `shelf.surge.ts`
 
-Surge third shelf — commons, and the Lynx and Kudu signatures. — **12 cards** (10 spell, 2 obstacle).
+Surge third shelf — commons, and the Lynx and Kudu signatures. — **18 cards** (16 spell, 2 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
 | **Spark** | `spark` | spell | 0 | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 10 shock damage to a unit, leaving it Charged. |
 | **Static Bristle** | `static_bristle` | spell | 0 | 1 | companion | — | — | none — range 1 | — | — | Leaves everything adjacent to the caster Charged. No damage. |
-| **Crackle Chase** | `crackle_chase` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | — | An ally moves 1 further this turn, and it and everything adjacent to it are left Charged. |
+| **Crackle Chase** | `crackle_chase` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | — | An ally moves 1 further this turn, and everything adjacent to it is left Charged. |
+| **Eel Jolt** | `eel_jolt` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 2, LoS | — | R2 | Deals 20 shock damage to a unit, leaving it Charged. |
+| **Scale Shed** | `scale_shed` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 20 Armor, and leaves everything adjacent to it Charged. |
 | **Short Circuit** | `short_circuit` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Against a Charged unit, deals 30 damage through any armor. Otherwise, 10 shock damage. |
+| **Static Curl** | `static_curl` | spell | 1P | 1 | companion | — | — | none — range 1 | — | R2 | Your Hero gains 20 Armor, and everything adjacent to the caster is left Charged. |
 | **Static Insight** | `static_insight` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 10 shock damage to a unit, leaving it Charged. Draw 1 card. |
-| **Lightning Draw** | `lightning_draw` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Drags everything within 2 tiles of an enemy 1 tile toward it, then deals 10 shock damage to it and everything adjacent. |
+| **Ball Roll** | `ball_roll` | spell | 2P | 2 | companion | — | — | line 3 — range 3, LoS | — | R2 | Deals 20 shock damage down a 3-tile line and shoves everything on it 1 tile away from its near end. Triggers standard Collision Damage (30 / 20). |
+| **Canal Current** | `canal_current` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | R2 | Turns a 2x2 block into a live current for 2 turns and deals 10 shock damage there. The current carries what stands on it 1 tile each round. |
+| **Eel Coil** | `eel_coil` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 2, LoS | — | R2 | Deals 10 shock damage to a unit and Entangles it: it cannot move through its next turn. |
+| **Lightning Draw** | `lightning_draw` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Drags everything within 2 tiles of an enemy 1 tile toward it, then deals 10 shock damage to everything adjacent to it. |
 | **Static Field** | `static_field` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Leaves every unit in a 3x3 around the target tile Charged, yours included. No damage. |
 | **Storm Pounce** | `storm_pounce` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | — | Deals 40 shock damage to a Charged unit, or 20 to anything else. |
 | **Thunderclap** | `thunderclap` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | R2 | Deals 10 shock damage to everything adjacent to the target tile and shoves it 1 tile away. Triggers standard Collision Damage (30 / 20). |
@@ -596,7 +620,7 @@ The third muster — thirty-six bodies a warband can field, four per school and 
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 132 of the 354 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 144 of the 378 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 

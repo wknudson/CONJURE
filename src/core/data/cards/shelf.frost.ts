@@ -304,4 +304,118 @@ export const FROST_SHELF: Record<string, CardDef> = {
     range: 3,
     needsLoS: true,
   },
+
+  // ======================================================= the Hoarfrost Mammoth
+
+  /** Thirty impact down a line. It shatters anything Frozen on the way. */
+  mammoth_trample: {
+    id: 'mammoth_trample',
+    name: 'Mammoth Trample',
+    cost: { bones: 3, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Tramples a 3-tile line for 30 impact damage. Shatters anything Frozen.',
+    target: { kind: 'line', length: 3 },
+    effect: { op: 'damage', amount: 30, dtype: 'impact', area: { shape: 'line', length: 3 } },
+    keywords: [],
+    bloodline: ['mammoth'],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /** Two Chill in a cross around a tile. One more stack and the whole cross is solid. */
+  permafrost_stomp: {
+    id: 'permafrost_stomp',
+    name: 'Permafrost Stomp',
+    cost: { bones: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Applies Chill 2 to everything in a cross around the target tile. The third stack freezes a unit solid.',
+    target: ANY_TILE,
+    effect: { op: 'applyStatus', status: 'chill', stacks: 2, area: { shape: 'plus', radius: 1 } },
+    keywords: [],
+    bloodline: ['mammoth'],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /** Thirty armour on an ally. The herd keeps the calves in the middle. */
+  woolly_hide: {
+    id: 'woolly_hide',
+    name: 'Woolly Hide',
+    cost: { bones: 1, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Gives an ally 30 Armor.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: { op: 'grantArmor', amount: 30 },
+    keywords: [],
+    bloodline: ['mammoth'],
+    range: 4,
+  },
+
+  // ============================================================= the Rime Ermine
+
+  /** Twenty frost and a Brittle on an adjacent enemy. */
+  ermine_bite: {
+    id: 'ermine_bite',
+    name: 'Ermine Bite',
+    cost: { bones: 1, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 frost damage to an adjacent enemy and applies Brittle 1. A Brittle target takes +20 damage from every hit.',
+    target: ENEMY_UNIT,
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'frost', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'brittle', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['ermine'],
+    range: 1,
+  },
+
+  /** Free: an ally a tile quicker this turn. */
+  white_dash: {
+    id: 'white_dash',
+    name: 'White Dash',
+    cost: { bones: 0, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'An ally moves 1 further this turn.',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: { op: 'applyStatus', status: 'fleet', stacks: 1, area: { shape: 'target' } },
+    keywords: [],
+    bloodline: ['ermine'],
+    range: 4,
+  },
+
+  /** Forty against a Chilled unit, twenty against anything else. The Ermine waits for the cold. */
+  frozen_ambush: {
+    id: 'frozen_ambush',
+    name: 'Frozen Ambush',
+    cost: { bones: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 40 frost damage to a Chilled unit, or 20 to anything else.',
+    target: ENEMY_UNIT,
+    effect: {
+      op: 'ifMet',
+      cond: { kind: 'targetStatus', status: 'chill' },
+      then: { op: 'damage', amount: 40, dtype: 'frost', area: { shape: 'target' } },
+      otherwise: { op: 'damage', amount: 20, dtype: 'frost', area: { shape: 'target' } },
+    },
+    keywords: [],
+    bloodline: ['ermine'],
+    range: 3,
+    needsLoS: true,
+  },
 };

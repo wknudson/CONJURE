@@ -13,4 +13,46 @@ silhouette until its own art arrives.
 - When the files are in, strike the species off `COMPANION_ART_PENDING` and rerun
   `npm run art:requests`. The suite checks both halves.
 
-Nothing is waiting. Every species has its own art.
+## Waiting
+
+### Ashwing Phoenix, Pyre Bird
+
+- **Schools:** pyre
+- **Body:** caster, moves 3, reaches 3
+- **Brief:** Burns down to ash every winter and comes back angrier. Throws fire from above the fight, and puts your fallen back on their feet.
+- **Files:** `ashwing_phoenix-front.png`, `ashwing_phoenix-back.png`, `ashwing_phoenix-side.png`
+
+### Cinderback Badger, Sett Burner
+
+- **Schools:** pyre
+- **Body:** skirmisher, moves 3, reaches 1
+- **Brief:** Digs its sett under the slag heaps and fills it with smoke. Bites hard, burns what it bites, and will not be moved off its ground.
+- **Files:** `cinderback_badger-front.png`, `cinderback_badger-back.png`, `cinderback_badger-side.png`
+
+### Hoarfrost Mammoth, Glacier Walker
+
+- **Schools:** frost
+- **Body:** bruiser, moves 1, reaches 1
+- **Brief:** Walks down off the glacier once a generation and does not step round anything. Stands in front, tramples a line, and freezes what it stops.
+- **Files:** `hoarfrost_mammoth-front.png`, `hoarfrost_mammoth-back.png`, `hoarfrost_mammoth-side.png`
+
+### Rime Ermine, Snow Thief
+
+- **Schools:** frost
+- **Body:** skirmisher, moves 4, reaches 1
+- **Brief:** White on white, and gone before you see it. Bites what the cold has already slowed, and hides in its own weather.
+- **Files:** `rime_ermine-front.png`, `rime_ermine-back.png`, `rime_ermine-side.png`
+
+### Galvanic Eel, Canal Current
+
+- **Schools:** surge
+- **Body:** caster, moves 2, reaches 2
+- **Brief:** Lives in the canals under the Works, where the grid bleeds into the water. Coils round what it catches and turns the water against it.
+- **Files:** `galvanic_eel-front.png`, `galvanic_eel-back.png`, `galvanic_eel-side.png`
+
+### Sparkback Pangolin, Rolling Grid
+
+- **Schools:** surge
+- **Body:** bruiser, moves 2, reaches 1
+- **Brief:** Plated in scales that hum. Curls up, takes the blow, and gives the charge back to whoever struck it.
+- **Files:** `sparkback_pangolin-front.png`, `sparkback_pangolin-back.png`, `sparkback_pangolin-side.png`
