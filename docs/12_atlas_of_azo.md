@@ -1846,11 +1846,11 @@ A city built upward because Vane taxed the ground. Six named places, and you can
 | Place | State | What is fought there |
 |---|---|---|
 | **Ashfall Ward** | 🟢 walkable | `curfew_breakers` (N4), `gutter_dispute` (N9) |
-| **Lamprow** | 🟢 walkable | `lamprow_tithe` (N1), `lamplighter_escort` (N3), `debt_collected_minor` (N5); packs **Lampwick Gutter Crew**, **Tithe-Takers** |
-| **The Bonemarket** | 🟢 walkable | `bonemarket_vermin` (N2) → binds **Cinder-Wasp Swarm** |
-| **The Cinderworks** | 🟢 walkable | `poster_work` (N8); `dynamo_flats` (M7, "the flats") → binds **Kinetic Dynamo**; hunt `hunt_cinderworks_salamander` → **Flue Salamander** |
-| **Highcourt & the Spire** | 🟢 walkable | `smoke_eaters_rest` (N6, wager, over the tables of the Rest) → binds **Dolmen Crab**; `relocation_train` (M8, in the Undercroft); `the_summons` (M10, at the lobby's doors) |
-| **Ward Seven** | 🟢 walkable | `fouled_cistern` (N7) → binds **Grave-Gargoyle** |
+| **Lamprow** | 🟢 walkable | `lamprow_tithe` (N1), `lamplighter_escort` (N3), `debt_collected_minor` (N5); packs, after dark, **Lampwick Gutter Crew**, **Tithe-Takers** and **Wick-Thieves** |
+| **The Bonemarket** | 🟢 walkable | `bonemarket_vermin` (N2) → binds **Cinder-Wasp Swarm**; two crews of **Knacker's Lads** after dark |
+| **The Cinderworks** | 🟢 walkable | `poster_work` (N8); `dynamo_flats` (M7, "the flats") → binds **Kinetic Dynamo**; hunt `hunt_cinderworks_salamander` → **Flue Salamander**; two crews of **Slag Rats** after dark, and **Chalk-Road Scavengers** in the scrapyard |
+| **Highcourt & the Spire** | 🟢 walkable | `smoke_eaters_rest` (N6, wager, over the tables of the Rest) → binds **Dolmen Crab**; `relocation_train` (M8, in the Undercroft); `the_summons` (M10, at the lobby's doors); the **Night Bailiffs**, a crew down each colonnade, after dark |
+| **Ward Seven** | 🟢 walkable | `fouled_cistern` (N7) → binds **Grave-Gargoyle**; two crews of **What Lives in the Cistern** after dark |
 
 `clinic_quota` (N10) is the back-alley clinic off Ward Seven's basin now, and you fight it inside.
 
@@ -1865,12 +1865,12 @@ what turns the Ring from a list into a region.
 | Place | State | What is fought there |
 |---|---|---|
 | **The Chalk Road** | 🟢 walkable | the artery to Jolrek; hunts `hunt_chalk_boar` → **Ferrum**, `hunt_chalk_cut_ram` → **Quarry Ram**; packs **Waywatch**, **Hedgerow Vermin**, **Freight-Pickers**. Its first wild stretch *is* the Chalk Verge |
-| **Millharrow** | 🟢 walkable | `chalk_road_toll` (A1), `drowned_granary` (A9) → binds **Obsidian Tortoise**, `waystone_duel` (A10, wager) → binds **Voltbriar Serpent** |
-| **The Tallow Levels** | 🟢 walkable | `tallow_blight` (A2) → binds **Crimson Treant**; hunt `hunt_tallow_aurochs` → **Moss Aurochs** |
-| **Saltglass** | 🟢 walkable | `saltglass_riot` (A3); hunt `hunt_saltglass_seal` → **Saltglass Seal** |
-| **Bray's Hollow** | 🟢 walkable | `warrant_of_distraint` (A4) |
-| **Fenwick's Crossing** | 🟢 walkable | `night_freight` (A5), `cellar_clearance` (A7) |
-| **Weeping Stile** | 🟢 walkable | `hollow_census` (A8) → binds **Murk Heron** |
+| **Millharrow** | 🟢 walkable | `chalk_road_toll` (A1), `drowned_granary` (A9) → binds **Obsidian Tortoise**, `waystone_duel` (A10, wager) → binds **Voltbriar Serpent**; the **Scarecrow Men** on the field edges after dark |
+| **The Tallow Levels** | 🟢 walkable | `tallow_blight` (A2) → binds **Crimson Treant**; hunt `hunt_tallow_aurochs` → **Moss Aurochs**; the **Dyke-Wardens**, on the dyke by day and in the reeds at night |
+| **Saltglass** | 🟢 walkable | `saltglass_riot` (A3); hunt `hunt_saltglass_seal` → **Saltglass Seal**; three crews of **Glass-Pickers**: the pans by day, the wreck and the kilns at night |
+| **Bray's Hollow** | 🟢 walkable | `warrant_of_distraint` (A4); a few **Verge Strays** on the south rim at night, and nowhere else |
+| **Fenwick's Crossing** | 🟢 walkable | `night_freight` (A5), `cellar_clearance` (A7); the **Bridge-Tollers**, on the bridge by day and the far bank at night |
+| **Weeping Stile** | 🟢 walkable | `hollow_census` (A8) → binds **Murk Heron**; the **Stile Mourners**, at the stile and in the south wood, at night |
 
 `ashwood_poacher` (A6) is fought on the Ashwood fringe — see below. `drowned_granary`, `warrant_of_distraint` and `cellar_clearance` are fought indoors now: the flooded end of the granary, the barn, the inn cellars.
 
@@ -1884,16 +1884,17 @@ at all, and the Ashwood is the only one with no visible boundary.
 
 | Region | State | Contracts | Hunts | Packs |
 |---|---|---|---|---|
-| **The Chalk Verge** | 🟢 walkable | — | signpost to all twelve | **3** — Scavengers, Strays, Hollows |
-| **The Caldera** | 🟢 walkable | `caldera_chimera` (M1) → **Chimera of the Caldera** | `hunt_caldera_drake` → **Ignis** | — |
-| **The Ashwood** | 🟢 walkable | `ashwood_poacher` (A6, wager) → **Winterthorn Elk**; `wildfire_writ` (M5) | `hunt_ashwood_warden` → **Sylva**; `hunt_ashwood_stag` → **Mortis** | — |
-| **The Rimefields** | 🟢 walkable | `rimefield_break` (M2) → **Glacial Juggernaut** | `hunt_rimefield_bear` → **Boreas** | — |
-| **The Storm Shelf** | 🟢 walkable | `storm_shelf_binding` (M3) → **Storm-Mantis**; `pylon_nine` (M4) → **Volatile Geist** | `hunt_shelf_lynx` → **Voltara**; `hunt_pylon_kudu` → **Conduit Kudu** | — |
-| **The Bone Bastion** | 🟢 walkable | `bone_bastion` (M9) → **Bone Bastion Sovereign** | `hunt_barrow_jackal` → **Barrow Jackal** | — |
+| **The Chalk Verge** | 🟢 walkable | — | signpost to all twelve | **4** — Scavengers (two crews, one working the quarry by day), Strays, Hollows |
+| **The Caldera** | 🟢 walkable | `caldera_chimera` (M1) → **Chimera of the Caldera** | `hunt_caldera_drake` → **Ignis** | **Magma Brood** — the inner basin, a sentry at the fall, and a prowler |
+| **The Ashwood** | 🟢 walkable | `ashwood_poacher` (A6, wager) → **Winterthorn Elk**; `wildfire_writ` (M5) | `hunt_ashwood_warden` → **Sylva**; `hunt_ashwood_stag` → **Mortis** | **Ashwood Pack** (prowling; a sentry under the Great Ash), **Poacher Band** (hide to hide; a man at the stand) |
+| **The Rimefields** | 🟢 walkable | `rimefield_break` (M2) → **Glacial Juggernaut** | `hunt_rimefield_bear` → **Boreas** | **Hoarhound Pack** (the mammoth's hollow; a stalker prowling), **Rime-Archers** (two ridge ends) |
+| **The Storm Shelf** | 🟢 walkable | `storm_shelf_binding` (M3) → **Storm-Mantis**; `pylon_nine` (M4) → **Volatile Geist** | `hunt_shelf_lynx` → **Voltara**; `hunt_pylon_kudu` → **Conduit Kudu** | **Static Swarm** (prowling; over the camp), **Pylon-Keepers** (Nine's foot; the track's turn) |
+| **The Bone Bastion** | 🟢 walkable | `bone_bastion` (M9) → **Bone Bastion Sovereign** | `hunt_barrow_jackal` → **Barrow Jackal** | **Barrow Watch** — the causeway by night; the opened barrow, the postern and the breach by day |
 
 `coldwater_duel` (M6) is fought "on ground of her choosing" — the only contract in the game
-that names no place at all. The packs column is the open ground; every wild region has a den
-behind a door now (§2.8), and the den is where the crew is.
+that names no place at all. The packs column is the open ground, and every wild region has
+crews on it now, prowlers among them -- the only places a prowler may walk, since nobody lives
+there. Each also has a den behind a door (§2.8), with its region's own crew in it.
 
 ---
 
