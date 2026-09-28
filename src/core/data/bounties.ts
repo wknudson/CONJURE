@@ -74,11 +74,15 @@ export const DIFFICULTIES: readonly BountyDifficulty[] = ['novice', 'adept', 'ma
  * Derived from what each encounter actually asks of a player rather than from a number
  * on the encounter: the duel is an honest opener, the ruin and the field punish bad
  * positioning, and the Trial is a boss with a Rite attached.
+ *
+ * Each tier has its own duelist, and each teaches a shelf of the Hero kit: Novice the first
+ * staples, Journeyman the colourless half of `cards/hero.ts`, Master its arcane half. They
+ * are also what keeps the post-campaign board from collapsing to four fights.
  */
 const TIER_ENCOUNTERS: Record<BountyDifficulty, string[]> = {
   novice: ['novice_duelist'],
-  adept: ['narrow_ruin', 'glacial_field'],
-  master: ['ignis_trial'],
+  adept: ['narrow_ruin', 'glacial_field', 'adept_duelist'],
+  master: ['ignis_trial', 'master_duelist'],
 };
 
 /**
@@ -286,7 +290,7 @@ export const WAGER_MULTIPLIER = 2;
  * Only the fights that are actually a person across a board: a duelist bets, a ruin does
  * not. Checked by encounter rather than by tier so a new duelling encounter inherits it.
  */
-export const DUEL_ENCOUNTERS: readonly string[] = ['novice_duelist'];
+export const DUEL_ENCOUNTERS: readonly string[] = ['novice_duelist', 'adept_duelist', 'master_duelist'];
 
 /**
  * `completed` widens the dice: a story contract this character has finished joins its
