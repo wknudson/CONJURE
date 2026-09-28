@@ -255,6 +255,43 @@ export const HUNTS: readonly Hunt[] = [
     tier: 'novice',
     region: 'The Tallow Levels',
   },
+
+  // ------------------------------------------------ the rare-hunt hybrids: rare hunts
+  {
+    encounterId: 'hunt_cinderworks_armadillo',
+    species: 'armadillo',
+    tier: 'adept',
+    region: 'The Cinderworks',
+    requires: { schools: ['pyre', 'bulwark'] },
+  },
+  {
+    encounterId: 'hunt_rimefield_kestrel',
+    species: 'kestrel',
+    tier: 'master',
+    region: 'The Rimefields',
+    requires: { schools: ['frost', 'surge'] },
+  },
+  {
+    encounterId: 'hunt_tallow_newt',
+    species: 'newt',
+    tier: 'novice',
+    region: 'The Tallow Levels',
+    requires: { schools: ['frost', 'bloom'] },
+  },
+  {
+    encounterId: 'hunt_bastion_raven',
+    species: 'raven',
+    tier: 'adept',
+    region: 'The Bone Bastion',
+    requires: { schools: ['surge', 'dusk'] },
+  },
+  {
+    encounterId: 'hunt_saltglass_toad',
+    species: 'toad',
+    tier: 'novice',
+    region: 'Saltglass',
+    requires: { schools: ['surge', 'bloom'] },
+  },
 ];
 
 export function huntByEncounter(encounterId: string): Hunt | undefined {

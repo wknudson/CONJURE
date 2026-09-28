@@ -478,4 +478,19 @@ export const SURGE_SHELF: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  /** The Raven: it points, and the storm follows the point. */
+  raven_call: {
+    id: 'raven_call',
+    name: 'Raven Call',
+    cost: { bones: 1, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 shock damage to the weakest enemy standing, leaving it Charged.',
+    target: { kind: 'global' },
+    effect: { op: 'damage', amount: 20, dtype: 'shock', area: { shape: 'lowestHpEnemy' } },
+    keywords: [],
+    bloodline: ['raven'],
+  },
 };

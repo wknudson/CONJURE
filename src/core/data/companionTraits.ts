@@ -477,6 +477,12 @@ export const TRAIT_LINEAGE: Record<string, readonly string[]> = {
   wight: ['boreas', 'mortis'],
   bear: ['ferrum', 'mortis'],
   myconid: ['mortis', 'sylva'],
+  // the rare-hunt hybrids
+  armadillo: ['ignis', 'ferrum'],
+  kestrel: ['boreas', 'voltara'],
+  newt: ['boreas', 'sylva'],
+  raven: ['voltara', 'mortis'],
+  toad: ['voltara', 'sylva'],
 };
 
 /**
@@ -1098,6 +1104,88 @@ const TRAITS_THE_LAIR_HYBRIDS: Record<string, CompanionTrait> = {
   },
 };
 
+/**
+ * Knacks for the rare-hunt hybrids: two apiece, all wired, built from boons the engine already reads.
+ * Their parents' pools come free through `TRAIT_LINEAGE`.
+ */
+const TRAITS_THE_RARE_HUNT_HYBRIDS: Record<string, CompanionTrait> = {
+  // ------------------------------------------------------------ armadillo
+  slag_plating: {
+    id: 'slag_plating',
+    name: 'Slag Plating',
+    text: 'Cooled into armour where it lies. Your units shrug off 10 of every collision.',
+    baseId: 'armadillo',
+    boons: { collisionResist: 10 },
+  },
+  rolling_ember: {
+    id: 'rolling_ember',
+    name: 'Rolling Ember',
+    text: 'Keeps rolling after it hits. Every shove your cards deal goes 1 tile further.',
+    baseId: 'armadillo',
+    boons: { bonusShoveDistance: 1 },
+  },
+  // ------------------------------------------------------------ kestrel
+  aurora_plumage: {
+    id: 'aurora_plumage',
+    name: 'Aurora Plumage',
+    text: 'Cold and charge are one thing to it. Chill counts as Charged for any reaction that asks, and is spent in its place.',
+    baseId: 'kestrel',
+    boons: { chillConducts: true },
+  },
+  high_wind: {
+    id: 'high_wind',
+    name: 'High Wind',
+    text: 'Sees over the weather. Fog and steam do not break its line of sight.',
+    baseId: 'kestrel',
+    boons: { ignoreFog: true },
+  },
+  // ------------------------------------------------------------ newt
+  mire_skin: {
+    id: 'mire_skin',
+    name: 'Mire Skin',
+    text: 'Poison is its own skin. Toxin stops ticking on your side entirely.',
+    baseId: 'newt',
+    boons: { immuneToToxin: true },
+  },
+  pond_walker: {
+    id: 'pond_walker',
+    name: 'Pond Walker',
+    text: 'At home in any ditch. Crosses broken ground freely, and no current carries it.',
+    baseId: 'newt',
+    boons: { boundFormIgnoresHazards: true },
+  },
+  // ------------------------------------------------------------ raven
+  twice_cawed: {
+    id: 'twice_cawed',
+    name: 'Twice-Cawed',
+    text: 'Calls twice. Resonance fires on your first two Companion cards each turn rather than one.',
+    baseId: 'raven',
+    boons: { doubleResonance: true },
+  },
+  carrion_spark: {
+    id: 'carrion_spark',
+    name: 'Carrion Spark',
+    text: 'Nothing it follows dies for nothing. Every body of yours that falls pays a Bone back.',
+    baseId: 'raven',
+    boons: { bonesOnDeath: 1 },
+  },
+  // ------------------------------------------------------------ toad
+  toxic_glands: {
+    id: 'toxic_glands',
+    name: 'Toxic Glands',
+    text: 'Everything it touches, it poisons more. Every Toxin you apply lands with an extra stack.',
+    baseId: 'toad',
+    boons: { bonusToxinStacks: 1 },
+  },
+  static_warts: {
+    id: 'static_warts',
+    name: 'Static Warts',
+    text: 'Whoever strikes its wall from afar gets a jolt. A Guardian of yours struck from range leaves its attacker Charged.',
+    baseId: 'toad',
+    boons: { guardiansCharge: true },
+  },
+};
+
 for (const [id, trait] of Object.entries(VOLTARA_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(MORTIS_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(SYLVA_TRAITS)) COMPANION_TRAITS[id] = trait;
@@ -1108,6 +1196,7 @@ for (const [id, trait] of Object.entries(CLOSING_HYBRID_TRAITS)) COMPANION_TRAIT
 for (const [id, trait] of Object.entries(THIRD_BLOODLINE_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(FOURTH_BLOODLINE_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(TRAITS_THE_LAIR_HYBRIDS)) COMPANION_TRAITS[id] = trait;
+for (const [id, trait] of Object.entries(TRAITS_THE_RARE_HUNT_HYBRIDS)) COMPANION_TRAITS[id] = trait;
 
 export function traitById(id: string): CompanionTrait | undefined {
   return COMPANION_TRAITS[id];

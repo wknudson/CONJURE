@@ -55,6 +55,12 @@ export const COMPANION_ART_PENDING: readonly string[] = [
   'wight',
   'bear',
   'myconid',
+  // the rare-hunt hybrids
+  'armadillo',
+  'kestrel',
+  'newt',
+  'raven',
+  'toad',
 ];
 
 /** The file stem a species' sprites are saved under. */

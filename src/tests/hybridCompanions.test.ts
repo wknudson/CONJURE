@@ -61,7 +61,7 @@ describe('the hybrid roster', () => {
     // number is asserted rather than derived on purpose: it is the whole claim of the
     // roster, and deriving it from `TRAIT_LINEAGE` would make this test agree with any
     // mistake made there.
-    expect(BLOODLINES).toHaveLength(20);
+    expect(BLOODLINES).toHaveLength(25);
     for (const id of BLOODLINES) {
       expect(companionById(id), id).toBeDefined();
     }
