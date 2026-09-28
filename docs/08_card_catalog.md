@@ -8,29 +8,29 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**318 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**354 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
-| minion | 88 | Hero | Vanguard Roster, never a deck |
+| minion | 124 | Hero | Vanguard Roster, never a deck |
 | spell | 162 | Companion | drafted into a Grimoire |
 | ability | 27 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
 | obstacle | 35 | Hero | Hero Deck, shown as a Construct |
-| **total** | **318** | | |
+| **total** | **354** | | |
 
 ### By school
 
 | School | Cards |
 |---|---:|
-| dusk | 48 |
-| frost | 45 |
-| bulwark | 44 |
-| bloom | 42 |
-| pyre | 42 |
-| surge | 41 |
-| arcane | 29 |
-| neutral | 27 |
+| dusk | 52 |
+| frost | 49 |
+| bulwark | 48 |
+| bloom | 46 |
+| pyre | 46 |
+| surge | 45 |
+| arcane | 35 |
+| neutral | 33 |
 
 ### By file
 
@@ -59,7 +59,8 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`shelf.bulwark.ts`](#shelfbulwarkts) | 12 | 10 spell, 2 obstacle |
 | [`shelf.dusk.ts`](#shelfduskts) | 12 | 11 spell, 1 obstacle |
 | [`shelf.bloom.ts`](#shelfbloomts) | 12 | 10 spell, 2 obstacle |
-| **total** | **318** | |
+| [`vanguard.ts`](#vanguardts) | 36 | 36 minion |
+| **total** | **354** | |
 
 ---
 
@@ -546,13 +547,56 @@ Bloom third shelf — commons, and the Warden and Aurochs signatures. — **12 c
 | **Seed Pod** | `seed_pod` | obstacle | 1P | 1 | companion | 30 hp | on break toxin 2 | empty tile (any) — range 3, LoS | — | R2 | Raises a 30 HP seed pod on an empty tile. When it breaks, every unit on or beside it is poisoned (Toxin 2). |
 | **Warden Tree** | `warden_tree` | obstacle | 3P | 2 | companion | 90 hp | on break 20 dmg + toxin 2; leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 90 HP tree on an empty tile. When it falls it bursts: 20 damage and Toxin 2 to every unit on or beside it. |
 
+### `vanguard.ts`
+
+The third muster — thirty-six bodies a warband can field, four per school and twelve colourless. — **36 cards** (36 minion).
+
+| Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
+|---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Arcane Familiar** | `arcane_familiar` | minion | 2P | 2 | hero | 10 atk, 30 hp, 3 mov, rng 1, caster | dmg spell; refund 1P on attack | empty tile (ownTerritory) | — | — | Its touch is spell damage. Refunds 1 Bone each time it attacks. |
+| **Bone Rattler** | `bone_rattler` | minion | 2P | 2 | hero | 20 atk, 30 hp, 3 mov, rng 1, skirmisher | refund 1P on death | empty tile (ownTerritory) | — | — | Quick and thin. Refunds 1 Bone when it dies — including bled dry by a tithe. |
+| **Frost Wisp** | `frost_wisp` | minion | 2P | 2 | hero | 10 atk, 30 hp, 3 mov, rng 1, caster | dmg frost; onHit chill 1 | empty tile (ownTerritory) | — | — | Whatever survives its touch takes Chill 1. The third stack freezes a unit solid. |
+| **Kiln Guard** | `kiln_guard` | minion | 2P | 2 | hero | 20 atk, 60 hp, 2 mov, rng 1, bruiser | onHit burn 1 | empty tile (ownTerritory) | Guardian | — | Guardian: blocks line of sight behind it. Whatever survives its blows catches fire (Burn 1). |
+| **Militia Pikeman** | `militia_pikeman` | minion | 2P | 2 | hero | 20 atk, 50 hp, 2 mov, rng 1, bruiser | — | empty tile (ownTerritory) | Counter | — | Counter: strikes back for its full Attack whenever it is hit in melee and survives. |
+| **Ramming Goat** | `ramming_goat` | minion | 2P | 2 | hero | 20 atk, 40 hp, 3 mov, rng 1, skirmisher | dmg impact | empty tile (ownTerritory) | — | — | Its blows are impact, which shatters anything Frozen. Quick on its feet for a Bulwark body. |
+| **Rampart Mason** | `rampart_mason` | minion | 2P | 2 | hero | 10 atk, 70 hp, 1 mov, rng 1, bruiser | — | empty tile (ownTerritory) | Guardian, Counter | — | Guardian and Counter: blocks line of sight behind it, and strikes back when hit in melee. |
+| **Road Scout** | `road_scout` | minion | 2P | 2 | hero | 10 atk, 30 hp, 4 mov, rng 1, skirmisher | — | empty tile (ownTerritory) | Haste | — | Haste. Fast and fragile: four tiles a turn. |
+| **Rune Golem** | `rune_golem` | minion | 2P | 2 | hero | 20 atk, 60 hp, 1 mov, rng 1, bruiser | dmg spell | empty tile (ownTerritory) | Guardian | — | Guardian: blocks line of sight behind it. Its blows are spell damage. |
+| **Salamander Whelp** | `salamander_whelp` | minion | 2P | 2 | hero | 20 atk, 30 hp, 4 mov, rng 1, skirmisher | trail burning | empty tile (ownTerritory) | — | — | Every tile it walks off is left burning. Quick, and gone before the fire takes. |
+| **Spark Imp** | `spark_imp` | minion | 2P | 2 | hero | 20 atk, 30 hp, 3 mov, rng 1, skirmisher | dmg shock | empty tile (ownTerritory) | Haste | — | Haste. Its bite is shock, so whatever survives it is left Charged. |
+| **Spellblade** | `spellblade` | minion | 2P | 2 | hero | 30 atk, 30 hp, 3 mov, rng 1, skirmisher | dmg spell | empty tile (ownTerritory) | — | — | Its blows are spell damage, which sets off Cinder and Rime Marks. Thin, and quick. |
+| **Thorn Sprout** | `thorn_sprout` | minion | 2P | 2 | hero | 10 atk, 50 hp, 1 mov, rng 1, bruiser | onHit toxin 1; escalate +10/+10 | empty tile (ownTerritory) | Growth | — | Growth. Whatever survives its thorns is poisoned (Toxin 1). |
+| **War Dog** | `war_dog` | minion | 2P | 2 | hero | 20 atk, 40 hp, 3 mov, rng 1, skirmisher | +20 vs entangle/stun | empty tile (ownTerritory) | — | — | Deals 20 more to anything Entangled or Stunned. It goes for whatever cannot run. |
+| **Aether Archer** | `aether_archer` | minion | 3P | 2 | hero | 30 atk, 30 hp, 2 mov, rng 2-5, sniper | lineOnly; dmg spell | empty tile (ownTerritory) | — | — | Fires spell damage only along a rank, file or diagonal, 2 to 5 tiles. Cannot hit what is adjacent. |
+| **Boulder Slinger** | `boulder_slinger` | minion | 3P | 2 | hero | 30 atk, 40 hp, 1 mov, rng 2-4, caster | arcing; dmg impact | empty tile (ownTerritory) | — | — | Throws 2 to 4 tiles over anything, needing no line of sight, for impact damage. Cannot hit what is adjacent. |
+| **Coil Lancer** | `coil_lancer` | minion | 3P | 2 | hero | 30 atk, 40 hp, 2 mov, rng 2-3, caster | dmg shock | empty tile (ownTerritory) | — | — | Strikes 2 to 3 tiles away in shock, leaving what survives Charged. Cannot hit what is adjacent. |
+| **Crossbowman** | `crossbowman` | minion | 3P | 2 | hero | 30 atk, 30 hp, 2 mov, rng 2-4, sniper | — | empty tile (ownTerritory) | — | — | Shoots 2 to 4 tiles. Cannot hit what is adjacent. |
+| **Flame Archer** | `flame_archer` | minion | 3P | 2 | hero | 20 atk, 30 hp, 2 mov, rng 2-4, sniper | dmg fire; onHit burn 1 | empty tile (ownTerritory) | — | — | Shoots 2 to 4 tiles and sets what it hits alight (Burn 1). Cannot hit what is adjacent. |
+| **Frost Ballista** | `frost_ballista` | minion | 3P | 2 | hero | 40 atk, 40 hp, 1 mov, rng 2-5, sniper | lineOnly; dmg frost | empty tile (ownTerritory) | — | — | Fires only along a rank, file or diagonal, 2 to 5 tiles. Cannot hit what is adjacent. |
+| **Glyph Turret** | `glyph_turret` | minion | 3P | 2 | hero | 30 atk, 50 hp, 0 mov, rng 1-4, caster | arcing; dmg spell | empty tile (ownTerritory) | — | — | Cannot move. Throws spell damage 1 to 4 tiles over anything, needing no line of sight. |
+| **Spore Archer** | `spore_archer` | minion | 3P | 2 | hero | 20 atk, 30 hp, 2 mov, rng 2-4, sniper | dmg toxic; onHit toxin 2 | empty tile (ownTerritory) | — | — | Shoots 2 to 4 tiles and poisons what it hits (Toxin 2). Cannot hit what is adjacent. |
+| **Wight Archer** | `wight_archer` | minion | 3P | 2 | hero | 20 atk, 30 hp, 2 mov, rng 2-4, sniper | dmg decay; onHit toxin 1 | empty tile (ownTerritory) | — | — | Shoots 2 to 4 tiles in decay and poisons what it hits (Toxin 1). Cannot hit what is adjacent. |
+| **Furnace Titan** | `furnace_titan` | minion | 4P | 3 | hero | 40 atk, 110 hp, 1 mov, rng 1, bruiser | deathburst burn 2 | empty tile (ownTerritory) | Counter | — | Counter. When it dies, every adjacent enemy catches fire (Burn 2). Weak to frost. |
+| **Galvanic Brute** | `galvanic_brute` | minion | 4P | 3 | hero | 40 atk, 90 hp, 2 mov, rng 1, bruiser | dmg shock; refund 1P on death | empty tile (ownTerritory) | — | — | Its blows are shock, leaving what survives Charged. Refunds 1 Bone when it dies. Weak to impact. |
+| **Grave Knight** | `grave_knight` | minion | 4P | 3 | hero | 40 atk, 100 hp, 2 mov, rng 1, bruiser | dmg decay; tithe +2M | empty tile (ownTerritory) | Counter | — | Counter. Its blows are decay. Yields 2 more Marrow when tithed. Weak to fire. |
+| **Iron Juggernaut** | `iron_juggernaut` | minion | 4P | 3 | hero | 40 atk, 110 hp, 1 mov, rng 1, bruiser | dmg impact; +30 vs freeze; plates 10/turn | empty tile (ownTerritory) | — | — | Grows 10 Armor every turn. Deals 30 more to anything Frozen. Weak to shock. |
+| **Oakheart Guardian** | `oakheart_guardian` | minion | 4P | 3 | hero | 30 atk, 120 hp, 1 mov, rng 1, bruiser | escalate +10/+10 | empty tile (ownTerritory) | Guardian, Growth | — | Guardian and Growth: blocks line of sight behind it, and gets bigger every turn it stands. Weak to fire. |
+| **Permafrost Troll** | `permafrost_troll` | minion | 4P | 3 | hero | 40 atk, 100 hp, 1 mov, rng 1, bruiser | onHit chill 1; plates 10/turn | empty tile (ownTerritory) | — | — | Grows 10 Armor of ice every turn. Whatever survives its blows takes Chill 1. Weak to fire. |
+| **Sergeant-at-Arms** | `sergeant_at_arms` | minion | 4P | 3 | hero | 30 atk, 100 hp, 2 mov, rng 1, bruiser | — | empty tile (ownTerritory) | Guardian, Counter | — | Guardian and Counter: blocks line of sight behind it, and strikes back when hit in melee. |
+| **Warden Construct** | `warden_construct` | minion | 4P | 3 | hero | 30 atk, 100 hp, 1 mov, rng 1, bruiser | plates 10/turn | empty tile (ownTerritory) | Guardian | — | Guardian. Grows 10 Armor every turn. Weak to impact. |
+| **Battering Ram** | `battering_ram` | minion | 5P | 3 | hero | 50 atk, 120 hp, 1 mov, rng 1, behemoth, **2x2** | dmg impact | empty tile (ownTerritory, 2x2) | PowerTier | — | Power Tier. 2x2 Behemoth. Its blows are impact, which shatters anything Frozen. Cannot enter 1x1 gaps. |
+| **Bone Colossus** | `bone_colossus` | minion | 5P | 3 | hero | 50 atk, 140 hp, 1 mov, rng 1, behemoth, **2x2** | +20 vs brittle | empty tile (ownTerritory, 2x2) | PowerTier | — | Power Tier. 2x2 Behemoth. Deals 20 more to anything Brittle. Cannot enter 1x1 gaps. |
+| **Frost Colossus** | `frost_colossus` | minion | 5P | 3 | hero | 40 atk, 140 hp, 1 mov, rng 1, behemoth, **2x2** | onHit chill 1 | empty tile (ownTerritory, 2x2) | PowerTier | — | Power Tier. 2x2 Behemoth. Whatever survives its blows takes Chill 1. Cannot enter 1x1 gaps. |
+| **Mossback Colossus** | `mossback_colossus` | minion | 5P | 3 | hero | 40 atk, 150 hp, 1 mov, rng 1, behemoth, **2x2** | deathburst toxin 3 | empty tile (ownTerritory, 2x2) | PowerTier | — | Power Tier. 2x2 Behemoth. When it dies, every adjacent enemy is poisoned (Toxin 3). Cannot enter 1x1 gaps. |
+| **Tempest Engine** | `tempest_engine` | minion | 5P | 3 | hero | 40 atk, 130 hp, 1 mov, rng 1, behemoth, **2x2** | dmg shock; plates 10/turn | empty tile (ownTerritory, 2x2) | PowerTier | — | Power Tier. 2x2 Behemoth. Its blows are shock, leaving what survives Charged. Cannot enter 1x1 gaps. |
+
 ---
 
 ## Notes
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 132 of the 318 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 132 of the 354 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 

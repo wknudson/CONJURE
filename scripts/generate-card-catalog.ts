@@ -47,6 +47,7 @@ import { SURGE_SHELF } from '../src/core/data/cards/shelf.surge.js';
 import { BULWARK_SHELF } from '../src/core/data/cards/shelf.bulwark.js';
 import { DUSK_SHELF } from '../src/core/data/cards/shelf.dusk.js';
 import { BLOOM_SHELF } from '../src/core/data/cards/shelf.bloom.js';
+import { VANGUARD_CARDS } from '../src/core/data/cards/vanguard.js';
 
 /**
  * The shelves, in the order `cards/index.ts` merges them.
@@ -109,6 +110,7 @@ const SOURCES: Source[] = [
   { file: 'shelf.bulwark.ts', cards: BULWARK_SHELF, blurb: 'Bulwark third shelf — commons, and the Boar and Ram signatures.' },
   { file: 'shelf.dusk.ts', cards: DUSK_SHELF, blurb: 'Dusk third shelf — commons, and the Stag and Jackal signatures.' },
   { file: 'shelf.bloom.ts', cards: BLOOM_SHELF, blurb: 'Bloom third shelf — commons, and the Warden and Aurochs signatures.' },
+  { file: 'vanguard.ts', cards: VANGUARD_CARDS, blurb: 'The third muster — thirty-six bodies a warband can field, four per school and twelve colourless.' },
 ];
 
 const KIND_ORDER = ['minion', 'spell', 'ability', 'mark', 'obstacle'] as const;
