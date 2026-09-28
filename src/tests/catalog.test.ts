@@ -721,7 +721,7 @@ describe('the catalog pools', () => {
       expect(gap.minions, `${gap.school} has no bodies`).toBeGreaterThan(0);
       expect(gap.short, `${gap.school} fell back below the target`).toBe(0);
     }
-    expect(CATALOG_TARGET.min).toBe(10);
+    expect(CATALOG_TARGET.min).toBe(20);
   });
 
   it('gates a body behind the bloodline that grants it', () => {

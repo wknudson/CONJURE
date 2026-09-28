@@ -184,7 +184,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['dusk'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['exhume', 'last_rites', 'charnel_pillar', 'smoke_bomb'],
+      // Two, where it was four: the Stag's signatures carry the feeding now.
+      omit: ['exhume', 'charnel_pillar'],
     },
     legacyGrimoire: [
       'shadow_siphon',
@@ -211,7 +212,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['bloom'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['pollen_drift', 'blight_harvest', 'noxious_cloud', 'blight_bloom'],
+      // Two, where it was four: the Warden's signatures carry the patience now.
+      omit: ['blight_harvest', 'blight_bloom'],
     },
     legacyGrimoire: [
       'spore_cloud',
@@ -238,7 +240,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['bulwark'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['sinkhole', 'counterweight', 'deadweight', 'crag_slam'],
+      // Two, where it was four: the Boar's signatures carry the ground now.
+      omit: ['sinkhole', 'crag_slam'],
     },
     legacyGrimoire: [
       'seismic_slam',
@@ -613,7 +616,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['dusk'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['harvest_the_weak', 'blood_and_bone_rally', 'marrow_burst', 'grave_call'],
+      // Two, where it was four: the Jackal's signatures carry the digging now.
+      omit: ['blood_and_bone_rally', 'grave_call'],
     },
     legacyGrimoire: [
       'pall',
@@ -640,7 +644,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['bloom'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['thornlash', 'strangling_vines', 'briar_rampart', 'verdant_collapse'],
+      // Two, where it was four: the Aurochs' signatures carry the field now.
+      omit: ['strangling_vines', 'verdant_collapse'],
     },
     legacyGrimoire: [
       'pollen_drift',
@@ -668,7 +673,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['bulwark'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['iron_gate', 'battlement', 'bastion_stance', 'petrifying_mantle'],
+      // Two, where it was four: the Ram's signatures carry the breaking now.
+      omit: ['iron_gate', 'bastion_stance'],
     },
     legacyGrimoire: [
       'sinkhole',
