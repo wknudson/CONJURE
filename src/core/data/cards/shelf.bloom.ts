@@ -267,4 +267,130 @@ export const BLOOM_SHELF: Record<string, CardDef> = {
     keywords: [],
     bloodline: ['aurochs'],
   },
+
+  // ============================================================ the Bramble Fox
+
+  /** Thirty physical, or fifty against something already rooted. The Fox finishes. */
+  bramble_pounce: {
+    id: 'bramble_pounce',
+    name: 'Bramble Pounce',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 50 physical damage to an Entangled unit, or 30 to anything else.',
+    target: ENEMY_UNIT,
+    effect: {
+      op: 'ifMet',
+      cond: { kind: 'targetStatus', status: 'entangle' },
+      then: { op: 'damage', amount: 50, dtype: 'physical', area: { shape: 'target' } },
+      otherwise: { op: 'damage', amount: 30, dtype: 'physical', area: { shape: 'target' } },
+    },
+    keywords: [],
+    bloodline: ['fox'],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /** Two tiles for an ally, this turn. The Fox is never where the hound thought. */
+  sly_retreat: {
+    id: 'sly_retreat',
+    name: 'Sly Retreat',
+    cost: { bones: 1, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'An ally moves 2 further this turn.',
+    target: ALLY_UNIT,
+    effect: { op: 'applyStatus', status: 'fleet', stacks: 2, area: { shape: 'target' } },
+    keywords: [],
+    bloodline: ['fox'],
+    range: 4,
+  },
+
+  /** Twenty physical and a Toxin on an adjacent enemy. */
+  briar_bite: {
+    id: 'briar_bite',
+    name: 'Briar Bite',
+    cost: { bones: 1, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 physical damage to an adjacent enemy and poisons it (Toxin 1).',
+    target: ENEMY_UNIT,
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'physical', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['fox'],
+    range: 1,
+  },
+
+  // ============================================================ the Pollen Moth
+
+  /** Ten toxic and a Toxin on everything in a cross around a tile. */
+  pollen_burst: {
+    id: 'pollen_burst',
+    name: 'Pollen Burst',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 10 toxic damage to everything in a cross around the target tile and poisons it (Toxin 1).',
+    target: ANY_TILE,
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'toxic', area: { shape: 'plus', radius: 1 } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'plus', radius: 1 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['moth'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** A Toxin on everything beside the Moth. The dust off its wings. */
+  dusting_wings: {
+    id: 'dusting_wings',
+    name: 'Dusting Wings',
+    cost: { bones: 1, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Poisons everything adjacent to the caster (Toxin 1), yours included.',
+    target: { kind: 'none' },
+    effect: { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'adjacent8' } },
+    keywords: [],
+    bloodline: ['moth'],
+    range: 1,
+  },
+
+  /** Ten toxic and a Toxin on everything in a 3x3. The swarm. */
+  moth_swarm: {
+    id: 'moth_swarm',
+    name: 'Moth Swarm',
+    cost: { bones: 3, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 10 toxic damage to every unit in a 3x3 around the target tile and poisons them (Toxin 1), yours included.',
+    target: ANY_TILE,
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'toxic', area: { shape: 'square', size: 3 } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'square', size: 3 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['moth'],
+    range: 4,
+    needsLoS: true,
+  },
 };
