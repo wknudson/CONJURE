@@ -483,6 +483,12 @@ export const TRAIT_LINEAGE: Record<string, readonly string[]> = {
   newt: ['boreas', 'sylva'],
   raven: ['voltara', 'mortis'],
   toad: ['voltara', 'sylva'],
+  // the contract hybrids
+  wraith: ['ignis', 'mortis'],
+  chameleon: ['ignis', 'sylva'],
+  yak: ['boreas', 'ferrum'],
+  scarab: ['voltara', 'ferrum'],
+  hedgehog: ['ferrum', 'sylva'],
 };
 
 /**
@@ -1186,6 +1192,88 @@ const TRAITS_THE_RARE_HUNT_HYBRIDS: Record<string, CompanionTrait> = {
   },
 };
 
+/**
+ * Knacks for the contract hybrids: two apiece, all wired, built from boons the engine already reads.
+ * Their parents' pools come free through `TRAIT_LINEAGE`.
+ */
+const TRAITS_THE_CONTRACT_HYBRIDS: Record<string, CompanionTrait> = {
+  // ------------------------------------------------------------ wraith
+  snuffing_touch: {
+    id: 'snuffing_touch',
+    name: 'Snuffing Touch',
+    text: 'Its fire drags. A Burning enemy moves 1 tile less.',
+    baseId: 'wraith',
+    boons: { burnSlows: 1 },
+  },
+  grave_wick: {
+    id: 'grave_wick',
+    name: 'Grave Wick',
+    text: 'Whatever snuffs one of its own is marked for it. A unit of yours killed by an attack leaves its killer Brittle.',
+    baseId: 'wraith',
+    boons: { deathRattle: true },
+  },
+  // ------------------------------------------------------------ chameleon
+  ember_skin: {
+    id: 'ember_skin',
+    name: 'Ember Skin',
+    text: 'Changes colour to the fire. Burn stops ticking on your side entirely.',
+    baseId: 'chameleon',
+    boons: { immuneToBurn: true },
+  },
+  vine_grip: {
+    id: 'vine_grip',
+    name: 'Vine Grip',
+    text: 'Holds on with everything it has. Every Toxin you apply lands with an extra stack.',
+    baseId: 'chameleon',
+    boons: { bonusToxinStacks: 1 },
+  },
+  // ------------------------------------------------------------ yak
+  pack_hauler: {
+    id: 'pack_hauler',
+    name: 'Pack Hauler',
+    text: 'Carries more than it should. Raises your Bone ceiling by 1 for the whole fight.',
+    baseId: 'yak',
+    boons: { maxBones: 1 },
+  },
+  shaggy_coat: {
+    id: 'shaggy_coat',
+    name: 'Shaggy Coat',
+    text: 'Snow sits on it and it does not notice. Your Hero opens every fight behind 30 Persistent Armor.',
+    baseId: 'yak',
+    boons: { armor: 30 },
+  },
+  // ------------------------------------------------------------ scarab
+  lodestone: {
+    id: 'lodestone',
+    name: 'Lodestone',
+    text: 'What it pushes keeps going. Every shove your cards deal goes 1 tile further.',
+    baseId: 'scarab',
+    boons: { bonusShoveDistance: 1 },
+  },
+  iron_shell: {
+    id: 'iron_shell',
+    name: 'Iron Shell',
+    text: 'Its plate is magnetised to it. Shatter and Superconduct cannot strip Armor from your units.',
+    baseId: 'scarab',
+    boons: { armorUnstrippable: true },
+  },
+  // ------------------------------------------------------------ hedgehog
+  spine_ward: {
+    id: 'spine_ward',
+    name: 'Spine Ward',
+    text: 'Hits nothing that hits it. Your units shrug off 20 of every collision.',
+    baseId: 'hedgehog',
+    boons: { collisionResist: 20 },
+  },
+  hedge_patience: {
+    id: 'hedge_patience',
+    name: 'Hedge Patience',
+    text: 'Waits in the wall until it is ready. Draws 1 more card in the opening hand.',
+    baseId: 'hedgehog',
+    boons: { extraOpeningCards: 1 },
+  },
+};
+
 for (const [id, trait] of Object.entries(VOLTARA_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(MORTIS_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(SYLVA_TRAITS)) COMPANION_TRAITS[id] = trait;
@@ -1197,6 +1285,7 @@ for (const [id, trait] of Object.entries(THIRD_BLOODLINE_TRAITS)) COMPANION_TRAI
 for (const [id, trait] of Object.entries(FOURTH_BLOODLINE_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(TRAITS_THE_LAIR_HYBRIDS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(TRAITS_THE_RARE_HUNT_HYBRIDS)) COMPANION_TRAITS[id] = trait;
+for (const [id, trait] of Object.entries(TRAITS_THE_CONTRACT_HYBRIDS)) COMPANION_TRAITS[id] = trait;
 
 export function traitById(id: string): CompanionTrait | undefined {
   return COMPANION_TRAITS[id];

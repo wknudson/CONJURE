@@ -8,27 +8,27 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**447 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**459 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
-| minion | 156 | Hero | Vanguard Roster, never a deck |
-| spell | 221 | Companion | drafted into a Grimoire |
+| minion | 163 | Hero | Vanguard Roster, never a deck |
+| spell | 226 | Companion | drafted into a Grimoire |
 | ability | 27 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
 | obstacle | 37 | Hero | Hero Deck, shown as a Construct |
-| **total** | **447** | | |
+| **total** | **459** | | |
 
 ### By school
 
 | School | Cards |
 |---|---:|
-| bloom | 66 |
-| bulwark | 66 |
-| dusk | 65 |
-| frost | 63 |
-| surge | 61 |
-| pyre | 58 |
+| bloom | 69 |
+| bulwark | 68 |
+| dusk | 68 |
+| frost | 64 |
+| surge | 62 |
+| pyre | 60 |
 | arcane | 35 |
 | neutral | 33 |
 
@@ -40,7 +40,7 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`arcane.ts`](#arcanets) | 12 | 1 minion, 3 ability, 6 mark, 2 obstacle |
 | [`pyre.ts`](#pyrets) | 12 | 4 minion, 6 spell, 2 obstacle |
 | [`frost.ts`](#frostts) | 20 | 5 minion, 12 spell, 3 obstacle |
-| [`companionUnits.ts`](#companionunitsts) | 55 | 55 minion |
+| [`companionUnits.ts`](#companionunitsts) | 60 | 60 minion |
 | [`terrain.ts`](#terraints) | 5 | 5 obstacle |
 | [`ranged.ts`](#rangedts) | 7 | 7 minion |
 | [`surge.ts`](#surgets) | 20 | 7 minion, 12 spell, 1 obstacle |
@@ -53,15 +53,15 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`hybrid.ts`](#hybridts) | 24 | 23 spell, 1 obstacle |
 | [`auras.ts`](#aurasts) | 13 | 11 spell, 2 ability |
 | [`hero.ts`](#herots) | 22 | 17 ability, 5 obstacle |
-| [`shelf.pyre.ts`](#shelfpyrets) | 22 | 21 spell, 1 obstacle |
+| [`shelf.pyre.ts`](#shelfpyrets) | 23 | 22 spell, 1 obstacle |
 | [`shelf.frost.ts`](#shelffrostts) | 23 | 21 spell, 2 obstacle |
 | [`shelf.surge.ts`](#shelfsurgets) | 22 | 20 spell, 2 obstacle |
-| [`shelf.bulwark.ts`](#shelfbulwarkts) | 24 | 21 spell, 3 obstacle |
+| [`shelf.bulwark.ts`](#shelfbulwarkts) | 26 | 23 spell, 3 obstacle |
 | [`shelf.dusk.ts`](#shelfduskts) | 19 | 17 spell, 2 obstacle |
-| [`shelf.bloom.ts`](#shelfbloomts) | 25 | 23 spell, 2 obstacle |
+| [`shelf.bloom.ts`](#shelfbloomts) | 27 | 25 spell, 2 obstacle |
 | [`vanguard.ts`](#vanguardts) | 36 | 36 minion |
-| [`threats.dens.ts`](#threatsdensts) | 10 | 10 minion |
-| **total** | **447** | |
+| [`threats.dens.ts`](#threatsdensts) | 12 | 12 minion |
+| **total** | **459** | |
 
 ---
 
@@ -155,10 +155,11 @@ Frost expansion — slow, freeze, shatter. — **20 cards** (5 minion, 12 spell,
 
 ### `companionUnits.ts`
 
-Bound Forms. Placed by setup, never drawn, never bought. — **55 cards** (55 minion).
+Bound Forms. Placed by setup, never drawn, never bought. — **60 cards** (60 minion).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Ashvine Chameleon** | `chameleon_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Pyre and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Ashwing Phoenix** | `phoenix_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Pyre spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Aurora Kestrel** | `kestrel_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 4 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Frost and Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Barrow Bear** | `bear_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 2 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Bulwark and Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
@@ -188,6 +189,7 @@ Bound Forms. Placed by setup, never drawn, never bought. — **55 cards** (55 mi
 | **Ink Owl** | `lexis_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 3 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Arcane cards are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Ironhide Rhino** | `rhino_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 2 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Kinetic Dynamo** | `dynamo_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 2 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Surge and Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
+| **Lodestone Scarab** | `scarab_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 2 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Surge and Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Menhir Beetle** | `beetle_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 1 mov, rng 1-3, caster | — | none | BoundForm, Guardian | setup only | Bound Form. Your Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Mortis** | `mortis_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 2 mov, rng 1, caster | — | none | BoundForm | setup only | Bound Form. Your Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Moss Aurochs** | `aurochs_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 2 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
@@ -197,6 +199,7 @@ Bound Forms. Placed by setup, never drawn, never bought. — **55 cards** (55 mi
 | **Quarry Ram** | `ram_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 3 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Rime Ermine** | `ermine_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 4 mov, rng 1, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Frost spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Rimebloom Newt** | `newt_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 2 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Frost and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
+| **Rimestone Yak** | `yak_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 2 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Frost and Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Rotcap Myconid** | `myconid_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 2 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Dusk and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Saltglass Seal** | `seal_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 1 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Frost spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Slagback Armadillo** | `armadillo_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Pyre and Bulwark spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
@@ -208,11 +211,13 @@ Bound Forms. Placed by setup, never drawn, never bought. — **55 cards** (55 mi
 | **Sylva** | `sylva_bound` | minion | 0 | 1 | companion | 10 atk, 40 hp, 2 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **The Clockwork Colossus** | `colossus_bound` | minion | 0 | 3 | companion | 60 atk, 440 hp, 1 mov, rng 1, behemoth, **2x2** | dmg shock; onHit charged 1; plates 10/turn | none | BoundForm | setup only | Bound Form. The Great Quieting, given legs. Blocks sight through itself. |
 | **The Sovereign, Risen** | `sovereign_behemoth_bound` | minion | 0 | 3 | companion | 50 atk, 440 hp, 1 mov, rng 1, behemoth, **2x2** | — | none | BoundForm | setup only | Bound Form. The Bastion, awake. Blocks sight through itself. |
+| **Thornstone Hedgehog** | `hedgehog_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 2 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Bulwark and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Thunderhawk** | `thunderhawk_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-3, caster | — | none | BoundForm | setup only | Bound Form. Your Pyre and Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Umbra** | `umbra_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 2 mov, rng 1-2, skirmisher | — | none | BoundForm | setup only | Bound Form. The Duelist casts from where it stands, and bleeds when it is struck. |
 | **Volatile Geist** | `geist_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Surge and Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Voltara** | `voltara_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-2, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Surge spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Voltbriar Serpent** | `serpent_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-2, skirmisher | — | none | BoundForm | setup only | Bound Form. Your Surge and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
+| **Wick Wraith** | `wraith_bound` | minion | 0 | 1 | companion | 20 atk, 40 hp, 3 mov, rng 1-2, caster | — | none | BoundForm | setup only | Bound Form. Your Pyre and Dusk spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 | **Winterthorn Elk** | `elk_bound` | minion | 0 | 1 | companion | 30 atk, 40 hp, 3 mov, rng 1, bruiser | — | none | BoundForm | setup only | Bound Form. Your Frost and Bloom spells are cast from where it stands. Wounds it takes are dealt to your Pact. |
 
 ### `terrain.ts`
@@ -456,7 +461,7 @@ The Hero's kit: colourless and arcane abilities and constructs, taught by the Du
 
 ### `shelf.pyre.ts`
 
-Pyre third shelf — commons, and the Drake and Salamander signatures. — **22 cards** (21 spell, 1 obstacle).
+Pyre third shelf — commons, and the Drake and Salamander signatures. — **23 cards** (22 spell, 1 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -478,6 +483,7 @@ Pyre third shelf — commons, and the Drake and Salamander signatures. — **22 
 | **Phoenix Dive** | `phoenix_dive` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 30 fire damage to a unit and sets everything adjacent to it alight (Burn 1). |
 | **Smoke Sett** | `smoke_sett` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | — | Fills a 2x2 block with smoke for 2 turns, blocking ranged line of sight, and sets everything there alight (Burn 1). |
 | **Twin Breath** | `twin_breath` | spell | 2P | 2 | companion | — | — | line 2 — range 2, LoS | — | R2 | Deals 20 fire damage in a 2-deep cone and Chills everything caught. |
+| **Wick Drain** | `wick_drain` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 20 fire damage to a unit and restores 20 health to your Pact. |
 | **Wildfire** | `wildfire` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Sets every unit in a 3x3 around the target tile alight (Burn 1), yours included. No damage. |
 | **Ember Cascade** | `ember_cascade` | spell | 3P | 2 | companion | — | — | global | — | — | Sets off every Mark on the board at once. |
 | **Immolate** | `immolate` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Deals 40 fire damage to a unit, or 60 if it is already Burning. |
@@ -544,7 +550,7 @@ Surge third shelf — commons, and the Lynx and Kudu signatures. — **22 cards*
 
 ### `shelf.bulwark.ts`
 
-Bulwark third shelf — commons, and the Boar and Ram signatures. — **24 cards** (21 spell, 3 obstacle).
+Bulwark third shelf — commons, and the Boar and Ram signatures. — **26 cards** (23 spell, 3 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -553,12 +559,14 @@ Bulwark third shelf — commons, and the Boar and Ram signatures. — **24 cards
 | **Iron Brace** | `iron_brace` | spell | 1P | 1 | companion | — | — | none | — | R2 | Your Hero gains 30 Armor. |
 | **Steady Footing** | `steady_footing` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 20 Armor. Draw 1 card. |
 | **Tusk Toss** | `tusk_toss` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 1 | — | — | Throws an adjacent enemy 2 tiles away. Triggers standard Collision Damage (30 / 20). |
+| **Avalanche Haul** | `avalanche_haul` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 30 impact damage to a unit and Chills it. Shatters anything Frozen. |
 | **Boar Charge** | `boar_charge` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 30 impact damage to a unit and shoves it 2 tiles away. Triggers standard Collision Damage (30 / 20). |
 | **Bone Bulwark** | `bone_bulwark` | spell | 2P | 2 | companion | — | — | entity (ally) — range 4 | — | R2 | Grants an ally 20 Armor, and leaves everything adjacent to it poisoned (Toxin 1). |
 | **Dung Ball** | `dung_ball` | spell | 2P | 2 | companion | — | — | entity (any, +obstacles) — range 4, LoS | — | R2 | Deals 30 impact damage to a unit or obstacle. |
 | **Fault Line** | `fault_line` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 20 impact damage down a 3-tile line and shoves everything on it 1 tile away from its near end. Triggers standard Collision Damage (30 / 20). |
 | **Ground Breaker** | `ground_breaker` | spell | 2P | 2 | companion | — | — | entity (any, +obstacles) — range 3, LoS | — | R2 | Deals 30 impact damage to a unit or obstacle and leaves rough ground in a cross around it for 3 turns. |
 | **Horn Gore** | `horn_gore` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 1 | — | R2 | Deals 40 impact damage to an adjacent enemy. Shatters anything Frozen. |
+| **Lodestone Pull** | `lodestone_pull` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Drags everything on a 3-tile line 1 tile toward its near end and leaves it Charged. |
 | **Magma Shell** | `magma_shell` | spell | 2P | 2 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 30 Armor, and sets everything adjacent to it alight (Burn 1). |
 | **Magnet Pull** | `magnet_pull` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Drags everything within 2 tiles of the target tile 1 tile toward it, then leaves everything in a cross around it Charged. |
 | **Ossuary Maul** | `ossuary_maul` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 1 | — | R2 | Deals 30 impact damage to an adjacent enemy and poisons it (Toxin 1). |
@@ -601,7 +609,7 @@ Dusk third shelf — commons, and the Stag and Jackal signatures. — **19 cards
 
 ### `shelf.bloom.ts`
 
-Bloom third shelf — commons, and the Warden and Aurochs signatures. — **25 cards** (23 spell, 2 obstacle).
+Bloom third shelf — commons, and the Warden and Aurochs signatures. — **27 cards** (25 spell, 2 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -625,9 +633,11 @@ Bloom third shelf — commons, and the Warden and Aurochs signatures. — **25 c
 | **Rootbind** | `rootbind` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Roots a unit for its next two turns (Entangle 2) and poisons it (Toxin 1). A rooted unit can still attack. |
 | **Rotcap Bloom** | `rotcap_bloom` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 10 decay damage to everything in a cross around the target tile and poisons it (Toxin 2). |
 | **Spark Spores** | `spark_spores` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | R2 | Deals 10 shock damage to a 2x2 block of tiles, leaving it Charged, and poisons everything there (Toxin 1). |
+| **Spine Volley** | `spine_volley` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | R2 | Deals 20 physical damage to everything adjacent to the target tile and poisons it (Toxin 1). |
 | **Thorn Volley** | `thorn_volley` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 20 physical damage down a 3-tile line and poisons everything on it (Toxin 1). |
 | **Moth Swarm** | `moth_swarm` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 10 toxic damage to every unit in a 3x3 around the target tile and poisons them (Toxin 1), yours included. |
 | **Rot Spores** | `rot_spores` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Poisons every unit in a wide cross around the target tile, two tiles out each way (Toxin 2), yours included. |
+| **Vine Flare** | `vine_flare` | spell | 3P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Sets everything on a 3-tile line alight (Burn 1) and roots it through its next turn (Entangle 1). |
 | **Seed Pod** | `seed_pod` | obstacle | 1P | 1 | companion | 30 hp | on break toxin 2 | empty tile (any) — range 3, LoS | — | R2 | Raises a 30 HP seed pod on an empty tile. When it breaks, every unit on or beside it is poisoned (Toxin 2). |
 | **Warden Tree** | `warden_tree` | obstacle | 3P | 2 | companion | 90 hp | on break 20 dmg + toxin 2; leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 90 HP tree on an empty tile. When it falls it bursts: 20 damage and Toxin 2 to every unit on or beside it. |
 
@@ -676,7 +686,7 @@ The third muster — thirty-six bodies a warband can field, four per school and 
 
 ### `threats.dens.ts`
 
-Den threats: the enemy-only bodies that guard the newer hybrids. — **10 cards** (10 minion).
+Den threats: the enemy-only bodies that guard the newer hybrids. — **12 cards** (12 minion).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -684,11 +694,13 @@ Den threats: the enemy-only bodies that guard the newer hybrids. — **10 cards*
 | **Bear Cub** | `bear_cub` | minion | 2P | 2 | hero | 20 atk, 50 hp, 2 mov, rng 1, bruiser | — | empty tile (ownTerritory) | — | setup only | Small, stubborn, and heavier than it looks. |
 | **Drake Hatchling** | `drake_hatchling` | minion | 2P | 2 | hero | 20 atk, 40 hp, 3 mov, rng 1, skirmisher | onHit burn 1 | empty tile (ownTerritory) | — | setup only | Quick, and bites fire (Burn 1). |
 | **Hawk Fledgling** | `hawk_fledgling` | minion | 2P | 2 | hero | 20 atk, 30 hp, 4 mov, rng 1, skirmisher | dmg shock | empty tile (ownTerritory) | — | setup only | Four tiles a turn, and its talons leave what they strike Charged. |
+| **Restless Geist** | `restless_geist` | minion | 2P | 2 | hero | 20 atk, 30 hp, 3 mov, rng 1, caster | dmg decay; onHit burn 1 | empty tile (ownTerritory) | — | setup only | Its touch is decay, and burns what it touches (Burn 1). |
 | **Spore Thrall** | `spore_thrall` | minion | 2P | 2 | hero | 10 atk, 50 hp, 1 mov, rng 1, bruiser | deathburst toxin 2 | empty tile (ownTerritory) | — | setup only | When it dies, every adjacent enemy is poisoned (Toxin 2). |
 | **Brood Drake** | `brood_drake` | minion | 4P | 3 | hero | 40 atk, 110 hp, 2 mov, rng 1-2, caster | dmg fire; deathburst burn 2 | empty tile (ownTerritory) | — | setup only | Breathes fire at 2 tiles. When it dies, every adjacent enemy catches fire (Burn 2). |
 | **Den Bear** | `den_bear` | minion | 4P | 3 | hero | 50 atk, 130 hp, 2 mov, rng 1, bruiser | — | empty tile (ownTerritory) | Counter | setup only | Counter. Fifty in a swipe, and it strikes back when struck. |
 | **Ring Elder** | `ring_elder` | minion | 4P | 3 | hero | 30 atk, 100 hp, 1 mov, rng 1-3, caster | dmg toxic; onHit toxin 2 | empty tile (ownTerritory) | Guardian | setup only | Guardian. Throws spores 1 to 3 tiles, poisoning what it hits (Toxin 2). |
 | **Storm Roc** | `storm_roc` | minion | 4P | 3 | hero | 40 atk, 100 hp, 3 mov, rng 1, bruiser | dmg shock | empty tile (ownTerritory) | Haste | setup only | Haste. Its strikes are shock, leaving what survives Charged. |
+| **Wailing Geist** | `wailing_geist` | minion | 4P | 3 | hero | 40 atk, 90 hp, 2 mov, rng 1-2, caster | dmg decay; deathburst burn 2 | empty tile (ownTerritory) | — | setup only | Strikes 1 to 2 tiles in decay. When it dies, every adjacent enemy catches fire (Burn 2). |
 | **Wight Lord** | `wight_lord` | minion | 4P | 3 | hero | 40 atk, 110 hp, 2 mov, rng 1, bruiser | dmg decay; onHit chill 1 | empty tile (ownTerritory) | Counter | setup only | Counter. Its blows are decay, and chill what survives them (Chill 1). |
 
 ---
@@ -697,7 +709,7 @@ Den threats: the enemy-only bodies that guard the newer hybrids. — **10 cards*
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 180 of the 447 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 183 of the 459 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 

@@ -80,6 +80,7 @@ import {
   HUNT_SALTGLASS_TOAD,
 } from './hunts.js';
 import { PACK_ENCOUNTERS } from './packs.js';
+import { THE_SNUFFED_LAMPS, THE_BURNT_ORCHARD, THE_SCRAP_FIELD, THE_FROZEN_TOLL, THE_HEDGE_FORT } from './campaign.bloodlines.js';
 import { CALDERA_TORTOISE, CALDERA_WASPS, RIMEFIELD_GARGOYLE } from './apex.lairs.js';
 import { CALDERA_OTTER, SHELF_EYRIE, RIMEFIELD_BARROW, BASTION_DEN, ASHWOOD_RING } from './lairs.hybrid.js';
 import {
@@ -137,6 +138,12 @@ export const ENCOUNTERS: EncounterDef[] = [
   UNDERCROFT_CENSUS,
   UNDERHILL_DUEL,
   THE_QUIET_BELOW,
+  // the contract hybrids: side contracts after each tier's arc.
+  THE_SNUFFED_LAMPS,
+  THE_BURNT_ORCHARD,
+  THE_SCRAP_FIELD,
+  THE_FROZEN_TOLL,
+  THE_HEDGE_FORT,
   // The regional apex lairs: walk-to fights with no poster, second routes for species
   // whose story fights happened in the city. See `district/sites.ts` for the ground.
   CALDERA_TORTOISE,

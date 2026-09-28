@@ -170,4 +170,36 @@ export const DEN_THREAT_CARDS: Record<string, CardDef> = {
     setupOnly: true,
     unit: { atk: 30, hp: 100, mov: 1, rangeMin: 1, rangeMax: 3, footprint: 1, archetype: 'caster', escalationBonus: { atk: 0, hp: 0 }, attackDtype: 'toxic', onHit: { status: 'toxin', stacks: 2 } },
   },
+
+  /** A lamp-ghost of Lamprow: a wick with nobody holding it. */
+  restless_geist: {
+    id: 'restless_geist',
+    name: 'Restless Geist',
+    cost: { bones: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Its touch is decay, and burns what it touches (Burn 1).',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'restless_geist' },
+    keywords: [],
+    setupOnly: true,
+    unit: { atk: 20, hp: 30, mov: 3, rangeMin: 1, rangeMax: 1, footprint: 1, archetype: 'caster', escalationBonus: { atk: 0, hp: 0 }, attackDtype: 'decay', onHit: { status: 'burn', stacks: 1 } },
+  },
+
+  /** The loudest of the lamp-ghosts, and the one the others follow. */
+  wailing_geist: {
+    id: 'wailing_geist',
+    name: 'Wailing Geist',
+    cost: { bones: 4, marrow: 0 },
+    school: 'dusk',
+    source: 'hero',
+    kind: 'minion',
+    text: 'Strikes 1 to 2 tiles in decay. When it dies, every adjacent enemy catches fire (Burn 2).',
+    target: { kind: 'emptyTile', zone: 'ownTerritory', footprint: 1 },
+    effect: { op: 'summon', unitDef: 'wailing_geist' },
+    keywords: [],
+    setupOnly: true,
+    unit: { atk: 40, hp: 90, mov: 2, rangeMin: 1, rangeMax: 2, footprint: 1, archetype: 'caster', escalationBonus: { atk: 0, hp: 0 }, attackDtype: 'decay', deathburst: { status: 'burn', stacks: 2 } },
+  },
 };

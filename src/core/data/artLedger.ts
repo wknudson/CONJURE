@@ -61,6 +61,12 @@ export const COMPANION_ART_PENDING: readonly string[] = [
   'newt',
   'raven',
   'toad',
+  // the contract hybrids
+  'wraith',
+  'chameleon',
+  'yak',
+  'scarab',
+  'hedgehog',
 ];
 
 /** The file stem a species' sprites are saved under. */
