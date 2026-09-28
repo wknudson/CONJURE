@@ -260,4 +260,121 @@ export const DUSK_SHELF: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  // ============================================================= the Gloam Owl
+
+  /** Twenty decay from nowhere, at four tiles. */
+  silent_talon: {
+    id: 'silent_talon',
+    name: 'Silent Talon',
+    cost: { bones: 1, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 decay damage to a unit.',
+    target: ENEMY_UNIT,
+    effect: { op: 'damage', amount: 20, dtype: 'decay', area: { shape: 'target' } },
+    keywords: [],
+    bloodline: ['owl'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** Two cards. The Owl sees what is coming. */
+  owl_omen: {
+    id: 'owl_omen',
+    name: 'Owl Omen',
+    cost: { bones: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Draw 2 cards. The Owl has already seen them coming.',
+    target: { kind: 'none' },
+    effect: { op: 'drawCards', amount: 2 },
+    keywords: [],
+    bloodline: ['owl'],
+  },
+
+  /** Fog on a 2x2 for two turns and ten decay to whoever is in it. The moonless night. */
+  moonless_night: {
+    id: 'moonless_night',
+    name: 'Moonless Night',
+    cost: { bones: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Darkens a 2x2 block for 2 turns, blocking ranged line of sight, and deals 10 decay damage to everything there.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 2 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'spawnHazard', kind: 'steam_fog', turns: 2, area: { shape: 'square', size: 2 } },
+        { op: 'damage', amount: 10, dtype: 'decay', area: { shape: 'square', size: 2 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['owl'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  // =========================================================== the Crypt Spider
+
+  /** Twenty decay and two Toxin on an adjacent enemy. */
+  venom_bite: {
+    id: 'venom_bite',
+    name: 'Venom Bite',
+    cost: { bones: 1, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 decay damage to an adjacent enemy and poisons it (Toxin 2).',
+    target: ENEMY_UNIT,
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'decay', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 2, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['spider'],
+    range: 1,
+  },
+
+  /** Two turns of web on a unit. It can still bite back. */
+  web_snare: {
+    id: 'web_snare',
+    name: 'Web Snare',
+    cost: { bones: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Webs a unit for its next two turns (Entangle 2). A webbed unit can still attack.',
+    target: ENEMY_UNIT,
+    effect: { op: 'applyStatus', status: 'entangle', stacks: 2, area: { shape: 'target' } },
+    keywords: [],
+    bloodline: ['spider'],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /** An egg sac that bursts in poison when broken. */
+  brood_sac: {
+    id: 'brood_sac',
+    name: 'Brood Sac',
+    cost: { bones: 2, marrow: 0 },
+    school: 'dusk',
+    source: 'companion',
+    kind: 'obstacle',
+    text: 'Raises a 40 HP egg sac on an empty tile. When it breaks, every unit on or beside it takes 10 damage and is poisoned (Toxin 2).',
+    target: ANY_TILE,
+    effect: { op: 'spawnObstacle', obstacleDef: 'brood_sac' },
+    keywords: [],
+    obstacleHp: 40,
+    obstacleDeath: { status: 'toxin', stacks: 2, damage: 10 },
+    bloodline: ['spider'],
+    range: 3,
+    needsLoS: true,
+  },
 };
