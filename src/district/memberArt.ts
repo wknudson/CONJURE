@@ -14,7 +14,8 @@ import { packByEncounter } from '../core/data/packs.js';
 import { hashText } from '../core/util/rng.js';
 import { schoolOf } from '../render/palette.js';
 import { actorArtFromTextures, type ActorArt } from './sprites3d.js';
-import { makeCreatureTexture, type CreatureShape } from './textures.js';
+import { configurePixelTexture, makeCreatureTexture, spriteTexture, type CreatureShape } from './textures.js';
+import { creatureImagesIfLoaded } from '../render/minionArt.js';
 
 /**
  * The shape of every body a pack can field that is not a person.
@@ -63,8 +64,17 @@ export function shapeOf(defId: string): CreatureShape {
   return SHAPES[defId] ?? 'humanoid';
 }
 
-/** The three views of one body, cut fresh. The caller owns them and disposes them. */
+/**
+ * The three views of one body, cut fresh. The caller owns them and disposes them.
+ *
+ * The card's own drawing when it has one and it has loaded (`core/data/art.ts`); the drawn
+ * silhouette otherwise, which is also what a body wears while its file is still on the way.
+ * The district preloads every pack's drawings before it builds the packs, so on the road the
+ * silhouette is only ever seen for a body nobody has drawn.
+ */
 export function memberArt(defId: string): ActorArt {
+  const drawn = drawnMemberArt(defId);
+  if (drawn) return drawn;
   const seed = hashText(defId);
   const shape = shapeOf(defId);
   return actorArtFromTextures(
@@ -74,8 +84,46 @@ export function memberArt(defId: string): ActorArt {
   );
 }
 
-/** Its school's colour, for the wash over the drawing. Null for an id that is not a card. */
+/**
+ * A body's drawing, as fresh textures, or null if it has none loaded.
+ *
+ * Pixel art is sampled nearest and painted art linearly, the rule `CreatureArt.style` states;
+ * a view standing in for a missing one reuses the same texture rather than uploading twice.
+ */
+function drawnMemberArt(defId: string): ActorArt | null {
+  const images = creatureImagesIfLoaded(defId);
+  if (!images) return null;
+  const made = new Map<HTMLImageElement, THREE.Texture>();
+  const tex = (img: HTMLImageElement): THREE.Texture => {
+    const hit = made.get(img);
+    if (hit) return hit;
+    let t: THREE.Texture;
+    if (images.style === 'pixel') {
+      t = configurePixelTexture(new THREE.Texture(img));
+      t.needsUpdate = true;
+    } else {
+      t = spriteTexture(img);
+    }
+    made.set(img, t);
+    return t;
+  };
+  return {
+    front: tex(images.front),
+    back: tex(images.back),
+    side: tex(images.side),
+    sideWalk: [],
+    walkGaitCycles: 1,
+    mirrorSide: images.mirrorSide,
+  };
+}
+
+/**
+ * Its school's colour, for the wash over the drawing. Null for an id that is not a card, and
+ * null for a body wearing its own drawing: a wash is how a silhouette says its school, and
+ * tinting a real drawing only makes it look broken.
+ */
 export function memberTint(defId: string): number | null {
+  if (creatureImagesIfLoaded(defId)) return null;
   const card = CARDS[defId];
   return card ? new THREE.Color(schoolOf(card.school).main).getHex() : null;
 }
