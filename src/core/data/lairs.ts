@@ -27,6 +27,11 @@ export const LAIRS: readonly Lair[] = [
   { encounterId: 'caldera_tortoise', tier: 'adept', region: 'The Caldera' },
   { encounterId: 'caldera_wasps', tier: 'adept', region: 'The Caldera' },
   { encounterId: 'rimefield_gargoyle', tier: 'master', region: 'The Rimefields' },
+  { encounterId: 'caldera_otter', tier: 'adept', region: 'The Caldera' },
+  { encounterId: 'shelf_eyrie', tier: 'master', region: 'The Storm Shelf' },
+  { encounterId: 'rimefield_barrow', tier: 'master', region: 'The Rimefields' },
+  { encounterId: 'bastion_den', tier: 'adept', region: 'The Bone Bastion' },
+  { encounterId: 'ashwood_ring', tier: 'adept', region: 'The Ashwood' },
 ];
 
 export function lairByEncounter(encounterId: string): Lair | undefined {

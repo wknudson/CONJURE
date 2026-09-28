@@ -471,6 +471,12 @@ export const TRAIT_LINEAGE: Record<string, readonly string[]> = {
   serpent: ['voltara', 'sylva'],
   heron: ['mortis', 'sylva'],
   crab: ['ferrum', 'sylva'],
+  // the lair hybrids
+  otter: ['ignis', 'boreas'],
+  thunderhawk: ['ignis', 'voltara'],
+  wight: ['boreas', 'mortis'],
+  bear: ['ferrum', 'mortis'],
+  myconid: ['mortis', 'sylva'],
 };
 
 /**
@@ -1010,6 +1016,88 @@ const FOURTH_BLOODLINE_TRAITS: Record<string, CompanionTrait> = {
   },
 };
 
+/**
+ * Knacks for the lair hybrids: two apiece, all wired, built from boons the engine already reads.
+ * Their parents' pools come free through `TRAIT_LINEAGE`.
+ */
+const TRAITS_THE_LAIR_HYBRIDS: Record<string, CompanionTrait> = {
+  // ------------------------------------------------------------ otter
+  steam_coat: {
+    id: 'steam_coat',
+    name: 'Steam Coat',
+    text: 'Its steam is hot enough to hurt. Steam you raise deals 10 damage to enemies standing in it at their turn start.',
+    baseId: 'otter',
+    boons: { steamBurns: 10 },
+  },
+  slick_fur: {
+    id: 'slick_fur',
+    name: 'Slick Fur',
+    text: 'Slips into its own mist. A unit of yours standing in steam or fog cannot be targeted by ranged attacks.',
+    baseId: 'otter',
+    boons: { fogConceals: true },
+  },
+  // ------------------------------------------------------------ thunderhawk
+  storm_sight: {
+    id: 'storm_sight',
+    name: 'Storm Sight',
+    text: 'Sees the target, not the shield. Your ranged attacks and spells see past a Guardian.',
+    baseId: 'thunderhawk',
+    boons: { ignoreGuardians: true },
+  },
+  updraft: {
+    id: 'updraft',
+    name: 'Updraft',
+    text: 'Never touches the ground it fights over. Crosses broken ground freely, and no current carries it.',
+    baseId: 'thunderhawk',
+    boons: { boundFormIgnoresHazards: true },
+  },
+  // ------------------------------------------------------------ wight
+  grave_frost: {
+    id: 'grave_frost',
+    name: 'Grave Frost',
+    text: 'Its rot finds the cracks the cold opened. Dusk damage you deal to a Chilled body also leaves it Brittle.',
+    baseId: 'wight',
+    boons: { duskBrittlesChilled: true },
+  },
+  barrow_calm: {
+    id: 'barrow_calm',
+    name: 'Barrow Calm',
+    text: 'Nothing in the barrow flinches. The shards of a Shatter never reach your side.',
+    baseId: 'wight',
+    boons: { immuneToShatterSplash: true },
+  },
+  // ------------------------------------------------------------ bear
+  winter_fat: {
+    id: 'winter_fat',
+    name: 'Winter Fat',
+    text: 'Slept well. Your Hero opens every fight behind 30 Persistent Armor.',
+    baseId: 'bear',
+    boons: { armor: 30 },
+  },
+  bone_gnawer: {
+    id: 'bone_gnawer',
+    name: 'Bone Gnawer',
+    text: 'Gets something out of every body. Every tithe you make pays 1 more Marrow.',
+    baseId: 'bear',
+    boons: { bonusTitheMarrow: 1 },
+  },
+  // ------------------------------------------------------------ myconid
+  rot_host: {
+    id: 'rot_host',
+    name: 'Rot Host',
+    text: 'Everything it grows on bursts further. Your Deathbursts reach one ring further.',
+    baseId: 'myconid',
+    boons: { deathburstReach: 1 },
+  },
+  fungal_mat: {
+    id: 'fungal_mat',
+    name: 'Fungal Mat',
+    text: 'Feeds on what it is given. Each tithe you make puts 10 health back on your Pact.',
+    baseId: 'myconid',
+    boons: { healOnTithe: 10 },
+  },
+};
+
 for (const [id, trait] of Object.entries(VOLTARA_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(MORTIS_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(SYLVA_TRAITS)) COMPANION_TRAITS[id] = trait;
@@ -1019,6 +1107,7 @@ for (const [id, trait] of Object.entries(SECOND_BLOODLINE_TRAITS)) COMPANION_TRA
 for (const [id, trait] of Object.entries(CLOSING_HYBRID_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(THIRD_BLOODLINE_TRAITS)) COMPANION_TRAITS[id] = trait;
 for (const [id, trait] of Object.entries(FOURTH_BLOODLINE_TRAITS)) COMPANION_TRAITS[id] = trait;
+for (const [id, trait] of Object.entries(TRAITS_THE_LAIR_HYBRIDS)) COMPANION_TRAITS[id] = trait;
 
 export function traitById(id: string): CompanionTrait | undefined {
   return COMPANION_TRAITS[id];

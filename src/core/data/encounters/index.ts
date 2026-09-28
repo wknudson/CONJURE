@@ -76,6 +76,7 @@ import {
 } from './hunts.js';
 import { PACK_ENCOUNTERS } from './packs.js';
 import { CALDERA_TORTOISE, CALDERA_WASPS, RIMEFIELD_GARGOYLE } from './apex.lairs.js';
+import { CALDERA_OTTER, SHELF_EYRIE, RIMEFIELD_BARROW, BASTION_DEN, ASHWOOD_RING } from './lairs.hybrid.js';
 import {
   DEAD_LETTERS,
   THE_QUIET_BELOW,
@@ -136,6 +137,11 @@ export const ENCOUNTERS: EncounterDef[] = [
   CALDERA_TORTOISE,
   CALDERA_WASPS,
   RIMEFIELD_GARGOYLE,
+  CALDERA_OTTER,
+  SHELF_EYRIE,
+  RIMEFIELD_BARROW,
+  BASTION_DEN,
+  ASHWOOD_RING,
   // The Wild Hunts, last: they are not campaign order because they are not campaign. Every
   // one is standing work behind the ward gate, repeatable on its own clock.
   HUNT_CALDERA_DRAKE,

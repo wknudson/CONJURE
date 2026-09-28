@@ -56,15 +56,25 @@ const withKnack = (baseId: string, traitId: string) => {
 };
 
 describe('the hybrid roster', () => {
-  it('registers all fifteen — one per school pairing', () => {
+  it('registers every hybrid bloodline the roster promises', () => {
     // Six schools make fifteen pairings, and every one of them is now somebody's. The
     // number is asserted rather than derived on purpose: it is the whole claim of the
     // roster, and deriving it from `TRAIT_LINEAGE` would make this test agree with any
     // mistake made there.
-    expect(BLOODLINES).toHaveLength(15);
+    expect(BLOODLINES).toHaveLength(20);
     for (const id of BLOODLINES) {
       expect(companionById(id), id).toBeDefined();
     }
+  });
+
+  it('covers every school pairing at least once', () => {
+    // The fifteen founding hybrids closed the set; the later ones are second beasts of a
+    // pairing, never a pairing nobody had. Asked directly, so a later bloodline can never
+    // quietly stand in for a pairing that lost its first.
+    const pairs = new Set(
+      BLOODLINES.map((id) => [...companionById(id)!.grimoire.schools].sort().join('+')),
+    );
+    expect(pairs.size).toBe(15);
   });
 
   it('gives each of them a body of its own', () => {
@@ -406,7 +416,8 @@ describe('the wired knacks', () => {
     // Counts boon *entries*, not traits — a knack granting two boons contributes two. Rose
     // from 11 when the five closing hybrids arrived with ten wired knacks between them, and
     // to 33 when the nine pending knacks were built (2026-09-03): every hybrid's two, wired.
-    expect(checked, 'wired hybrid knacks').toBe(33);
+    // And to 43 with the five lair hybrids (2026-09-28), two wired knacks each.
+    expect(checked, 'wired hybrid knacks').toBe(43);
   });
 
   it('opens a fight with the knack already switched on', () => {

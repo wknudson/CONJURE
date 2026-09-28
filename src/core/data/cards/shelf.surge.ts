@@ -455,4 +455,27 @@ export const SURGE_SHELF: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  /** The Thunderhawk: a stoop that ends in a strike. */
+  lightning_dive: {
+    id: 'lightning_dive',
+    name: 'Lightning Dive',
+    cost: { bones: 2, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 30 shock damage to a unit and sets it alight (Burn 1). Fire into a Charged target Overloads.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 30, dtype: 'shock', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['thunderhawk'],
+    range: 4,
+    needsLoS: true,
+  },
 };

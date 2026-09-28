@@ -49,6 +49,12 @@ export const COMPANION_ART_PENDING: readonly string[] = [
   'spider',
   'fox',
   'moth',
+  // the lair hybrids
+  'otter',
+  'thunderhawk',
+  'wight',
+  'bear',
+  'myconid',
 ];
 
 /** The file stem a species' sprites are saved under. */
