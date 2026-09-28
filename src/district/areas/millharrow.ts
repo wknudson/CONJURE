@@ -221,7 +221,7 @@ export const MILLHARROW: AreaDef = defineArea({
       x: HALF_X - 2,
       z: -2,
       label: "East, into Bray's Hollow",
-      arrive: { x: -42, z: 0 },
+      arrive: { x: -70, z: 0 },
     },
     {
       // The Mill, with its door on the lane between the race and the cross.

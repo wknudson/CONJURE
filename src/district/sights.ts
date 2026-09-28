@@ -1250,6 +1250,102 @@ export const SIGHTS: readonly SightDef[] = [
       'HARBOUR CLOSED BY WRIT, and a sheet of paper nailed under it saying the same in smaller ' +
       'letters. The paper is newer than the stone. The stone was cut to match it.',
   },
+
+  /* ---- Bray's Hollow ---- */
+  {
+    id: 'brays_hollow:the_stone_circle',
+    areaId: 'brays_hollow',
+    at: { x: 0, z: -57 },
+    label: 'Look at the stone circle',
+    caption:
+      'Nine stones on the crown of the rim, older than the hedges and older than the name. The ' +
+      'Magistracy has never surveyed them, which is the only thing in the Ring it has never ' +
+      'surveyed.',
+  },
+  {
+    id: 'brays_hollow:the_fallen_stone',
+    areaId: 'brays_hollow',
+    at: { x: -8, z: -64 },
+    label: 'Look at the fallen stone',
+    caption:
+      'The one that fell, lying where it went down. There are coins pushed into the turf under ' +
+      'its edge, so far in the grass has grown over them. Nobody will say who puts them there, ' +
+      'because everybody does.',
+  },
+  {
+    id: 'brays_hollow:the_farmhouse',
+    areaId: 'brays_hollow',
+    at: { x: -58, z: -34 },
+    label: "Look at Old Bray's door",
+    caption:
+      'The farmhouse door stands open with a dog asleep across the step. The warrant for the ' +
+      'herd is nailed to the frame. The dog has chewed the bottom of it off.',
+  },
+  {
+    id: 'brays_hollow:the_dairy',
+    areaId: 'brays_hollow',
+    at: { x: -58, z: -10 },
+    label: 'Look into the dairy',
+    caption:
+      'Cool stone and a slate floor, cheeses on the shelves in rows, each marked with a date ' +
+      "and a cow's name. The cows are in the barn under a warrant. The cheeses are not " +
+      'mentioned in it.',
+  },
+  {
+    id: 'brays_hollow:the_byre',
+    areaId: 'brays_hollow',
+    at: { x: -62, z: 22 },
+    label: 'Look into the byre',
+    caption:
+      'The old byre, too small now for a herd that is not here. The mangers are full of hay ' +
+      'anyway. Somebody fills them every morning.',
+  },
+  {
+    id: 'brays_hollow:the_pond',
+    areaId: 'brays_hollow',
+    at: { x: -54, z: 36 },
+    label: 'Look at the pond',
+    caption:
+      'Green and still, a willow over it and a duck on it. A notice on a post says the water is ' +
+      'licensed. The duck has not seen it.',
+  },
+  {
+    id: 'brays_hollow:the_hives',
+    areaId: 'brays_hollow',
+    at: { x: 64, z: 2 },
+    label: 'Look at the hives',
+    caption:
+      "Straw hives on a bench at the orchard's edge, loud and warm. The honey is the one thing " +
+      'in the Hollow nobody has thought to tax. The bees would take it badly.',
+  },
+  {
+    id: 'brays_hollow:the_orchard_row',
+    areaId: 'brays_hollow',
+    at: { x: 64, z: -34 },
+    label: 'Look along the trees',
+    caption:
+      'Old trees in rows, their bark cut with initials a hundred years deep. The newest pair ' +
+      'are carved together inside a ring, and the ring has been carved again since, deeper.',
+  },
+  {
+    id: 'brays_hollow:the_south_rim',
+    areaId: 'brays_hollow',
+    at: { x: 0, z: 62 },
+    label: 'Look back across the Hollow',
+    caption:
+      'From the rim the whole bowl is in sight: the lane, the barn, the stubs of hedge, the ' +
+      'farm. The one place in the Ring where you can see everywhere you could go, and nowhere ' +
+      'you have to.',
+  },
+  {
+    id: 'brays_hollow:the_waystone',
+    areaId: 'brays_hollow',
+    at: { x: 14, z: -18 },
+    label: 'Read the waystone',
+    caption:
+      'BRAY — NO MARKET, NO INN. Under it somebody has scratched NO TOLL, and under that, in ' +
+      'another hand, a very small sheep.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {
