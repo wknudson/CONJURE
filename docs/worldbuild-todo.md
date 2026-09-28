@@ -1197,7 +1197,7 @@ the pool at its ten lights.
 | The drowned terraces | painted water, beside the cistern's moving water | the flood as one sheet of real water. The band carries one canal; a second plane for a flood that is not a band would need the bake to learn it |
 | Night crews | beats and sentries, no prowlers | the prowl the plan gave the Knacker's Lads and the Cistern Things. A prowler goes everywhere, so the rules keep it out of anywhere with people in it, and every city ward has people |
 | Wardens | every hour | a Warden with hours. `patrols` has no clock; the second beats are always walked |
-| The atlas | its §2 still draws the first build | a redraw of every grown map. The grids are in the area files and read as maps already; the atlas says so |
+| The atlas | ~~its §2 still draws the first build~~ | **Done.** §2.9 draws every outdoor place from its area file (`scripts/atlas-maps.ts`), and `atlasMaps.test.ts` fails if it drifts |
 
 ### 15.7 The Ring (built)
 
@@ -1302,4 +1302,4 @@ The wilds are pinned free of passers-by as well as of townsfolk.
 | Rooms | nobody comes or goes | the tavern by night as a room with its evening in it. Hours are kept within one area; somebody who goes "to the inn" goes to its door |
 | Passers-by | straight lanes, walked there and back | somewhere to go. They have no errands and no doors; a lane is a street, not a life |
 | Dusk | the street empties inside an hour | a slower evening. The street follows the light, and the light goes quickly |
-| The atlas | its §2 still draws the first build | a redraw of every grown map, as 15.6 said |
+| The atlas | ~~its §2 still draws the first build~~ | **Done — see 15.6.** |
