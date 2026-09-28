@@ -225,5 +225,7 @@ export const CHALK_VERGE: AreaDef = defineArea({
       { x: 50, z: 10 },
     ],
     horizon: 'treeline',
+    /** The gibbet in the middle of the open chalk, where everything on the road can see it. */
+    landmarks: [{ kind: 'gibbet', x: -20, z: 10 }],
   },
 });

@@ -71,6 +71,16 @@ export const SIGHTS: readonly SightDef[] = [
       'board stuck into the nearest heap. It stops mid-week.',
   },
 
+  {
+    id: 'chalk_verge:the_gibbet',
+    areaId: 'chalk_verge',
+    at: { x: -20, z: 12.8 },
+    label: 'Look at the gibbet',
+    caption:
+      'Empty, and oiled. The chain has been replaced recently, and the notice nailed to the post has ' +
+      'been torn down so many times the nails are all that is left of it.',
+  },
+
   /* ---- The Chalk Road ---- */
   {
     id: 'chalk_road:the_milestone',
