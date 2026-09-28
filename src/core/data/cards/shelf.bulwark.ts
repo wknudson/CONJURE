@@ -499,4 +499,27 @@ export const BULWARK_SHELF: Record<string, CardDef> = {
     bloodline: ['bear'],
     range: 1,
   },
+
+  /** The Armadillo: a ball of slag coming down the tip. */
+  slag_roll: {
+    id: 'slag_roll',
+    name: 'Slag Roll',
+    cost: { bones: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 impact damage down a 3-tile line and sets everything on it alight (Burn 1). Shatters anything Frozen.',
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'impact', area: { shape: 'line', length: 3 } },
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'line', length: 3 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['armadillo'],
+    range: 4,
+    needsLoS: true,
+  },
 };

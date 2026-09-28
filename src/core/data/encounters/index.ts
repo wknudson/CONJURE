@@ -73,6 +73,11 @@ import {
   HUNT_SALTGLASS_SEAL,
   HUNT_SHELF_LYNX,
   HUNT_TALLOW_AUROCHS,
+  HUNT_CINDERWORKS_ARMADILLO,
+  HUNT_RIMEFIELD_KESTREL,
+  HUNT_TALLOW_NEWT,
+  HUNT_BASTION_RAVEN,
+  HUNT_SALTGLASS_TOAD,
 } from './hunts.js';
 import { PACK_ENCOUNTERS } from './packs.js';
 import { CALDERA_TORTOISE, CALDERA_WASPS, RIMEFIELD_GARGOYLE } from './apex.lairs.js';
@@ -168,6 +173,11 @@ export const ENCOUNTERS: EncounterDef[] = [
   HUNT_BASTION_SPIDER,
   HUNT_ASHWOOD_FOX,
   HUNT_TALLOW_MOTH,
+  HUNT_CINDERWORKS_ARMADILLO,
+  HUNT_RIMEFIELD_KESTREL,
+  HUNT_TALLOW_NEWT,
+  HUNT_BASTION_RAVEN,
+  HUNT_SALTGLASS_TOAD,
   // The roaming packs. Spread rather than listed, because what a pack *is* lives in
   // `data/packs.ts` and this file should not be a second place to forget one.
   ...PACK_ENCOUNTERS,

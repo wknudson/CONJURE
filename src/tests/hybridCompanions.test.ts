@@ -61,7 +61,7 @@ describe('the hybrid roster', () => {
     // number is asserted rather than derived on purpose: it is the whole claim of the
     // roster, and deriving it from `TRAIT_LINEAGE` would make this test agree with any
     // mistake made there.
-    expect(BLOODLINES).toHaveLength(20);
+    expect(BLOODLINES).toHaveLength(25);
     for (const id of BLOODLINES) {
       expect(companionById(id), id).toBeDefined();
     }
@@ -417,7 +417,8 @@ describe('the wired knacks', () => {
     // from 11 when the five closing hybrids arrived with ten wired knacks between them, and
     // to 33 when the nine pending knacks were built (2026-09-03): every hybrid's two, wired.
     // And to 43 with the five lair hybrids (2026-09-28), two wired knacks each.
-    expect(checked, 'wired hybrid knacks').toBe(43);
+    // And to 53 with the five rare-hunt hybrids.
+    expect(checked, 'wired hybrid knacks').toBe(53);
   });
 
   it('opens a fight with the knack already switched on', () => {

@@ -133,3 +133,38 @@ silhouette until its own art arrives.
 - **Body:** caster, moves 2, reaches 3
 - **Brief:** The fairy ring in the Ashwood is one creature, and it is very old. Its caps rot the ground they stand on and everything that falls there.
 - **Files:** `rotcap_myconid-front.png`, `rotcap_myconid-back.png`, `rotcap_myconid-side.png`
+
+### Slagback Armadillo, Tip Roller
+
+- **Schools:** pyre + bulwark
+- **Body:** bruiser, moves 3, reaches 1
+- **Brief:** Curls into a ball of cooling slag and rolls down the tip at whatever is at the bottom. What it hits is flattened and alight.
+- **Files:** `slagback_armadillo-front.png`, `slagback_armadillo-back.png`, `slagback_armadillo-side.png`
+
+### Aurora Kestrel, Polar Light
+
+- **Schools:** frost + surge
+- **Body:** skirmisher, moves 4, reaches 1
+- **Brief:** Hovers over the Rimefields on nights the sky burns green, and falls on whatever the light shows it. The cold it carries conducts.
+- **Files:** `aurora_kestrel-front.png`, `aurora_kestrel-back.png`, `aurora_kestrel-side.png`
+
+### Rimebloom Newt, Meltwater Sleeper
+
+- **Schools:** frost + bloom
+- **Body:** caster, moves 2, reaches 2
+- **Brief:** Sleeps out the winter frozen in the ditches of the Tallow Levels and wakes when the first shoots do. Its skin is cold, and its skin is poison.
+- **Files:** `rimebloom_newt-front.png`, `rimebloom_newt-back.png`, `rimebloom_newt-side.png`
+
+### Stormgrave Raven, Carrion Crackle
+
+- **Schools:** surge + dusk
+- **Body:** caster, moves 3, reaches 3
+- **Brief:** Follows the storms over the Bone Bastion and picks over what they leave. It always knows which of you is weakest, and it tells the lightning.
+- **Files:** `stormgrave_raven-front.png`, `stormgrave_raven-back.png`, `stormgrave_raven-side.png`
+
+### Sparkspore Toad, Bog Battery
+
+- **Schools:** surge + bloom
+- **Body:** bruiser, moves 2, reaches 1
+- **Brief:** Squats in the salt marsh where the grid runs to earth and swells up on it. Its warts spark, and the spores it puffs are live.
+- **Files:** `sparkspore_toad-front.png`, `sparkspore_toad-back.png`, `sparkspore_toad-side.png`
