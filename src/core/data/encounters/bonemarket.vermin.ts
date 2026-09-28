@@ -50,6 +50,8 @@ export const BONEMARKET_VERMIN: EncounterDef = registerEncounter({
     // Pyre's third shelf, taught here: fire at arm's length.
     'scorch',
     'fire_breath',
+    // The signature of the beast this fight awards: the wasp’s own.
+    'swarm_sting',
   ],
   // Drones on the wing. Ember moths stand in for wasp drones.
   // TODO(worldbuild): 'ember_moth' as wasp drones until a drone unit exists.
