@@ -132,6 +132,8 @@ function standsIn(area: AreaDef): string {
     return `${nameOf(e.to)}${room} from ${at(e)}, arriving ${at(e.arrive)}`;
   });
   lines.push(`- **Spawn** ${at(area.spawn)}.`);
+  if (area.props.board) lines.push(`- **Bounty board** ${at(area.props.board)}.`);
+  if (area.props.huntSignpost) lines.push(`- **Hunt signpost** ${at(area.props.huntSignpost)}.`);
   lines.push(`- **Ways out:** ${out.join('; ')}.`);
   const npcs = area.props.npcs ?? [];
   if (npcs.length) lines.push(`- **People:** ${npcs.map(person).join('; ')}.`);

@@ -629,6 +629,7 @@ says what is in them.
 | `O` | the ossuary — impassable; stone, windowless, full | ❌ |  | hall, 4.2 tall |
 
 - **Spawn** (0, 26).
+- **Bounty board** (10, 21).
 - **Ways out:** The Chalk Verge from (0, -27.6), arriving (40, 30); Lamprow from (0, 95.6), arriving (-88, -4); The Bonemarket from (106, 6), arriving (-88, -8); The Cinderworks from (-106, -26), arriving (98, 0); Ward Seven from (-106, 30), arriving (86, -2); The Ironworks Artificer (a room) from (-36, 5.4), arriving (0, 22); The Records Office (a room) from (36, 5.4), arriving (0, 18); The Apothecary (a room) from (-36, 10.6), arriving (-4, -18); The Vivarium (a room) from (36, 10.6), arriving (-4, -18); The Toll House (a room) from (-44, -34.6), arriving (0, 16); The Counting House (a room) from (-40, -6.6), arriving (0, 16); The Chapel of the Quiet Flame (a room) from (-26, 34.6), arriving (0, -20); The Cinder Cup (a room) from (26, 34.6), arriving (0, -20); The Tannery (a room) from (102, -10.6), arriving (0, 14).
 - **People:** Dispatcher Vex (-6, 24); the gate sentry (6, 92); the lamplighter (-2, 8); the cobbler, keeping hours: 08:00 (-18, 30) · 19:00 (70, 28); the crier, keeping hours: 07:00 (12, 80) · 12:00 (-33, -82) · 17:00 (18, 30).
 - **Wardens:** 2 beats, (-48, -17) → (-22, -17) → (-22, -5) → (-48, -5); (70, -22) → (94, -22) → (94, -10) → (70, -10).
@@ -1542,6 +1543,7 @@ says what is in them.
 | `H` | the quarry hut — impassable; timber | ❌ |  | cottage, 3.4–3.6 tall |
 
 - **Spawn** (40, 22).
+- **Hunt signpost** (26, 14).
 - **Ways out:** Ashfall Ward from (40, 34), arriving (0, -24.6); The Chalk Road from (-90, -6), arriving (108, 2); The Shepherd's Bothy (a room) from (34, -26.6), arriving (0, 14).
 - **Crews:** Chalk-Road Scavengers: roaming (-10, 0), 9 out; The Verge Strays, by night: roaming (0, 8), 9 out; Spoil-Heap Hollows, by night: roaming (6, -4), 9 out; Chalk-Road Scavengers, by day: roaming (-30, 46), 6 out.
 - **Landmarks:** gibbet (-20, 10).
