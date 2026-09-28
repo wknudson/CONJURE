@@ -182,7 +182,7 @@ export const TALLOW_LEVELS: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: -6,
       label: 'West, along the causeway to the Bone Bastion',
-      arrive: { x: 38, z: -2 },
+      arrive: { x: 74, z: -2 },
     },
     {
       // The pump house. Chained, until the north field is answered for.

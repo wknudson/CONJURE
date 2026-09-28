@@ -1970,6 +1970,115 @@ export const SIGHTS: readonly SightDef[] = [
       'stone at a time, down to the camp. It is the straightest thing on the shelf that is not ' +
       'iron.',
   },
+
+  /* ---- The Bone Bastion ---- */
+  {
+    id: 'bone_bastion:the_gatehouse',
+    areaId: 'bone_bastion',
+    at: { x: 62, z: -2 },
+    label: 'Look up at the gatehouse',
+    caption:
+      'Two towers either side of the one gate the wall was built with, and a lantern kept lit ' +
+      'on each. Somebody still fills them. The oil is fresh and there is nobody here to have ' +
+      'brought it.',
+  },
+  {
+    id: 'bone_bastion:the_bone_stage',
+    areaId: 'bone_bastion',
+    at: { x: 62, z: 12 },
+    label: 'Look up into the tower',
+    caption:
+      'Its top is open, and stacked full to the slab with bones laid in courses like brick: ' +
+      'skulls on the outside, facing out. The field was cleared into it. There was more field ' +
+      'than tower.',
+  },
+  {
+    id: 'bone_bastion:the_wall_faces_in',
+    areaId: 'bone_bastion',
+    at: { x: 62, z: -20 },
+    label: 'Look at the wall',
+    caption:
+      'From out here the wall has no slits, no parapet, no walk along the top. All of that is ' +
+      'on the other side, facing the barrows. Whoever built it was not worried about the field.',
+  },
+  {
+    id: 'bone_bastion:the_breach',
+    areaId: 'bone_bastion',
+    at: { x: -60, z: -8 },
+    label: 'Look at the breach',
+    caption:
+      'Where the besiegers brought the wall down, and the stones lie where they fell, inward. ' +
+      'They got in. There is no sign they got out again, and the causeway was laid back over ' +
+      'the rubble afterwards.',
+  },
+  {
+    id: 'bone_bastion:the_siege_bank',
+    areaId: 'bone_bastion',
+    at: { x: -70, z: -30 },
+    label: 'Look along the bank',
+    caption:
+      "The besiegers' earthwork, still running the length of the field, slumped where the rain " +
+      'has had it. The stakes along its top all lean away from the wall, as if something leaned ' +
+      'on them from that side.',
+  },
+  {
+    id: 'bone_bastion:the_battlefield',
+    areaId: 'bone_bastion',
+    at: { x: -60, z: 40 },
+    label: 'Look across the field',
+    caption:
+      'Bone dust underfoot the whole way to the bank, and bones still in it. The field was ' +
+      'cleared once, into the gatehouse. It has had a long time since to come back up.',
+  },
+  {
+    id: 'bone_bastion:the_siege_camp',
+    areaId: 'bone_bastion',
+    at: { x: -82, z: 8 },
+    label: 'Look at the camp',
+    caption:
+      'Where the causeway runs out on the far side of the field: a cart, a fire gone to scorch, ' +
+      "the sacks it came with. The besiegers' camp, or the last of it. The tents faced the " +
+      'wall.',
+  },
+  {
+    id: 'bone_bastion:the_open_barrow',
+    areaId: 'bone_bastion',
+    at: { x: -12, z: -78 },
+    label: 'Look into the open barrow',
+    caption:
+      'Somebody dug this one out, down to the stone core, and heaped the spoil either side. ' +
+      'Whatever was in it is not in it. The Watch keeps to it by day, as if waiting for it to ' +
+      'come back.',
+  },
+  {
+    id: 'bone_bastion:the_paired_barrows',
+    areaId: 'bone_bastion',
+    at: { x: -42, z: -78 },
+    label: 'Look at the barrows',
+    caption:
+      'Paired outside the wall the way they are inside it, rank on rank, and none of them lines ' +
+      'up with any inside. Count them from here and then count them again. The numbers do not ' +
+      'agree.',
+  },
+  {
+    id: 'bone_bastion:the_postern',
+    areaId: 'bone_bastion',
+    at: { x: 48, z: 70 },
+    label: 'Look through the postern',
+    caption:
+      'A low gap in the south wall, the only other way through it. Kept, not broken: the edges ' +
+      'are dressed. Somebody meant to come and go this way, quietly, and did not want the field ' +
+      'to know.',
+  },
+  {
+    id: 'bone_bastion:the_south_line',
+    areaId: 'bone_bastion',
+    at: { x: -10, z: 72 },
+    label: 'Look at the south line',
+    caption:
+      'The second siege line, facing the posterns. They knew the wall had a back door. The bank ' +
+      'is higher here than in the west, and the stakes are closer together.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {
