@@ -19,7 +19,7 @@ thirty-nine rooms behind real doors, four registries of things to do on the grou
 §7.9 and §7.10; that note was PR #40. The bestiary and grimoire expansion then began with its
 machinery as PR #41 — signature cards, rare hunts, and a pipeline for creature art — recorded in
 §7.11; that note was PR #42. Its second wave, the Hero kit and a duelist at every tier, merged
-as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; this note is PR #49.*
+as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; that note was PR #49. A motion pass over both boards and the streets, including two fixes for flinches that were computed and never drawn, merged as PR #47 and is recorded in §7.15; this note is PR #50.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -1007,12 +1007,50 @@ pins still holds.
 non-balance suite on the same commit: green on a clean rerun, after the first run lost the
 `intents` Adept case to the known load timeout. The catalog grows to 318 base cards.
 
-### 7.15 What remains
+### 7.15 Smoother motion — **FIXED and built, PR #47**
+
+Asked for on the grounds that the game should "look much smoother". A survey of open-source
+animated sprites came first. Under the CC0/CC-BY ruling, nothing 2D comes near the painted
+cast's 250px Octopath look. The CC0 3D route (KayKit, Quaternius) was downloaded, pre-rendered
+and put beside the cast, and it animates well but reads as low-poly chibi. That route stays on a
+local `sprite-bake` branch, unmerged. What merged is the motion the existing art could already
+have had.
+
+**What was wrong.** Two flinches were computed every fight and drawn on neither board. The
+canvas board's `drawEntity` never read `view.squash`, so no hit or collision squash had ever
+shown there. On the district board, `BodyLayer` wrote `view.elev` into the walker's `y` before
+`Walker.step()` wrote the walk bob into the same vector, so lunge hops, summon drops and death
+sinks were overwritten every frame. Both are fixed. Squash scales about the feet through one
+`squashScale()` shared by the two boards, and the lift is added after the step.
+
+**What was built.** The curves live in `src/anim/motion.ts` as pure functions of progress, and
+every one of them ends at rest at k = 1, so skip still leaves nothing behind.
+
+- A walk is one eased tween along the whole path, where it used to brake on every tile.
+- Melee has a wind-up, a strike and an overshooting recovery. It keeps its 240 ms and stays
+  under half a tile.
+- Ranged shots recoil, summons, deploys and revives land with a squash, and deaths stretch and
+  collapse.
+- The painted Commander and companion breathe beside the board.
+- On the streets, `src/district/gait.ts` adds momentum to the companion, Wardens and packs, a
+  lean into sideways travel for every walker, and a `(1 − cos)/2` breath at rest in place of
+  `abs(sin)`, which tapped the ground. `Walker` itself is untouched.
+
+**Verified.** `motionPolish.test.ts` pins the curves, the momentum and the lean. The nearby
+walk, pack, wildlife, hero-walk and pacing suites are green. The full non-balance suite on the
+exact tip is green: 148 files, 3,593 tests. An earlier tip hit the two known load timeouts,
+`intents` and `determinism`, which were green when rerun alone. That tip was superseded when
+Wave 3 merged, and the rerun on the final tip was clean. In the browser, the canvas board
+now issues the squash scale it never drew. The melee swing winds up, peaks under half a tile
+and lands back on its tile, a three-tile walk runs without stopping per tile, and on the
+street the Commander and companion lean into travel and settle upright when they stop.
+
+### 7.16 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 to §7.14 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.15 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
-found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45 and #48 did. What comes next is
+found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47 and #48 did. What comes next is
 a playtest, and the remaining waves of the bestiary expansion, each recorded here as it
 merges.
 
