@@ -24,7 +24,7 @@ merged as nine stacked parts, PRs #55 to #63 — foundations, patrols that see a
 themed crews, a building kit, things to look at, the three area passes, and townsfolk who keep
 hours — and is recorded in §7.20; that note was PR #68. Its Wave 8, five hybrids bound in lairs, merged as PR #69 and is recorded in §7.21; that note was PR #70. Its Wave 9, five hybrids on rare hunts, merged as PR #72 and is recorded in §7.22; that note was PR #73. The atlas's maps, redrawn for
 the grown world and drawn from the area files so they cannot drift, merged as PR #71 and are
-recorded in §7.23; that note was PR #74. Its Wave 10, five side contracts each ending in a hybrid, merged as PR #75 and is recorded in §7.24; this note is PR #76.*
+recorded in §7.23; that note was PR #74. Its Wave 10, five side contracts each ending in a hybrid, merged as PR #75 and is recorded in §7.24; that note was PR #76. Its Wave 11, drawings for every body on the board, merged as PR #77 and is recorded in §7.25; this note is PR #78.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -1213,10 +1213,25 @@ all.
 
 **Verified.** The full non-balance suite and the balance ledger on the exact tip, green.
 
-### 7.25 What remains
+### 7.25 The bestiary expansion, Wave 11 — **built, PR #77**
+
+The art pipeline Wave 0 built, filled: all 103 bodies a board can field wear a drawing — 97
+Dungeon Crawl Stone Soup tiles (CC0), four JS Monster Set elementals and two Redshrike soldiers
+(CC-BY 3.0), each licence re-checked on its source page and credited in `CREDITS.md`. The road's
+packs wear the same drawings as their squads, which closes the item Wave 0 left open: the roaming
+packs stayed procedural until the world waves had reworked `Pack`, and they had.
+
+Still open, and recorded in `docs/sprite-requests.md` rather than here: the twenty-seven new
+companion species stand on generated silhouettes until their own three-view art is painted.
+
+**Verified.** The full non-balance suite and the balance ledger on the exact tip, green; in the
+browser, every Chalk Road crew and the Novice Duelist's warband drawn, and a road fight opened
+with its squad in their drawings.
+
+### 7.26 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 to §7.24 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.25 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
 found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47, #48, #51, #53, #55 to #63, #64, #66 and #71 did. What comes next is
 a playtest, and the remaining waves of the bestiary expansion, each recorded here as it
