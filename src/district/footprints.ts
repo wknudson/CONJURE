@@ -22,6 +22,9 @@ import { NOTICES } from './notices.js';
 import { CACHES } from './caches.js';
 import { FORAGE_KINDS, FORAGE_NODES, foragePropAt } from './forage.js';
 import { RESTS } from './rests.js';
+import { SIGHTS } from './sights.js';
+import { LANDMARKS } from './landmarks.js';
+import { expandVignette } from './vignettes.js';
 
 /**
  * The furniture the registries hang in an area, beside what the area file lists itself.
@@ -43,9 +46,13 @@ export function registryProps(areaId: string): DressingSpec[] {
   return out;
 }
 
-/** Everything standing in an area: the area file's own list, then the registries'. */
+/** Everything standing in an area: the area file's own list, its vignettes, then the registries'. */
 export function allDressing(area: AreaDef): readonly DressingSpec[] {
-  return [...(area.props.dressing ?? []), ...registryProps(area.id)];
+  return [
+    ...(area.props.dressing ?? []),
+    ...(area.props.vignettes ?? []).flatMap(expandVignette),
+    ...registryProps(area.id),
+  ];
 }
 
 /** Every place a registry puts a prompt in an area, for the clearance rules the tests keep. */
@@ -56,6 +63,7 @@ export function registryHotspots(areaId: string): { what: string; x: number; z: 
     ...CACHES.filter((c) => c.areaId === areaId).map((c) => ({ what: `cache ${c.id}`, x: c.at.x, z: c.at.z })),
     ...FORAGE_NODES.filter((n) => n.areaId === areaId).map((n) => ({ what: `node ${n.id}`, x: n.at.x, z: n.at.z })),
     ...RESTS.filter((r) => r.areaId === areaId).map((r) => ({ what: `bed ${r.id}`, x: r.at.x, z: r.at.z })),
+    ...SIGHTS.filter((s) => s.areaId === areaId).map((s) => ({ what: `sight ${s.id}`, x: s.at.x, z: s.at.z })),
   ];
 }
 
@@ -107,6 +115,11 @@ export function staticFootprints(
     if (exit.gate) {
       out.push({ x: exit.gate.x, z: exit.gate.z, w: GATE_FOOTPRINT.w, d: GATE_FOOTPRINT.d, tag: 'gate' });
     }
+  }
+  // The landmarks, each on its own footprint. See `landmarks.ts`.
+  for (const l of area.props.landmarks ?? []) {
+    const k = LANDMARKS[l.kind];
+    out.push({ x: l.x, z: l.z, w: k.w, d: k.d, tag: `landmark:${l.kind}` });
   }
   return out;
 }

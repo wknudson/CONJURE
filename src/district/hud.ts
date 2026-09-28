@@ -74,6 +74,9 @@ export class DistrictHud {
   private readonly objectiveFlash: HTMLDivElement;
   private readonly objectiveDrop: HTMLButtonElement;
   private flashTimer = 0;
+  /** The caption a sight shows, and its timer. See `showCaption`. */
+  private readonly caption: HTMLElement;
+  private captionTimer = 0;
   private readonly zoneChip: HTMLDivElement;
   private readonly alert: HTMLDivElement;
   private readonly prompt: HTMLDivElement;
@@ -166,6 +169,9 @@ export class DistrictHud {
     this.mapCanvas = this.mapPanel.querySelector('.district-map__canvas')!;
     this.mapCaption = this.mapPanel.querySelector('.district-map__cap')!;
 
+    this.caption = el('div', 'district-panel district-caption');
+    root.appendChild(this.caption);
+
     const help = el('div', 'district-panel district-help');
     this.help = help;
     help.textContent =
@@ -229,6 +235,24 @@ export class DistrictHud {
    * and this is a receipt. Clears itself, and is deliberately not queued: two of these in the
    * same second means the second one is what matters.
    */
+  /**
+   * What you notice when you stop and look: a title and a line or two, over the prompt, gone
+   * again on its own. A caption rather than the reading panel, because a sight is a glance.
+   */
+  showCaption(title: string, text: string): void {
+    this.caption.innerHTML = '';
+    const t = document.createElement('div');
+    t.className = 'district-caption__title';
+    t.textContent = title;
+    const b = document.createElement('div');
+    b.className = 'district-caption__body';
+    b.textContent = text;
+    this.caption.append(t, b);
+    this.caption.classList.add('is-shown');
+    window.clearTimeout(this.captionTimer);
+    this.captionTimer = window.setTimeout(() => this.caption.classList.remove('is-shown'), 6000);
+  }
+
   flashNotice(text: string): void {
     this.objectiveFlash.textContent = text;
     this.objectiveFlash.classList.add('is-shown');
@@ -908,7 +932,10 @@ export class DistrictHud {
     ctx.stroke();
     dot(view.player.x, view.player.z, 3.6, '#f6ecd8', '#1b1720');
 
-    this.mapCaption.textContent = area.name.toUpperCase();
+    this.mapCaption.textContent =
+      view.sights && view.sights.of > 0
+        ? `${area.name.toUpperCase()}  ·  SIGHTS ${view.sights.found}/${view.sights.of}`
+        : area.name.toUpperCase();
   }
 
   /**
@@ -1116,6 +1143,8 @@ export interface MapView {
    * the board was broken. The mark is what turns the writ into a walk.
    */
   sites?: readonly { x: number; z: number; label: string }[];
+  /** How many of the area's sights have been found, out of how many. See `sights.ts`. */
+  sights?: { found: number; of: number };
 }
 
 /**

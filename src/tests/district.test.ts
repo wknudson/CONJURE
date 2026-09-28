@@ -35,6 +35,7 @@ import { CRITTERS, CRITTER_IDS, isCritterId } from '../district/wildlife.js';
 import { isSkyId, SKIES } from '../district/skies.js';
 import { FOLK_IDS, isFolkId } from '../render/folk.js';
 import { CONTRACT_SITES } from '../district/sites.js';
+import { expandVignette } from '../district/vignettes.js';
 import { outsideReach, packReach } from '../district/packReach.js';
 
 const SPAWN = ASHFALL.spawn;
@@ -530,7 +531,8 @@ describe('every area', () => {
           ...area.exits.map((e) => ({ what: `the ${e.to} exit`, x: e.x, z: e.z })),
           ...registryHotspots(area.id),
         ];
-        for (const d of area.props.dressing ?? []) {
+        // A vignette's props are the area's own furniture too, stamped rather than listed.
+        for (const d of [...(area.props.dressing ?? []), ...(area.props.vignettes ?? []).flatMap(expandVignette)]) {
           if (!DRESSING[d.kind].collides) continue;
           const size = d.size ?? DRESSING[d.kind].size;
           for (const h of hotspots) {

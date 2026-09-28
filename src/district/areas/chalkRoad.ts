@@ -237,5 +237,7 @@ export const CHALK_ROAD: AreaDef = defineArea({
     // No lamps: the light is the safe zone, and there is none here to have.
     // No board and no signpost: the notices are posted where somebody is accountable for them.
     horizon: 'treeline',
+    /** A drovers' camp on the south verge of the road, the fire long out and the beasts gone on. */
+    vignettes: [{ id: 'drovers_camp', x: 24, z: 9.4 }],
   },
 });

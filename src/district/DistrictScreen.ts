@@ -120,6 +120,7 @@ import { hashText, makeRng, nextInt } from '../core/util/rng.js';
 import { flagForBench, tutorialActive } from './quest.js';
 import { benchesInArea, type BenchDef, type BenchKind } from './benches.js';
 import { noticesInArea, type NoticeDef } from './notices.js';
+import { SIGHTS_PURSE, sightFlag, sightsInArea, sightsPaidFlag, type SightDef } from './sights.js';
 import { cachesInArea, type CacheDef, type CacheLoot } from './caches.js';
 import {
   FORAGE_KINDS,
@@ -345,6 +346,11 @@ export interface DistrictOpts {
    */
   worldFlags: readonly string[];
   onWorldFlag: (flag: string) => void;
+  /**
+   * Every sight in an area found: pay its purse. Returns what was paid, to say so. Guarded by
+   * the screen with `sightsPaidFlag`, and by the caller with the same flag in the save.
+   */
+  onSightsFound?: (areaId: string, ducats: number) => string | null;
   /**
    * When each forage node was last picked, on the street clock, and the call that picks one.
    *
@@ -811,6 +817,15 @@ export class DistrictScreen implements Screen {
     // Things to read. Gate-filtered and one per lectern, first open wins; see `notices.ts`.
     for (const n of noticesInArea(this.area.id, this.chronicle)) {
       this.interactables.push(new Hotspot(n.at.x, n.at.z, n.label, () => this.read(n)));
+    }
+
+    // Things to stop and look at. The prompt stays after the first look, marked as seen, because
+    // a sight is a place and looking twice is allowed.
+    for (const s of sightsInArea(this.area.id)) {
+      if (!gateOpen(s.gate, this.chronicle)) continue;
+      const spot: Hotspot = new Hotspot(s.at.x, s.at.z, s.label, () => this.look(s, spot));
+      if (this.worldFlags.includes(sightFlag(s.id))) spot.interactDetail = 'Seen';
+      this.interactables.push(spot);
     }
 
     // Things to open. One already opened, or not yet earned, keeps its furniture and loses
@@ -1387,6 +1402,31 @@ export class DistrictScreen implements Screen {
     this.opts.onJournal();
   }
 
+  /**
+   * Stops and looks: the caption over the prompt, the sight recorded, and -- the first time the
+   * last of an area's sights is seen -- its purse. See `sights.ts`.
+   */
+  private look(s: SightDef, spot: Hotspot): void {
+    const what = s.label.replace(/^Look at /, '');
+    this.hud?.showCaption(what.charAt(0).toUpperCase() + what.slice(1), s.caption);
+    spot.interactDetail = 'Seen';
+    this.raiseWorldFlag(sightFlag(s.id));
+    const all = sightsInArea(this.area.id);
+    const found = all.filter((x) => this.worldFlags.includes(sightFlag(x.id))).length;
+    const paid = sightsPaidFlag(this.area.id);
+    if (found === all.length && !this.worldFlags.includes(paid)) {
+      this.raiseWorldFlag(paid);
+      const said = this.opts.onSightsFound?.(this.area.id, SIGHTS_PURSE.ducats);
+      if (said) this.hud?.flashNotice(`Everything worth seeing here, seen. ${said}`);
+    }
+  }
+
+  /** How many of this area's sights have been found, out of how many there are. */
+  private sightsTally(): { found: number; of: number } {
+    const all = sightsInArea(this.area.id);
+    return { found: all.filter((s) => this.worldFlags.includes(sightFlag(s.id))).length, of: all.length };
+  }
+
   /** Opens a notice in the panel, and records that it was read if the world wants to know. */
   private read(n: NoticeDef): void {
     this.hud?.openReading(n);
@@ -1751,6 +1791,7 @@ export class DistrictScreen implements Screen {
     if (!this.combat) world.setFogScale(1 / this.zoom);
     world.updateLamps(this.elapsed, anchor.x, anchor.z);
     world.updateSmoke(dt);
+    world.updateLandmarks(this.elapsed);
     world.updateImpactLights(dt);
     world.scrollWater(dt);
     world.updateRises(dt, Math.random);
@@ -1794,6 +1835,7 @@ export class DistrictScreen implements Screen {
         ...(this.marker ? { errand: { x: this.marker.hotspot.position.x, z: this.marker.hotspot.position.z } } : {}),
         // Only the ground a writ on *this* board names, so the map never marks a fight the
         // player has not been offered.
+        sights: this.sightsTally(),
         sites: sitesInArea(this.area.id)
           .filter((site) => this.opts.bounties.some((b) => b.id === `story_${site.encounterId}`))
           .map((site) => ({ x: site.at.x, z: site.at.z, label: site.label })),

@@ -16,6 +16,7 @@ import { SKIES, SkyField, skyStrengthAt, type SkyId } from './skies.js';
 import { hashText, makeRng, nextFloat } from '../core/util/rng.js';
 import { BUILT, buildPiece, lotsOf, type Facing, type SolidStyle, type SurfaceKey } from './buildings.js';
 import { CLUTTER_KINDS, CLUTTER_SIZE, STANDING, scatterClutter, type ClutterPoint } from './clutter.js';
+import { LANDMARKS, buildLandmark, moverAngle, type LandmarkMover } from './landmarks.js';
 import { gateOpen, NOTHING_HAPPENED, type Chronicle } from './chronicle.js';
 import { ambientAt, lampsAt, lightingHour, NIGHT_ANCHOR, type Lit } from './daylight.js';
 import { poolShares } from './lightPool.js';
@@ -214,6 +215,8 @@ export class DistrictWorld {
    * turns them up after dark -- the ward's own light, when the lamps are the other half of it.
    */
   private readonly windows: { mat: THREE.MeshLambertMaterial; home: boolean }[] = [];
+  /** Each landmark's moving part, on its pivot. See `updateLandmarks`. */
+  private readonly movers: { pivot: THREE.Object3D; mover: LandmarkMover; phase: number }[] = [];
   /** The ground clutter: one instanced mesh per kind, and the points it was placed at. */
   private readonly clutter: { mesh: THREE.InstancedMesh; points: ClutterPoint[] }[] = [];
   /** Where the chimneys smoke from, and the smoke. See `updateSmoke`. */
@@ -680,6 +683,9 @@ export class DistrictWorld {
 
     for (const l of area.props.lamps ?? []) this.addLamp(l.x, l.z);
 
+    // The tall things you steer by -- before the pool, because a lighthouse is a fire too.
+    this.buildLandmarks(area);
+
     // The pool, now every fire is known. Built dark; the first `updateLamps` hands it out.
     // Added before `warmupShaders` runs, so the shaders are compiled for this many lights once
     // and never again for the life of the area.
@@ -985,6 +991,60 @@ export class DistrictWorld {
   }
 
   /**
+   * The landmarks: fixed parts in the kit's surfaces, a moving part on a pivot, a fade box of
+   * their full height, and a light from the pool where they burn. See `landmarks.ts`.
+   */
+  private buildLandmarks(area: AreaDef): void {
+    for (const [i, l] of (area.props.landmarks ?? []).entries()) {
+      const kind = LANDMARKS[l.kind];
+      const seed = hashText(`${area.id}:landmark:${i}`);
+      const built = buildLandmark(l.kind, seed);
+      const mats: Structure['mats'] = [];
+      const material = (surface: SurfaceKey | 'glow'): THREE.Material =>
+        surface === 'glow'
+          ? new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd08a'), transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide })
+          : this.surface(surface, 'stone', 'tower');
+      for (const part of built.parts) {
+        const mat = material(part.surface);
+        const mesh = new THREE.Mesh(part.geometry, mat);
+        mesh.position.set(l.x, 0, l.z);
+        mesh.castShadow = part.surface !== 'glow';
+        mesh.receiveShadow = true;
+        this.scene.add(mesh);
+        if (part.surface !== 'glow') mats.push(mat as Structure['mats'][number]);
+      }
+      for (const m of built.movers) {
+        const pivot = new THREE.Group();
+        pivot.position.set(l.x + m.pivot.x, m.pivot.y, l.z + m.pivot.z);
+        const mat = material(m.surface);
+        const mesh = new THREE.Mesh(m.geometry, mat);
+        mesh.castShadow = m.surface !== 'glow';
+        pivot.add(mesh);
+        this.scene.add(pivot);
+        if (m.surface !== 'glow') mats.push(mat as Structure['mats'][number]);
+        this.movers.push({ pivot, mover: m, phase: (seed % 628) / 100 });
+      }
+      if (built.light) {
+        this.fires.push({ x: l.x + built.light.at.x, y: built.light.at.y, z: l.z + built.light.at.z, kind: 'brazier' });
+      }
+      const hit = new THREE.Mesh(new THREE.BoxGeometry(kind.w, kind.height, kind.d), new THREE.MeshBasicMaterial());
+      hit.position.set(l.x, kind.height / 2, l.z);
+      hit.visible = false;
+      this.scene.add(hit);
+      hit.updateMatrixWorld();
+      this.structures.push({ hit, mats });
+      this.hitboxes.push(hit);
+    }
+  }
+
+  /** Turns the sails, swings the bells, sweeps the beams. Called every frame by the screen. */
+  updateLandmarks(t: number): void {
+    for (const { pivot, mover, phase } of this.movers) {
+      pivot.quaternion.setFromAxisAngle(mover.axis, moverAngle(mover, t, phase));
+    }
+  }
+
+  /**
    * The ground clutter, one instanced mesh per kind: a single draw call for every tuft in the
    * area, and no shadows -- at this size a shadow is a smudge and costs a second pass.
    */
@@ -1286,9 +1346,13 @@ export class DistrictWorld {
         light.distance = LOOK.lampDistance;
         light.intensity = LOOK.lampIntensity * (1 - LOOK.lampFlicker + LOOK.lampFlicker * n * 2) * l.lit * share;
       } else if (fire.kind === 'brazier') {
+        // A wood fire gutters harder and faster than gas: three sines, one of them quick, on a
+        // phase from where it stands so two braziers in one yard never breathe together.
+        const ph = fire.x * 0.37 + fire.z * 0.61;
+        const n = 0.5 + 0.5 * (Math.sin(t * 7.1 + ph) * 0.45 + Math.sin(t * 13.3 + ph * 1.7) * 0.35 + Math.sin(t * 23 + ph * 2.9) * 0.2);
         light.color.copy(BRAZIER_LIGHT);
         light.distance = LOOK.lampDistance * 0.6;
-        light.intensity = LOOK.lampIntensity * 0.8 * share;
+        light.intensity = LOOK.lampIntensity * 0.8 * (0.62 + 0.76 * n) * share;
       } else {
         light.color.copy(VENT_LIGHT);
         light.distance = LOOK.lampDistance * 0.4;
@@ -1723,5 +1787,6 @@ export class DistrictWorld {
     this.windows.length = 0;
     this.smoke = null;
     this.clutter.length = 0;
+    this.movers.length = 0;
   }
 }

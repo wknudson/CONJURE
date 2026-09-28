@@ -556,6 +556,13 @@ function showArea(areaId: string, companionId: string): void {
         if (!p.worldFlags.includes(flag)) p.worldFlags.push(flag);
         persist();
       },
+      // An area's sights all found. Paid through the errand purse like a chest, and guarded the
+      // way a chest is: the flag the screen raised first is what says it has been paid.
+      onSightsFound: (_areaId, ducats) => {
+        payErrand(global, { ducats });
+        persist();
+        return `Paid: ${ducats} Ducats.`;
+      },
       forage: profile().forage,
       onForage: (id, loot, clock) => {
         // The stamp first, then the purse, so a write that lands between them errs toward a
