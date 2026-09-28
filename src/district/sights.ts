@@ -817,6 +817,56 @@ export const SIGHTS: readonly SightDef[] = [
       'Better kept than the Sink. The horses are fed a ration the Magistracy calls generous. ' +
       "Lamprow's tithe clerk has been heard to use the same word.",
   },
+
+  /* ---- The Chalk Verge, since it grew ---- */
+  {
+    id: 'chalk_verge:the_chalk_horse',
+    areaId: 'chalk_verge',
+    at: { x: -4, z: -42 },
+    label: 'Look at the chalk horse',
+    caption:
+      'Cut through the turf to the chalk, long-backed and reaching, legs that do not meet the ' +
+      'body. Older than the ward and older than the writ. The Magistracy scours it every ' +
+      'spring, and has never said why.',
+  },
+  {
+    id: 'chalk_verge:the_sheepfold',
+    areaId: 'chalk_verge',
+    at: { x: -68, z: -41 },
+    label: 'Look into the fold',
+    caption:
+      'A drystone fold, knee high, with a gap to drive the sheep through. The sheep are the ' +
+      "shepherd's. The shepherd is not in the bothy, and has not been since the census.",
+  },
+  {
+    id: 'chalk_verge:the_dew_pond',
+    areaId: 'chalk_verge',
+    at: { x: -76, z: 18 },
+    label: 'Look at the dew pond',
+    caption:
+      'Clay-lined and round, filled by the mist and nothing else, which is why the drovers ' +
+      'trust it. Somebody has dropped a writ into it. It has not sunk.',
+  },
+  {
+    id: 'chalk_verge:the_lime_kiln',
+    areaId: 'chalk_verge',
+    at: { x: 74, z: -8.6 },
+    label: 'Look at the kiln',
+    caption:
+      'Chalk in at the top, lime out at the bottom, three days to burn. The lime goes to ' +
+      'Tannery Row for the pits and to the Magistracy for the graves. The kiln does not ask ' +
+      'which.',
+  },
+  {
+    id: 'chalk_verge:the_quarry_face',
+    areaId: 'chalk_verge',
+    at: { x: -10, z: 50 },
+    label: 'Look at the quarry face',
+    caption:
+      'The chalk is white where it was cut last week and grey where it was cut last year. Near ' +
+      'the top, in the white, somebody has cut a name, and under it a date that has not come ' +
+      'yet.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {

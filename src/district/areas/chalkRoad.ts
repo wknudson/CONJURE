@@ -112,7 +112,7 @@ export const CHALK_ROAD: AreaDef = defineArea({
       x: HALF_X - 2,
       z: 2,
       label: 'Follow the road east onto the Chalk Verge',
-      arrive: { x: -52, z: -6 },
+      arrive: { x: -84, z: -6 },
     },
     {
       // North through the hedge, up the lane to the crossroads. The Ring proper starts here:

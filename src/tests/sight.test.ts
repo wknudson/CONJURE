@@ -85,12 +85,13 @@ describe('sight through the grid', () => {
   });
 
   it('is broken by the Chalk Verge thicket, and not by the chalk around it', () => {
-    // The middle thicket is two tiles square at columns 13-14, rows 8-9.
-    const west = { x: xOfCol(CHALK_VERGE, 11), z: zOfRow(CHALK_VERGE, 8) };
-    const east = { x: xOfCol(CHALK_VERGE, 16), z: zOfRow(CHALK_VERGE, 8) };
+    // The middle thicket is two tiles square at columns 21-22, rows 13-14 -- 13-14 and 8-9 before
+    // the Verge grew by eight columns and five rows a side.
+    const west = { x: xOfCol(CHALK_VERGE, 19), z: zOfRow(CHALK_VERGE, 13) };
+    const east = { x: xOfCol(CHALK_VERGE, 24), z: zOfRow(CHALK_VERGE, 13) };
     expect(sightClear(CHALK_VERGE, west.x, west.z, east.x, east.z), 'through the thicket').toBe(false);
-    const southW = { x: xOfCol(CHALK_VERGE, 11), z: zOfRow(CHALK_VERGE, 10) };
-    const southE = { x: xOfCol(CHALK_VERGE, 16), z: zOfRow(CHALK_VERGE, 10) };
+    const southW = { x: xOfCol(CHALK_VERGE, 19), z: zOfRow(CHALK_VERGE, 15) };
+    const southE = { x: xOfCol(CHALK_VERGE, 24), z: zOfRow(CHALK_VERGE, 15) };
     expect(sightClear(CHALK_VERGE, southW.x, southW.z, southE.x, southE.z), 'below it').toBe(true);
   });
 });
