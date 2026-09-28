@@ -31,6 +31,7 @@ import {
   xpForNextLevel,
 } from '../core/data/roster.js';
 import { COMPANIONS } from '../core/data/companions.js';
+import { TRAIT_LINEAGE } from '../core/data/companionTraits.js';
 import {
   HYBRID_HYBRID_CHANCE,
   MONO_HYBRID_CHANCE,
@@ -306,7 +307,10 @@ describe('the grimoire pool', () => {
     // still bites on the thing it was written for: a mono beast whose pool quietly grew a
     // second school, or whose fusion odds were nudged, lands here.
     const mono = COMPANIONS.filter((c) => c.grimoire.hybridChance === MONO_HYBRID_CHANCE);
-    expect(mono.length, 'the mono bloodlines').toBe(COMPANIONS.length - 15);
+    // Against the hybrid registry rather than a number: the roster grew past fifteen
+    // hybrids, and `hybridCompanions.test.ts` is where the exact count is pinned.
+    const hybrids = Object.keys(TRAIT_LINEAGE).length;
+    expect(mono.length, 'the mono bloodlines').toBe(COMPANIONS.length - hybrids);
     for (const c of mono) {
       expect(c.grimoire.schools, `${c.name}`).toHaveLength(1);
     }
@@ -314,7 +318,7 @@ describe('the grimoire pool', () => {
 
   it('gives a two-school bloodline both its schools and a far better fusion rate', () => {
     const hybrid = COMPANIONS.filter((c) => c.grimoire.hybridChance !== MONO_HYBRID_CHANCE);
-    expect(hybrid.length, 'the hybrid bloodlines').toBe(15);
+    expect(hybrid.length, 'the hybrid bloodlines').toBe(Object.keys(TRAIT_LINEAGE).length);
     for (const c of hybrid) {
       expect(c.grimoire.schools, `${c.name}`).toHaveLength(2);
       expect(c.grimoire.hybridChance, `${c.name}`).toBe(HYBRID_HYBRID_CHANCE);
