@@ -69,8 +69,8 @@ export const FROST_SHELF: Record<string, CardDef> = {
   /**
    * A ward that bites. Twenty armour on an ally, and a Chill on everything orthogonally
    * beside it — yours included, because rime does not ask whose shoulder it forms on. The
-   * cross rather than all eight, because `adjacent8` counts the centre tile and the ally
-   * being warded would chill itself.
+   * cross rather than all eight keeps it a ward and not a blast: it is the ally's four
+   * shoulders that frost over.
    */
   hoar_glaze: {
     id: 'hoar_glaze',

@@ -184,7 +184,7 @@ export const SURGE_SHELF: Record<string, CardDef> = {
     range: 1,
   },
 
-  /** An ally a tile quicker, and it and everything beside it left Charged — Arcing Step spread. */
+  /** An ally a tile quicker, and everything beside it left Charged — Arcing Step, spread outward. */
   crackle_chase: {
     id: 'crackle_chase',
     name: 'Crackle Chase',
@@ -192,7 +192,7 @@ export const SURGE_SHELF: Record<string, CardDef> = {
     school: 'surge',
     source: 'companion',
     kind: 'spell',
-    text: 'An ally moves 1 further this turn, and it and everything adjacent to it are left Charged.',
+    text: 'An ally moves 1 further this turn, and everything adjacent to it is left Charged.',
     target: ALLY_UNIT,
     effect: {
       op: 'seq',
@@ -219,7 +219,7 @@ export const SURGE_SHELF: Record<string, CardDef> = {
     school: 'surge',
     source: 'companion',
     kind: 'spell',
-    text: 'Drags everything within 2 tiles of an enemy 1 tile toward it, then deals 10 shock damage to it and everything adjacent.',
+    text: 'Drags everything within 2 tiles of an enemy 1 tile toward it, then deals 10 shock damage to everything adjacent to it.',
     target: ENEMY_UNIT,
     effect: {
       op: 'seq',
