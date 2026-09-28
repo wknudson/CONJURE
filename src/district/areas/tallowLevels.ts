@@ -175,7 +175,7 @@ export const TALLOW_LEVELS: AreaDef = defineArea({
       x: -26,
       z: zOfRow(1),
       label: 'North, up the ride into the Ashwood',
-      arrive: { x: -6, z: 42 },
+      arrive: { x: -6, z: 94 },
     },
     {
       to: 'bone_bastion',

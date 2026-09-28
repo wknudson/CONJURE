@@ -374,7 +374,7 @@ describe('the ground you fight on', () => {
     expect(fogged.map((a) => a.id).sort(), 'the smogged wards').toEqual(['ashfall_ward', 'bonemarket', 'cinderworks', 'lamprow']);
     // The Ring joined as its night crews did: a fight in Millharrow's fields, or with the strays on
     // Bray's rim, is fought in the pollen; and the Caldera's, under its embers.
-    expect(clear.map((a) => a.id).sort(), 'the open road').toEqual(['brays_hollow', 'caldera', 'chalk_road', 'chalk_verge', 'millharrow']);
+    expect(clear.map((a) => a.id).sort(), 'the open road').toEqual(['ashwood', 'brays_hollow', 'caldera', 'chalk_road', 'chalk_verge', 'millharrow']);
   });
 });
 

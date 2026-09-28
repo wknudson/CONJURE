@@ -1644,6 +1644,126 @@ export const SIGHTS: readonly SightDef[] = [
       'A gap in the old crater wall where the rock came down, and past it the inner basin, the ' +
       "Caldera's first floor. Everything out here is the Caldera still growing.",
   },
+
+  /* ---- The Ashwood ---- */
+  {
+    id: 'ashwood:the_great_ash',
+    areaId: 'ashwood',
+    at: { x: 78, z: -82 },
+    label: 'Look up at the Great Ash',
+    caption:
+      'Dead a hundred years and still standing, older than the wood round it by as much again. ' +
+      'It made this clearing by dying: nothing grew where its shade fell. The wolves sleep ' +
+      'under it, when they sleep.',
+  },
+  {
+    id: 'ashwood:the_ash_roots',
+    areaId: 'ashwood',
+    at: { x: 92, z: -80 },
+    label: 'Look at the roots',
+    caption:
+      'Roots out of the ground like knuckles, and between them bones picked white. Deer, ' +
+      'mostly. The wolves bring what they take up here to eat it where they can see the whole ' +
+      'wood coming.',
+  },
+  {
+    id: 'ashwood:the_charcoal_clamp',
+    areaId: 'ashwood',
+    at: { x: -14, z: -80 },
+    label: 'Look at the clamp',
+    caption:
+      'A dome of turf with the wood stacked inside, burning too slowly to flame. It wants ' +
+      "opening today or it burns through to ash and a season's work goes up the smoke. Nobody " +
+      'has come to open it.',
+  },
+  {
+    id: 'ashwood:the_burners_hut',
+    areaId: 'ashwood',
+    at: { x: 26, z: -84 },
+    label: 'Look into the hut',
+    caption:
+      'Two bunks, a pot, a pair of boots by the door. The burners live out here all season and ' +
+      'walk down to the Levels once, black to the elbow, to sell. They are late this year, and ' +
+      'the boots are still here.',
+  },
+  {
+    id: 'ashwood:the_woodcutters_cottage',
+    areaId: 'ashwood',
+    at: { x: -106, z: -22 },
+    label: 'Look inside the walls',
+    caption:
+      'A cottage down to its footings, the hearth still in the middle. The woodcutters left ' +
+      'when the Magistracy stopped paying for the ride to be kept, and took the roof with them. ' +
+      'It was good timber.',
+  },
+  {
+    id: 'ashwood:the_sawpit',
+    areaId: 'ashwood',
+    at: { x: -92, z: -14 },
+    label: 'Look into the sawpit',
+    caption:
+      'A pit for the man under the saw, the one who took the dust in his eyes. It has filled ' +
+      'with rain, and there is a saw still down there, the handle just showing, as if it were ' +
+      'waiting for a hand.',
+  },
+  {
+    id: 'ashwood:the_second_cottage',
+    areaId: 'ashwood',
+    at: { x: -98, z: 10 },
+    label: 'Look at the burnt cottage',
+    caption:
+      'The other cottage, the one that burned. The ends of its rafters are charcoal under the ' +
+      "grass, and a horse whittled out of ash lies in the hearth, small enough for a child's " +
+      'hand. Nobody came back for it.',
+  },
+  {
+    id: 'ashwood:the_hunting_stand',
+    areaId: 'ashwood',
+    at: { x: 98, z: 6 },
+    label: 'Look up at the stand',
+    caption:
+      "A platform on legs, high enough to see over a deer's back across the whole clearing. The " +
+      'Magistracy built it for its guests. The poachers use it now, and there is always ' +
+      'somebody up there.',
+  },
+  {
+    id: 'ashwood:the_ruins_hide',
+    areaId: 'ashwood',
+    at: { x: -82, z: -30 },
+    label: 'Look at the hide',
+    caption:
+      'Brush woven over a frame, low enough to lie in. A bedroll, a sack of pegs, a line of ' +
+      "snares already knotted. The knots are the ones on the ranger's stone.",
+  },
+  {
+    id: 'ashwood:the_snare_line',
+    areaId: 'ashwood',
+    at: { x: -70, z: 82 },
+    label: 'Look along the snares',
+    caption:
+      'Snares strung at ankle height round the hide, dozens of them, most with something in. ' +
+      'The poachers do not come back for all of it. The foxes do, and they have learned which ' +
+      'knots slip.',
+  },
+  {
+    id: 'ashwood:the_east_hide',
+    areaId: 'ashwood',
+    at: { x: 66, z: 82 },
+    label: 'Look at the watching hide',
+    caption:
+      'A third hide, with a clear line out of it down the ride towards the Levels road. Marks ' +
+      'are scratched into the frame: carts, and beside each cart a tally of what it carried.',
+  },
+  {
+    id: 'ashwood:the_old_edge',
+    areaId: 'ashwood',
+    at: { x: -66, z: -6 },
+    label: "Look at the old wood's edge",
+    caption:
+      'The trunks close up here like a hedge, planted that way round the old wood when there ' +
+      'was a ranger to plant it. Somebody has cut a way through since. Not recently, and not ' +
+      'the ranger.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {
