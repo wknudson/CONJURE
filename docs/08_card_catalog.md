@@ -8,27 +8,27 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**402 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**417 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
 | minion | 136 | Hero | Vanguard Roster, never a deck |
-| spell | 196 | Companion | drafted into a Grimoire |
+| spell | 211 | Companion | drafted into a Grimoire |
 | ability | 27 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
 | obstacle | 37 | Hero | Hero Deck, shown as a Construct |
-| **total** | **402** | | |
+| **total** | **417** | | |
 
 ### By school
 
 | School | Cards |
 |---|---:|
+| bulwark | 60 |
 | dusk | 60 |
-| frost | 57 |
-| bulwark | 56 |
-| bloom | 54 |
-| pyre | 54 |
-| surge | 53 |
+| frost | 60 |
+| bloom | 58 |
+| pyre | 56 |
+| surge | 55 |
 | arcane | 35 |
 | neutral | 33 |
 
@@ -53,14 +53,14 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`hybrid.ts`](#hybridts) | 24 | 23 spell, 1 obstacle |
 | [`auras.ts`](#aurasts) | 13 | 11 spell, 2 ability |
 | [`hero.ts`](#herots) | 22 | 17 ability, 5 obstacle |
-| [`shelf.pyre.ts`](#shelfpyrets) | 20 | 19 spell, 1 obstacle |
-| [`shelf.frost.ts`](#shelffrostts) | 18 | 16 spell, 2 obstacle |
-| [`shelf.surge.ts`](#shelfsurgets) | 18 | 16 spell, 2 obstacle |
-| [`shelf.bulwark.ts`](#shelfbulwarkts) | 18 | 15 spell, 3 obstacle |
+| [`shelf.pyre.ts`](#shelfpyrets) | 22 | 21 spell, 1 obstacle |
+| [`shelf.frost.ts`](#shelffrostts) | 21 | 19 spell, 2 obstacle |
+| [`shelf.surge.ts`](#shelfsurgets) | 20 | 18 spell, 2 obstacle |
+| [`shelf.bulwark.ts`](#shelfbulwarkts) | 22 | 19 spell, 3 obstacle |
 | [`shelf.dusk.ts`](#shelfduskts) | 18 | 16 spell, 2 obstacle |
-| [`shelf.bloom.ts`](#shelfbloomts) | 18 | 16 spell, 2 obstacle |
+| [`shelf.bloom.ts`](#shelfbloomts) | 22 | 20 spell, 2 obstacle |
 | [`vanguard.ts`](#vanguardts) | 36 | 36 minion |
-| **total** | **402** | |
+| **total** | **417** | |
 
 ---
 
@@ -445,7 +445,7 @@ The Hero's kit: colourless and arcane abilities and constructs, taught by the Du
 
 ### `shelf.pyre.ts`
 
-Pyre third shelf — commons, and the Drake and Salamander signatures. — **20 cards** (19 spell, 1 obstacle).
+Pyre third shelf — commons, and the Drake and Salamander signatures. — **22 cards** (21 spell, 1 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -462,9 +462,11 @@ Pyre third shelf — commons, and the Drake and Salamander signatures. — **20 
 | **Ductwork Drag** | `ductwork_drag` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Drags everything on a 3-tile line 1 tile toward its near end and sets it alight (Burn 1). |
 | **Fire Breath** | `fire_breath` | spell | 2P | 2 | companion | — | — | line 2 — range 2, LoS | — | R2 | Deals 20 fire damage in a 2-deep cone and sets everything caught alight (Burn 1). |
 | **Flashover** | `flashover` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Against a Burning unit, deals 30 fire damage to it and everything in a cross around it. Otherwise only 10. |
+| **Lampblack** | `lampblack` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 20 decay damage to a unit and sets it alight (Burn 1). |
 | **Molten Shot** | `molten_shot` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 5, LoS | — | R2 | Deals 30 fire damage to a unit. |
 | **Phoenix Dive** | `phoenix_dive` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 30 fire damage to a unit and sets everything adjacent to it alight (Burn 1). |
 | **Smoke Sett** | `smoke_sett` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | — | Fills a 2x2 block with smoke for 2 turns, blocking ranged line of sight, and sets everything there alight (Burn 1). |
+| **Twin Breath** | `twin_breath` | spell | 2P | 2 | companion | — | — | line 2 — range 2, LoS | — | R2 | Deals 20 fire damage in a 2-deep cone and Chills everything caught. |
 | **Wildfire** | `wildfire` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Sets every unit in a 3x3 around the target tile alight (Burn 1), yours included. No damage. |
 | **Ember Cascade** | `ember_cascade` | spell | 3P | 2 | companion | — | — | global | — | — | Sets off every Mark on the board at once. |
 | **Immolate** | `immolate` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Deals 40 fire damage to a unit, or 60 if it is already Burning. |
@@ -472,7 +474,7 @@ Pyre third shelf — commons, and the Drake and Salamander signatures. — **20 
 
 ### `shelf.frost.ts`
 
-Frost third shelf — commons, and the Bear and Seal signatures. — **18 cards** (16 spell, 2 obstacle).
+Frost third shelf — commons, and the Bear and Seal signatures. — **21 cards** (19 spell, 2 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -483,11 +485,14 @@ Frost third shelf — commons, and the Bear and Seal signatures. — **18 cards*
 | **Sea Fog** | `sea_fog` | spell | 1P | 1 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | — | Fogs a 2x2 block of tiles for 2 turns, blocking ranged line of sight through them. |
 | **Woolly Hide** | `woolly_hide` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 30 Armor. |
 | **Cold Front** | `cold_front` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Shoves everything on a 3-tile line 1 tile away from its near end and Chills it. Triggers standard Collision Damage (30 / 20). |
+| **Frostgrave Gaze** | `frostgrave_gaze` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 20 decay damage to a unit and Chills it. |
 | **Frozen Ambush** | `frozen_ambush` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | — | Deals 40 frost damage to a Chilled unit, or 20 to anything else. |
+| **Hoarthorn** | `hoarthorn` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 20 physical damage to a unit, Chills it and poisons it (Toxin 1). |
 | **Icebreaker Dive** | `icebreaker_dive` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | — | Against a Frozen unit, deals 40 impact damage and shoves it 1 tile away. Otherwise, 20 frost damage. |
 | **Numbing Roar** | `numbing_roar` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 10 frost damage to an enemy and everything in a cross around it, and Chills them all. |
 | **Permafrost Stomp** | `permafrost_stomp` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | — | Applies Chill 2 to everything in a cross around the target tile. The third stack freezes a unit solid. |
 | **Sleet** | `sleet` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | R2 | Deals 10 frost damage to a 2x2 block of tiles and Chills everything there. |
+| **Static Frost** | `static_frost` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 20 frost damage to a unit and leaves it Charged. Frost into a Charged target Superconducts. |
 | **Tidal Floe** | `tidal_floe` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | — | Turns a 2x2 block of tiles into a drifting current for 2 turns and Chills everything there. The current carries what stands on it 1 tile each round. |
 | **Glacial Maul** | `glacial_maul` | spell | 3P | 2 | companion | — | — | entity (enemy) — range 2, LoS | — | R2 | Deals 40 frost damage to a unit and applies Chill 2. The third stack freezes it solid. |
 | **Icicle Rain** | `icicle_rain` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 20 frost damage in a cross around the target tile and Chills everything there. |
@@ -497,7 +502,7 @@ Frost third shelf — commons, and the Bear and Seal signatures. — **18 cards*
 
 ### `shelf.surge.ts`
 
-Surge third shelf — commons, and the Lynx and Kudu signatures. — **18 cards** (16 spell, 2 obstacle).
+Surge third shelf — commons, and the Lynx and Kudu signatures. — **20 cards** (18 spell, 2 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -505,6 +510,7 @@ Surge third shelf — commons, and the Lynx and Kudu signatures. — **18 cards*
 | **Static Bristle** | `static_bristle` | spell | 0 | 1 | companion | — | — | none — range 1 | — | — | Leaves everything adjacent to the caster Charged. No damage. |
 | **Crackle Chase** | `crackle_chase` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | — | An ally moves 1 further this turn, and everything adjacent to it is left Charged. |
 | **Eel Jolt** | `eel_jolt` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 2, LoS | — | R2 | Deals 20 shock damage to a unit, leaving it Charged. |
+| **Haunting Charge** | `haunting_charge` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 10 decay damage to a unit and leaves it Charged. |
 | **Scale Shed** | `scale_shed` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 20 Armor, and leaves everything adjacent to it Charged. |
 | **Short Circuit** | `short_circuit` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Against a Charged unit, deals 30 damage through any armor. Otherwise, 10 shock damage. |
 | **Static Curl** | `static_curl` | spell | 1P | 1 | companion | — | — | none — range 1 | — | R2 | Your Hero gains 20 Armor, and everything adjacent to the caster is left Charged. |
@@ -515,6 +521,7 @@ Surge third shelf — commons, and the Lynx and Kudu signatures. — **18 cards*
 | **Lightning Draw** | `lightning_draw` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Drags everything within 2 tiles of an enemy 1 tile toward it, then deals 10 shock damage to everything adjacent to it. |
 | **Static Field** | `static_field` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Leaves every unit in a 3x3 around the target tile Charged, yours included. No damage. |
 | **Storm Pounce** | `storm_pounce` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | — | Deals 40 shock damage to a Charged unit, or 20 to anything else. |
+| **Swarm Sting** | `swarm_sting` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 10 shock damage to a unit and sets it alight (Burn 1). Fire into a Charged target Overloads. |
 | **Thunderclap** | `thunderclap` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 3, LoS | — | R2 | Deals 10 shock damage to everything adjacent to the target tile and shoves it 1 tile away. Triggers standard Collision Damage (30 / 20). |
 | **Ball Lightning** | `ball_lightning` | spell | 3P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 30 shock damage in a cross around the target tile, leaving every survivor Charged. |
 | **Capacitor Bank** | `capacitor_bank` | obstacle | 1P | 1 | companion | 30 hp | on break 20 dmg + stun 1 | empty tile (any) — range 3, LoS | — | R2 | Raises a 30 HP capacitor bank on an empty tile. When it breaks it discharges: 20 damage and Stun to every unit on or beside it. |
@@ -522,7 +529,7 @@ Surge third shelf — commons, and the Lynx and Kudu signatures. — **18 cards*
 
 ### `shelf.bulwark.ts`
 
-Bulwark third shelf — commons, and the Boar and Ram signatures. — **18 cards** (15 spell, 3 obstacle).
+Bulwark third shelf — commons, and the Boar and Ram signatures. — **22 cards** (19 spell, 3 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -532,13 +539,17 @@ Bulwark third shelf — commons, and the Boar and Ram signatures. — **18 cards
 | **Steady Footing** | `steady_footing` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 20 Armor. Draw 1 card. |
 | **Tusk Toss** | `tusk_toss` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 1 | — | — | Throws an adjacent enemy 2 tiles away. Triggers standard Collision Damage (30 / 20). |
 | **Boar Charge** | `boar_charge` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 30 impact damage to a unit and shoves it 2 tiles away. Triggers standard Collision Damage (30 / 20). |
+| **Bone Bulwark** | `bone_bulwark` | spell | 2P | 2 | companion | — | — | entity (ally) — range 4 | — | R2 | Grants an ally 20 Armor, and leaves everything adjacent to it poisoned (Toxin 1). |
 | **Dung Ball** | `dung_ball` | spell | 2P | 2 | companion | — | — | entity (any, +obstacles) — range 4, LoS | — | R2 | Deals 30 impact damage to a unit or obstacle. |
 | **Fault Line** | `fault_line` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 20 impact damage down a 3-tile line and shoves everything on it 1 tile away from its near end. Triggers standard Collision Damage (30 / 20). |
 | **Ground Breaker** | `ground_breaker` | spell | 2P | 2 | companion | — | — | entity (any, +obstacles) — range 3, LoS | — | R2 | Deals 30 impact damage to a unit or obstacle and leaves rough ground in a cross around it for 3 turns. |
 | **Horn Gore** | `horn_gore` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 1 | — | R2 | Deals 40 impact damage to an adjacent enemy. Shatters anything Frozen. |
+| **Magma Shell** | `magma_shell` | spell | 2P | 2 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 30 Armor, and sets everything adjacent to it alight (Burn 1). |
+| **Magnet Pull** | `magnet_pull` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Drags everything within 2 tiles of the target tile 1 tile toward it, then leaves everything in a cross around it Charged. |
 | **Rockslide Run** | `rockslide_run` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Shoves everything on a 3-tile line 2 tiles away from its near end. Triggers standard Collision Damage (30 / 20). |
 | **Stone Lance** | `stone_lance` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 5, LoS | — | — | Deals 30 impact damage to a unit, or 50 if it is Brittle. |
 | **Crushing Charge** | `crushing_charge` | spell | 3P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 30 impact damage down a 3-tile line and shoves everything on it 1 tile away from its near end. Triggers standard Collision Damage (30 / 20). |
+| **Glacier Ram** | `glacier_ram` | spell | 3P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 20 impact damage down a 3-tile line and Chills everything on it. |
 | **Landslide** | `landslide` | spell | 3P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 20 impact damage in a widening 3-deep cone and shoves everything caught 1 tile away. Triggers standard Collision Damage (30 / 20). |
 | **Rockfall** | `rockfall` | spell | 3P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | R2 | Drops 30 impact damage on a 2x2 block of tiles. Shatters anything Frozen. |
 | **Rubble Wall** | `rubble_wall` | obstacle | 1P | 1 | companion | 50 hp | leaves rubble | empty tile (any) — range 3, LoS | — | R2 | Raises a 50 HP wall of rubble on an empty tile. Blocks movement and line of sight, and leaves rough ground when it breaks. |
@@ -572,7 +583,7 @@ Dusk third shelf — commons, and the Stag and Jackal signatures. — **18 cards
 
 ### `shelf.bloom.ts`
 
-Bloom third shelf — commons, and the Warden and Aurochs signatures. — **18 cards** (16 spell, 2 obstacle).
+Bloom third shelf — commons, and the Warden and Aurochs signatures. — **22 cards** (20 spell, 2 obstacle).
 
 | Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
 |---|---|---|---|:-:|---|---|---|---|---|---|---|
@@ -580,12 +591,16 @@ Bloom third shelf — commons, and the Warden and Aurochs signatures. — **18 c
 | **Bark Skin** | `bark_skin` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | R2 | Gives an ally 30 Armor. It takes root: Entangled until the end of your turn. |
 | **Briar Bite** | `briar_bite` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 1 | — | R2 | Deals 20 physical damage to an adjacent enemy and poisons it (Toxin 1). |
 | **Dusting Wings** | `dusting_wings` | spell | 1P | 1 | companion | — | — | none — range 1 | — | — | Poisons everything adjacent to the caster (Toxin 1), yours included. |
+| **Mossback Pinch** | `mossback_pinch` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 1 | — | R2 | Deals 20 impact damage to an adjacent enemy and roots it through its next turn (Entangle 1). |
 | **Ruminate** | `ruminate` | spell | 1P | 1 | companion | — | — | none | — | R2 | Restores 20 health to your Pact. Draw 1 card. |
 | **Sly Retreat** | `sly_retreat` | spell | 1P | 1 | companion | — | — | entity (ally) — range 4 | — | — | An ally moves 2 further this turn. |
 | **Bramble Lash** | `bramble_lash` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 20 physical damage to a unit and poisons it and everything in a cross around it (Toxin 1). |
 | **Bramble Pounce** | `bramble_pounce` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | — | Deals 50 physical damage to an Entangled unit, or 30 to anything else. |
+| **Ember Bark** | `ember_bark` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 20 physical damage to a unit, sets it alight (Burn 1) and poisons it (Toxin 1). |
 | **Fallow Cloud** | `fallow_cloud` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | — | Poisons every unit in a 3x3 around the target tile (Toxin 1), yours included. No damage. |
+| **Fen Strike** | `fen_strike` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Deals 20 decay damage to a unit and poisons it (Toxin 2). |
 | **Leech Vine** | `leech_vine` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | R2 | Deals 20 toxic damage to a unit and restores 20 health to your Pact. |
+| **Live Briar** | `live_briar` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 3, LoS | — | R2 | Roots a unit through its next turn (Entangle 1) and deals 10 shock damage to it, leaving it Charged. |
 | **Moss Stampede** | `moss_stampede` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | — | Shoves everything on a 3-tile line 1 tile away from its near end and poisons it (Toxin 1). Triggers standard Collision Damage (30 / 20). |
 | **Pollen Burst** | `pollen_burst` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 10 toxic damage to everything in a cross around the target tile and poisons it (Toxin 1). |
 | **Rootbind** | `rootbind` | spell | 2P | 2 | companion | — | — | entity (enemy) — range 4, LoS | — | — | Roots a unit for its next two turns (Entangle 2) and poisons it (Toxin 1). A rooted unit can still attack. |
@@ -644,7 +659,7 @@ The third muster — thirty-six bodies a warband can field, four per school and 
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 157 of the 402 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 171 of the 417 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 
