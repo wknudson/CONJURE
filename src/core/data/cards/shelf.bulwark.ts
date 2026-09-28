@@ -382,4 +382,99 @@ export const BULWARK_SHELF: Record<string, CardDef> = {
     keywords: [],
     bloodline: ['beetle'],
   },
+
+  // ================================================== hybrid signatures (Bulwark)
+  //
+  // One apiece for the hybrids filed here: a card of this school that carries its other
+  // parent's element on it, so a hybrid's book opens on the seam it is made of.
+
+  /** The Obsidian Tortoise: a shell that is still cooling. */
+  magma_shell: {
+    id: 'magma_shell',
+    name: "Magma Shell",
+    cost: { bones: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Gives an ally 30 Armor, and sets everything adjacent to it alight (Burn 1).',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'grantArmor', amount: 30 },
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['tortoise'],
+    range: 4,
+  },
+
+  /** The Glacial Juggernaut: a charge of packed ice. */
+  glacier_ram: {
+    id: 'glacier_ram',
+    name: "Glacier Ram",
+    cost: { bones: 3, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 impact damage down a 3-tile line and Chills everything on it.',
+    target: { kind: 'line', length: 3 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'impact', area: { shape: 'line', length: 3 } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'line', length: 3 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['juggernaut'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** The Kinetic Dynamo: iron drawn to the coil. */
+  magnet_pull: {
+    id: 'magnet_pull',
+    name: "Magnet Pull",
+    cost: { bones: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Drags everything within 2 tiles of the target tile 1 tile toward it, then leaves everything in a cross around it Charged.',
+    target: { kind: 'emptyTile', zone: 'any', footprint: 1 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'pullArea', distance: 1, area: { shape: 'square', size: 5 } },
+        { op: 'applyStatus', status: 'charged', stacks: 1, area: { shape: 'plus', radius: 1 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['dynamo'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** The Bone Bastion Sovereign: plate grown out of the grave. */
+  bone_bulwark: {
+    id: 'bone_bulwark',
+    name: "Bone Bulwark",
+    cost: { bones: 2, marrow: 0 },
+    school: 'bulwark',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Grants an ally 20 Armor, and leaves everything adjacent to it poisoned (Toxin 1).',
+    target: { kind: 'entity', side: 'ally', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'grantArmor', amount: 20 },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'adjacent8' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['sovereign'],
+    range: 4,
+  },
 };
