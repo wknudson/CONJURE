@@ -335,16 +335,51 @@ which is the `MAX_PULLS` cap where it can actually be seen.
 
 ### 2.5 The crossings
 
-Three real edges in the world, and the numbers most likely to drift:
+Every way between two outdoor places, and the numbers most likely to drift -- which is why they are
+written from the area files, not typed:
 
-| | Hotspot | Gate collider | Arrives at |
+<!-- atlas-crossings:begin — written by scripts/atlas-maps.ts; do not edit by hand -->
+
+| From | To | Hotspot | Arrives at |
 |---|---|---|---|
-| Ashfall → Verge | `(4, -15.6)` — on the walkway, south of the wall | `(4, -18)` — the yard wall, row 5 | `(34, 22)` — the verge trailhead |
-| Verge → Ashfall | `(34, 26)` | *none* | `(4, -12.4)` — back onto pavement |
-| Ashfall → Lamprow | `(26, 35.6)` — the south plaza edge | `(26, 38)` — the south wall, row 19 | `(-36, 4)` — Lamprow's High Street |
-| Lamprow → Ashfall | `(-42, 4)` — the west mouth of the High Street | *none* | `(26, 32)` — Ashfall's plaza |
-| Verge → Road | `(-46, -8)` — the west cut | *none* | `(56, 2)` — the road's east end |
-| Road → Verge | `(62, 2)` | *none* | `(-42, -8)` — back onto the verge |
+| Ashfall Ward | The Chalk Verge | (0, -27.6) | (40, 30) |
+| Ashfall Ward | Lamprow | (0, 95.6) | (-88, -4) |
+| Ashfall Ward | The Bonemarket | (106, 6) | (-88, -8) |
+| Ashfall Ward | The Cinderworks | (-106, -26) | (98, 0) |
+| Ashfall Ward | Ward Seven | (-106, 30) | (86, -2) |
+| Lamprow | Ashfall Ward | (-92, -4) | (0, 92.4) |
+| Lamprow | Highcourt & the Spire | (92, -4) | (-78, 0) |
+| The Bonemarket | Ashfall Ward | (-94, -8) | (102, 8) |
+| The Cinderworks | Ashfall Ward | (102, 0) | (-102, -26) |
+| The Cinderworks | The Caldera | (-102, 0) | (102, -2) |
+| Highcourt & the Spire | Lamprow | (-82, 0) | (88, -4) |
+| Ward Seven | Ashfall Ward | (90, -2) | (-102, 30) |
+| The Chalk Road | The Chalk Verge | (114, 2) | (-84, -6) |
+| The Chalk Road | Millharrow | (-34, -22) | (-2, 86) |
+| The Chalk Road | Fenwick's Crossing | (38, 22) | (-2, -56) |
+| The Chalk Road | The Rimefields | (-114, 2) | (110, -2) |
+| Millharrow | The Chalk Road | (-2, 98) | (-34, -14) |
+| Millharrow | The Tallow Levels | (-2, -98) | (-2, 58) |
+| Millharrow | Saltglass | (-118, -2) | (82, 8) |
+| Millharrow | Bray's Hollow | (118, -2) | (-70, 0) |
+| The Tallow Levels | Millharrow | (-2, 74) | (-2, -86) |
+| The Tallow Levels | The Ashwood | (-26, -74) | (-6, 94) |
+| The Tallow Levels | The Bone Bastion | (-102, -6) | (74, -2) |
+| Saltglass | Millharrow | (90, 8) | (-98, -2) |
+| Bray's Hollow | Millharrow | (-78, 0) | (98, -2) |
+| Fenwick's Crossing | The Chalk Road | (-2, -66) | (38, 14) |
+| Fenwick's Crossing | Weeping Stile | (-102, -6) | (50, 4) |
+| Fenwick's Crossing | The Storm Shelf | (102, -6) | (-86, -6) |
+| Weeping Stile | Fenwick's Crossing | (70, 2) | (-82, -2) |
+| The Chalk Verge | Ashfall Ward | (40, 34) | (0, -24.6) |
+| The Chalk Verge | The Chalk Road | (-90, -6) | (108, 2) |
+| The Caldera | The Cinderworks | (118, -2) | (-98, 0) |
+| The Ashwood | The Tallow Levels | (-6, 110) | (-26, -62) |
+| The Rimefields | The Chalk Road | (126, -2) | (-106, 2) |
+| The Storm Shelf | Fenwick's Crossing | (-102, -6) | (82, -6) |
+| The Bone Bastion | The Tallow Levels | (90, -2) | (-86, -6) |
+
+<!-- atlas-crossings:end -->
 
 Only the two **gates** carry a collider, and only Ashfall has them: a gate is the Magistracy
 sealing something, and the Magistracy does not seal open country. Both gate meshes face
@@ -491,6 +526,1421 @@ follow them too:
 | The Rimefields | the ice cave (**Strays** denned) |
 | The Storm Shelf | Pylon Nine's base (**Hedgerow Vermin** denned) |
 | The Bone Bastion | the great barrow (**Hollows** denned) |
+
+### 2.9 Every map, as it stands
+
+Every outdoor place, drawn from its own area file by `scripts/atlas-maps.ts` rather than copied
+out of it: the grid row by row with the note the file keeps beside each row, the legend in the
+words the file uses for each tile, and what stands in it. `atlasMaps.test.ts` draws them again
+and fails if this section has drifted from the grids, so a map here is the map in the game. One
+character is one tile, four world units across; coordinates are world units from the middle of
+the map, as the code writes them. Rooms are not drawn: each is one board-sized room, and §2.8
+says what is in them.
+
+<!-- atlas-maps:begin — written by scripts/atlas-maps.ts from the area files; do not edit by hand -->
+
+#### Jolrek
+
+##### Ashfall Ward
+
+`ashfall.ts` — 54 × 50 — `safety: 'sidewalk'` — `horizon: 'city'` — `sky: 'ash'`
+
+```
+      0         1         2         3         4         5
+      012345678901234567890123456789012345678901234567890123
+   0  #DDDDDDDccDDDDDDDcDDDDDDDDDDDDDDDDDDcDDDDDDDccDDDDDDD#   THE FAR BANK: the bonded warehouses, backs to the edge, dead-end lanes between
+   1  #DDDDDDDccDDDDDDDcDDDDDDDDDDDDDDDDDDcDDDDDDDccDDDDDDD#
+   2  #DDDDDDDccDDDDDDDcDDDDDDDDDDDDDDDDDDcDDDDDDDccDDDDDDD#
+   3  #DDDDDDDccDDDDDDDcDDDDDDDffffDDDDDDDcDDDDDDDccDDDDDDD#   the customs square, where the Ash Bridge comes over
+   4  cccccccccccccccccccccccccffffccccccccccccccccccccccccc   the back lane
+   5  ........ccDDDDDDDcDDDDDDcffffcDDDDDDczzzzzzzcccDDDDDDc   the barge slip (west)          the bond          the coal staithes (east)
+   6  ........ccDDDDDDDcDDDDDDcffffcDDDDDDczzzzzzzcccDDDDDDc
+   7  ........ccDDDDDDDcDDDDDDcffffcDDDDDDczzzzzzzcccDDDDDDc
+   8  ........cccccccccccccccccffffccccccccccccccccccccccccc   the far quay
+   9  ........cccccccccccccccccffffccccccccccccccccccccccccc
+  10  ........cccccccccccccccccccccccccccccccccccccccccccccc
+  11  WWWWWWWWWWWWWWWWWWWWWWWWWWffWWWWWWWWWWWWWWWWWWeeWWWWWW   the canal -- the Ash Bridge (middle), the tanners' footbridge (east)
+  12  WWWWWWWWWWWWWWWWWWWWWWWWWWffWWWWWWWWWWWWWWWWWWeeWWWWWW
+  13  cccccccccccc#cccccccccccccccccccccccccccc#cccccccccccc   the wharf
+  14  ............#cTTTTcc..............ccBBBcc#ffffffffffff   the timber wharf    TOLL HOUSE   the sealed yard   the boathouse    the hide steps
+  15  .kkk........#cTTTTcc..............ccBBBcc#ffffffffffff   the boat shed
+  16  .kkk........#ccccccc..............ccccccc#llllllllllll   the quay road, and the Toll House door                  behind the tanneries
+  17  #############VVVVVVVVVVVVVVVVVVVVVVVVVVVV#HHHlHHHHlHHH   the yard wall -- a gate in it, and the road to the Verge
+  18  cccccccccccc#cccccccccccccSSccccccccccccc#HHHlHHHHlHHH   the cart lane, west to the Cinderworks
+  19  ............#cBBBBBBBBccccSSccccBBBBBBBBc#llllllllllll   the north blocks                                        TANNERY ROW
+  20  .QQ.........#c........ccccSScccc........c#HHlppppplAAA   THE ROPEWALK   the warehouse yard (the Warden)   the back alley   the pits, THE TANNERY
+  21  .QQ.....kkk.#c.CCCC...ccccSScccc........c#HHlppppplAAA   the ropemaker   COUNTING HOUSE, inside the yard
+  22  .QQ.....kkk.#c.CCCC...ccccSScccc........c#HHllllllllll
+  23  .QQ.........#c........ccccSScccc........c#RRRlRRRRlRRR   the tenements
+  24  .QQ.........#cBBBBBBBBccccSSccccBBBBBBBBc#RRRlRRRRlRRR   IRONWORKS (west)          RECORDS OFFICE (east)
+  25  .QQ.........#cBBBBBBBBccccSSccccBBBBBBBBc#llllllllllll
+  26  .QQ.........#SSSSSSSSSSSSSSSSSSSSSSSSSSSS#SSSSSSSSSSSS   the cross-street, on east to the Bonemarket
+  27  .QQ.........#SSSSSSSSSSSSSSSSSSSSSSSSSSSS#SSSSSSSSSSSS
+  28  .QQ.....kkk.#cBBBBBBBBccSSSSSSccBBBBBBBBc#RRRlRRRRlRRR   the tar shed    APOTHECARY (west)         VIVARIUM (east)    THE ROOKERIES
+  29  .QQ.....kkk.#cBBBBBBBBccSSSSSSccBBBBBBBBc#RRRlRRRRlRRR
+  30  .QQ.........#cccccSSSSSSSSSSSSSSSSSSccccc#lllllllllRRR   the plaza
+  31  ............#cccccSSSSSSSSSSSSSSSSSSccccc#RRl.....lRRR   the Rookery court
+  32  cccccccccccc#cccccSSSSSSSSSSSSSSSSSSccccc#RRl.....llll   the lane out to Ward Seven
+  33  #############cccccSSSSSSSSSSSSSSSSSSccccc#RRl.....lRRR
+  34  #...........#cccccKKKKKcSSSSSScUUUUUccccc#RRRRlRRRlRRR   the paupers' ground   THE CHAPEL   the south road   THE CINDER CUP
+  35  #...........#cccccKKKKKcSSSSSScUUUUUccccc#RRRRlRRRlRRR
+  36  #...........#c.........cSSSSSSc.........c#llllllllllll   the graves                           the tavern yard
+  37  #...........#c.........cSSSSSSc.........c#RRRRRRlRRRRR
+  38  #############VV..VVVVVVVSSSSSSVVVVVV..VVV#######l#####   the old south wall: the lych gap, the arch the road goes through, the garden gap
+  39  ###############..#######SSSSSS########################   CHAPEL HILL (west)        the south road        ASH GARDENS (east)
+  40  #hhOOOOhhhhhhhh..hhhhhh#SSSSSS#ggg#ggg#ggg#ggg#ggg#kk#   the ossuary                                      the gardeners' shed
+  41  #hhOOOOhhhhhhhh..hhhhhh#SSSSSS#ggg#ggg#ggg#ggg#ggg#kk#
+  42  #hhhhhhhhhhhhhh..hhhhhh#SSSSSS########################
+  43  #hhhhhhhhhhhhhh..hhhhhh#SSSSSS#ggg#ggg#...#ggg#ggg#gg#
+  44  #.......................SSSSSS#ggg#ggg#...#ggg#ggg#gg#   the path across the hill
+  45  #hhhhhhhhhhhhhh..hhhhhh#SSSSSS########################
+  46  #hhhhhhhhhhhhhh..hkkkhh#SSSSSS#...#ggg#ggg#ggg#ggg#gg#   the sexton's cottage
+  47  #hhhhhhhhhhhhhh..hkkkhh#SSSSSS#...#ggg#ggg#ggg#ggg#gg#
+  48  ########################SSSSSS########################
+  49  VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV   the ward wall, and the gate to Lamprow in it
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `S` | sanctioned walkway — SAFE, no Warden may see you here | ✅ | ✅ |  |
+| `c` | cobbles — danger | ✅ |  |  |
+| `.` | broken cobbles — danger, weeds through the joints | ✅ |  |  |
+| `#` | scrub verge — danger | ✅ |  |  |
+| `W` | canal — impassable | ❌ |  |  |
+| `B` | building footprint — impassable, tall | ❌ |  | terrace, 4.8–7 tall |
+| `V` | yard wall — impassable, low | ❌ |  | wall, 3.2 tall |
+| `T` | the Toll House — impassable; brick, a stack | ❌ |  | terrace, 5.6 tall |
+| `C` | the Counting House — impassable; dressed stone, taller than its neighbours | ❌ |  | hall, 7.6 tall |
+| `K` | the chapel — impassable; stone, one unbroken mass | ❌ |  | hall, 6.8 tall |
+| `U` | the Cinder Cup — impassable; timber over plaster, a chimney always going | ❌ |  | shopfront, 5.4 tall |
+| `f` | flagstone — the customs square, the hide steps, the Ash Bridge | ✅ |  |  |
+| `e` | planking — the tanners' footbridge | ✅ |  |  |
+| `l` | the Row's mud — Tannery Row's lanes, and what is in them | ✅ |  |  |
+| `z` | coal dust — the staithes on the far bank | ✅ |  |  |
+| `h` | churchyard turf — Chapel Hill | ✅ |  |  |
+| `g` | allotment beds — Ash Gardens | ✅ |  |  |
+| `p` | tanning pits — impassable; sunk in the pit yard | ❌ |  |  |
+| `D` | bonded warehouse — impassable; brick, the Magistracy's seal on every door | ❌ |  | warehouse, 5.2–6.6 tall |
+| `H` | tannery — impassable; timber, a chimney more often than not | ❌ |  | warehouse, 4.4–5.4 tall |
+| `A` | the Tannery — impassable; the one with a door you can use | ❌ |  | warehouse, 5.4 tall |
+| `R` | tenement — impassable; the Rookeries, timber and tall | ❌ |  | terrace, 5.4–6.8 tall |
+| `Q` | the Ropewalk — impassable; long, low sheds | ❌ |  | warehouse, 3.2–3.6 tall |
+| `k` | cottage — impassable; the ropemaker, the sexton, the sheds | ❌ |  | cottage, 3.8–4.4 tall |
+| `O` | the ossuary — impassable; stone, windowless, full | ❌ |  | hall, 4.2 tall |
+
+- **Spawn** (0, 26).
+- **Ways out:** The Chalk Verge from (0, -27.6), arriving (40, 30); Lamprow from (0, 95.6), arriving (-88, -4); The Bonemarket from (106, 6), arriving (-88, -8); The Cinderworks from (-106, -26), arriving (98, 0); Ward Seven from (-106, 30), arriving (86, -2); The Ironworks Artificer (a room) from (-36, 5.4), arriving (0, 22); The Records Office (a room) from (36, 5.4), arriving (0, 18); The Apothecary (a room) from (-36, 10.6), arriving (-4, -18); The Vivarium (a room) from (36, 10.6), arriving (-4, -18); The Toll House (a room) from (-44, -34.6), arriving (0, 16); The Counting House (a room) from (-40, -6.6), arriving (0, 16); The Chapel of the Quiet Flame (a room) from (-26, 34.6), arriving (0, -20); The Cinder Cup (a room) from (26, 34.6), arriving (0, -20); The Tannery (a room) from (102, -10.6), arriving (0, 14).
+- **People:** Dispatcher Vex (-6, 24); the gate sentry (6, 92); the lamplighter (-2, 8); the cobbler, keeping hours: 08:00 (-18, 30) · 19:00 (70, 28); the crier, keeping hours: 07:00 (12, 80) · 12:00 (-33, -82) · 17:00 (18, 30).
+- **Wardens:** 2 beats, (-48, -17) → (-22, -17) → (-22, -5) → (-48, -5); (70, -22) → (94, -22) → (94, -10) → (70, -10).
+- **Landmarks:** bell tower (-56, 74); crane (-82, -45).
+- **Passers-by:** up to 8 by day, on 4 lanes.
+- **Lamps** 20; **sights** 14.
+
+##### Lamprow
+
+`lamprow.ts` — 48 × 40 — `safety: 'sidewalk'` — `horizon: 'city'` — `sky: 'ash'`
+
+```
+      0         1         2         3         4
+      012345678901234567890123456789012345678901234567
+   0  VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV   THE GASWORKS: the works wall along the edge
+   1  ccGGGGGGGGGGGGcccckkkkccccffffffffffccGGGGGGGGcc   the retort house (west)   the office   the holder yard   the purifiers (east)
+   2  ccGGGGGGGGGGGGccccccccccccffffffffffccGGGGGGGGcc
+   3  ccGGGGGGGGGGGGccccccccccccffffffffffccGGGGGGGGcc
+   4  cczzzzzzzzzzzzccccccccccccffffffffffcc........cc   the coal                                                 the spent lime
+   5  cczzzzzzzzzzzzccccccccccccffffffffffcc........cc
+   6  cccccccccccccccccccccccccccccccccccccccccccccccc   the works quay
+   7  WWWWWWWWWWWWWWWWWWWWWWWWffWWWWWWWWWWWWWWWWWWWWWW   the lighters' cut -- the lighters' bridge across it
+   8  WWWWWWWWWWWWWWWWWWWWWWWWffWWWWWWWWWWWWWWWWWWWWWW
+   9  cccccccc#cccccccccccccccccccccccccccccc#cccccccc   the quay
+  10  cccccccc#cccccccccccccccccccccccccccccc#cccccccc   the wharf lane
+  11  #BBBBBB##cBBBBBBBBccOOOOccccccccBBBBBBc##BBBBBB#   the chandlers (west)   bonded warehouse   LAMP-OIL HOUSE   the yard   the Lighters' Hall   the lamp stores (east)
+  12  #BBBBBB##cBBBBBBBBccOOOOccccccccBBBBBBc##BBBBBB#
+  13  ........#cBBBBBBBBcccccccccccccccccccVc##BBBBBB#   the chandlers' yard (the second Warden)   the lighters' yard (the Warden)
+  14  ........#cc.......ccccccccccccccccccVVc#........
+  15  ........#cc.......cccccccccccc........c#........   the back lane
+  16  #BBBBBB##cBBBBBBBBccXXXXXXccBBBBBBBBBBc##BBBBBB#   the north terraces, and THE TITHE OFFICE
+  17  #BBBBBB##cBBBBBBBBccXXXXXXccBBBBBBBBBBc##BBBBBB#
+  18  SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS   THE HIGH STREET — lit, sanctioned, and run on to both edges
+  19  SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+  20  cccccccc#cccccccccccccccccccccccccccccc#cccccccc   the step down
+  21  #kkk#kkk#cBBBBBB..............BBBBBBccc#........   cottages (west)   the Sink, and its tenements; the cellar hatch on the west one   THE DITCHES (east)
+  22  #kkk#kkk#cBBBBBB..............BBBBBBcccdddddddd.
+  23  #gggggg##cc...........................c#........
+  24  #gggggg##cc...........................cd.ddddddd
+  25  cccccccc#cccccccccccccccccccccccccccccc#........   the south lane
+  26  #kkkkkk##cccBBBBBBBBcccccccccBBBBBBBBccdddddddd.   the lighters' cottages
+  27  #kkkkkk##cccBBBBBBBBcccccccccBBBBBBBBcc#........
+  28  #gggggg##c...........cccccc...........cd.ddedddd   their gardens
+  29  #gggggg##c...........cccccc...........c#........
+  30  cccccccc#ccccccccccccccccccccccccccccccddddddd..
+  31  ########################################........   the verge
+  32  #######################################d..dddddd
+  33  #####################...........................   the verge
+  34  #gggg#gggg#gggg#kkkkdd.ddddddd.ddddddd.ddddddd.d   the allotments and the potting shed (west)             where the Sink drains (east)
+  35  #gggg#gggg#gggg#kkkk#.......................kkk.
+  36  ####################dddddd.ddddddd.dddeddd.ddddd
+  37  #gggg#gggg#gggg#gggg#..kkk......................
+  38  #gggg#gggg#gggg#ggggd.dddddddd.dddddddd.ddddddd.
+  39  #####################...........................
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `S` | sanctioned walkway — SAFE, no Warden may see you here | ✅ | ✅ |  |
+| `c` | cobbles — danger | ✅ |  |  |
+| `.` | broken cobbles — danger, weeds through the joints | ✅ |  |  |
+| `#` | scrub verge — danger | ✅ |  |  |
+| `W` | the lighters' cut — impassable | ❌ |  |  |
+| `B` | building footprint — impassable, tall | ❌ |  | terrace, 4.8–7 tall |
+| `V` | yard wall — impassable, low | ❌ |  | wall, 3.2 tall |
+| `O` | the Lamp-oil House — impassable; timber, a stack always going | ❌ |  | warehouse, 5.2 tall |
+| `X` | the Tithe Office — impassable; dressed stone, like every Magistracy counter | ❌ |  | hall, 7.2 tall |
+| `G` | the gasworks — impassable; brick, tall, and a stack on every roof | ❌ |  | warehouse, 6–6.8 tall |
+| `k` | cottage — impassable; the lighters', the office, the sheds | ❌ |  | cottage, 3.8–4.4 tall |
+| `f` | flagstone — the holder yard, and the lighters' bridge | ✅ |  |  |
+| `z` | coal — the works' heap | ✅ |  |  |
+| `g` | garden — the cottage plots and the allotments | ✅ |  |  |
+| `d` | drain — impassable; the ditches the Sink runs out through | ❌ |  |  |
+| `e` | a board — over a drain, where somebody laid one | ✅ |  |  |
+
+- **Spawn** (-52, -2).
+- **Ways out:** Ashfall Ward from (-92, -4), arriving (0, 92.4); Highcourt & the Spire from (92, -4), arriving (-78, 0); The Lamp-oil House (a room) from (-8, -26.6), arriving (0, 16); The Tithe Office (a room) from (-4, -6.6), arriving (0, 16); The Sink Cellars (a room) from (-44, 13.4), arriving (0, 16).
+- **People:** the pit hand (-20, -6); the tithe clerk, keeping hours: 09:00 (6, -6) · 14:00 (-28, -62) · 19:00 (6, -6); the lamplighter (26, -6); the urchin (-30, -6); the butcher (-8, -2); the printer (-44, -6); the lighter's boy (44, -2).
+- **Crews:** The Lampwick Gutter Crew, by night: roaming (-10, 6), 7 out; The Tithe-Takers, by night: roaming (2, 8), 7 out; The Wick-Thieves, by night: a beat (-36, -58) → (6, -58) → (6, -70) → (-36, -70).
+- **Wardens:** 2 beats, (6, -25) → (30, -25) → (30, -17) → (6, -17); (-90, -26) → (-68, -26) → (-68, -18) → (-90, -18).
+- **Landmarks:** gasholder (28, -66).
+- **Passers-by:** up to 6 by day, on 4 lanes.
+- **Lamps** 15; **sights** 12.
+
+##### The Bonemarket
+
+`bonemarket.ts` — 48 × 36 — `safety: 'none'` — `horizon: 'city'` — `sky: 'ash'`
+
+```
+      0         1         2         3         4
+      012345678901234567890123456789012345678901234567
+   0  BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB   the outer range
+   1  BuuuuuKKKKuuuuuuKKKKuuuuuuuuKKKKuuuuuuKKKKuuuuuB   THE SHAMBLES: the lairage pens and the killing sheds
+   2  BuuuuuKKKKuuuuuuKKKKuuuuuuuuKKKKuuuuuuKKKKuuuuuB
+   3  BccccccccccccccccccccccccccccccccccccccccccccccB   the Shambles lane (a crew of Knacker's Lads walks it at night)
+   4  BdddddddddddedddddddddddeddddddddddedddddddddddB   the gutter, boarded in three places
+   5  B..............................................B   the offal yard
+   6  BBBBBBccBBBBccBBBBBBBBBBccBBBBBBBBccBBBBBBBBBBBB   the north range, with three ways down through it
+   7  B.....ccBccccccccccccccccccccccccccccccBkkk.kkkB   KNACKER'S LANE (west: the knacker's yard)            THE RAG LANES (east)
+   8  B.KKK.ccBc.TTTTT.cc.TTTTTTT.cc.TTTTT.ccBkkk.kkkB   stall rows, backed onto the range
+   9  B.KKK.ccBccTTTTTccccTTTTTTTccccTTTTTcccB.......B
+  10  B.....ccBmmmmmmmmmmmmmmmmmmmmmmmmmmmmm.c.kk.kk.B   the market floor begins
+  11  B.....ccBmm.TTTTTT.mmmm.TTTTT.mmmm.TTT.B.kk.kk.B
+  12  B.....ccBmmmTTTTTTmmmmmmTTTTTmmmmmmTTTmB...k...B
+  13  B.....ccBmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmBkk.k.kkB
+  14  B.....ccBAmmmmmmHHHHHHHHHHHHHHHHmmmmmmABkk.k.kkB   THE MARKET HALL, between the arcade's last pillars
+  15  cccccccccmmmmmmmHHHHHHHHHHHHHHHHmmmmmmmB...k...B   the way in, off the ward -- across the lane the second crew walks
+  16  cccccccccmmmmmmmHHHHHHHHHHHHHHHHmmmmmmmB.kkkkk.B
+  17  BBBBBBccBAmmmmmmHHHHHHHHHHHHHHHHmmmmmmAB.kkkkk.B
+  18  BBBBBBccBmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmB.......B   the Hall's door, on its south face
+  19  B.....ccBmm.TTTT.mmmmm.TTTTTTT.mmmm.TT.Bkk.k.kkB   rag-and-bone dead ends off the lane
+  20  BBBBBBccBmmmTTTTmmmmmmmTTTTTTTmmmmmmTTmBkk.k.kkB
+  21  BBBBBBccBcccccccccccccccccccccccccccc..B...k...B   the south lane
+  22  BBBBBBccBc.TTTTTT.cc.TTTTT.ccccc.PPPP.cc.kk.kk.B   THE PAWNSHOP, east
+  23  B.....ccBccTTTTTTccccTTTTTcccccccPPPPccB.kk.kk.B
+  24  BBBBBBccBccccccccccccccccccccccccccccccB.......B   the back lane
+  25  BBBBBBccB.........cccccccccc...........Bkkk.kkkB   west: the bone-boiler's yard   east: the eaves
+  26  BBBBBBccB.........cccccccccc...........Bkkk.kkkB
+  27  B.....ccB.........cccccccccc...........B.......B
+  28  BBBBBBccBccccccccccccccccccccccccccccccBkkk.kkkB
+  29  BBBBBBccBBBBBB..BBBBBBBBBBBBBB..BBBBBBBBBBBBBBBB   the south range, the lane and two gaps through it
+  30  B..............................................B   THE GLUE WORKS: the yard
+  31  B...GGGGGGGGGG...dddddddddd...GGGGGGGGGGG......B   the works, the vats between them
+  32  B...GGGGGGGGGG...dddddddddd...GGGGGGGGGGG......B
+  33  BccccccccccccccccccccccccccccccccccccccccccccccB   the tallow lane
+  34  B..kkkkkk.............kkkkkk........kkkkkkkkk..B   the tallow sheds
+  35  BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB   the outer range
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `m` | market floor — trodden dirt over the old paving | ✅ |  |  |
+| `c` | cobbles — the lanes, still swept | ✅ |  |  |
+| `.` | weeds — the corners nobody trades in, and the yards | ✅ |  |  |
+| `T` | stall row — impassable, low, taken whole so a row reads as a row | ❌ |  | stall, 1.9–2.4 tall |
+| `A` | arcade pillar — impassable, tall and narrow | ❌ |  | wall, 5.4 tall |
+| `H` | the Market Hall — impassable; stone, the arcade with its roof back on | ❌ |  | hall, 7 tall |
+| `P` | the pawnshop — impassable; plaster, one storey | ❌ |  | shopfront, 4.6 tall |
+| `B` | the ranges — impassable, the buildings that box the ward in | ❌ |  | terrace, 4.4–6.4 tall |
+| `u` | the pens — lairage mud, trodden to soup | ✅ |  |  |
+| `K` | a killing shed — impassable; timber, and the knacker's the same | ❌ |  | warehouse, 4.2–5 tall |
+| `d` | the gutter — impassable; the Shambles' channel, and the glue vats | ❌ |  |  |
+| `e` | a board — over the gutter | ✅ |  |  |
+| `k` | a shed — impassable; the rag lanes' sorting sheds, the tallow sheds | ❌ |  | cottage, 3.2–3.8 tall |
+| `G` | the glue works — impassable; brick, a stack always going | ❌ |  | warehouse, 5.6–6.4 tall |
+
+- **Spawn** (-48, -8).
+- **Ways out:** Ashfall Ward from (-94, -8), arriving (102, 8); The Market Hall (a room) from (0, 1.4), arriving (0, 20); The Pawnshop (a room) from (44, 14.6), arriving (0, -16).
+- **People:** the lamplighter (-50, -42); the alchemist (-22, 4); the bone-boiler (-40, 32); the knacker (-84, -30); the rag-sorter (80, -34).
+- **Crews:** The Knacker's Lads, by night: a beat (-80, -58) → (80, -58); The Knacker's Lads, by night: a beat (-68, -40) → (-68, 40).
+- **Landmarks:** bell tower (44, -8).
+- **Passers-by:** up to 6 by day, on 4 lanes.
+- **Lamps** 11; **sights** 12.
+
+##### The Cinderworks
+
+`cinderworks.ts` — 52 × 40 — `safety: 'none'` — `horizon: 'city'` — `sky: 'ash'`
+
+```
+      0         1         2         3         4         5
+      0123456789012345678901234567890123456789012345678901
+   0  BBBqqBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB   the barracks wall
+   1  aaaqqabbbbbbbbbbaabbbbbbbbbbbaabbbbbbbbbbaabbbbbbbba   THE BARRACKS: back-to-backs for the works' hands
+   2  aaaqqabbbbbbbbbbaabbbbbbbbbbbaabbbbbbbbbbaabbbbbbbba
+   3  cccffccccccccccccccccccccccccccccccccccccccccccccccc   the barracks lane, over the channel
+   4  aaaqqabbbbbbbaabbbbbbbbbbbaabbbbbbbbbaabbbbbbbbbbbaa
+   5  aaaqqabbbbbbbaabbbbbbbbbbbaabbbbbbbbbaabbbbbbbbbbbaa
+   6  aaaqqaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa   the drying green, and the pump
+   7  ...qqcc..BBBBBBBBccBBBBBBBBBBBBBBBccBBBBBBBaaaaaaaaa   the north range, with two ways down through it
+   8  ...qqcc..BccccccccccccccccccccccccccccccccBaaHHHaaaa   THE QUENCH CHANNEL (west), the slag bank beyond it        THE SCRAPYARD (east)
+   9  ...qqcc..BcFFFFcFFFFcYYYYYYYYYYcFFFFcFFFFcBaaHHHaakk   furnace houses, and THE FOUNDRY HALL between them
+  10  ...qqcc..BcFFFFcFFFFcYYYYYYYYYYcFFFFcFFFFcBaaHHHaakk
+  11  ...qqcc..BcccccccccccYYYYYYYYYYcccccccccccBaaaaaaaaa
+  12  ...qqcc..BccccccccccccccccccccccccccccccccBaaaaaaaaa   the Hall's door, onto the lane
+  13  ...qqcc..BssssssssssssssssssssssssssssssssBaaaaaHHHa   the casting floor
+  14  ...qqcc..BsssssaaasssssssssssssssaaassssssBaaaaaHHHa
+  15  ...qqcc..BssssssssssssssssssssssssssssssssBaaaaaHHHa
+  16  ...qqcc..BssssssssssssssssssssssssssssssssBaaaaaaaaa
+  17  ...qqcc..BsssHHHHHHssssssssssssHHHHHHsssssBaaaaaaaaa   the heaps
+  18  ...qqcc..BsssHHHHHHssssssssssssHHHHHHsssssBaaaaaaaaa
+  19  sssffssssssssssssssssssssssssssssssssssssscccccccccc   west over the channel bridge, out to the Caldera; east, up to the ward
+  20  sssffssssssssssssssssssssssssssssssssssssscccccccccc
+  21  ...qqcc..BaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaBaaaaaaaaa   the ash yards
+  22  ...qqcc..BaaaaaWWWWaaaaHHHHHHaaaaWWWWaaaaaBaHHHaaaaa   the cooling ponds, and the middle heap
+  23  ...qqcc..BaaaaaWWWWaaaaHHHHHHaaaaWWWWaaaaaBaHHHaaaaa
+  24  ...qqcc..BaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaBaHHHaaaaa
+  25  ...qqcc..BccccccccccccccccccccccccccccccccBakkaaaaaa   the south cart lane
+  26  ...qqcc..BcPPPPcccFFFFccccFFFFccccFFFFccccBakkaaaaaa   THE POSTER'S SHED, west, and the south furnaces
+  27  ...qqcc..BcPPPPcccFFFFccccFFFFccccFFFFccccBaaaaaHHHa
+  28  ...qqcc..BccccccccccccccccccccccccccccccccBaaaaaHHHa   the rail spur
+  29  ...qqcc..B................................BaaaaaHHHa   the slag terraces
+  30  ...qqcc..Ba...aaaa...aaaaaaaa...aaaa...aaaBaHHaaaaaa
+  31  ...qqcc..BaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaBaHHaaaaaa
+  32  ...qqcc..BBBBBBBBBBBaaBBBBBBBBBBBBBBaaBBBBBaaaaaaaaa   the south range, with two ways down through it
+  33  aaaqqaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaEEEEEEa   THE RAIL YARD: ballast, three tracks, the wagons standing, the engine shed (east)
+  34  rrrrrrrrwwwwwwrrrrrrrrrrrrrrrrwwwwwwrrrrrrrrrEEEEEEr
+  35  aaaqqaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaEEEEEEa
+  36  rrrrrrrrrrrrrrwwwwwwwwrrrrrrrrrrrrrrrrwwwwwwrrrrrrrr
+  37  aaaqqaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  38  rrrrrrwwwwwwrrrrrrrrrrrrwwwwwwwwrrrrrrrrrrrrrrrrrrrr
+  39  aaaqqaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `s` | casting floor — clinker, vitrified where it ran | ✅ |  |  |
+| `a` | ash yard — what falls, and stays fallen | ✅ |  |  |
+| `.` | slag terrace — broken ground past the spur, still warm | ✅ |  |  |
+| `c` | cart lane — cobbles, the only maintained ground | ✅ |  |  |
+| `W` | cooling pond — impassable | ❌ |  |  |
+| `F` | furnace house — impassable, tall, and chimneyed almost every time | ❌ |  | hall, 5.6–8.2 tall |
+| `Y` | the Foundry Hall — impassable; dressed stone over the casting floor, stacked | ❌ |  | hall, 8.6 tall |
+| `P` | the poster's shed — impassable; timber, one storey | ❌ |  | cottage, 4.6 tall |
+| `H` | slag heap — impassable, low and broad, taken whole | ❌ |  | rock, 2.4–3.4 tall |
+| `B` | the ranges — impassable, the ward wall | ❌ |  | terrace, 4.6–6.8 tall |
+| `b` | the barracks — impassable; plaster back-to-backs | ❌ |  | terrace, 4–4.8 tall |
+| `q` | the quench channel — impassable | ❌ |  |  |
+| `f` | an iron bridge — over the channel | ✅ |  |  |
+| `r` | track — the rails, on their ties | ✅ |  |  |
+| `w` | a wagon — impassable; standing on a track | ❌ |  | plain, 2.4–2.8 tall |
+| `E` | the engine shed — impassable; brick | ❌ |  | hall, 6.4 tall |
+| `k` | a sorting shed — impassable; timber | ❌ |  | cottage, 3.4–3.8 tall |
+
+- **Spawn** (30, 0).
+- **Ways out:** Ashfall Ward from (102, 0), arriving (-102, -26); The Caldera from (-102, 0), arriving (102, -2); The Foundry Hall (a room) from (0, -30.6), arriving (0, 20); The Poster's Shed (a room) from (-52, 22.6), arriving (0, -16).
+- **People:** the lamplighter (-50, -46); the foundry smith (-30, -22); the glassblower (18, -22); the potter (10, -26); the ash-yard hand (-6, 26); the carter (34, 22).
+- **Crews:** The Slag Rats, by night: a beat (-70, 62) → (70, 62); The Slag Rats, by night: a sentry at (-82, -8); Chalk-Road Scavengers, by night: roaming (86, 40), 7 out.
+- **Landmarks:** furnace stack (86, -30).
+- **Passers-by:** up to 6 by day, on 4 lanes.
+- **Lamps** 8; **sights** 12.
+
+##### Highcourt & the Spire
+
+`highcourt.ts` — 42 × 46 — `safety: 'none'` — `horizon: 'city'` — `sky: 'drizzle'`
+
+```
+      0         1         2         3         4
+      012345678901234567890123456789012345678901
+   0  BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB   the outer range
+   1  BpAAAAAAAAAAppppppppppppppppppAAAAAAAAAApB   THE ARCHIVE (west)        THE BEACON COURT and its statues        THE ANNEXE (east)
+   2  BpAAAAAAAAAAppppppppppppppppppAAAAAAAAAApB
+   3  BpAAAAAAAAAAppppppppppppppppppAAAAAAAAAApB
+   4  BpAAAAAAAAAAppppppppppppppppppAAAAAAAAAApB
+   5  BppppppppppppppppppppppppppppppppppppppppB
+   6  BppppVVVVVVppppppppppppppppppppVVVVVVppppB   balustrades, mirrored
+   7  BppppppppppppppppppppppppppppppppppppppppB
+   8  BppppppBBppBBBBBBBBBBBBBBBBBBBBppBBppppppB   the old north range, two ways up through it
+   9  BppIpppBppppppppppppppppppppppppppBpppIppB   THE COLONNADES, either side of the court: a pillar every other row
+  10  BppppppBppppppPPPPPPPPPPPPPPppppppBppppppB   the Spire's footing, and THE LOBBY under it
+  11  BppIpppBppppppPPPPPPPPPPPPPPppppppBpppIppB
+  12  BppppppBppppppPPPPPPPPPPPPPPppppppBppppppB
+  13  BppIpppBppppppPPPPPPPPPPPPPPppppppBpppIppB
+  14  BppppppBppppppppppppppppppppppppppBppppppB   the lobby doors, onto the processional
+  15  BppIpppBppVVppppppppppppppppppVVppBpppIppB
+  16  BppppppBppppppppppppppppppppppppppBppppppB
+  17  BppIpppBppppppppppppppppppppppppccBpppIppB
+  18  BppppppBccppppppppppppppppppppppppBppppppB
+  19  BppIpppBppppppppppppppppppppppppppBpppIppB
+  20  BppppppBppVVVVppppppppppppppVVVVppBppppppB
+  21  BppppppBppppppppppppppppppppppppppBppppppB
+  22  ccccccccppppppppppppppppppppppppppBppppppB   the way down to Lamprow, across the west colonnade
+  23  ccccccccppppppppppppppppppppppppppBppppppB
+  24  BppppppBppppppppppppppppppppppppppBppppppB
+  25  BppIpppBppVVVVppppppppppppppVVVVppBpppIppB
+  26  BppppppBppppppppppppppppppppppppppBppppppB
+  27  BppIpppBccppppppppppppppppppppppppBpppIppB
+  28  BppppppBccccccccccccccccccccccccccBppppppB   the service end; the Rest's door
+  29  BppIpppBccRRRRRRcccccccBBBBBBBccccBpppIppB   THE SMOKE-EATER'S REST, west; the service terrace, east
+  30  BppppppBccRRRRRRcccccccBBBBBBBccccBppppppB
+  31  BppIpppBccccccccccccccccccccccccccBpppIppB
+  32  BppppppBcc.ccccccccccccccccccc.cccBppppppB   the Undercroft's door
+  33  BppIpppBccUUUUUUcccccccccccccccc.cBpppIppB   THE UNDERCROFT's stair-head
+  34  BppppppBccUUUUUUcccccccccccccccc.cBppppppB
+  35  BppIpppBccccccccccccccccccccccccccBpppIppB
+  36  BppppppBcc.ccccccccccccccccccc.cccBppppppB
+  37  BppppppBBBBBccBBBBBBBBBBBBBBccBBBBBppppppB   the old south range, two ways down through it
+  38  BccccccccccccccccccccccccccccccccccccccccB   THE BAILIFFS' YARD
+  39  BccccccccccccccccccccccccccccccccccccccccB
+  40  BccccNNNNNNNNNNccccccccccccNNNNNNNNNNccccB   the Night Bailiffs' barracks, one each side
+  41  BccccNNNNNNNNNNccccccccccccNNNNNNNNNNccccB
+  42  BccccNNNNNNNNNNccccccccccccNNNNNNNNNNccccB
+  43  BccccccccccccccccSSSSSSSSccccccccccccccccB   the court's stables
+  44  BccccccccccccccccSSSSSSSSccccccccccccccccB
+  45  BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB   the outer range
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `p` | dressed stone — the processional | ✅ |  |  |
+| `c` | cobbles — the service lanes at the south end, where the money ran out | ✅ |  |  |
+| `.` | weeds — and where it ran out entirely | ✅ |  |  |
+| `P` | the Spire — impassable, and the tallest thing anybody has built | ❌ |  | tower, 16 tall |
+| `V` | balustrade — impassable, low, symmetrical | ❌ |  | wall, 1.6 tall |
+| `R` | the Smoke-Eater's Rest — impassable; timber, on the service end | ❌ |  | shopfront, 5.6 tall |
+| `U` | the Undercroft — impassable; the stone stair-head over what is under the court | ❌ |  | hall, 4.2 tall |
+| `B` | the court — impassable, the ranges either side | ❌ |  | hall, 7–9.5 tall |
+| `A` | the Archive and the Annexe — impassable; stone, windowless where it matters | ❌ |  | hall, 6.4 tall |
+| `I` | a colonnade pillar — impassable, tall and narrow | ❌ |  | wall, 5.8 tall |
+| `N` | the bailiffs' barracks — impassable; brick | ❌ |  | hall, 5.2 tall |
+| `S` | the stables — impassable; timber | ❌ |  | cottage, 3.8–4.2 tall |
+
+- **Spawn** (0, 0).
+- **Ways out:** Lamprow from (-82, 0), arriving (88, -4); The Spire Lobby (a room) from (0, -34.6), arriving (0, 20); The Smoke-Eater's Rest (a room) from (-32, 22.6), arriving (0, -20); The Undercroft (a room) from (-32, 38.6), arriving (0, -24).
+- **People:** the lamplighter (-34, -42); the court scribe, keeping hours: 08:00 (-48, -62) · 18:00 (-14, -14); the lady of the court (14, -22); the crier (-14, -2); the herald (6, -30); the court tailor (22, -30); the court musician, keeping hours: 10:00 (22, -6) · 19:00 (0, -63); the clerk of works (-14, 22).
+- **Crews:** The Night Bailiffs, by night: a beat (-64, -56) → (-64, 52); The Night Bailiffs, by night: a beat (64, -56) → (64, 52).
+- **Landmarks:** lighthouse (0, -76).
+- **Passers-by:** up to 6 by day, on 4 lanes.
+- **Lamps** 11; **sights** 12.
+
+##### Ward Seven
+
+`wardSeven.ts` — 46 × 40 — `safety: 'none'` — `horizon: 'city'` — `sky: 'drizzle'`
+
+```
+      0         1         2         3         4
+      0123456789012345678901234567890123456789012345
+   0  WWWWWWWWWWWWWWWWWWkWWWWWWWWWWWWWWWWWWWWWWWWWWW   THE DROWNED TERRACES: the flood, and what stands out of it
+   1  WWXXXXXXXXWWkkkkkkkkkkkkkWWWWWWWWWWXXXXXXXXXWW   the boardwalks along the old terrace fronts
+   2  WWWkWWWWWWWWkWWWWWWWWWWWkWggWWWWWWWWWWWWWWkWWW   the island, and the water tower on it
+   3  WWWkWWWWWWWWkWWWWWWWWWWWkkkkkkkkkkWWWWWWWWkWWW
+   4  WWWkkkkkkkkkkWWWWWWWXXXXXXXXWWWWWkWWWXXXXXkXXW
+   5  WWWWWWWWWWWWkWWWWWWWWWWWWWWWWWWWWkkkkkkkkkkWWW
+   6  WXXXXXXXXWWWkkWWWWWWWWWWWWWWWWWWkkWWWWXXXXXXXW
+   7  WWWWWWWWWWWWkkWWWWWWWWWWWWWWWWWWkkWWWWWWWWWWWW   the cistern -- the two bridges across it
+   8  WWWWWWWWWWWWkkWWWWWWWWWWWWWWWWWWkkWWWWWWWWWWWW
+   9  WWWWWWWWWWWWkkWWWWWWWWWWWWWWWWWWkkWWWWWWWWWWWW
+  10  cccccccccccccccccccccccccccccccccccccccccccccc   the quay; the punt moorings (west)                     the washhouse (east)
+  11  .hhh....Bcc.gggggggggggggggggggggg.ccB........   the north bank
+  12  .hhh....BckkkkkkkkkkkkkkkkkkkkkkkkkkcB.LLLLLL.   the north boardwalk
+  13  ........BcgggWWWWWWWWggggWWWWWWWWgggcB.LLLLLL.   what is left of the water
+  14  .hhhhhh.BcgggWWWWWWWWggggWWWWWWWWgggcB.LLLLLL.
+  15  .hhhhhh.BckkkkkkkkkkkkkkkkkkkkkkkkkkcB........   the south boardwalk
+  16  ........Bccggggggggggggggggggggggg.ccB........
+  17  cccccccccccccccccccccccccccccccccccccccccccccc   the ring lane, on through both old walls
+  18  ........BcVVVVVccccccMMMMccccccVVVVVcB........   the wall round the basin, and THE PUMP HOUSE
+  19  ggggggggBccccccccccccMMMMccccccccccccccccccccc   the soak (west)                              the way out, east to the ward
+  20  ggggggggBccccccccccccccccccccccccccccB........   the pump house door, onto the lane
+  21  ggWWWgggBccBBBBBcccccBBBBBcLLLLLcccccB........   the terraces, and THE CLINIC
+  22  ggWWWgggBccBBBBBcccccBBBBBcLLLLLcccccB........
+  23  ggggggggBccccccccccccccccccccccccccccB........   the terrace lane; the clinic door
+  24  ggggggggBc..ggggg.ccccc.gggggg.ccccccB........   the south seep, and the drowned graves
+  25  gggggWWWBccggggggggccccgggggggggcccccB........
+  26  cccccccccccccccccccccccccccccccccccccB........
+  27  ggggggggBccBBBBBBccccccccBBBBBBBcccccB..BBBBB.   the drying yard, and its terraces
+  28  gWWWggggBccBBBBBBccccccccBBBBBBBcccccB..BBBBB.
+  29  gWWWggggBccccccccccccccccccccccccccccB........
+  30  ggggggggBcc.ggggggg.cccc.ggggggg.ccccB........   the second seep
+  31  ggggggggBccccccccccccccccccccccccccccB........
+  32  BBBBBBBBBBBBBBcBBBBBBBBBBBBBBBBcBBBBBBBBBBBBBB   the south range, with two ways down through it
+  33  ..............................................   THE NEW CUT: the drain the Magistracy began, boarded twice
+  34  WWWWWWWWWWWWWWkWWWWWWWWWWWWWWWWkWWWWWWWWWWWWWW
+  35  WWWWWWWWWWWWWWkWWWWWWWWWWWWWWWWkWWWWWWWWWWWWWW
+  36  ..............................................
+  37  ....................MMMMMM....................   the engine house, with no engine
+  38  ....................MMMMMM....................
+  39  BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB   the far range
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `c` | cobbles — the dry lanes, such as they are | ✅ |  |  |
+| `.` | weeds — the joints losing the argument | ✅ |  |  |
+| `g` | soaked peat — walkable, and it is not pretending otherwise | ✅ |  |  |
+| `k` | boardwalk — planks over the peat, the one thing the ward built for itself | ✅ |  |  |
+| `W` | open water — impassable | ❌ |  |  |
+| `V` | low wall — impassable, the barrier round the basin | ❌ |  | wall, 2.2 tall |
+| `M` | the pump house — impassable; stone, the Magistracy's one answer | ❌ |  | hall, 5.4 tall |
+| `L` | the clinic — impassable; limewashed plaster, one storey | ❌ |  | cottage, 4.4 tall |
+| `B` | terrace — impassable | ❌ |  | terrace, 4.2–6 tall |
+| `X` | a drowned terrace — impassable; broken walls standing out of the flood | ❌ |  | wall, 1.2–2.8 tall |
+| `h` | cottage — impassable; the punters' | ❌ |  | cottage, 3.6–4.2 tall |
+
+- **Spawn** (0, -10).
+- **Ways out:** Ashfall Ward from (90, -2), arriving (-102, 30); The Cistern (a room) from (0, 1.4), arriving (0, 20); The Back-Alley Clinic (a room) from (26, 13.4), arriving (0, 16).
+- **People:** the lamplighter (10, -10); the apothecary (18, 14); the herbalist (-22, -10); the washerwoman (-30, 22).
+- **Crews:** What Lives in the Cistern, by night: a beat (-42, -54) → (-42, -74) → (6, -74) → (6, -66) → (42, -66) → (42, -54); What Lives in the Cistern, by night: roaming (-80, 40), 7 out.
+- **Landmarks:** water tower (16, -70).
+- **Passers-by:** up to 5 by day, on 4 lanes.
+- **Lamps** 8; **sights** 12.
+
+#### The Middle Ring
+
+##### The Chalk Road
+
+`chalkRoad.ts` — 58 × 20 — `safety: 'none'` — `horizon: 'treeline'` — `sky: 'pollen'`
+
+```
+      0         1         2         3         4         5
+      0123456789012345678901234567890123456789012345678901234567
+   0  HHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+   1  HHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+   2  HHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+   3  HHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH   the north hedge, and the lane up to Millharrow; fields where the hedges give out (west)
+   4  fffffffffffHffffffff,,HHfffffffffWWWWffffHHfffffSSSSSfffff   ploughed strips; THE WAYSTATION; its stables (east)
+   5  fffffffffffHfff.ffff,,HHffff.ffffWWWWffffHHfffffSSSSSfffff
+   6  fffffffffffHffffffff,,HHfffffffffWWWWf.ffHHffff........fff
+   7  fffffffffffHffff..ff,,HHff.ffffff....ffffHHfff............   the waystation's yard, and its graves
+   8  #ww#ww#ww##H##.#####,,####################################   the north verge; THE WAGON TRAIN drawn up on it (west)
+   9  ,,,,,,,,,,,,,,,,,,,,,,,RR,,,,,,,,,,RR,,,,,,,,,,,,,,,,,,,,,   waystones, set in pairs
+  10  ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,   THE ROAD — never blocked, end to end
+  11  ,,,,,,,,,,,,,,,,,,,,,,,RR,,,,,,,,,,RR,,,,,,,,,,,,,,,,,,,,,
+  12  ##ww##ww###H#########################,,###################   the south verge, and the lane down to the Crossing; two more wagons (west)
+  13  fffffffffffHfffffffffffffHHffffffffff,,fffffffffffffffffff
+  14  fffffffffffHffff.ffffffffHHfffff.ffff,,fffffff............
+  15  fffffffffffHfffffffffffffHHffffffffff,,fffffffffffffffffff
+  16  HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHH   the south hedge
+  17  HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHH
+  18  HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHH
+  19  HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,HHHHHHHHHHHHHHHHHHH
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `,` | chalk track — the road itself | ✅ |  |  |
+| `f` | ploughed strip — field, furrowed north-south against an east-west road | ✅ |  |  |
+| `#` | grass verge — the margin either side of the track | ✅ |  |  |
+| `.` | weeds — where the verge has gone over | ✅ |  |  |
+| `H` | hedgerow — impassable, tall and split into a broken line | ❌ |  | foliage, 4–5.4 tall |
+| `R` | waystone — impassable, low and taken whole | ❌ |  | rock, 2.2–3.6 tall |
+| `W` | the waystation — impassable; timber, the stack cold | ❌ |  | cottage, 4.6 tall |
+| `S` | the stables — impassable; the waystation's, timber | ❌ |  | cottage, 3.8–4 tall |
+| `w` | a wagon — impassable; the train, drawn up on the verges | ❌ |  | plain, 2.4–2.8 tall |
+
+- **Spawn** (62, 2).
+- **Ways out:** The Chalk Verge from (114, 2), arriving (-84, -6); Millharrow from (-34, -22), arriving (-2, 86); Fenwick's Crossing from (38, 22), arriving (-2, -56); The Rimefields from (-114, 2), arriving (110, -2); The Chalk Road Waystation (a room) from (24, -10.6), arriving (0, 14).
+- **Crews:** The Waywatch, by day: roaming (-30, 2), 10 out; Hedgerow Vermin: roaming (-12, 4), 10 out; The Freight-Pickers, by night: roaming (-26, -4), 10 out; The Waywatch, by day: a beat (-60, 2) → (40, 2); The Freight-Pickers, by night: roaming (-96, -22), 6 out.
+- **Landmarks:** toll bar (-26, -6).
+- **Lamps** 0; **sights** 9.
+
+##### Millharrow
+
+`millharrow.ts` — 60 × 52 — `safety: 'none'` — `horizon: 'treeline'` — `sky: 'pollen'`
+
+```
+      0         1         2         3         4         5
+      012345678901234567890123456789012345678901234567890123456789
+   0  TTTTTTTTTTTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the far hedge; the north road
+   1  T#####################cccccc,,ccccccTffffffffffffffffffffffT   THE MILLPOND (west)   THE NORTH END, cottages either side of the road   WINDMILL HILL (east)
+   2  T#####WWWWWWWWWWWW####chhhcc,,chhhccTffffffffffffffffffffffT
+   3  T###WWWWWWWWWWWWWW####chhhcc,,chhhccTfffffff########fffffffT
+   4  T###WWWWWWWWWWWWWW####cccccc,,ccccccTfffffff########fffffffT
+   5  T###WWWWWWWWWWWWWW####cccccc,,ccccccffffffff########fffffffT
+   6  T###WWWWWWWWWWWWWW####chhhcc,,chhhccTfffffff########fffffffT
+   7  T###WWWWWWWWWWWWWW####chhhcc,,chhhccTfffffff########fffffffT
+   8  T###WWWWWWWWWWW#######cccccc,,ccccccTfffffff########fffffffT
+   9  T##############W######cccccc,,ccccccTffffffffffffffffffffffT   the leat, down from the pond to the race
+  10  T##############W######cccccc,,ccccccTffffffffffffffffffffffT
+  11  TffffffffffffffWffffffffffff,,fffffffffffffffffffffffffffffT
+  12  TTTTTTTTTTTTT#TWTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   north hedge; north, to the Levels
+  13  Tcccccccccccc#TW#fffffffffff,,,,fffffffffff##Tc############T   THE GRANARY YARDS (west)                                            THE EAST END
+  14  TcGGGGGcGGGGG#TW#fffffffffff,,,,fffffffffff##Tc#hhhhh#hhhh#T
+  15  TcGGGGGcGGGGG#TW#fffffffffff,,,,fffffffffff##Tc#hhhhh#hhhh#T
+  16  TcGGGGGcGGGGG#TW....#######,,,,,,#######....#Tc#gggggggggg#T
+  17  Tcccccccccccc#cbccccccccccc,,,,,,cccccccccccccc#gggggggggg#T   the leat bridge, and a way through each old hedge
+  18  Tcccccccccccc#TWBBBBBBccMMMM,,,,,,cBBBBBBBBccTc############T   the north frontages, and THE MILL
+  19  TcGGGGGcGGGGG#TWBBBBBBccMMMM,,,,,,cBBBBBBBBccTc##hhhh######T
+  20  TcGGGGGcGGGGG#TWcWWWWWWcMMMM,,,,,,cccccccccccTc##hhhh######T   the mill race
+  21  TcGGGGGcGGGGG#TWcWWWWWWccccc,,,,cccccccccccccTc##hhhh######T   the mill door
+  22  TcGGGGGcGGGGG#TcGGGGGGccBBBBc,,,,cBBBBBBcccccTc############T   THE LOW GRANARY, drowned
+  23  Tcccccccccccc#TcGGGGGGccBBBBc,,,,cBBBBBBcccccT#############T
+  24  ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,   THE CROSS — west to Saltglass, east to Bray's Hollow
+  25  ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+  26  T............#Tcccccccccccc,,,,,,ccccccccccccT#############T   the threshing floor, and the tithe barn                            the crossroads chapel
+  27  T............#TcBBBBBccBBBBc,,,,cBBBBBBccBBBcTc############T   the south frontages
+  28  T.GGGGGG.....#TcBBBBBccBBBBc,,,,cBBBBBBccBBBcTc############T
+  29  T.GGGGGG.....#ccccccccccccc,,,,,,cccccccccccccc###KKKKKK###T
+  30  T.GGGGGG.....#TcBBBBBBccBBBB,,,,,,cBBBBBBBBccTc###KKKKKK###T
+  31  T.GGGGGG.....#TcBBBBBBccBBBB,,,,,,cBBBBBBBBccTc###KKKKKK###T
+  32  T............#Tcccccccccccc,,,,,,ccccccccccccTc###KKKKKK###T
+  33  T............#T#....#######,,,,,,#######....#Tc############T
+  34  T........GGGG#T##fffffffffff,,,,fffffffffff##Tc#..........#T
+  35  T........GGGG#T##fffffffffff,,,,fffffffffff##Tc#..........#T
+  36  T........GGGG#T##fffffffffff,,,,fffffffffff##Tc#..........#T
+  37  T........GGGG#T##fffffffffff,,,,fffffffffff##Tc#..........#T
+  38  T............#T##fffffffffff,,,,fffffffffff##Tc############T
+  39  TTTTTTTTTTTTT#TTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTcTTTTTTTTTTTTT   south, to the Chalk Road
+  40  TTTTTTTTTTTTT#TTTTTTTTTTTTT#,,#TTTTTTTTTTTTTTT#TTTTTTTTTTTTT   THE ORCHARDS (west), the cider press      the south road      THE FAIR GREEN, and THE INN
+  41  T#########################T#,,####IIIIII###################T
+  42  T###################hhhh##T#,,####IIIIII###################T
+  43  T###################hhhh##T#,,#############################T
+  44  T#########################T#,,##hh#########################T
+  45  T#########################T#,,##hh#########################T
+  46  T#########################T#,,########YYYYYY###YYYYYY######T   the fair stalls
+  47  T#########################T#,,#############################T
+  48  T###########################,,#############################T
+  49  T#########################T#,,########YYYYYY###YYYYYY######T
+  50  T#########################T#,,#############################T
+  51  TTTTTTTTTTTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the far hedge; south, to the Chalk Road
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `,` | chalk street — the crossroads themselves, and the four roads out | ✅ |  |  |
+| `c` | cobbles — the yards and frontages either side | ✅ |  |  |
+| `f` | ploughed strip | ✅ |  |  |
+| `#` | grass | ✅ |  |  |
+| `.` | weeds | ✅ |  |  |
+| `W` | the mill race — impassable, and below you | ❌ |  |  |
+| `B` | town building — impassable | ❌ |  | terrace, 3.6–5.2 tall |
+| `M` | the Mill — impassable; timber, the stack going | ❌ |  | hall, 6.4 tall |
+| `G` | the granary — impassable; low stone, the water line on it | ❌ |  | warehouse, 3.2 tall |
+| `T` | hedgerow — impassable, the town's edge | ❌ |  | foliage, 3.4–4.6 tall |
+| `h` | cottage — impassable; the road-heads, the East End, the cider press | ❌ |  | cottage, 3.6–4.4 tall |
+| `g` | garden — the East End's | ✅ |  |  |
+| `b` | the leat bridge — planks over the leat | ✅ |  |  |
+| `K` | the chapel — impassable; stone | ❌ |  | hall, 5.6 tall |
+| `I` | the Crossroads Arms — impassable; timber, the stack going | ❌ |  | shopfront, 5.2 tall |
+| `Y` | a fair stall — impassable, low | ❌ |  | stall, 1.9–2.3 tall |
+
+- **Spawn** (0, 0).
+- **Ways out:** The Chalk Road from (-2, 98), arriving (-34, -14); The Tallow Levels from (-2, -98), arriving (-2, 58); Saltglass from (-118, -2), arriving (82, 8); Bray's Hollow from (118, -2), arriving (-70, 0); The Mill (a room) from (-16, -18.6), arriving (0, 14); The Drowned Granary (a room) from (-44, -6.6), arriving (0, 20); The Crossroads Arms (a room) from (28, 69.4), arriving (0, 14).
+- **People:** the miller (6, -10); the farmer, keeping hours: 06:00 (-90, -26) · 15:00 (-10, 2); the baker, keeping hours: 04:00 (14, 14) · 10:00 (62, 70) · 16:00 (14, 14); the brewer, keeping hours: 06:00 (2, -14) · 18:00 (44, 66); the tollman (10, -14).
+- **Crews:** The Scarecrow Men, by night: a beat (46, -98) → (110, -98) → (110, -62) → (46, -62); The Scarecrow Men, by night: a beat (-110, 94) → (-22, 94).
+- **Landmarks:** windmill (72, -80); water wheel (-26, -22).
+- **Passers-by:** up to 7 by day, on 5 lanes.
+- **Lamps** 11; **sights** 14.
+
+##### The Tallow Levels
+
+`tallowLevels.ts` — 52 × 40 — `safety: 'none'` — `horizon: 'treeline'` — `sky: 'drizzle'`
+
+```
+      0         1         2         3         4         5
+      0123456789012345678901234567890123456789012345678901
+   0  TTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the far thicket
+   1  ggWWWWWWWggggggggg,,ggWWWWWWWWggggggggggggggWWWWWWgg   THE REED BEDS, and the ride north into the Ashwood
+   2  ggWWWWWWWggggggggg,,ggWWWWWWWWggggggggggggggWWWWWWgg
+   3  ggWWWWWWWggggggggg,,ggggggggggggggggggggggggWWWWWWgg
+   4  ggggggggggWWWWWWgg,,gggggggggggggWWWWWWWWggggggggggg
+   5  ggggggggggWWWWWWgg,,gggggggggggggWWWWWWWWggggggggggg
+   6  ggggggggggWWWWWWgg,,gggggggggggggggggggggggggggggggg
+   7  TggWWggggTTTTTTTTT,,TTTTTTTTTTggTTTTggTTTTTg#W#ggggT   the old north thicket, with ways through it
+   8  TggWWggggTffffffffffffffffffffffffffffffffTg#W#ggggT
+   9  TggWWggggTffffffffffffffffffffffffffffffffTg#W#ggggT   THE MAIN DRAIN (west)                                                THE NEW DRAIN, its dykes (east)
+  10  TggWWghhgTffffWWWWWfffffffffffWWWWWfffffffTg#W#ggggT   the sluice-keeper's hut
+  11  TggWWghhgTggggWWWWWgggggggggggWWWWWgggggggTg#W#ggggT
+  12  TggWWggggTgggggggggggggggggggggggggggggggggg#W#ggggT   the north field
+  13  TggWWggggTgg##gggggggggggggggggggPPPggggggTg#W#ggggT   THE PUMP HOUSE, on the middle bank
+  14  TggWWggggTgggggggggggggggggggggggPPPggggggTg#W#ggggT   the pumping engine, on its ground by the new drain
+  15  TggWWggggTggggggggggggggggggggggggggggggggTg#W#ggggT   the pump house door
+  16  TggWWggggTWWWWWWWgggggggggggggggWWWWWWWWWWTg#W#ggggT   through the middle
+  17  TggSSggggTggggggggggggggggggggggggggggggggTg#W#ggggT   the sluice gates
+  18  kkkkkkkkkgggggggggggggggggggggggggggggggggTg#k#ggggT   THE CAUSEWAY — west to the Bone Bastion
+  19  kkkkkkkkkgggggggggggggggggggggggggggggggggTg#k#ggggT
+  20  TggSSggggTgg##gggggggWWWWggggggg##ggggggggTg#W#ggggT
+  21  TggWWggggTggggggggggggggggggggggggggggggggTg#W#ggggT
+  22  TggWWggggTWWWWWWWWWgggggggggggggWWWWWWWWWWTg#W#ggggT   through the middle again, but narrower
+  23  TggWWggggTggggggggggggggggggggggggggggggggTg#W#ggggT
+  24  TggWWggggTgg##ggggggggggggggg##ggggggggggggg#W#ggggT
+  25  TggWWggggTggggggggggggggggggggggggggggggggTg#W#ggggT
+  26  TggWWggggTggggWWWWWgggggggggggWWWWWgggggggTg#W#ggggT
+  27  TggWWggggTffffWWWWWfffffffffffWWWWWfffffffTg#W#ggggT
+  28  TggWWggggTffffffffffffffffffffffffffffffffTg#W#ggggT   the rendering yard
+  29  TggWWggggTffffffffffffffffffffffffffffffffTg#W#ggggT
+  30  TggWWggggTffffffffffffffffffffffffffffffffTg#W#ggggT
+  31  TggWWggggTffffffffffffffffffffffffffffffffTg#W#ggggT
+  32  TggWWggggTggTTTTTTTTTTTTT,,TTTTTTTTTTTggTTTg#W#ggggT   the old south thicket, with ways through it
+  33  Tgggggggggggggggggggggggg,,ggggggggggggggggggggggggT   THE HALF-SUNK VILLAGE
+  34  Tggghhhggghhhgggggggggggg,,ggghhhggghhhggggggggggggT   the cottages still standing
+  35  Tggghhhggghhhgggggggggggg,,ggghhhggghhhggggggggggggT
+  36  TgWWWWWWWWWWWgWKKKKgggggg,,ggggWWWWWWWggWWXXXXWWWWgT   where the ground went under: the chapel, and the ones that are not standing
+  37  TgWWWXXXXWWWWgWKKKKgggggg,,ggggWXXXXWWggWWWWWWWWWWgT
+  38  TgWWWWWWWWWWWgWKKKKgggggg,,ggggWWWWWWWgggggggggggggT
+  39  TTTTTTTTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTTTTT   the far thicket; south, to Millharrow
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `g` | soaked ground — walkable, and most of the map | ✅ |  |  |
+| `W` | drainage cut — impassable | ❌ |  |  |
+| `f` | ploughed strip | ✅ |  |  |
+| `#` | grass | ✅ |  |  |
+| `,` | chalk track — the road south, and nothing else | ✅ |  |  |
+| `P` | the pump house — impassable; stone, the stack cold | ❌ |  | hall, 5 tall |
+| `T` | thicket — impassable, the boundary | ❌ |  | foliage, 3.2–4.8 tall |
+| `k` | the causeway — cobbled, raised over the drains | ✅ |  |  |
+| `S` | a sluice gate — impassable; timber on iron screws | ❌ |  | wall, 2 tall |
+| `h` | cottage — impassable; the keeper's hut, the half-sunk village | ❌ |  | cottage, 3.6–4.2 tall |
+| `X` | a sunk cottage — impassable; walls standing out of the water | ❌ |  | wall, 1.2–2.6 tall |
+| `K` | the chapel — impassable; its west end in the water | ❌ |  | hall, 5 tall |
+
+- **Spawn** (0, -10).
+- **Ways out:** Millharrow from (-2, 74), arriving (-2, -86); The Ashwood from (-26, -74), arriving (-6, 94); The Bone Bastion from (-102, -6), arriving (74, -2); The Pump House (a room) from (34, -18.6), arriving (0, 14).
+- **People:** the farm girl (-18, -14); the tanner (10, 18); the cobbler (-22, -18); the renderer (-30, 38).
+- **Crews:** The Dyke-Wardens, by day: a beat (82, -48) → (82, 48); The Dyke-Wardens, by night: roaming (-40, -66), 7 out.
+- **Landmarks:** beam engine (88, -16).
+- **Lamps** 4; **sights** 10.
+
+##### Saltglass
+
+`saltglass.ts` — 46 × 36 — `safety: 'none'` — `horizon: 'treeline'` — `sky: 'drizzle'`
+
+```
+      0         1         2         3         4
+      0123456789012345678901234567890123456789012345
+   0  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW   the sea
+   1  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+   2  ssssssssssssssssssssssssssssssssssssssssssssss   THE SALT PANS, in their ranks between the bunds; the headland (east)
+   3  sPPPsPPPsPPPsPPPsPPPsPPPsPPPsPPPsPPPssssssssss
+   4  sPPPsPPPsPPPsPPPsPPPsPPPsPPPsPPPsPPPssssssssss
+   5  ssssssssssssssssssssssssssssssssssssssssssssss
+   6  sPPPsPPPsPPPsPPPsPPPsPPPsPPPsPPPsPPPsskkksssss   the pans that were the works' own; the salt-rakers' shed
+   7  sPPPsPPPsPPPsPPPsPPPsPPPsPPPsPPPsPPPsskkksssss
+   8  cccccccccccccccccccccccccccccccccccccccccccccc   the quay; the Customs Chain
+   9  TsssssssTssHHHHHHsssssssssssXXXXXssssTsssssssT   THE GLASSHOUSE   THE CUSTOMS HOUSE
+  10  TKKKssssTssHHHHHHsssssssssssXXXXXssssTsssssssT   THE GLASS KILNS (west)
+  11  TKKKssssTssHHHHHHssssssssssssssssssssTsssssssT   the customs house door
+  12  TsssssssssssssssssssssssssssssssssssssssGGGGsT   the glasshouse door
+  13  TsssssssTssGGGGssssssssssGGGGssssssssTssGGGGsT   the pane ranks
+  14  TsssssssTssGGGGssssssssssGGGGssssssssTsssssssT
+  15  TKKKssssTssssssssssssssssssssssssssssTsssssssT
+  16  TKKKssssTss,,,,,,,,,,,,,,,,,,,,ssssssTsssssssT   a cart way across the flats
+  17  TsssssssTssssssssssssssssssssssssssssTsssssssT
+  18  TsssssssTsssGGGGGGssssssGGGGGGsssssssTsssssssT
+  19  TsssssssT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,   the way east, to Millharrow
+  20  TsssssssT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+  21  TsssssssTsssGGGGGGssssssGGGGGGsssssssTsssssssT
+  22  TsssssssTssssssssssssssssssssssssssssTsssssssT
+  23  TsssKKKsTss,,,,,,,,,,,,,,,,,,,,ssssssTsssssssT
+  24  TsssKKKsTssssssssssssssssssssssssssssTsssssssT
+  25  TssssssssssGGGGssssssssssGGGGssssssssssssssssT
+  26  TsssssssTssGGGGssssssssssGGGGssssssssTsGGGGssT
+  27  TsssssssTssssssssssssssssssssssssssssTsGGGGssT
+  28  TsssssssTccccccccccccccccccccccccccccTsssssssT   the south quay
+  29  TsssssssTTTTTTTssTTTTTTTTTTTTTTTTssTTTsssssssT   the old south scrub, two ways through it
+  30  TssssssssssssssssssssssssssssssssssssssssssssT   THE WRECK ON THE SALT: the hull, the bow, the stern broken to the ribs
+  31  TsssssssssRRRZZZZZZZZZZZZZZZZssssssssssssssssT
+  32  TsssssssssRRRZZZZZZZZZZZZZZZsssssssssssssssssT
+  33  TssssssssssssssssssssssssssssssssssssssssssssT
+  34  TssssssssssssssssssssssssssssssssssssssssssssT
+  35  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the scrub
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `s` | salt crust — the flats | ✅ |  |  |
+| `,` | chalk track — the cart ways across them | ✅ |  |  |
+| `c` | cobbles — the quay along the pans | ✅ |  |  |
+| `W` | brine pan — impassable | ❌ |  |  |
+| `G` | fused pane — impassable, tall, thin, and taken whole | ❌ |  | ice, 4.4–5.6 tall |
+| `H` | the Glasshouse — impassable; timber, the furnace stack always going | ❌ |  | warehouse, 5.4 tall |
+| `X` | the Customs House — impassable; dressed stone, the Magistracy's | ❌ |  | hall, 6 tall |
+| `T` | scrub — impassable, the boundary | ❌ |  | foliage, 2.6–3.8 tall |
+| `P` | a salt pan — impassable; brine, left for the sun | ❌ |  |  |
+| `k` | the rakers' shed — impassable; timber | ❌ |  | cottage, 3.4–3.6 tall |
+| `K` | a glass kiln — impassable; stone, fired on driftwood | ❌ |  | cottage, 3.8–4.2 tall |
+| `Z` | the wreck — impassable; a hull on the salt | ❌ |  | plain, 2.8–3.2 tall |
+| `R` | its stern — impassable; broken open to the ribs | ❌ |  | wall, 1.4–2.6 tall |
+
+- **Spawn** (0, 8).
+- **Ways out:** Millharrow from (90, 8), arriving (-98, -2); The Glasshouse (a room) from (-36, -22.6), arriving (0, 14); The Customs House (a room) from (30, -26.6), arriving (0, 14).
+- **People:** the fisherman (-14, -38); the pan-wife (14, -26); the chart-maker (-18, -34); the singer (-10, -30).
+- **Crews:** The Glass-Pickers, by day: a beat (-80, -50) → (60, -50); The Glass-Pickers, by night: a sentry at (36, 56); The Glass-Pickers, by night: roaming (-78, -2), 6 out.
+- **Landmarks:** lighthouse (76, -56).
+- **Lamps** 4; **sights** 10.
+
+##### Bray's Hollow
+
+`braysHollow.ts` — 40 × 40 — `safety: 'none'` — `horizon: 'treeline'` — `sky: 'pollen'`
+
+```
+      0         1         2         3
+      0123456789012345678901234567890123456789
+   0  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the far hedge
+   1  T#fffffffffff###############ffffffffff#T   THE NORTH RIM: strips either side, and the stone circle on the crown
+   2  T#fffffffffff###############ffffffffff#T
+   3  T######################################T
+   4  T######################################T
+   5  T######################################T
+   6  T######################################T
+   7  T######TTTTT##TTTTTTTTTTTT##TTTTT######T   the old north hedge, two gaps in it
+   8  T######TffffffffffffffffffffffffT######T   the ploughed rim
+   9  T######Tff####################ffT######T
+  10  T......Tf######################fT######T   OLD BRAY'S FARM (west): the yard, the farmhouse, the dairy        THE ORCHARD (east)
+  11  Thhhh..T########################T######T
+  12  Thhhh..####..##############..##########T
+  13  Thhhh..T#####BBBB###############T######T   THE BARN
+  14  T......T#####BBBB###############T######T
+  15  T....hhT########################T######T   the barn door
+  16  T....hhT###TT############TT#####T######T   a stub of hedge, left standing
+  17  T......T########################T######T
+  18  T######T###########,,###########T######T
+  19  ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,T######T   the lane, west to Millharrow, through the farm
+  20  ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,T######T
+  21  T######T###########,,###########T######T
+  22  T######T########################T######T
+  23  Thhh###T#####TT##########TT#####T######T   the byre
+  24  Thhh###T########################T######T
+  25  T######T###..##############..###T######T
+  26  T#PPPP#################################T   the pond
+  27  T#PPPP#T########################T######T
+  28  T#PPPP#Tf######################fT######T
+  29  T#PPPP#Tff####################ffT######T
+  30  T######TffffffffffffffffffffffffT######T
+  31  T######TffffffffffffffffffffffffT######T
+  32  T######TTT##TTTTTTTTTTTTTTTT##TTT######T   the old south hedge, two gaps in it
+  33  TffffffffffffffffffffffffffffffffffffffT   THE SOUTH RIM: ploughed strips, a hedge between them
+  34  TffffffffffffffffffffffffffffffffffffffT
+  35  TffffffffffffffffffffffffffffffffffffffT
+  36  TTTTTTTTffTTTTTTTTTTTTTTTTTTTTffTTTTTTTT
+  37  TffffffffffffffffffffffffffffffffffffffT
+  38  TffffffffffffffffffffffffffffffffffffffT
+  39  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the far hedge
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `#` | grass — the bowl | ✅ |  |  |
+| `f` | ploughed rim | ✅ |  |  |
+| `,` | chalk lane — the way through | ✅ |  |  |
+| `.` | weeds | ✅ |  |  |
+| `B` | the barn — impassable; timber, no stack | ❌ |  | cottage, 5.2 tall |
+| `T` | hedge — impassable | ❌ |  | foliage, 3–4.4 tall |
+| `h` | the farm — impassable; Old Bray's farmhouse, dairy and byre | ❌ |  | cottage, 3.8–4.4 tall |
+| `P` | the pond — impassable | ❌ |  |  |
+
+- **Spawn** (0, 0).
+- **Ways out:** Millharrow from (-78, 0), arriving (98, -2); Bray's Barn (a room) from (-20, -18.6), arriving (0, 14).
+- **People:** old Bray (-14, -10); the child (14, 6); the weaver (-10, -14).
+- **Crews:** The Verge Strays, by night: roaming (0, 58), 6 out.
+- **Landmarks:** stone circle (0, -64).
+- **Lamps** 2; **sights** 10.
+
+##### Fenwick's Crossing
+
+`fenwicksCrossing.ts` — 52 × 34 — `safety: 'none'` — `horizon: 'treeline'` — `sky: 'drizzle'`
+
+```
+      0         1         2         3         4         5
+      0123456789012345678901234567890123456789012345678901
+   0  TTTTTTTTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTTTTT   the far hedge; the lane north, to the Chalk Road
+   1  T#hhh####################,,######rMMMMM############T   THE FAR BANK: the ferry hut (west)     the lane     THE WATERMILL and its race (east)
+   2  T#hhh####################,,######rMMMMM############T
+   3  T#ccccccc################,,######b#################T   the north ferry landing
+   4  T#ccccccc##############cccccc####r#################T   the bridge's north landing
+   5  WWWWWWWWWWWWWWWWWWWWWWW,,,,,,WWWWWWWWWWWWWWWWWWWWWWW   the river, wider now -- THE GREAT BRIDGE across it, and the bridge chapel on it
+   6  WWWWWWWWWWWWWWWWWWWWWWW,,,,,,WWWWWWWWWWWWWWWWWWWWWWW   the river
+   7  WWWWWWWWWWWWWWWWWWWWWWW,,,,,,WWWWWWWWWWWWWWWWWWWWWWW
+   8  TccccccccTcccccccccccccccccccccccccccccccccccccccccc   the bridgehead — the south ferry landing (west)                   the quay (east)
+   9  TccccccccTcc.ccccccccccccccccXXXXccc.cccccTffhhhhffT   THE TOLL HOUSE, on the bridgehead; the tollers' lodge (east)
+  10  TchhhcccccccIIIIIIcccccccccccXXXXccBBBBBBcTffhhhhffT   THE COACH INN, and the north frontage
+  11  TfhhhffffTccIIIIIIcccccccccccccccccBBBBBBccccccccccT   the toll house door
+  12  TffffffffTccccccccccccccccccccccccccccccccTccccccccT   the inn door
+  13  TffffffffTffffffccccccccccccccccccccffffffTffffffffT
+  14  ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,   the through street: west to Weeping Stile, east to the Shelf
+  15  ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+  16  TffffffffTccccccccccccccccccccccccccccccccTffffffffT
+  17  TffffffffTccBBBBBBccccccccccccBBBBBBBcccccTffffffffT   the south frontages
+  18  TffffffffTccBBBBBBccccccccccccBBBBBBBcccccTffffffffT
+  19  TffffffffTccccccccccccccccccccccccccccccccTffffffffT
+  20  Tfffffffffffffffffcc..ccccfffffffffffffffffffffffffT
+  21  TffffffffTffffffffffffffffffffffffffffffffTffffffffT
+  22  TffffffffTffffffffffffffffffffffffffffffffTffffffffT
+  23  TffffffffTffffffffffffffffffffffffffffffffTffffffffT
+  24  TffffffffTffffffffffffff....ffffffffffffffTffffffffT   the burying ground, such as it is
+  25  TffffffffTffffffffffffffffffffffffffffffffTffffffffT
+  26  TffffffffTffffffffffffffffffffffffffffffffTffffffffT
+  27  TffffffffTTTTTffTTTTTTTTTTTTTTTTTTTTffTTTTTffffffffT
+  28  Tfffffffffffffffffff............fffffffffffffffffffT   the burying ground, grown with the town
+  29  Tfffffffffffffffffff............fffffffffffffffffffT
+  30  TffffffffffffffffffffffffffffffffffffffffffffffffffT
+  31  TTTTTTTTTTTTffTTTTTTTTTTTTTTTTTTTTTTTTffTTTTTTTTTTTT   a hedge between the strips
+  32  TffffffffffffffffffffffffffffffffffffffffffffffffffT
+  33  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the far hedge
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `c` | cobbles — the frontages and the bridgehead | ✅ |  |  |
+| `,` | chalk street — the through street, and the bridge itself | ✅ |  |  |
+| `f` | ploughed strip | ✅ |  |  |
+| `.` | weeds | ✅ |  |  |
+| `#` | grass — the far bank | ✅ |  |  |
+| `W` | the river — impassable | ❌ |  |  |
+| `B` | town building — impassable | ❌ |  | terrace, 3.8–5.6 tall |
+| `I` | the coach inn — impassable; timber, three stacks | ❌ |  | shopfront, 6.2 tall |
+| `X` | the toll house — impassable; dressed stone, Fenwick's | ❌ |  | hall, 5.4 tall |
+| `T` | hedge — impassable, the boundary | ❌ |  | foliage, 3.2–4.6 tall |
+| `h` | cottage — impassable; the ferry hut, the ferryman's, the tollers' lodge | ❌ |  | cottage, 3.6–4.2 tall |
+| `M` | the watermill — impassable; the far bank's, timber | ❌ |  | hall, 5.6 tall |
+| `r` | the mill race — impassable | ❌ |  |  |
+| `b` | a plank — over the race | ✅ |  |  |
+
+- **Spawn** (0, -6).
+- **Ways out:** The Chalk Road from (-2, -66), arriving (38, 14); Weeping Stile from (-102, -6), arriving (50, 4); The Storm Shelf from (102, -6), arriving (-86, -6); Fenwick's Toll House (a room) from (20, -22.6), arriving (0, 14); The Coach Inn (a room) from (-44, -18.6), arriving (0, 18).
+- **People:** the innkeeper (-22, -10); the brewer (-6, -6); the bard, keeping hours: 10:00 (10, 6) · 19:00 (-28, -2); the cartographer, keeping hours: 09:00 (-78, -26) · 17:00 (34, -22); the carpenter (-10, -30).
+- **Crews:** The Bridge-Tollers, by day: a beat (4, -54) → (4, -30); The Bridge-Tollers, by night: roaming (70, -58), 6 out.
+- **Landmarks:** bell tower (-8, -42); water wheel (34, -54).
+- **Passers-by:** up to 5 by day, on 4 lanes.
+- **Lamps** 4; **sights** 11.
+
+##### Weeping Stile
+
+`weepingStile.ts` — 36 × 40 — `safety: 'none'` — `horizon: 'treeline'` — `sky: 'drizzle'`
+
+```
+      0         1         2         3
+      012345678901234567890123456789012345
+   0  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the wood
+   1  TTTTTTTgggCCCggggggggggggggggTTTTTTT   THE HERMIT'S GRAVE FIELD, closed round by the wood; the hermit's cell (west)
+   2  TTTTTTTgggCCCgggggggwwgggggggTTTTTTT
+   3  TTTTTTTggggggggggggggggggggggTTTTTTT
+   4  TTTTTTTggwwggggggggggggggwwggTTTTTTT
+   5  TTTTTTTggggggggggggggggggggggTTTTTTT
+   6  TTTTTTTTTTTTTTgggggggggTTTTTTTTTTTTT   the ground before the stile
+   7  TTTTTTTTTTTTTTTTTTgTTTTTTTTTTTTTTTTT   THE STILE, the one way through the old north thicket; the willow beside it
+   8  TTTTTTTggggggwwggggggwwggggggTTTTTTT
+   9  TTTTTTTggwwgggggggwwgggggggggTTTTTTT
+  10  TTTTTTTggggggggggggggggggggggTTTTTTT
+  11  TTTTTTTgwwgggggwwggggggggggggTTTTTTT
+  12  TwwwwwwgggCCCCgggggggggggggggTTTTTTT   a path west off the hollow, winding to the drowned well
+  13  TwTTTTTgggCCCCgggggggggggggggTTTTTTT
+  14  TwTTTTTgggCCCCgggggggggggggggTTTTTTT
+  15  TwTTTTTggggggggggggggggggggggTTTTTTT   the chapel door
+  16  TwTTTTTggggggggggggggTTggggggTTTTTTT   thicket standing in the open
+  17  TwwwTTTggggggggggggggggggggggTTTTTTT
+  18  TTTwTTTggwwggggwwggggggggggggTTwwwwT
+  19  TTTwTTTggggggggggggggggggggggLTwwwwT   THE LYCH-GATE, where the lane leaves the hollow
+  20  TTTwTTTgggggggggggggggggggggg,,wwww,   the lane east, to the Crossing
+  21  TTTwTTTgggggggggggggggggggggg,,wwww,
+  22  TTTwTTTggggggggggggggggggggggLTwwwwT
+  23  TTTwTTTggwwgggggggwwgggggggggTTwwwwT
+  24  TDDwTTTggggggggggggggggggggggTTTTTTT   the drowned well
+  25  TDDTTTTgwwgggggwwgggggwggggggTTTTTTT
+  26  TTTTTTTgggTTgggggggggggTTggggTTTTTTT
+  27  TTTTTTTggg..gggggg..gggggggggTTTTTTT
+  28  TTTTTTTggggggggggggggggggggggTTTTTTT
+  29  TTTTTTTggwwggggwwggggggggggggTTTTTTT
+  30  TTTTTTTggggggggggggggggggggggTTTTTTT
+  31  TTTTTTTggggggggggggggggggggggTTTTTTT
+  32  TTTTTTTTTTTTTTgTTTTTTTTgTTTTTTTTTTTT
+  33  TTTTTTTTwwwwwwwwwwwwTTTwwwwwTTTTTTTT   THE SOUTH WOOD, dry at last, thicket standing in it
+  34  TTTTTTTTwwwTTTwwwwwwTTTwwwggTTTTTTTT
+  35  TTTTTTTTwwwTTTwwwwwwwwwwTTggTTTTTTTT
+  36  TTTTTTTTwwwwwwwwTTTwwwwwTTwwTTTTTTTT
+  37  TTTTTTTTwwwwwwwwTTTwwwwwwwwwTTTTTTTT
+  38  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+  39  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `g` | soaked ground — walkable, most of the hollow | ✅ |  |  |
+| `w` | leaf litter — where it is dry enough for the wood | ✅ |  |  |
+| `.` | weeds | ✅ |  |  |
+| `,` | chalk — the lane east, and the only made ground here | ✅ |  |  |
+| `C` | the chapel — impassable; stone, and the roof off it | ❌ |  | wall, 3.8 tall |
+| `T` | thicket — impassable, and both the boundary and the obstacles | ❌ |  | foliage, 2.8–4.2 tall |
+| `D` | the drowned well — impassable; full to the lip | ❌ |  |  |
+| `L` | the lych-gate's posts — impassable | ❌ |  | wall, 3.2 tall |
+
+- **Spawn** (0, -2).
+- **Ways out:** Fenwick's Crossing from (70, 2), arriving (-82, -2); The Stile Chapel (a room) from (-24, -18.6), arriving (0, 14).
+- **People:** the Census clerk (-6, -10); the hired blade (10, 2).
+- **Crews:** The Stile Mourners, by night: a sentry at (2, -58); The Stile Mourners, by night: roaming (-10, 66), 5 out.
+- **Landmarks:** great tree (-6, -56).
+- **Lamps** 0; **sights** 10.
+
+#### The Wildlands
+
+##### The Chalk Verge
+
+`chalkVerge.ts` — 46 × 30 — `safety: 'none'` — `horizon: 'treeline'` — `sky: 'pollen'`
+
+```
+      0         1         2         3         4
+      0123456789012345678901234567890123456789012345
+   0  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the far treeline
+   1  ###FFFFFF##########,,,,,,,,,,,,,,#####FFFFFF##   THE DOWNS: the sheepfolds (west and east), and the chalk horse cut into the turf between
+   2  ###F####F########,,############,,,,###F####F##
+   3  ###FF##FF##########,,,,,,,,,,,,##,####FF##FF##
+   4  ##################,##,######,##,##############
+   5  T#######TTTT##TTTTTTTTTTTTTTTTT##TTTTT#######T   the old treeline, with two ways up through it
+   6  T#######TT####..####..####..##BBB###TT#######T   THE BOTHY, under the trees
+   7  T##TTT##T#,,,,,,,,,,,,,,,,,,,,BBB,,,#T#######T
+   8  T##TTT##T#,,,,,,,,,,,,,,,,,,,,,,,,,,#T#######T   the north track; the bothy door
+   9  T#######T#,,,,RR,,,,,,,,,,RR,,,,,,,,####KKK##T   the lime kiln (east)
+  10  T#######T#,,,,RR,,,,,,,,,,RR,,,,,,,,#T##KKK##T
+  11  T#######T#,,,,,,,,,,,,,,,,,,,,,,,,,,#T##KKK##T
+  12  ,,,,,,,,,#..,,,,,,,,,,,,,,,,,,,,,..,#T#######T   the road, on west to the Chalk Road
+  13  ,,,,,,,,,#..,,,,,,,,,TT,,,,,,,,,,..,#T#......T   the middle thicket
+  14  T#######T#,,,,,,,,,,,TT,,,,,,,,,,,,,#T#......T
+  15  T#######T#,,,,,,,,,,,,,,,,,,,,,,,,,,#T#......T
+  16  T#PPPP##T#,,,,RR,,,,,,,,,,RR,,,,,,,,#T#######T   the dew pond (west)                                           the lime (east)
+  17  T#PPPP##T#,,,,RR,,,,,,,,,,RR,,,,,,,,#T#######T
+  18  T#PPPP##T#,,,,,,,,,,,,,,,,,,,,,,,,,,#T###RRR#T   the south track
+  19  T#######T#....,,,,,,,,,,,,,,,,,,....#####RRR#T
+  20  T#######T#....,,,,,,,,,,,,,,,,,,....#T###RRR#T
+  21  TTTT####TT####..####..####..####,,##TT#######T   the gate approach, bottom-right
+  22  TTTT####TTTTTTTTTTTTTTTTTTTTTTTT,,TTTT#######T   the cut back to the ward
+  23  TTTT####TTTTTTTTTTTTTTTTTTTTTTTT,,TTTT#######T
+  24  T#######TTTT,,TTTTTT,,TTTTTTTTTTTTTTTT#######T   the old south treeline, with two ways down through it
+  25  T,,,R,,,,,,,,,,,,,,,,,,,,,,R,,,,,,,,,,,,,,,,,T   THE QUARRY: the pit, its faces, and the quarrymen's hut
+  26  T,,,R,,,,,,,,,,,,,,,,,,,,,,R,,HHH,,,,,,,,,,,,T
+  27  T,,,R,,,,,,,,,,,,,,,,,,,,,,R,,HHH,,,,,,,,,,,,T
+  28  T,,,RRRRRRRRRRRRRRRRRRRRRRRR,,,,,,,,,,,,,,,,,T
+  29  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the treeline
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `,` | chalk track — open going | ✅ |  |  |
+| `#` | scrub — open going | ✅ |  |  |
+| `.` | spoil — open going, broken underfoot | ✅ |  |  |
+| `R` | rock outcrop — impassable, low and lumpy | ❌ |  | rock, 2.2–3.6 tall |
+| `T` | thicket — impassable, tall | ❌ |  | foliage, 4–5.4 tall |
+| `B` | the bothy — impassable; drystone, one stack | ❌ |  | cottage, 3.4 tall |
+| `F` | a sheepfold — impassable; drystone, knee high | ❌ |  | wall, 1.2–1.4 tall |
+| `P` | the dew pond — impassable | ❌ |  |  |
+| `K` | the lime kiln — impassable; stone, always smoking | ❌ |  | cottage, 3.8 tall |
+| `H` | the quarry hut — impassable; timber | ❌ |  | cottage, 3.4–3.6 tall |
+
+- **Spawn** (40, 22).
+- **Ways out:** Ashfall Ward from (40, 34), arriving (0, -24.6); The Chalk Road from (-90, -6), arriving (108, 2); The Shepherd's Bothy (a room) from (34, -26.6), arriving (0, 14).
+- **Crews:** Chalk-Road Scavengers: roaming (-10, 0), 9 out; The Verge Strays, by night: roaming (0, 8), 9 out; Spoil-Heap Hollows, by night: roaming (6, -4), 9 out; Chalk-Road Scavengers, by day: roaming (-30, 46), 6 out.
+- **Landmarks:** gibbet (-20, 10).
+- **Lamps** 0; **sights** 9.
+
+##### The Caldera
+
+`caldera.ts` — 60 × 52 — `safety: 'none'` — `horizon: 'none'` — `sky: 'embers'`
+
+```
+      0         1         2         3         4         5
+      012345678901234567890123456789012345678901234567890123456789
+   0  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR   the outer wall
+   1  RRRRaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaRRRR
+   2  RRRRooooooooooooooooooooooooooooooooooooooooooooooooOOooaaaR   THE OBSIDIAN FIELDS, glass standing up out of them
+   3  RaaaooooOOooooooooooooooOOOoooooooooooooooooooooooooooooaaaR
+   4  RaaaooooOOooooooooooooooooooooooooooooooOOooooooooooooooaaaR
+   5  RaaaooooooooooooooooooooooooooooooooooooOOooooooooooooooaaaR
+   6  RaaaoooooooooooOOoooooooooooooooooooooooooooooooooooooooaaaR
+   7  RaaaoooooooooooOOoooooooooooooooooooooooooooooooOOooooooaaaR
+   8  RaaaooooooooooooooooooooooooooOOooooooooooooooooOOooooooaaaR
+   9  RRRaooooooooooooooooooooooooooOOooooooooooooooooooooooooaaaR
+  10  RRRaooooooooooooooooooooooooooooooooooooooooooooooooooooaaaR
+  11  RaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaR
+  12  RaaaaaaaaaaaaaRRRRRRaaRRRRRRRRRRRRRRRRRRRRRRRRaaaaaaaaaaaaaR   the old crater wall, the inner basin now: three ways in through it on this side
+  13  RafffffffffffaRaaaaaaaaaaaaaaaaaaaKKKKaaaaaaaRacccccccccccaR   THE FUMAROLES (west)                                        the crust towards the fall (east)
+  14  RafffffffffffaRaaaaaaaaaaaaaaaaaaaKKKKaaaaaaaRacccccccccccaR
+  15  RaffVVfffffffaRaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaRacccccccccccaR
+  16  RaffVVfffffffaRaaaaaaRRRRaaaaaaaaRRRRaaaaaaaaRaccccccccRRRRR
+  17  RafffffffffffaRaaaaaaRRRRaaaaaaaaRRRRaaaaaaaaRaccccccccRRRRR
+  18  RafffffffffffaRaaaaaaffffffaaaffffffaaaaaaaaaRaccccccccRRRRR
+  19  RafffffffffffaaaaaassssssssssscssssssssssaaaaRacccccccccccaR
+  20  RaffffffVVfffaaaaascsssVVsssssssVVssssssssaaaRacccccccccccaR
+  21  RafffffffffffaRaaassssssssssssssssssssssssaaaRacccccccccccaR
+  22  RafffffffffffaRaaassssssssssssssssssssssssaaaRacccccccccccaR
+  23  RafffffffffVVaRaaascsVVVVssssssscVVVVsssssaaaRacccccccccccaR
+  24  RafffffffffffaRaaasccsssssssssccccssssssssaaaRacccccccccccaR
+  25  RafffffffffffaRaaascccsssssssscccccsssssssaaasssssssssssssss   the cut, east to the Cinderworks
+  26  RafVVffffffffaRaaasccccsssssscccccccssssssaaasssssssssssssss
+  27  RafVVffffffffaRaaasccVVVVssscccccVVVVsssssaaaRacccccccccccaR
+  28  RafffffffffffaRaaasccccccssccccccccccssscsaaaRacccccccccccaR
+  29  RafffffffffffaRaaasccccccssccccccccccssscsaaaRacccccccccccaR
+  30  RafffffffffffaRaaasccccVVsscccccVVcccssscsaaaRacccccccccccaR
+  31  RafffffffVVffaaaaaassssssssscccssssssssssaaaaRacccccccccccaR
+  32  RafffffffffffaaaaaaaaffffffaaaffffffaaaaaaaaaRacccccccccaaaR   THE LAVA FALL, on the east wall
+  33  RafffffffffffaRaaaaaaRRRRaaaaaaaaRRRRaaaaaaaaaacccccccccaaaR
+  34  RafffffffffffaRaaaaaaRRRRaaaaaaaaRRRRaaaaaaaaaacccccccccaaaR
+  35  RafffVVffffffaRaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaRacccccccccccaR
+  36  RafffVVffffffaRaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaRacccccccccccaR
+  37  RafffffffffffaRaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaRacccccccccccaR
+  38  RafffffffffffaRaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaRacccccccRRRRRR
+  39  RaaaaaaaaaaaaaRaaRRRRRRRaaRRRRRRRRRRRRaaRRRaaRaaaaaaaaRRRRRR   the old crater wall, its south side
+  40  RaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaRRRRRR
+  41  RaaassssssssssssssssssssssssssssssssssssssssssssssssssssRRRR   THE SURVEY CAMP: the hut fallen in, the line of markers
+  42  RaaassssssssssssssssssssssssssssssssssssssssssssssssssssRRRR
+  43  RaaassssssssssssssssssssssssssssssssssssssssssssssssssssaaaR
+  44  RaaassssssssssssssssXXXXXsssssssssssssssssssssssssssssssaaaR
+  45  RaaassssssssssssssssXsssXsssssssssssssssssssssssssssssssaaaR
+  46  RaaassssssssssssssssXsssssssssssssssssssssssssssssssssssaaaR
+  47  RaaassssssssssssssssssssssssssssssssssssssssssssssssssssaaaR
+  48  RRRRssssssssssssssssssssssssssssssssssssssssssssssssssssaaaR
+  49  RRRRssssssssssssssssssssssssssssssssssssssssssssssssssssaaaR
+  50  RaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaR
+  51  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR   the outer wall
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `c` | cooled crust — the floor where it set in sheets rather than shattering | ✅ |  |  |
+| `f` | sulphur — the bloom a vent leaves on the ash it breathes on | ✅ |  |  |
+| `s` | cooled slag — the floor | ✅ |  |  |
+| `a` | fallen ash — the skirt, where the walls shed | ✅ |  |  |
+| `R` | rock face — impassable, and the whole boundary | ❌ |  | rock, 9–13 tall |
+| `V` | vent — impassable, low and taken whole | ❌ |  | rock, 2–3.6 tall |
+| `o` | obsidian — the outer floor, set to glass | ✅ |  |  |
+| `O` | an obsidian spire — impassable | ❌ |  | rock, 2.6–4.6 tall |
+| `X` | the survey hut — impassable; what is left of its walls | ❌ |  | wall, 1–2.2 tall |
+| `K` | ash | ❌ |  | rock, 5.5 tall |
+
+- **Spawn** (0, -2).
+- **Ways out:** The Lava Tube (a room) from (24, -42.6), arriving (0, 16); The Cinderworks from (118, -2), arriving (-98, 0).
+- **Crews:** The Magma Brood: roaming (10, 30), 8 out; The Magma Brood: a sentry at (96, 30); The Magma Brood: prowling the whole area.
+- **Landmarks:** lava fall (108, 30).
+- **Lamps** 0; **sights** 10.
+
+##### The Ashwood
+
+`ashwood.ts` — 64 × 56 — `safety: 'none'` — `horizon: 'treeline'` — `sky: 'leaves'`
+
+```
+      0         1         2         3         4         5         6
+      0123456789012345678901234567890123456789012345678901234567890123
+   0  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the wood
+   1  TTTlwTTlTTlwwlTTllllwlTlwwlllwwwTTTllTlllllTlwwwllwwwwlllwwllTTT
+   2  TTlwwlllllwwwlTTTllwwllwwllllwwwlTlllwwwlllTlll############wwllT
+   3  TTlwwlllwwwwwwTTTl#########################TTTl############wwwwT   THE CHARCOAL BURNERS' CLEARING, the huts either end              THE GREAT ASH's clearing (east)
+   4  TTlwwTTlwwwwwwlTTl###hhh#############hhh###TTTl############lllwT
+   5  TTllllllwwwlTlllll###hhh#############hhh###lTTT############llllT
+   6  TTlllllllwwTTTllll#########################llTl############TlllT
+   7  TTTlllllwwwTTTlllw#########################wlTl############TTTlT
+   8  TTlwwwwwwwwTTlllTl#########################lTTT############TTTlT
+   9  TTlwwwwwwwwlTlllTl#########################lTTT############TTTlT
+  10  TllwlwlllllTTTlllllwwwllwwlwwllllllllwTTTllTTTTlwlllllwllTTTTTlT
+  11  TwwwwllTlllTTllwwwwwwlllwwwwwllllwlTTlTTTlllTTlwwwllllllwwTTTTTT
+  12  TwwwwlTTTllTTTwwwwwwllllwwwwwllllwllTTTTllwlTTlwwwlllTllwwlTTTTT
+  13  TllllllllllTTTwTTTTTllTTTTTTTTllTTTTTTTTllTTTTTTTlTTTlllwwwlTTTT   the old wood, from here to row 42
+  14  TllllwwllllllllTlllllllllllllllllllKKKllllllllllTTTTTllllllTTTTT
+  15  TllTlwwwllwwwllTlllllllllllllllllllKKKllllllllllTTTTTlllllTTTTTT
+  16  TlllTwwwwwwwwwlTllllllllllllllllllllllllllllllllTlTTTlwllllllTTT
+  17  TTlllwwwwwllllwTlllwTTwwwwwwwlTTwwwwwwwlTTwwwlllTllTlllwlllwwwTT
+  18  TllllwwwwwlTTTwlllllwwwwww####wllwwwww####wwwllllwllllwwllwwwwlT
+  19  Tl###########llllllwwwwwww####wwwwwwww####wwwllllllllwwllwwllwwT   THE WOODCUTTERS' RUINS (west): two cottages down to their walls, the sawpit
+  20  Tl###########llTlllwlwwlwlwwwwwlllwwwllwlwwlllllTllwlwwlTTlllllT
+  21  Tl#XXXXX#####wlTllTTlwwlTTwwwwwwTTwwwlTTlwwlTTllTll###########lT   THE HUNTING STAND (east)
+  22  Tl#X###X###P#wlTlllwwwwwllwwwwwwlwlwwwwllwwwllllTTT###########lT
+  23  Tw#X###X#####wwTlllw####wwwwwwwwww####wwwwwwwlllTll###########lT
+  24  Tw###########wwTlllw####wwwwwwwwww####wwwwwwwlllTll###########lT
+  25  Tw#######pp##wwTllllwllwwwlwwwwwwwwllwwwwllwllllTll###########wT
+  26  Tl#######pp##llllllwTTlwwwTTlwwwwwwwTTlwwlTTwllllll###########wT
+  27  Tl###########llllllllllwwwllwwwwwwwllwlwwllllllllll#####S#####wT
+  28  Tl####XXXXX##wlTlllw..wwwwwwww..wwwwwwww..wwwlllTlw###########wT
+  29  Tl########X##wlTllllwwwllwlwwwwlllwwwwwlwwwlwlllTll###########wT
+  30  Tl########X##wlTllTTlwwlTTlwwwwlTTlwwwTTwwwlTTllTlT###########wT
+  31  Tl###########wwTlllwwwwllwwwwwwllwwwwwlllwwlllllTlT###########lT
+  32  Tl###########lwTlllw####wwwwwwwwww####wwwwwwwlllTTT###########lT
+  33  Tl###########lwTlllw####wwwwwwwwww####wwwwwwwlllTTT###########TT
+  34  TllwlTTllwlwlllTlllwwwlwwwwwwlwllwwwwwwllwwwwlllTTlllllTllllTlTT
+  35  TwwwwlllwwwwwllTllllTTwwwwwwwlTTlwwwwwwlTTwwwlllTllwllllTTlTTTlT
+  36  TwwwwwwwwwwwwllllllwlwlwwwwwwwlwwwwwwwwwwllwwlllTlwwwlllTTTTTTlT
+  37  Twwwwwwwllwllwlllllwwwwwwwwwww,,wwwwwwwwwwwwwlllTwlwwwwllTTlTllT
+  38  TlwwwllllTTTTllTlllwwwwwwwwwww,,wwwwwwwwwwwwwlllllllwlllllTllllT
+  39  TllwwlllTTTTTTwTllllllllllllll,,llllllllllllllllllTTllllllTllllT
+  40  TllwwllllTTTllwTllllllllllllllllllllllllllllllllTwlTlwwlllllllwT
+  41  TllllwwllTTTTlwTllllllllllllllllllllllllllllllllTwwwwwwwllwlllwT
+  42  TwlTlwwwlTTTTllTllTTTTllTTTTTT,,TTTTTTllTTTTTTllTwwwwwwwllwwwwwT
+  43  TwwlllwlTTlllTTTllllTTlwwwTTTT,,wwwllllllTTlwwwwwwwwwwlllwwwwwwT   the ride, on south to the Levels
+  44  TllllTTllllllllllllTTTlwwwlllT,,wwwllTTTlTTTlwlwwwwwwTTlwwwwwwwT
+  45  TllllTTTllllTllwlllTTTllwllllT,,wwllTTTTTTTTlwlwwwwwlTTTwwwwlwwT
+  46  TTllTTTT#############TlllllllT,,wwwlTlTTTTTlllwlllwwwTTlwwlllwlT   the south clearings, a poachers' hide in each
+  47  TlTTTTTT#############llllwllll,,llllllllll#############llllwwllT
+  48  TlTTTTTT####P########llllwllll,,lllwwlllll########P####llllwwllT
+  49  TllllTTl#############llllllTTT,,llllllTTll#############lTTlllwwT
+  50  Tlwwllll#############lTTTTTTTT,,wwwlllllll#############lllTllllT
+  51  Tlwwwwww#############lTTTTTTTT,,wwwlllllTl#############llTTTTllT
+  52  Tlwwwwww#############lllTlTTlT,,lwlllTllTl#############lTTTTTllT
+  53  TTwwwwwwllTTTTllwlTTwwlTTlllll,,Tllwllwwll#############lTTTlllTT
+  54  TTwwwwwwlTTTTlllllllwwlTTTTTll,,TTlwwwwwwllllTTlllllTTTTTTTlwwTT
+  55  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT   the wood
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `l` | leaf litter — the floor under the canopy; bare ground is the clearings | ✅ |  |  |
+| `w` | leaf litter — the floor, under the canopy | ✅ |  |  |
+| `#` | clearing — grass, where light gets down | ✅ |  |  |
+| `.` | weeds — the edges of a clearing going over | ✅ |  |  |
+| `,` | chalk track — the ride south, out to the Levels | ✅ |  |  |
+| `T` | timber — impassable | ❌ |  | forest, 6–9.5 tall |
+| `h` | a burners' hut — timber, a chimney on most | ❌ |  | cottage, 3.4–3.8 tall |
+| `X` | a ruined wall — impassable; the woodcutters' cottages, down to their footings | ❌ |  | wall, 1–2 tall |
+| `p` | the sawpit — gone to rainwater; impassable | ❌ |  |  |
+| `S` | the hunting stand — a timber tower on one tile | ❌ |  | tower, 5 tall |
+| `P` | a poachers' hide — brush over a frame, low, on one tile | ❌ |  | cottage, 2.6 tall |
+| `K` | litter | ❌ |  | rock, 5.5 tall |
+
+- **Spawn** (0, 0).
+- **Ways out:** The Poacher's Hide (a room) from (18, -46.6), arriving (0, 16); The Tallow Levels from (-6, 110), arriving (-26, -62).
+- **Crews:** The Ashwood Pack: prowling the whole area; The Ashwood Pack: a sentry at (74, -80); The Poacher Band: a beat (-82, -14) → (-100, 40) → (-78, 74) → (74, 74) → (-78, 74) → (-100, 40); The Poacher Band: a sentry at (92, -2).
+- **Landmarks:** great tree (84, -88).
+- **Lamps** 0; **sights** 12.
+
+##### The Rimefields
+
+`rimefields.ts` — 64 × 46 — `safety: 'none'` — `horizon: 'none'` — `sky: 'snow'`
+
+```
+      0         1         2         3         4         5         6
+      0123456789012345678901234567890123456789012345678901234567890123
+   0  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR   the rock
+   1  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+   2  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR   the north escarpment: THE FROZEN FALLS come off it here, cols 30-35
+   3  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRiiiiiiRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+   4  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRiiiiiiRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+   5  RRRRRRRRRRRRdddddddRRRRRRRRRRRiiiiiiRRRdddRRRdRdddRddddddddddddR
+   6  RRddRdRRRRRddddddddRRRRRRRRRRRddiidddddddddddddddddddddddddddddR
+   7  RdddddddRdddddnnnddRRRRRRRRRRRddiidddddddddddddddddddnnnddnnnddR
+   8  RddddddddddddnnnnddRRRRRRRRRRRddiindnnnnnnnnnnnnnnnnnnnnddnnnddR
+   9  RddnnndddddnnnnnnddRRRRRRRRRRRddiidnnnnnnnnnnnndnnnddnnddnnnnddR
+  10  RddnnndnnnnnnndddddRRRRRRRRRRRddiidnnnnnnnnnnnndnnnddnndnnnnnddR
+  11  RddnnndnnnnnnnnddddddddKKKddddddddddddddddddddddddnnnndddnnnnddR   the ice cave, in the escarpment face
+  12  RddnnnnnnnnnnnnddddddddKKKdddddddddddddddddddddddnnnnnnniiiiiidR
+  13  RddnnnnndddnnnnddddddddddddddddddddddddddddddddddnddddddiiiiiidR
+  14  RddiiiiiiiiinnnddddddIIIIddddddddddIIIIddddddddddndddddddddddddR
+  15  RddiiiiiiiiinnnddddddIIIIddnndddnddIIIIdddnnnddddnddIIIIIIIddddR
+  16  RddddddddnnnnnnddddddddddddnnnnnnddddddddnnnnddddndddddddddddddR
+  17  RddddddddnnnnnnddddiiiiiiddnnnnnnddddiiiiiinnddddddddddddddddddR
+  18  RdIIIIIddnndnnnddddiiiiiiddddddddnnddiiiiiiddddddddddddddnnnnddR
+  19  RdddddddddddnnnddddnnnnddddddddddnndddddddddddddddIIIIIddnnnnddR
+  20  RddddddddnnnnnnddddnnnnddIIIIIIddnnddIIIIIIddddddddddddddnnnnddR
+  21  RddnnnWWWndnnnnddddnnnnddddddddddnnddddddddddddddddddddddnnnnddR   THE FROZEN CARAVAN (west), where the road runs out
+  22  RddWn,,dd,,,,,,dd,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,dd,,,,,,,,,,,,,,,   the Chalk Road, from the east edge to the lead wagon
+  23  RddWn,,dd,,,,,,dd,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,dd,,,,,,,,,,,,,,,
+  24  RddnnnnndnWWWnnddddnnnnddddddddddnnddddddddddddddnnnnndnnnnnnddR
+  25  RddnnndddddddddddddnnnnddIIIIIIddnnddIIIIIIddddddnnnnnnnnnnnnddR
+  26  RddnnndddddddddddddnnnnddddddddddnnddddddddddddddnnnnnnnnnnnnddR
+  27  RddnnnddIIIIIIdddddiiiiiiddddddddnnddiiiiiidddddddnddddddddddddR   THE MAMMOTH's hollow (east)
+  28  RddnnndddddddddddddiiiiiinnnnnnnnnnnniiiiiinnddddndddddddddddddR
+  29  RdddnndddddddddddddddddddddnnnnnnddddddddnnnnddddnnddiiiiiiidddR
+  30  Rdiiiiiiiiinnnndddddd##ddddnnndnndddd##ddnnddddddnnddiiiiiiidddR
+  31  RdiiiiiiiiinnnnddddddIIIIddddddddddIIIIddddddddddndddiiiiiiidddR
+  32  RddnnnnnnndnnnnddddddddddddddddddddddddddddddddddndddddddddddddR
+  33  RddnnnnnnndnnnnddddddddddddddddddddddddddddddddddnnddddddddddddR
+  34  RddnnnnnnnnnnnnddddddddddddddddddddddddddddddddddnnnnnnnnnnnnddR
+  35  RdddndnniiiiiiiiiiinnnnnnnnnnnnnnnnnnnnnnddnnnnnnnnnnnnnnnnnnddR   THE TARN (south-west), its huts and holes; the ridges the archers were posted on
+  36  RdddiiiiiiiiiiiiiiiiiiinnnnnnnnnnnnndnnnnddnnndnnndddddddddddddR
+  37  RddiiiihioiiiiiiihiiiiiinndddddddddddddnnddnnnnnnndddddddddddddR
+  38  RdiiiiiiiiiiiiioiiiiiiiiindddddddddddddnnnnnnnnnnnddRRRRRRRRRddR
+  39  RdiiiiiiiiiiiiiiiiiiiiiiiiddRRRRRRRRRdddddddddddddddddRRRRRddddR
+  40  RdiiiiiiiiihioiiiiiiiiiiinddddRRRRRddddddddddddddddddddddddddddR
+  41  RddiiiiiiiiiiiiiiioihiiinnddddddddddddddRRRRRRRRRddndddddddddddR
+  42  RdddiiiiiiiiiiiiiiiiiiidddddddddddddddddddRRRRRddddddddddddddddR
+  43  RdddddddiiiiiiiiiiiddddddddddddddddddddddddddddddddddddddddddddR
+  44  RRRdRdRRRRdRddddRRRRdRdddRdRRddRdRdRRdRddRdRRdRdddRddRRRddRddRdR
+  45  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR   the rock
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `d` | drift — where the wind put the snow down rather than scouring it | ✅ |  |  |
+| `n` | packed snow — most of it | ✅ |  |  |
+| `i` | glare ice — swept bare, and darker than the snow around it | ✅ |  |  |
+| `#` | frozen scrub — the only living thing | ✅ |  |  |
+| `,` | chalk road — the road east, running out into the snow | ✅ |  |  |
+| `I` | pressure ridge — impassable, low and broad | ❌ |  | ice, 1.8–2.8 tall |
+| `R` | rock — impassable, the boundary | ❌ |  | rock, 7–11 tall |
+| `W` | a wagon — impassable; the caravan, frozen where it stopped | ❌ |  | wall, 1.8–2.2 tall |
+| `h` | a fishing hut — timber on runners, a stovepipe through the roof | ❌ |  | cottage, 2.8–3 tall |
+| `o` | a fishing hole — through the tarn's ice; open water, impassable | ❌ |  |  |
+| `K` | snow | ❌ |  | rock, 5.5 tall |
+
+- **Spawn** (0, -2).
+- **Ways out:** The Ice Cave (a room) from (-30, -38.6), arriving (0, 16); The Chalk Road from (126, -2), arriving (-106, 2).
+- **Crews:** The Hoarhound Pack: roaming (90, 44), 8 out; The Hoarhound Pack: prowling the whole area; The Rime-Archers: a sentry at (-18, 62); The Rime-Archers: a sentry at (78, 58).
+- **Landmarks:** frozen falls (6, -78); mammoth (96, 30).
+- **Lamps** 0; **sights** 11.
+
+##### The Storm Shelf
+
+`stormShelf.ts` — 52 × 48 — `safety: 'none'` — `horizon: 'none'` — `sky: 'drizzle'`
+
+```
+      0         1         2         3         4         5
+      0123456789012345678901234567890123456789012345678901
+   0  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR   the rock
+   1  Rhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#hhhhhh#hhhh#hhhhhhR
+   2  Rhhhhhhhhhhh#h##hhhhhhhhhhhhhh#hhh#hhhhhhhhhhhhhhhhR
+   3  Rhhhhhhhh#h#hhhhhhhbbbbbbbbbbbbhhhhhhhhhhhhhhhhhhhhR
+   4  RbbbhhhhbbbhhhhbbbhbbbbbbbbbbbbbhhhbbbhhhhbbbhhhbbbR
+   5  RbPbhhhhbPbhh#hbPbhbbbbbbbbbbbPbhhhbPbhhhhbPbhhhbPbR   a rank, carried on: the gap at col 23 is where PYLON NINE stands behind it
+   6  RbbbhhhhbbbhhhhbbbhbbbbbbbbbbbbbhhhbbbhhhhbbbhhhbbbR
+   7  Rhh#hh#hhhhhhhhhhhhbbbbbbbbbbbbhhhhhhhhhhhhhhhhhhhhR
+   8  Rbbbhh#hbbb#hhhhhhhbbbbbbbbbbbbhhhhhhhhhhhbbbhhhbbbR
+   9  RbPbhhhhbPbhhhh#h#hhhhRRRRRRhhhhhhhhhhhhhhbPbhhhbPbR   Nine's base cut into what is left of the old north face
+  10  Rbbbhhhhbbbhhh#hhhhhRRRRRRRRRRhh#hhh#hhhh#bbbhhhbbbR
+  11  Rhhh#hhhhhhhhhhhhhhhhhhKKKKhhhhhhhhhhhhhh#hhhhhhhhhR   PYLON NINE's base (the K)
+  12  RhhhhhhhhhhhhhhhhhhhhhhKKKKhhhhhhhhhhhhh#hhhhhhhhhhR
+  13  Rhhh#hhhhhhhhhhhhhhhhhhhbbbbhhhhhhhhhhhhhhhhhhhhhhhR
+  14  RbbbhhhhbbbhhhhbbbhhhhbbbbbbbbbbhhhbbbhhhhbbbhhhbbbR
+  15  RbPbhhhhbPbhhhhbPbhhhhbPbbbbbbPbhhhbPbhhhhbPbhhhbPbR
+  16  Rbbbhh#hbbbhhhhbbbhhhbbbbbbbbbbbhhhbbbhhhhbbbhhhbbbR
+  17  Rhhhhhhhhhhhhhbbhh##bbbbbbbbbb##hhhhbbhh#hhhhhhhhh#R
+  18  RbbbhhhhbbbhhhbbbbbbbbbbbbbbbbbbbbbbbbhhhhbbbhhhbbbR
+  19  RbPbhhh#bPbhhhbbPbbbbbbPbbbbbbPbbbbbPbhhhhbPbhhhbPbR
+  20  RbbbhhhhbbbhhhbbbbbbbbbbbbbbbbbbbhhbbbhhhhbbbhhhbbbR
+  21  Rhhhh#hhh#hhhhbhhhhhbbbbbbbbbbbbhhhhbbhhhhhhhhhhhhhR
+  22  ,,,,,,,,,,,,hh,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,hhhhR   the track, in from the west edge, on east, and down cols 45-46 to the survey camp
+  23  ,,,,,,,,,,,,hh,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,hhhhR
+  24  Rbbbhhhhbbb#hhhbbbhhhhbbbbbbhbbbhhhbbbhhhhbbb,,#bbbR
+  25  RbPbhhhhbPbhhhhbPbhhhhbPbbbhhbPbhhhbPbhhhhbPb,,hbPbR
+  26  Rbbb#hhhbbbhhhhbbbhhhhbbbbbhhbbbhhhbbbhhhhbbb,,#bbbR
+  27  Rhhhhhhhh#h#hhhhhh##hhhhbbbbhh##hhhhhhhhhhhhh,,hhhhR
+  28  Rbbbh#hhbbbhhhhbbbhhhhbbbbbbbbbbhhhbbbhhhhbbb,,hbbbR
+  29  RbPbhhh#bPbhhhhbPbhhhhbPbbbbbbPbhhhbPbhhhhbPb,,hbPbR
+  30  Rbbbhhhhbbbhhhbbbbhhbbbbbbbbbbbbhhhbbbhh#hbbb,,hbbbR
+  31  Rh#h#hhhhhhhhhbbhh##bbbbbbbbbb##bhhhbbhhhhhhh,,hhhhR
+  32  Rbbbhhhhbbbhhhbbbbbbbbbbbbbbbbbbbbbbbbhhhhbbb,,hbbbR
+  33  RbPbhhhhbPbhhhbbPbbbbbbPbbbbbbPbbbbbPbhhhhbPb,,#bPbR
+  34  Rbbbhhhhbbbhhhbbbbhbbbbbbbbbbbbbbhhbbbhhhhbbb,,hbbbR
+  35  Rhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh,,hhhhR
+  36  Rhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh,,hhhhR
+  37  Rhhhhhhhhhhhhhh#hhhhhhh#hhhhh#h#hhhhhhhhbbbbbbbbbbbR   THE SURVEY CAMP (south-east), struck
+  38  RbbbhhhhbbbhhhhbbbhhhhbbbhhhhbbbhhhbbbhhbbbbbbbbbbbR
+  39  RbPbhhhhbPbh#hhbPbhhhhbPbhhhhbPbhhhbPbhhbbbbbXXXXbbR   a rank, carried on
+  40  Rbbbhhhhbbbhhhhbbbhhhhbbbhhhhbbbh#hbbbhhbbbbbXbbXbbR
+  41  Rhhhhhhh#hhhh#hhhhhhhh#hhhhhhhhhh#hhhhhhbbbbbXbbXbbR
+  42  Rbbbhhhhbbbhhhhbbbhhh#bbbhhh#bbbhhhbbbhhbbbbbbbbbbbR
+  43  RbPbhhh#bPbhhh#bPbhhhhbPbhhhhbPbhhhbPbhhbbbbbbbbbbbR   a rank, carried on
+  44  Rbbbhh#hbbbhhhhbbbhhhhbbbhhhhbbbhhhbbbhhbbbbbbbbbbbR
+  45  Rhhhhhhhhhhhhhhhhhhhhhh#hhhhhhhhhhhhhhhhbbbbbbbbbbbR
+  46  Rhhhhhhhhhhhhhhh#hhhhhhhhhhhhhhhhhhhhhhhhhh#hhhhhhhR
+  47  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR   the rock
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `h` | burnt heath — scrub far enough from a footing to have grown back | ✅ |  |  |
+| `b` | scorched rock — the shelf | ✅ |  |  |
+| `#` | scrub — what grows back between strikes | ✅ |  |  |
+| `,` | chalk track — the way west, off the shelf | ✅ |  |  |
+| `P` | pylon footing — impassable, tall and very thin | ❌ |  | pylon, 10–12.5 tall |
+| `R` | rock — impassable, the boundary | ❌ |  | rock, 5–8 tall |
+| `X` | the survey hut — impassable; burnt down to its sills | ❌ |  | wall, 0.6–1.2 tall |
+| `K` | blasted | ❌ |  | rock, 5.5 tall |
+
+- **Spawn** (0, -6).
+- **Ways out:** Pylon Nine's Base (a room) from (-4, -42.6), arriving (0, 16); Fenwick's Crossing from (-102, -6), arriving (82, -6).
+- **Crews:** The Static Swarm: prowling the whole area; The Static Swarm: roaming (70, 78), 7 out; The Pylon-Keepers: a sentry at (-18, -66); The Pylon-Keepers: a sentry at (70, -14).
+- **Landmarks:** great pylon (-4, -66).
+- **Lamps** 0; **sights** 10.
+
+##### The Bone Bastion
+
+`boneBastion.ts` — 46 × 50 — `safety: 'none'` — `horizon: 'none'` — `sky: 'none'`
+
+```
+      0         1         2         3         4
+      0123456789012345678901234567890123456789012345
+   0  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR   the edge
+   1  Ro#ttot#ttotootootooootototttttototttt#ttoo#tR
+   2  Rot##ttottoootttottottttoottototttttttto#otttR
+   3  Ro#oEotoMMMMttt#ttoMMottoootMMMMtooo#tMMMMtttR   paired barrows outside the wall, two ranks; THE OPEN BARROW at cols 18-21
+   4  RtooEtttMMMMottot#oMMooo##ooMMMMott##tMMMM#ttR
+   5  RtotE#t#ootttttototttotoo#ttoooot###ototo##toR
+   6  RtttE#too#ooootttototott#ttt#tttttttottto##ooR
+   7  R#otEttotooooMMMMtt#tttMMMMttttttMMMMttt#ot#oR
+   8  Rtt#o#oooooooMMMMtttottMMMMtotootMMMMtoo#ttooR
+   9  Rot#Etototooottott#ott#ttooottttot##oot#t#ottR
+  10  RtttEoot#XXXXXXXXXXXXXXXXXXXXXXXXXXXX#otott##R   the bastion wall
+  11  RtotEtttoXtttttttttttttttKKKKtttttttXttttto#tR   the great barrow, in the north wall
+  12  RttoE#ottXtttttttttttttttKKKKtttttttX#tttttotR
+  13  RtttEtottXttttttttttooottttttttooottXot#tttttR
+  14  RtttottooXttttttttttooottttttttooottXtoottotoR
+  15  RtttEttt#XttttMMMMttooottMMMMttooottXo#ttttotR
+  16  R#otEttotXttttMMMMtttttttMMMMttooottX#ottt#ttR
+  17  R#otEottoXtttttttttttttttttttttooottXootott##R
+  18  RtttEttttXttttttttMMMMMMtttttttooottXttttttttR
+  19  RoooEttttXttttttttMMMMMMtttttooooottXtttttootR
+  20  RoooEo#ooXtttttttttttttttttttooooottXotototttR
+  21  Roootttt#XttttMMMMtttttMMMMttoooo#ttXtttoototR
+  22  Rooo#ttttrttttMMMMttottMMMMttoooo#ttXoottott#R   THE BREACH (west, col 9); the ossuary GATEHOUSE (east, col 37)
+  23  RoootttorrrtttttttttottttttttooooottXooot#o##R
+  24  Rooo,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,tt,,,,,,,,,,   the causeway, west through the breach and east through the gate
+  25  Rooo,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,tt,,,,,,,,,,
+  26  RooooooorrrtttttttttottttttttooooottXoooo#ottR
+  27  Rooot#ot#rttttMMMMttottMMMMttoooo#ttXo###tttoR
+  28  Rooottt#oXttttMMMMtttttMMMMttoooo#ttXtt##tot#R
+  29  RoooE#t##XtttttttttttttttttttooooottXttttttotR
+  30  RoooEttotXttttttttMMMMMMtttttooooottXt#ttttooR
+  31  RttoEtottXttttttttMMMMMMtttttttooottXtooo#ottR
+  32  RttoE#tttXtttttttttttttttttttttooottXttt##ttoR
+  33  RtttEt#ttXttttMMMMtttttttMMMMttooottXtottotttR
+  34  Rto#EttotXttttMMMMttooottMMMMttooottXttttotttR
+  35  Rt#oo##toXttttttttttooottttttttooottXo###otttR
+  36  RotoEooooXttttttttttooottttttttooottXo#oo#tttR
+  37  Rt##EtttoXttttttttttttttttttttttttttXtoottottR
+  38  R#ttEtotoXttttttttttttttttttttttttttXot#otoo#R
+  39  RtooE##t#XttXXXXXXXXXXXXXXXXXXXXXXttXttttttt#R   the bastion wall, its two posterns
+  40  RottEttttttttt#t#oottttttottttoooott#otoo#tt#R
+  41  Rottotooo#tt#otttootooto#ttotoottttt#oMMMM#ttR
+  42  Rto#E#tototttt##ttotttttt#tottotttttooMMMMottR
+  43  R#ttEtttt#ttttoooottttt##tttootto#ttttottttttR
+  44  RtttEttoEEttEEEEEEEooEEEEEoEEEEoo#tto#ootoootR   the south siege line
+  45  RtotEoottttttttttoot##ttttottotttttttoMMMM#toR
+  46  RottEototttt#tMMMMto#oMMMMtttttt##ttttMMMMtooR
+  47  Rt#otttttttt#oMMMMoo#tMMMMot#ottttttott#t#ottR
+  48  Rt#ttto#totttoto#o#t#totttot#tttotttoo#o#toooR
+  49  RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR   the edge
+```
+
+| Tile | What it is | Walk | Safe | Stands |
+|---|---|---|---|---|
+| `t` | turf — grass over a mound, going grey where the barrow surfaces | ✅ |  |  |
+| `o` | bone dust — the ground, and what it is made of | ✅ |  |  |
+| `#` | scrub — the little that grows | ✅ |  |  |
+| `,` | causeway — chalk, and the only cut ground here | ✅ |  |  |
+| `M` | barrow mound — impassable, low and wide | ❌ |  | mound, 2.6–4 tall |
+| `X` | bastion wall — impassable, and enormous | ❌ |  | wall, 12–14 tall |
+| `r` | rubble — the breach: the wall's own stones, where they fell | ✅ |  |  |
+| `E` | earthwork — impassable, low; the besiegers' banks | ❌ |  | mound, 1.2–1.6 tall |
+| `R` | rock — impassable, the edge of the field | ❌ |  | rock, 5–7.5 tall |
+| `K` | bone | ❌ |  | rock, 5.5 tall |
+
+- **Spawn** (0, -2).
+- **Ways out:** The Great Barrow (a room) from (16, -46.6), arriving (0, 16); The Tallow Levels from (90, -2), arriving (-86, -6).
+- **Crews:** The Barrow Watch, by night: a beat (-62, 0) → (-84, 0); The Barrow Watch, by day: roaming (-12, -72), 7 out; The Barrow Watch, by day: roaming (62, 76), 6 out; The Barrow Watch, by day: a sentry at (-46, 10).
+- **Landmarks:** ossuary (58, -8); ossuary (58, 8).
+- **Lamps** 0; **sights** 11.
+
+<!-- atlas-maps:end -->
 
 ---
 
