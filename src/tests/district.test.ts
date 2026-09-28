@@ -679,8 +679,9 @@ describe('the Lamprow grid', () => {
   it('runs one unbroken safe lane from one end of the ward to the other', () => {
     // The whole reason the ward is on the map: a walkway long enough to matter, so that
     // stepping off it is a decision rather than an accident of where the paving stopped.
+    // Edge to edge since the ward grew: the street runs on to both new ends.
     for (const z of HIGH_STREET_Z) {
-      for (let x = -60; x <= 58; x += 2) {
+      for (let x = -94; x <= 94; x += 2) {
         expect(isSafeAt(LAMPROW, x, z), `the High Street breaks at (${x}, ${z})`).toBe(true);
       }
     }
@@ -700,7 +701,9 @@ describe('the Lamprow grid', () => {
   });
 
   it('keeps the Sink below the kerb, and its crews on it', () => {
-    for (const spec of LAMPROW.props.packs ?? []) {
+    // The Sink's crews are the ones with no band of their own; the Wick-Thieves work the
+    // gasworks across the cut, which is nobody's kerb.
+    for (const spec of (LAMPROW.props.packs ?? []).filter((s) => !s.band)) {
       expect(spec.z, `${spec.encounterId} should live below the flags`).toBeGreaterThan(KERB_Z);
       expect(isWalkable(LAMPROW, spec.x, spec.z)).toBe(true);
       expect(isSafeAt(LAMPROW, spec.x, spec.z)).toBe(false);

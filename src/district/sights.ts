@@ -247,6 +247,120 @@ export const SIGHTS: readonly SightDef[] = [
       'Every stone on it was carried from somewhere else. The ones at the bottom are chalk; the ones at ' +
       'the top came from the Rimefields, which is a long way to carry a stone to put on a pile.',
   },
+
+  /* ---- Lamprow ---- */
+  {
+    id: 'lamprow:the_gasholder',
+    areaId: 'lamprow',
+    at: { x: 28, z: -58.4 },
+    label: 'Look up at the gasholder',
+    caption:
+      'The bell is half up its frame and has been for a month: there is gas in it and nowhere ' +
+      'yet to send it. A lighter comes over the bridge every evening to light the valve lamp, ' +
+      'which the works finds funnier than he does.',
+  },
+  {
+    id: 'lamprow:the_retort_house',
+    areaId: 'lamprow',
+    at: { x: -64, z: -61 },
+    label: 'Look at the retorts',
+    caption:
+      'Coal in at one end, coke out at the other, and in between it gives up the gas and the ' +
+      'smell. The furnace doors are chalked with the dates they were last opened. The newest ' +
+      "date is tomorrow's.",
+  },
+  {
+    id: 'lamprow:the_lighters_bridge',
+    areaId: 'lamprow',
+    at: { x: 4, z: -48 },
+    label: 'Look along the rail',
+    caption:
+      'Built so the oil barges could be met halfway. The Magistracy has had the rail painted in ' +
+      "the works' colours, and under the paint the old ones show through wherever hands go.",
+  },
+  {
+    id: 'lamprow:the_spent_lime',
+    areaId: 'lamprow',
+    at: { x: 72, z: -62 },
+    label: 'Look at the lime heaps',
+    caption:
+      'Spent lime from the purifiers, blue-grey and stinking. Children from the Sink pick ' +
+      'through it for the lumps that still burn, and are chased off, and come back.',
+  },
+  {
+    id: 'lamprow:the_gas_main',
+    areaId: 'lamprow',
+    at: { x: -84, z: 2.6 },
+    label: 'Look into the trench',
+    caption:
+      'A trench along the step with a pipe laid in it and not yet covered. It runs the length ' +
+      'of the High Street under the lamps, and every evening the lighters walk beside it to ' +
+      'work.',
+  },
+  {
+    id: 'lamprow:the_chandlers_yard',
+    areaId: 'lamprow',
+    at: { x: -94, z: -22 },
+    label: 'Look at the candle-ends',
+    caption:
+      'Candle-ends swept into a heap by the wall and saved for the tallow. On the High Street ' +
+      'the light is taxed by the hour. In here it is whatever the Magistracy forgot to count.',
+  },
+  {
+    id: 'lamprow:the_allotments',
+    areaId: 'lamprow',
+    at: { x: -54, z: 64.6 },
+    label: 'Look at the plots',
+    caption:
+      "Every plot is marked with a lighter's number instead of a name. Two numbers have been " +
+      'painted out. The beans in those plots are still being watered.',
+  },
+  {
+    id: 'lamprow:the_shrine',
+    areaId: 'lamprow',
+    at: { x: -78, z: 66 },
+    label: 'Look at the cairn',
+    caption:
+      'A cairn with a wick-lamp set in its top, the glass smoked black. It is not lit. Lighting ' +
+      'it would be a light the tithe clerk has not been told about.',
+  },
+  {
+    id: 'lamprow:the_boards',
+    areaId: 'lamprow',
+    at: { x: 78, z: 34 },
+    label: 'Look down at the board',
+    caption:
+      'A board across the drain, worn hollow in the middle. Somebody has nailed a second board ' +
+      'beside it, and it is not worn at all, which tells you how many come this way and how ' +
+      'often.',
+  },
+  {
+    id: 'lamprow:the_eel_traps',
+    areaId: 'lamprow',
+    at: { x: 66, z: 62.5 },
+    label: 'Look at the traps',
+    caption:
+      'Wicker traps staked in the drain where it runs out of the Sink. What comes up in them is ' +
+      'eels, mostly, and the Sink eats them, mostly.',
+  },
+  {
+    id: 'lamprow:the_sink_grating',
+    areaId: 'lamprow',
+    at: { x: 0, z: 16 },
+    label: 'Look at the grating',
+    caption:
+      'An iron grating in the lowest part of the Sink, where the water goes when it rains. The ' +
+      "Tithe-Takers' cellars are under here somewhere. On a still night you can hear counting.",
+  },
+  {
+    id: 'lamprow:the_works_office',
+    areaId: 'lamprow',
+    at: { x: -16, z: -66.6 },
+    label: 'Read the notice on the door',
+    caption:
+      'LIGHTERS WILL BE RETAINED DURING THE TRANSITION. Somebody has underlined DURING, twice, ' +
+      'in lamp black.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {

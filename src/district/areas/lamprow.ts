@@ -12,12 +12,21 @@
  * and both roam circles reach the kerb — so a cone goes out the moment you step up onto the
  * flags, and comes back on the moment you step down.
  *
- * Thirty-two by twenty-six now. North of the street: the cut and its quay, the bonded
- * warehouse, the Lamp-oil House the row is lit from, the lighters' yard the Warden walks with
- * the Lighters' Hall at the back of it, and the Tithe Office -- sealed until the tithe has
- * been collected -- with its door on the flags. South of it: the Sink and its tenements, one
- * of which has a hatch down to the cellars where the count is kept; the south lane; and a
- * quarter of lighters' cottages with their gardens running to the verge.
+ * Forty-eight by forty, grown evenly from thirty-two by twenty-six, and the High Street runs
+ * on to both new edges. North of the street: the cut and its quay, the bonded warehouse, the
+ * Lamp-oil House the row is lit from, the lighters' yard the Warden walks with the Lighters'
+ * Hall at the back of it, and the Tithe Office -- sealed until the tithe has been collected --
+ * with its door on the flags. South of it: the Sink and its tenements, one of which has a hatch
+ * down to the cellars where the count is kept; the south lane; and a quarter of lighters'
+ * cottages with their gardens running to the verge.
+ *
+ * What the growth added: **across the cut, the gasworks** -- the retort house, the coal, the
+ * holder yard with its gasholder, the purifiers and their spent lime -- which the Magistracy is
+ * building so the High Street can be lit without lighters, and which the Wick-Thieves work at
+ * night. **West, the chandlers**, round a yard a second Warden walks, and more cottages with
+ * their gardens and allotments below them. **East, the lamp stores, and the ditches** where the
+ * Sink drains: cuts across the ground, each open at one end or crossed by a board, running on
+ * under the verge to the south edge, with the eel-catchers' sheds among them.
  *
  * The lamps are all on walkway tiles, as they are in the ward. That is not decoration: the
  * light *is* the safe zone, and a lamp standing on danger ground would be the map telling a
@@ -38,6 +47,13 @@ import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
  *   V  yard wall           — impassable, low
  *   O  the Lamp-oil House  — impassable; timber, a stack always going
  *   X  the Tithe Office    — impassable; dressed stone, like every Magistracy counter
+ *   G  the gasworks        — impassable; brick, tall, and a stack on every roof
+ *   k  cottage             — impassable; the lighters', the office, the sheds
+ *   f  flagstone           — the holder yard, and the lighters' bridge
+ *   z  coal                — the works' heap
+ *   g  garden              — the cottage plots and the allotments
+ *   d  drain               — impassable; the ditches the Sink runs out through
+ *   e  a board             — over a drain, where somebody laid one
  *
  * Deliberately Ashfall's materials rather than a dialect of them. Two Jolrek wards should
  * be built out of the same stone; what differs between them is the plan.
@@ -72,40 +88,71 @@ const LAMPROW_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { style: 'hall', minHeight: 7.2, maxHeight: 7.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
   },
+  G: {
+    tex: 'cobble',
+    safe: false,
+    walk: false,
+    solid: { style: 'warehouse', minHeight: 6.0, maxHeight: 6.8, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: true },
+  },
+  k: {
+    tex: 'grass',
+    safe: false,
+    walk: false,
+    solid: { style: 'cottage', minHeight: 3.8, maxHeight: 4.4, inset: 0.3, depthInset: 0.3, chimneyChance: 0.8, split: true, wall: 'brick' },
+  },
+  f: { tex: 'flagstone', safe: false, walk: true },
+  z: { tex: 'slag', safe: false, walk: true },
+  g: { tex: 'field', safe: false, walk: true },
+  d: { tex: 'water', safe: false, walk: false },
+  e: { tex: 'planks', safe: false, walk: true },
 };
 
-/** Two tiles of the cut along the north edge, as the ward has its canal. */
+/** Two tiles of the cut, as the ward has its canal -- with the gasworks on the far side of it now. */
 const WATER_ROWS = 2;
+const WATER_ROW0 = 7;
 
-const C30 = 'c'.repeat(30);
 
 const GRID: readonly string[] = [
-  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW', //  0  the lighters' cut
-  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW', //  1
-  `#${C30}#`, //  2  the quay
-  `#${C30}#`, //  3  the wharf lane
-  '#cBBBBBBBBccOOOOccccccccBBBBBBc#', //  4  bonded warehouse   LAMP-OIL HOUSE   the yard   the Lighters' Hall
-  '#cBBBBBBBBccOOOOccccccccBBBBBBc#', //  5
-  '#cBBBBBBBBcccccccccccccccccccVc#', //  6  the lighters' yard (the Warden)
-  '#cc.......ccccccccccccccccccVVc#', //  7
-  '#cc.......cccccccccccc........c#', //  8  the back lane
-  '#cBBBBBBBBccXXXXXXccBBBBBBBBBBc#', //  9  the north terraces, and THE TITHE OFFICE
-  '#cBBBBBBBBccXXXXXXccBBBBBBBBBBc#', // 10
-  'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS#', // 11  THE HIGH STREET — lit, sanctioned, and open at both ends
-  'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS#', // 12
-  `#${C30}#`, // 13  the step down
-  '#cBBBBBB..............BBBBBBccc#', // 14  the Sink, and its tenements; the cellar hatch on the west one
-  '#cBBBBBB..............BBBBBBccc#', // 15
-  '#cc...........................c#', // 16
-  '#cc...........................c#', // 17
-  `#${C30}#`, // 18  the south lane
-  '#cccBBBBBBBBcccccccccBBBBBBBBcc#', // 19  the lighters' cottages
-  '#cccBBBBBBBBcccccccccBBBBBBBBcc#', // 20
-  '#c...........cccccc...........c#', // 21  their gardens
-  '#c...........cccccc...........c#', // 22
-  `#${C30}#`, // 23
-  '################################', // 24  the verge
-  '################################', // 25
+  'VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV', //  0  THE GASWORKS: the works wall along the edge
+  'ccGGGGGGGGGGGGcccckkkkccccffffffffffccGGGGGGGGcc', //  1  the retort house (west)   the office   the holder yard   the purifiers (east)
+  'ccGGGGGGGGGGGGccccccccccccffffffffffccGGGGGGGGcc', //  2
+  'ccGGGGGGGGGGGGccccccccccccffffffffffccGGGGGGGGcc', //  3
+  'cczzzzzzzzzzzzccccccccccccffffffffffcc........cc', //  4  the coal                                                 the spent lime
+  'cczzzzzzzzzzzzccccccccccccffffffffffcc........cc', //  5
+  'cccccccccccccccccccccccccccccccccccccccccccccccc', //  6  the works quay
+  'WWWWWWWWWWWWWWWWWWWWWWWWffWWWWWWWWWWWWWWWWWWWWWW', //  7  the lighters' cut -- the lighters' bridge across it
+  'WWWWWWWWWWWWWWWWWWWWWWWWffWWWWWWWWWWWWWWWWWWWWWW', //  8
+  'cccccccc#cccccccccccccccccccccccccccccc#cccccccc', //  9  the quay
+  'cccccccc#cccccccccccccccccccccccccccccc#cccccccc', // 10  the wharf lane
+  '#BBBBBB##cBBBBBBBBccOOOOccccccccBBBBBBc##BBBBBB#', // 11  the chandlers (west)   bonded warehouse   LAMP-OIL HOUSE   the yard   the Lighters' Hall   the lamp stores (east)
+  '#BBBBBB##cBBBBBBBBccOOOOccccccccBBBBBBc##BBBBBB#', // 12
+  '........#cBBBBBBBBcccccccccccccccccccVc##BBBBBB#', // 13  the chandlers' yard (the second Warden)   the lighters' yard (the Warden)
+  '........#cc.......ccccccccccccccccccVVc#........', // 14
+  '........#cc.......cccccccccccc........c#........', // 15  the back lane
+  '#BBBBBB##cBBBBBBBBccXXXXXXccBBBBBBBBBBc##BBBBBB#', // 16  the north terraces, and THE TITHE OFFICE
+  '#BBBBBB##cBBBBBBBBccXXXXXXccBBBBBBBBBBc##BBBBBB#', // 17
+  'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS', // 18  THE HIGH STREET — lit, sanctioned, and run on to both edges
+  'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS', // 19
+  'cccccccc#cccccccccccccccccccccccccccccc#cccccccc', // 20  the step down
+  '#kkk#kkk#cBBBBBB..............BBBBBBccc#........', // 21  cottages (west)   the Sink, and its tenements; the cellar hatch on the west one   THE DITCHES (east)
+  '#kkk#kkk#cBBBBBB..............BBBBBBcccdddddddd.', // 22
+  '#gggggg##cc...........................c#........', // 23
+  '#gggggg##cc...........................cd.ddddddd', // 24
+  'cccccccc#cccccccccccccccccccccccccccccc#........', // 25  the south lane
+  '#kkkkkk##cccBBBBBBBBcccccccccBBBBBBBBccdddddddd.', // 26  the lighters' cottages
+  '#kkkkkk##cccBBBBBBBBcccccccccBBBBBBBBcc#........', // 27
+  '#gggggg##c...........cccccc...........cd.ddedddd', // 28  their gardens
+  '#gggggg##c...........cccccc...........c#........', // 29
+  'cccccccc#ccccccccccccccccccccccccccccccddddddd..', // 30
+  '########################################........', // 31  the verge
+  '#######################################d..dddddd', // 32
+  '#####################...........................', // 33  the verge
+  '#gggg#gggg#gggg#kkkkdd.ddddddd.ddddddd.ddddddd.d', // 34  the allotments and the potting shed (west)             where the Sink drains (east)
+  '#gggg#gggg#gggg#kkkk#.......................kkk.', // 35
+  '####################dddddd.ddddddd.dddeddd.ddddd', // 36
+  '#gggg#gggg#gggg#gggg#..kkk......................', // 37
+  '#gggg#gggg#gggg#ggggd.dddddddd.dddddddd.ddddddd.', // 38
+  '#####################...........................', // 39
 ];
 
 const HALF_X = (GRID[0]!.length * TILE) / 2;
@@ -155,20 +202,20 @@ export const LAMPROW: AreaDef = defineArea({
     {
       // The oil store the row is lit from, off the lane behind the quay.
       to: 'lamprow_oil_house',
-      x: xOfCol(13.5),
-      z: zOfRow(5) + TILE / 2 + 1.4,
+      x: xOfCol(21.5),
+      z: zOfRow(12) + TILE / 2 + 1.4,
       label: 'Into the Lamp-oil House',
-      door: { x: xOfCol(13.5), z: zOfRow(5) + TILE / 2 + 0.05, facesSouth: true, sign: 'lamp' },
+      door: { x: xOfCol(21.5), z: zOfRow(12) + TILE / 2 + 0.05, facesSouth: true, sign: 'lamp' },
       arrive: { x: 0, z: 16 },
     },
     {
       // The Tithe Office, on the flags, and sealed until the tithe has been collected: the
       // Magistracy does not open its books to a Whisperer it has not yet paid.
       to: 'lamprow_tithe_office',
-      x: xOfCol(14.5),
-      z: zOfRow(10) + TILE / 2 + 1.4,
+      x: xOfCol(22.5),
+      z: zOfRow(17) + TILE / 2 + 1.4,
       label: 'Into the Tithe Office',
-      door: { x: xOfCol(14.5), z: zOfRow(10) + TILE / 2 + 0.05, facesSouth: true, sign: 'counting', style: 'iron' },
+      door: { x: xOfCol(22.5), z: zOfRow(17) + TILE / 2 + 0.05, facesSouth: true, sign: 'counting', style: 'iron' },
       when: { after: ['lamprow_tithe'] },
       lockedReason: 'The office opens when the tithe has been collected. Ask the clerk which of you that is.',
       arrive: { x: 0, z: 16 },
@@ -177,10 +224,10 @@ export const LAMPROW: AreaDef = defineArea({
       // A hatch on the west tenement, down to the cellars the Tithe-Takers count in. Off the
       // flags, below the kerb, and not a door the ward will admit to.
       to: 'lamprow_sink_cellars',
-      x: xOfCol(4.5),
-      z: zOfRow(15) + TILE / 2 + 1.4,
+      x: xOfCol(12.5),
+      z: zOfRow(22) + TILE / 2 + 1.4,
       label: 'Down the hatch to the Sink cellars',
-      door: { x: xOfCol(4.5), z: zOfRow(15) + TILE / 2 + 0.05, facesSouth: true, style: 'hatch' },
+      door: { x: xOfCol(12.5), z: zOfRow(22) + TILE / 2 + 0.05, facesSouth: true, style: 'hatch' },
       arrive: { x: 0, z: 16 },
     },
   ],
@@ -194,6 +241,9 @@ export const LAMPROW: AreaDef = defineArea({
       { kind: 'rat', x: 44, z: 34, roam: 5, count: 2 },
       { kind: 'rat', x: -40, z: -18, roam: 4, count: 2 },
       { kind: 'rook', x: -18, z: -44, roam: 24, count: 3 },
+      // In the ditches: rats on the banks, and a heron that has found the eel traps.
+      { kind: 'rat', x: 80, z: 30, roam: 4, count: 2 },
+      { kind: 'heron', x: 40, z: 70, roam: 6, count: 1 },
     ],
     /** The lighting ward. Oil on the quay, fires below the kerb, washing over the Sink. */
     dressing: [
@@ -236,6 +286,42 @@ export const LAMPROW: AreaDef = defineArea({
       { kind: 'haybale', x: 52, z: 38 },
       { kind: 'trough', x: -20, z: 38 },
       { kind: 'logpile', x: 28, z: 34 },
+
+      // The gasworks: the coal heaped by the retorts, tar in barrels, the spent lime, the quay.
+      { kind: 'spoilheap', x: -70, z: -60 },
+      { kind: 'spoilheap', x: -54, z: -60 },
+      { kind: 'cart', x: -30, z: -62 },
+      { kind: 'barrel', x: 50, z: -66 },
+      { kind: 'barrel', x: 50, z: -62 },
+      { kind: 'spoilheap', x: 64, z: -60 },
+      { kind: 'spoilheap', x: 80, z: -58 },
+      { kind: 'bollard', x: -80, z: -53 },
+      { kind: 'bollard', x: -60, z: -53 },
+      { kind: 'bollard', x: -40, z: -53 },
+      { kind: 'bollard', x: 20, z: -53 },
+      { kind: 'bollard', x: 40, z: -53 },
+      { kind: 'bollard', x: 60, z: -53 },
+      { kind: 'bollard', x: 80, z: -53 },
+      // The chandlers' yard, inside the second Warden's beat; the lamp stores' yard.
+      { kind: 'workbench', x: -78, z: -22 },
+      { kind: 'barrel', x: -84, z: -22 },
+      { kind: 'washing', x: 80, z: -20, yaw: 0 },
+      { kind: 'barrel', x: 90, z: -18 },
+      // The trench for the gas main, dug along the step and not yet filled.
+      { kind: 'spoilheap', x: -78, z: 2.2 },
+      { kind: 'barrel', x: -70, z: 2 },
+      // The ditches: reeds on the banks.
+      { kind: 'reeds', x: 70, z: 6 },
+      { kind: 'reeds', x: 86, z: 14 },
+      { kind: 'reeds', x: 66, z: 30 },
+      { kind: 'reeds', x: 90, z: 38 },
+      { kind: 'reeds', x: 76, z: 46 },
+      { kind: 'reeds', x: 30, z: 62 },
+      { kind: 'reeds', x: 84, z: 70 },
+      // The allotments.
+      { kind: 'trough', x: -54, z: 54 },
+      { kind: 'wildflowers', x: -34, z: 66 },
+      { kind: 'wildflowers', x: -90, z: 38 },
     ],
     /**
      * The ward, on its own flags.
@@ -267,6 +353,13 @@ export const LAMPROW: AreaDef = defineArea({
         { x: 30, z: -17 },
         { x: 6, z: -17 },
       ],
+      // And round the chandlers' yard at the west end, where the ward keeps its wicks.
+      [
+        { x: -90, z: -26 },
+        { x: -68, z: -26 },
+        { x: -68, z: -18 },
+        { x: -90, z: -18 },
+      ],
     ],
     /**
      * The Sink's two crews.
@@ -282,6 +375,24 @@ export const LAMPROW: AreaDef = defineArea({
       // be a crew doing it in front of everybody.
       { encounterId: 'pack_lamprow_gutter_crew', x: -10, z: 6, roam: 7, hours: 'night' },
       { encounterId: 'pack_lamprow_tithe_takers', x: 2, z: 8, roam: 7, hours: 'night' },
+      // Across the cut, the Wick-Thieves walk the gasworks yard at night: a band of their own,
+      // well out of the Sink's reach, stealing from the thing that will replace the lighters.
+      {
+        encounterId: 'pack_wick_thieves',
+        id: 'wick_thieves',
+        x: -16,
+        z: -64,
+        roam: 7,
+        hours: 'night',
+        band: 'gasworks',
+        behaviour: 'beat',
+        route: [
+          { x: -36, z: -58 },
+          { x: 6, z: -58 },
+          { x: 6, z: -70 },
+          { x: -36, z: -70 },
+        ],
+      },
     ],
     /**
      * Who walks the row.
@@ -291,8 +402,11 @@ export const LAMPROW: AreaDef = defineArea({
      * by themselves. Now they come on behind him.
      */
     lamplighter: 'lamprow_lamplighter',
-    /** The lamps the ward is named for — every one of them on the flags, in one straight row. */
+    /** The lamps the ward is named for — every one of them on the flags, in one straight row, edge to edge. */
     lamps: [
+      { x: -82, z: -2 },
+      { x: -70, z: -2 },
+      { x: -58, z: -2 },
       { x: -46, z: -2 },
       { x: -34, z: -2 },
       { x: -22, z: -2 },
@@ -302,6 +416,9 @@ export const LAMPROW: AreaDef = defineArea({
       { x: 26, z: -2 },
       { x: 38, z: -2 },
       { x: 50, z: -2 },
+      { x: 62, z: -2 },
+      { x: 74, z: -2 },
+      { x: 86, z: -2 },
     ],
     /** Spill: from the yard, and from the Sink. Kept off the line between the spawn and the ways out. */
     crates: [
@@ -319,13 +436,22 @@ export const LAMPROW: AreaDef = defineArea({
     ],
     /** What a ward taxed for its own light writes on the walls of the quarter that pays. */
     graffiti: [
-      { text: 'THE LAMPS ARE NOT FOR US', wallX: xOfCol(24.5), wallZ: zOfRow(10) + TILE / 2 + 0.05, dx: 0, facesSouth: true, tint: '#b7ae9d' },
-      { text: 'PAY FOR YOUR OWN DARK', wallX: xOfCol(7.5), wallZ: zOfRow(19) - TILE / 2, dx: 0, facesSouth: false, tint: '#a46a4a' },
-      { text: 'THE SINK PAYS IN THE DARK', wallX: xOfCol(24.5), wallZ: zOfRow(14) - TILE / 2, dx: 0, facesSouth: false, tint: '#8a7a6a' },
+      { text: 'THE LAMPS ARE NOT FOR US', wallX: xOfCol(32.5), wallZ: zOfRow(17) + TILE / 2 + 0.05, dx: 0, facesSouth: true, tint: '#b7ae9d' },
+      { text: 'PAY FOR YOUR OWN DARK', wallX: xOfCol(15.5), wallZ: zOfRow(26) - TILE / 2, dx: 0, facesSouth: false, tint: '#a46a4a' },
+      { text: 'THE SINK PAYS IN THE DARK', wallX: xOfCol(32.5), wallZ: zOfRow(21) - TILE / 2, dx: 0, facesSouth: false, tint: '#8a7a6a' },
       // Beside the hatch, on the tenement it goes under.
-      { text: 'THEY COUNT DOWN HERE', wallX: xOfCol(4.5), wallZ: zOfRow(15) + TILE / 2 + 0.05, dx: 6.5, facesSouth: true, tint: '#a46a4a' },
+      { text: 'THEY COUNT DOWN HERE', wallX: xOfCol(12.5), wallZ: zOfRow(22) + TILE / 2 + 0.05, dx: 6.5, facesSouth: true, tint: '#a46a4a' },
+      // On the retort house, facing the works quay and the ward across the cut.
+      { text: 'LIGHT WITHOUT LIGHTERS', wallX: -64, wallZ: zOfRow(3) + TILE / 2, dx: 0, facesSouth: true, tint: '#b7ae9d' },
     ],
     waterRows: WATER_ROWS,
+    waterRow0: WATER_ROW0,
     horizon: 'city',
+    /** The works' gasholder, its valve lamp the one light in the ward nobody pays tithe on yet. */
+    landmarks: [{ kind: 'gasholder', x: 28, z: -66 }],
+    vignettes: [
+      { id: 'wayside_shrine', x: -74, z: 68.5 },
+      { id: 'fish_racks', x: 60, z: 60.5 },
+    ],
   },
 });

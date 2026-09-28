@@ -135,7 +135,7 @@ export const HIGHCOURT: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: 0,
       label: 'Down to the High Street',
-      arrive: { x: 56, z: -4 },
+      arrive: { x: 88, z: -4 },
     },
     {
       // The lobby under the footing. The doors the Summons opens are at the far end of it.
