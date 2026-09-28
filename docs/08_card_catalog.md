@@ -8,16 +8,16 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 
 ## Totals
 
-**222 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
+**244 base cards.** Rank 2 printings are derived, not authored — see [Rank 2](#rank-2).
 
 | Kind | Count | Whose | Where it goes |
 |---|---:|---|---|
 | minion | 88 | Hero | Vanguard Roster, never a deck |
 | spell | 98 | Companion | drafted into a Grimoire |
-| ability | 10 | Hero | Hero Deck |
+| ability | 27 | Hero | Hero Deck |
 | mark | 6 | Hero | Hero Deck |
-| obstacle | 20 | Hero | Hero Deck, shown as a Construct |
-| **total** | **222** | | |
+| obstacle | 25 | Hero | Hero Deck, shown as a Construct |
+| **total** | **244** | | |
 
 ### By school
 
@@ -27,10 +27,10 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | frost | 33 |
 | bulwark | 32 |
 | bloom | 30 |
+| arcane | 29 |
 | surge | 29 |
 | pyre | 28 |
-| arcane | 23 |
-| neutral | 11 |
+| neutral | 27 |
 
 ### By file
 
@@ -52,7 +52,8 @@ Every card in the game, grouped by the file it lives in. Card data is read from 
 | [`threats.ts`](#threatsts) | 3 | 3 minion |
 | [`hybrid.ts`](#hybridts) | 24 | 23 spell, 1 obstacle |
 | [`auras.ts`](#aurasts) | 13 | 11 spell, 2 ability |
-| **total** | **222** | |
+| [`hero.ts`](#herots) | 22 | 17 ability, 5 obstacle |
+| **total** | **244** | |
 
 ---
 
@@ -394,13 +395,42 @@ The Aura attach cards, their Detonations and Revival. — **13 cards** (11 spell
 | **Aetheric Resurgence** | `aetheric_resurgence` | ability | X (max 5) | 1 | hero | — | — | fallen (pyre) | — | — | X Bones, up to 5. Raises a fallen Vanguard on the exact tile it fell, at 20% of its health per Bone spent. Nothing may be standing there. |
 | **The Anchor Rally** | `anchor_rally` | ability | 3P | 2 | hero | — | — | fallen (anchor) | — | — | Raises a fallen Vanguard on an Anchor Tile at half health, quickened: +1 MOV this turn. |
 
+### `hero.ts`
+
+The Hero's kit: colourless and arcane abilities and constructs, taught by the Duelists. — **22 cards** (17 ability, 5 obstacle).
+
+| Name | id | Kind | Cost | Tier | Source | Stats | Riders | Target | Keywords | Flags | Text |
+|---|---|---|---|:-:|---|---|---|---|---|---|---|
+| **Cut Loose** | `cut_loose` | ability | 0 | 1 | hero | — | — | entity (ally) | — | — | Frees a friendly unit from Entangle and grants it +1 MOV this turn. |
+| **Forced March** | `forced_march` | ability | 0 | 1 | hero | — | — | entity (ally) | — | — | Grants a friendly unit +2 MOV this turn. |
+| **Supply Run** | `supply_run` | ability | 0 | 1 | hero | — | — | none | — | — | Gain 1 Bone and draw 1 card. |
+| **Bola** | `bola` | ability | 1P | 1 | hero | — | — | entity (enemy) | — | R2 | Deals 10 damage to an enemy and Entangles it: it cannot move through its next turn. |
+| **Cleansing Rune** | `cleansing_rune` | ability | 1P | 1 | hero | — | — | entity (ally) | — | — | Strips Burn, Toxin, Chill, Freeze, Entangle and Stun from a friendly unit. |
+| **Field Dressing** | `field_dressing` | ability | 1P | 1 | hero | — | — | none | — | R2 | Restores 40 health to your Pact. |
+| **Mana Bolt** | `mana_bolt` | ability | 1P | 1 | hero | — | — | entity (enemy) | — | R2 | Deals 30 spell damage to an enemy. |
+| **Scatter Debris** | `scatter_debris` | ability | 1P | 1 | hero | — | — | empty tile (any, 2x2) | — | — | Strews rubble over a 2x2 block of tiles for 3 turns. Crossing it costs extra movement. |
+| **Second Wind** | `second_wind` | ability | 1P | 1 | hero | — | — | ally unit or portrait | — | R2 | Grants a friendly unit or your Hero 20 Persistent Armor. Draw 1 card. |
+| **Aether Lance** | `aether_lance` | ability | 2P | 2 | hero | — | — | entity (enemy) | — | R2 | Deals 20 spell damage to an enemy and everything in a cross around it, yours included. |
+| **Brace and Heave** | `brace_and_heave` | ability | 2P | 2 | hero | — | — | entity (ally) | — | — | Everything adjacent to a friendly unit is shoved 1 tile away from it. Triggers standard Collision Damage (30 / 20). |
+| **Pike Thrust** | `pike_thrust` | ability | 2P | 2 | hero | — | — | line 2 | — | R2 | Deals 30 damage to everything on a 2-tile line, yours included. |
+| **Quick Study** | `quick_study` | ability | 2P | 2 | hero | — | — | none | — | — | Draw 2 cards. |
+| **Siphon Bolt** | `siphon_bolt` | ability | 2P | 2 | hero | — | — | entity (enemy) | — | R2 | Deals 20 spell damage to an enemy and restores 20 health to your Pact. |
+| **Sledgehammer** | `sledgehammer` | ability | 2P | 2 | hero | — | — | entity (any, +obstacles) | — | R2 | Deals 40 damage to a unit or obstacle. |
+| **Weighted Net** | `weighted_net` | ability | 2P | 2 | hero | — | — | entity (enemy) | — | — | Entangles an enemy and every unit in a cross around it, yours included, through their next turn. |
+| **Stasis Glyph** | `stasis_glyph` | ability | 3P | 2 | hero | — | — | entity (enemy) | — | — | Stuns an enemy: it cannot move or attack through its next turn. |
+| **Sandbag Wall** | `sandbag_wall` | obstacle | 0 | 1 | hero | 30 hp, cover | — | empty tile (any) | — | R2 | Raises 30 HP of cover on an empty tile. Blocks line of sight but not movement. |
+| **Supply Crate** | `supply_crate` | obstacle | 1P | 1 | hero | 30 hp | breaks for 2M | empty tile (any) | — | R2 | Raises a 30 HP crate on an empty tile. Whoever breaks it takes 2 Marrow. |
+| **Tar Barrel** | `tar_barrel` | obstacle | 1P | 1 | hero | 30 hp | on break entangle 1 | empty tile (any) | — | R2 | Raises a 30 HP barrel of pitch. When it breaks, every unit on or beside it is Entangled. |
+| **Timber Palisade** | `timber_palisade` | obstacle | 3P | 2 | hero | 120 hp | leaves rubble | empty tile (any) | — | R2 | Raises a 120 HP palisade on an empty tile. Blocks line of sight, and leaves rubble when it breaks. |
+| **Warding Obelisk** | `warding_obelisk` | obstacle | 3P | 2 | hero | 60 hp | turn start entangle 1; leaves rubble | empty tile (any) | — | R2 | Raises a 60 HP obelisk on an empty tile. Enemies in its row start each turn Entangled while it stands. |
+
 ---
 
 ## Notes
 
 ### Rank 2
 
-Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 74 of the 222 base cards currently have one, marked `R2` above.
+Every card above may also exist as a Rank 2 printing, id-suffixed `_r2`. These are **derived, not authored**: `ascendCardDef()` in `src/core/data/ascension.ts` raises the numbers a card deals by 10% and changes nothing else, and `cards/index.ts` builds them at module load. A card with no number to raise gets no printing, which is what the Forge reads to decide it has nothing to sell you. There is nothing to author and nothing to list here — 87 of the 244 base cards currently have one, marked `R2` above.
 
 ### Tiers and copy limits
 

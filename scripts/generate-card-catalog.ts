@@ -40,6 +40,7 @@ import { WILDLIFE_CARDS } from '../src/core/data/cards/wildlife.js';
 import { THREAT_CARDS } from '../src/core/data/cards/threats.js';
 import { HYBRID_CARDS } from '../src/core/data/cards/hybrid.js';
 import { AURA_CARDS } from '../src/core/data/cards/auras.js';
+import { HERO_KIT_CARDS } from '../src/core/data/cards/hero.js';
 
 /**
  * The shelves, in the order `cards/index.ts` merges them.
@@ -91,6 +92,11 @@ const SOURCES: Source[] = [
     blurb: 'Splice products. Obtainable only at the bench.',
   },
   { file: 'auras.ts', cards: AURA_CARDS, blurb: 'The Aura attach cards, their Detonations and Revival.' },
+  {
+    file: 'hero.ts',
+    cards: HERO_KIT_CARDS,
+    blurb: "The Hero's kit: colourless and arcane abilities and constructs, taught by the Duelists.",
+  },
 ];
 
 const KIND_ORDER = ['minion', 'spell', 'ability', 'mark', 'obstacle'] as const;
