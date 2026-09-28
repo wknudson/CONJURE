@@ -27,6 +27,7 @@ import type { SkyId } from './skies.js';
 import type { SignId } from './signs.js';
 import type { SolidStyle } from './buildings.js';
 import type { LandmarkId } from './landmarks.js';
+import type { VignetteSpec } from './vignettes.js';
 
 /**
  * World units per tile, global to every area.
@@ -407,6 +408,8 @@ export interface AreaProps {
    * A landmark stands on a footprint the colliders learn, and its moving part moves.
    */
   readonly landmarks?: readonly { readonly kind: LandmarkId; readonly x: number; readonly z: number }[];
+  /** Little composed scenes, stamped whole. See `vignettes.ts`; `allDressing` expands them. */
+  readonly vignettes?: readonly VignetteSpec[];
 }
 
 export interface AreaDef {

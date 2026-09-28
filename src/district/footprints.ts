@@ -24,6 +24,7 @@ import { FORAGE_KINDS, FORAGE_NODES, foragePropAt } from './forage.js';
 import { RESTS } from './rests.js';
 import { SIGHTS } from './sights.js';
 import { LANDMARKS } from './landmarks.js';
+import { expandVignette } from './vignettes.js';
 
 /**
  * The furniture the registries hang in an area, beside what the area file lists itself.
@@ -45,9 +46,13 @@ export function registryProps(areaId: string): DressingSpec[] {
   return out;
 }
 
-/** Everything standing in an area: the area file's own list, then the registries'. */
+/** Everything standing in an area: the area file's own list, its vignettes, then the registries'. */
 export function allDressing(area: AreaDef): readonly DressingSpec[] {
-  return [...(area.props.dressing ?? []), ...registryProps(area.id)];
+  return [
+    ...(area.props.dressing ?? []),
+    ...(area.props.vignettes ?? []).flatMap(expandVignette),
+    ...registryProps(area.id),
+  ];
 }
 
 /** Every place a registry puts a prompt in an area, for the clearance rules the tests keep. */
