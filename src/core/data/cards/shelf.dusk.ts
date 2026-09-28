@@ -288,7 +288,7 @@ export const DUSK_SHELF: Record<string, CardDef> = {
     school: 'dusk',
     source: 'companion',
     kind: 'spell',
-    text: 'Draw 2 cards.',
+    text: 'Draw 2 cards. The Owl has already seen them coming.',
     target: { kind: 'none' },
     effect: { op: 'drawCards', amount: 2 },
     keywords: [],

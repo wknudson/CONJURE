@@ -560,7 +560,7 @@ Dusk third shelf — commons, and the Stag and Jackal signatures. — **18 cards
 | **Venom Bite** | `venom_bite` | spell | 1P | 1 | companion | — | — | entity (enemy) — range 1 | — | R2 | Deals 20 decay damage to an adjacent enemy and poisons it (Toxin 2). |
 | **Barrow Howl** | `barrow_howl` | spell | 2P | 2 | companion | — | — | empty tile (any) — range 4, LoS | — | R2 | Deals 10 decay damage to every unit in a 3x3 around the target tile and poisons them (Toxin 1), yours included. |
 | **Moonless Night** | `moonless_night` | spell | 2P | 2 | companion | — | — | empty tile (any, 2x2) — range 4, LoS | — | R2 | Darkens a 2x2 block for 2 turns, blocking ranged line of sight, and deals 10 decay damage to everything there. |
-| **Owl Omen** | `owl_omen` | spell | 2P | 2 | companion | — | — | none | — | — | Draw 2 cards. |
+| **Owl Omen** | `owl_omen` | spell | 2P | 2 | companion | — | — | none | — | — | Draw 2 cards. The Owl has already seen them coming. |
 | **Plague Wind** | `plague_wind` | spell | 2P | 2 | companion | — | — | line 3 — range 4, LoS | — | R2 | Deals 10 decay damage in a widening 3-deep cone and poisons everything caught (Toxin 1). |
 | **Shallow Grave** | `shallow_grave` | spell | 2P | 2 | companion | — | — | fallen (anchor) | — | — | Raises a fallen Vanguard on an Anchor Tile at 30% of its health. |
 | **Soul Toll** | `soul_toll` | spell | 2P | 2 | companion | — | — | global | — | R2 | Deals 30 damage through any armor to the weakest enemy standing. |
