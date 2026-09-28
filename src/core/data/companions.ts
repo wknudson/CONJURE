@@ -80,7 +80,7 @@ export interface CompanionDef {
   unitCardId: string;
 }
 
-export const COMPANIONS: CompanionDef[] = [
+const SPECIES: CompanionDef[] = [
   {
     id: 'ignis',
     name: 'Ignis',
@@ -95,7 +95,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['pyre'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['chimney_draw', 'emberfall', 'slag_cairn', 'pressure_valve_release'],
+      // Two, where it was four: the Drake's own signatures now say what the omit used to.
+      omit: ['chimney_draw', 'slag_cairn'],
     },
     legacyGrimoire: [
       'flame_surge',
@@ -122,7 +123,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['frost'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['hoarfrost_veil', 'calving', 'whiteout', 'hail_spire'],
+      // Two, where it was four: the Bear's signatures carry the lockdown now.
+      omit: ['hoarfrost_veil', 'calving'],
     },
     legacyGrimoire: [
       'glacial_spike',
@@ -152,7 +154,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['surge'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['elmos_fire', 'capacitor_dump', 'tesla_pylon', 'thunderhead'],
+      // Two, where it was four: the Lynx's signatures carry the footwork now.
+      omit: ['capacitor_dump', 'tesla_pylon'],
     },
     legacyGrimoire: [
       'static_arc',
@@ -181,7 +184,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['dusk'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['exhume', 'last_rites', 'charnel_pillar', 'smoke_bomb'],
+      // Two, where it was four: the Stag's signatures carry the feeding now.
+      omit: ['exhume', 'charnel_pillar'],
     },
     legacyGrimoire: [
       'shadow_siphon',
@@ -208,7 +212,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['bloom'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['pollen_drift', 'blight_harvest', 'noxious_cloud', 'blight_bloom'],
+      // Two, where it was four: the Warden's signatures carry the patience now.
+      omit: ['blight_harvest', 'blight_bloom'],
     },
     legacyGrimoire: [
       'spore_cloud',
@@ -235,7 +240,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['bulwark'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['sinkhole', 'counterweight', 'deadweight', 'crag_slam'],
+      // Two, where it was four: the Boar's signatures carry the ground now.
+      omit: ['sinkhole', 'crag_slam'],
     },
     legacyGrimoire: [
       'seismic_slam',
@@ -524,7 +530,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['pyre'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['cataclysm', 'cataclysmic_core', 'cinder_gale', 'pyre_pillar'],
+      // Two, where it was four: the signatures carry the chimney now.
+      omit: ['cataclysm', 'cataclysmic_core'],
     },
     legacyGrimoire: [
       'emberfall',
@@ -551,7 +558,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['frost'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['rime_lock', 'deep_winter', 'creeping_rime', 'ice_barricade'],
+      // Two, where it was four: the Seal's signatures carry the harbour now.
+      omit: ['rime_lock', 'deep_winter'],
     },
     legacyGrimoire: [
       'cold_snap',
@@ -579,7 +587,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['surge'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['arcing_step', 'galvanic_rally', 'paralytic_arc', 'chain_bolt'],
+      // Two, where it was four: the Kudu's signatures carry what stands still now.
+      omit: ['arcing_step', 'galvanic_rally'],
     },
     legacyGrimoire: [
       'induction',
@@ -607,7 +616,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['dusk'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['harvest_the_weak', 'blood_and_bone_rally', 'marrow_burst', 'grave_call'],
+      // Two, where it was four: the Jackal's signatures carry the digging now.
+      omit: ['blood_and_bone_rally', 'grave_call'],
     },
     legacyGrimoire: [
       'pall',
@@ -634,7 +644,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['bloom'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['thornlash', 'strangling_vines', 'briar_rampart', 'verdant_collapse'],
+      // Two, where it was four: the Aurochs' signatures carry the field now.
+      omit: ['strangling_vines', 'verdant_collapse'],
     },
     legacyGrimoire: [
       'pollen_drift',
@@ -662,7 +673,8 @@ export const COMPANIONS: CompanionDef[] = [
     grimoire: {
       schools: ['bulwark'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['iron_gate', 'battlement', 'bastion_stance', 'petrifying_mantle'],
+      // Two, where it was four: the Ram's signatures carry the breaking now.
+      omit: ['iron_gate', 'bastion_stance'],
     },
     legacyGrimoire: [
       'sinkhole',
@@ -803,7 +815,195 @@ export const COMPANIONS: CompanionDef[] = [
     ],
     unitCardId: 'crab_bound',
   },
+
+  // -------------------------------------------------------- the third bloodlines
+  //
+  // Two more mono species for Pyre, Frost and Surge, so each of those schools speaks through
+  // four beasts. What separates four beasts of one school is no longer mostly `omit`: each
+  // has three signature cards of its own and opens its book on one of them, and the omit is
+  // down to the two cards that most belong to a cousin. Every one is huntable; none reaches
+  // the creation screen, because `foundersOf` takes the first mono species of each school.
+  //
+  // Their art is still to be painted, so each ships on a school-coloured stand-in listed in
+  // `COMPANION_ART_PENDING`.
+
+  {
+    id: 'phoenix',
+    artId: 'ashwing_phoenix',
+    name: 'Ashwing Phoenix',
+    title: 'Pyre Bird',
+    school: 'pyre',
+    blurb:
+      'Burns down to ash every winter and comes back angrier. Throws fire from above the fight, and puts your fallen back on their feet.',
+    deck: [...STARTER_DECK],
+    // The Phoenix is the caster of the school: it keeps the long shapes and gives up the
+    // two that pull the fight to it.
+    grimoire: {
+      schools: ['pyre'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['chimney_draw', 'pressure_valve_release'],
+    },
+    legacyGrimoire: [
+      'phoenix_dive',
+      'phoenix_dive',
+      'wingbeat_embers',
+      'flame_surge',
+      'flame_surge',
+      'molten_shot',
+      'kindling',
+      'ash_rebirth',
+    ],
+    unitCardId: 'phoenix_bound',
+  },
+  {
+    id: 'badger',
+    artId: 'cinderback_badger',
+    name: 'Cinderback Badger',
+    title: 'Sett Burner',
+    school: 'pyre',
+    blurb:
+      'Digs its sett under the slag heaps and fills it with smoke. Bites hard, burns what it bites, and will not be moved off its ground.',
+    deck: [...STARTER_DECK],
+    // The brawler of the school: close fire and smoke. It never learns the long shapes.
+    grimoire: {
+      schools: ['pyre'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['cinder_gale', 'cataclysmic_core'],
+    },
+    legacyGrimoire: [
+      'burrow_strike',
+      'burrow_strike',
+      'smoke_sett',
+      'cinderback_bristle',
+      'fire_breath',
+      'fire_breath',
+      'scorch',
+      'stoke',
+    ],
+    unitCardId: 'badger_bound',
+  },
+  {
+    id: 'mammoth',
+    artId: 'hoarfrost_mammoth',
+    name: 'Hoarfrost Mammoth',
+    title: 'Glacier Walker',
+    school: 'frost',
+    blurb:
+      'Walks down off the glacier once a generation and does not step round anything. Stands in front, tramples a line, and freezes what it stops.',
+    deck: [...STARTER_DECK],
+    // The wall of the school: armour and stomps. It leaves the fog to the Seal and the Ermine.
+    grimoire: {
+      schools: ['frost'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['whiteout', 'cold_snap'],
+    },
+    legacyGrimoire: [
+      'mammoth_trample',
+      'permafrost_stomp',
+      'permafrost_stomp',
+      'woolly_hide',
+      'woolly_hide',
+      'glacial_spike',
+      'ice_barricade',
+      'frost_nova',
+    ],
+    unitCardId: 'mammoth_bound',
+  },
+  {
+    id: 'ermine',
+    artId: 'rime_ermine',
+    name: 'Rime Ermine',
+    title: 'Snow Thief',
+    school: 'frost',
+    blurb:
+      'White on white, and gone before you see it. Bites what the cold has already slowed, and hides in its own weather.',
+    deck: [...STARTER_DECK],
+    // The skirmisher of the school: cheap cold and the payoff for it. It never learns the
+    // slow walls.
+    grimoire: {
+      schools: ['frost'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['ice_barricade', 'hail_spire'],
+    },
+    legacyGrimoire: [
+      'ermine_bite',
+      'ermine_bite',
+      'frozen_ambush',
+      'white_dash',
+      'cold_snap',
+      'cold_snap',
+      'creeping_rime',
+      'frostbite',
+    ],
+    unitCardId: 'ermine_bound',
+  },
+  {
+    id: 'eel',
+    artId: 'galvanic_eel',
+    name: 'Galvanic Eel',
+    title: 'Canal Current',
+    school: 'surge',
+    blurb:
+      'Lives in the canals under the Works, where the grid bleeds into the water. Coils round what it catches and turns the water against it.',
+    deck: [...STARTER_DECK],
+    // The water half of Surge: currents and coils. It leaves the pylons to the Kudu.
+    grimoire: {
+      schools: ['surge'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['tesla_pylon', 'tempest_break'],
+    },
+    legacyGrimoire: [
+      'eel_coil',
+      'eel_jolt',
+      'eel_jolt',
+      'canal_current',
+      'static_arc',
+      'static_arc',
+      'discharge',
+      'spark',
+    ],
+    unitCardId: 'eel_bound',
+  },
+  {
+    id: 'pangolin',
+    artId: 'sparkback_pangolin',
+    name: 'Sparkback Pangolin',
+    title: 'Rolling Grid',
+    school: 'surge',
+    blurb:
+      'Plated in scales that hum. Curls up, takes the blow, and gives the charge back to whoever struck it.',
+    deck: [...STARTER_DECK],
+    // The shield of the school: scales and rolls. It never learns the Lynx's footwork.
+    grimoire: {
+      schools: ['surge'],
+      hybridChance: MONO_HYBRID_CHANCE,
+      omit: ['arcing_step', 'galvanic_rally'],
+    },
+    legacyGrimoire: [
+      'ball_roll',
+      'ball_roll',
+      'scale_shed',
+      'static_curl',
+      'thunderclap',
+      'chain_bolt',
+      'induction',
+      'spark',
+    ],
+    unitCardId: 'pangolin_bound',
+  },
 ];
+
+/**
+ * Every species, with its Grimoire source stamped with its own id.
+ *
+ * `GrimoireSource.bloodline` is what a signature card is matched against, and it is always
+ * the species' id — so it is written here once rather than twenty-seven times by hand, where
+ * a species added later could leave it off and quietly draft none of its own signatures.
+ */
+export const COMPANIONS: CompanionDef[] = SPECIES.map((c) => ({
+  ...c,
+  grimoire: { ...c.grimoire, bloodline: c.id },
+}));
 
 export function companionById(id: string): CompanionDef | undefined {
   return COMPANIONS.find((c) => c.id === id);

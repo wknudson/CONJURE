@@ -9,8 +9,17 @@
 import type { Coord, Side, UnitId } from '../contract/ids.js';
 import type { UnitSnapshot } from '../contract/snapshots.js';
 import type { Sequencer } from './Sequencer.js';
-import { easeInOutQuad, easeInQuad, easeOutBack, easeOutQuad, tween } from './tween.js';
-import type { EntityViewMap } from '../render/EntityViews.js';
+import { easeInOutQuad, easeInQuad, easeOutBack, easeOutQuad, linear, tween } from './tween.js';
+import {
+  STEP_HOP_PX,
+  alongPath,
+  deathSquash,
+  landingSquash,
+  meleeSwing,
+  pathDurationMs,
+  rangedKick,
+} from './motion.js';
+import type { EntityView, EntityViewMap } from '../render/EntityViews.js';
 import { lerpCoord } from '../render/EntityViews.js';
 import type { Fx } from '../render/Fx.js';
 import { FLOATER_FOR_DTYPE } from '../render/Fx.js';
@@ -85,6 +94,18 @@ function hold(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * The squash a body takes as it touches down from a drop-in, springing back out.
+ *
+ * Shared by summon, deploy and revive, so every arrival lands the same way. It ends at
+ * zero squash, like every other curve here.
+ */
+function land(v: EntityView, t: (ms: number) => number): Promise<void> {
+  return tween(t(120), linear, (k) => {
+    v.squash = landingSquash(k);
+  });
+}
+
 export function registerHandlers(seq: Sequencer<CombatView>): void {
   /**
    * The Alpha's body, remembered from the seal until the Rite is cast.
@@ -120,6 +141,7 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
         v.elev = 30 * (1 - k);
       });
       v.elev = 0;
+      await land(v, t);
     }
   });
 
@@ -153,6 +175,7 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
       v.elev = 46 * (1 - k);
     });
     v.elev = 0;
+    await land(v, t);
   });
 
   seq.on('obstacleSpawned', async (e, { view, t }) => {
@@ -171,16 +194,17 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     const v = view.views.get(e.unitId);
     if (!v || e.path.length < 2) return;
 
-    for (let i = 0; i < e.path.length - 1; i++) {
-      const from = e.path[i]!;
-      const to = e.path[i + 1]!;
-      await tween(t(120), easeOutQuad, (k) => {
-        v.pos = lerpCoord(from, to, k);
-        v.elev = Math.sin(k * Math.PI) * 6;
-      });
-      v.pos = { ...to };
-      v.elev = 0;
-    }
+    // One tween for the whole path, eased at its two ends only. A tween per tile braked
+    // the body to a stop on every tile it crossed; now it carries its speed through the
+    // interior tiles and still puts a footfall on each (the hop is zero at every centre).
+    const path = e.path;
+    await tween(t(pathDurationMs(path.length - 1)), easeInOutQuad, (k) => {
+      const at = alongPath(path, k);
+      v.pos = at.pos;
+      v.elev = Math.sin(at.stride * Math.PI) * STEP_HOP_PX;
+    });
+    v.pos = { ...path[path.length - 1]! };
+    v.elev = 0;
   });
 
   seq.on('unitDisplaced', async (e, { view, t }) => {
@@ -231,28 +255,32 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
       view.fx.tracer(v.pos, at, schoolOf(snap.school).main, snap.attackProfile === 'arcing', t(220));
     }
 
-    // The swing itself: motion with a direction, not just a hop in place. Both are
-    // round trips on `sin(kπ)`, so a skip's `finishAll()` lands at k=1 — the origin —
+    // The swing itself: motion with a direction, not just a hop in place. Both curves
+    // (`motion.ts`) end at rest, so a skip's `finishAll()` lands at k=1 — the origin —
     // and nothing is left to clean up.
     const base = { ...v.pos };
     const span = at ? Math.hypot(at.x - base.x, at.y - base.y) : 0;
     const dir = span > 0 ? { x: (at!.x - base.x) / span, y: (at!.y - base.y) / span } : null;
 
     if (dir && reach <= 1) {
-      // Melee: the body throws itself at the target and recovers. 0.35 tiles keeps the
-      // depth sort honest — the attacker never rounds into its victim's cell.
-      await tween(t(240), easeInOutQuad, (k) => {
-        const s = Math.sin(k * Math.PI);
-        v.pos = { x: base.x + dir.x * 0.35 * s, y: base.y + dir.y * 0.35 * s };
-        v.elev = 6 * s;
+      // Melee: wind up, throw the body at the target, and recover with a little overshoot.
+      // The curve carries its own easing per beat, so the tween runs linear. The peak
+      // stays under half a tile, so the depth sort holds: the attacker never rounds into
+      // its victim's cell.
+      await tween(t(240), linear, (k) => {
+        const m = meleeSwing(k);
+        v.pos = { x: base.x + dir.x * m.reach, y: base.y + dir.y * m.reach };
+        v.elev = m.lift;
+        v.squash = m.squash;
       });
     } else if (dir) {
       // Ranged: the tracer carries the shot; the body just absorbs the loosing of it,
-      // a short kick away from the target.
+      // a short kick away from the target, and takes the recoil in a squash.
       await tween(t(150), easeOutQuad, (k) => {
-        const s = Math.sin(k * Math.PI);
-        v.pos = { x: base.x - dir.x * 0.12 * s, y: base.y - dir.y * 0.12 * s };
-        v.elev = 10 * s;
+        const m = rangedKick(k);
+        v.pos = { x: base.x + dir.x * m.reach, y: base.y + dir.y * m.reach };
+        v.elev = m.lift;
+        v.squash = m.squash;
       });
     } else {
       // No target to lean toward — the old vertical hop still says "I acted".
@@ -262,6 +290,7 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     }
     v.pos = base;
     v.elev = 0;
+    v.squash = 0;
   });
 
   seq.on('damageDealt', async (e, { view, t }) => {
@@ -538,9 +567,12 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     if (e.footprint === 2) view.fx.screenShake(8, t(320));
 
     if (v) {
-      await tween(t(230), easeInQuad, (k) => {
-        v.alpha = 1 - k;
-        v.elev = -14 * k;
+      // Stretch as the blow lands, then collapse as it sinks. The body is removed at the
+      // end, so this curve is the one that does not have to come back to rest.
+      await tween(t(230), linear, (k) => {
+        v.alpha = 1 - easeInQuad(k);
+        v.elev = -14 * easeInQuad(k);
+        v.squash = deathSquash(k);
       });
     }
     view.views.remove(e.unitId);
@@ -581,6 +613,7 @@ export function registerHandlers(seq: Sequencer<CombatView>): void {
     });
     v.elev = 0;
     v.alpha = 1;
+    await land(v, t);
   });
 
   seq.on('obstacleDestroyed', async (e, { view, t }) => {
