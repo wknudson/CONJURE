@@ -1452,6 +1452,101 @@ export const SIGHTS: readonly SightDef[] = [
       "Cut off the river to turn the far bank's wheel, with a sluice at its head chained open. " +
       'Somebody has hung a key on the chain, which is either a joke or a very long patience.',
   },
+
+  /* ---- Weeping Stile ---- */
+  {
+    id: 'weeping_stile:the_stile',
+    areaId: 'weeping_stile',
+    at: { x: 2, z: -50 },
+    label: 'Look at the stile',
+    caption:
+      'Two steps up, a plank over, two steps down, through the thicket to the field beyond. The ' +
+      'steps are worn in the middle. The field is where the hollow buried its own, before the ' +
+      'roll decided where they went instead.',
+  },
+  {
+    id: 'weeping_stile:the_willow',
+    areaId: 'weeping_stile',
+    at: { x: -6, z: -60.6 },
+    label: 'Look up at the willow',
+    caption:
+      'A willow gone to bone, older than the chapel, its limbs over the stile. Sixty-one ' +
+      'ribbons are tied to the lowest branch, grey now. One of them is new.',
+  },
+  {
+    id: 'weeping_stile:the_hermits_cell',
+    areaId: 'weeping_stile',
+    at: { x: -26, z: -62 },
+    label: "Look into the hermit's cell",
+    caption:
+      'Four walls, no roof, a stone bench and a stone cup on it. The hermit kept the grave ' +
+      'field when there was nobody else to. The cup has rainwater in it and a leaf, and ' +
+      'somebody has left a crust beside it.',
+  },
+  {
+    id: 'weeping_stile:the_hermits_grave',
+    areaId: 'weeping_stile',
+    at: { x: -18, z: -66 },
+    label: "Look at the hermit's grave",
+    caption:
+      'At the head of the field he kept: a cairn, and an urn with nothing in it. Nobody knows ' +
+      'who buried him. The roll has him down as RELOCATED with the rest.',
+  },
+  {
+    id: 'weeping_stile:the_grave_field',
+    areaId: 'weeping_stile',
+    at: { x: 18, z: -70 },
+    label: 'Look along the graves',
+    caption:
+      'Stones in rows, the old names cut deep and the newer ones scratched. The newest row has ' +
+      'no names, only a mark, the same mark over and over, as if whoever cut them could not ' +
+      'bring themselves to write the word.',
+  },
+  {
+    id: 'weeping_stile:the_lych_gate',
+    areaId: 'weeping_stile',
+    at: { x: 40, z: -2 },
+    label: 'Look at the lych-gate',
+    caption:
+      'Where the coffins waited for the priest. The roof is a sheet of canvas now. Under it on ' +
+      'the bench somebody has left a pair of boots, laced, side by side, facing out.',
+  },
+  {
+    id: 'weeping_stile:the_drowned_well',
+    areaId: 'weeping_stile',
+    at: { x: -58, z: 18 },
+    label: 'Look into the well',
+    caption:
+      'Drowned to the lip at the end of the path. The rope still goes down into it and does not ' +
+      'come up. Pull on it and it pulls back, a little, and then lets go.',
+  },
+  {
+    id: 'weeping_stile:the_south_wood',
+    areaId: 'weeping_stile',
+    at: { x: -2, z: 62 },
+    label: 'Look into the wood',
+    caption:
+      'The only dry ground in the hollow is the wood, which is why nobody lived in it. It is ' +
+      'quiet here in a way the rest of the Stile is not. That is not the same as empty.',
+  },
+  {
+    id: 'weeping_stile:the_roll',
+    areaId: 'weeping_stile',
+    at: { x: -14, z: -38 },
+    label: 'Read the stone',
+    caption:
+      'RELOCATED — LABOUR — 61, cut clean by a Magistracy mason. Beside it, scratched in with a ' +
+      'nail: WE WERE NOT ASKED. Beside that, in another hand: WE WERE COUNTED.',
+  },
+  {
+    id: 'weeping_stile:the_lane_shrine',
+    areaId: 'weeping_stile',
+    at: { x: 64, z: 8 },
+    label: 'Look at the cairn',
+    caption:
+      'A cairn on the lane just past the gate, for whoever comes back. Sixty-one stones in it. ' +
+      'Somebody counts them every week, and every week there are sixty-one.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {

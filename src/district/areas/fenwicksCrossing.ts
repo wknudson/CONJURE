@@ -172,7 +172,8 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
       x: -HALF_X + 2,
       z: -6,
       label: 'West, up the lane to Weeping Stile',
-      arrive: { x: 26, z: -2 },
+      // Onto the Stile's lane, just outside its lych-gate.
+      arrive: { x: 50, z: 4 },
     },
     {
       // East, up onto the shelf. The through street runs the whole width of the town and out
