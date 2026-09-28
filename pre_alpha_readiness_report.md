@@ -16,7 +16,9 @@ Stand as PR #33, the three generic reactions as PR #35, and the opening hour as 
 recorded in §7. Nothing either audit raised remains open. Outside the audits' scope, the female
 side-walk was fixed as PR #37 and the world itself rebuilt as PR #39 — every area larger,
 thirty-nine rooms behind real doors, four registries of things to do on the ground — recorded in
-§7.9 and §7.10; this note is PR #40.*
+§7.9 and §7.10; that note was PR #40. The bestiary and grimoire expansion then began with its
+machinery as PR #41 — signature cards, rare hunts, and a pipeline for creature art — recorded in
+§7.11; this note is PR #42.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -884,13 +886,65 @@ Wildlands floors are still one texture per region with a ring added; a room's ca
 liveness is read once at mount; and the bench screens are still screens — the room is the shop
 now, but the shop still swaps the view.
 
-### 7.11 What remains
+### 7.11 The bestiary expansion, Wave 0 — **built, PR #41**
+
+Not an audit finding: an ask. More companions, many more minions, and more cards in every school,
+the colourless one included, "so not every companion has the same pool of cards". The complaint
+was accurate. Every species hands over the identical Hero Deck by design, built from the colourless
+shelf §5 already calls thin; the two mono species of a school drafted from one
+pure pool of nine to eleven cards and differed only by a four-card `omit`; and a fusion reached
+any beast sharing one of its two schools, so the hybrid pools overlapped heavily too. Minions
+had no art at all — every body on both boards was a procedural silhouette or an archetype prism.
+
+The expansion was planned as twelve waves and ruled in one sitting: two new mono species per
+elemental school and one new hybrid per school pair (twenty-seven in all, none neutral or
+arcane); signature cards per species plus larger school shelves, with the Hero Deck left shared;
+thirty-six new fieldable minions and twelve threats; the new hybrids split across lairs, story
+contracts and rare hunts; bundled art restricted to CC0 and attribution-only licences; and the
+owner painting the new companions, with stand-ins until then. Wave 0 builds only the machinery
+those need, and changes nothing a player sees.
+
+**What was built.** `CardDef.bloodline` names the species that may learn a card, and
+`GrimoireSource.bloodline` is stamped from the species id where `COMPANIONS` is built, so a new
+species cannot forget it. One predicate guards all four doors a card comes through — the pure
+shelf, the fusions, the colourless fallback and the socket, which refuses a forged signature in
+the wrong beast as `off-bloodline` — and a draft's first slot deals from the species' own
+signatures when it has any. A hunt may now carry `requires`, and the board posts it only once
+the kept beasts speak every school it names: a rare hunt is a hybrid that comes to the scent of
+both its parents. `CREATURE_ART` lists a card's drawing, its facings, its filtering and whose it
+is; the loader remembers failures, BodyLayer changes a body into its drawing on the frame the
+file lands, the 2D board draws a standee, and the silhouette stays the fallback everywhere.
+`CREDITS.md` and `docs/sprite-requests.md` are generated from the data and checked against it,
+and `COMPANION_ART_PENDING` is a two-way ledger over placeholder PNGs that mark themselves.
+
+**What was found on the way.** `rosterUnlocks` is the wrong thing to gate a hunt on, although
+it is the permanent ledger: its migration floor hands a pre-enrolment save a Dusk archer and a
+Pyre lobber nobody tamed, so the gate reads the Vivarium instead. A missing front sprite drops
+the district follower entirely rather than drawing a shape, which is why stand-ins are files on
+disk rather than a code path. And the hunt spec lists each enemy deck by hand, so signatures will
+not be taught by their hunts automatically — every content wave adds its own to the fight that
+teaches it, because `schematics.test.ts`'s UNREACHABLE list fails in both directions.
+
+**Verified.** The full non-balance suite on the exact tip: 146 files, 3,565 tests, green. The
+balance ledger was not run: no card, encounter or pack changed, and a test pins that the draft
+rule moved no shipped species' draw. In the browser, a throwaway registry entry pointed the
+footman at a probe PNG; both enemy footmen wore it on the diamond and in a Chalk Road fight while
+everything else kept its silhouette, and the probe was removed before commit. The Pages deploy
+of the squash commit carries its build stamp.
+
+**Open by choice:** the road's roaming packs stay procedural until the world waves finish
+reworking `Pack`; `CATALOG_TARGET` rises with the second school-shelf wave, because raising it
+now fails the catalog test before the cards exist; and `CREATURE_ART` ships empty, so the first
+drawings arrive with the art wave.
+
+### 7.12 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 and §7.10 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.11 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
-found outside it belongs here on the same terms PRs #37 and #39 did. What comes next is a
-playtest, and after #39 there is a great deal more world to hold one in.
+found outside it belongs here on the same terms PRs #37, #39 and #41 did. What comes next is a
+playtest, and the eleven remaining waves of the bestiary expansion, each recorded here as it
+merges.
 
 ### Appendix — documentation drift found along the way
 
