@@ -468,4 +468,55 @@ export const PYRE_SHELF: Record<string, CardDef> = {
     bloodline: ['badger'],
     range: 1,
   },
+
+  // ================================================== hybrid signatures (Pyre)
+  //
+  // One apiece for the hybrids filed here: a card of this school that carries its other
+  // parent's element on it, so a hybrid's book opens on the seam it is made of.
+
+  /** The Chimera: fire from one head and frost from the other, in one breath. */
+  twin_breath: {
+    id: 'twin_breath',
+    name: "Twin Breath",
+    cost: { bones: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 fire damage in a 2-deep cone and Chills everything caught.',
+    target: { kind: 'line', length: 2 },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'fire', area: { shape: 'cone', depth: 2 } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'cone', depth: 2 } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['chimera'],
+    range: 2,
+    needsLoS: true,
+  },
+
+  /** The Cinder Shade: soot that rots as it burns. */
+  lampblack: {
+    id: 'lampblack',
+    name: "Lampblack",
+    cost: { bones: 2, marrow: 0 },
+    school: 'pyre',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 decay damage to a unit and sets it alight (Burn 1).',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'decay', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['shade'],
+    range: 4,
+    needsLoS: true,
+  },
 };

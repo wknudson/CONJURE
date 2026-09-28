@@ -404,4 +404,55 @@ export const SURGE_SHELF: Record<string, CardDef> = {
     bloodline: ['pangolin'],
     range: 1,
   },
+
+  // ================================================== hybrid signatures (Surge)
+  //
+  // One apiece for the hybrids filed here: a card of this school that carries its other
+  // parent's element on it, so a hybrid's book opens on the seam it is made of.
+
+  /** The Cinder-Wasp Swarm: a sting that sparks and burns. */
+  swarm_sting: {
+    id: 'swarm_sting',
+    name: "Swarm Sting",
+    cost: { bones: 2, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 10 shock damage to a unit and sets it alight (Burn 1). Fire into a Charged target Overloads.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'shock', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['wasp'],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /** The Volatile Geist: a cold touch that leaves the grid in you. */
+  haunting_charge: {
+    id: 'haunting_charge',
+    name: "Haunting Charge",
+    cost: { bones: 1, marrow: 0 },
+    school: 'surge',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 10 decay damage to a unit and leaves it Charged.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 10, dtype: 'decay', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'charged', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['geist'],
+    range: 4,
+    needsLoS: true,
+  },
 };
