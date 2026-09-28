@@ -204,6 +204,25 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
     },
   ],
   props: {
+    /**
+     * Who passes through by day: drovers, the ferry trade, the inn’s custom on its way in and out.
+     */
+    passersby: {
+      peak: 5,
+      folk: ['fisherman', 'farmer_wife', 'cobbler', 'elder', 'grocer', 'seamstress'],
+      lanes: [
+        [{ x: -64, z: -4 }, { x: 63, z: -4 }],
+        [{ x: -40, z: -16 }, { x: 39, z: -16 }],
+        [{ x: -52, z: -32 }, { x: 1, z: -32 }],
+        [{ x: 32, z: -36 }, { x: 103, z: -36 }],
+      ],
+      barks: [
+        "Toll's gone up on the bridge. Again.",
+        "Ferry's quicker, if you don't mind wet boots.",
+        "Innkeeper's got a new barrel in. Worth the walk.",
+        "River's high. It's always high when the bridge is shut.",
+      ],
+    },
     /** A bridge town on a river. Everything here belongs to the water. */
     sky: 'drizzle',
     wildlife: [
@@ -293,8 +312,22 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
     npcs: [
       { id: 'fenwick_innkeeper', x: -22, z: -10, art: 'innkeeper', label: 'Talk to the innkeeper' },
       { id: 'fenwick_brewer', x: -6, z: -6, art: 'brewer', label: 'Talk to the brewer' },
-      { id: 'fenwick_bard', x: 10, z: 6, art: 'bard', label: 'Listen to the bard' },
-      { id: 'fenwick_cartographer', x: 34, z: -22, art: 'cartographer', label: 'Talk to the cartographer' },
+      {
+        id: 'fenwick_bard', x: 10, z: 6, art: 'bard', label: 'Listen to the bard',
+        // Sings on the street by day and at the inn by night, which is where the money is.
+        hours: [
+          { from: 10, x: 10, z: 6 },
+          { from: 19, x: -28, z: -2 },
+        ],
+      },
+      {
+        id: 'fenwick_cartographer', x: 34, z: -22, art: 'cartographer', label: 'Talk to the cartographer',
+        // Down at the south ferry in the mornings, sounding the river, and at the toll board after.
+        hours: [
+          { from: 9, x: -78, z: -26 },
+          { from: 17, x: 34, z: -22 },
+        ],
+      },
       { id: 'fenwick_carpenter', x: -10, z: -30, art: 'carpenter', label: 'Talk to the carpenter' },
     ],
     /**
