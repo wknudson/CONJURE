@@ -25,7 +25,7 @@ export const ADEPT_DUELIST: EncounterDef = registerEncounter({
   width: 7,
   height: 8,
   playerHp: 400,
-  enemyHp: 430,
+  enemyHp: 460,
   playerName: 'Hero',
   companionName: 'Ignis',
   companionSchool: 'pyre',
@@ -55,20 +55,31 @@ export const ADEPT_DUELIST: EncounterDef = registerEncounter({
     'sandbag_wall',
     'supply_crate',
     'tar_barrel',
+    // The staples, twice each. Without them the deck is all rope and no blade: the kit's
+    // utility cards are the lesson, but a duelist who only ever nets and shoves is a
+    // duelist a Novice beats.
+    'shield_bash',
+    'shield_bash',
+    'aegis_ward',
+    'aegis_ward',
     'arc_mark',
     'tremor_mark',
   ],
   /**
    * A Surge warband worth the arena: thirteen points authored plus the free Footman at the
    * middle of row 1, which on a 7-wide board is (3,1) and is left clear here.
+   *
+   * Two big guns at the back rather than a line of two-point skirmishers. The first draft
+   * fielded the skirmishers, and in AI playouts the default character beat it eight times in
+   * eight — softer than the Novice Duelist, which it beats in none. The Dynamo and the
+   * Bombardier behind a thin screen took it to three in eight, which is an Adept fight.
    */
   enemyOpeningBoard: [
     ['voltaic_hound', 1, 1],
     ['static_hare', 5, 1],
     ['voltaic_coil', 2, 1],
-    ['storm_wisp', 4, 1],
-    ['clockwork_bombardier', 3, 0],
-    ['storm_rod', 6, 0],
+    ['arc_dynamo', 4, 0],
+    ['clockwork_bombardier', 2, 0],
   ],
   // The Conduit Kudu: a caster that stands back and throws, which is what a journeyman who
   // relies on rope and nets wants beside them.
