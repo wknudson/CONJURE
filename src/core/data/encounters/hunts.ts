@@ -798,3 +798,201 @@ export const HUNT_SHELF_PANGOLIN = hunt({
     { at: { x: 4, y: 5 }, kind: 'cover' },
   ],
 });
+
+// ============================================================== the fourth bloodlines
+
+export const HUNT_CHALK_RHINO = hunt({
+  encounterId: 'hunt_chalk_rhino',
+  name: 'Chalk Cut: Ironhide Rhino',
+  blurb:
+    'It charged the toll gate at the cut and the toll gate lost. The road crew would like it to lose next time.',
+  boundForm: 'rhino_bound',
+  enemyDeck: [
+    'fault_line',
+    'fault_line',
+    'siege_break',
+    'counterweight',
+    'rubble_wall',
+    'iron_juggernaut',
+    'shield_bash',
+    'aegis_ward',
+    // The Rhino's own three.
+    'horn_gore',
+    'crushing_charge',
+    'iron_brace',
+  ],
+  opening: [
+    ['iron_juggernaut', 3, 1],
+    ['rampart_mason', 1, 1],
+    ['boulder_slinger', 5, 0],
+  ],
+  terrain: [
+    { at: { x: 2, y: 4 }, kind: 'wall' },
+    { at: { x: 5, y: 3 }, kind: 'wall' },
+    { at: { x: 3, y: 5 }, kind: 'cover' },
+  ],
+  geodes: { min: 2, max: 3 },
+});
+
+export const HUNT_BASTION_BEETLE = hunt({
+  encounterId: 'hunt_bastion_beetle',
+  name: 'Bastion Barrows: Menhir Beetle',
+  blurb:
+    'Somebody keeps putting the fallen standing stones back up in the night. It is not somebody.',
+  boundForm: 'beetle_bound',
+  enemyDeck: [
+    'rubble_wall',
+    'rubble_wall',
+    'stone_lance',
+    'steady_footing',
+    'iron_gate',
+    'rampart_mason',
+    'shield_bash',
+    'aegis_ward',
+    // The Beetle's own three.
+    'standing_stone',
+    'dung_ball',
+    'hardened_shell',
+  ],
+  opening: [
+    ['rampart_mason', 2, 1],
+    ['ramming_goat', 5, 1],
+    ['boulder_slinger', 3, 0],
+  ],
+  terrain: [
+    { at: { x: 1, y: 3 }, kind: 'wall' },
+    { at: { x: 6, y: 4 }, kind: 'wall' },
+    { at: { x: 3, y: 4 }, kind: 'cover' },
+  ],
+});
+
+export const HUNT_ASHWOOD_OWL = hunt({
+  encounterId: 'hunt_ashwood_owl',
+  name: 'Ashwood Clearing: Gloam Owl',
+  blurb:
+    'The charcoal burners say the owl in the clearing knows their names. They have stopped working after dark.',
+  boundForm: 'owl_bound',
+  enemyDeck: [
+    'gloom_bolt',
+    'gloom_bolt',
+    'wither',
+    'pall',
+    'plague_wind',
+    'wight_archer',
+    'shield_bash',
+    'aegis_ward',
+    // The Owl's own three.
+    'silent_talon',
+    'owl_omen',
+    'moonless_night',
+  ],
+  opening: [
+    ['wight_archer', 2, 0],
+    ['bone_rattler', 5, 1],
+    ['grave_sentinel', 3, 1],
+  ],
+  weather: { kind: 'fog' },
+  terrain: [
+    { at: { x: 2, y: 3 }, kind: 'cover' },
+    { at: { x: 5, y: 4 }, kind: 'cover' },
+    { at: { x: 4, y: 5 }, kind: 'wall' },
+  ],
+});
+
+export const HUNT_BASTION_SPIDER = hunt({
+  encounterId: 'hunt_bastion_spider',
+  name: 'Ossuary Doors: Crypt Spider',
+  blurb:
+    'The ossuary doors are webbed shut from the inside. The Census wants the count, and the count is in there.',
+  boundForm: 'spider_bound',
+  enemyDeck: [
+    'pall',
+    'plague_wind',
+    'creeping_decay',
+    'shadow_siphon',
+    'ossuary_wall',
+    'grave_knight',
+    'shield_bash',
+    'aegis_ward',
+    // The Spider's own three.
+    'venom_bite',
+    'web_snare',
+    'brood_sac',
+  ],
+  opening: [
+    ['grave_knight', 3, 1],
+    ['bone_rattler', 1, 1],
+    ['wight_archer', 5, 0],
+  ],
+  weather: { kind: 'fog' },
+  terrain: [
+    { at: { x: 2, y: 2 }, kind: 'wall' },
+    { at: { x: 5, y: 5 }, kind: 'wall' },
+    { at: { x: 3, y: 4 }, kind: 'cover' },
+  ],
+  geodes: { min: 2, max: 3 },
+});
+
+export const HUNT_ASHWOOD_FOX = hunt({
+  encounterId: 'hunt_ashwood_fox',
+  name: 'Ashwood Hedgerow: Bramble Fox',
+  blurb:
+    'It takes a hen a night and leaves the feathers on the brambles as a receipt. The warden would like a word.',
+  boundForm: 'fox_bound',
+  enemyDeck: [
+    'thornlash',
+    'root_snare',
+    'nettle',
+    'nettle',
+    'thorn_volley',
+    'thorn_sprout',
+    'shield_bash',
+    'aegis_ward',
+    // The Fox's own three.
+    'bramble_pounce',
+    'sly_retreat',
+    'briar_bite',
+  ],
+  opening: [
+    ['thorn_sprout', 2, 1],
+    ['briar_wolf', 5, 1],
+    ['spore_archer', 3, 0],
+  ],
+  terrain: [
+    { at: { x: 1, y: 4 }, kind: 'cover' },
+    { at: { x: 6, y: 3 }, kind: 'cover' },
+    { at: { x: 3, y: 3 }, kind: 'wall' },
+  ],
+});
+
+export const HUNT_TALLOW_MOTH = hunt({
+  encounterId: 'hunt_tallow_moth',
+  name: 'Tallow Strips: Pollen Moth',
+  blurb:
+    'The fallow strips wake up poisoned every morning, and the only thing moving over them at dusk is very large and very soft.',
+  boundForm: 'moth_bound',
+  enemyDeck: [
+    'spore_cloud',
+    'pollen_drift',
+    'noxious_cloud',
+    'spore_burst',
+    'seed_pod',
+    'spore_archer',
+    'shield_bash',
+    'aegis_ward',
+    // The Moth's own three.
+    'pollen_burst',
+    'dusting_wings',
+    'moth_swarm',
+  ],
+  opening: [
+    ['spore_archer', 2, 0],
+    ['mire_toad', 5, 1],
+    ['thorn_sprout', 3, 1],
+  ],
+  weather: { kind: 'gale', wind: { x: 0, y: 1 } },
+  terrain: [
+    { at: { x: 2, y: 4 }, kind: 'cover' },
+    { at: { x: 5, y: 3 }, kind: 'cover' },
+  ],
+});
