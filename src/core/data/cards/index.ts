@@ -25,6 +25,9 @@ import { THREAT_CARDS } from './threats.js';
 import { HYBRID_CARDS } from './hybrid.js';
 import { AURA_CARDS } from './auras.js';
 import { HERO_KIT_CARDS } from './hero.js';
+import { PYRE_SHELF } from './shelf.pyre.js';
+import { FROST_SHELF } from './shelf.frost.js';
+import { SURGE_SHELF } from './shelf.surge.js';
 
 const RANK1: Record<string, CardDef> = {
   ...STARTER_CARDS,
@@ -44,6 +47,9 @@ const RANK1: Record<string, CardDef> = {
   ...HYBRID_CARDS,
   ...AURA_CARDS,
   ...HERO_KIT_CARDS,
+  ...PYRE_SHELF,
+  ...FROST_SHELF,
+  ...SURGE_SHELF,
 };
 
 /**
@@ -133,6 +139,9 @@ for (const source of [
   HYBRID_CARDS,
   AURA_CARDS,
   HERO_KIT_CARDS,
+  PYRE_SHELF,
+  FROST_SHELF,
+  SURGE_SHELF,
 ]) {
   for (const id of Object.keys(source)) {
     if (seen.has(id)) throw new Error(`duplicate card id across school files: ${id}`);

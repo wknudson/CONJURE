@@ -95,7 +95,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['pyre'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['chimney_draw', 'emberfall', 'slag_cairn', 'pressure_valve_release'],
+      // Two, where it was four: the Drake's own signatures now say what the omit used to.
+      omit: ['chimney_draw', 'slag_cairn'],
     },
     legacyGrimoire: [
       'flame_surge',
@@ -122,7 +123,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['frost'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['hoarfrost_veil', 'calving', 'whiteout', 'hail_spire'],
+      // Two, where it was four: the Bear's signatures carry the lockdown now.
+      omit: ['hoarfrost_veil', 'calving'],
     },
     legacyGrimoire: [
       'glacial_spike',
@@ -152,7 +154,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['surge'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['elmos_fire', 'capacitor_dump', 'tesla_pylon', 'thunderhead'],
+      // Two, where it was four: the Lynx's signatures carry the footwork now.
+      omit: ['capacitor_dump', 'tesla_pylon'],
     },
     legacyGrimoire: [
       'static_arc',
@@ -524,7 +527,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['pyre'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['cataclysm', 'cataclysmic_core', 'cinder_gale', 'pyre_pillar'],
+      // Two, where it was four: the signatures carry the chimney now.
+      omit: ['cataclysm', 'cataclysmic_core'],
     },
     legacyGrimoire: [
       'emberfall',
@@ -551,7 +555,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['frost'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['rime_lock', 'deep_winter', 'creeping_rime', 'ice_barricade'],
+      // Two, where it was four: the Seal's signatures carry the harbour now.
+      omit: ['rime_lock', 'deep_winter'],
     },
     legacyGrimoire: [
       'cold_snap',
@@ -579,7 +584,8 @@ const SPECIES: CompanionDef[] = [
     grimoire: {
       schools: ['surge'],
       hybridChance: MONO_HYBRID_CHANCE,
-      omit: ['arcing_step', 'galvanic_rally', 'paralytic_arc', 'chain_bolt'],
+      // Two, where it was four: the Kudu's signatures carry what stands still now.
+      omit: ['arcing_step', 'galvanic_rally'],
     },
     legacyGrimoire: [
       'induction',
