@@ -21,7 +21,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, basename } from 'node:path';
-import { AREAS, areaById } from '../src/district/areas/index.js';
+import { areaById } from '../src/district/areas/index.js';
 import type { AreaDef, NpcSpec, PackSpec } from '../src/district/map.js';
 import { packByEncounter } from '../src/core/data/packs.js';
 import { sightsInArea } from '../src/district/sights.js';
