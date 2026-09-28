@@ -36,6 +36,7 @@ import {
   type ActorArt,
 } from '../sprites3d.js';
 import { PX_TO_WORLD } from './OverlayCanvas.js';
+import { squashScale } from '../../anim/motion.js';
 import { TILE } from '../map.js';
 import type { WorldBoard } from './WorldBoard.js';
 
@@ -515,17 +516,23 @@ export class BodyLayer {
 
       const dx = c.x - body.lastX;
       const dz = c.z - body.lastZ;
-      body.walker.position.set(c.x, view.elev * PX_TO_WORLD, c.z);
+      body.walker.position.set(c.x, 0, c.z);
       body.lastX = c.x;
       body.lastZ = c.z;
       // The real delta, so the gait is driven by ground covered exactly as it is on the road.
       body.walker.step(dx, dz, cameraYaw);
+      // `walker.position` *is* the sprite's position, and stepping writes the walk bob into
+      // its y. The lift the handlers set (a lunge's hop, a summon's drop, a death's sink) is
+      // added after, on top of the bob. Setting it before the step, as this used to, had it
+      // overwritten every frame, so none of those ever showed on this board.
+      body.walker.position.y = body.walker.bob + view.elev * PX_TO_WORLD;
 
       const sprite = body.walker.sprite;
       // Squash is a flinch: shorter and correspondingly wider, so the body keeps its mass.
-      const squash = 1 - view.squash * 0.35;
-      sprite.scale.y = squash;
-      sprite.scale.x = 1 / Math.max(0.2, squash);
+      // Negative is a stretch. The same formula the canvas board uses.
+      const { sx, sy } = squashScale(view.squash);
+      sprite.scale.y = sy;
+      sprite.scale.x = sx;
 
       const mat = sprite.material;
       mat.opacity = view.alpha;

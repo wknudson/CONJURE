@@ -11,6 +11,7 @@ import type { UnitArchetype } from '../contract/snapshots.js';
 import { PALETTE, schoolOf, type SchoolColors } from './palette.js';
 import type { IsoCamera } from './IsoCamera.js';
 import { creatureImagesIfLoaded } from './minionArt.js';
+import { idleBreath } from '../anim/motion.js';
 // The painted bodies, reused rather than reimplemented. `drawCommander` there is the *other*
 // function of this name -- it blits a bitmap, where the one below draws a prism -- so it is
 // aliased at the import to keep the two apart at every call site in this file.
@@ -274,8 +275,10 @@ function drawDrawnBody(
   const images = creatureImagesIfLoaded(o.defId);
   if (!images) return false;
   const img = images.front;
-  const h = DRAWN_BODY_HEIGHT * o.footprint * cam.zoom + breath(o.idleMs, 2200) * cam.zoom;
-  const w = (img.naturalWidth / Math.max(1, img.naturalHeight)) * h;
+  // Breathes about the feet, narrowing a little as it rises, so the drawing keeps its mass.
+  const b = o.idleMs === undefined ? { sx: 1, sy: 1 } : idleBreath(o.idleMs, 2200, 0.025);
+  const h = DRAWN_BODY_HEIGHT * o.footprint * cam.zoom * b.sy;
+  const w = (img.naturalWidth / Math.max(1, img.naturalHeight)) * DRAWN_BODY_HEIGHT * o.footprint * cam.zoom * b.sx;
   ctx.save();
   if (o.dim) ctx.globalAlpha = 0.45;
   ctx.imageSmoothingEnabled = images.style === 'painted';
@@ -467,6 +470,11 @@ export function drawCommander(
      * mind. `mirror` flips the profile to face the direction of travel.
      */
     walk?: { sheet: HTMLImageElement; frame: number; mirror: boolean } | null;
+    /**
+     * The idle clock, for a painted figure's breath. Omitted, the figure stands dead still,
+     * which is what it did before and what a test that counts draw calls expects.
+     */
+    idleMs?: number;
   },
 ): void {
   const colors = schoolOf(o.school as never);
@@ -506,6 +514,13 @@ export function drawCommander(
     const unit = height / COMMANDER_HEIGHT_TILES;
     ctx.save();
     ctx.translate(centre.x, centre.y);
+    // A standing painted figure breathes: a slow rise about the feet. A beast breathes
+    // quicker and deeper than a person, so the pair beside the board do not move alike.
+    if (o.idleMs !== undefined) {
+      const beast = o.kind !== 'hero';
+      const b = idleBreath(o.idleMs, beast ? 1900 : 2600, beast ? 0.02 : 0.012);
+      ctx.scale(b.sx, b.sy);
+    }
     if (o.kind === 'companion' || o.kind === 'boss') drawCompanionBitmap(ctx, unit, o.art);
     else drawHeroBitmap(ctx, unit, o.art);
     ctx.restore();
