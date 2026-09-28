@@ -11,6 +11,7 @@ import type { ColliderSet } from './collision.js';
 import { CRITTERS, type CritterId, type CritterKind } from './wildlife.js';
 import { beatPostAt, type PackHours } from './daylight.js';
 import { Walker, pickFacing, type ActorArt } from './sprites3d.js';
+import { Lean, Momentum, restBreath } from './gait.js';
 
 /** Anything the player can stand near and press a key at. */
 export interface Interactable {
@@ -68,6 +69,7 @@ export class NPC implements Interactable, Updatable {
   interactDetail: string | null = null;
   readonly interactRadius = 2.8;
   private readonly bobPhase: number;
+  private readonly lean = new Lean();
 
   constructor(
     art: ActorArt,
@@ -117,9 +119,11 @@ export class NPC implements Interactable, Updatable {
         // The gait, and the facing that comes with it. Walking wins over looking at you: a man
         // on his rounds glances and keeps going.
         this.walker.step((dx / dist) * step, (dz / dist) * step, cameraYaw);
+        this.lean.update(this.walker.sprite, (dx / dist) * step, (dz / dist) * step, dt, cameraYaw);
         return;
       }
     }
+    this.lean.update(this.walker.sprite, 0, 0, dt, cameraYaw);
 
     if (this.playerAt) {
       const dx = this.playerAt.x - this.position.x;
@@ -133,7 +137,9 @@ export class NPC implements Interactable, Updatable {
     // was in meant a townsperson stopped breathing the moment you walked up to them and started
     // again the moment you left. Caught by the wildlife tests, which asked the same question of
     // a rook and got it back on the ground.
-    this.position.y = Math.abs(Math.sin(t * 1.4 + this.bobPhase)) * 0.035;
+    //
+    // The same period the old `abs(sin(1.4t))` had, on a curve with no corner at the bottom.
+    this.position.y = restBreath(t, 2.8, 0.035, this.bobPhase * 2);
   }
 
   onInteract(): void {
@@ -154,6 +160,8 @@ export class CompanionFollower implements Updatable {
   readonly position: THREE.Vector3;
   private readonly trail: { x: number; z: number }[] = [];
   private lastCrumb = new THREE.Vector2();
+  private readonly momentum = new Momentum();
+  private readonly lean = new Lean();
 
   /** How far back it hangs. Closer and it treads on the Commander's heels. */
   private static readonly TRAIL_GAP = 1.9;
@@ -187,21 +195,27 @@ export class CompanionFollower implements Updatable {
     const target = this.trail[0];
     const before = { x: this.position.x, z: this.position.z };
 
+    let dist = 0;
     if (target) {
-      const dx = target.x - this.position.x;
-      const dz = target.z - this.position.z;
-      const dist = Math.hypot(dx, dz);
-
-      if (dist < 0.35) {
-        this.trail.shift();
-      } else if (this.trailLength() > CompanionFollower.TRAIL_GAP) {
-        // Slightly quicker than the Commander so it can close a gap it has fallen into,
-        // but resolved through the same walls so it cannot cheat through a lamp post.
-        const speed = 6.6;
+      dist = Math.hypot(target.x - this.position.x, target.z - this.position.z);
+      if (dist < 0.35) this.trail.shift();
+    }
+    const next = this.trail[0];
+    // Slightly quicker than the Commander so it can close a gap it has fallen into, but
+    // resolved through the same walls so it cannot cheat through a lamp post. The speed
+    // ramps up and bleeds off rather than switching, so the beast sets off and pulls up
+    // like an animal instead of like a cursor.
+    const want = next && this.trailLength() > CompanionFollower.TRAIL_GAP ? 6.6 : 0;
+    const speed = this.momentum.approach(want, dt);
+    if (next && speed > 0) {
+      const dx = next.x - this.position.x;
+      const dz = next.z - this.position.z;
+      dist = Math.hypot(dx, dz);
+      if (dist > 1e-4) {
         this.colliders.move(
           this.position as unknown as { x: number; z: number },
-          (dx / dist) * speed * dt,
-          (dz / dist) * speed * dt,
+          (dx / dist) * Math.min(dist, speed * dt),
+          (dz / dist) * Math.min(dist, speed * dt),
           0.3,
         );
       }
@@ -209,9 +223,11 @@ export class CompanionFollower implements Updatable {
 
     const moved = { x: this.position.x - before.x, z: this.position.z - before.z };
     this.walker.step(moved.x, moved.z, cameraYaw);
+    this.lean.update(this.walker.sprite, moved.x, moved.z, dt, cameraYaw);
     if (Math.hypot(moved.x, moved.z) < 1e-4) {
       // Breathing on the spot, on a timer, because nothing is being covered to drive it.
-      this.position.y = Math.abs(Math.sin(t * 1.9)) * 0.03;
+      // The old `abs(sin(1.9t))`'s period, without its tap at the bottom.
+      this.position.y = restBreath(t, 3.8, 0.03);
     }
     // Moving, the walk's own bob is already on `position.y` and is left alone. Flattening it
     // here is what made the beast slide: it has no walk frames, so the bob is the only thing
@@ -236,6 +252,7 @@ export class CompanionFollower implements Updatable {
   /** Puts the beast back at heel — used when the ward is re-entered from a doorway. */
   snapTo(x: number, z: number): void {
     this.trail.length = 0;
+    this.momentum.stop();
     this.position.set(x, 0, z);
     this.lastCrumb.set(x, z);
   }
@@ -270,6 +287,8 @@ export class Warden implements Updatable {
   private detect = 0;
   private readonly heading = new THREE.Vector2(0, 1);
   private coneAlpha = 0;
+  private readonly momentum = new Momentum();
+  private readonly lean = new Lean();
 
   private static readonly SPEED = 2.4;
   private static readonly CHASE_SPEED = 4.6;
@@ -380,23 +399,34 @@ export class Warden implements Updatable {
     this.heading.set(ux, uz);
 
     const before = { x: this.position.x, z: this.position.z };
-    if (speed > 0) {
-      this.colliders.move(
-        this.position as unknown as { x: number; z: number },
-        ux * speed * dt,
-        uz * speed * dt,
-        0.45,
-      );
+    // Eased, so breaking from the beat into a run, or pulling up to look, has a moment of
+    // acceleration in it. Never past the post it is walking to.
+    const actual = this.momentum.approach(speed, dt);
+    if (actual > 0) {
+      const step = Math.min(dist, actual * dt);
+      this.colliders.move(this.position as unknown as { x: number; z: number }, ux * step, uz * step, 0.45);
     }
     this.walker.step(this.position.x - before.x, this.position.z - before.z, cameraYaw);
     if (speed === 0) this.walker.face(pickFacing(ux, uz, cameraYaw));
     return dist;
   }
 
-  update(dt: number, _t: number, cameraYaw: number): void {
+  update(dt: number, t: number, cameraYaw: number): void {
+    const before = { x: this.position.x, z: this.position.z };
+    this.stride(dt, cameraYaw);
+    const mx = this.position.x - before.x;
+    const mz = this.position.z - before.z;
+    this.lean.update(this.walker.sprite, mx, mz, dt, cameraYaw);
+    // Standing at a post, or stopped to look: breathe. Moving, the walk's bob is left alone.
+    if (Math.hypot(mx, mz) < 1e-4) this.position.y = restBreath(t, 2.6, 0.03, 1.3);
+    this.dressCone(dt);
+  }
+
+  private stride(dt: number, cameraYaw: number): void {
     if (this.state === 'PATROL' || this.state === 'RETURN') {
       if (this.pause > 0) {
         this.pause -= dt;
+        this.momentum.approach(0, dt);
       } else {
         // Where the clock says it is due, not the next post round the ring. See `beatPostAt`:
         // the whole value of this is that a player can learn it, and a loop that depends on
@@ -437,7 +467,9 @@ export class Warden implements Updatable {
         if (dist < 1.0) this.onCatch?.();
       }
     }
+  }
 
+  private dressCone(dt: number): void {
     const want = this.playerSafe || this.state === 'RETURN' ? 0 : LOOK.coneOpacity;
     this.coneAlpha += (want - this.coneAlpha) * Math.min(1, dt * 6);
     this.cone.material.opacity = this.coneAlpha;
@@ -452,6 +484,7 @@ export class Warden implements Updatable {
     this.detect = 0;
     this.pause = 0.6;
     this.target = 0;
+    this.momentum.stop();
     const wp = this.waypoints[0]!;
     this.position.set(wp.x, 0, wp.z);
     this.onAlertChange?.(false);
@@ -478,6 +511,8 @@ export class Warden implements Updatable {
  */
 export class Pack implements Updatable {
   readonly walkers: Walker[] = [];
+  private readonly momentum = new Momentum();
+  private readonly lean = new Lean();
   /** The fight walking into this one starts. Carried so the screen can re-arm by identity. */
   readonly encounterId: string;
   readonly position: THREE.Vector3;
@@ -628,6 +663,8 @@ export class Pack implements Updatable {
   holdStill(seconds: number): void {
     this.pause = Math.max(this.pause, seconds);
     this.state = 'ROAM';
+    // Exactly where the circle opened: no coasting on out of the ambush.
+    this.momentum.stop();
   }
 
   /** Turn and come running — what a pulled pack does when the circle catches it. */
@@ -757,16 +794,21 @@ export class Pack implements Updatable {
     const dist = Math.hypot(dx, dz);
     if (dist < 0.001) return;
     this.heading.set(dx / dist, dz / dist);
+    // Eased, so a pack sets off from loitering and breaks into its run rather than
+    // switching speed. Never past the spot it is heading for.
+    const step = Math.min(dist, this.momentum.approach(speed, dt) * dt);
     this.colliders.move(
       this.position as unknown as { x: number; z: number },
-      (dx / dist) * speed * dt,
-      (dz / dist) * speed * dt,
+      (dx / dist) * step,
+      (dz / dist) * step,
       0.4,
     );
   }
 
-  update(dt: number, _t: number, cameraYaw: number): void {
+  update(dt: number, t: number, cameraYaw: number): void {
     const before = { x: this.position.x, z: this.position.z };
+    const driving = this.state === 'CHASE' || (this.state === 'ROAM' && this.pause <= 0);
+    if (!driving) this.momentum.approach(0, dt);
 
     if (this.state === 'CHASE') {
       // Straight at you, through the collider layer so it slides along walls instead of
@@ -829,6 +871,15 @@ export class Pack implements Updatable {
       w.position.set(this.position.x + ox, 0, this.position.z + oz);
       w.step(movedX, movedZ, cameraYaw);
     }
+
+    // One lean for the group, since they move as one; and standing about, each breathes on
+    // its own phase so the three do not rise in unison.
+    const angle = this.lean.update(this.walkers[0]!.sprite, movedX, movedZ, dt, cameraYaw);
+    const still = Math.hypot(movedX, movedZ) < 1e-4;
+    this.walkers.forEach((w, i) => {
+      w.sprite.rotation.z = angle;
+      if (still) w.position.y = restBreath(t, 3.1, 0.028, i * 2.1);
+    });
 
     // The cone and its ring, on one alpha so suppression fades both together. Drawn at the
     // pack's own feet, pointing wherever it last steered.
