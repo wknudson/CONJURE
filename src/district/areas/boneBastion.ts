@@ -36,20 +36,20 @@ const BASTION_LEGEND: Record<string, TileDef> = {
     tex: 'bone',
     safe: false,
     walk: false,
-    solid: { minHeight: 2.6, maxHeight: 4.0, inset: 0.1, depthInset: 0.1, chimneyChance: 0, split: false },
+    solid: { style: 'mound', minHeight: 2.6, maxHeight: 4.0, inset: 0.1, depthInset: 0.1, chimneyChance: 0, split: false },
   },
   X: {
     tex: 'bone',
     safe: false,
     walk: false,
-    solid: { minHeight: 12.0, maxHeight: 14.0, inset: 0.05, depthInset: 0.05, chimneyChance: 0, split: false },
+    solid: { style: 'wall', minHeight: 12.0, maxHeight: 14.0, inset: 0.05, depthInset: 0.05, chimneyChance: 0, split: false },
   },
   /** The cave mouth: rock, taken whole, with a door in the south face of it. */
   K: {
     tex: 'bone',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
+    solid: { style: 'rock', minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
   },
 };
 

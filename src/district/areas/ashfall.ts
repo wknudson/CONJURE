@@ -51,7 +51,7 @@ const WARD_LEGEND: Record<string, TileDef> = {
     safe: false,
     walk: false,
     // A terrace, split into two- and three-tile pieces so the skyline has a silhouette.
-    solid: { minHeight: 4.8, maxHeight: 7.0, inset: 0.3, depthInset: 0.3, chimneyChance: 0.4, split: true },
+    solid: { style: 'terrace', minHeight: 4.8, maxHeight: 7.0, inset: 0.3, depthInset: 0.3, chimneyChance: 0.4, split: true },
   },
   V: {
     tex: 'cobble',
@@ -59,31 +59,31 @@ const WARD_LEGEND: Record<string, TileDef> = {
     walk: false,
     // The Magistracy's seal across the yard: low, unbroken, and taken whole rather than
     // split — a wall with a skyline would read as a row of sheds.
-    solid: { minHeight: 3.2, maxHeight: 3.2, inset: 0.1, depthInset: 1.6, chimneyChance: 0, split: false },
+    solid: { style: 'wall', minHeight: 3.2, maxHeight: 3.2, inset: 0.1, depthInset: 1.6, chimneyChance: 0, split: false },
   },
   T: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.6, maxHeight: 5.6, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false },
+    solid: { style: 'terrace', minHeight: 5.6, maxHeight: 5.6, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false },
   },
   C: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 7.6, maxHeight: 7.6, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
+    solid: { style: 'hall', minHeight: 7.6, maxHeight: 7.6, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
   },
   K: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 6.8, maxHeight: 6.8, inset: 0.2, depthInset: 0.2, chimneyChance: 0, split: false, wall: 'stone' },
+    solid: { style: 'hall', minHeight: 6.8, maxHeight: 6.8, inset: 0.2, depthInset: 0.2, chimneyChance: 0, split: false, wall: 'stone' },
   },
   U: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
+    solid: { style: 'shopfront', minHeight: 5.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
   },
 };
 

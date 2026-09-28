@@ -9,16 +9,19 @@
  */
 
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { LOOK, ambientFor, type AmbientDef } from './look.js';
 import { SWAYS } from './dressing.js';
 import { SKIES, SkyField, skyStrengthAt, type SkyId } from './skies.js';
-import { hashText } from '../core/util/rng.js';
+import { hashText, makeRng, nextFloat } from '../core/util/rng.js';
+import { BUILT, buildPiece, lotsOf, type Facing, type SolidStyle, type SurfaceKey } from './buildings.js';
+import { CLUTTER_KINDS, CLUTTER_SIZE, STANDING, scatterClutter, type ClutterPoint } from './clutter.js';
 import { gateOpen, NOTHING_HAPPENED, type Chronicle } from './chronicle.js';
 import { ambientAt, lampsAt, lightingHour, NIGHT_ANCHOR, type Lit } from './daylight.js';
 import { poolShares } from './lightPool.js';
 import type { ColliderSet } from './collision.js';
 import { DRESSING } from './dressing.js';
-import { allDressing, staticFootprints } from './footprints.js';
+import { allDressing, registryHotspots, staticFootprints } from './footprints.js';
 import {
   TILE,
   extractRects,
@@ -47,6 +50,18 @@ import {
   makeWaterTexture,
   mulberry32,
   configurePixelTexture,
+  makeFacadeTextures,
+  makeRoofTexture,
+  makeTrimAtlas,
+  makeLeafTexture,
+  makeBarkTexture,
+  makeTurfTexture,
+  makeIceTexture,
+  makeIronTexture,
+  makeSmokeTexture,
+  makeClutterTexture,
+  type RoofKind,
+  type WindowKind,
 } from './textures.js';
 import { BillboardSprite, applySway } from './sprites3d.js';
 
@@ -106,6 +121,41 @@ export const LIGHT_POOL = 10;
 /** How far inside the pool's cut a fire burns at full strength. See `poolShares`. */
 const POOL_BAND = 6;
 
+/** How long a puff of chimney smoke lasts, in seconds. */
+const SMOKE_LIFE = 4.5;
+
+/** How brightly a lit window burns at the lamps' full strength. */
+const WINDOW_GLOW = 1.15;
+
+/**
+ * Which side of a footprint the street is: the side with the most walkable ground against it,
+ * south first on a tie, because that is the side the camera starts looking at. Null for a
+ * footprint with no walkable ground round it at all.
+ */
+function streetFacing(area: AreaDef, x0: number, z0: number, w: number, d: number): Facing | null {
+  const count = (fx: (t: number) => number, fz: (t: number) => number, len: number): number => {
+    let n = 0;
+    for (let t = TILE / 2; t < len; t += TILE) {
+      const x = fx(t);
+      const z = fz(t);
+      const col = Math.floor((x + area.halfX) / TILE);
+      const row = Math.floor((z + area.halfZ) / TILE);
+      if (row < 0 || row >= area.rows || col < 0 || col >= area.cols) continue;
+      if (area.legend[area.grid[row]![col]!]?.walk) n++;
+    }
+    return n;
+  };
+  const sides: [Facing, number][] = [
+    ['south', count((t) => x0 + t, () => z0 + d + TILE / 2, w)],
+    ['east', count(() => x0 + w + TILE / 2, (t) => z0 + t, d)],
+    ['west', count(() => x0 - TILE / 2, (t) => z0 + t, d)],
+    ['north', count((t) => x0 + t, () => z0 - TILE / 2, w)],
+  ];
+  let best: [Facing, number] = sides[0]!;
+  for (const s of sides) if (s[1] > best[1]) best = s;
+  return best[1] > 0 ? best[0] : null;
+}
+
 /** A brazier's light: the gas lamps' warmth, redder, because it is wood and not gas. */
 const BRAZIER_LIGHT = new THREE.Color('#e08040');
 /** An ember vent's: low and red, a crack that breathes. */
@@ -157,6 +207,17 @@ export class DistrictWorld {
   private readonly pool: THREE.PointLight[] = [];
   /** Each fire's share of a pool light this frame. Sized once the fires are all known. */
   private shares = new Float32Array(0);
+  /** The kit's surfaces, one texture per kind and variant for the life of this world. See `surface`. */
+  private readonly kitTex = new Map<string, THREE.Texture>();
+  /**
+   * Every lit window's material, and whether that building has anybody home tonight. `setHour`
+   * turns them up after dark -- the ward's own light, when the lamps are the other half of it.
+   */
+  private readonly windows: { mat: THREE.MeshLambertMaterial; home: boolean }[] = [];
+  /** The ground clutter: one instanced mesh per kind, and the points it was placed at. */
+  private readonly clutter: { mesh: THREE.InstancedMesh; points: ClutterPoint[] }[] = [];
+  /** Where the chimneys smoke from, and the smoke. See `updateSmoke`. */
+  private smoke: { points: THREE.Points; from: THREE.Vector3[]; age: Float32Array } | null = null;
   /**
    * Everything standing loose on the ground that is not a building: trees, plants, fences,
    * decals, crates, lamp posts, the board. See `setArena` -- these are hidden, not faded, when a
@@ -346,9 +407,14 @@ export class DistrictWorld {
       return t;
     };
     const buildRng = mulberry32(4242);
+    const chimneys: THREE.Vector3[] = [];
     for (const [char, def] of Object.entries(area.legend)) {
       const solid = def.solid;
       if (!solid) continue;
+      if (solid.style && solid.style !== 'plain') {
+        for (const rect of extractRects(area, char)) chimneys.push(...this.buildStyled(area, char, rect, solid, solid.style));
+        continue;
+      }
       for (const rect of extractRects(area, char)) {
         const runs = solid.split ? splitRun(rect.w) : ([[0, rect.w]] as [number, number][]);
         for (const [off, w] of runs) {
@@ -392,6 +458,7 @@ export class DistrictWorld {
       }
     }
     for (const t of wallTextures.values()) t.dispose();
+    if (!indoor && chimneys.length > 0) this.buildSmoke(chimneys);
 
     /* --- the horizon, pure silhouette in the smog ---
        A city ring for the ward; low broken humps for open country. Either way it exists so
@@ -634,6 +701,10 @@ export class DistrictWorld {
       this.colliders.add(f.x, f.z, f.w, f.d, f.tag);
     }
 
+    /* --- what lies about on the ground ---
+       After the furniture and its footprints, because it is kept off them. See `clutter.ts`. */
+    if (!indoor) this.buildClutter(area);
+
     /* --- collider wireframes, off by default --- */
     this.colliderHelpers.visible = false;
     this.scene.add(this.colliderHelpers);
@@ -776,6 +847,266 @@ export class DistrictWorld {
     crate.receiveShadow = true;
     this.scene.add(crate);
     this.loose.push({ obj: crate, x, z, r: s / 2 });
+  }
+
+  /**
+   * One solid run, built in the kit's style: cut into lots, each lot a piece with its own seed,
+   * height and street face, each piece its own few meshes and its own fade. Returns the chimney
+   * tops, for the smoke.
+   *
+   * The collider is the run's footprint as it always was -- the kit changes what you see, not
+   * where you can walk -- and the fade target is an invisible box the size of what was built,
+   * roof and all, because the occluder ray and the arena both read a box.
+   */
+  private buildStyled(
+    area: AreaDef,
+    char: string,
+    rect: { col: number; row: number; w: number; d: number },
+    solid: NonNullable<AreaDef['legend'][string]['solid']>,
+    style: SolidStyle,
+  ): THREE.Vector3[] {
+    const chimneys: THREE.Vector3[] = [];
+    const x0 = xOfCol(area, rect.col) - TILE / 2;
+    const z0 = zOfRow(area, rect.row) - TILE / 2;
+    const alongX = rect.w >= rect.d;
+    const len = alongX ? rect.w : rect.d;
+    const baseSeed = hashText(`${area.id}:${char}:${rect.col}:${rect.row}`);
+    // Lots for a street; the old two-and-three cut for anything natural that asked to be split;
+    // one piece for the rest.
+    const lots = BUILT.has(style)
+      ? lotsOf(len, baseSeed)
+      : solid.split
+        ? splitRun(len).map(([, w]) => w)
+        : [len];
+    let at = 0;
+    lots.forEach((n, i) => {
+      const ax0 = alongX ? x0 + at * TILE : x0;
+      const az0 = alongX ? z0 : z0 + at * TILE;
+      const aw = alongX ? n * TILE : rect.w * TILE;
+      const ad = alongX ? rect.d * TILE : n * TILE;
+      at += n;
+      const seed = (baseSeed + i * 0x9e3779b1) >>> 0;
+      const rng = makeRng(seed);
+      const height = solid.minHeight + nextFloat(rng) * (solid.maxHeight - solid.minHeight);
+      const chimney = !solid.bare && nextFloat(rng) < solid.chimneyChance;
+      const ix = (alongX ? solid.inset : solid.depthInset) / 2;
+      const iz = (alongX ? solid.depthInset : solid.inset) / 2;
+      const px0 = ax0 + ix;
+      const px1 = ax0 + aw - ix;
+      const pz0 = az0 + iz;
+      const pz1 = az0 + ad - iz;
+      const facing = streetFacing(area, ax0, az0, aw, ad);
+      const hasDoor = area.exits.some((e) => {
+        const d = e.door;
+        if (!d || !facing) return false;
+        if (facing === 'south' || facing === 'north') {
+          const fz = facing === 'south' ? pz1 : pz0;
+          return d.x > px0 - 0.5 && d.x < px1 + 0.5 && Math.abs(d.z - fz) < TILE / 2;
+        }
+        const fx = facing === 'east' ? px1 : px0;
+        return d.z > pz0 - 0.5 && d.z < pz1 + 0.5 && Math.abs(d.x - fx) < TILE / 2;
+      });
+      const built = buildPiece({ style, x0: px0, x1: px1, z0: pz0, z1: pz1, height, seed, facing, chimney, hasDoor });
+
+      const mats: Structure['mats'] = [];
+      const home = nextFloat(rng) < 0.7;
+      for (const part of built.parts) {
+        const mat = this.surface(part.surface, solid.wall ?? 'brick', style);
+        if (part.glows) this.windows.push({ mat, home });
+        const mesh = new THREE.Mesh(part.geometry, mat);
+        mesh.castShadow = part.surface !== 'trim';
+        mesh.receiveShadow = true;
+        this.scene.add(mesh);
+        mats.push(mat as Structure['mats'][number]);
+      }
+      // The fade target: the size of what was built, never drawn.
+      const cx = (px0 + px1) / 2;
+      const cz = (pz0 + pz1) / 2;
+      const hit = new THREE.Mesh(new THREE.BoxGeometry(px1 - px0, built.top, pz1 - pz0), new THREE.MeshBasicMaterial());
+      hit.position.set(cx, built.top / 2, cz);
+      hit.visible = false;
+      this.scene.add(hit);
+      hit.updateMatrixWorld();
+      this.structures.push({ hit, mats });
+      this.hitboxes.push(hit);
+      this.colliders.add(cx, cz, px1 - px0, pz1 - pz0, 'structure');
+      chimneys.push(...built.chimneys);
+    });
+    return chimneys;
+  }
+
+  /**
+   * A material for one of the kit's surfaces, over a texture shared across the whole area.
+   *
+   * A fresh material per piece, because each piece fades on its own -- the occluder writes a
+   * material's opacity -- but never a fresh texture: a ward of forty terraces uploads one facade.
+   */
+  private surface(key: SurfaceKey, wall: WallTex, style: SolidStyle): THREE.MeshLambertMaterial {
+    const tex = (k: string, make: () => THREE.Texture): THREE.Texture => {
+      let t = this.kitTex.get(k);
+      if (!t) {
+        t = make();
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        this.kitTex.set(k, t);
+      }
+      return t;
+    };
+    if (key === 'facade') {
+      const kind: WindowKind = style === 'hall' ? 'tall' : style === 'warehouse' ? 'wide' : style === 'tower' ? 'slit' : 'house';
+      const id = `facade:${wall}:${kind}`;
+      let map = this.kitTex.get(id);
+      let glow = this.kitTex.get(`${id}:glow`);
+      if (!map || !glow) {
+        const made = makeFacadeTextures(wall, kind);
+        map = made.map;
+        glow = made.glow;
+        this.kitTex.set(id, map);
+        this.kitTex.set(`${id}:glow`, glow);
+      }
+      return new THREE.MeshLambertMaterial({ map, emissiveMap: glow, emissive: new THREE.Color('#ffb060'), emissiveIntensity: 0 });
+    }
+    if (key === 'roof') {
+      const kind: RoofKind =
+        style === 'cottage' ? 'thatch' : style === 'warehouse' ? 'tin' : wall === 'timber' || wall === 'plaster' ? 'tile' : 'slate';
+      return new THREE.MeshLambertMaterial({ map: tex(`roof:${kind}`, () => makeRoofTexture(kind)) });
+    }
+    if (key === 'trim') {
+      return new THREE.MeshLambertMaterial({ map: tex('trim', makeTrimAtlas), alphaTest: 0.5, side: THREE.DoubleSide });
+    }
+    if (key === 'leaf') return new THREE.MeshLambertMaterial({ map: tex('leaf', makeLeafTexture), flatShading: true });
+    if (key === 'bark') return new THREE.MeshLambertMaterial({ map: tex('bark', makeBarkTexture) });
+    if (key === 'rock') return new THREE.MeshLambertMaterial({ map: tex('rock', WALL_ART.rock), flatShading: true });
+    if (key === 'turf') return new THREE.MeshLambertMaterial({ map: tex('turf', makeTurfTexture), flatShading: true });
+    if (key === 'ice') {
+      return new THREE.MeshLambertMaterial({ map: tex('ice', makeIceTexture), flatShading: true, emissive: new THREE.Color('#1a2a38') });
+    }
+    if (key === 'iron') return new THREE.MeshLambertMaterial({ map: tex('iron', makeIronTexture) });
+    return new THREE.MeshLambertMaterial({ map: tex(`wall:${wall}`, WALL_ART[wall]) });
+  }
+
+  /**
+   * The ground clutter, one instanced mesh per kind: a single draw call for every tuft in the
+   * area, and no shadows -- at this size a shadow is a smudge and costs a second pass.
+   */
+  private buildClutter(area: AreaDef): void {
+    const avoid = [
+      ...area.exits.map((e) => ({ x: e.x, z: e.z, r: 1.6 })),
+      ...area.exits.flatMap((e) => (e.door ? [{ x: e.door.x, z: e.door.z, r: 1.6 }] : [])),
+      ...registryHotspots(area.id).map((h) => ({ x: h.x, z: h.z, r: 1.2 })),
+      ...(area.props.npcs ?? []).map((n) => ({ x: n.x, z: n.z, r: 1.0 })),
+      ...staticFootprints(area).map((f) => ({ x: f.x, z: f.z, r: Math.max(f.w, f.d) / 2 + 0.35 })),
+      ...(area.props.lamps ?? []).map((l) => ({ x: l.x, z: l.z, r: 0.7 })),
+    ];
+    const points = scatterClutter(area, avoid);
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    for (const kind of CLUTTER_KINDS) {
+      const mine = points.filter((p) => p.kind === kind);
+      if (mine.length === 0) continue;
+      const size = CLUTTER_SIZE[kind];
+      let geo: THREE.BufferGeometry;
+      if (STANDING.has(kind)) {
+        // Two cards crossed, so it has a front from every side the camera orbits to.
+        const a = new THREE.PlaneGeometry(size, size);
+        a.translate(0, size / 2, 0);
+        const b = a.clone();
+        b.rotateY(Math.PI / 2);
+        geo = mergeGeometries([a, b])!;
+      } else {
+        geo = new THREE.PlaneGeometry(size, size);
+        geo.rotateX(-Math.PI / 2);
+        geo.translate(0, 0.025, 0);
+      }
+      const mat = new THREE.MeshLambertMaterial({
+        map: makeClutterTexture(kind),
+        alphaTest: 0.5,
+        side: THREE.DoubleSide,
+        ...(STANDING.has(kind) ? {} : { polygonOffset: true, polygonOffsetFactor: -1 }),
+      });
+      const mesh = new THREE.InstancedMesh(geo, mat, mine.length);
+      mine.forEach((p, i) => {
+        q.setFromAxisAngle(up, p.yaw);
+        m.compose(new THREE.Vector3(p.x, 0, p.z), q, new THREE.Vector3(p.scale, p.scale, p.scale));
+        mesh.setMatrixAt(i, m);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.castShadow = false;
+      mesh.receiveShadow = !STANDING.has(kind);
+      this.scene.add(mesh);
+      this.clutter.push({ mesh, points: mine });
+    }
+  }
+
+  /** Takes the clutter off the board's footprint, or puts it all back. */
+  private clutterForArena(rect: { x0: number; z0: number; x1: number; z1: number } | null): void {
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    for (const { mesh, points } of this.clutter) {
+      points.forEach((p, i) => {
+        const hide = !!rect && p.x > rect.x0 && p.x < rect.x1 && p.z > rect.z0 && p.z < rect.z1;
+        const s = hide ? 0 : p.scale;
+        q.setFromAxisAngle(up, p.yaw);
+        m.compose(new THREE.Vector3(p.x, 0, p.z), q, new THREE.Vector3(s, s, s));
+        mesh.setMatrixAt(i, m);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+
+  /** The chimney smoke: one cloud of points for the area, a dozen puffs a chimney. */
+  private buildSmoke(from: THREE.Vector3[]): void {
+    const per = 12;
+    const n = from.length * per;
+    const pos = new Float32Array(n * 3);
+    const col = new Float32Array(n * 4);
+    const age = new Float32Array(n);
+    for (let i = 0; i < n; i++) age[i] = (i % per) * (SMOKE_LIFE / per);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 4));
+    const points = new THREE.Points(
+      geo,
+      new THREE.PointsMaterial({
+        size: 1.6,
+        map: makeSmokeTexture(),
+        vertexColors: true,
+        transparent: true,
+        depthWrite: false,
+        sizeAttenuation: true,
+      }),
+    );
+    points.frustumCulled = false;
+    this.scene.add(points);
+    this.smoke = { points, from, age };
+    this.updateSmoke(0);
+  }
+
+  /**
+   * Each puff rises, drifts downwind, swells and fades, then starts again at its chimney.
+   * Allocates nothing. Called every frame by the screen.
+   */
+  updateSmoke(dt: number): void {
+    const s = this.smoke;
+    if (!s) return;
+    const per = 12;
+    const pos = s.points.geometry.getAttribute('position') as THREE.BufferAttribute;
+    const col = s.points.geometry.getAttribute('color') as THREE.BufferAttribute;
+    for (let i = 0; i < s.age.length; i++) {
+      let a = s.age[i]! + dt;
+      if (a > SMOKE_LIFE) a -= SMOKE_LIFE;
+      s.age[i] = a;
+      const src = s.from[(i / per) | 0]!;
+      const k = a / SMOKE_LIFE;
+      const wob = Math.sin(i * 1.7 + a * 1.3) * 0.25;
+      pos.setXYZ(i, src.x + k * 2.6 + wob, src.y + 0.2 + k * 3.4, src.z - k * 1.2 + wob * 0.6);
+      // In fast and out slow, the way a puff thins.
+      const alpha = Math.min(1, k * 6) * (1 - k) * 0.55;
+      col.setXYZW(i, 0.62, 0.6, 0.58, alpha);
+    }
+    pos.needsUpdate = true;
+    col.needsUpdate = true;
   }
 
   private addStructure(
@@ -1131,6 +1462,7 @@ export class DistrictWorld {
     // in the middle of the grid is the same complaint as a wall, and nothing fades a billboard.
     for (const o of this.hiddenForArena) o.visible = true;
     this.hiddenForArena.length = 0;
+    this.clutterForArena(rect);
     if (!rect) return;
     for (const l of this.loose) {
       if (!l.obj.visible) continue;
@@ -1295,6 +1627,8 @@ export class DistrictWorld {
     // it lamp by lamp immediately afterwards; everywhere else this is the behaviour, unchanged.
     const burning = lampsAt(lightingHour(this.indoor, hour));
     for (const l of this.lamps) l.lit = burning;
+    // The windows of the houses with somebody in them, on the lamps' own curve.
+    for (const w of this.windows) w.mat.emissiveIntensity = w.home ? burning * WINDOW_GLOW : 0;
   }
 
   /** The ambience at the hour this place is lit at -- the clock's, or a room's anchor. */
@@ -1384,5 +1718,10 @@ export class DistrictWorld {
     this.signs.length = 0;
     this.loose.length = 0;
     this.hiddenForArena.length = 0;
+    for (const t of this.kitTex.values()) t.dispose();
+    this.kitTex.clear();
+    this.windows.length = 0;
+    this.smoke = null;
+    this.clutter.length = 0;
   }
 }

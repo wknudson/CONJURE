@@ -48,20 +48,20 @@ const VERGE_LEGEND: Record<string, TileDef> = {
     walk: false,
     // Lumpy and low. Taken whole rather than split: an outcrop with a skyline reads as
     // masonry, which is exactly what this place is not.
-    solid: { minHeight: 2.2, maxHeight: 3.6, inset: 0.5, depthInset: 0.5, chimneyChance: 0, split: false },
+    solid: { style: 'rock', minHeight: 2.2, maxHeight: 3.6, inset: 0.5, depthInset: 0.5, chimneyChance: 0, split: false },
   },
   T: {
     tex: 'grass',
     safe: false,
     walk: false,
     // Tall enough to break a sightline, so the packs can come round it.
-    solid: { minHeight: 4.0, maxHeight: 5.4, inset: 0.7, depthInset: 0.7, chimneyChance: 0, split: true },
+    solid: { style: 'foliage', minHeight: 4.0, maxHeight: 5.4, inset: 0.7, depthInset: 0.7, chimneyChance: 0, split: true },
   },
   B: {
     tex: 'chalk',
     safe: false,
     walk: false,
-    solid: { minHeight: 3.4, maxHeight: 3.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'stone' },
+    solid: { style: 'cottage', minHeight: 3.4, maxHeight: 3.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'stone' },
   },
 };
 

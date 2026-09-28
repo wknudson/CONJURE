@@ -41,25 +41,25 @@ const SALT_LEGEND: Record<string, TileDef> = {
     tex: 'salt',
     safe: false,
     walk: false,
-    solid: { minHeight: 4.4, maxHeight: 5.6, inset: 1.5, depthInset: 0.25, chimneyChance: 0, split: false },
+    solid: { style: 'ice', minHeight: 4.4, maxHeight: 5.6, inset: 1.5, depthInset: 0.25, chimneyChance: 0, split: false },
   },
   H: {
     tex: 'salt',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
+    solid: { style: 'warehouse', minHeight: 5.4, maxHeight: 5.4, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
   },
   X: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 6.0, maxHeight: 6.0, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
+    solid: { style: 'hall', minHeight: 6.0, maxHeight: 6.0, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
   },
   T: {
     tex: 'grass',
     safe: false,
     walk: false,
-    solid: { minHeight: 2.6, maxHeight: 3.8, inset: 0.8, depthInset: 0.8, chimneyChance: 0, split: true },
+    solid: { style: 'foliage', minHeight: 2.6, maxHeight: 3.8, inset: 0.8, depthInset: 0.8, chimneyChance: 0, split: true },
   },
 };
 

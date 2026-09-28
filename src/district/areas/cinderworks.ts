@@ -48,32 +48,32 @@ const WORKS_LEGEND: Record<string, TileDef> = {
     tex: 'slag',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.6, maxHeight: 8.2, inset: 0.35, depthInset: 0.35, chimneyChance: 0.9, split: true },
+    solid: { style: 'hall', minHeight: 5.6, maxHeight: 8.2, inset: 0.35, depthInset: 0.35, chimneyChance: 0.9, split: true },
   },
   Y: {
     tex: 'slag',
     safe: false,
     walk: false,
-    solid: { minHeight: 8.6, maxHeight: 8.6, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'stone' },
+    solid: { style: 'hall', minHeight: 8.6, maxHeight: 8.6, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'stone' },
   },
   P: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 4.6, maxHeight: 4.6, inset: 0.3, depthInset: 0.3, chimneyChance: 0.5, split: false, wall: 'timber' },
+    solid: { style: 'cottage', minHeight: 4.6, maxHeight: 4.6, inset: 0.3, depthInset: 0.3, chimneyChance: 0.5, split: false, wall: 'timber' },
   },
   H: {
     tex: 'ash',
     safe: false,
     walk: false,
     // Low, wide and unsplit: a spoil heap is one mass that was tipped, not a row of anything.
-    solid: { minHeight: 2.4, maxHeight: 3.4, inset: 0.15, depthInset: 0.15, chimneyChance: 0, split: false },
+    solid: { style: 'rock', minHeight: 2.4, maxHeight: 3.4, inset: 0.15, depthInset: 0.15, chimneyChance: 0, split: false },
   },
   B: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 4.6, maxHeight: 6.8, inset: 0.3, depthInset: 0.3, chimneyChance: 0.3, split: true },
+    solid: { style: 'terrace', minHeight: 4.6, maxHeight: 6.8, inset: 0.3, depthInset: 0.3, chimneyChance: 0.3, split: true },
   },
 };
 

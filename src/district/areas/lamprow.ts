@@ -52,25 +52,25 @@ const LAMPROW_LEGEND: Record<string, TileDef> = {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 4.8, maxHeight: 7.0, inset: 0.3, depthInset: 0.3, chimneyChance: 0.4, split: true },
+    solid: { style: 'terrace', minHeight: 4.8, maxHeight: 7.0, inset: 0.3, depthInset: 0.3, chimneyChance: 0.4, split: true },
   },
   V: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 3.2, maxHeight: 3.2, inset: 0.1, depthInset: 1.6, chimneyChance: 0, split: false },
+    solid: { style: 'wall', minHeight: 3.2, maxHeight: 3.2, inset: 0.1, depthInset: 1.6, chimneyChance: 0, split: false },
   },
   O: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.2, maxHeight: 5.2, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
+    solid: { style: 'warehouse', minHeight: 5.2, maxHeight: 5.2, inset: 0.3, depthInset: 0.3, chimneyChance: 1, split: false, wall: 'timber' },
   },
   X: {
     tex: 'cobble',
     safe: false,
     walk: false,
-    solid: { minHeight: 7.2, maxHeight: 7.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
+    solid: { style: 'hall', minHeight: 7.2, maxHeight: 7.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'stone' },
   },
 };
 

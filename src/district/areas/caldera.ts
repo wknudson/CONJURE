@@ -37,20 +37,20 @@ const CALDERA_LEGEND: Record<string, TileDef> = {
     tex: 'ash',
     safe: false,
     walk: false,
-    solid: { minHeight: 9.0, maxHeight: 13.0, inset: 0.05, depthInset: 0.05, chimneyChance: 0, split: false },
+    solid: { style: 'rock', minHeight: 9.0, maxHeight: 13.0, inset: 0.05, depthInset: 0.05, chimneyChance: 0, split: false },
   },
   V: {
     tex: 'slag',
     safe: false,
     walk: false,
-    solid: { minHeight: 2.0, maxHeight: 3.6, inset: 1.1, depthInset: 1.1, chimneyChance: 0.8, split: false },
+    solid: { style: 'rock', minHeight: 2.0, maxHeight: 3.6, inset: 1.1, depthInset: 1.1, chimneyChance: 0.8, split: false },
   },
   /** The cave mouth: rock, taken whole, with a door in the south face of it. */
   K: {
     tex: 'ash',
     safe: false,
     walk: false,
-    solid: { minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
+    solid: { style: 'rock', minHeight: 5.5, maxHeight: 5.5, inset: 0.3, depthInset: 0.3, chimneyChance: 0, split: false, wall: 'rock', bare: true },
   },
 };
 

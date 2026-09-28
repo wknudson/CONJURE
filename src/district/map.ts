@@ -25,6 +25,7 @@ import type { Gate } from './chronicle.js';
 import type { PackHours } from './daylight.js';
 import type { SkyId } from './skies.js';
 import type { SignId } from './signs.js';
+import type { SolidStyle } from './buildings.js';
 
 /**
  * World units per tile, global to every area.
@@ -97,6 +98,12 @@ export interface TileDef {
      * a box with a roofline; a wall is just the box.
      */
     readonly bare?: boolean;
+    /**
+     * What stands here: a terrace, a hall, a stall, a thicket, a rock -- see `buildings.ts`.
+     * Absent means the plain box every solid was before the kit, which is what a room's walls
+     * still are.
+     */
+    readonly style?: SolidStyle;
   };
 }
 

@@ -1117,3 +1117,25 @@ in" row -- and the forage that bites in them, and on the Storm Shelf's seam and 
 row, bites with the same. The Sink cellars keep the Tithe-Takers. The rest are placed by the area
 passes. Several crews planned from cards outside the roster pool -- ridge wolves, hollow wraiths,
 the tesla pylon -- were recomposed from what a pack may actually field.
+
+### 15.4 The building kit and the ground (built)
+
+| Piece | What it does |
+|---|---|
+| `buildings.ts` | a legend's `solid.style` picks what stands on a solid tile. Built: terrace, shopfront, warehouse, hall, cottage, tower -- lots of one to three tiles cut by bisection, each with windows, a roof inside its height budget, a chimney where asked, and a door (or a shop window, door, awning and sign) on its street side. Walls and stalls. Natural: foliage, forest, rock, mound, ice, pylon, out of noise-roughed primitives |
+| The surfaces | a facade per wall material and window kind, with a matching glow map; slate, tile, thatch and tin roofs; a trim atlas; leaf, bark, turf, ice and iron. World-unit UVs, so one texture serves every lot |
+| Night | windows light on the lamps' curve in seven buildings of ten; chimneys smoke |
+| The fade | an invisible box the size of what was built is the occluder and arena target, so a roof fades with its walls |
+| Every area | every outdoor solid has a style -- the Ashwood is a wood, the Verge's thickets are leaves, the Storm Shelf's footings are pylons, the barrows are turf |
+| `clutter.ts` | tufts, flowers, stones, cinders, leaves, puddles, drifts, bones and litter scattered by Poisson-disk sampling onto the paints that shed them, one instanced draw call per kind |
+
+Measured with the Perf folder: Ashfall at night 124 draw calls and ten lights, the Bonemarket 146,
+the Chalk Verge 79 with its clutter, the Ashwood 95.
+
+### What is still standing in (15.4)
+
+| Where | Placeholder | Standing in for |
+|---|---|---|
+| The Wildlands' ground | one paint per region with a ring added | a simplex-noise pass through `enrich-ground.ts`; it rewrites the grids, so it goes with the Wildlands area pass |
+| Box props | one picture on every face | a front and a side; the Wave 7 row stands |
+| Clutter | static | swaying with the wind like the plants do; an instanced mesh needs the sway shader taught about `instanceMatrix` |
