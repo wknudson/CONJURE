@@ -22,7 +22,8 @@ import {
   storyContractByEncounter,
   type StoryContract,
 } from './campaign.js';
-import { HUNTS, huntByEncounter, type Hunt } from './hunts.js';
+import type { School } from '../../contract/ids.js';
+import { HUNTS, huntByEncounter, huntOpen, type Hunt } from './hunts.js';
 import { LAIRS, lairByEncounter, type Lair } from './lairs.js';
 import { packByEncounter, type PackDef } from './packs.js';
 
@@ -73,11 +74,15 @@ export const DIFFICULTIES: readonly BountyDifficulty[] = ['novice', 'adept', 'ma
  * Derived from what each encounter actually asks of a player rather than from a number
  * on the encounter: the duel is an honest opener, the ruin and the field punish bad
  * positioning, and the Trial is a boss with a Rite attached.
+ *
+ * Each tier has its own duelist, and each teaches a shelf of the Hero kit: Novice the first
+ * staples, Journeyman the colourless half of `cards/hero.ts`, Master its arcane half. They
+ * are also what keeps the post-campaign board from collapsing to four fights.
  */
 const TIER_ENCOUNTERS: Record<BountyDifficulty, string[]> = {
   novice: ['novice_duelist'],
-  adept: ['narrow_ruin', 'glacial_field'],
-  master: ['ignis_trial'],
+  adept: ['narrow_ruin', 'glacial_field', 'adept_duelist'],
+  master: ['ignis_trial', 'master_duelist'],
 };
 
 /**
@@ -285,7 +290,7 @@ export const WAGER_MULTIPLIER = 2;
  * Only the fights that are actually a person across a board: a duelist bets, a ruin does
  * not. Checked by encounter rather than by tier so a new duelling encounter inherits it.
  */
-export const DUEL_ENCOUNTERS: readonly string[] = ['novice_duelist'];
+export const DUEL_ENCOUNTERS: readonly string[] = ['novice_duelist', 'adept_duelist', 'master_duelist'];
 
 /**
  * `completed` widens the dice: a story contract this character has finished joins its
@@ -397,9 +402,16 @@ export function packBounty(pack: PackDef, seed: number): Bounty {
   };
 }
 
-/** Every hunt as a Bounty, in registry order. The gate panel's whole data source. */
-export function huntBoard(seed: number): Bounty[] {
-  return HUNTS.map((h) => huntBounty(h, seed));
+/**
+ * Every hunt posted for this character, as a Bounty, in registry order. The gate panel's
+ * whole data source.
+ *
+ * `kept` is the schools the player's beasts speak (`schoolsKept`), and it is required
+ * rather than defaulted: a board that showed every rare hunt whenever a caller forgot to
+ * pass it would be a bug that looks exactly like a feature.
+ */
+export function huntBoard(seed: number, kept: ReadonlySet<School>): Bounty[] {
+  return HUNTS.filter((h) => huntOpen(h, kept)).map((h) => huntBounty(h, seed));
 }
 
 /**

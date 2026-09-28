@@ -66,6 +66,9 @@ export const IGNIS_TRIAL: EncounterDef = registerEncounter({
     'dark_tithe',
     'soul_splinter_mark',
     'cataclysmic_core',
+    // Pyre's third shelf, taught here: the long bolt and the wide Burn.
+    'molten_shot',
+    'wildfire',
   ],
   enemyOpeningBoard: [
     ['scout_imp', 1, 1],

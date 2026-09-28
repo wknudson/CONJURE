@@ -10,6 +10,8 @@ import type { Coord } from '../contract/ids.js';
 import type { UnitArchetype } from '../contract/snapshots.js';
 import { PALETTE, schoolOf, type SchoolColors } from './palette.js';
 import type { IsoCamera } from './IsoCamera.js';
+import { creatureImagesIfLoaded } from './minionArt.js';
+import { idleBreath } from '../anim/motion.js';
 // The painted bodies, reused rather than reimplemented. `drawCommander` there is the *other*
 // function of this name -- it blits a bitmap, where the one below draws a prism -- so it is
 // aliased at the import to keep the two apart at every call site in this file.
@@ -241,6 +243,48 @@ export interface UnitDrawOptions {
    * and are the reason this is optional rather than zero.
    */
   idleMs?: number;
+  /**
+   * The card this body is, so a body with a drawing can wear it. Absent for obstacles and
+   * for anything that should stay a shape — the prism is the fallback, never an error.
+   */
+  defId?: string;
+}
+
+/**
+ * How tall a drawn body stands on the diamond, in screen pixels at zoom 1, per tile of
+ * footprint. Matched to the tallest prism, the sniper's, so a drawn body and a shaped one
+ * next to it read as the same size of thing.
+ */
+const DRAWN_BODY_HEIGHT = 58;
+
+/**
+ * A body's drawing, standing on its tile — or false if it has none loaded yet.
+ *
+ * Feet on the tile centre, width from the drawing's own aspect so a wolf is long and a wisp
+ * is tall. Pixel art is blitted without smoothing, which is what keeps it pixel art at
+ * three times its size. The school still shows, in the base plate and the furniture drawn
+ * around the body; the drawing itself is never tinted.
+ */
+function drawDrawnBody(
+  ctx: Ctx2D,
+  cam: IsoCamera,
+  centre: { x: number; y: number },
+  o: UnitDrawOptions,
+): boolean {
+  if (!o.defId) return false;
+  const images = creatureImagesIfLoaded(o.defId);
+  if (!images) return false;
+  const img = images.front;
+  // Breathes about the feet, narrowing a little as it rises, so the drawing keeps its mass.
+  const b = o.idleMs === undefined ? { sx: 1, sy: 1 } : idleBreath(o.idleMs, 2200, 0.025);
+  const h = DRAWN_BODY_HEIGHT * o.footprint * cam.zoom * b.sy;
+  const w = (img.naturalWidth / Math.max(1, img.naturalHeight)) * DRAWN_BODY_HEIGHT * o.footprint * cam.zoom * b.sx;
+  ctx.save();
+  if (o.dim) ctx.globalAlpha = 0.45;
+  ctx.imageSmoothingEnabled = images.style === 'painted';
+  ctx.drawImage(img, centre.x - w / 2, centre.y - h, w, h);
+  ctx.restore();
+  return true;
 }
 
 /** One slow breath: a gentle ±1 multiplier at the given period, from the idle clock. */
@@ -254,6 +298,7 @@ export function drawUnitBody(
   centre: { x: number; y: number },
   o: UnitDrawOptions,
 ): void {
+  if (drawDrawnBody(ctx, cam, centre, o)) return;
   const colors = schoolOf(o.school as never);
   ctx.save();
   if (o.dim) ctx.globalAlpha = 0.45;
@@ -425,6 +470,11 @@ export function drawCommander(
      * mind. `mirror` flips the profile to face the direction of travel.
      */
     walk?: { sheet: HTMLImageElement; frame: number; mirror: boolean } | null;
+    /**
+     * The idle clock, for a painted figure's breath. Omitted, the figure stands dead still,
+     * which is what it did before and what a test that counts draw calls expects.
+     */
+    idleMs?: number;
   },
 ): void {
   const colors = schoolOf(o.school as never);
@@ -464,6 +514,13 @@ export function drawCommander(
     const unit = height / COMMANDER_HEIGHT_TILES;
     ctx.save();
     ctx.translate(centre.x, centre.y);
+    // A standing painted figure breathes: a slow rise about the feet. A beast breathes
+    // quicker and deeper than a person, so the pair beside the board do not move alike.
+    if (o.idleMs !== undefined) {
+      const beast = o.kind !== 'hero';
+      const b = idleBreath(o.idleMs, beast ? 1900 : 2600, beast ? 0.02 : 0.012);
+      ctx.scale(b.sx, b.sy);
+    }
     if (o.kind === 'companion' || o.kind === 'boss') drawCompanionBitmap(ctx, unit, o.art);
     else drawHeroBitmap(ctx, unit, o.art);
     ctx.restore();

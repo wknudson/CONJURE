@@ -13,6 +13,10 @@
  * standing on the grid. Everything else gets a procedural silhouette from
  * `makeMinionTexture`, seeded off its card id and tinted by school — the same generator that
  * draws the packs roaming the road, so a body does not change species when the fight starts.
+ *
+ * A card listed in `core/data/art.ts` has a drawing, and wears it once it has decoded. Until
+ * then — and for good, if the file never arrives — it wears the silhouette like anything else,
+ * which is the same bargain the Companion's own art makes.
  */
 
 import * as THREE from 'three';
@@ -21,7 +25,8 @@ import type { EntityView, EntityViewMap } from '../../render/EntityViews.js';
 import { PALETTE, schoolOf } from '../../render/palette.js';
 import { loadCompanionSprite } from '../../render/sprites.js';
 import { hashText } from '../../core/util/rng.js';
-import { makeMinionTexture } from '../textures.js';
+import { configurePixelTexture, makeMinionTexture, spriteTexture } from '../textures.js';
+import { creatureImagesIfLoaded } from '../../render/minionArt.js';
 import {
   actorArtFromTextures,
   buildActorArt,
@@ -31,6 +36,7 @@ import {
   type ActorArt,
 } from '../sprites3d.js';
 import { PX_TO_WORLD } from './OverlayCanvas.js';
+import { squashScale } from '../../anim/motion.js';
 import { TILE } from '../map.js';
 import type { WorldBoard } from './WorldBoard.js';
 
@@ -79,6 +85,8 @@ interface Body {
    * exception. See `sync`.
    */
   usesCompanionArt: boolean;
+  /** Whether this body is wearing its card's drawing rather than the silhouette. */
+  wearsDrawing: boolean;
 }
 
 /** Where the two Commanders stand: off the grid at either end, but on the field. */
@@ -146,6 +154,8 @@ export class BodyLayer {
   private readonly bodies = new Map<UnitId, Body>();
   /** Cut once per card id and shared — a pack of four footmen is one silhouette, not four. */
   private readonly artCache = new Map<string, ActorArt>();
+  /** Drawings, cut once per card id and shared the same way the silhouettes are. */
+  private readonly drawingCache = new Map<string, ActorArt>();
   /** The Companion's painted art, once it has decoded. Null until then, and if it 404s. */
   private companionArt: ActorArt | null = null;
   /** The enemy Commander's, on exactly the same terms. */
@@ -306,11 +316,54 @@ export class BodyLayer {
     return art;
   }
 
-  /** A procedural silhouette for a card id, cut once and shared. */
-  private artFor(view: EntityView): { art: ActorArt; owned: boolean } {
+  /** A card's drawing if it has decoded, its procedural silhouette if not. Both shared. */
+  private artFor(view: EntityView): { art: ActorArt; owned: boolean; drawn: boolean } {
     const snap = view.snapshot;
+    const drawn = snap ? this.drawingFor(snap.defId) : null;
+    if (drawn) return { art: drawn, owned: false, drawn: true };
     const key = snap ? snap.defId : 'obstacle';
-    return { art: this.silhouette(key), owned: false };
+    return { art: this.silhouette(key), owned: false, drawn: false };
+  }
+
+  /**
+   * A card's drawing, cut into textures once it has decoded, or null until then.
+   *
+   * Asking is what starts the fetch, and asking again every frame is a map lookup — so a body
+   * that opened the fight in its silhouette simply changes into its drawing on whichever frame
+   * the file lands. Pixel art is sampled nearest and painted art linear, for the reasons
+   * `CreatureArt.style` gives; a view standing in for a missing one reuses its texture rather
+   * than uploading the same image twice.
+   */
+  private drawingFor(defId: string): ActorArt | null {
+    const cached = this.drawingCache.get(defId);
+    if (cached) return cached;
+    const images = creatureImagesIfLoaded(defId);
+    if (!images) return null;
+
+    const made = new Map<HTMLImageElement, THREE.Texture>();
+    const tex = (img: HTMLImageElement): THREE.Texture => {
+      const hit = made.get(img);
+      if (hit) return hit;
+      let t: THREE.Texture;
+      if (images.style === 'pixel') {
+        t = configurePixelTexture(new THREE.Texture(img));
+        t.needsUpdate = true;
+      } else {
+        t = spriteTexture(img, this.opts.maxAnisotropy);
+      }
+      made.set(img, t);
+      return t;
+    };
+    const art: ActorArt = {
+      front: tex(images.front),
+      back: tex(images.back),
+      side: tex(images.side),
+      sideWalk: [],
+      walkGaitCycles: 1,
+      mirrorSide: images.mirrorSide,
+    };
+    this.drawingCache.set(defId, art);
+    return art;
   }
 
   /**
@@ -339,7 +392,17 @@ export class BodyLayer {
         // all, and a generic hooded body in its place quietly throws that away. Waiting on the
         // decode before opening the board would cost every first fight a stall on the network,
         // which is worse; this costs one rebuild, once, and only when it would be wrong not to.
-        if (this.wantsCompanionArt(view) && !existing.usesCompanionArt) {
+        //
+        // A card's drawing arrives the same way and is handled the same way: a body wearing
+        // its silhouette changes into the drawing on the frame the drawing lands.
+        const lateCompanion = this.wantsCompanionArt(view) && !existing.usesCompanionArt;
+        const lateDrawing =
+          !lateCompanion &&
+          !existing.usesCompanionArt &&
+          !existing.wearsDrawing &&
+          view.snapshot !== null &&
+          this.drawingFor(view.snapshot.defId) !== null;
+        if (lateCompanion || lateDrawing) {
           this.group.remove(existing.walker.sprite);
           this.dropFooting(existing);
           if (existing.ownsArt) disposeActorArt(existing.art);
@@ -351,8 +414,8 @@ export class BodyLayer {
 
       const snap = view.snapshot;
       const useCompanion = this.wantsCompanionArt(view);
-      const { art, owned } = useCompanion
-        ? { art: this.companionArt!, owned: false }
+      const { art, owned, drawn } = useCompanion
+        ? { art: this.companionArt!, owned: false, drawn: false }
         : this.artFor(view);
 
       // A Behemoth fills a 2x2 and has to look like it. The height goes into the `Walker`,
@@ -366,7 +429,7 @@ export class BodyLayer {
       // player has already been shown out on the street.
       if (useCompanion) {
         if (this.opts.companionShiny) walker.sprite.setTint(SHINY_TINT);
-      } else if (snap) {
+      } else if (snap && !drawn) {
         walker.sprite.setTint(new THREE.Color(schoolOf(snap.school).main).getHex());
       }
 
@@ -402,6 +465,7 @@ export class BodyLayer {
         lastX: c.x,
         lastZ: c.z,
         usesCompanionArt: useCompanion,
+        wearsDrawing: drawn,
       });
     }
 
@@ -452,17 +516,23 @@ export class BodyLayer {
 
       const dx = c.x - body.lastX;
       const dz = c.z - body.lastZ;
-      body.walker.position.set(c.x, view.elev * PX_TO_WORLD, c.z);
+      body.walker.position.set(c.x, 0, c.z);
       body.lastX = c.x;
       body.lastZ = c.z;
       // The real delta, so the gait is driven by ground covered exactly as it is on the road.
       body.walker.step(dx, dz, cameraYaw);
+      // `walker.position` *is* the sprite's position, and stepping writes the walk bob into
+      // its y. The lift the handlers set (a lunge's hop, a summon's drop, a death's sink) is
+      // added after, on top of the bob. Setting it before the step, as this used to, had it
+      // overwritten every frame, so none of those ever showed on this board.
+      body.walker.position.y = body.walker.bob + view.elev * PX_TO_WORLD;
 
       const sprite = body.walker.sprite;
       // Squash is a flinch: shorter and correspondingly wider, so the body keeps its mass.
-      const squash = 1 - view.squash * 0.35;
-      sprite.scale.y = squash;
-      sprite.scale.x = 1 / Math.max(0.2, squash);
+      // Negative is a stretch. The same formula the canvas board uses.
+      const { sx, sy } = squashScale(view.squash);
+      sprite.scale.y = sy;
+      sprite.scale.x = sx;
 
       const mat = sprite.material;
       mat.opacity = view.alpha;
@@ -530,6 +600,8 @@ export class BodyLayer {
     this.bodies.clear();
     for (const art of this.artCache.values()) disposeActorArt(art);
     this.artCache.clear();
+    for (const art of this.drawingCache.values()) disposeActorArt(art);
+    this.drawingCache.clear();
     if (this.companionArt) disposeActorArt(this.companionArt);
     this.companionArt = null;
     this.group.clear();
