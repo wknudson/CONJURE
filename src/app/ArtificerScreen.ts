@@ -142,6 +142,7 @@ const REFUSAL_COPY: Record<string, string> = {
   'not-forged': 'Requires Schematic Forging',
   'not-unlocked': 'Requires Schematic Forging',
   'off-school': 'This beast has no claim to that school',
+  'off-bloodline': 'Only its own bloodline can learn this',
   'not-castable': 'Not a card a Companion can carry',
   'bad-slot': 'No such slot',
   'already-ascended': 'Already raised',
