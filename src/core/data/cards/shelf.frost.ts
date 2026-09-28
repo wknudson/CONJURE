@@ -418,4 +418,79 @@ export const FROST_SHELF: Record<string, CardDef> = {
     range: 3,
     needsLoS: true,
   },
+
+  // ================================================== hybrid signatures (Frost)
+  //
+  // One apiece for the hybrids filed here: a card of this school that carries its other
+  // parent's element on it, so a hybrid's book opens on the seam it is made of.
+
+  /** The Storm-Mantis: rime that carries a charge. */
+  static_frost: {
+    id: 'static_frost',
+    name: "Static Frost",
+    cost: { bones: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 frost damage to a unit and leaves it Charged. Frost into a Charged target Superconducts.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'frost', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'charged', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['mantis'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** The Grave-Gargoyle: a stare that rots and freezes. */
+  frostgrave_gaze: {
+    id: 'frostgrave_gaze',
+    name: "Frostgrave Gaze",
+    cost: { bones: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 decay damage to a unit and Chills it.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'decay', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['gargoyle'],
+    range: 4,
+    needsLoS: true,
+  },
+
+  /** The Winterthorn Elk: antlers of frozen briar. */
+  hoarthorn: {
+    id: 'hoarthorn',
+    name: "Hoarthorn",
+    cost: { bones: 2, marrow: 0 },
+    school: 'frost',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 physical damage to a unit, Chills it and poisons it (Toxin 1).',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'physical', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'chill', stacks: 1, area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['elk'],
+    range: 3,
+    needsLoS: true,
+  },
 };

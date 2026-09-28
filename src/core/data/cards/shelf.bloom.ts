@@ -393,4 +393,101 @@ export const BLOOM_SHELF: Record<string, CardDef> = {
     range: 4,
     needsLoS: true,
   },
+
+  // ================================================== hybrid signatures (Bloom)
+  //
+  // One apiece for the hybrids filed here: a card of this school that carries its other
+  // parent's element on it, so a hybrid's book opens on the seam it is made of.
+
+  /** The Crimson Treant: bark that smoulders. */
+  ember_bark: {
+    id: 'ember_bark',
+    name: "Ember Bark",
+    cost: { bones: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 physical damage to a unit, sets it alight (Burn 1) and poisons it (Toxin 1).',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'physical', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'burn', stacks: 1, area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['treant'],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /** The Voltbriar Serpent: a hedge wired to the grid. */
+  live_briar: {
+    id: 'live_briar',
+    name: "Live Briar",
+    cost: { bones: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Roots a unit through its next turn (Entangle 1) and deals 10 shock damage to it, leaving it Charged.',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'applyStatus', status: 'entangle', stacks: 1, area: { shape: 'target' } },
+        { op: 'damage', amount: 10, dtype: 'shock', area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['serpent'],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /** The Murk Heron: a beak dipped in the fen. */
+  fen_strike: {
+    id: 'fen_strike',
+    name: "Fen Strike",
+    cost: { bones: 2, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 decay damage to a unit and poisons it (Toxin 2).',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'decay', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'toxin', stacks: 2, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['heron'],
+    range: 3,
+    needsLoS: true,
+  },
+
+  /** The Dolmen Crab: a claw that holds. */
+  mossback_pinch: {
+    id: 'mossback_pinch',
+    name: "Mossback Pinch",
+    cost: { bones: 1, marrow: 0 },
+    school: 'bloom',
+    source: 'companion',
+    kind: 'spell',
+    text: 'Deals 20 impact damage to an adjacent enemy and roots it through its next turn (Entangle 1).',
+    target: { kind: 'entity', side: 'enemy', includeObstacles: false },
+    effect: {
+      op: 'seq',
+      effects: [
+        { op: 'damage', amount: 20, dtype: 'impact', area: { shape: 'target' } },
+        { op: 'applyStatus', status: 'entangle', stacks: 1, area: { shape: 'target' } },
+      ],
+    },
+    keywords: [],
+    bloodline: ['crab'],
+    range: 1,
+  },
 };
