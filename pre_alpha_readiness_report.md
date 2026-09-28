@@ -19,7 +19,7 @@ thirty-nine rooms behind real doors, four registries of things to do on the grou
 §7.9 and §7.10; that note was PR #40. The bestiary and grimoire expansion then began with its
 machinery as PR #41 — signature cards, rare hunts, and a pipeline for creature art — recorded in
 §7.11; that note was PR #42. Its second wave, the Hero kit and a duelist at every tier, merged
-as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; that note was PR #49. A motion pass over both boards and the streets, including two fixes for flinches that were computed and never drawn, merged as PR #47 and is recorded in §7.15; that note was PR #50. The expansion's Wave 4, thirty-six new bodies for the Vanguard, merged as PR #51 and is recorded in §7.16; this note is PR #52.*
+as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; that note was PR #49. A motion pass over both boards and the streets, including two fixes for flinches that were computed and never drawn, merged as PR #47 and is recorded in §7.15; that note was PR #50. The expansion's Wave 4, thirty-six new bodies for the Vanguard, merged as PR #51 and is recorded in §7.16; that note was PR #52. Its Wave 5, the third and fourth bloodlines of Pyre, Frost and Surge, merged as PR #53 and is recorded in §7.17; this note is PR #54.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -1062,12 +1062,25 @@ because `startingRosterFor` derives them from the shelf by design.
 
 **Verified.** The full non-balance suite and the balance ledger on the exact tip, green.
 
-### 7.17 What remains
+### 7.17 The bestiary expansion, Wave 5 — **built, PR #53**
+
+Six species — the Ashwing Phoenix and Cinderback Badger, the Hoarfrost Mammoth and Rime Ermine,
+the Galvanic Eel and Sparkback Pangolin — each whole: a Bound Form with a shape its school
+lacked, three wired knacks built from existing boons, three signatures its own hunt teaches, and
+a hunt at the gate. Stand-in art (`COMPANION_ART_PENDING`) until they are painted.
+
+**What was found on the way.** The Eel's hunt in rain ended AI playouts in four to six turns at
+an Adept tier whose other hunts run to twenty, because rain lifts every shock hit the Eel's deck
+is made of; fog and a slower handler brought it to six to nine.
+
+**Verified.** The full non-balance suite and the balance ledger on the exact tip, green.
+
+### 7.18 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 to §7.16 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.17 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
-found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47, #48 and #51 did. What comes next is
+found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47, #48, #51 and #53 did. What comes next is
 a playtest, and the remaining waves of the bestiary expansion, each recorded here as it
 merges.
 
