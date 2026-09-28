@@ -23,6 +23,7 @@ import { CACHES } from './caches.js';
 import { FORAGE_KINDS, FORAGE_NODES, foragePropAt } from './forage.js';
 import { RESTS } from './rests.js';
 import { SIGHTS } from './sights.js';
+import { LANDMARKS } from './landmarks.js';
 
 /**
  * The furniture the registries hang in an area, beside what the area file lists itself.
@@ -109,6 +110,11 @@ export function staticFootprints(
     if (exit.gate) {
       out.push({ x: exit.gate.x, z: exit.gate.z, w: GATE_FOOTPRINT.w, d: GATE_FOOTPRINT.d, tag: 'gate' });
     }
+  }
+  // The landmarks, each on its own footprint. See `landmarks.ts`.
+  for (const l of area.props.landmarks ?? []) {
+    const k = LANDMARKS[l.kind];
+    out.push({ x: l.x, z: l.z, w: k.w, d: k.d, tag: `landmark:${l.kind}` });
   }
   return out;
 }

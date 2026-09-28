@@ -1787,6 +1787,7 @@ export class DistrictScreen implements Screen {
     if (!this.combat) world.setFogScale(1 / this.zoom);
     world.updateLamps(this.elapsed, anchor.x, anchor.z);
     world.updateSmoke(dt);
+    world.updateLandmarks(this.elapsed);
     world.updateImpactLights(dt);
     world.scrollWater(dt);
     world.updateRises(dt, Math.random);

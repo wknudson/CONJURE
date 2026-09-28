@@ -26,6 +26,7 @@ import type { PackHours } from './daylight.js';
 import type { SkyId } from './skies.js';
 import type { SignId } from './signs.js';
 import type { SolidStyle } from './buildings.js';
+import type { LandmarkId } from './landmarks.js';
 
 /**
  * World units per tile, global to every area.
@@ -401,6 +402,11 @@ export interface AreaProps {
   readonly waterRows?: number;
   /** The ring of far silhouettes on the horizon. */
   readonly horizon?: 'city' | 'treeline' | 'none';
+  /**
+   * The tall things you steer by: a windmill, a bell tower, a lighthouse. See `landmarks.ts`.
+   * A landmark stands on a footprint the colliders learn, and its moving part moves.
+   */
+  readonly landmarks?: readonly { readonly kind: LandmarkId; readonly x: number; readonly z: number }[];
 }
 
 export interface AreaDef {
