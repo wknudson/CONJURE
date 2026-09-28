@@ -19,7 +19,10 @@ thirty-nine rooms behind real doors, four registries of things to do on the grou
 §7.9 and §7.10; that note was PR #40. The bestiary and grimoire expansion then began with its
 machinery as PR #41 — signature cards, rare hunts, and a pipeline for creature art — recorded in
 §7.11; that note was PR #42. Its second wave, the Hero kit and a duelist at every tier, merged
-as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; that note was PR #49. A motion pass over both boards and the streets, including two fixes for flinches that were computed and never drawn, merged as PR #47 and is recorded in §7.15; that note was PR #50. The expansion's Wave 4, thirty-six new bodies for the Vanguard, merged as PR #51 and is recorded in §7.16; that note was PR #52. Its Wave 5, the third and fourth bloodlines of Pyre, Frost and Surge, merged as PR #53 and is recorded in §7.17; that note was PR #54. Its Wave 6, the same for Bulwark, Dusk and Bloom, merged as PR #64 and is recorded in §7.18; that note was PR #65. Its Wave 7, a signature for each of the fifteen founding hybrids, merged as PR #66 and is recorded in §7.19; this note is PR #67.*
+as PR #43 and is recorded in §7.12; that note was PR #44. The expansion's Wave 2, deeper shelves and signature cards for Pyre, Frost and Surge, merged as PR #45 and is recorded in §7.13; that note was PR #46. The expansion's Wave 3, the same shelves and signatures for Bulwark, Dusk and Bloom, merged as PR #48 and is recorded in §7.14; that note was PR #49. A motion pass over both boards and the streets, including two fixes for flinches that were computed and never drawn, merged as PR #47 and is recorded in §7.15; that note was PR #50. The expansion's Wave 4, thirty-six new bodies for the Vanguard, merged as PR #51 and is recorded in §7.16; that note was PR #52. Its Wave 5, the third and fourth bloodlines of Pyre, Frost and Surge, merged as PR #53 and is recorded in §7.17; that note was PR #54. Its Wave 6, the same for Bulwark, Dusk and Bloom, merged as PR #64 and is recorded in §7.18; that note was PR #65. Its Wave 7, a signature for each of the fifteen founding hybrids, merged as PR #66 and is recorded in §7.19; that note was PR #67. The world immersion pass then
+merged as nine stacked parts, PRs #55 to #63 — foundations, patrols that see and path, eighteen
+themed crews, a building kit, things to look at, the three area passes, and townsfolk who keep
+hours — and is recorded in §7.20; this note is PR #68.*
 
 *Updated 2026-09-04: a rendering bug outside either audit's scope — the female Commander's
 side-walk pulsing at a fixed height, found and fixed on request rather than by an audit pass
@@ -881,9 +884,10 @@ rather than by eye — recorded in the worldbuild to-do's Wave 14.
 balance ledger was not run, because `core/data/packs.ts` is untouched and nothing the AI plays
 against changed. The Pages deploy of the squash commit carries its build stamp.
 
-**Open by choice, and written down in Wave 14 rather than here:** the wild dens borrow existing
-road crews instead of themed packs, because a new `PackDef` enters the balance harness; the
-Wildlands floors are still one texture per region with a ring added; a room's cache and door
+**Open by choice, and written down in Wave 14 rather than here:** ~~the wild dens borrow existing
+road crews instead of themed packs, because a new `PackDef` enters the balance harness~~ **FIXED in
+#57**; ~~the Wildlands floors are still one texture per region with a ring added~~ **FIXED in #62**;
+a room's cache and door
 liveness is read once at mount; and the bench screens are still screens — the room is the shop
 now, but the shop still swaps the view.
 
@@ -1095,12 +1099,77 @@ same card, so a hybrid's book opens on the seam it is made of. Each is taught by
 
 **Verified.** The full non-balance suite and the balance ledger on the exact tip, green.
 
-### 7.20 What remains
+### 7.20 The world immersion pass — **built, PRs #55 to #63**
+
+Not an audit finding: a request, that all of the world be more immersive and more fun — every
+area bigger and better thought out, more enemies patrolling, more things to look at, buildings
+that are buildings. Read against the world PR #39 left, that was four findings. Buildings were a
+box per run of solid tiles, every area's heights off one seed. Sixteen of the nineteen outdoor
+places had nothing roaming them, and the eight crews that did roam were drawn as one hooded
+figure, wandered a circle, saw through walls and could not go round a corner. There was no verb
+for looking at anything, and the furniture had been placed by a search rather than composed. And
+the play space was small for a camera that frames five tiles by four.
+
+**What was built**, as nine parts, each its own PR, stacked and merged in order:
+
+- **#55, foundations.** Colliders indexed by tile; one reachability flood per area; seeded
+  simplex and Poisson-disk sampling (MIT ports, credited); `grow-area.ts`, which pads a grid
+  evenly and moves edge exits and the neighbours' arrivals with it, so nothing placed moves; a
+  pool of ten real lights handed to the nearest fires; a fight that clears the loose furniture
+  off its board; far critters and off-shift crews frozen; a perf folder; half the noon fog; and
+  a walk camera that pulls back on the wheel.
+- **#56, patrols.** Sight that walls block, and cones cut at the first wall; a nav grid with A*;
+  `beat`, `sentry` and `prowl` beside `roam`; suspicion by degrees, a `?` and a `!`, a chase
+  round buildings, a search where it last saw you, and a walk back; cooldowns keyed by crew and
+  map; a pack on the road drawn as the members it fights with; a Warden for every beat; and
+  placement rules asked of the ground a pack works rather than of a circle.
+- **#57, crews of their own.** Eighteen themed `PackDef`s through the balance ledger — five for
+  the city's nights, five for the Ring, eight for the Wildlands — and the dens' own crews in the
+  dens.
+- **#58, the building kit.** Terraces, shopfronts, warehouses, halls, cottages and towers cut into
+  lots, with windows that light after dusk, roofs inside the height budget, doors on the street
+  side, smoke, and fade boxes the size of what was built; every outdoor solid given a style; and
+  clutter scattered on the ground at one draw call a kind.
+- **#59, things to look at.** A sights registry (Space for a caption, a count on the map, a purse
+  for finding all of an area's); a landmark kit of tall things to steer by; vignettes, composed
+  scenes an area stamps; braziers that gutter.
+- **#60, #61, #62, the area passes.** All nineteen outdoor places grown, by half again to double
+  on a side, and recomposed quarter by quarter by hand — the six city wards, the eight Ring
+  places, the five Wildlands — each with its landmark, its scenes, its crews on beats and posts
+  and, in the wilds, prowlers, and at least eight sights, now pinned by a test. A canal band gave
+  four places a far bank; ten landmarks joined the kit, among them a lava fall, a mammoth, and a
+  pylon whose light strikes.
+- **#63, townsfolk.** A townsperson can keep hours — posts by hour, walked between round the
+  buildings on the nav grid — and eight towns have passers-by, out by day, gone before the night
+  crews are, one of them now and then saying something as you pass.
+
+**What was found on the way.** The two sessions shipped at once, and `main` moved from #40 to #67
+while the parts were built; it was merged in at the bottom of the stack and carried up. It met
+the work in two places: the motion pass (#47) eased and leaned bodies that the patrols now steer
+through more states than it knew, so a pack slows on any frame nothing drove it and a stall is
+measured against the eased step; and a townsperson's lean now follows the step the nav grid
+steers. The nav grid's build for the grown Ashwood took 431 ms under load against a 250 ms
+budget, at every crossing into it; it is painted now, tiles then boxes, in about 40 ms, and a test
+holds it to the old answer cell for cell. And the intents and determinism playouts time out when
+two suites share the machine, so every merge gate here was run with nothing else on it.
+
+**Verified.** Each part's full non-balance suite, on four workers, on the exact head that landed
+— a squash whose tree was that head's, checked after each merge: #55 3,941; #56 4,061; #57 4,133,
+with all six balance shards, 847 playouts; #58 4,256; #59 4,273; #60 4,334; #61 4,395; #62 4,427;
+#63 4,450; every one green. Browser checks as each PR records them.
+
+**Open by choice, and written down in the worldbuild to-do's Wave 15 rather than here:** the
+atlas still draws the first build's maps; Ward Seven's drowned terraces are painted water; city
+crews beat and stand, since a prowler may only walk where nobody lives; Wardens keep no hours; the
+stone circle is one collider; ferries have landings and no boat; Pylon Nine's crown cannot flash
+with its light; passers-by have no errands; and a room keeps no evening of its own.
+
+### 7.21 What remains
 
 Nothing either audit raised. Every finding either audit ranked as a blocker, High or Medium,
-and every design call they left open, is closed and merged. §7.9 to §7.19 are reminders that
+and every design call they left open, is closed and merged. §7.9 to §7.20 are reminders that
 "nothing remains" describes the audits' own scope, not every gap the game has — the next thing
-found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47, #48, #51, #53, #64 and #66 did. What comes next is
+found outside it belongs here on the same terms PRs #37, #39, #41, #43, #45, #47, #48, #51, #53, #55 to #63, #64 and #66 did. What comes next is
 a playtest, and the remaining waves of the bestiary expansion, each recorded here as it
 merges.
 
