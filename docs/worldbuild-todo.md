@@ -1018,7 +1018,7 @@ scripts, eight new errands, two new signs, eighteen new pieces of furniture with
 
 | Where | Placeholder | Standing in for |
 |---|---|---|
-| The dens | crews borrowed from the road | a drake's brood, a bear, a geist, wights. Every wild den holds a pack that already existed, because a new `PackDef` enters the balance harness and this wave stayed out of it |
+| The dens | ~~crews borrowed from the road~~ | **Done in Wave 15.3.** Each wild den holds its region's own crew -- the Magma Brood, the Barrow Watch, the Hoarhound Pack, the Pylon-Keepers, the Poacher Band, the cistern's things |
 | A room's liveness | read once at mount | a cache opened or a door unlocked in the same room takes effect on the next visit. `rearmCaches` covers the flag case; the contract case waits for a remount |
 | The bench screens | the three old 2D screens | the room *is* the shop now, but the screen is still a screen. The bench pins your spot and the screen comes back to it, which is the seam you can see |
 | The Wildlands' ground | one texture per region with a ring added | the enrichment pass `enrich-ground.ts` was written for. The rooms landed; the floors did not |
@@ -1100,3 +1100,20 @@ and searches the new way.
 | Wardens | steer straight | the nav grid. A Warden's beat is on lanes it can walk and its chase is short, so it has not needed going round things yet; the grown wards will |
 | Creature shapes | six silhouettes on a 14 by 22 canvas | painted bodies. Enough to read a hound from a golem at the walk camera's range; not a bestiary |
 | The mark | over the leader only | a mark that follows whichever body is nearest you |
+
+### 15.3 Crews of their own (built)
+
+Eighteen new `PackDef`s, through the balance ledger, composed from the forty-eight roster-eligible
+minions to exactly ten points, none with a two-by-two body in it or in its reinforcements:
+
+| Where | Crews |
+|---|---|
+| The city, after dark | the Knacker's Lads (Bonemarket), the Slag Rats (Cinderworks), What Lives in the Cistern (Ward Seven), the Night Bailiffs (Highcourt), the Wick-Thieves (Lamprow) |
+| The Ring | the Scarecrow Men (Millharrow), the Dyke-Wardens (Tallow Levels), the Glass-Pickers (Saltglass), the Bridge-Tollers (Fenwick's), the Stile Mourners (Weeping Stile) |
+| The Wildlands | the Magma Brood (Caldera), the Ashwood Pack and the Poacher Band (Ashwood), the Hoarhound Pack and the Rime-Archers (Rimefields), the Static Swarm and the Pylon-Keepers (Storm Shelf), the Barrow Watch (Bone Bastion) |
+
+Six dens take their region's crew in place of a borrowed road pack -- the Wave 14 "still standing
+in" row -- and the forage that bites in them, and on the Storm Shelf's seam and the Bastion's south
+row, bites with the same. The Sink cellars keep the Tithe-Takers. The rest are placed by the area
+passes. Several crews planned from cards outside the roster pool -- ridge wolves, hollow wraiths,
+the tesla pylon -- were recomposed from what a pack may actually field.

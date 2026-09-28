@@ -1,9 +1,9 @@
 /**
  * The poacher's hide -- a long hut of deadfall and turf under the Ashwood's north edge.
  *
- * The poacher at the fire on the ride is one man and wants to be found. The crew in here are
- * the rest of the trade: the pickers who move what he takes down to the road at night, and
- * who are not looking to be found by anybody. Snares on the walls, a rack of what the snares
+ * The poacher at the fire on the ride is one man and wants to be found. The band in here are
+ * the rest of the trade: the ones who set the lines and move what he takes down to the road at
+ * night, and who are not looking to be found by anybody. Snares on the walls, a rack of what the snares
  * took, and under the floor what the trade is worth, which opens once the man at the fire has
  * been fought.
  */
@@ -73,8 +73,8 @@ export const ASHWOOD_POACHERS_HIDE: AreaDef = defineArea({
       { kind: 'haybale', x: xOfCol(1), z: zOfRow(10) },
       { kind: 'brazier', x: xOfCol(5.5), z: zOfRow(7) },
     ],
-    /** The pickers, off the road and in the dry. Short roam, for the same reason as every cellar. */
-    packs: [{ encounterId: 'pack_freight_pickers', x: 0, z: zOfRow(4), roam: 5 }],
+    /** The band, in the dry between rounds of the lines. Short roam, for the same reason as every cellar. */
+    packs: [{ encounterId: 'pack_poacher_band', x: 0, z: zOfRow(4), roam: 5 }],
     graffiti: [
       { text: 'KEEP OFF THE RIDE', wallX: xOfCol(3), wallZ: zOfRow(0) + TILE / 2, dx: 0, facesSouth: true, tint: '#8a7a5a' },
     ],

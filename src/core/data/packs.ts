@@ -182,6 +182,215 @@ export const PACKS: readonly PackDef[] = [
     // A marksman first, then another body. The Magistracy is not short of either.
     reinforce: { points: REINFORCE_POINTS, chance: 50, unitCardIds: ['longshot_stalker', 'vanguard_footman'] },
   },
+  /* ---- The city after dark: crews that come out when the lamps are the only law ---- */
+
+  {
+    encounterId: 'pack_knackers_lads',
+    name: "The Knacker's Lads",
+    blurb:
+      'They take what the Bonemarket will not sell and sell it anyway. At this hour they are ' +
+      'choosing who else is stock.',
+    tier: 'novice',
+    // 2 + 2 + 2 + 2 + 2 = 10. Things that were dead and things that eat them, and one man
+    // keeping the ledger.
+    members: ['ash_ghoul', 'hollowed_husk', 'carrion_crow', 'carrion_crow', 'vanguard_footman'],
+    reinforce: { points: REINFORCE_POINTS, chance: 50, unitCardIds: ['carrion_crow', 'ash_ghoul'] },
+  },
+  {
+    encounterId: 'pack_slag_rats',
+    name: 'The Slag Rats',
+    blurb:
+      'They live in the warm ground under the heaps and come up when the shift bell goes. The ' +
+      'foreman calls them a heat problem.',
+    tier: 'adept',
+    // 2 + 2 + 3 + 3 = 10. Two to close, two to lob from the heap tops.
+    members: ['soot_sprite', 'soot_sprite', 'cinder_adder', 'cinder_lobber'],
+    reinforce: { points: REINFORCE_POINTS, chance: 55, unitCardIds: ['soot_sprite', 'cinder_adder'] },
+  },
+  {
+    encounterId: 'pack_cistern_things',
+    name: 'What Lives in the Cistern',
+    blurb:
+      'The pumps stopped and something else started. It comes up the seeps at night to see ' +
+      'what the ward is doing.',
+    tier: 'novice',
+    // 2 x 5 = 10. Slow and wet and a great many of them.
+    members: ['mire_toad', 'mire_toad', 'hollowed_husk', 'sap_wisp', 'creeping_briar'],
+    reinforce: { points: REINFORCE_POINTS, chance: 55, unitCardIds: ['mire_toad', 'sap_wisp'] },
+  },
+  {
+    encounterId: 'pack_night_bailiffs',
+    name: 'The Night Bailiffs',
+    blurb:
+      'The Court sits by day and these sit by night. They carry no seal, because nobody they ' +
+      'stop is going to ask to see it.',
+    tier: 'adept',
+    // 2 + 2 + 3 + 3 = 10. Two shields in front and two bows behind: the processional is long
+    // and straight, and they would rather you did not reach them.
+    members: ['shieldbearer', 'quarry_hand', 'longshot_stalker', 'hedge_slinger'],
+    reinforce: { points: REINFORCE_POINTS, chance: 50, unitCardIds: ['longshot_stalker', 'shieldbearer'] },
+  },
+  {
+    encounterId: 'pack_wick_thieves',
+    name: 'The Wick-Thieves',
+    blurb:
+      'Oil is money on the Lamprow and a lit lamp is oil left out. They start at the far end ' +
+      'of the row and work toward you.',
+    tier: 'novice',
+    // 3 + 2 + 2 + 3 = 10.
+    members: ['cinder_lobber', 'scout_imp', 'soot_sprite', 'hedge_slinger'],
+    reinforce: { points: REINFORCE_POINTS, chance: 45, unitCardIds: ['scout_imp', 'soot_sprite'] },
+  },
+
+  /* ---- The Ring: the farms, the drained country, the salt and the river ---- */
+
+  {
+    encounterId: 'pack_scarecrow_men',
+    name: 'The Scarecrow Men',
+    blurb:
+      'Millharrow stopped putting them up after the second harvest they walked. The fields ' +
+      'were not grateful enough to stop.',
+    tier: 'adept',
+    // 2 + 3 + 3 + 2 = 10. One to stand in the furrow and three to throw things from it.
+    members: ['bramble_sentinel', 'hedge_slinger', 'thorn_lobber', 'sap_wisp'],
+    reinforce: { points: REINFORCE_POINTS, chance: 50, unitCardIds: ['bramble_sentinel', 'sap_wisp'] },
+  },
+  {
+    encounterId: 'pack_dyke_wardens',
+    name: 'The Dyke-Wardens',
+    blurb:
+      'Nobody appointed them. They keep the sluices, after a fashion, and they are sure the ' +
+      'levels are theirs.',
+    tier: 'adept',
+    // 2 + 2 + 3 + 3 = 10.
+    members: ['mire_toad', 'sporeback_boar', 'thorn_lobber', 'thorn_lobber'],
+    reinforce: { points: REINFORCE_POINTS, chance: 55, unitCardIds: ['mire_toad', 'sporeback_boar'] },
+  },
+  {
+    encounterId: 'pack_glass_pickers',
+    name: 'The Glass-Pickers',
+    blurb:
+      'They work the cull heaps behind the kilns for pane that will still sell. Anything on ' +
+      'the pans that moves is the same trade.',
+    tier: 'adept',
+    // 3 + 3 + 2 + 2 = 10. Two arbalests, loaded with offcuts.
+    members: ['glass_arbalest', 'glass_arbalest', 'scrap_phalanx', 'vanguard_footman'],
+    reinforce: { points: REINFORCE_POINTS, chance: 50, unitCardIds: ['scrap_phalanx', 'scout_imp'] },
+  },
+  {
+    encounterId: 'pack_bridge_tollers',
+    name: 'The Bridge-Tollers',
+    blurb:
+      'Fenwick charges to cross and so do they, on the south bank, in daylight, with the ' +
+      'bridge behind them. It is simpler to pay one of them.',
+    tier: 'novice',
+    // 2 + 2 + 3 + 3 = 10.
+    members: ['vanguard_footman', 'shieldbearer', 'longshot_stalker', 'hedge_slinger'],
+    reinforce: { points: REINFORCE_POINTS, chance: 45, unitCardIds: ['vanguard_footman', 'hedge_slinger'] },
+  },
+  {
+    encounterId: 'pack_stile_mourners',
+    name: 'The Stile Mourners',
+    blurb:
+      'They stand at the stile at night as if they were waiting to be let over. Whatever they ' +
+      'are mourning, it is not you yet.',
+    tier: 'adept',
+    // 2 x 5 = 10.
+    members: ['grave_sentinel', 'ash_ghoul', 'carrion_crow', 'marrow_wisp', 'hollowed_husk'],
+    reinforce: { points: REINFORCE_POINTS, chance: 60, unitCardIds: ['ash_ghoul', 'carrion_crow'] },
+  },
+
+  /* ---- The Wildlands: nobody lives here, and these do ---- */
+
+  {
+    encounterId: 'pack_magma_brood',
+    name: 'The Magma Brood',
+    blurb:
+      'Born in the vents and in no hurry to leave them. The crater floor is warm enough to ' +
+      'keep them fed and they would like to know what you are.',
+    tier: 'adept',
+    // 3 + 3 + 2 + 2 = 10.
+    members: ['cinder_lobber', 'cinder_adder', 'ember_hound', 'ember_moth'],
+    reinforce: { points: REINFORCE_POINTS, chance: 60, unitCardIds: ['ember_moth', 'cinder_adder'] },
+  },
+  {
+    encounterId: 'pack_ashwood_wolves',
+    name: 'The Ashwood Pack',
+    blurb:
+      'They have the whole wood and they walk all of it. You are on their round, and they ' +
+      'know it before you do.',
+    tier: 'adept',
+    // 2 x 5 = 10. Four wolves and whatever they flushed.
+    members: ['briar_wolf', 'briar_wolf', 'briar_wolf', 'briar_wolf', 'sporeback_boar'],
+    reinforce: { points: REINFORCE_POINTS, chance: 60, unitCardIds: ['briar_wolf'] },
+  },
+  {
+    encounterId: 'pack_poacher_band',
+    name: 'The Poacher Band',
+    blurb:
+      'They set lines through the Ashwood for anything the Vivarium would pay for, and they ' +
+      'have heard what a Whisperer fetches.',
+    tier: 'novice',
+    // 3 + 3 + 2 + 2 = 10.
+    members: ['hedge_slinger', 'longshot_stalker', 'vanguard_footman', 'scout_imp'],
+    reinforce: { points: REINFORCE_POINTS, chance: 45, unitCardIds: ['scout_imp', 'hedge_slinger'] },
+  },
+  {
+    encounterId: 'pack_hoarhounds',
+    name: 'The Hoarhound Pack',
+    blurb:
+      'White on white until they move, and they do not move until they are sure. The ice ' +
+      'bands are theirs to cross and yours to slip on.',
+    tier: 'adept',
+    // 2 x 5 = 10.
+    members: ['hoarhound', 'hoarhound', 'rime_fox', 'glacial_stalker', 'rime_fox'],
+    reinforce: { points: REINFORCE_POINTS, chance: 60, unitCardIds: ['hoarhound', 'rime_fox'] },
+  },
+  {
+    encounterId: 'pack_rime_archers',
+    name: 'The Rime-Archers',
+    blurb:
+      'Somebody posted them on the ridges a long winter ago and forgot to send the relief. ' +
+      'They have not forgotten their orders.',
+    tier: 'adept',
+    // 3 + 3 + 2 + 2 = 10. The first pack that would rather shoot you from a ridge than meet
+    // you on the snow.
+    members: ['rime_archer', 'rime_archer', 'rimeguard', 'glacial_stalker'],
+    reinforce: { points: REINFORCE_POINTS, chance: 50, unitCardIds: ['rimeguard', 'rime_fox'] },
+  },
+  {
+    encounterId: 'pack_static_swarm',
+    name: 'The Static Swarm',
+    blurb:
+      'The pylons hum and these hum back. Stand between two footings long enough and they ' +
+      'come to find out what is earthing them.',
+    tier: 'novice',
+    // 2 x 5 = 10.
+    members: ['storm_wisp', 'storm_wisp', 'static_hare', 'voltaic_hound', 'voltaic_coil'],
+    reinforce: { points: REINFORCE_POINTS, chance: 60, unitCardIds: ['storm_wisp', 'static_hare'] },
+  },
+  {
+    encounterId: 'pack_pylon_keepers',
+    name: 'The Pylon-Keepers',
+    blurb:
+      'Machines left to mind the machines. Nobody has told them the survey was abandoned, and ' +
+      'you are not on their list.',
+    tier: 'adept',
+    // 4 + 2 + 2 + 2 = 10.
+    members: ['arc_turret', 'storm_rod', 'voltaic_coil', 'voltaic_hound'],
+    reinforce: { points: REINFORCE_POINTS, chance: 50, unitCardIds: ['voltaic_coil', 'storm_rod'] },
+  },
+  {
+    encounterId: 'pack_barrow_watch',
+    name: 'The Barrow Watch',
+    blurb:
+      'They walk the causeway between the mounds as they were buried to. The Bastion was ' +
+      'built to keep something in, and they are what it keeps.',
+    tier: 'adept',
+    // 2 x 5 = 10.
+    members: ['grave_sentinel', 'grave_sentinel', 'ash_ghoul', 'hollowed_husk', 'marrow_wisp'],
+    reinforce: { points: REINFORCE_POINTS, chance: 55, unitCardIds: ['grave_sentinel', 'ash_ghoul'] },
+  },
 ];
 
 export function packByEncounter(encounterId: string): PackDef | undefined {

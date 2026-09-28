@@ -4,8 +4,9 @@
  * Rock cut for water and holding it: a channel down the west side that never quite empties,
  * the pumpman at the foot of the stair who keeps the one pump the Magistracy paid for going,
  * and at the far end the mouth the `fouled_cistern` contract is fought at. Something has
- * moved in beside the pumps -- a crew, roaming the dry end at every hour, because there is no
- * hour down here -- and what it is keeping is in the sump behind it. The door is on the south
+ * moved in beside the pumps -- the things that came up when the pumps stopped, roaming the dry
+ * end at every hour, because there is no hour down here -- and what they are keeping is in the
+ * sump behind them. The door is on the south
  * wall, up to the lane.
  */
 
@@ -79,11 +80,11 @@ export const WARD_SEVEN_CISTERN: AreaDef = defineArea({
       { id: 'ward_seven_pumpman', x: xOfCol(4), z: zOfRow(10), art: 'miner_b', label: 'Talk to the pumpman' },
     ],
     /**
-     * What moved in beside the pumps: hollows off the spoil, roaming the dry end at every hour.
+     * What moved in beside the pumps: the cistern's own things, roaming the dry end at every hour.
      * The roam is short for the reason the Sink cellars' is -- a crew that wandered to the
      * stair would take you on the first step down.
      */
-    packs: [{ encounterId: 'pack_spoil_heap_hollows', x: 8, z: -12, roam: 5 }],
+    packs: [{ encounterId: 'pack_cistern_things', x: 8, z: -12, roam: 5 }],
     graffiti: [
       { text: 'DRINKS FIRST, DRINKS LAST', wallX: 8, wallZ: zOfRow(0) + TILE / 2, dx: 0, facesSouth: true, tint: '#5e9e8f' },
     ],
