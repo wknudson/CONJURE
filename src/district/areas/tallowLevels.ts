@@ -175,14 +175,14 @@ export const TALLOW_LEVELS: AreaDef = defineArea({
       x: -26,
       z: zOfRow(1),
       label: 'North, up the ride into the Ashwood',
-      arrive: { x: -6, z: 42 },
+      arrive: { x: -6, z: 94 },
     },
     {
       to: 'bone_bastion',
       x: -HALF_X + 2,
       z: -6,
       label: 'West, along the causeway to the Bone Bastion',
-      arrive: { x: 38, z: -2 },
+      arrive: { x: 74, z: -2 },
     },
     {
       // The pump house. Chained, until the north field is answered for.

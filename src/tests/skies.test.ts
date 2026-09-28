@@ -371,10 +371,10 @@ describe('the ground you fight on', () => {
     const clear = fightable.filter((a) => !fightWeatherFor(a.props.sky));
     // The city wards joined as their night crews did: a fight on the Shambles or in the rail yard
     // is fought in the ash.
-    expect(fogged.map((a) => a.id).sort(), 'the smogged wards').toEqual(['ashfall_ward', 'bonemarket', 'cinderworks', 'lamprow']);
+    expect(fogged.map((a) => a.id).sort(), 'the smogged wards').toEqual(['ashfall_ward', 'bonemarket', 'cinderworks', 'lamprow', 'rimefields']);
     // The Ring joined as its night crews did: a fight in Millharrow's fields, or with the strays on
-    // Bray's rim, is fought in the pollen.
-    expect(clear.map((a) => a.id).sort(), 'the open road').toEqual(['brays_hollow', 'chalk_road', 'chalk_verge', 'millharrow']);
+    // Bray's rim, is fought in the pollen; and the Caldera's, under its embers.
+    expect(clear.map((a) => a.id).sort(), 'the open road').toEqual(['ashwood', 'bone_bastion', 'brays_hollow', 'caldera', 'chalk_road', 'chalk_verge', 'millharrow']);
   });
 });
 

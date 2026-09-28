@@ -27,6 +27,14 @@ describe('the sights', () => {
     }
   });
 
+  it('give every area under the sky at least eight things to walk to', () => {
+    // The floor the area passes were built to: a map is only as big as the reasons to cross it.
+    // Rooms are not held to it; a room is one place, and its sights are a bonus.
+    for (const area of AREAS.filter((a) => !a.indoor)) {
+      expect(sightsInArea(area.id).length, `${area.id} has too little to look at`).toBeGreaterThanOrEqual(8);
+    }
+  });
+
   for (const area of AREAS) {
     const mine = sightsInArea(area.id);
     if (mine.length === 0) continue;

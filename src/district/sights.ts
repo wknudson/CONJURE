@@ -1547,6 +1547,538 @@ export const SIGHTS: readonly SightDef[] = [
       'A cairn on the lane just past the gate, for whoever comes back. Sixty-one stones in it. ' +
       'Somebody counts them every week, and every week there are sixty-one.',
   },
+
+  /* ---- The Caldera ---- */
+  {
+    id: 'caldera:the_lava_fall',
+    areaId: 'caldera',
+    at: { x: 100, z: 30 },
+    label: 'Look at the lava fall',
+    caption:
+      'Running down a spur of the east wall into a pool that never crusts over, since before ' +
+      'the Cinderworks was built. The works always said it would tap it. The tap field is what ' +
+      'happened when it tried.',
+  },
+  {
+    id: 'caldera:the_obsidian_field',
+    areaId: 'caldera',
+    at: { x: -40, z: -70 },
+    label: 'Look across the glass',
+    caption:
+      'The floor set to glass, black and sharp enough to cut a boot through. Footprints are ' +
+      'pressed into it where it was still soft. They go out towards the middle, and they do not ' +
+      'come back.',
+  },
+  {
+    id: 'caldera:the_obsidian_spire',
+    areaId: 'caldera',
+    at: { x: -56, z: -68 },
+    label: 'Look into the spire',
+    caption:
+      'Black glass taller than a man, grown where a bubble in the flow burst and froze. Look ' +
+      'into it and there is something in the glass, a long way down, that looks back.',
+  },
+  {
+    id: 'caldera:the_fumaroles',
+    areaId: 'caldera',
+    at: { x: -90, z: -18 },
+    label: 'Look at the fumaroles',
+    caption:
+      'The ground breathes here, a vent every few strides with its own colour of bloom round ' +
+      'its mouth. The survey numbered each one. The numbers go up to forty. There are ' +
+      'fifty-one.',
+  },
+  {
+    id: 'caldera:the_sulphur_bloom',
+    areaId: 'caldera',
+    at: { x: -106, z: 30 },
+    label: 'Look at the sulphur',
+    caption:
+      'Crusted yellow on the ash where the vents breathe on it, bright enough to see by at ' +
+      'night. It stinks of the Cinderworks, or the Cinderworks stinks of it.',
+  },
+  {
+    id: 'caldera:the_survey_camp',
+    areaId: 'caldera',
+    at: { x: 6, z: 70 },
+    label: 'Look at the camp',
+    caption:
+      'Somebody surveyed the Caldera once: tents gone to rags, a fire gone to scorch, a sack of ' +
+      'stakes. The report is in the Archive at Highcourt, under a title that is only a number.',
+  },
+  {
+    id: 'caldera:the_survey_line',
+    areaId: 'caldera',
+    at: { x: 40, z: 90 },
+    label: 'Look along the cairns',
+    caption:
+      'A line of cairns straight across the south floor, one every thirty paces, marking where ' +
+      'the Magistracy decided the crater ends. The crater did not agree. The last cairn is on ' +
+      'its side in the ash.',
+  },
+  {
+    id: 'caldera:the_fallen_hut',
+    areaId: 'caldera',
+    at: { x: -18, z: 72 },
+    label: 'Look into the hut',
+    caption:
+      'Fallen in, the table inside still set up with its instruments. The last reading was ' +
+      'written down and then crossed out so hard the pen went through the paper.',
+  },
+  {
+    id: 'caldera:the_tap_field',
+    areaId: 'caldera',
+    at: { x: -30, z: -42 },
+    label: 'Look at the tap field',
+    caption:
+      'THE TAP FIELD — KEEP OUT, and past the stone the ground cracked and scorched where the ' +
+      'works tried to draw the heat off. It took nine. The wall says so, in the same paint as ' +
+      'the warning.',
+  },
+  {
+    id: 'caldera:the_inner_rim',
+    areaId: 'caldera',
+    at: { x: -36, z: -54 },
+    label: 'Look through the gap',
+    caption:
+      'A gap in the old crater wall where the rock came down, and past it the inner basin, the ' +
+      "Caldera's first floor. Everything out here is the Caldera still growing.",
+  },
+
+  /* ---- The Ashwood ---- */
+  {
+    id: 'ashwood:the_great_ash',
+    areaId: 'ashwood',
+    at: { x: 78, z: -82 },
+    label: 'Look up at the Great Ash',
+    caption:
+      'Dead a hundred years and still standing, older than the wood round it by as much again. ' +
+      'It made this clearing by dying: nothing grew where its shade fell. The wolves sleep ' +
+      'under it, when they sleep.',
+  },
+  {
+    id: 'ashwood:the_ash_roots',
+    areaId: 'ashwood',
+    at: { x: 92, z: -80 },
+    label: 'Look at the roots',
+    caption:
+      'Roots out of the ground like knuckles, and between them bones picked white. Deer, ' +
+      'mostly. The wolves bring what they take up here to eat it where they can see the whole ' +
+      'wood coming.',
+  },
+  {
+    id: 'ashwood:the_charcoal_clamp',
+    areaId: 'ashwood',
+    at: { x: -14, z: -80 },
+    label: 'Look at the clamp',
+    caption:
+      'A dome of turf with the wood stacked inside, burning too slowly to flame. It wants ' +
+      "opening today or it burns through to ash and a season's work goes up the smoke. Nobody " +
+      'has come to open it.',
+  },
+  {
+    id: 'ashwood:the_burners_hut',
+    areaId: 'ashwood',
+    at: { x: 26, z: -84 },
+    label: 'Look into the hut',
+    caption:
+      'Two bunks, a pot, a pair of boots by the door. The burners live out here all season and ' +
+      'walk down to the Levels once, black to the elbow, to sell. They are late this year, and ' +
+      'the boots are still here.',
+  },
+  {
+    id: 'ashwood:the_woodcutters_cottage',
+    areaId: 'ashwood',
+    at: { x: -106, z: -22 },
+    label: 'Look inside the walls',
+    caption:
+      'A cottage down to its footings, the hearth still in the middle. The woodcutters left ' +
+      'when the Magistracy stopped paying for the ride to be kept, and took the roof with them. ' +
+      'It was good timber.',
+  },
+  {
+    id: 'ashwood:the_sawpit',
+    areaId: 'ashwood',
+    at: { x: -92, z: -14 },
+    label: 'Look into the sawpit',
+    caption:
+      'A pit for the man under the saw, the one who took the dust in his eyes. It has filled ' +
+      'with rain, and there is a saw still down there, the handle just showing, as if it were ' +
+      'waiting for a hand.',
+  },
+  {
+    id: 'ashwood:the_second_cottage',
+    areaId: 'ashwood',
+    at: { x: -98, z: 10 },
+    label: 'Look at the burnt cottage',
+    caption:
+      'The other cottage, the one that burned. The ends of its rafters are charcoal under the ' +
+      "grass, and a horse whittled out of ash lies in the hearth, small enough for a child's " +
+      'hand. Nobody came back for it.',
+  },
+  {
+    id: 'ashwood:the_hunting_stand',
+    areaId: 'ashwood',
+    at: { x: 98, z: 6 },
+    label: 'Look up at the stand',
+    caption:
+      "A platform on legs, high enough to see over a deer's back across the whole clearing. The " +
+      'Magistracy built it for its guests. The poachers use it now, and there is always ' +
+      'somebody up there.',
+  },
+  {
+    id: 'ashwood:the_ruins_hide',
+    areaId: 'ashwood',
+    at: { x: -82, z: -30 },
+    label: 'Look at the hide',
+    caption:
+      'Brush woven over a frame, low enough to lie in. A bedroll, a sack of pegs, a line of ' +
+      "snares already knotted. The knots are the ones on the ranger's stone.",
+  },
+  {
+    id: 'ashwood:the_snare_line',
+    areaId: 'ashwood',
+    at: { x: -70, z: 82 },
+    label: 'Look along the snares',
+    caption:
+      'Snares strung at ankle height round the hide, dozens of them, most with something in. ' +
+      'The poachers do not come back for all of it. The foxes do, and they have learned which ' +
+      'knots slip.',
+  },
+  {
+    id: 'ashwood:the_east_hide',
+    areaId: 'ashwood',
+    at: { x: 66, z: 82 },
+    label: 'Look at the watching hide',
+    caption:
+      'A third hide, with a clear line out of it down the ride towards the Levels road. Marks ' +
+      'are scratched into the frame: carts, and beside each cart a tally of what it carried.',
+  },
+  {
+    id: 'ashwood:the_old_edge',
+    areaId: 'ashwood',
+    at: { x: -66, z: -6 },
+    label: "Look at the old wood's edge",
+    caption:
+      'The trunks close up here like a hedge, planted that way round the old wood when there ' +
+      'was a ranger to plant it. Somebody has cut a way through since. Not recently, and not ' +
+      'the ranger.',
+  },
+
+  /* ---- The Rimefields ---- */
+  {
+    id: 'rimefields:the_frozen_falls',
+    areaId: 'rimefields',
+    at: { x: 6, z: -70 },
+    label: 'Look up at the frozen falls',
+    caption:
+      'The fall came off the escarpment and froze where it fell, a sheet of ice as tall as a ' +
+      'house. Put an ear to it and the water is still moving somewhere behind it, a long way ' +
+      'in.',
+  },
+  {
+    id: 'rimefields:the_icicles',
+    areaId: 'rimefields',
+    at: { x: -2, z: -74 },
+    label: 'Look at the icicles',
+    caption:
+      'Icicles off the lip of the fall, some longer than a man is tall. Every so often one lets ' +
+      'go, and the sound it makes going into the pool carries across the whole field.',
+  },
+  {
+    id: 'rimefields:the_frozen_stream',
+    areaId: 'rimefields',
+    at: { x: 6, z: -52 },
+    label: 'Look along the stream',
+    caption:
+      'What the fall fed, frozen from bank to bank and all the way down. There are fish in it, ' +
+      "stopped in the middle of turning, an arm's length under your boots.",
+  },
+  {
+    id: 'rimefields:the_lead_wagon',
+    areaId: 'rimefields',
+    at: { x: -108, z: 2 },
+    label: 'Look at the lead wagon',
+    caption:
+      'Broadside across the road where the road stops, as if the driver turned it to make a ' +
+      'wall. There is frost on the inside of the canvas. Whatever they were keeping out, they ' +
+      'kept it out from in here.',
+  },
+  {
+    id: 'rimefields:the_oxen',
+    areaId: 'rimefields',
+    at: { x: -96, z: -12 },
+    label: 'Look at the oxen',
+    caption:
+      'Still in the traces, or what the hounds have left of them. The yoke is iced to the pole. ' +
+      'Nobody unhitched them, which means nobody meant to stop here.',
+  },
+  {
+    id: 'rimefields:the_road_end',
+    areaId: 'rimefields',
+    at: { x: -92, z: 2 },
+    label: 'Look along the road',
+    caption:
+      'The Chalk Road runs on past the last waystone for a hundred paces more under the snow, ' +
+      'the same as it has for sixty miles. Then it stops at a wagon.',
+  },
+  {
+    id: 'rimefields:the_fishing_huts',
+    areaId: 'rimefields',
+    at: { x: -92, z: 54 },
+    label: 'Look at the fishing huts',
+    caption:
+      'Timber huts dragged out onto the tarn on runners, a stovepipe through each roof and a ' +
+      'hole through the ice by each door. The stoves are cold. The holes are freezing over from ' +
+      'the edges in.',
+  },
+  {
+    id: 'rimefields:the_fishing_hole',
+    areaId: 'rimefields',
+    at: { x: -74, z: 76 },
+    label: 'Look into the hole',
+    caption:
+      'Cut through ice as thick as an arm is long. The water under it is black and very still, ' +
+      'and something down there has been taking the lines. All of them, hooks and all.',
+  },
+  {
+    id: 'rimefields:the_mammoth',
+    areaId: 'rimefields',
+    at: { x: 86, z: 28 },
+    label: 'Look at the mammoth',
+    caption:
+      'A beast the size of a house lay down in the snow here, long before there were houses, ' +
+      'and the snow took the rest of it away. The ribs still stand. The hounds sleep inside ' +
+      'them.',
+  },
+  {
+    id: 'rimefields:the_tusks',
+    areaId: 'rimefields',
+    at: { x: 104, z: 26 },
+    label: 'Look at the tusks',
+    caption:
+      'Curled up and back over the skull, longer than a cart and yellow under the rime. ' +
+      "Somebody tried to saw one off. The saw is still in it, a hand's width in, and its teeth " +
+      'are gone.',
+  },
+  {
+    id: 'rimefields:the_archers_post',
+    areaId: 'rimefields',
+    at: { x: -22, z: 54 },
+    label: "Look at the archers' post",
+    caption:
+      "A fire in a ring of stones at the ridge's end, and a tally cut into the rock beside it: " +
+      'one mark a day, rows of them, until the marks stop being days and start being something ' +
+      'else.',
+  },
+
+  /* ---- The Storm Shelf ---- */
+  {
+    id: 'storm_shelf:pylon_nine',
+    areaId: 'storm_shelf',
+    at: { x: 4, z: -64 },
+    label: 'Look up at Pylon Nine',
+    caption:
+      'The tallest iron on the shelf, and the one the others were set out from. The sky comes ' +
+      'down to its crown more than to all the rest together. The survey never said why. The ' +
+      'waystones only say not to shelter.',
+  },
+  {
+    id: 'storm_shelf:the_gap_in_the_rank',
+    areaId: 'storm_shelf',
+    at: { x: -10, z: -74 },
+    label: 'Look along the rank',
+    caption:
+      'The rank runs east to west, footing after footing, and breaks here for one. Nine stands ' +
+      'behind the gap, as if the rank stepped aside for it, or it stepped out.',
+  },
+  {
+    id: 'storm_shelf:the_glass_in_the_ground',
+    areaId: 'storm_shelf',
+    at: { x: 14, z: -78 },
+    label: 'Look at the glass in the ground',
+    caption:
+      'Where a strike went into the shelf it melted the rock into a root of glass, branched ' +
+      'like a tree grown downwards. There are dozens of them round Nine. You can hear the ones ' +
+      'under you ring.',
+  },
+  {
+    id: 'storm_shelf:the_ranks_west',
+    areaId: 'storm_shelf',
+    at: { x: -80, z: -6 },
+    label: 'Look down the ranks',
+    caption:
+      'From the track the footings run away east in their rows as far as the rain lets you see, ' +
+      'and past that, you know, they keep going. Somebody surveyed this, and then left.',
+  },
+  {
+    id: 'storm_shelf:the_survey_hut',
+    areaId: 'storm_shelf',
+    at: { x: 82, z: 66 },
+    label: 'Look into the hut',
+    caption:
+      'Burnt to the sills, the table in the middle still standing because it was iron. The ' +
+      "survey's instruments are fused to it in a lump. Whatever they were measuring, they got a " +
+      'reading.',
+  },
+  {
+    id: 'storm_shelf:the_survey_table',
+    areaId: 'storm_shelf',
+    at: { x: 88, z: 76 },
+    label: 'Look at the survey table',
+    caption:
+      'Iron, and scorched blue. Scratched into the top by somebody who did not have paper left: ' +
+      'a column of dates, and against each date a count of strikes that goes up by one every ' +
+      'day.',
+  },
+  {
+    id: 'storm_shelf:the_strike',
+    areaId: 'storm_shelf',
+    at: { x: 66, z: 60 },
+    label: 'Look at the scorch',
+    caption:
+      'The ground here is black in a star as wide as a cart, and the tent that stood in the ' +
+      'middle of it is a ring of pegs. The strike found the camp on its first night. The camp ' +
+      'stayed nine more.',
+  },
+  {
+    id: 'storm_shelf:the_stakes',
+    areaId: 'storm_shelf',
+    at: { x: 60, z: 80 },
+    label: 'Look at the stakes',
+    caption:
+      "Iron stakes driven in round the camp in a ring, the survey's idea of a lightning rod. " +
+      'Every one of them has been struck. Every one of them is still standing, which is more ' +
+      'than the camp is.',
+  },
+  {
+    id: 'storm_shelf:the_shelter_scorch',
+    areaId: 'storm_shelf',
+    at: { x: -94, z: 26 },
+    label: 'Look under the footing',
+    caption:
+      'Somebody sheltered under this footing once, whatever the waystones said. The scorch on ' +
+      'the ground under it is the shape of a person sitting with their knees up.',
+  },
+  {
+    id: 'storm_shelf:the_track_east',
+    areaId: 'storm_shelf',
+    at: { x: 78, z: 10 },
+    label: 'Look down the track',
+    caption:
+      'The track used to stop where the old survey stopped. Somebody carried it on, on foot, a ' +
+      'stone at a time, down to the camp. It is the straightest thing on the shelf that is not ' +
+      'iron.',
+  },
+
+  /* ---- The Bone Bastion ---- */
+  {
+    id: 'bone_bastion:the_gatehouse',
+    areaId: 'bone_bastion',
+    at: { x: 62, z: -2 },
+    label: 'Look up at the gatehouse',
+    caption:
+      'Two towers either side of the one gate the wall was built with, and a lantern kept lit ' +
+      'on each. Somebody still fills them. The oil is fresh and there is nobody here to have ' +
+      'brought it.',
+  },
+  {
+    id: 'bone_bastion:the_bone_stage',
+    areaId: 'bone_bastion',
+    at: { x: 62, z: 12 },
+    label: 'Look up into the tower',
+    caption:
+      'Its top is open, and stacked full to the slab with bones laid in courses like brick: ' +
+      'skulls on the outside, facing out. The field was cleared into it. There was more field ' +
+      'than tower.',
+  },
+  {
+    id: 'bone_bastion:the_wall_faces_in',
+    areaId: 'bone_bastion',
+    at: { x: 62, z: -20 },
+    label: 'Look at the wall',
+    caption:
+      'From out here the wall has no slits, no parapet, no walk along the top. All of that is ' +
+      'on the other side, facing the barrows. Whoever built it was not worried about the field.',
+  },
+  {
+    id: 'bone_bastion:the_breach',
+    areaId: 'bone_bastion',
+    at: { x: -60, z: -8 },
+    label: 'Look at the breach',
+    caption:
+      'Where the besiegers brought the wall down, and the stones lie where they fell, inward. ' +
+      'They got in. There is no sign they got out again, and the causeway was laid back over ' +
+      'the rubble afterwards.',
+  },
+  {
+    id: 'bone_bastion:the_siege_bank',
+    areaId: 'bone_bastion',
+    at: { x: -70, z: -30 },
+    label: 'Look along the bank',
+    caption:
+      "The besiegers' earthwork, still running the length of the field, slumped where the rain " +
+      'has had it. The stakes along its top all lean away from the wall, as if something leaned ' +
+      'on them from that side.',
+  },
+  {
+    id: 'bone_bastion:the_battlefield',
+    areaId: 'bone_bastion',
+    at: { x: -60, z: 40 },
+    label: 'Look across the field',
+    caption:
+      'Bone dust underfoot the whole way to the bank, and bones still in it. The field was ' +
+      'cleared once, into the gatehouse. It has had a long time since to come back up.',
+  },
+  {
+    id: 'bone_bastion:the_siege_camp',
+    areaId: 'bone_bastion',
+    at: { x: -82, z: 8 },
+    label: 'Look at the camp',
+    caption:
+      'Where the causeway runs out on the far side of the field: a cart, a fire gone to scorch, ' +
+      "the sacks it came with. The besiegers' camp, or the last of it. The tents faced the " +
+      'wall.',
+  },
+  {
+    id: 'bone_bastion:the_open_barrow',
+    areaId: 'bone_bastion',
+    at: { x: -12, z: -78 },
+    label: 'Look into the open barrow',
+    caption:
+      'Somebody dug this one out, down to the stone core, and heaped the spoil either side. ' +
+      'Whatever was in it is not in it. The Watch keeps to it by day, as if waiting for it to ' +
+      'come back.',
+  },
+  {
+    id: 'bone_bastion:the_paired_barrows',
+    areaId: 'bone_bastion',
+    at: { x: -42, z: -78 },
+    label: 'Look at the barrows',
+    caption:
+      'Paired outside the wall the way they are inside it, rank on rank, and none of them lines ' +
+      'up with any inside. Count them from here and then count them again. The numbers do not ' +
+      'agree.',
+  },
+  {
+    id: 'bone_bastion:the_postern',
+    areaId: 'bone_bastion',
+    at: { x: 48, z: 70 },
+    label: 'Look through the postern',
+    caption:
+      'A low gap in the south wall, the only other way through it. Kept, not broken: the edges ' +
+      'are dressed. Somebody meant to come and go this way, quietly, and did not want the field ' +
+      'to know.',
+  },
+  {
+    id: 'bone_bastion:the_south_line',
+    areaId: 'bone_bastion',
+    at: { x: -10, z: 72 },
+    label: 'Look at the south line',
+    caption:
+      'The second siege line, facing the posterns. They knew the wall had a back door. The bank ' +
+      'is higher here than in the west, and the stakes are closer together.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {

@@ -1230,3 +1230,39 @@ Crossing's north -- rather than leaving an exit stranded in the middle of the ne
 | The stone circle | a nine-by-nine collider | a ring you can walk into. The kit gives a landmark one footprint, and the circle's is its whole ring |
 | Ferries | landings and a bell, no boat | a ferry that crosses. A boat on the band would be a mover on a path, which the kit does not have |
 | Beehives | honeycomb props on a bench | hives. The honeycomb is the forage node's picture, drawn for a hedge |
+
+### 15.8 The Wildlands (built)
+
+The five places past the Ring, grown the same way, and the only five where a prowler may walk:
+nobody lives in any of them, so there is nobody for the rules to keep one away from. Where an old
+boundary was a wall of rock with the field inside it, the wall came down and the field ran on;
+where the wall was the point -- the Bone Bastion's -- it stayed, and the field grew round it.
+
+| Place | Size | What the growth added | Who works it | Sights |
+|---|---|---|---|---|
+| The Caldera | 32×28 → 60×52 | the old crater an inner basin inside a second wall, broken through in six places; the obsidian fields and their spires; the fumaroles; the survey camp and its line of cairns; the lava fall on the east wall | the Magma Brood roaming the inner basin, a sentry at the foot of the fall, and a prowler over all of it | 10 |
+| The Ashwood | 34×30 → 64×56 | the old wood's edge opened in eleven places onto the wood that grew up round it: the charcoal burners' clearing and their huts; the Great Ash; the woodcutters' ruins and the flooded sawpit; the hunting stand; two south clearings, and a poachers' hide in three | the Ashwood Pack prowling the whole wood and keeping a sentry under the Great Ash; the Poacher Band walking hide to hide and back, and a man at the stand | 12 |
+| The Rimefields | 36×26 → 64×46 | the rock ring taken down; the escarpment, the ice cave still in its face, the frozen falls off it; the road run on to the frozen caravan; the tarn and its fishing huts; the ridges the archers were posted on; the mammoth by the road in | the Hoarhound Pack in the mammoth's hollow and a stalker prowling; the Rime-Archers at two ridge ends, their fires lit | 11 |
+| The Storm Shelf | 30×28 → 52×48 | the ranks carried on at the same spacing, eight columns in nine rows; Pylon Nine behind the rock its base is cut into, the rank breaking for it; the track on to the survey camp, struck | the Static Swarm prowling, and a knot of it over the camp; the Pylon-Keepers at Nine's foot and at the turn of the track | 10 |
+| The Bone Bastion | 28×30 → 46×50 | the wall no longer the edge: the battlefield round it, the besiegers' bank, the breach and the siege camp past it; the ossuary gatehouse at the east gate; paired barrows outside the wall, one dug open; the south siege line facing the posterns | the Barrow Watch on the causeway out on the battlefield at night; by day at the opened barrow, by the south-east postern, and holding the breach | 11 |
+
+| Piece | What it does |
+|---|---|
+| Ground by region | `enrich-ground.ts` lays the wilds by simplex field instead of a sin-and-cos pattern, the Rimefields gained a drift rule, and `--region` runs every rule inside a named rectangle, so a grown ring gets what the old ground got |
+| Five landmarks | a lava fall; a frozen fall, its icicles cut to the seed; a mammoth's bones; the Great Pylon, a lattice mast with a turning crown; an ossuary gate tower, two of which make the Bastion's gatehouse |
+| A light that strikes | a landmark's light can say it arcs: the pool gives it blue-white, a low hum and two quick flashes every few seconds. A landmark can name its glow colour, too; everything that glowed before keeps its warm one |
+| The sights floor | pinned: every outdoor area has at least eight sights. Rooms are not held to it |
+| The skies pin | the Caldera, the Ashwood and the Bone Bastion joined the open road, the Rimefields the fogged list; the Storm Shelf fights in the rain and stands where it was |
+
+The Shelf, with fifty-odd footings standing, draws between sixty and eighty calls; the Ashwood,
+the biggest map in the world, about a hundred and ten.
+
+### What is still standing in (15.8)
+
+| Where | Placeholder | Standing in for |
+|---|---|---|
+| Pylon Nine's crown | a glow that turns, under a light that strikes | a bolt that strikes. The kit's glow is one opacity for good, so the crown cannot flash with its light |
+| The mammoth | the kit's ice | bone. The kit has no bone surface; the rime is what makes the ice read as right |
+| The ossuary gatehouse | two towers either side of the gap | a gate with an arch over the causeway. A landmark stands on one footprint, and an arch is two with a way between |
+| The tarn's holes, the sawpit | painted water | open water. The same limit as the drowned terraces: the band carries one canal |
+| The Ashwood's wolves | the old wood's ambient wolves, still there beside the Ashwood Pack | one or the other. They scatter from a prowler like any animal, which is some of the point |

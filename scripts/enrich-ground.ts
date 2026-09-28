@@ -12,8 +12,16 @@
  * texture uniformly would raise the numbers and change nothing you can see — the eye reads
  * noise as one surface.
  *
+ * The fields are simplex (`core/util/noise.ts`), seeded per area. They were sums of sines, which
+ * read as waves because they are waves: the stripes line up across a whole map.
+ *
  *     npx tsx scripts/enrich-ground.ts          # report
  *     npx tsx scripts/enrich-ground.ts --write  # rewrite the grids
+ *
+ * And on part of one area -- the new ring an area pass grew, say -- ignoring the guard that
+ * refuses to run a rule twice, because inside a region nothing has been enriched yet:
+ *
+ *     npx tsx scripts/enrich-ground.ts --area ashwood --region 0,0,63,6 --region 0,49,63,55 --write
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -21,6 +29,17 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { AREAS } from '../src/district/areas/index.js';
 import type { AreaDef } from '../src/district/map.js';
+import { fractal2D, makeNoise2D } from '../src/core/util/noise.js';
+
+/** A smooth field over the grid, in [-1, 1], patches about `scale` tiles across. */
+function field(seed: number, scale: number): (c: number, r: number) => number {
+  const n = makeNoise2D(seed);
+  return (c, r) => fractal2D(n, c, r, { scale, octaves: 3 });
+}
+
+const CRUST = field(101, 5);
+const DRIFT = field(202, 6);
+const HEATH = field(505, 5);
 
 /** Deterministic, so a rerun produces the same map. Seeded per area, not globally. */
 function rng(seed: number): () => number {
@@ -72,8 +91,7 @@ const PLAN: Record<string, { seed: number; rules: Rule[] }> = {
       {
         from: 's',
         to: 'c',
-        when: (g, c, r) =>
-          near(g, c, r, 'R', 2) === 0 && Math.sin(c * 0.5) + Math.cos(r * 0.42) > 0.15,
+        when: (g, c, r) => near(g, c, r, 'R', 2) === 0 && CRUST(c, r) > 0.05,
       },
     ],
   },
@@ -84,6 +102,8 @@ const PLAN: Record<string, { seed: number; rules: Rule[] }> = {
       // wind runs the length of the field.
       { from: 'n', to: 'd', when: (g, c, r) => near(g, c, r, 'RI', 2) > 0 },
       { from: 'n', to: 'd', when: (g, _c, r, rand) => (r < 4 || r > g.length - 5) && rand() < 0.45 },
+      // And in the open, where the wind has dropped it: drifts in patches, not stripes.
+      { from: 'n', to: 'd', when: (_g, c, r) => DRIFT(c, r) > 0.35 },
     ],
   },
   ashwood: {
@@ -114,8 +134,7 @@ const PLAN: Record<string, { seed: number; rules: Rule[] }> = {
       {
         from: 'b',
         to: 'h',
-        when: (g, c, r) =>
-          near(g, c, r, 'P', 1) === 0 && Math.sin(c * 0.38) + Math.cos(r * 0.46) > 0.1,
+        when: (g, c, r) => near(g, c, r, 'P', 1) === 0 && HEATH(c, r) > 0,
       },
     ],
   },
@@ -138,7 +157,11 @@ function dominance(grid: readonly string[]): { ch: string; share: number } {
   return { ch, share: count / total };
 }
 
-function rewrite(area: AreaDef, plan: { seed: number; rules: Rule[] }): string[] {
+function rewrite(
+  area: AreaDef,
+  plan: { seed: number; rules: Rule[] },
+  inside: (c: number, r: number) => boolean = () => true,
+): string[] {
   const grid = [...area.grid];
   for (const rule of plan.rules) {
     const rand = rng(plan.seed + rule.to.charCodeAt(0));
@@ -146,7 +169,7 @@ function rewrite(area: AreaDef, plan: { seed: number; rules: Rule[] }): string[]
       let row = '';
       for (let c = 0; c < grid[r]!.length; c++) {
         const ch = grid[r]![c]!;
-        row += ch === rule.from && rule.when(grid, c, r, rand) ? rule.to : ch;
+        row += ch === rule.from && inside(c, r) && rule.when(grid, c, r, rand) ? rule.to : ch;
       }
       grid[r] = row;
     }
@@ -155,11 +178,29 @@ function rewrite(area: AreaDef, plan: { seed: number; rules: Rule[] }): string[]
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
-const write = process.argv.includes('--write');
+const argv = process.argv.slice(2);
+const write = argv.includes('--write');
+const only = argv.includes('--area') ? argv[argv.indexOf('--area') + 1] : undefined;
+const regions = argv
+  .map((a, i) => (a === '--region' ? argv[i + 1] : undefined))
+  .filter((a): a is string => !!a)
+  .map((a) => a.split(',').map(Number) as [number, number, number, number]);
+if (regions.length && !only) throw new Error('--region needs --area: a region is a place in one grid');
+const inRegion = (c: number, r: number): boolean =>
+  regions.some(([c0, r0, c1, r1]) => c >= c0 && c <= c1 && r >= r0 && r <= r1);
 
 for (const area of AREAS) {
   const plan = PLAN[area.id];
   if (!plan) continue;
+  if (only && area.id !== only) continue;
+  if (regions.length) {
+    // Every rule, inside the regions only: nothing in them has been enriched, whatever the rest
+    // of the grid says.
+    const grid = rewrite(area, plan, inRegion);
+    console.log(`${area.id.padEnd(15)} ${regions.length} region(s): ${grid.filter((row, i) => row !== area.grid[i]).length} rows changed`);
+    if (write) writeGrid(area, grid);
+    continue;
+  }
   // Refuse to run a rule twice.
   //
   // The rules are stated as "some `w` becomes `l`", so applying one to an already-enriched grid
@@ -184,7 +225,10 @@ for (const area of AREAS) {
       `${after.ch} ${(after.share * 100).toFixed(0)}%   chars ${new Set(area.grid.join('')).size} -> ${chars.size}`,
   );
   if (!write) continue;
+  writeGrid(area, grid);
+}
 
+function writeGrid(area: AreaDef, grid: readonly string[]): void {
   const file = resolve(here, '..', 'src', 'district', 'areas', `${FILES[area.id]}.ts`);
   const src = readFileSync(file, 'utf8').split(/\r?\n/);
 

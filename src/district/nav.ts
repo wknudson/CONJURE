@@ -23,6 +23,7 @@
  */
 
 import type { ColliderSet } from './collision.js';
+import { tileAt } from './map.js';
 
 export interface Point {
   x: number;
@@ -66,11 +67,34 @@ export class NavGrid {
     this.rows = Math.round((a.halfZ * 2) / C);
     const n = this.cols * this.rows;
     this.open = new Uint8Array(n);
+    // Painted rather than asked. Asking `colliders.blocked` of every cell was fine at twenty tiles
+    // and is a quarter of a second at the Ashwood's sixty-four by fifty-six, under load, at every
+    // crossing into it. The answer is the same one `blocked` gives, got the other way round: the
+    // tile layer first, each cell's five probes read off the tiles, and then every box painted
+    // over the cells whose centre it covers, which is the test `blocked` makes box by box.
+    const walkAt = (x: number, z: number): boolean => tileAt(a, x, z).walk;
     for (let r = 0; r < this.rows; r++) {
+      const z = this.minZ + (r + 0.5) * C;
       for (let c = 0; c < this.cols; c++) {
         const x = this.minX + (c + 0.5) * C;
+        const ok =
+          walkAt(x, z) && walkAt(x + radius, z) && walkAt(x - radius, z) && walkAt(x, z + radius) && walkAt(x, z - radius);
+        this.open[r * this.cols + c] = ok ? 1 : 0;
+      }
+    }
+    for (const b of colliders.boxes) {
+      if (!b.enabled) continue;
+      const c0 = Math.max(0, Math.floor((b.minX - radius - this.minX) / C - 0.5));
+      const c1 = Math.min(this.cols - 1, Math.ceil((b.maxX + radius - this.minX) / C - 0.5));
+      const r0 = Math.max(0, Math.floor((b.minZ - radius - this.minZ) / C - 0.5));
+      const r1 = Math.min(this.rows - 1, Math.ceil((b.maxZ + radius - this.minZ) / C - 0.5));
+      for (let r = r0; r <= r1; r++) {
         const z = this.minZ + (r + 0.5) * C;
-        this.open[r * this.cols + c] = colliders.blocked(x, z, radius) ? 0 : 1;
+        if (!(z > b.minZ - radius && z < b.maxZ + radius)) continue;
+        for (let c = c0; c <= c1; c++) {
+          const x = this.minX + (c + 0.5) * C;
+          if (x > b.minX - radius && x < b.maxX + radius) this.open[r * this.cols + c] = 0;
+        }
       }
     }
 

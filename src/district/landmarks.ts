@@ -35,7 +35,12 @@ export type LandmarkId =
   | 'gasholder'
   | 'toll_bar'
   | 'water_wheel'
-  | 'beam_engine';
+  | 'beam_engine'
+  | 'lava_fall'
+  | 'frozen_falls'
+  | 'mammoth'
+  | 'great_pylon'
+  | 'ossuary';
 
 export interface LandmarkKind {
   /** The footprint the colliders learn, centred on the landmark, in world units. */
@@ -65,6 +70,11 @@ export const LANDMARKS: Readonly<Record<LandmarkId, LandmarkKind>> = {
   toll_bar: { w: 1.2, d: 1.2, height: 9, note: 'A striped boom on a post, raised on its counterweight over the road, rocking for carts that do not come.' },
   water_wheel: { w: 1.2, d: 1.2, height: 4.4, note: 'An undershot wheel standing in the race off its bearing post, turning because the water does.' },
   beam_engine: { w: 3.6, d: 3.6, height: 11, note: 'A pumping engine: the house, its stack, and the great beam rocking on the wall-top.' },
+  lava_fall: { w: 3.2, d: 2.8, height: 9, note: 'A spur of the crater wall with lava running down its face into a pool that never cools.' },
+  frozen_falls: { w: 3.6, d: 3.0, height: 10, note: 'A fall off the ridge that froze where it fell: a sheet of ice down the rock, and the icicles it grew.' },
+  great_pylon: { w: 3.6, d: 3.6, height: 20, overhang: 1.7, note: "The tallest pylon on the shelf, the one the ranks were set out from: a lattice mast with its arms out, and the sky still coming down to it." },
+  ossuary: { w: 3.6, d: 3.6, height: 13, overhang: 0.9, note: 'A gate tower, and a charnel house: the field’s bones stacked in its open top, a lantern swinging off its face.' },
+  mammoth: { w: 6.4, d: 3.2, height: 3.2, overhang: 0.6, note: 'A mammoth where it lay down in the snow: the ribs still standing, the tusks curled over the skull, all of it rimed.' },
 };
 
 export const LANDMARK_IDS = Object.keys(LANDMARKS) as readonly LandmarkId[];
@@ -100,8 +110,13 @@ export interface LandmarkMover {
 export interface BuiltLandmark {
   readonly parts: LandmarkPart[];
   readonly movers: LandmarkMover[];
-  /** A light it casts, relative to its centre, if it lights anything. */
-  readonly light?: { readonly at: THREE.Vector3; readonly color: string };
+  /**
+   * A light it casts, relative to its centre, if it lights anything. A fire's, unless `arc` says
+   * it is the sky coming down: blue-white, dark most of the time, and then not.
+   */
+  readonly light?: { readonly at: THREE.Vector3; readonly color: string; readonly arc?: boolean };
+  /** The colour of its glowing parts, where it is not firelight. */
+  readonly glow?: string;
 }
 
 /* ------------------------------------------------------------------------------------------ */
@@ -126,6 +141,14 @@ const cyl = (r0: number, r1: number, h: number, seg: number, x = 0, y = h / 2, z
 const cone = (r: number, h: number, seg: number, x = 0, y = h / 2, z = 0): THREE.BufferGeometry =>
   uvify(new THREE.ConeGeometry(r, h, seg).translate(x, y, z));
 const join = (gs: THREE.BufferGeometry[]): THREE.BufferGeometry => (gs.length === 1 ? gs[0]! : mergeGeometries(gs)!);
+/** A round bar from one point to another: a leg, a brace, a stroke of lightning. */
+const strut = (a: THREE.Vector3, b: THREE.Vector3, r: number, seg = 4): THREE.BufferGeometry => {
+  const dir = b.clone().sub(a);
+  const g = new THREE.CylinderGeometry(r, r, dir.length(), seg);
+  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize()));
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  return uvify(g.translate(mid.x, mid.y, mid.z));
+};
 
 /** What a landmark is made of. `seed` varies the details that should not repeat between two. */
 export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
@@ -276,6 +299,130 @@ export function buildLandmark(id: LandmarkId, seed: number): BuiltLandmark {
       ],
       movers: [{ surface: 'iron', geometry: beam, pivot: new THREE.Vector3(0, 7.6, -1.3), axis: new THREE.Vector3(1, 0, 0), motion: 'swing', amount: 0.22, period: 4.5, reach: 2.7 }],
     };
+  }
+  if (id === 'lava_fall') {
+    // A spur of rock stepped out from the wall, a glowing sheet down its south face, and the pool
+    // it runs into -- the light the Caldera has always had and nobody lit.
+    const spur = join([box(3.0, 8.6, 1.6, 0, 4.3, -0.4), box(2.2, 5.0, 0.8, 0, 2.5, 0.5)]);
+    return {
+      parts: [
+        { surface: 'rock', geometry: spur },
+        { surface: 'glow', geometry: box(1.0, 8.0, 0.2, 0, 4.2, 0.95) },
+        { surface: 'glow', geometry: cyl(0.8, 0.8, 0.1, 10, 0, 0.05, 0.8) },
+      ],
+      movers: [],
+      light: { at: new THREE.Vector3(0, 1.0, 1.0), color: '#ff7a30' },
+    };
+  }
+  if (id === 'frozen_falls') {
+    // The lava fall's cold twin: a spur of rock, a sheet of ice down its south face where the water
+    // was, icicles hung off the lip at lengths the seed picks, and the pool it froze into.
+    const spur = join([box(3.4, 9.6, 1.6, 0, 4.8, -0.6), box(2.6, 6.0, 0.8, 0, 3.0, 0.4)]);
+    const icicles: THREE.BufferGeometry[] = [box(1.6, 8.6, 0.3, 0, 4.3, 0.95)];
+    for (const [i, x] of [-1.1, -0.6, 0.6, 1.1].entries()) {
+      const h = 3 + ((seed >> (i * 3)) % 7) * 0.5;
+      icicles.push(cyl(0.05, 0.22, h, 6, x, 8.6 - h / 2, 1.0));
+    }
+    icicles.push(cyl(0.9, 0.9, 0.08, 12, 0, 0.04, 0.55));
+    icicles.push(cone(1.0, 1.4, 8, 0, 0.7, 0.4));
+    return {
+      parts: [
+        { surface: 'rock', geometry: spur },
+        { surface: 'ice', geometry: join(icicles) },
+      ],
+      movers: [],
+    };
+  }
+  if (id === 'great_pylon') {
+    // A lattice mast: four legs leaning in from the footing's corners, a ring of bars and a brace
+    // across every face at each stage, the arms out at the top with their insulators hung off them,
+    // and a spike over it all. The crown is three strokes of light from the spike down to a ring
+    // round the arms, turning, and the light in it strikes.
+    const V = (x: number, y: number, z: number): THREE.Vector3 => new THREE.Vector3(x, y, z);
+    const at = (s: number, y: number): number => s * (1.55 - (y / 16) * 1.0);
+    const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const;
+    const iron: THREE.BufferGeometry[] = [];
+    // Each leg stands on a footing block, so its end is off the ground rather than through it.
+    for (const [sx, sz] of corners) {
+      iron.push(box(0.6, 0.3, 0.6, at(sx, 0), 0.15, at(sz, 0)));
+      iron.push(strut(V(at(sx, 0.3), 0.3, at(sz, 0.3)), V(at(sx, 16), 16, at(sz, 16)), 0.12));
+    }
+    for (const y0 of [0, 4, 8, 12]) {
+      const y1 = y0 + 4;
+      for (let i = 0; i < 4; i++) {
+        const [ax, az] = corners[i]!;
+        const [bx, bz] = corners[(i + 1) % 4]!;
+        iron.push(strut(V(at(ax, y1), y1, at(az, y1)), V(at(bx, y1), y1, at(bz, y1)), 0.07));
+        const yb = Math.max(y0, 0.3);
+        iron.push(strut(V(at(ax, yb), yb, at(az, yb)), V(at(bx, y1), y1, at(bz, y1)), 0.05));
+      }
+    }
+    iron.push(box(6.6, 0.3, 0.3, 0, 16.2, 0), box(0.3, 0.3, 4.4, 0, 14.4, 0));
+    for (const x of [-3.1, 3.1]) iron.push(cyl(0.12, 0.12, 1.1, 5, x, 15.5, 0));
+    for (const z of [-2.0, 2.0]) iron.push(cyl(0.12, 0.12, 1.1, 5, 0, 13.7, z));
+    iron.push(cone(0.25, 3.2, 5, 0, 17.8, 0));
+    // The crown: jagged strokes, each a chain of bars kinked where the seed says.
+    const bolts: THREE.BufferGeometry[] = [];
+    for (let b = 0; b < 3; b++) {
+      const ang = (b / 3) * Math.PI * 2;
+      let p = V(0, 19.2, 0);
+      for (let s = 1; s <= 4; s++) {
+        const t = s / 4;
+        const r = 3.0 * t;
+        const q = V(Math.cos(ang) * r + (nextFloat(rng) - 0.5) * 0.5, 19.2 - 3.0 * t + (nextFloat(rng) - 0.5) * 0.4, Math.sin(ang) * r + (nextFloat(rng) - 0.5) * 0.5);
+        bolts.push(strut(p, q, 0.06, 3));
+        p = q;
+      }
+    }
+    return {
+      parts: [{ surface: 'iron', geometry: join(iron) }],
+      movers: [{ surface: 'glow', geometry: join(bolts), pivot: V(0, 0, 0), axis: V(0, 1, 0), motion: 'spin', amount: 5, reach: 1.7 }],
+      light: { at: V(0, 17, 0), color: '#9fd8ff', arc: true },
+      glow: '#cfeaff',
+    };
+  }
+  if (id === 'ossuary') {
+    // A square gate tower in the bastion's stone: the shaft, an open stage at the top with the
+    // bones stacked in it between the corner posts, a slab and merlons over that, and an iron
+    // bracket off the east face with a lantern swinging from it.
+    const stone = join([
+      box(3.4, 9.0, 3.4),
+      ...[[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => box(0.5, 2.6, 0.5, sx! * 1.45, 10.3, sz! * 1.45)),
+      box(3.8, 0.4, 3.8, 0, 11.8, 0),
+      ...[[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => box(0.6, 0.8, 0.6, sx! * 1.6, 12.4, sz! * 1.6)),
+    ]);
+    const lantern = join([box(0.4, 0.6, 0.4, 0, -0.55, 0), cyl(0.03, 0.03, 0.25, 4, 0, -0.12, 0)]);
+    return {
+      parts: [
+        { surface: 'wall', geometry: stone },
+        { surface: 'ice', geometry: box(2.4, 2.2, 2.4, 0, 10.1, 0) },
+        { surface: 'iron', geometry: box(1.2, 0.15, 0.15, 2.3, 7.2, 0) },
+      ],
+      movers: [{ surface: 'glow', geometry: lantern, pivot: new THREE.Vector3(2.8, 7.1, 0), axis: new THREE.Vector3(0, 0, 1), motion: 'swing', amount: 0.25, period: 2.8, reach: 1.6 }],
+      light: { at: new THREE.Vector3(2.8, 6.5, 0), color: '#ffb45e' },
+    };
+  }
+  if (id === 'mammoth') {
+    // Lying east to west, head to the east: a spine, the ribs standing up off it in arches that
+    // shrink towards the tail, the pelvis, the skull, and the tusks curling up over it. Rimed, so
+    // the kit's ice, which is also the nearest thing it has to bone.
+    const bones: THREE.BufferGeometry[] = [
+      box(4.6, 0.28, 0.28, -0.2, 2.5, 0),
+      box(0.8, 0.5, 1.4, -2.4, 1.9, 0),
+      box(1.1, 1.0, 1.1, 2.5, 1.6, 0),
+    ];
+    for (const [i, x] of [-1.9, -1.2, -0.5, 0.2, 0.9, 1.6].entries()) {
+      const r = 1.0 + i * 0.06;
+      const rib = new THREE.TorusGeometry(r, 0.09, 5, 10, Math.PI).rotateY(Math.PI / 2).scale(1, 2.5 / r, 1).translate(x, 0, 0);
+      bones.push(uvify(rib));
+    }
+    for (const z of [-0.55, 0.55]) {
+      const tusk = new THREE.TorusGeometry(0.9, 0.1, 5, 10, Math.PI * 1.1).rotateZ(-Math.PI / 2).translate(3.0, 2.0, z);
+      bones.push(uvify(tusk));
+    }
+    // A thigh bone and a shin, dragged off and left.
+    bones.push(box(1.4, 0.22, 0.22, -1.0, 0.11, 1.4), box(1.0, 0.18, 0.18, 0.8, 0.09, -1.4));
+    return { parts: [{ surface: 'ice', geometry: join(bones) }], movers: [] };
   }
   if (id === 'gibbet') {
     const post = join([box(0.3, 6, 0.3), box(1.6, 0.25, 0.25, 0.65, 5.8, 0), box(0.12, 0.9, 0.12, 0.35, 5.35, 0)]);

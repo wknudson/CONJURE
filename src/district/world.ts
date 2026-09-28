@@ -107,7 +107,7 @@ interface Fire {
   readonly x: number;
   readonly y: number;
   readonly z: number;
-  readonly kind: 'lamp' | 'brazier' | 'vent';
+  readonly kind: 'lamp' | 'brazier' | 'vent' | 'arc';
   /** The lamp this is, for its flicker and whether it is lit. Absent for the other two. */
   readonly lamp?: Lamp;
 }
@@ -163,6 +163,8 @@ function streetFacing(area: AreaDef, x0: number, z0: number, w: number, d: numbe
 const BRAZIER_LIGHT = new THREE.Color('#e08040');
 /** An ember vent's: low and red, a crack that breathes. */
 const VENT_LIGHT = new THREE.Color('#ff5a20');
+/** The Great Pylon's crown: the one light in the world that is not a fire. */
+const ARC_LIGHT = new THREE.Color('#9fd8ff');
 
 /** One expanding ring on the canal. See `updateRises`. */
 interface Rise {
@@ -1022,7 +1024,7 @@ export class DistrictWorld {
       const mats: Structure['mats'] = [];
       const material = (surface: SurfaceKey | 'glow'): THREE.Material =>
         surface === 'glow'
-          ? new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd08a'), transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide })
+          ? new THREE.MeshBasicMaterial({ color: new THREE.Color(built.glow ?? '#ffd08a'), transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide })
           : this.surface(surface, 'stone', 'tower');
       for (const part of built.parts) {
         const mat = material(part.surface);
@@ -1045,7 +1047,7 @@ export class DistrictWorld {
         this.movers.push({ pivot, mover: m, phase: (seed % 628) / 100 });
       }
       if (built.light) {
-        this.fires.push({ x: l.x + built.light.at.x, y: built.light.at.y, z: l.z + built.light.at.z, kind: 'brazier' });
+        this.fires.push({ x: l.x + built.light.at.x, y: built.light.at.y, z: l.z + built.light.at.z, kind: built.light.arc ? 'arc' : 'brazier' });
       }
       const hit = new THREE.Mesh(new THREE.BoxGeometry(kind.w, kind.height, kind.d), new THREE.MeshBasicMaterial());
       hit.position.set(l.x, kind.height / 2, l.z);
@@ -1373,6 +1375,15 @@ export class DistrictWorld {
         light.color.copy(BRAZIER_LIGHT);
         light.distance = LOOK.lampDistance * 0.6;
         light.intensity = LOOK.lampIntensity * 0.8 * (0.62 + 0.76 * n) * share;
+      } else if (fire.kind === 'arc') {
+        // The sky coming down to the iron: a low hum of blue most of the time, and a strike every
+        // few seconds -- two quick flashes, on a phase from where it stands.
+        const ph = fire.x * 0.29 + fire.z * 0.53;
+        const k = (t * 0.31 + ph) % 1;
+        const strike = k < 0.03 || (k > 0.05 && k < 0.07) ? 1 : 0;
+        light.color.copy(ARC_LIGHT);
+        light.distance = LOOK.lampDistance * 1.4;
+        light.intensity = LOOK.lampIntensity * (0.18 + 1.6 * strike) * share;
       } else {
         light.color.copy(VENT_LIGHT);
         light.distance = LOOK.lampDistance * 0.4;

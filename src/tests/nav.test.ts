@@ -136,6 +136,24 @@ describe('every area has ground to hunt across', () => {
     });
   }
 
+  it('paints the grid that asking every cell would have given', () => {
+    // The grid is painted -- tiles, then boxes -- rather than asked of `blocked` cell by cell,
+    // which is what made it quick. Held to the old answer everywhere it is quick to hold it:
+    // the three biggest maps, where the boxes are thickest, and a room, where they are closest.
+    const sized = [...AREAS].sort((a, b) => b.cols * b.rows - a.cols * a.rows);
+    const room = AREAS.find((a) => a.indoor && (a.props.npcs?.length ?? 0) > 0)!;
+    for (const area of [...sized.slice(0, 3), room]) {
+      const set = colliders(area);
+      const nav = new NavGrid(set);
+      for (let z = -area.halfZ + 0.5; z < area.halfZ; z += 1) {
+        for (let x = -area.halfX + 0.5; x < area.halfX; x += 1) {
+          if (nav.walkable(x, z) === !set.blocked(x, z, 0.45)) continue;
+          expect.fail(`${area.id}: the painted grid and the asked one disagree at ${x},${z}`);
+        }
+      }
+    }
+  });
+
   it('builds the grid for the largest area quickly enough to do at every crossing', () => {
     const biggest = [...AREAS].sort((a, b) => b.cols * b.rows - a.cols * a.rows)[0]!;
     const set = colliders(biggest);
