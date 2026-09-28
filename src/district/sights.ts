@@ -1346,6 +1346,112 @@ export const SIGHTS: readonly SightDef[] = [
       'BRAY — NO MARKET, NO INN. Under it somebody has scratched NO TOLL, and under that, in ' +
       'another hand, a very small sheep.',
   },
+
+  /* ---- Fenwick's Crossing ---- */
+  {
+    id: 'fenwicks_crossing:the_great_bridge',
+    areaId: 'fenwicks_crossing',
+    at: { x: 10, z: -46 },
+    label: 'Look over the bridge',
+    caption:
+      'Six carts wide and eleven arches long, older than Fenwick and older than the toll. The ' +
+      "downstream stones are worn smooth to a gunwale's height. The river used to be busier " +
+      'than the road.',
+  },
+  {
+    id: 'fenwicks_crossing:the_bridge_chapel',
+    areaId: 'fenwicks_crossing',
+    at: { x: -8, z: -37.4 },
+    label: 'Look at the bridge chapel',
+    caption:
+      'A chapel on the bridge for travellers to pray in before the crossing. There is a slot in ' +
+      'the door for offerings, and a newer slot beside it with TOLL cut over it. Both slots go ' +
+      'into the same box.',
+  },
+  {
+    id: 'fenwicks_crossing:the_watermill',
+    areaId: 'fenwicks_crossing',
+    at: { x: 38, z: -50 },
+    label: 'Look at the watermill',
+    caption:
+      "The far bank's mill, its wheel turning in a race cut off the river. It grinds for the " +
+      'far bank and not for the town, which has its own mill and its own opinions.',
+  },
+  {
+    id: 'fenwicks_crossing:the_north_ferry',
+    areaId: 'fenwicks_crossing',
+    at: { x: -82, z: -52 },
+    label: 'Look at the ferry landing',
+    caption:
+      "The far bank's landing, for when the bridge is shut. The bridge has never been shut. The " +
+      'ferryman is paid by the tollers to wait, which is the only job on the river that pays.',
+  },
+  {
+    id: 'fenwicks_crossing:the_south_ferry',
+    areaId: 'fenwicks_crossing',
+    at: { x: -86, z: -32 },
+    label: 'Look at the ferry bell',
+    caption:
+      'Nets on the racks, the ferry rope through its post, and a bell to ring for the boat. The ' +
+      'bell has no clapper. People ring it anyway, out of habit, and the ferryman comes, out of ' +
+      'habit.',
+  },
+  {
+    id: 'fenwicks_crossing:the_drovers_fold',
+    areaId: 'fenwicks_crossing',
+    at: { x: 80, z: -54 },
+    label: "Look at the drovers' fold",
+    caption:
+      'Hurdle pens where the drovers hold the herds overnight rather than pay the bridge by the ' +
+      'head. In the morning the herds cross at the ford upstream, and the tollers pretend not ' +
+      'to see.',
+  },
+  {
+    id: 'fenwicks_crossing:the_moorings',
+    areaId: 'fenwicks_crossing',
+    at: { x: 56, z: -52 },
+    label: 'Look at the moorings',
+    caption:
+      'Mooring posts along the far bank, their ropes rotted through. A ring on one post is ' +
+      'polished bright. Something ties up here at night that does not use a rope.',
+  },
+  {
+    id: 'fenwicks_crossing:the_burying_ground',
+    areaId: 'fenwicks_crossing',
+    at: { x: -14, z: 48 },
+    label: 'Look at the burying ground',
+    caption:
+      'The older stones along the river side, the newer going up the slope away from it. Nobody ' +
+      'wants to be buried near the water. The water keeps coming for them anyway.',
+  },
+  {
+    id: 'fenwicks_crossing:the_toll_board',
+    areaId: 'fenwicks_crossing',
+    at: { x: 28, z: -20 },
+    label: 'Read the toll board',
+    caption:
+      "FENWICK'S RATES, and under it in Magistracy paint, THE RATES: a cart, a horse, a head of " +
+      'cattle, a soul on foot. The last line has been rubbed out and written in again, several ' +
+      'times, at the same price.',
+  },
+  {
+    id: 'fenwicks_crossing:the_tollers_lodge',
+    areaId: 'fenwicks_crossing',
+    at: { x: 86, z: -16 },
+    label: "Look at the tollers' lodge",
+    caption:
+      'A bench outside worn to the shape of sitting, and the rates pinned to the door. So is a ' +
+      'list of names headed EXEMPT, and it is shorter than you would think.',
+  },
+  {
+    id: 'fenwicks_crossing:the_mill_race',
+    areaId: 'fenwicks_crossing',
+    at: { x: 26, z: -60 },
+    label: 'Look at the mill race',
+    caption:
+      "Cut off the river to turn the far bank's wheel, with a sluice at its head chained open. " +
+      'Somebody has hung a key on the chain, which is either a joke or a very long patience.',
+  },
 ];
 
 export function sightsInArea(areaId: string): SightDef[] {

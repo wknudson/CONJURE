@@ -9,10 +9,22 @@
  * choices; this is a *crossing* and offers two — over the water to the Chalk Road, or west into
  * Weeping Stile. A town on a river is a town about one decision.
  *
- * Thirty-four by twenty-two now, and two roofs on the north frontage. The toll house stands on
+ * Fifty-two by thirty-four now, grown evenly from thirty-four by twenty-two, and two roofs on the
+ * north frontage. The toll house stands on
  * the bridgehead where Fenwick took the toll, with the book he took it in. The coach inn is the
  * other, and under the inn are the cellars: the `cellar_clearance` contract is fought down the
  * hatch behind the bar now, where the barking is, rather than on the cobbles behind the house.
+ *
+ * What the growth added is the other side of the river, and the river itself: wider, a band
+ * across the map now rather than the map's edge, with **the great bridge** over it six carts
+ * wide and a chapel standing on its deck for the crossing's prayers and its tolls. North of it,
+ * **the far bank**, the Chalk Road side and a different place: the ferry hut and landing, the
+ * far bank's own watermill with its wheel in a race off the river, the drovers' fold, the old
+ * moorings. The town side gets its south ferry landing west of the bridgehead, the tollers'
+ * lodge to the east, and a burying ground grown with the town.
+ *
+ * The Bridge Tollers walk the bridge by day, end to end; at night a crew of them works the far
+ * bank, where the drovers hold the herds they would rather not pay for.
  */
 
 import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
@@ -24,17 +36,23 @@ import { TILE, defineArea, type AreaDef, type TileDef } from '../map.js';
  *   ,  chalk street — the through street, and the bridge itself
  *   f  ploughed strip
  *   .  weeds
+ *   #  grass        — the far bank
  *   W  the river     — impassable
  *   B  town building — impassable
  *   I  the coach inn — impassable; timber, three stacks
  *   X  the toll house — impassable; dressed stone, Fenwick's
  *   T  hedge        — impassable, the boundary
+ *   h  cottage      — impassable; the ferry hut, the ferryman's, the tollers' lodge
+ *   M  the watermill — impassable; the far bank's, timber
+ *   r  the mill race — impassable
+ *   b  a plank      — over the race
  */
 const FEN_LEGEND: Record<string, TileDef> = {
   c: { tex: 'cobble', safe: false, walk: true },
   ',': { tex: 'chalk', safe: false, walk: true },
   f: { tex: 'field', safe: false, walk: true },
   '.': { tex: 'weeds', safe: false, walk: true },
+  '#': { tex: 'grass', safe: false, walk: true },
   W: { tex: 'water', safe: false, walk: false },
   B: {
     tex: 'cobble',
@@ -60,14 +78,26 @@ const FEN_LEGEND: Record<string, TileDef> = {
     walk: false,
     solid: { style: 'foliage', minHeight: 3.2, maxHeight: 4.6, inset: 0.75, depthInset: 0.75, chimneyChance: 0, split: true },
   },
+  h: {
+    tex: 'grass',
+    safe: false,
+    walk: false,
+    solid: { style: 'cottage', minHeight: 3.6, maxHeight: 4.2, inset: 0.3, depthInset: 0.3, chimneyChance: 0.7, split: true, wall: 'plaster' },
+  },
+  M: {
+    tex: 'grass',
+    safe: false,
+    walk: false,
+    solid: { style: 'hall', minHeight: 5.6, maxHeight: 5.6, inset: 0.3, depthInset: 0.3, chimneyChance: 0.4, split: false, wall: 'timber' },
+  },
+  r: { tex: 'water', safe: false, walk: false },
+  b: { tex: 'planks', safe: false, walk: true },
 };
 
-/** Two rows of river along the north edge. The bridge is the quay row below it. */
-const WATER_ROWS = 2;
+/** Three rows of river now, a band with the far bank above it; the great bridge crosses it. */
+const WATER_ROWS = 3;
+const WATER_ROW0 = 5;
 
-const COBBLES = `T${'c'.repeat(32)}T`;
-const STRIP = `T${'f'.repeat(32)}T`;
-const SOUTH_FRONT = `Tcc${'B'.repeat(6)}${'c'.repeat(12)}${'B'.repeat(7)}${'c'.repeat(5)}T`;
 
 /**
  * 34 wide by 22 deep.
@@ -77,28 +107,40 @@ const SOUTH_FRONT = `Tcc${'B'.repeat(6)}${'c'.repeat(12)}${'B'.repeat(7)}${'c'.r
  * 33 at the same rows, running east onto the Shelf.
  */
 const GRID: readonly string[] = [
-  'W'.repeat(34), //  0  the river
-  'W'.repeat(34), //  1
-  COBBLES, //  2  the bridgehead — north, over the water
-  `Tcc.${'c'.repeat(16)}${'X'.repeat(4)}ccc.cccccT`, //  3  THE TOLL HOUSE, on the bridgehead
-  `Tcc${'I'.repeat(6)}${'c'.repeat(11)}${'X'.repeat(4)}cc${'B'.repeat(6)}cT`, //  4  THE COACH INN, and the north frontage
-  `Tcc${'I'.repeat(6)}${'c'.repeat(17)}${'B'.repeat(6)}cT`, //  5  the toll house door
-  COBBLES, //  6  the inn door
-  `T${'f'.repeat(6)}${'c'.repeat(20)}${'f'.repeat(6)}T`, //  7
-  ','.repeat(34), //  8  the through street: west to Weeping Stile, east to the Shelf
-  ','.repeat(34), //  9
-  COBBLES, // 10
-  SOUTH_FRONT, // 11  the south frontages
-  SOUTH_FRONT, // 12
-  COBBLES, // 13
-  `T${'f'.repeat(8)}cc..cccc${'f'.repeat(16)}T`, // 14
-  STRIP, // 15
-  STRIP, // 16
-  STRIP, // 17
-  `T${'f'.repeat(14)}....${'f'.repeat(14)}T`, // 18  the burying ground, such as it is
-  STRIP, // 19
-  STRIP, // 20
-  'T'.repeat(34), // 21
+  'TTTTTTTTTTTTTTTTTTTTTTTTT,,TTTTTTTTTTTTTTTTTTTTTTTTT', //  0  the far hedge; the lane north, to the Chalk Road
+  'T#hhh####################,,######rMMMMM############T', //  1  THE FAR BANK: the ferry hut (west)     the lane     THE WATERMILL and its race (east)
+  'T#hhh####################,,######rMMMMM############T', //  2
+  'T#ccccccc################,,######b#################T', //  3  the north ferry landing
+  'T#ccccccc##############cccccc####r#################T', //  4  the bridge's north landing
+  'WWWWWWWWWWWWWWWWWWWWWWW,,,,,,WWWWWWWWWWWWWWWWWWWWWWW', //  5  the river, wider now -- THE GREAT BRIDGE across it, and the bridge chapel on it
+  'WWWWWWWWWWWWWWWWWWWWWWW,,,,,,WWWWWWWWWWWWWWWWWWWWWWW', //  6  the river
+  'WWWWWWWWWWWWWWWWWWWWWWW,,,,,,WWWWWWWWWWWWWWWWWWWWWWW', //  7
+  'TccccccccTcccccccccccccccccccccccccccccccccccccccccc', //  8  the bridgehead — the south ferry landing (west)                   the quay (east)
+  'TccccccccTcc.ccccccccccccccccXXXXccc.cccccTffhhhhffT', //  9  THE TOLL HOUSE, on the bridgehead; the tollers' lodge (east)
+  'TchhhcccccccIIIIIIcccccccccccXXXXccBBBBBBcTffhhhhffT', // 10  THE COACH INN, and the north frontage
+  'TfhhhffffTccIIIIIIcccccccccccccccccBBBBBBccccccccccT', // 11  the toll house door
+  'TffffffffTccccccccccccccccccccccccccccccccTccccccccT', // 12  the inn door
+  'TffffffffTffffffccccccccccccccccccccffffffTffffffffT', // 13
+  ',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,', // 14  the through street: west to Weeping Stile, east to the Shelf
+  ',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,', // 15
+  'TffffffffTccccccccccccccccccccccccccccccccTffffffffT', // 16
+  'TffffffffTccBBBBBBccccccccccccBBBBBBBcccccTffffffffT', // 17  the south frontages
+  'TffffffffTccBBBBBBccccccccccccBBBBBBBcccccTffffffffT', // 18
+  'TffffffffTccccccccccccccccccccccccccccccccTffffffffT', // 19
+  'Tfffffffffffffffffcc..ccccfffffffffffffffffffffffffT', // 20
+  'TffffffffTffffffffffffffffffffffffffffffffTffffffffT', // 21
+  'TffffffffTffffffffffffffffffffffffffffffffTffffffffT', // 22
+  'TffffffffTffffffffffffffffffffffffffffffffTffffffffT', // 23
+  'TffffffffTffffffffffffff....ffffffffffffffTffffffffT', // 24  the burying ground, such as it is
+  'TffffffffTffffffffffffffffffffffffffffffffTffffffffT', // 25
+  'TffffffffTffffffffffffffffffffffffffffffffTffffffffT', // 26
+  'TffffffffTTTTTffTTTTTTTTTTTTTTTTTTTTffTTTTTffffffffT', // 27
+  'Tfffffffffffffffffff............fffffffffffffffffffT', // 28  the burying ground, grown with the town
+  'Tfffffffffffffffffff............fffffffffffffffffffT', // 29
+  'TffffffffffffffffffffffffffffffffffffffffffffffffffT', // 30
+  'TTTTTTTTTTTTffTTTTTTTTTTTTTTTTTTTTTTTTffTTTTTTTTTTTT', // 31  a hedge between the strips
+  'TffffffffffffffffffffffffffffffffffffffffffffffffffT', // 32
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT', // 33  the far hedge
 ];
 
 const HALF_X = (GRID[0]!.length * TILE) / 2;
@@ -118,10 +160,11 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
   safety: 'none',
   exits: [
     {
+      // Over the great bridge and up the far bank's lane to the edge.
       to: 'chalk_road',
       x: -2,
-      z: zOfRow(2),
-      label: 'North, over the bridge to the Chalk Road',
+      z: zOfRow(0),
+      label: 'North, up the far bank to the Chalk Road',
       arrive: { x: 38, z: 14 },
     },
     {
@@ -143,19 +186,19 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
     {
       // The toll house. Fenwick's, and then the Magistracy's, and the book never changed hands.
       to: 'fenwicks_toll_house',
-      x: xOfCol(21.5),
-      z: zOfRow(4) + TILE / 2 + 1.4,
+      x: xOfCol(30.5),
+      z: zOfRow(10) + TILE / 2 + 1.4,
       label: 'Into the toll house',
-      door: { x: xOfCol(21.5), z: zOfRow(4) + TILE / 2 + 0.05, facesSouth: true, sign: 'toll', style: 'iron' },
+      door: { x: xOfCol(30.5), z: zOfRow(10) + TILE / 2 + 0.05, facesSouth: true, sign: 'toll', style: 'iron' },
       arrive: { x: 0, z: 14 },
     },
     {
       // The coach inn. Every rumour on Azo drinks here, and the cellars are under the bar.
       to: 'fenwicks_inn',
-      x: xOfCol(5.5),
-      z: zOfRow(5) + TILE / 2 + 1.4,
+      x: xOfCol(14.5),
+      z: zOfRow(11) + TILE / 2 + 1.4,
       label: 'Into the coach inn',
-      door: { x: xOfCol(5.5), z: zOfRow(5) + TILE / 2 + 0.05, facesSouth: true, sign: 'tavern' },
+      door: { x: xOfCol(14.5), z: zOfRow(11) + TILE / 2 + 0.05, facesSouth: true, sign: 'tavern' },
       arrive: { x: 0, z: 18 },
     },
   ],
@@ -171,6 +214,9 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
       { kind: 'crab', x: 18, z: 18, roam: 4, count: 2 },
       { kind: 'rat', x: -14, z: -34, roam: 5, count: 2 },
       { kind: 'rat', x: -30, z: 6, roam: 5, count: 2 },
+      // Herons on the far bank, gulls over the bridge.
+      { kind: 'heron', x: -40, z: -58, roam: 6 },
+      { kind: 'gull', x: 10, z: -46, roam: 20, count: 3 },
     ],
     /** Coach inn and bridge. Beer, horses, and somewhere to tie them. */
     dressing: [
@@ -212,6 +258,29 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
       { kind: 'bollard', x: 6, z: -34 },
       { kind: 'bollard', x: 26, z: -34 },
       { kind: 'awning', x: -36, z: -18, yaw: 0 },
+
+      // The far bank: the ferry's posts, the old moorings, the drovers' hurdles, the mill's sacks.
+      { kind: 'bollard', x: -90, z: -49 },
+      { kind: 'bollard', x: -74, z: -49 },
+      { kind: 'bollard', x: 50, z: -49 },
+      { kind: 'bollard', x: 62, z: -49 },
+      { kind: 'bollard', x: 78, z: -49 },
+      { kind: 'pens', x: 74, z: -62 },
+      { kind: 'pens', x: 86, z: -62 },
+      { kind: 'sacks', x: 42, z: -50 },
+      { kind: 'cart', x: 46, z: -54 },
+      // The south ferry landing.
+      { kind: 'bollard', x: -94, z: -34.6 },
+      { kind: 'bollard', x: -78, z: -34.6 },
+      { kind: 'rack', x: -70, z: -30 },
+      // The tollers' lodge yard: the rates on a post.
+      { kind: 'barrel', x: 80, z: -22 },
+      { kind: 'noticepost', x: 90, z: -22 },
+      // The burying ground.
+      { kind: 'gravestone', x: -10, z: 46 },
+      { kind: 'gravestone', x: 6, z: 46 },
+      { kind: 'gravestone', x: 14, z: 50 },
+      { kind: 'wildflowers', x: -2, z: 50 },
     ],
     /**
      * The busiest street in the Ring, and the only place five people is not too many.
@@ -255,13 +324,41 @@ export const FENWICKS_CROSSING: AreaDef = defineArea({
         // On the south frontage, facing the toll house across the street.
         text: 'FENWICK TOOK THE TOLL AND THE BRIDGE',
         wallX: 32,
-        wallZ: zOfRow(11) - TILE / 2 - 0.05,
+        wallZ: zOfRow(17) - TILE / 2 - 0.05,
         dx: 0,
         facesSouth: false,
         tint: '#9e8f5e',
       },
     ],
     waterRows: WATER_ROWS,
+    waterRow0: WATER_ROW0,
     horizon: 'treeline',
+    /**
+     * The Bridge Tollers: one crew walks the great bridge by day, far landing to bridgehead and
+     * back, down the lane the chapel leaves open; a crew of them works the far bank at night.
+     */
+    packs: [
+      {
+        encounterId: 'pack_bridge_tollers',
+        id: 'bridge',
+        x: 4,
+        z: -42,
+        roam: 6,
+        hours: 'day',
+        band: 'bridge',
+        behaviour: 'beat',
+        route: [
+          { x: 4, z: -54 },
+          { x: 4, z: -30 },
+        ],
+      },
+      { encounterId: 'pack_bridge_tollers', id: 'far_bank', x: 70, z: -58, roam: 6, hours: 'night', band: 'far_bank' },
+    ],
+    /** The bridge chapel, standing on the great bridge's deck; the far bank's wheel in its race. */
+    landmarks: [
+      { kind: 'bell_tower', x: -8, z: -42 },
+      { kind: 'water_wheel', x: 34, z: -54 },
+    ],
+    vignettes: [{ id: 'fish_racks', x: -74, z: -24 }],
   },
 });

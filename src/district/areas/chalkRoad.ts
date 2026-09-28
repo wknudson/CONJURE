@@ -159,7 +159,8 @@ export const CHALK_ROAD: AreaDef = defineArea({
       x: 38,
       z: zOfRow(15),
       label: "South, down to Fenwick's Crossing",
-      arrive: { x: -2, z: -22 },
+      // Onto the far bank's lane, a stride inside the Crossing's north exit, the bridge ahead.
+      arrive: { x: -2, z: -56 },
     },
     {
       // West, out of the cut and into the snow. The road does not end here so much as stop

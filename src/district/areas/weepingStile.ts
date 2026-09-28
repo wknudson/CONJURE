@@ -106,7 +106,7 @@ export const WEEPING_STILE: AreaDef = defineArea({
       x: HALF_X - 2,
       z: 2,
       label: "East, down the lane to Fenwick's Crossing",
-      arrive: { x: -46, z: -2 },
+      arrive: { x: -82, z: -2 },
     },
     {
       // The chapel. The door is the only part of it that still shuts.
