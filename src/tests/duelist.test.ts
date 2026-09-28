@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { CARDS } from '../core/data/cards/index.js';
 import { MARKS } from '../core/data/marks.js';
-import { NOVICE_DUELIST } from '../core/data/encounters/index.js';
+import { NOVICE_DUELIST, encounterById } from '../core/data/encounters/index.js';
+import { DUEL_ENCOUNTERS } from '../core/data/bounties.js';
+import { HERO_KIT_CARDS } from '../core/data/cards/hero.js';
 import { HERO_KINDS, deckRoleRefusal } from '../core/data/deckRules.js';
 import { schematicPool } from '../core/data/schematics.js';
 import { SCHOOLS } from '../core/data/pools.js';
@@ -79,6 +81,47 @@ describe('the Wandering Duelist holds a Hero Deck', () => {
     for (const [defId, x, y] of NOVICE_DUELIST.enemyOpeningBoard) {
       expect(y, `${defId} is out of the enemy's zone`).toBeLessThanOrEqual(1);
       expect(x, `${defId} is off the board`).toBeLessThan(NOVICE_DUELIST.width);
+    }
+  });
+});
+
+describe('every duel on the poster holds a Hero Deck', () => {
+  // The Novice Duelist's rules, asked of all three. A duelist is another Hero, whichever
+  // tier's poster they are on, and the Adept and Master duels are the Hero kit's teachers.
+  const duels = DUEL_ENCOUNTERS.map((id) => encounterById(id)!);
+
+  it('names a real encounter for every duel', () => {
+    for (const [i, id] of DUEL_ENCOUNTERS.entries()) expect(duels[i], id).toBeDefined();
+  });
+
+  it('plays nothing a Hero Deck could not legally hold, and teaches all of it', () => {
+    for (const duel of duels) {
+      const taught = new Set(schematicPool(duel).map((d) => d.id));
+      for (const id of duel.enemyDeck) {
+        expect(CARDS[id], `${duel.id}: ${id} is not a card`).toBeDefined();
+        expect(deckRoleRefusal(CARDS[id]!), `${duel.id}: ${id}`).toBeNull();
+        expect(taught.has(id), `${duel.id}: ${id} is played but never offered`).toBe(true);
+      }
+    }
+  });
+
+  it('stands its line in its own two rows, clear of the free Footman', () => {
+    for (const duel of duels) {
+      const mid = Math.floor(duel.width / 2);
+      for (const [defId, x, y] of duel.enemyOpeningBoard) {
+        expect(y, `${duel.id}: ${defId} is out of the enemy's zone`).toBeLessThanOrEqual(1);
+        expect(x, `${duel.id}: ${defId} is off the board`).toBeLessThan(duel.width);
+        expect([x, y], `${duel.id}: ${defId} sits on the free Footman tile`).not.toEqual([mid, 1]);
+      }
+    }
+  });
+
+  it('teaches every card of the Hero kit somewhere', () => {
+    // The kit exists to widen what a Hero Deck can be built from, and a card no duel plays
+    // is a card no player can forge. The duels are where it is taught, all of it.
+    const played = new Set(duels.flatMap((d) => d.enemyDeck));
+    for (const id of Object.keys(HERO_KIT_CARDS)) {
+      expect(played.has(id), `${id} is taught by no duel`).toBe(true);
     }
   });
 });

@@ -87,6 +87,7 @@ import {
 } from './core/data/bounties.js';
 import { packByEncounter, reinforceSquad, type PackDef } from './core/data/packs.js';
 import { stampClock } from './core/data/hunts.js';
+import { schoolsKept } from './core/data/pools.js';
 import { storyContractByEncounter } from './core/data/campaign.js';
 import {
   carryFor,
@@ -465,8 +466,12 @@ function showArea(areaId: string, companionId: string): void {
       bounties: composeBoard(global.overworld.bountySeed, profile().campaign),
       // Standing work, past the gate. Composed off the same seed as the board so a hunt's
       // fee is stable while the player is looking at it, and re-rolled when a fight moves
-      // the seed on — the same rule the posters follow.
-      huntBoard: huntBoard(global.overworld.bountySeed),
+      // the seed on — the same rule the posters follow. A rare hunt is posted only once the
+      // kennel holds both of its parents' schools.
+      huntBoard: huntBoard(
+        global.overworld.bountySeed,
+        schoolsKept(profile().companions.map((c) => c.baseId)),
+      ),
       lairBoard: lairBoard(global.overworld.bountySeed),
       hunts: profile().hunts,
       collection: profile().collection,

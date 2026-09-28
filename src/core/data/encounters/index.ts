@@ -5,6 +5,8 @@
 
 import type { EncounterDef } from './registry.js';
 import { NOVICE_DUELIST } from './duelist.novice.js';
+import { ADEPT_DUELIST } from './duelist.adept.js';
+import { MASTER_DUELIST } from './duelist.master.js';
 import { NARROW_RUIN } from './narrow.ruin.js';
 import { GLACIAL_FIELD } from './glacial.field.js';
 import { IGNIS_TRIAL } from './ignis.trial.js';
@@ -51,6 +53,12 @@ import {
   HUNT_ASHWOOD_WARDEN,
   HUNT_BARROW_JACKAL,
   HUNT_CALDERA_DRAKE,
+  HUNT_CALDERA_PHOENIX,
+  HUNT_CINDERWORKS_BADGER,
+  HUNT_RIMEFIELD_ERMINE,
+  HUNT_RIMEFIELD_MAMMOTH,
+  HUNT_SALTGLASS_EEL,
+  HUNT_SHELF_PANGOLIN,
   HUNT_CHALK_BOAR,
   HUNT_CHALK_CUT_RAM,
   HUNT_CINDERWORKS_SALAMANDER,
@@ -77,6 +85,10 @@ export const ENCOUNTERS: EncounterDef[] = [
   NARROW_RUIN,
   GLACIAL_FIELD,
   IGNIS_TRIAL,
+  // The two later duels, beside the first: rolled-pool work at Adept and Master that teaches
+  // the Hero kit the way the Novice Duelist teaches the first shelf.
+  ADEPT_DUELIST,
+  MASTER_DUELIST,
   LAMPROW_TITHE,
   BONEMARKET_VERMIN,
   LAMPLIGHTER_ESCORT,
@@ -132,6 +144,12 @@ export const ENCOUNTERS: EncounterDef[] = [
   HUNT_TALLOW_AUROCHS,
   HUNT_PYLON_KUDU,
   HUNT_BARROW_JACKAL,
+  HUNT_CALDERA_PHOENIX,
+  HUNT_CINDERWORKS_BADGER,
+  HUNT_RIMEFIELD_MAMMOTH,
+  HUNT_RIMEFIELD_ERMINE,
+  HUNT_SALTGLASS_EEL,
+  HUNT_SHELF_PANGOLIN,
   // The roaming packs. Spread rather than listed, because what a pack *is* lives in
   // `data/packs.ts` and this file should not be a second place to forget one.
   ...PACK_ENCOUNTERS,
@@ -141,7 +159,7 @@ export function encounterById(id: string): EncounterDef | undefined {
   return ENCOUNTERS.find((e) => e.id === id);
 }
 
-export { NOVICE_DUELIST, NARROW_RUIN, GLACIAL_FIELD, IGNIS_TRIAL };
+export { NOVICE_DUELIST, ADEPT_DUELIST, MASTER_DUELIST, NARROW_RUIN, GLACIAL_FIELD, IGNIS_TRIAL };
 export { LAMPROW_TITHE, BONEMARKET_VERMIN, CURFEW_BREAKERS, CHALK_ROAD_TOLL };
 export {
   LAMPLIGHTER_ESCORT,
